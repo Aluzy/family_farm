@@ -180,6 +180,13 @@ ROCHE = rampe([(44, 44, 50), (82, 82, 88), (124, 122, 124), (170, 166, 162), (21
 CUIVRE_R = rampe([(96, 46, 22), (160, 86, 42), (214, 136, 74), (246, 196, 132)])
 FERRUGINEUX = rampe([(70, 34, 26), (124, 62, 40), (176, 98, 62), (214, 146, 104)])
 EAU_R = rampe([(20, 44, 66), (36, 76, 108), (60, 116, 150), (110, 168, 196), (200, 230, 240)])
+OSIER = rampe([(90, 62, 30), (146, 104, 52), (196, 152, 86), (228, 196, 132), (246, 226, 176)])
+HERBE_R = rampe([(30, 52, 24), (58, 88, 36), (98, 128, 54), (150, 170, 86), (196, 206, 130)])
+SAUGE = rampe([(48, 62, 50), (82, 102, 80), (122, 142, 116), (168, 184, 156), (208, 218, 196)])
+LAVANDE = rampe([(58, 36, 92), (96, 66, 140), (140, 108, 184), (186, 160, 220)])
+CHAMPI_R = rampe([(70, 36, 20), (122, 66, 36), (176, 108, 62), (216, 160, 108), (240, 216, 180)])
+BAIE_R = rampe([(56, 10, 30), (110, 22, 50), (170, 40, 70), (220, 90, 110), (250, 180, 190)])
+CEPE = rampe([(52, 30, 16), (96, 56, 28), (142, 92, 48), (190, 142, 92), (236, 214, 176)])
 ECORCE = rampe([(30, 20, 12), (58, 40, 24), (88, 64, 40), (120, 92, 60), (150, 120, 82)])
 
 
@@ -643,36 +650,136 @@ def auge():
     return im, (17, 18)
 
 
+def branche(t, x, y0, y1, s):
+    """Un montant de branche brute (2 px), son écorce éclairée à gauche, un nœud ou deux."""
+    for y in range(y0, y1 + 1):
+        f = (y - y0) / max(1, y1 - y0)
+        t.put(x, y, ton(ECORCE, 0.72 - 0.18 * f + 0.06 * bruit(x, y, s)))
+        t.put(x + 1, y, ton(ECORCE, 0.38 - 0.10 * f + 0.05 * bruit(x + 1, y, s)))
+        if bruit(x, y // 3, s + 1) > 0.85:
+            t.put(x + 1, y, ton(ECORCE, 0.15))                      # un nœud
+    t.put(x, y0, ton(COEUR, 0.80))
+    t.put(x + 1, y0, ton(COEUR, 0.55))
+
+
+def bouquet(t, x, y0, R, fleur, s):
+    """Un bouquet d'herbes qui sèche la tête en bas : la ficelle, les tiges serrées, les feuilles
+    qui s'évasent vers le bas ; fleur : une rampe de fleurs au bout (lavande…), ou rien."""
+    t.put(x, y0, ton(FILET_R, 0.85))
+    t.put(x, y0 + 1, ton(FILET_R, 0.60))
+    for k in range(9):
+        y = y0 + 2 + k
+        demi = min(2, k // 3) + (1 if k > 6 else 0)
+        for dx in range(-demi, demi + 1):
+            if k > 6 and abs(dx) == demi and bruit(x + dx, y, s) < 0:
+                continue                                               # le bord, effiloché
+            lum = 0.62 - 0.14 * dx - 0.03 * k + 0.08 * bruit(x + dx, y, s)
+            c = ton(R, lum)
+            if fleur and k >= 6 and bruit(x + dx, y, s + 3) > -0.2:
+                c = ton(fleur, lum + 0.1)
+            t.put(x + dx, y, c)
+
+
 def claie():
-    """La claie du cueilleur : un châssis de branches, des bouquets d'herbes qui sèchent la tête en bas."""
-    t = Toile(34, 26)
-    for x in (3, 30):
-        t.rect(x, 3, x + 1, 25, BOIS[1])
-    t.rect(2, 4, 31, 5, BOIS[3])
-    for k, x in enumerate(range(6, 30, 4)):
-        c = HERBES[k % 3]
-        for y in range(6, 14):
-            for dx in range(-1, 2):
-                if hasard(x, y, dx) < 0.8 - (y - 6) * 0.04:
-                    t.put(x + dx, y, c if dx else HERBES[2])
-        t.put(x, 6, PAILLE[1])
-    t.rect(4, 22, 29, 23, BOIS[2])                  # le plateau du bas, des champignons qui sèchent
-    for x in range(6, 28, 3):
-        t.put(x, 21, CHAMPI[1]); t.put(x + 1, 21, CHAMPI[0])
-    return t.fini(), (17, 26)
+    """La claie du cueilleur, vue de haut à 45° : deux montants de branches brutes et leur traverse ;
+    des bouquets d'herbes et de lavande qui sèchent la tête en bas, liés de ficelle ; en bas, un
+    plateau d'osier tressé sur ses pieds, où sèchent des champignons ; l'ombre."""
+    t = Toile(36, 31)
+    for x in (2, 32):
+        branche(t, x, 3, 28, 131 + x)
+    for x in range(1, 35):                                            # la traverse
+        t.put(x, 3, ton(ECORCE, 0.82 - 0.2 * x / 34))
+        t.put(x, 4, ton(ECORCE, 0.45 - 0.1 * x / 34))
+    for x in (2, 3, 32, 33):                                          # les ligatures
+        t.put(x, 4, ton(FILET_R, 0.8))
+    for x in (6, 29):                                                 # les pieds du plateau
+        for y in range(23, 29):
+            t.put(x, y, ton(CHENE, 0.55 - 0.04 * (y - 23)))
+    for y in range(18, 24):                                           # le plateau d'osier, vu de dessus
+        for x in range(4, 32):
+            bord = y in (18, 23) or x in (4, 31)
+            if bord:
+                lum = 0.85 if (y == 18 or x == 4) else 0.45
+            else:
+                lum = 0.60 - 0.10 * (x - 4) / 27 + (0.14 if (x // 2 + y) % 2 else -0.08)   # le tressage
+            t.put(x, y, ton(OSIER, lum + 0.03 * bruit(x, y, 150)))
+    for x in range(4, 32):                                            # le chant du plateau
+        t.put(x, 24, ton(OSIER, 0.35 - 0.1 * (x - 4) / 27))
+    for k, x in enumerate(range(7, 30, 4)):                           # les champignons qui sèchent
+        y = 20 + (k % 2)
+        t.put(x, y, ton(CHAMPI_R, 0.85))
+        t.put(x + 1, y, ton(CHAMPI_R, 0.60))
+        t.put(x, y + 1, ton(CHAMPI_R, 0.45))
+        t.put(x + 1, y + 1, ton(CHAMPI_R, 0.30))
+    im = ombre_portee(t.fini(), 18, 28.6, 17.2, 2.2)
+    # les bouquets, posés après le contour : on voit entre eux au travers de la claie
+    t = Toile(36, 31)
+    t.im, t.px = im, im.load()
+    sortes = [(HERBE_R, None), (HERBE_R, LAVANDE), (SAUGE, None), (HERBE_R, LAVANDE), (SAUGE, None), (HERBE_R, None)]
+    for k, x in enumerate(range(7, 31, 4)):
+        R, fleur = sortes[k]
+        bouquet(t, x, 5, R, fleur, 140 + k)
+    return im, (18, 29)
+
+
+def panier(rx, ry, h, contenu, s, anse=False):
+    """Un panier d'osier vu de haut à 45°, sur sa propre toile cernée : son bord clair en ellipse,
+    son flanc tressé en rangs décalés (éclairé à gauche), son contenu en tas ; anse : une anse
+    d'osier par-dessus. Rend l'image et le point du milieu de son bord."""
+    w, haut_anse = int(2 * rx) + 3, 6 if anse else 1
+    t = Toile(w, int(2 * ry + h) + haut_anse + 3)
+    cx, cy = w / 2, ry + haut_anse + 1
+    for y in range(t.h):                                              # le flanc
+        for x in range(w):
+            u = (x + .5 - cx) / rx
+            if abs(u) > 1:
+                continue
+            bas = cy + ry * (1 - u * u) ** 0.5
+            if y < bas - 0.5 or y > bas + h:
+                continue
+            k = int(y - bas + 0.5)
+            lum = 0.40 - 0.22 * u - 0.06 * k + (0.12 if (x + k) % 2 else -0.10)
+            t.put(x, y, ton(OSIER, lum + 0.03 * bruit(x, y, s)))
+    R, rond = contenu
+    for y in range(t.h):                                              # le bord et le contenu
+        for x in range(w):
+            u, v = (x + .5 - cx) / rx, (y + .5 - cy) / ry
+            d = u * u + v * v
+            if d > 1:
+                continue
+            if d > 0.74:
+                c = ton(OSIER, 0.95 - 0.40 * (u + v) / 2)               # le bord tressé
+                if (x + y) % 3 == 0:
+                    c = ton(OSIER, 0.70 - 0.40 * (u + v) / 2)
+            else:
+                lum = 0.55 - 0.25 * (u + v) / 2 + 0.06 * bruit(x, y, s + 1)
+                if rond:
+                    lum += 0.40 if (x + 2 * y) % 3 == 0 else -0.18 if (x + 2 * y) % 3 == 1 else 0
+                else:                                                  # des chapeaux de 3 × 2, en quinconce
+                    i, j = (x + (y // 2) % 2) % 3, y % 2
+                    lum = 0.75 if (i, j) == (0, 0) else 0.12 if i == 2 else 0.38 + 0.1 * bruit(x // 3, y // 2, s)
+                c = ton(R, lum)
+            t.put(x, y, c)
+    if anse:
+        for k in range(int(2 * rx) - 1):
+            f = (k / (2 * rx - 2)) * 2 - 1
+            x = int(cx - rx + 1) + k
+            y = int(round(cy - (ry + 4) * (1 - f * f) ** 0.5))
+            if y < cy - ry * (1 - f * f) ** 0.5 - 0.5:
+                t.put(x, y, ton(OSIER, 0.90 - 0.4 * (f + 1) / 2))
+                t.put(x, y + 1, ton(OSIER, 0.45 - 0.2 * (f + 1) / 2))
+    return t.fini(), cx, cy
 
 
 def paniers():
-    """Des paniers d'osier : l'un de champignons, l'autre de baies."""
-    t = Toile(16, 18)
-    for (x0, x1, y, fruit) in ((1, 8, 16, CHAMPI), (8, 14, 13, BAIES)):
-        for y2 in range(y - 5, y + 1):
-            for x in range(x0, x1 + 1):
-                t.put(x, y2, PAILLE[1] if (x + y2) % 2 else PAILLE[2])
-        for x in range(x0 + 1, x1):
-            t.put(x, y - 6, fruit[1] if x % 2 else fruit[0])
-            t.put(x, y - 7, fruit[1] if (x % 3) else fruit[-1])
-    return t.fini(), (8, 18)
+    """Deux paniers d'osier du cueilleur, vus de haut à 45° : derrière, le petit, plein de baies ;
+    devant, le grand à anse, plein de cèpes ; chacun cerné ; leur ombre."""
+    im = Image.new('RGBA', (20, 22), (0, 0, 0, 0))
+    petit, pcx, pcy = panier(4.4, 2.8, 3, (BAIE_R, True), 161)
+    grand, gcx, gcy = panier(5.8, 3.4, 3, (CEPE, False), 162, anse=True)
+    im.alpha_composite(petit, (int(14 - pcx), int(8 - pcy)))
+    im.alpha_composite(grand, (int(7 - gcx), int(13 - gcy)))
+    return ombre_portee(im, 10, 20, 9.6, 2), (10, 21)
 
 
 def coffre():
