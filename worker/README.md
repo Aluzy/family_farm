@@ -291,6 +291,56 @@ joueur (`players/<id>.json`) : 2 écritures et 1 lecture R2 par minute. Le jeu n
 envoi d'une visite, toutes les 10 minutes et à la fin (`fiche: true` dans la session) : ≈ 1,1 écriture et
 0,1 lecture par minute. Un ancien jeu, sans ce champ, garde l'ancien comportement.
 
+## Les gemmes (achats en argent réel, par Stripe)
+
+`worker/src/boutique.mjs` ; dans le jeu, `js/ui/gemmes.js`. Les gemmes 💎 s'achètent en packs (100 gemmes à
+0,99 €, 550 à 4,99 €, 1 200 à 9,99 €) et achètent les rosiers grimpants (25 gemmes, 4 coloris). Le solde, les
+paiements et les achats sont dans la base du Durable Object Comptes : jamais dans la partie, qui se modifie à la
+main. Il faut un compte du jeu en ligne pour acheter.
+
+Le paiement passe par **Stripe Checkout** (la page de paiement hébergée par Stripe : le jeu ne voit jamais de
+carte) : `POST /compte/boutique/payer` crée la session de paiement, Stripe prévient le Worker sur
+`POST /stripe/webhook` (événement `checkout.session.completed`), le Worker vérifie la signature (en-tête
+`Stripe-Signature`, HMAC SHA-256, 5 minutes de tolérance), puis crédite les gemmes une seule fois. Sources :
+[Create a Checkout Session](https://docs.stripe.com/api/checkout/sessions/create),
+[Receive Stripe events in your webhook endpoint](https://docs.stripe.com/webhooks).
+
+Le mode (test ou réel) vient de la clé : `sk_test_` / `rk_test_` : paiements fictifs, la console et le jeu le
+disent ; `sk_live_` / `rk_live_` : vrais paiements. Sans les deux secrets, l'achat de gemmes reste fermé.
+
+### Mise en route du mode test (une seule fois)
+
+1. **Un compte Stripe** : [dashboard.stripe.com/register](https://dashboard.stripe.com/register). Pour tester,
+   pas besoin d'activer les vrais paiements.
+2. **La clé de test** : dans le tableau de bord de Stripe, en mode bac à sable (*sandbox*), page
+   [API keys](https://dashboard.stripe.com/apikeys) ; copier la **clé secrète** (elle commence par `sk_test_`).
+   Source : [API keys](https://docs.stripe.com/keys).
+3. **Le point de réception des notifications** : page [Webhooks](https://dashboard.stripe.com/webhooks) (dans
+   Workbench), toujours en bac à sable : **Create an event destination** › **Your account** › format
+   **Snapshot** › l'événement `checkout.session.completed` (et `checkout.session.async_payment_succeeded`) ›
+   **Webhook endpoint** › adresse : `https://family-farm.contact-voidr.workers.dev/stripe/webhook`. Sur la page
+   du point créé, **Reveal secret** donne le secret de signature (il commence par `whsec_`). Source :
+   [Set up your endpoint](https://docs.stripe.com/webhooks#webhook-endpoint-def).
+4. **Les deux secrets du Worker** : Cloudflare › Workers & Pages › `family-farm` › Paramètres › Variables et
+   secrets › Ajouter, type **Secret** :
+   - `STRIPE_SECRET_KEY` = la clé `sk_test_…`
+   - `STRIPE_WEBHOOK_SECRET` = le secret `whsec_…`
+
+   Jamais dans `wrangler.toml` (le dépôt est public).
+5. **Essayer** : dans le jeu, connecté, toucher 💎 sous les pièces, choisir un pack ; sur la page de Stripe, la
+   carte de test `4242 4242 4242 4242`, une date future (par exemple 12/34), n'importe quel code à 3 chiffres.
+   Source : [Testing](https://docs.stripe.com/testing). De retour dans le jeu, les gemmes arrivent en quelques
+   secondes ; la console (écran **Ventes**) montre le paiement « test ».
+
+### Avant les vrais paiements
+
+- Faire relire et compléter `cgv.html` (brouillon : vendeur, médiateur de la consommation, droit de
+  rétractation) ; activer le compte Stripe (identité, compte bancaire).
+- Activer l'envoi des reçus par e-mail dans Stripe (la confirmation d'achat que demande la renonciation au droit
+  de rétractation pour un contenu numérique).
+- Remplacer les deux secrets par ceux du mode réel (une clé restreinte `rk_live_` avec l'écriture des sessions
+  Checkout, conseillée par Stripe, ou `sk_live_` ; et le secret du point de réception créé en mode réel).
+
 ## Mise en route du rapport (une seule fois)
 
 1. **Créer un dépôt privé** pour les rapports, par exemple `family_farm_rapports`

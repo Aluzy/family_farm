@@ -20,6 +20,8 @@
 //   GET /mondes/<id>/journal?avant= (le propriétaire). E-12 : GET et POST /mondes/<id>/sauvegardes, POST
 //   /mondes/<id>/restaurer { cle } (le propriétaire ; les sauvegardes dans R2, sous mondes/).
 //   Le Worker vérifie la session auprès des comptes, puis passe au Durable Object Monde du monde.
+// - /compte/boutique… et POST /stripe/webhook : la boutique (boutique.mjs) : les gemmes, achetées par Stripe
+//   Checkout (secrets STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET), et les rosiers grimpants.
 // - GET /report (facultatif) : aperçu du rapport en Markdown, ou publication de test
 //   avec &publish=1. Protégé par REPORT_TOKEN : sans ce secret, la route n'existe pas.
 
@@ -27,6 +29,7 @@ import { buildReport, mergePlayer, playerMeta, renderMarkdown, reportSubject, pa
 
 // Les comptes des joueurs (E-0) : le Durable Object Comptes (comptes.mjs), routes /compte/….
 import { routeAdmin } from './admin.mjs';
+import { boutiqueOuverte, modeStripe } from './boutique.mjs';
 export { Comptes } from './comptes.mjs';
 // Le monde partagé (E-1) : un Durable Object Monde par monde (monde.mjs), routes /mondes….
 export { Monde } from './monde.mjs';
@@ -141,6 +144,8 @@ function outilsAdmin(env) {
     },
     lire: async (cle) => { const o = await env.SESSIONS.get(cle); return o ? o.json() : null; },
     enLigne: async () => (env.COMPTES ? interne(env, '/interne/admin') : { ok: false, erreur: 'Le jeu en ligne n\'est pas ouvert.' }),
+    // (les ventes de gemmes : boutique.mjs ; le mode de la clé de Stripe, jamais la clé)
+    ventes: async () => (env.COMPTES ? { ...(await interne(env, '/interne/ventes')), mode: modeStripe(env), ouverte: boutiqueOuverte(env) } : { ok: false, erreur: 'Le jeu en ligne n\'est pas ouvert.' }),
   };
 }
 
@@ -250,6 +255,18 @@ async function routeComptes(request, env, origin) {
   const stub = env.COMPTES.get(env.COMPTES.idFromName('comptes'));
   const r = await stub.fetch(request);
   return new Response(await r.text(), { status: r.status, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
+}
+
+// Une notification de Stripe : son corps brut et sa signature passés au Durable Object Comptes (qui a le
+// secret, la vérifie et crédite les gemmes). 64 Ko au plus.
+async function stripeWebhook(request, env) {
+  if (!env.COMPTES) return new Response('{"ok":false}', { status: 503, headers: { 'Content-Type': 'application/json' } });
+  if (Number(request.headers.get('Content-Length') || 0) > 64 * 1024) return new Response('{"ok":false}', { status: 413, headers: { 'Content-Type': 'application/json' } });
+  const corps = await request.text();
+  const r = await env.COMPTES.get(env.COMPTES.idFromName('comptes')).fetch(new Request('https://interne/stripe/webhook', {
+    method: 'POST', body: corps, headers: { 'Stripe-Signature': request.headers.get('Stripe-Signature') || '', 'Content-Type': 'application/json' },
+  }));
+  return new Response(await r.text(), { status: r.status, headers: { 'Content-Type': 'application/json' } });
 }
 
 /* ---------- E-1 : les mondes en ligne ---------- */
@@ -392,6 +409,8 @@ export default {
     if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return routeAdmin(request, env, url, outilsAdmin(env));
     if (url.hostname.startsWith('admin.') && url.pathname === '/') return Response.redirect(`${url.origin}/admin`, 302);
 
+    // les notifications de Stripe (boutique.mjs) : pas depuis le jeu ; leur signature est vérifiée par les comptes
+    if (url.pathname === '/stripe/webhook' && request.method === 'POST') return stripeWebhook(request, env);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
     if (url.pathname.startsWith('/compte/')) return routeComptes(request, env, origin);
     if (url.pathname === '/mondes' || url.pathname.startsWith('/mondes/') || url.pathname === '/rejoindre') return routeMondes(request, env, origin, url);

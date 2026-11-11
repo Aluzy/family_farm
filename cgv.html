@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Conditions générales de vente des gemmes de Moon Bloom Village (brouillon).">
+  <meta name="theme-color" content="#664579">
+  <title>Conditions de vente — Moon Bloom Village</title>
+  <meta name="robots" content="noindex">
+  <style>
+    /* Le style du jeu (css/jeu.css), comme l'accueil et l'encyclopédie : la police en pixels
+       (assets/police_dialogue.woff), les cadres de bois sur fond crème, la ferme vue de loin en
+       tête (assets/accueil_ferme.webp) ; le texte, lui, dans une lettre crème, comme le courrier
+       du jeu (.modal.letter). */
+    @font-face {
+      font-family: 'Ferme Dialogue';
+      src: url('assets/police_dialogue.woff') format('woff');
+      font-display: swap;
+    }
+    :root {
+      --color-sun: #d074d6;
+      --color-earth: #3a2a55;
+      --wood-ink: #3a2a55;
+      --wood-dark: #1e1530;
+      --wood-light: #9673a7;
+      --wood-glow: rgba(150, 115, 167, 0.9);
+      --wood-cream: #fbf3ff;
+      --wood-paper: #f1e3f7;
+      --wood-bg: rgba(251, 243, 255, 0.97);
+      --accent: #444f9f;
+      --bg: #f8f2fb;
+      --text: #2a1f3d;
+      --text-muted: #6e5a80;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #19161a; --text: #e9e1ee; --text-muted: #aa9cb2; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font-family: 'Ferme Dialogue', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-synthesis: none;
+      font-size-adjust: ex-height 0.47;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+    h1, h2, h3, strong, b, th { font-weight: normal; }
+    a { color: var(--accent); }
+    .wrap { width: min(860px, calc(100% - 32px)); margin: auto; }
+    .large { width: min(1120px, calc(100% - 32px)); }
+
+    .bois {
+      background: var(--wood-bg);
+      color: var(--wood-ink);
+      border: 3px solid var(--color-earth);
+      border-radius: 8px;
+      box-shadow: inset 0 0 0 2px var(--wood-glow), 0 4px 0 rgba(42, 28, 50, 0.35);
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 40px; padding: 0 16px; text-decoration: none;
+      border: 3px solid var(--color-earth); border-radius: 6px; font-size: 16px;
+      background: var(--accent); color: #fff; box-shadow: inset 0 0 0 2px #7480d6, 0 3px 0 var(--wood-dark);
+    }
+    a:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+
+    /* l'en-tête : une planche de bois */
+    .nav { position: sticky; top: 0; z-index: 20; padding: 8px 0; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px 6px 6px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; color: var(--wood-ink); text-decoration: none; }
+    .nav .prune { background: #3a2a55; border-color: #1e1530; box-shadow: inset 0 0 0 2px #9673a7, 0 4px 0 rgba(30, 21, 48, 0.35); color: #fbf3ff; }
+    .nav .prune a:not(.btn) { color: #fbf3ff; }
+    .brand .logo { display: block; width: 90px; height: 45px; image-rendering: pixelated; }
+    .medaillon {
+      width: 44px; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center;
+      background: var(--wood-cream); border: 3px solid var(--color-earth); box-shadow: inset 0 0 0 2px var(--color-sun);
+    }
+    .medaillon .px { --pxs: 28px; }
+    .nav-links { display: flex; gap: 22px; font-size: 16px; }
+    .nav-links a { color: var(--wood-ink); text-decoration: none; }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* la tête de page : la ferme vue de loin, un panneau de bois par-dessus */
+    header.hero {
+      margin-top: -80px; padding: 116px 0 36px;
+      background: #6f9f3c url('assets/accueil_ferme.webp') no-repeat;
+      background-position: calc(50% - 600px) 70%;
+      image-rendering: pixelated;
+      border-bottom: 3px solid var(--color-earth);
+    }
+    .hero-panel { max-width: 640px; padding: 22px 26px 20px; }
+    .ruban {
+      display: inline-block; padding: 2px 14px;
+      background: #f0d4f2; border: 2px solid var(--color-earth); border-radius: 4px; font-size: 15px;
+    }
+    h1 { font-size: clamp(32px, 5vw, 44px); line-height: 1.08; margin: 10px 0 8px; color: var(--wood-dark); }
+    .lead { font-size: 18px; color: #5d426c; margin: 0 0 6px; }
+    .meta { font-size: 15px; color: #5d426c; margin: 0; }
+
+    main { padding: 30px 0 10px; }
+    /* le résumé : un panneau de bois ; le texte : une lettre */
+    .summary { padding: 18px 24px; margin: 0 0 24px; }
+    .summary strong { font-size: 20px; color: var(--wood-dark); }
+    .summary ul { margin: 8px 0 0; padding-left: 20px; }
+    .lettre {
+      background: #f2e8f8; color: #291a32;
+      border: 3px solid var(--color-earth); border-radius: 8px;
+      box-shadow: inset 0 0 0 2px #c1abce, 0 4px 0 rgba(42, 28, 50, 0.35);
+      padding: 6px 30px 26px;
+    }
+    .lettre a { color: #2f3878; }
+    h2 { font-size: 24px; margin: 30px 0 6px; color: var(--wood-dark); border-bottom: 3px solid var(--color-sun); display: inline-block; }
+    p, li { font-size: 17px; }
+    ul { padding-left: 22px; }
+    .table-wrap { overflow-x: auto; border: 3px solid var(--color-earth); border-radius: 6px; background: var(--wood-cream); }
+    table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 15px; }
+    th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 2px solid #cbb3d9; }
+    th { background: #cbafdb; font-size: 15px; color: var(--wood-ink); }
+    tr:last-child td { border-bottom: 0; }
+    code {
+      background: var(--wood-paper); border: 2px solid var(--wood-light); border-radius: 4px;
+      padding: 0 5px; font-family: inherit; font-size: 0.95em; white-space: nowrap;
+    }
+    footer { padding: 24px 0 36px; color: var(--text-muted); font-size: 15px; border-top: 3px solid var(--color-earth); margin-top: 40px; }
+    .footer-inner { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    footer a { color: inherit; }
+    @media (max-width: 850px) {
+      .nav-links { display: none; }
+      header.hero { background-size: 1800px 500px; background-position: calc(50% - 300px) 60%; }
+    }
+    @media (max-width: 560px) {
+      header.hero { padding: 96px 0 24px; }
+      .hero-panel { padding: 18px 16px; }
+      .lettre { padding: 4px 16px 20px; }
+      .summary { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap large nav-inner bois prune">
+      <a class="brand" href="index.html"><img class="logo" src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45"></a>
+      <nav class="nav-links" aria-label="Pages">
+        <a href="index.html">Accueil</a>
+        <a href="encyclopedie.html">Encyclopédie</a>
+      </nav>
+      <a class="btn" href="jeu.html">Jouer</a>
+    </div>
+  </header>
+
+  <header class="hero">
+    <div class="wrap">
+      <div class="hero-panel bois">
+        <div class="ruban">Gemmes</div>
+        <h1>Conditions générales de vente</h1>
+        <p class="lead">Les gemmes 💎 du jeu en ligne et ce qu'elles achètent.</p>
+        <p class="meta">BROUILLON, à relire et compléter avant d'accepter de vrais paiements · 11 novembre 2026</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="summary bois">
+      <strong>Ce document est un brouillon</strong>
+      <ul>
+        <li>Il n'a pas été relu par un professionnel du droit. Les passages entre crochets [ ] sont à compléter par l'éditeur du jeu.</li>
+        <li>Tant qu'il est en brouillon, seuls des paiements de test (sans argent réel) sont proposés.</li>
+      </ul>
+    </div>
+
+    <h2>1. Le vendeur</h2>
+    <p>[Nom ou raison sociale], [statut juridique], [adresse], [numéro SIREN/SIRET], [numéro de TVA s'il y a lieu], contact : [adresse e-mail de contact].</p>
+
+    <h2>2. Ce qui est vendu</h2>
+    <p>Des gemmes 💎, une monnaie du jeu Moon Bloom Village, en packs : 100 gemmes (0,99 €), 550 gemmes (4,99 €) et 1 200 gemmes (9,99 €), prix toutes taxes comprises. Les gemmes servent seulement dans le jeu, à acheter des objets de décoration (par exemple un rosier grimpant pour 25 gemmes). Elles ne sont ni remboursables en argent, ni échangeables entre joueurs, ni convertibles en autre chose.</p>
+
+    <h2>3. Compte et âge</h2>
+    <p>L'achat demande un compte du jeu en ligne. Les achats sont réservés aux adultes ; un mineur ne peut acheter qu'avec l'accord de la personne qui exerce l'autorité parentale.</p>
+
+    <h2>4. Paiement</h2>
+    <p>Le paiement se fait sur la page sécurisée de Stripe (prestataire de paiement). Le jeu ne voit ni ne garde jamais les données de carte.</p>
+
+    <h2>5. Livraison</h2>
+    <p>Les gemmes sont créditées sur le compte dès que Stripe confirme le paiement, en général en quelques secondes. Les objets achetés avec des gemmes arrivent dans l'inventaire de la partie solo de l'appareil connecté.</p>
+
+    <h2>6. Droit de rétractation</h2>
+    <p>Les gemmes sont un contenu numérique fourni sans support matériel, livré dès le paiement. Avant de payer, l'acheteur demande expressément cette livraison immédiate et renonce expressément à son droit de rétractation ; il reçoit ensuite une confirmation de son achat (le reçu de Stripe par e-mail). Référence : article L221-28, 13°, du Code de la consommation. [À vérifier par l'éditeur.]</p>
+
+    <h2>7. Suppression du compte</h2>
+    <p>Supprimer son compte efface son solde de gemmes et ses achats en attente de livraison, sans remboursement. Les objets déjà livrés restent dans la partie.</p>
+
+    <h2>8. Réclamations</h2>
+    <p>Pour toute question ou réclamation : [adresse e-mail de contact]. [Médiateur de la consommation : nom et coordonnées, obligatoire pour la vente aux consommateurs.]</p>
+
+    <h2>9. Droit applicable</h2>
+    <p>[Droit français ; tribunal compétent.]</p>
+  </main>
+
+  <footer>
+    <div class="wrap large footer-inner">
+      <div>🌱 <strong>Moon Bloom Village</strong> — un jeu de gestion agricole.</div>
+      <div><a href="index.html">Accueil</a> · <a href="jeu.html">Jouer</a> · <a href="encyclopedie.html">Encyclopédie</a></div>
+    </div>
+  </footer>
+<script type="module" src="js/icones-page.js"></script>
+</body>
+</html>

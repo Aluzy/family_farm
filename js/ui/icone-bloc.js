@@ -23,6 +23,8 @@ export function iconeBloc(sorte) {
   const b = DATA.ATELIER.BLOCS[sorte];
   const machine = dessinMachine(sorte);
   if (machine) return machine;
+  // (un rosier grimpant de la boutique : son dessin, dans son coloris)
+  if (b.grimpant) return `<span class="build-slot-rosier" style="--f:${['multicolore', 'rouge', 'blanc', 'jaune'].indexOf(b.grimpant)}"></span>`;
   if (b.meuble) return `<img class="build-slot-img" src="${meubleSrc(b.meuble)}" alt="" draggable="false">`;
   // (le four redessiné : son dessin, éteint)
   if (b.dessin === 'four') return `<img class="build-slot-img" src="${meubleSrc('four')}" alt="" draggable="false">`;

@@ -61,5 +61,7 @@ enabled = true
 #   RESEND_API_KEY       (jeu en ligne) clé de l'API de Resend, qui envoie les liens de connexion
 #   ACCESS_EQUIPE, ACCESS_AUD, ADMIN_EMAILS, CF_API_TOKEN, CF_ACCOUNT_ID
 #                        (la console d'administration, /admin : worker/README.md, « La console d'administration »)
+#   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+#                        (les gemmes, achetées par Stripe : worker/README.md, « Les gemmes »)
 #   COMPTE_EXPEDITEUR    (jeu en ligne) l'expéditeur des liens, d'un domaine vérifié chez Resend,
 #                        « Moon Bloom Village <connexion@mail.moonbloom-village.com> »

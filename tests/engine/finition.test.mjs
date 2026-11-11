@@ -292,7 +292,7 @@ test('restes : aucun texte du jeu ne parle de la ville, du Marché, du train… 
   }
   voir('encyclopedie_ferme_familiale.json', valeursDe(JSON.parse(readFileSync(join(RACINE, 'encyclopedie_ferme_familiale.json'), 'utf8'))));
   for (const f of fichiersJs('js')) voir(f, textesDe(f));
-  for (const f of ['jeu.html', 'index.html', 'encyclopedie.html', 'cookies.html']) voir(f, textesDe(f));
+  for (const f of ['jeu.html', 'index.html', 'encyclopedie.html', 'cookies.html', 'cgv.html']) voir(f, textesDe(f));
   assertEqual(trouves, []);
   // le test voit bien ce qu'il cherche
   assertEqual([reste('Vends au Marché'), reste('en ville'), reste('la marche du cheval'), reste('tu marches')], ['Marché', 'ville', null, null]);

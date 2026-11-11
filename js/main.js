@@ -25,6 +25,7 @@ import { garderPlusTard, relireFerme } from './ui/ferme-gardee.js';
 import { connexionDuLien } from './ui/compte.js';
 import { bandeau, invitationDuLien, mondeDemande, rejoindre } from './ui/en-ligne.js';
 import { demarrerAmis } from './ui/amis.js';
+import { demarrerGemmes } from './ui/gemmes.js';
 
 // Chaque écran s'inscrit en se chargeant (ses actions, ses écouteurs) : ils sont tous
 // chargés ici, qu'un autre module les importe ou non.
@@ -138,6 +139,7 @@ async function demarrer() {
   invitationDuLien(); // E-3 : le jeu ouvert par un lien d'invitation (jeu.html#invitation=…)
   connexionDuLien(); // E-0 : le jeu ouvert par le lien de connexion reçu par e-mail (jeu.html#connexion=…)
   demarrerAmis(); // les amis : le bouton 💌, le profil publié, un lien d'ami (jeu.html#ami=…)
+  demarrerGemmes(); // les gemmes : le solde, les rosiers à livrer, le retour d'un paiement (#boutique=…)
 }
 // E-2 : dans le monde, le bandeau (E-5 : on y construit et l'on y cultive : le mode Construire n'est plus
 // ouvert d'office).

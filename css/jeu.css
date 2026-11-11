@@ -2011,6 +2011,12 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
   image-rendering: pixelated; pointer-events: none;
 }
 .build-bulle .build-slot-dessin { transform: scale(0.75); }
+/* un rosier grimpant (acheté en gemmes) : son dessin (une case de 20 × 40 de rosiers.png, --f : son coloris) */
+.build-slot-rosier {
+  display: block; width: 20px; height: 40px; margin: auto;
+  background: url('../assets/rosiers.png') no-repeat; background-size: auto 40px; background-position: calc(var(--f) * -20px) 0;
+  image-rendering: pixelated; pointer-events: none;
+}
 /* la case d'un groupe (les murs, les portes, les sols) : « ⋯ » en haut à gauche (elle ouvre sa bulle) */
 .build-groupe-plus { position: absolute; left: 4px; top: -2px; font-size: 1rem; font-weight: 900; line-height: 1; color: var(--color-earth); }
 /* la bulle d'un groupe : sous la ligne de sa case (--ligne), une flèche vers elle (--rang : sa
@@ -2693,6 +2699,36 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 }
 .hud-pastille .pxt { --p: var(--hp); --row: 0; } /* chiffres sombres sur la pastille, même en mode sombre */
 .player-money .piece { position: absolute; left: 0; top: 50%; margin-top: calc(-5 * var(--hp)); }
+/* Les gemmes (jeu en ligne, js/ui/gemmes.js) : sous l'argent, une pastille qui ouvre leurs achats. */
+.player-card .player-gemmes {
+  display: inline-flex; align-items: center; gap: 3px; margin-top: 3px; padding: 1px 7px 1px 4px;
+  border-radius: 9px; border: 2px solid #6f4fb0; background: #f3ecff; color: #3d2a72;
+  font-weight: 700; font-size: 0.78rem; line-height: 1.2; cursor: pointer;
+}
+.player-card .player-gemmes:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+/* les achats en gemmes */
+.modal.gemmes { max-width: min(440px, 94vw); }
+.gemmes-test { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; background: #fff4c8; color: #5a4300; font-size: 0.85rem; }
+.gemmes-solde { margin: 0 0 8px; }
+.gemmes-onglets { display: flex; gap: 6px; margin-bottom: 10px; }
+.gemmes-onglet { flex: 1; padding: 6px 8px; border-radius: 8px; border: 2px solid rgba(var(--wood-bg-rgb), 0.5); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.gemmes-onglet.actif { background: rgba(var(--wood-bg-rgb), 0.25); border-color: currentColor; font-weight: 700; }
+.gemmes-packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.gemmes-pack { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border-radius: 10px; border: 2px solid rgba(var(--wood-bg-rgb), 0.5); background: rgba(255, 255, 255, 0.35); color: inherit; font: inherit; cursor: pointer; }
+.gemmes-pack.choisi { border-color: #6f4fb0; background: #f3ecff; color: #3d2a72; }
+.gemmes-pack-g { font-weight: 700; }
+.gemmes-pack-p { font-size: 0.85rem; }
+.gemmes-payer { display: flex; flex-direction: column; gap: 8px; }
+.gemmes-payer p { margin: 0; }
+.gemmes-adulte input { margin-left: 6px; width: 4em; font: inherit; }
+.gemmes-case { font-size: 0.85rem; }
+.gemmes-case input { margin-right: 6px; vertical-align: middle; }
+.gemmes-rosiers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.gemmes-rosier { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; border-radius: 10px; background: rgba(255, 255, 255, 0.35); text-align: center; }
+.gemmes-rosier-img { width: 40px; height: 80px; background: url('../assets/rosiers.png') no-repeat; background-size: auto 80px; background-position: calc(var(--f) * -40px) 0; image-rendering: pixelated; }
+.gemmes-rosier-nom { font-size: 0.82rem; }
+.gemmes-aide { font-size: 0.82rem; opacity: 0.85; }
+.gemmes-erreur { color: #a3261d; font-weight: 700; }
 
 /* ---------- Fenêtres de la carte « bois » (Famille…) : le cadre bois des cartes flottantes ----------
    Couleurs, fond et cadre : la règle commune avec .modal.bois, plus haut. */

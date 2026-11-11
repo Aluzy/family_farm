@@ -92,6 +92,7 @@
       this.syncDistributeurs(model.distributeurs, model.grainEnMain);
       this.syncChaines(model.chaines);                                           // (après les blocs : leurs images, chaines.js)
       this.syncTableaux(model.tableaux);                                         // (après les blocs : sur leurs murs)
+      this.syncGrimpants(model.grimpants);                                       // (les rosiers grimpants : sur les murs aussi)
       this.syncEtage(model.etage, model.niveau, model.vueNiveau);                // (après les blocs : ceux sous l'étage se cachent)
       this.syncToits(model.toits);
       this.syncVoilure(model.moulinTour);

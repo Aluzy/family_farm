@@ -26,7 +26,7 @@ const VU = 'ferme-titre-vu';          // (sessionStorage : l'écran déjà pass�
 // (une ancienne adresse de la mine, jeu.html?carte=grotte&…, compte comme jeu.html : la mine n'est plus,
 // docs/gisements.md, lot 4 ; js/ui/hote.js oublierAdresseMine)
 export function ecranTitreVoulu() {
-  if (typeof location === 'undefined' || /invitation=|connexion=|ami=/.test(location.hash)) return false;
+  if (typeof location === 'undefined' || /invitation=|connexion=|ami=|boutique=/.test(location.hash)) return false;
   const p = new URLSearchParams(location.search);
   if (location.search && !p.get('carte') && !p.get('arrivee')) return false;
   try { return !sessionStorage.getItem(VU); } catch (e) { return true; }

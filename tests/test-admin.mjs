@@ -92,6 +92,7 @@ test('routes : lecture seule, page avec CSP, paramètres vérifiés, rapport sur
     listeSessions: async (ms) => [{ sid: 'abcdefgh12', date: T0, taille: 2048 }],
     lire: async (cle) => { lus.push(cle); return cle.includes('abcdefgh12') ? { sid: 'abcdefgh12' } : null; },
     enLigne: async () => ({ ok: true, comptes: 4 }),
+    ventes: async () => ({ ok: true, mode: 'test', gemmesEnCirculation: 550 }),
   };
   const jwt = await jeton();
   const appel = async (chemin, init) => { const r = await routeAdmin(requete(chemin, jwt, init), ENV, new URL('https://x' + chemin), outils, o); return { statut: r.status, r, corps: r.headers.get('Content-Type').includes('json') ? await r.json() : await r.text() }; };
@@ -111,6 +112,7 @@ test('routes : lecture seule, page avec CSP, paramètres vérifiés, rapport sur
   eq((await appel('/admin/api/joueur?id=inconnu123')).statut, 404);
   eq(lus, ['sessions/abcdefgh12.json', 'players/inconnu123.json'], 'rien d\'autre n\'est lu');
   eq((await appel('/admin/api/enligne')).corps.comptes, 4);
+  eq((await appel('/admin/api/ventes')).corps.gemmesEnCirculation, 550, 'les ventes de gemmes');
   eq((await appel('/admin/api/rien')).statut, 404);
 });
 

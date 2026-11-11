@@ -14,6 +14,8 @@
 //   - Sessions et retours : GET /admin/api/sessions?jours=… (la liste), /admin/api/session?sid=… (une session),
 //     /admin/api/joueur?id=… (une fiche), /admin/api/retours?jours=… (commentaires et erreurs).
 //   - En ligne : GET /admin/api/enligne : comptes, mondes, amis, joueurs en ligne (le Durable Object des comptes).
+//   - Ventes : GET /admin/api/ventes : les gemmes vendues (par mode : test ou réel), les packs, les articles
+//     achetés (boutique.mjs) ; jamais de compte.
 // Rien ici n'écrit : la console lit.
 
 const SID_RE = /^[A-Za-z0-9_-]{8,64}$/;
@@ -184,5 +186,6 @@ export async function routeAdmin(request, env, url, outils, o = {}) {
     return f ? json({ ok: true, fiche: f }) : json({ ok: false, erreur: 'Fiche introuvable.' }, 404);
   }
   if (p === '/admin/api/enligne') return json(await outils.enLigne());
+  if (p === '/admin/api/ventes') return json(outils.ventes ? await outils.ventes() : { ok: false, erreur: 'not found' });
   return json({ ok: false, erreur: 'not found' }, 404);
 }

@@ -574,6 +574,8 @@ export function stageModel() {
     moulinTour: tour && tour.ok ? { ...tour.bornes, enMarche: batiments.moulin.enMarche } : null,
     // les tableaux accrochés aux murs (DATA.ATELIER.BLOCS : sur « mur »)
     tableaux: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].meuble).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
+    // (les rosiers grimpants de la boutique : sur la face extérieure d'un mur)
+    grimpants: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].grimpant).map(([c, sorte]) => ({ case: Number(c), coloris: DATA.ATELIER.BLOCS[sorte].grimpant })),
     // les sols posés (le plancher, les dalles… : [{ case, sorte }] ; le chemin change les tuiles du sol, ci-dessous)
     sols: Object.entries(solsPoses(state)).filter(([, k]) => k !== 'chemin').map(([c, sorte]) => ({ case: Number(c), sorte })),
     // (les sols posés au niveau 1 : sur l'étage, ou dans une pièce dont les murs y montent)

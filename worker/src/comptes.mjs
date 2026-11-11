@@ -14,6 +14,7 @@
 // Object de Cloudflare ; tests/test-comptes.mjs en fait une avec node:sqlite).
 
 import { Amis, routeAmis } from './amis.mjs';
+import { Boutique, recevoirStripe, routeBoutique } from './boutique.mjs';
 
 export const COMPTES = {
   LIEN_MIN: 15,             // minutes de validité d'un lien
@@ -64,6 +65,7 @@ export class Registre {
     this.maintenant = maintenant;
     creerTables(sql);
     this.amis = new Amis(sql, maintenant);   // (les amis : amis.mjs)
+    this.boutique = new Boutique(sql, maintenant);   // (les gemmes et leurs achats : boutique.mjs)
   }
 
   un(requete, ...valeurs) { return lignes(this.sql.exec(requete, ...valeurs))[0] || null; }
@@ -168,6 +170,7 @@ export class Registre {
     this.faire('DELETE FROM liens WHERE email = ?', c.email);
     this.faire('DELETE FROM mondes WHERE compte = ?', c.id);
     this.amis.oublier(c.id);
+    this.boutique.oublier(c.id);
     this.faire('DELETE FROM comptes WHERE id = ?', c.id);
     return { ok: true };
   }
@@ -240,6 +243,12 @@ export async function routeCompte(request, registre, env, envoyer = fetch) {
     if (!c) return { statut: 401, corps: { ok: false, erreur: 'Connecte-toi d\'abord (⚙️ Options › Jeu en ligne).' } };
     return routeAmis(chemin, request, registre.amis, c);
   }
+  // la boutique (boutique.mjs) : connecté seulement
+  if (chemin === 'boutique' || chemin.startsWith('boutique/')) {
+    const c = await registre.moi(session);
+    if (!c) return { statut: 401, corps: { ok: false, erreur: 'Connecte-toi d\'abord (⚙️ Options › Jeu en ligne).' } };
+    return routeBoutique(chemin, request, registre.boutique, c, env, (env && env.JEU_URL) || 'https://moonbloom-village.com/jeu.html', envoyer);
+  }
   if (request.method === 'POST' && chemin === 'deconnexion') return { statut: 200, corps: await registre.deconnecter(session) };
   if (request.method === 'POST' && chemin === 'supprimer') {
     const r = await registre.supprimer(session);
@@ -279,6 +288,7 @@ export async function routeInterne(request, registre) {
     return { statut: r.ok ? 200 : r.statut, corps: r };
   }
   // (la console d'administration : des comptes, jamais d'adresse e-mail)
+  if (url.pathname === '/interne/ventes') return { statut: 200, corps: { ok: true, ...registre.boutique.ventes() } };
   if (url.pathname === '/interne/admin') return { statut: 200, corps: { ok: true, ...registre.statsAdmin() } };
   if (url.pathname === '/interne/mondes') return { statut: 200, corps: { ok: true, mondes: registre.mondesDe(url.searchParams.get('compte') || '') } };
   return { statut: 404, corps: { ok: false, erreur: 'not found' } };
@@ -295,6 +305,11 @@ export class Comptes {
   async fetch(request) {
     // (les demandes du Worker lui-même, jamais celles du jeu : le Worker ne passe ici que /compte/…)
     const url = new URL(request.url);
+    // (une notification de Stripe, que le Worker passe telle quelle : son corps brut, sa signature)
+    if (url.pathname === '/stripe/webhook') {
+      const r = await recevoirStripe(await request.text(), request.headers.get('Stripe-Signature') || '', this.registre.boutique, this.env);
+      return new Response(JSON.stringify(r.corps), { status: r.statut, headers: { 'Content-Type': 'application/json' } });
+    }
     if (url.pathname.startsWith('/interne/')) {
       const r = await routeInterne(request, this.registre);
       return new Response(JSON.stringify(r.corps), { status: r.statut, headers: { 'Content-Type': 'application/json' } });
