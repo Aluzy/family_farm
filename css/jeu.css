@@ -3709,13 +3709,12 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .son-curseur input[type="range"] { width: 100%; accent-color: var(--accent); }
 @media (max-width: 420px) { .son-curseur { grid-template-columns: 1fr; gap: 4px; } }
 
-/* L'écran de chargement (jeu.html, #chargement) : par-dessus tout, sur le fond de la page, le
-   temps que la carte soit dessinée. Quatre carottes du potager (assets/crops.png, la carotte : son
-   sprite de data/crops.json, rangée 0, colonnes 0 à 3, une case de 24 × 44 agrandie 3 fois sans
-   lissage) poussent stade par stade dans une bande de terre (assets/soil_dry.png), puis l'écran
-   s'efface en fondu. Le milieu de leur butte (à 39,8 px du haut de la case, comme sur la carte :
-   scripts/carte/planche_cultures.py, TACHE) est posé au milieu de la bande : -36 px (132 - 119,4,
-   plus les 23 px du haut de la bande à son milieu). */
+/* L'écran de chargement (jeu.html, #chargement) : par-dessus tout, sur le soir prune, le temps que la
+   carte soit dessinée. Sous le logo, la liane fleurie à ses couleurs (assets/chargement_liane.png,
+   scripts/chargement/liane.py : 5 calques de 90 × 30) : le fond, le plein (montré de gauche à droite
+   jusqu'à --plein pixels du dessin), les feuilles, et cinq cases de 8 × 8 où un bouton s'ouvre en fleur
+   quand la jauge l'atteint. --u : un pixel du dessin (3 px, moins sur un écran étroit). Puis l'écran
+   s'efface en fondu. */
 .chargement {
   position: fixed;
   inset: 0;
@@ -3734,31 +3733,39 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .chargement-titre { margin: 0; font-size: 32px; font-weight: normal; color: var(--text); }
 /* l'écran de chargement : un soir prune, où les lettres du logo se lisent */
 .chargement { background: radial-gradient(circle at 50% 35%, #4a3a6a, var(--prune) 70%); }
-.chargement .chargement-texte { color: #f0b8f3; }
+.chargement .chargement-texte { color: #b2bfff; }   /* la pervenche des lettres du logo */
 /* le logo (assets/logo.png, 90 × 45) agrandi sans lissage, sur le soir prune */
 .chargement-titre img { display: block; width: 270px; max-width: 80vw; height: auto; image-rendering: pixelated; }
-.chargement-rang { display: flex; flex-direction: column; align-items: stretch; }
-.chargement-plants { display: flex; gap: 4px; padding: 0 10px; margin-bottom: -36px; position: relative; z-index: 1; }
-.chargement-plants i {
-  width: 72px;
-  height: 132px;
-  background: url('../assets/crops.png') no-repeat 0 0 / 360px 2376px;
+.chargement-liane {
+  --u: min(3px, calc(80vw / 90));
+  --plein: 0;
+  position: relative;
+  width: calc(90 * var(--u));
+  height: calc(30 * var(--u));
+}
+.chargement-liane > * {
+  position: absolute;
+  background: url('../assets/chargement_liane.png') no-repeat;
+  background-size: calc(450 * var(--u)) calc(30 * var(--u));
   image-rendering: pixelated;
 }
-.chargement-plants i[data-stade="1"] { background-position: -72px 0; }
-.chargement-plants i[data-stade="2"] { background-position: -144px 0; }
-.chargement-plants i[data-stade="3"] { background-position: -216px 0; }
-.chargement-terre {
-  height: 40px;
-  border: 3px solid var(--color-earth);
-  border-radius: 4px;
-  background: url('../assets/soil_dry.png') 0 0 / 64px 64px;
-  image-rendering: pixelated;
-  box-shadow: inset 0 0 0 2px var(--wood-light), 0 4px 0 rgba(42, 28, 50, 0.35);
+.chargement-liane i { inset: 0; }
+.liane-fond { background-position: 0 0; }
+.liane-plein { background-position: calc(-90 * var(--u)) 0; clip-path: inset(0 calc((86 - var(--plein)) * var(--u)) 0 0); }
+.liane-feuilles { background-position: calc(-180 * var(--u)) 0; }
+.chargement-liane b {
+  --k: 3;
+  left: calc(var(--x) * var(--u));
+  top: calc(7 * var(--u));
+  width: calc(8 * var(--u));
+  height: calc(8 * var(--u));
+  background-position: calc(-1 * (var(--k) * 90 + var(--x)) * var(--u)) calc(-7 * var(--u));
 }
+.chargement-liane b[data-ouverte] { --k: 4; animation: liane-eclot 0.35s ease-out; }
+@keyframes liane-eclot { from { transform: scale(0.5); } 60% { transform: scale(1.2); } }
 .chargement-texte { font-size: 20px; color: var(--color-earth); }
 @media (prefers-color-scheme: dark) { .chargement-texte { color: var(--wood-light); } }
-@media (prefers-reduced-motion: reduce) { .chargement { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .chargement { transition: none; } .chargement-liane b[data-ouverte] { animation: none; } }
 
 /* L'outil pièce (js/ui/chantier.js, build-piece) : un carré du même bois que celui du niveau, à
    côté de lui ; allumé, il prend le jaune de la case choisie. */
