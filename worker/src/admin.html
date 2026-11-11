@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Console Moon Bloom</title>
+<style>
+/* La console d'administration (worker/src/admin.mjs) : une barre d'onglets prune, puis l'écran choisi ; les
+   couleurs du jeu. Aucune ressource externe (la page ne charge rien d'autre qu'elle-même et ses /admin/api). */
+:root {
+  --fond: #fbf3ff; --carte: #ffffff; --encre: #2b1f40; --doux: #6e5a80; --filet: #e3d2ef;
+  --prune: #3a2a55; --sur-prune: #fbf3ff; --accent: #444f9f; --accent-doux: #dfe4ff; --rose: #b34fba; --rose-pale: #f6e2f7;
+  --ok: #2f7d4a; --ok-fond: #e1f3e6; --alerte: #a05a00; --alerte-fond: #fff0d6; --critique: #b3261e; --critique-fond: #fde4e2;
+  --f-texte: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-chiffre: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --fond: #1d1530; --carte: #271d3d; --encre: #f1e3f7; --doux: #b9a6c9; --filet: #3d2f5a;
+  --prune: #120c20; --sur-prune: #f1e3f7; --accent: #b2bfff; --accent-doux: #2f3566; --rose: #e39be8; --rose-pale: #3b2547;
+  --ok: #7fd49a; --ok-fond: #183a26; --alerte: #f3b45a; --alerte-fond: #3d2c10; --critique: #ff8f86; --critique-fond: #45201d;
+  color-scheme: dark; } }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--fond); color: var(--encre); font-family: var(--f-texte); font-size: 15px; line-height: 1.5; }
+:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+.barre { position: sticky; top: 0; z-index: 5; background: var(--prune); color: var(--sur-prune); padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
+.barre h1 { font-size: 1.1rem; margin: 0 auto 0 0; letter-spacing: .3px; }
+.barre .qui { font-size: .78rem; opacity: .75; }
+nav { display: flex; flex-wrap: wrap; gap: 4px; }
+nav a { color: var(--sur-prune); text-decoration: none; font-size: .88rem; padding: 6px 10px; border-radius: 8px; opacity: .78; }
+nav a[aria-current="page"] { background: rgba(255,255,255,.15); opacity: 1; font-weight: 600; }
+main { max-width: 1120px; margin: 0 auto; padding: 22px max(16px, env(safe-area-inset-right, 0px)) 60px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 18px; }
+h2 { font-size: 1.35rem; margin: 0; text-wrap: balance; }
+h3 { font-size: 1rem; margin: 0; }
+p { margin: 0; }
+.doux { color: var(--doux); }
+.ligne { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.tuiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.tuile { background: var(--carte); border: 1px solid var(--filet); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tuile .lib { font-size: .8rem; color: var(--doux); }
+.tuile .val { font-family: var(--f-chiffre); font-size: 1.3rem; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tuile.grande { background: var(--prune); color: var(--sur-prune); border-color: var(--prune); }
+.tuile.grande .lib { color: var(--sur-prune); opacity: .8; }
+.tuile.grande .val { font-size: 1.8rem; }
+.jauge { height: 6px; border-radius: 3px; background: var(--filet); overflow: hidden; }
+.jauge i { display: block; height: 100%; background: var(--accent); }
+.jauge i.alerte { background: var(--alerte); } .jauge i.critique { background: var(--critique); }
+.pastille { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .74rem; font-weight: 600; white-space: nowrap; }
+.p-ok { background: var(--ok-fond); color: var(--ok); } .p-alerte { background: var(--alerte-fond); color: var(--alerte); } .p-critique { background: var(--critique-fond); color: var(--critique); } .p-neutre { background: var(--accent-doux); color: var(--accent); }
+.choix { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.choix button, .bouton { font: inherit; font-size: .85rem; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--filet); background: var(--carte); color: var(--encre); cursor: pointer; }
+.choix button[aria-pressed="true"], .bouton.principal { background: var(--accent); border-color: var(--accent); color: var(--carte); font-weight: 600; }
+.cadre { background: var(--carte); border: 1px solid var(--filet); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.table-wrap { overflow-x: auto; background: var(--carte); border: 1px solid var(--filet); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--filet); vertical-align: top; }
+th { font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--doux); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; font-family: var(--f-chiffre); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .jauge { min-width: 90px; }
+.erreur { background: var(--critique-fond); color: var(--critique); border-radius: 10px; padding: 10px 12px; font-size: .9rem; }
+.note { font-size: .8rem; color: var(--doux); }
+.deux { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; align-items: start; }
+.barres { display: flex; flex-direction: column; gap: 6px; }
+.barres div { display: grid; grid-template-columns: minmax(80px, 160px) 1fr 60px; gap: 8px; align-items: center; font-size: .82rem; }
+.barres span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barres b { display: block; height: 10px; border-radius: 5px; background: var(--accent); min-width: 2px; }
+.barres em { font-style: normal; font-family: var(--f-chiffre); text-align: right; }
+.commentaire { border-left: 3px solid var(--rose); padding: 4px 10px; display: flex; flex-direction: column; gap: 2px; }
+.commentaire p { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre { margin: 0; max-height: 460px; overflow: auto; font-size: .76rem; background: var(--fond); border-radius: 8px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+a.lien, button.lien { color: var(--accent); background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; }
+/* simulateur */
+.atelier { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 820px) { .atelier { grid-template-columns: minmax(0, 1fr); } }
+.champ { display: flex; flex-direction: column; gap: 3px; }
+.champ label { font-size: .86rem; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+.champ output { font-family: var(--f-chiffre); color: var(--accent); white-space: nowrap; }
+.champ small { color: var(--doux); font-size: .76rem; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.hyp { display: grid; grid-template-columns: 1fr 90px; gap: 6px 10px; align-items: center; margin-top: 10px; font-size: .8rem; }
+.hyp input { width: 100%; font: inherit; font-family: var(--f-chiffre); font-size: .82rem; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--filet); background: var(--fond); color: var(--encre); text-align: right; }
+details summary { cursor: pointer; font-size: .86rem; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="barre">
+  <h1>Console Moon Bloom</h1>
+  <nav aria-label="Écrans de la console">
+    <a href="#couts">Coûts</a><a href="#simulateur">Simulateur</a><a href="#joueurs">Joueurs</a><a href="#sessions">Sessions et retours</a><a href="#enligne">En ligne</a>
+  </nav>
+  <span class="qui" id="qui"></span>
+</header>
+<main id="ecran" aria-live="polite"></main>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var nf = function (n, d) { return Number(n || 0).toLocaleString('fr-FR', { maximumFractionDigits: d || 0 }); };
+  var court = function (n) { n = Number(n) || 0; return n >= 1e9 ? nf(n / 1e9, 1) + ' Md' : n >= 1e6 ? nf(n / 1e6, 1) + ' M' : n >= 1e4 ? nf(n / 1e3, 0) + ' k' : nf(n, 0); };
+  var dollars = function (n) { return Number(n || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var euros = function (n) { return Number(n || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var duree = function (ms) { ms = Number(ms) || 0; var m = Math.round(ms / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0'); };
+  var date = function (t) { var d = new Date(t); return isNaN(d) ? '' : d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+  var garde = function (cle, v) { try { if (v === undefined) return localStorage.getItem('console-' + cle); localStorage.setItem('console-' + cle, v); } catch (e) { return null; } };
+  var EUR = 0.87;   // (1 $ en euros, approché)
+
+  function api(chemin) {
+    return fetch('/admin/api/' + chemin, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json().catch(function () { return { ok: false, erreur: 'Réponse illisible (' + r.status + ').' }; }); })
+      .catch(function () { return { ok: false, erreur: 'Pas de réponse du serveur.' }; });
+  }
+  function erreur(e) { return '<p class="erreur">' + esc(e || 'Erreur inconnue.') + '</p>'; }
+  function chargement(titre) { $('ecran').innerHTML = '<h2>' + esc(titre) + '</h2><p class="doux">Chargement…</p>'; }
+
+  /* ---------- les tarifs Cloudflare (novembre 2026) : le simulateur et l'écran Coûts ---------- */
+  // inclus : par mois (Workers Paid) ; jour : limite par jour (formule gratuite) ; gratuitMois : offre gratuite de R2 (toutes formules)
+  var TARIFS = {
+    wReq: { nom: 'Worker · requêtes', unite: '', inclus: 10e6, jour: 100e3, prix: 0.30 / 1e6 },
+    wCpu: { nom: 'Worker · temps de calcul', unite: ' ms', inclus: 30e6, jour: null, prix: 0.02 / 1e6 },
+    doReq: { nom: 'Durable Objects · requêtes', unite: '', inclus: 1e6, jour: 100e3, prix: 0.15 / 1e6 },
+    doGbs: { nom: 'Durable Objects · durée', unite: ' Go·s', inclus: 400e3, jour: 13e3, prix: 12.5 / 1e6 },
+    sqlLu: { nom: 'Base SQLite · lignes lues', unite: '', inclus: 25e9, jour: 5e6, prix: 0.001 / 1e6 },
+    sqlEc: { nom: 'Base SQLite · lignes écrites', unite: '', inclus: 50e6, jour: 100e3, prix: 1 / 1e6 },
+    sqlGo: { nom: 'Base SQLite · stockage', unite: ' Go', inclus: 5, total: 5, prix: 0.20 },
+    r2A: { nom: 'R2 · écritures (classe A)', unite: '', inclus: 1e6, gratuitMois: 1e6, prix: 4.50 / 1e6 },
+    r2B: { nom: 'R2 · lectures (classe B)', unite: '', inclus: 10e6, gratuitMois: 10e6, prix: 0.36 / 1e6 },
+    r2Go: { nom: 'R2 · stockage', unite: ' Go', inclus: 10, gratuitMois: 10, prix: 0.015 }
+  };
+  // Une consommation du mois `u` (clé → quantité, null : inconnue) → { lignes HTML, total $ }. `parJour` : la
+  // formule gratuite compare au mois divisé par `joursMois`.
+  function facture(u, payante, joursMois) {
+    var total = payante ? 5 : 0, lignes = '', pire = null;
+    Object.keys(TARIFS).forEach(function (k) {
+      var t = TARIFS[k], q = u[k];
+      if (q == null || isNaN(q)) { lignes += '<tr><td>' + t.nom + '</td><td class="n doux">—</td><td class="doux">indisponible</td><td class="n doux">—</td></tr>'; return; }
+      var part = null, cout = 0;
+      if (payante) { part = q / t.inclus; cout = Math.max(0, q - t.inclus) * t.prix; }
+      else if (t.gratuitMois) { part = q / t.gratuitMois; cout = Math.max(0, q - t.gratuitMois) * t.prix; }
+      else if (t.total) part = q / t.total;
+      else if (t.jour) part = (q / joursMois) / t.jour;
+      total += cout;
+      if (part !== null && (!pire || part > pire[0])) pire = [part, t.nom];
+      var etat = part === null ? '' : part > 1 ? 'critique' : part > 0.7 ? 'alerte' : '';
+      var bloque = !payante && !t.gratuitMois && part > 1;
+      lignes += '<tr><td>' + t.nom + '</td><td class="n">' + court(q) + t.unite + '</td><td>' + (part === null ? '<span class="doux">sans limite</span>'
+        : '<div class="ligne" style="flex-wrap:nowrap"><div class="jauge" style="flex:1"><i class="' + etat + '" style="width:' + Math.min(100, part * 100).toFixed(1) + '%"></i></div><span class="doux" style="white-space:nowrap">' + nf(part * 100) + ' %' + (!payante && t.jour && !t.gratuitMois ? ' / jour' : '') + '</span></div>')
+        + '</td><td class="n">' + (bloque ? '<span class="pastille p-critique">bloqué</span>' : cout > 0 ? dollars(cout) : '<span class="doux">0</span>') + '</td></tr>';
+    });
+    return { lignes: lignes, total: total, pire: pire };
+  }
+  var formulePayante = garde('formule') !== 'gratuite';
+  function choixFormule(id) {
+    return '<span class="choix" role="group" aria-label="Formule Cloudflare"><button type="button" data-formule="gratuite" aria-pressed="' + !formulePayante + '">Gratuite</button><button type="button" data-formule="payante" aria-pressed="' + formulePayante + '">Workers Paid (5 $/mois)</button></span>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-formule]');
+    if (!b) return;
+    formulePayante = b.dataset.formule === 'payante';
+    garde('formule', formulePayante ? 'payante' : 'gratuite');
+    ecran();
+  });
+
+  /* ---------- Coûts ---------- */
+  var coutsCache = null;
+  function ecranCouts() {
+    if (!coutsCache) { chargement('Coûts du mois'); api('couts').then(function (r) { coutsCache = r; if (ecranCourant() === 'couts') ecranCouts(); }); return; }
+    var r = coutsCache;
+    if (!r.ok) { $('ecran').innerHTML = '<h2>Coûts du mois</h2>' + erreur(r.erreur); return; }
+    var m = r.mesures, v = function (k) { return m[k] && m[k].valeur != null ? m[k].valeur : null; };
+    var debut = new Date(r.debut), now = new Date(r.maintenant);
+    var finMois = new Date(Date.UTC(debut.getUTCFullYear(), debut.getUTCMonth() + 1, 1));
+    var ecoule = Math.max(1 / 24, (now - debut) / 864e5), joursMois = (finMois - debut) / 864e5, k = joursMois / ecoule;
+    var r2 = v('r2Operations');
+    var wsDo = v('doMessagesWs');
+    var u = {
+      wReq: v('workerRequetes'), wCpu: v('workerCpuUs') == null ? null : v('workerCpuUs') / 1000,
+      doReq: v('doRequetes') == null ? null : v('doRequetes') + (wsDo || 0) / 20,
+      doGbs: v('doActifUs') == null ? null : v('doActifUs') / 1e6 * 0.128,
+      sqlLu: v('doLignesLues'), sqlEc: v('doLignesEcrites'), sqlGo: v('doStockage') == null ? null : v('doStockage') / 1e9,
+      r2A: r2 ? r2.A : null, r2B: r2 ? r2.B : null, r2Go: v('r2Stockage') == null ? null : v('r2Stockage') / 1e9
+    };
+    // la projection : les quantités du mois au rythme actuel (le stockage reste ce qu'il est)
+    var proj = {};
+    Object.keys(u).forEach(function (c) { proj[c] = u[c] == null ? null : /Go$/.test(c) ? u[c] : u[c] * k; });
+    var ici = facture(u, formulePayante, ecoule), fin = facture(proj, formulePayante, joursMois);
+    var manquantes = Object.keys(m).filter(function (c) { return m[c].erreur; });
+    var etat = !formulePayante && /bloqué/.test(fin.lignes) ? '<span class="pastille p-critique">Limite gratuite dépassée</span>' : fin.total > (formulePayante ? 5 : 0) ? '<span class="pastille p-alerte">Dépassement prévu</span>' : '<span class="pastille p-ok">' + (formulePayante ? 'Dans l\'abonnement' : 'Dans la formule gratuite') + '</span>';
+    $('ecran').innerHTML = '<div class="ligne"><h2 style="margin-right:auto">Coûts du mois</h2>' + choixFormule() + '<button class="bouton" type="button" id="rafraichir">Actualiser</button></div>'
+      + '<p class="doux">Du ' + debut.toLocaleDateString('fr-FR') + ' à maintenant (' + nf(ecoule, 1) + ' jour' + (ecoule >= 2 ? 's' : '') + ' sur ' + nf(joursMois) + '). Lu chez Cloudflare (API d\'analytique) ; la facture est une estimation.</p>'
+      + '<div class="tuiles"><div class="tuile grande"><span class="lib">Facture estimée en fin de mois</span><span class="val">' + dollars(fin.total) + '</span><span class="lib">≈ ' + euros(fin.total * EUR) + '</span>' + etat + '</div>'
+      + '<div class="tuile"><span class="lib">Déjà consommé ce mois</span><span class="val">' + dollars(ici.total) + '</span><span class="lib">' + (formulePayante ? 'abonnement compris' : 'formule gratuite') + '</span></div>'
+      + '<div class="tuile"><span class="lib">Poste le plus chargé (fin de mois)</span><span class="val" style="font-size:1rem">' + esc(fin.pire ? fin.pire[1] : '—') + '</span><span class="lib">' + (fin.pire ? nf(fin.pire[0] * 100) + ' %' + (formulePayante ? ' de l\'inclus' : ' de la limite') : '') + '</span></div>'
+      + '<div class="tuile"><span class="lib">Erreurs du Worker</span><span class="val">' + (v('workerErreurs') == null ? '—' : court(v('workerErreurs'))) + '</span><span class="lib">sur ' + court(u.wReq) + ' requêtes</span></div></div>'
+      + '<h3>Projection en fin de mois</h3><div class="table-wrap"><table><thead><tr><th>Service</th><th class="n">Fin de mois</th><th>Part de l\'inclus</th><th class="n">Coût</th></tr></thead><tbody>' + fin.lignes + '</tbody></table></div>'
+      + '<details><summary>Ce qui est déjà consommé</summary><div class="table-wrap" style="margin-top:8px"><table><thead><tr><th>Service</th><th class="n">Depuis le 1er</th><th>Part</th><th class="n">Coût</th></tr></thead><tbody>' + ici.lignes + '</tbody></table></div>'
+      + (r2 ? '<p class="note" style="margin-top:8px">R2 par opération : ' + Object.keys(r2.parAction).sort().map(function (a) { return esc(a) + ' ' + court(r2.parAction[a]); }).join(' · ') + '</p>' : '') + '</details>'
+      + (manquantes.length ? '<p class="note">Mesures indisponibles : ' + manquantes.map(function (c) { return esc(c) + ' (' + esc(m[c].erreur) + ')'; }).join(' ; ') + '.</p>' : '')
+      + '<p class="note">La durée des Durable Objects est estimée à partir de leur temps actif (128 Mo). Les messages WebSocket comptent pour 1/20 de requête. Le mois des quotas est le mois civil (UTC) ; ta facture Cloudflare peut suivre une autre date.</p>';
+    $('rafraichir').onclick = function () { coutsCache = null; ecranCouts(); };
+  }
+
+  /* ---------- Simulateur ---------- */
+  var SIMU = [
+    ['joueurs', 'Joueurs actifs par mois', 10, 20000, 10, 300, '', 'Au moins une partie dans le mois.'],
+    ['heures', 'Heures de jeu par joueur et par mois', 1, 60, 1, 8, ' h', ''],
+    ['connectes', 'Part des joueurs connectés à un compte', 0, 100, 5, 40, ' %', 'Ils publient leur profil d\'ami toutes les 45 s.'],
+    ['enligne', 'Part du temps de jeu passé à plusieurs', 0, 100, 5, 15, ' %', ''],
+    ['suivi', 'Part des joueurs qui acceptent le suivi', 0, 100, 5, 60, ' %', 'Seuls eux envoient leurs sessions.'],
+    ['mois', 'Mois de données gardées', 1, 36, 1, 12, ' mois', 'Les sessions s\'accumulent dans R2.']
+  ];
+  var HYP = [['telem', 'Envois de télémétrie', 60], ['fiches', 'Fiches joueur réécrites', 7], ['pos', 'Messages de position (à plusieurs)', 5000], ['cmd', 'Gestes envoyés (à plusieurs)', 300], ['amis', 'Mises à jour du volet des amis', 80], ['ms', 'Temps actif par message (ms)', 5], ['session', 'Taille d\'une session (Ko)', 30], ['ferme', 'Taille d\'une ferme en ligne (Ko)', 210]];
+  var simuValeurs = {};
+  function ecranSimulateur() {
+    var champs = SIMU.map(function (c) {
+      var v = simuValeurs[c[0]] != null ? simuValeurs[c[0]] : c[5];
+      return '<div class="champ"><label for="s-' + c[0] + '">' + c[1] + ' <output id="o-' + c[0] + '"></output></label><input id="s-' + c[0] + '" type="range" min="' + c[2] + '" max="' + c[3] + '" step="' + c[4] + '" value="' + v + '">' + (c[7] ? '<small>' + c[7] + '</small>' : '') + '</div>';
+    }).join('');
+    var hyp = HYP.map(function (h) { return '<label for="h-' + h[0] + '">' + h[1] + '</label><input id="h-' + h[0] + '" type="number" min="0" value="' + (simuValeurs['h' + h[0]] != null ? simuValeurs['h' + h[0]] : h[2]) + '">'; }).join('');
+    $('ecran').innerHTML = '<div class="ligne"><h2 style="margin-right:auto">Simulateur de coût</h2>' + choixFormule() + '<button class="bouton" type="button" id="mes-chiffres">Remplir avec mes chiffres (30 jours)</button></div>'
+      + '<p class="doux">Les besoins par heure de jeu viennent du code du jeu ; change-les dans « Hypothèses ». Tarifs Cloudflare de novembre 2026.</p>'
+      + '<div class="atelier"><form class="cadre" id="simu" onsubmit="return false">' + champs + '<details><summary>Hypothèses (par heure de jeu)</summary><div class="hyp">' + hyp + '</div></details></form>'
+      + '<div style="display:flex;flex-direction:column;gap:12px;min-width:0"><div class="tuile grande"><span class="lib">Facture estimée par mois</span><span class="val" id="r-total"></span><span class="lib" id="r-detail"></span></div>'
+      + '<div class="table-wrap"><table><thead><tr><th>Service</th><th class="n">Par mois</th><th>Part de l\'inclus</th><th class="n">Coût</th></tr></thead><tbody id="r-lignes"></tbody></table></div><p class="note" id="r-note"></p></div></div>';
+    var calc = function () {
+      var g = function (id) { return Math.max(0, Number($(id).value) || 0); };
+      SIMU.forEach(function (c) { simuValeurs[c[0]] = g('s-' + c[0]); $('o-' + c[0]).textContent = nf(simuValeurs[c[0]]) + c[6]; });
+      HYP.forEach(function (h) { simuValeurs['h' + h[0]] = g('h-' + h[0]); });
+      var s = simuValeurs, P = s.joueurs, heures = P * s.heures, conn = s.connectes / 100, suivi = s.suivi / 100;
+      var hSuivi = heures * suivi, hConn = heures * conn, hPlus = heures * s.enligne / 100, sessions = heures * 1.5;
+      var envois = hSuivi * s.htelem, fiches = hSuivi * s.hfiches, majAmis = hConn * s.hamis, msgs = hPlus * (s.hpos + s.hcmd);
+      var mondes = Math.max(1, Math.round(P * conn * 0.3));
+      var u = {
+        wReq: envois + majAmis + hPlus * 2 + sessions * conn * 2, wCpu: envois * 4 + majAmis * 1.5 + hPlus * 4,
+        doReq: majAmis + msgs / 20 + hPlus * 2, doGbs: (msgs + majAmis) * (s.hms / 1000) * 0.128,
+        sqlLu: majAmis * 30 + hPlus * s.hcmd * 6, sqlEc: majAmis + hPlus * s.hcmd * 3, sqlGo: (mondes * (s.hferme + 300) + P * conn * 2) / 1e6,
+        r2A: envois + fiches + hPlus * 2 + 30 * (Math.ceil(sessions * suivi * s.mois / 1000) + Math.ceil(P / 1000)), r2B: fiches + sessions * suivi,
+        r2Go: (sessions * suivi * s.mois * s.hsession + P * 12 + mondes * 14 * s.hferme) / 1e6
+      };
+      var f = facture(u, formulePayante, 30);
+      $('r-lignes').innerHTML = f.lignes;
+      $('r-total').textContent = dollars(f.total) + '  ≈ ' + euros(f.total * EUR);
+      $('r-detail').textContent = nf(heures) + ' heures de jeu, dont ' + nf(hPlus) + ' à plusieurs · ≈ ' + nf(mondes) + ' fermes en ligne';
+      $('r-note').textContent = f.pire ? 'Poste le plus chargé : ' + f.pire[1] + ' (' + nf(f.pire[0] * 100) + ' %' + (formulePayante ? ' de l\'inclus' : ' de la limite') + ').' : '';
+    };
+    $('simu').addEventListener('input', calc);
+    $('mes-chiffres').onclick = function () {
+      $('mes-chiffres').textContent = 'Lecture…';
+      api('joueurs?jours=30').then(function (r) {
+        $('mes-chiffres').textContent = 'Remplir avec mes chiffres (30 jours)';
+        if (!r.ok) { alerte(r.erreur); return; }
+        var R = r.rapport, actifs = Math.max(1, R.joueurs.actifs || 0);
+        $('s-joueurs').value = Math.max(10, actifs);
+        $('s-heures').value = Math.max(1, Math.round((R.avgActiveMs * R.sessions) / actifs / 3.6e6));
+        calc();
+      });
+    };
+    calc();
+  }
+  function alerte(t) { var p = document.createElement('p'); p.className = 'erreur'; p.textContent = t; $('ecran').prepend(p); }
+
+  /* ---------- Joueurs ---------- */
+  var periode = Number(garde('periode')) || 7;
+  function choixPeriode() {
+    return '<span class="choix" role="group" aria-label="Période">' + [1, 7, 30].map(function (n) { return '<button type="button" data-periode="' + n + '" aria-pressed="' + (n === periode) + '">' + (n === 1 ? '24 h' : n + ' jours') + '</button>'; }).join('') + '</span>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-periode]');
+    if (!b) return;
+    periode = Number(b.dataset.periode); garde('periode', String(periode)); ecran();
+  });
+  function barres(rows, lib, val, fmt) {
+    var max = Math.max(1, Math.max.apply(null, rows.map(val)));
+    return '<div class="barres">' + rows.map(function (x) { return '<div><span title="' + esc(lib(x)) + '">' + esc(lib(x)) + '</span><b style="width:' + (100 * val(x) / max).toFixed(1) + '%"></b><em>' + (fmt ? fmt(val(x)) : nf(val(x))) + '</em></div>'; }).join('') + '</div>';
+  }
+  function ecranJoueurs() {
+    chargement('Joueurs');
+    api('joueurs?jours=' + periode).then(function (r) {
+      if (ecranCourant() !== 'joueurs') return;
+      if (!r.ok) { $('ecran').innerHTML = '<h2>Joueurs</h2>' + erreur(r.erreur); return; }
+      var R = r.rapport, ret = R.retention || {};
+      var tuile = function (lib, val, sous) { return '<div class="tuile"><span class="lib">' + lib + '</span><span class="val">' + val + '</span>' + (sous ? '<span class="lib">' + sous + '</span>' : '') + '</div>'; };
+      var pct = function (x) { return x && x.n ? nf(x.pct) + ' %' : '—'; };
+      var html = '<div class="ligne"><h2 style="margin-right:auto">Joueurs</h2>' + choixPeriode() + '</div>'
+        + '<div class="tuiles">' + tuile('Joueurs actifs', nf(R.joueurs.actifs), nf(R.joueurs.nouveaux) + ' nouveaux')
+        + tuile('Sessions', nf(R.sessions), nf(R.shortSessions) + ' très courtes') + tuile('Durée médiane', duree(R.medianActiveMs), 'moyenne ' + duree(R.avgActiveMs))
+        + tuile('Retour le lendemain (J+1)', pct(ret.j1), ret.j1 ? 'sur ' + nf(ret.j1.n) + ' joueurs' : '') + tuile('Retour à J+7', pct(ret.j7), ret.j7 ? 'sur ' + nf(ret.j7.n) : '') + tuile('Retour après un mois', pct(ret.j30), ret.j30 ? 'sur ' + nf(ret.j30.n) : '')
+        + tuile('Partis (récents, sans visite depuis 3 j)', nf((R.abandon || {}).partis), 'sur ' + nf((R.abandon || {}).recents) + ' arrivés') + '</div>'
+        + '<div class="deux"><div class="cadre"><h3>Niveaux : temps de jeu médian pour les atteindre</h3>' + (R.niveaux && R.niveaux.length ? barres(R.niveaux, function (x) { return 'Niveau ' + x.level + ' (' + x.joueurs + ')'; }, function (x) { return x.medianMs || 0; }, duree) : '<p class="doux">Pas encore de données.</p>') + '</div>'
+        + '<div class="cadre"><h3>Didacticiel : où en sont les joueurs</h3>' + (R.tutos && R.tutos.length ? barres(R.tutos.slice(0, 12), function (x) { return x[0]; }, function (x) { return x[1]; }) : '<p class="doux">Pas encore de données.</p>') + '</div>'
+        + '<div class="cadre"><h3>Rétention par jour d\'arrivée</h3>' + (ret.cohortes && ret.cohortes.length ? '<div class="table-wrap"><table><thead><tr><th>Arrivés le</th><th class="n">Joueurs</th><th class="n">J+1</th><th class="n">J+7</th></tr></thead><tbody>' + ret.cohortes.map(function (c) { return '<tr><td>' + esc(c.date) + '</td><td class="n">' + nf(c.n) + '</td><td class="n">' + nf(c.d1) + '</td><td class="n">' + nf(c.d7) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="doux">Pas encore de données.</p>') + '</div>'
+        + '<div class="cadre"><h3>Où partent ceux qui abandonnent</h3>' + ((R.abandon || {}).niveaux && R.abandon.niveaux.length ? barres(R.abandon.niveaux, function (x) { return 'Niveau ' + x[0]; }, function (x) { return x[1]; }) : '<p class="doux">Personne n\'est parti.</p>') + '</div></div>'
+        + '<h3>Les joueurs de la période (' + nf(R.joueurs.fichesTotal) + ')</h3><div class="table-wrap"><table><thead><tr><th>Joueur</th><th class="n">Temps de jeu</th><th class="n">Sessions</th><th class="n">Niveau</th><th class="n">Jour</th><th class="n">Chapitre</th><th>Didacticiel</th></tr></thead><tbody>'
+        + (R.joueurs.fiches || []).map(function (f) { return '<tr><td><button type="button" class="lien" data-joueur="' + esc(f.id) + '">' + esc(String(f.id).slice(0, 10)) + '…</button></td><td class="n">' + duree(f.playMs) + '</td><td class="n">' + nf(f.sessions) + '</td><td class="n">' + nf(f.niveau) + '</td><td class="n">' + (f.jour == null ? '—' : nf(f.jour)) + '</td><td class="n">' + (f.chapitre == null ? '—' : esc(f.chapitre)) + '</td><td>' + esc(f.tuto || '') + '</td></tr>'; }).join('')
+        + '</tbody></table></div><div id="detail"></div>'
+        + (R.truncated ? '<p class="note">' + nf(R.truncated) + ' fichiers non lus (limite de lecture) : les chiffres sont partiels.</p>' : '');
+      $('ecran').innerHTML = html;
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-joueur]');
+    if (!b) return;
+    var d = $('detail'); if (!d) return;
+    d.innerHTML = '<p class="doux">Lecture de la fiche…</p>';
+    api('joueur?id=' + encodeURIComponent(b.dataset.joueur)).then(function (r) {
+      d.innerHTML = r.ok ? '<div class="cadre"><div class="ligne"><h3 style="margin-right:auto">Fiche du joueur ' + esc(b.dataset.joueur) + '</h3><button class="bouton" type="button" data-fermer>Fermer</button></div><pre>' + esc(JSON.stringify(r.fiche, null, 2)) + '</pre></div>' : erreur(r.erreur);
+      d.scrollIntoView({ block: 'nearest' });
+    });
+  });
+  document.addEventListener('click', function (e) { if (e.target.closest('[data-fermer]')) { var d = $('detail'); if (d) d.innerHTML = ''; } });
+
+  /* ---------- Sessions et retours ---------- */
+  function ecranSessions() {
+    chargement('Sessions et retours');
+    Promise.all([api('retours?jours=' + periode), api('sessions?jours=' + periode)]).then(function (rs) {
+      if (ecranCourant() !== 'sessions') return;
+      var ret = rs[0], ses = rs[1];
+      var html = '<div class="ligne"><h2 style="margin-right:auto">Sessions et retours</h2>' + choixPeriode() + '</div><div class="deux">';
+      if (!ret.ok) html += erreur(ret.erreur);
+      else {
+        html += '<div class="cadre"><h3>Commentaires des joueurs (' + nf(ret.commentaires.length) + ')</h3>' + (ret.commentaires.length ? ret.commentaires.slice().reverse().map(function (c) {
+          return '<div class="commentaire"><span class="note">' + date(c.at) + (c.chapter ? ' · chapitre ' + esc(c.chapter) : '') + (c.device ? ' · ' + esc(c.device) : '') + (c.game ? ' · v' + esc(c.game) : '') + '</span><p>' + esc(c.text) + '</p></div>';
+        }).join('') : '<p class="doux">Aucun commentaire sur la période.</p>') + '</div>'
+          + '<div class="cadre"><h3>Erreurs techniques (' + nf(ret.erreurs.total) + ')</h3>' + (ret.erreurs.top.length ? barres(ret.erreurs.top, function (x) { return x[0]; }, function (x) { return x[1]; }) : '<p class="doux">Aucune erreur. 🎉</p>') + '</div>';
+      }
+      html += '</div>';
+      if (!ses.ok) html += erreur(ses.erreur);
+      else {
+        html += '<h3>Sessions (' + nf(ses.sessions.length) + (ses.sessions.length >= 300 ? ', les 300 plus récentes' : '') + ')</h3><div class="table-wrap"><table><thead><tr><th>Mise à jour</th><th>Session</th><th class="n">Taille</th></tr></thead><tbody>'
+          + ses.sessions.map(function (s) { return '<tr><td>' + date(s.date) + '</td><td><button type="button" class="lien" data-session="' + esc(s.sid) + '">' + esc(s.sid) + '</button></td><td class="n">' + nf(s.taille / 1024, 1) + ' Ko</td></tr>'; }).join('')
+          + '</tbody></table></div>';
+      }
+      $('ecran').innerHTML = html + '<div id="detail"></div>';
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-session]');
+    if (!b) return;
+    var d = $('detail'); if (!d) return;
+    d.innerHTML = '<p class="doux">Lecture de la session…</p>';
+    api('session?sid=' + encodeURIComponent(b.dataset.session)).then(function (r) {
+      if (!r.ok) { d.innerHTML = erreur(r.erreur); return; }
+      var s = r.session, pid = s.player && s.player.id;
+      d.innerHTML = '<div class="cadre"><div class="ligne"><h3 style="margin-right:auto">Session ' + esc(b.dataset.session) + '</h3>' + (pid ? '<button type="button" class="bouton" data-joueur="' + esc(pid) + '">Fiche du joueur</button>' : '') + '<button class="bouton" type="button" data-fermer>Fermer</button></div>'
+        + '<p class="note">Commencée le ' + date(s.startedAt) + ' · active ' + duree(s.visibleMs) + ' · ' + esc((s.device && s.device.cls) || '') + ' · v' + esc(s.game || '') + (s.coop ? ' · à plusieurs' : '') + '</p><pre>' + esc(JSON.stringify(s, null, 2)) + '</pre></div>';
+      d.scrollIntoView({ block: 'nearest' });
+    });
+  });
+
+  /* ---------- En ligne ---------- */
+  function ecranEnLigne() {
+    chargement('Jeu en ligne');
+    api('enligne').then(function (r) {
+      if (ecranCourant() !== 'enligne') return;
+      if (!r.ok) { $('ecran').innerHTML = '<h2>Jeu en ligne</h2>' + erreur(r.erreur); return; }
+      var tuile = function (lib, val, sous) { return '<div class="tuile"><span class="lib">' + lib + '</span><span class="val">' + val + '</span>' + (sous ? '<span class="lib">' + sous + '</span>' : '') + '</div>'; };
+      $('ecran').innerHTML = '<div class="ligne"><h2 style="margin-right:auto">Jeu en ligne</h2><button class="bouton" type="button" id="rafraichir">Actualiser</button></div>'
+        + '<div class="tuiles">' + tuile('En ligne maintenant', nf(r.enLigne.length), nf(r.mondesActifs) + ' monde' + (r.mondesActifs > 1 ? 's' : '') + ' ouvert' + (r.mondesActifs > 1 ? 's' : ''))
+        + tuile('Vus ces dernières 24 h', nf(r.vus24h), 'sur ' + nf(r.profils) + ' profils') + tuile('Comptes', nf(r.comptes), nf(r.nouveaux7j) + ' nouveaux en 7 jours')
+        + tuile('Comptes venus en 7 jours', nf(r.vus7j), nf(r.sessionsOuvertes) + ' sessions ouvertes') + tuile('Mondes en ligne', nf(r.mondes), (r.mondesParRole || []).map(function (x) { return nf(x.n) + ' ' + esc(x.role); }).join(' · '))
+        + tuile('Amitiés', nf(r.amities), nf(r.demandes) + ' demandes en attente') + '</div>'
+        + '<h3>Qui est en ligne</h3>' + (r.enLigne.length ? '<div class="table-wrap"><table><thead><tr><th>Prénom</th><th class="n">Niveau</th><th>Où</th><th>Vu</th></tr></thead><tbody>' + r.enLigne.map(function (p) { return '<tr><td>' + esc(p.prenom) + '</td><td class="n">' + nf(p.niveau) + '</td><td>' + (p.aPlusieurs ? (p.proprio ? 'Dans sa ferme en ligne' : 'Dans un monde partagé') : 'En solo') + '</td><td>' + date(p.vu) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="doux">Personne en ce moment.</p>')
+        + '<p class="note">Seuls les joueurs connectés à un compte apparaissent (leur profil d\'ami, publié toutes les 45 s). Jamais d\'adresse e-mail ici.</p>';
+      $('rafraichir').onclick = ecranEnLigne;
+    });
+  }
+
+  /* ---------- la navigation ---------- */
+  var ECRANS = { couts: ecranCouts, simulateur: ecranSimulateur, joueurs: ecranJoueurs, sessions: ecranSessions, enligne: ecranEnLigne };
+  function ecranCourant() { var nom = (location.hash || '').slice(1); return ECRANS[nom] ? nom : 'couts'; }
+  function ecran() {
+    var nom = ecranCourant();
+    document.querySelectorAll('nav a').forEach(function (a) { if (a.getAttribute('href') === '#' + nom) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    ECRANS[nom]();
+  }
+  window.addEventListener('hashchange', ecran);
+  api('moi').then(function (r) { if (r.ok) $('qui').textContent = r.email; });
+  ecran();
+})();
+</script>
+</body>
+</html>

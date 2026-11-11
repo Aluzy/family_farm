@@ -238,6 +238,57 @@ tables sont créées au premier appel, après le déploiement.
   (le propriétaire du monde, entre amis seulement) : un lien d'invitation, déposé dans la boîte de l'ami.
 - La suppression d'un compte efface son profil, ses amitiés et ses messages.
 
+## La console d'administration
+
+`src/admin.mjs` et `src/admin.html` : la **Console Moon Bloom**, servie par ce Worker à l'adresse `/admin`, pour
+toi seul. Cinq écrans :
+
+- **Coûts** : la consommation du mois chez Cloudflare (Worker, Durable Objects, base SQLite, R2), lue par l'API
+  d'analytique, la projection en fin de mois et la facture estimée (formule gratuite ou Workers Paid) ;
+- **Simulateur** : la facture selon le nombre de joueurs, leurs heures de jeu, la part de jeu en ligne… (« Remplir
+  avec mes chiffres » part des 30 derniers jours) ;
+- **Joueurs** : les calculs du rapport quotidien sur 24 h, 7 ou 30 jours (actifs, sessions, rétention, niveaux,
+  didacticiel, abandons, la liste des joueurs et leur fiche) ;
+- **Sessions et retours** : les commentaires des joueurs, les erreurs techniques, les sessions (le contenu de chacune) ;
+- **En ligne** : comptes, mondes, amitiés, qui est en ligne (son prénom ; jamais d'adresse e-mail).
+
+La console ne fait que lire. Elle est **fermée** tant que les réglages ci-dessous n'existent pas.
+
+### Mise en route (une seule fois)
+
+1. **Une adresse pour la console** : Workers & Pages › `family-farm` › Settings › Domains & Routes › Add ›
+   **Custom domain** : `admin.moonbloom-village.com`. (Le domaine est déjà chez Cloudflare : le certificat se crée seul.)
+2. **Cloudflare Access** (Zero Trust, offre gratuite) : dans le tableau de bord, **Zero Trust**. La première fois,
+   choisis un nom d'équipe (par exemple `moonbloom`) et l'offre **Free**. Puis Access › Applications › Add an
+   application › **Self-hosted** :
+   - nom : Console Moon Bloom ; domaine : `admin.moonbloom-village.com` ;
+   - une règle (policy) : Action **Allow**, Include › **Emails** › ton adresse ;
+   - méthode de connexion : « One-time PIN » (un code envoyé par e-mail ; rien d'autre à configurer).
+   Une fois l'application créée, copie son **Application Audience (AUD) Tag** (onglet Overview de l'application).
+3. **Un jeton en lecture seule pour l'analytique** : My Profile › API Tokens › Create Token › Custom token :
+   permission **Account › Account Analytics › Read**, ressource : ton compte. Copie le jeton.
+4. **Les secrets du Worker** (Workers & Pages › `family-farm` › Settings › Variables and Secrets › Add, type
+   **Secret** pour chacun ; jamais dans `wrangler.toml`, le dépôt est public) :
+   - `ACCESS_EQUIPE` : le nom d'équipe Access de l'étape 2 (`moonbloom`) ;
+   - `ACCESS_AUD` : l'AUD Tag de l'étape 2 ;
+   - `ADMIN_EMAILS` : ton adresse (plusieurs : séparées par des virgules) ;
+   - `CF_API_TOKEN` : le jeton de l'étape 3 ;
+   - `CF_ACCOUNT_ID` : l'identifiant du compte (Workers & Pages › Overview, à droite : Account ID).
+5. Ouvre `https://admin.moonbloom-village.com/admin` : Access demande ton adresse, t'envoie un code, et la
+   console s'ouvre.
+
+Le Worker vérifie lui-même le jeton d'Access (signature, audience, expiration) et l'adresse : une requête qui ne
+passe pas par Access (par exemple `family-farm….workers.dev/admin`) est refusée. Si une mesure de l'écran Coûts
+est « indisponible », son message dit pourquoi (un champ que Cloudflare a renommé, par exemple) : les autres
+s'affichent quand même.
+
+### Moins d'opérations R2 (la télémétrie)
+
+Le jeu envoie sa session chaque minute de jeu. Avant, chaque envoi relisait et réécrivait aussi la fiche du
+joueur (`players/<id>.json`) : 2 écritures et 1 lecture R2 par minute. Le jeu ne la demande plus qu'au premier
+envoi d'une visite, toutes les 10 minutes et à la fin (`fiche: true` dans la session) : ≈ 1,1 écriture et
+0,1 lecture par minute. Un ancien jeu, sans ce champ, garde l'ancien comportement.
+
 ## Mise en route du rapport (une seule fois)
 
 1. **Créer un dépôt privé** pour les rapports, par exemple `family_farm_rapports`

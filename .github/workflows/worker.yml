@@ -38,6 +38,8 @@ jobs:
         run: node tests/test-comptes.mjs
       - name: Tests du monde partagé
         run: node tests/test-monde.mjs
+      - name: Tests de la console d'administration
+        run: node tests/test-admin.mjs
       - name: Construire le Worker comme au déploiement (wrangler deploy --dry-run)
         run: npx --yes "$WRANGLER" deploy --dry-run --outdir "$RUNNER_TEMP/worker"
       - name: Construire une version de branche (wrangler versions upload --dry-run)

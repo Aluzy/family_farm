@@ -31,6 +31,10 @@ const Telemetry = (() => {
   const POLICY_VERSION = '1.5';
   const CONSENT_TTL_MS = 183 * 24 * 3600 * 1000; // environ 6 mois
   const FLUSH_MS = 60000;
+  // La fiche du joueur (players/<id>.json, côté serveur) n'est réécrite qu'au premier envoi d'une session, toutes
+  // les FICHE_TOUS envois et à la fin : la session part chaque minute, la fiche bien moins souvent (moins
+  // d'opérations R2 : une écriture et une lecture de moins par minute de jeu).
+  const FICHE_TOUS = 10;
   const MAX_EVENTS = 400;
   const MAX_BYTES = 60 * 1024;
   const MAX_KEYS = 200;
@@ -396,7 +400,7 @@ const Telemetry = (() => {
     return { cls: w && w < 768 ? 'mobile' : 'desktop', width: Math.round(w / 100) * 100 };
   }
 
-  function buildPayload(ended) {
+  function buildPayload(ended, fiche = true) {
     accrue();
     const d = data;
     let events = d.events;
@@ -404,7 +408,7 @@ const Telemetry = (() => {
       v: 3, sid, game: gameVersion, policy: POLICY_VERSION,
       player: player ? { id: player.id, playMs: Math.round(player.ms), since: player.since, suivi: player.suivi, jalons: player.jalons } : null,
       startedAt: new Date(t0).toISOString(), updatedAt: new Date().toISOString(),
-      ended: !!ended, durationMs: rel(), visibleMs: Math.round(d.visibleMs),
+      ended: !!ended, fiche: !!fiche, durationMs: rel(), visibleMs: Math.round(d.visibleMs),
       device: deviceInfo(),
       counters: { clicks: d.clicks, deadClicks: d.dead, scrolls: d.scrolls, tabs: d.tabs, scrollDepth: d.scroll, modals: d.modals, errors: d.errors, droppedEvents: d.dropped, creation: d.creation || {} },
       coop: !!d.coop,
@@ -445,11 +449,13 @@ const Telemetry = (() => {
 
   function persist() { if (active) { ssSet(DATA_KEY, JSON.stringify(data)); savePlayer(); } }
 
+  let envois = 0;   // (les envois de cette page : la fiche part au premier, puis tous les FICHE_TOUS)
   function flush(endedNow) {
     if (!active) return;
-    const body = buildPayload(endedNow || ended);
+    const fin = !!(endedNow || ended);
+    const body = buildPayload(fin, fin || envois % FICHE_TOUS === 0);
     persist();
-    if (send(body)) dirty = false;
+    if (send(body)) { dirty = false; envois += 1; }
   }
 
   function onVisibility() {
