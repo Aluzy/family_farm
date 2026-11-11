@@ -2221,11 +2221,18 @@ main .ancre { scroll-margin-top: 150px; }
    « 🎨 Apparence » de la fiche y amène, sous l'aperçu). */
 .member-modal .member-preview { position: sticky; top: -20px; z-index: 1; }
 .member-modal #apparence-details { scroll-margin-top: 170px; }
-/* La famille choisie, à la dernière question (fiche 18) : chacun son portrait et son prénom. */
-.accueil-famille { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; }
-.accueil-membre { display: flex; flex-direction: column; align-items: center; max-width: 72px; font-size: 0.85em; text-align: center; overflow-wrap: anywhere; }
-.accueil-membre .perso-px { --s: 64px; }
-.accueil-animal-icone { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; font-size: 32px; }
+/* Le récapitulatif, à la fin (fiche 18 ; les retours de 2026-11) : une ligne par membre, son portrait, son prénom, son
+   rôle, ✏️ pour le changer (🗑️ pour un enfant ou un animal) ; ＋ en ajoute un ; puis « Valider et commencer ». */
+.accueil-recap { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 4px; max-height: calc(100dvh - 330px); overflow-y: auto; overscroll-behavior: contain; }
+.accueil-recap li { display: flex; align-items: center; gap: 10px; padding: 2px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.35); }
+.accueil-recap .perso-px { --s: 48px; flex: none; }
+.accueil-recap-qui { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; overflow-wrap: anywhere; }
+.accueil-recap-qui small { opacity: 0.7; }
+.accueil-recap-boutons { display: flex; gap: 4px; flex: none; }
+.accueil-crayon { width: 40px; height: 40px; min-height: 0; padding: 0; font-size: 18px; }
+.accueil-plus .btn { min-width: 0; }
+.accueil-valider { min-width: 200px; }
+.accueil-animal-icone { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; font-size: 26px; flex: none; }
 .accueil-espece.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
 .accueil-modal .pose-meuble-ok, .accueil-modal .pose-meuble-non { width: 56px; height: 56px; }
 .accueil-suite {
@@ -2244,6 +2251,20 @@ main .ancre { scroll-margin-top: 150px; }
 .accueil-suite:disabled span { animation: none; }
 .accueil-suite:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 6px; }
 @keyframes accueil-suite { to { transform: translateX(4px); } }
+/* La flèche ◀ : l'écran d'avant, en bas à gauche (dans la ligne d'un champ, à gauche de lui). */
+.accueil-retour {
+  position: absolute; left: 10px; bottom: 8px;
+  width: 44px; height: 44px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: none; cursor: pointer;
+}
+.accueil-retour span {
+  width: 0; height: 0; opacity: 0.75;
+  border-top: 9px solid transparent; border-bottom: 9px solid transparent;
+  border-right: 14px solid var(--color-earth);
+}
+.accueil-retour:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 6px; }
+.accueil-ligne .accueil-retour { position: static; flex: none; }
 @media (prefers-reduced-motion: reduce) { .accueil-suite span { animation: none; } }
 .starter-row {
   display: flex;
