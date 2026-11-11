@@ -173,6 +173,7 @@
       "sel_mouton": { "nom": "Pierre à sel et foin : un mouton", "entrees": { "pierre": 4, "paille": 6, "fibre": 4 }, "animal": "mouton", "debloque": "moutons" },
       "sel_vache": { "nom": "Pierre à sel et foin : une vache", "entrees": { "pierre": 6, "paille": 12, "planche": 2 }, "animal": "vache", "debloque": "moutons" },
       "licol_cheval": { "nom": "Licol et friandises : un cheval", "entrees": { "corde": 2, "carotte": 6, "pomme": 4 }, "cheval": true, "debloque": "ecurie" },
+      "sacoche_cheval": { "nom": "La sacoche du cheval", "entrees": { "fibre": 6, "planche": 2 }, "sacoche": true, "debloque": "ecurie" },
       "sac_petit": { "entrees": { "fibre": 6 }, "sortie": { "sac_petit": 1 } },
       "tente": { "entrees": { "fibre": 12, "planche": 2, "corde": 2 }, "sortie": { "tente": 1 } },
       "lanterne_tempete": { "entrees": { "lingot_fer": 1, "planche": 1, "champignon_lumineux": 1 }, "sortie": { "lanterne_tempete": 1 } },
@@ -862,6 +863,17 @@
       "ingredients": [{ "item": "minerai_or", "qte": 4 }, { "item": "bois", "qte": 4 }],
       "transformation": true,
       "sortie": "lingot_or",
+      "qteSortie": 1,
+      "libre": true
+    },
+    "pomme_doree": {
+      "nom": "Pomme dorée",
+      "icone": "🍎‍✨",
+      "station": "four",
+      "temps": 60,
+      "ingredients": [{ "item": "pomme", "qte": 1 }, { "item": "lingot_or", "qte": 5 }],
+      "transformation": true,
+      "sortie": "pomme_doree",
       "qteSortie": 1,
       "libre": true
     },

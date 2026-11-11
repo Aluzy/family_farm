@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 484 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 486 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -110,6 +110,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/aubergine.png" width="48" height="48" alt=""> | 🍆 | [`aubergine.png`](aubergine.png) |
 | <img src="apercu/raisin.png" width="48" height="48" alt=""> | 🍇 | [`raisin.png`](raisin.png) |
 | <img src="apercu/red_apple.png" width="48" height="48" alt=""> | 🍎 | [`red_apple.png`](red_apple.png) |
+| <img src="apercu/red_apple+sparkles.png" width="48" height="48" alt=""> | 🍎‍✨ | [`red_apple+sparkles.png`](red_apple+sparkles.png) |
 | <img src="apercu/pear.png" width="48" height="48" alt=""> | 🍐 | [`pear.png`](pear.png) |
 | <img src="apercu/peach.png" width="48" height="48" alt=""> | 🍑 | [`peach.png`](peach.png) |
 | <img src="apercu/peach+large_orange_circle.png" width="48" height="48" alt=""> | 🍑‍🟠 | [`peach+large_orange_circle.png`](peach+large_orange_circle.png) |
@@ -186,6 +187,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/waving_hand_sign.png" width="48" height="48" alt=""> | 👋 | [`waving_hand_sign.png`](waving_hand_sign.png) |
 | <img src="apercu/womans_hat+ear_of_rice.png" width="48" height="48" alt=""> | 👒‍🌾 | [`womans_hat+ear_of_rice.png`](womans_hat+ear_of_rice.png) |
 | <img src="apercu/jeans+wrench.png" width="48" height="48" alt=""> | 👖‍🔧 | [`jeans+wrench.png`](jeans+wrench.png) |
+| <img src="apercu/handbag.png" width="48" height="48" alt=""> | 👜 | [`handbag.png`](handbag.png) |
 | <img src="apercu/womans_boots+large_brown_square.png" width="48" height="48" alt=""> | 👢‍🟫 | [`womans_boots+large_brown_square.png`](womans_boots+large_brown_square.png) |
 | <img src="apercu/pas_ardoise.png" width="48" height="48" alt=""> | 👣‍⬛ | [`pas_ardoise.png`](pas_ardoise.png) |
 | <img src="apercu/pas_pierre.png" width="48" height="48" alt=""> | 👣‍🪨 | [`pas_pierre.png`](pas_pierre.png) |

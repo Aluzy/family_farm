@@ -1176,6 +1176,15 @@ export const RAW_DATA = {
       "rachetable": false,
       "invendable": true
     },
+    "pomme_doree": {
+      "nom": "Pomme dorée",
+      "icone": "🍎‍✨",
+      "prix": 200,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
     "lingot_platine": {
       "nom": "Lingot de platine",
       "icone": "🧈‍⚪",
@@ -1458,6 +1467,7 @@ export const RAW_DATA = {
         "cheval": true,
         "debloque": "ecurie"
       },
+      "sacoche_cheval": { "nom": "La sacoche du cheval", "entrees": { "fibre": 6, "planche": 2 }, "sacoche": true, "debloque": "ecurie" },
       "sac_petit": { "entrees": { "fibre": 6 }, "sortie": { "sac_petit": 1 } },
       "tente": { "entrees": { "fibre": 12, "planche": 2, "corde": 2 }, "sortie": { "tente": 1 } },
       "lanterne_tempete": { "entrees": { "lingot_fer": 1, "planche": 1, "champignon_lumineux": 1 }, "sortie": { "lanterne_tempete": 1 } },
@@ -2310,6 +2320,16 @@ export const RAW_DATA = {
       "sortie": "lingot_or",
       "qteSortie": 1
     },
+    "pomme_doree": {
+      "nom": "Pomme dorée",
+      "icone": "🍎‍✨",
+      "station": "four",
+      "temps": 60,
+      "ingredients": [{ "item": "pomme", "qte": 1 }, { "item": "lingot_or", "qte": 5 }],
+      "transformation": true,
+      "sortie": "pomme_doree",
+      "qteSortie": 1
+    },
     "lingot_platine": {
       "nom": "Fondre du platine",
       "icone": "🧈‍⚪",
@@ -2733,7 +2753,8 @@ export const RAW_DATA = {
     "VITESSE_FAIM": 1.4,
     "RATION": 2,
     "ATTACHE": ["poteau_attache", "corde"],
-    "PROCHE": 40
+    "PROCHE": 40,
+    "GALOP": { "PLACES": 5, "FRIANDISES": { "pomme": { "vitesse": 2, "secondes": 30 }, "pomme_doree": { "vitesse": 2.5, "secondes": 600 } } }
   },
   "POULAILLER": { "PRIX_CONSTRUCTION": 40, "CAPACITE": [4, 8, 12, 16, 24], "PRIX_NIVEAUX": [0, 100, 220, 450, 900] },
   "ANIMAUX": {
@@ -3320,6 +3341,7 @@ export const RAW_DATA = {
       "lingot_fer",
       "lingot_cuivre",
       "lingot_or",
+      "pomme_doree",
       "lingot_platine",
       "colorant_rouge",
       "colorant_orange",

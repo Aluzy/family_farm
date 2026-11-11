@@ -620,6 +620,16 @@
       for (const [id, e] of M) if (!seen.has(id)) { e.img.destroy(); M.delete(id); }
     },
 
+    // Le cheval de l'Écurie sous le doigt ? (un appui : sa fiche, la sacoche du galop, js/ui/galop.js)
+    chevalAt(wx, wy) {
+      if (!this.beasts) return false;
+      for (const e of this.beasts.values()) {
+        if (e.kind !== 'cheval' || !e.img.visible || e.img.alpha < 0.5) continue;
+        if (Math.abs(wx - e.img.x) <= 16 && wy <= e.img.y + 3 && wy >= e.img.y - 30) return true;
+      }
+      return false;
+    },
+
     // (fiche 32) Une case de l'enclos `cases` à moins de TROUPEAU.autour px du point p, au hasard, ou null.
     caseAutour(cases, p, h = Math.random) {
       const cols = this.grid.cols, A = TROUPEAU.autour, pres = [];

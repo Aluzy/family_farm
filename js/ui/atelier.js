@@ -15,7 +15,7 @@ import { recettesDidacticiel } from '../engine/didacticiel.js';
 import { countItem } from '../engine/inventory.js';
 import { hasTool, niveauPioche, toolDef } from '../engine/outils.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
-import { chevalPossede } from '../engine/cheval.js';
+import { chevalPossede, sacocheCheval } from '../engine/cheval.js';
 import { categorieBloc } from '../engine/blocs.js';
 import { estEquipement } from '../engine/equipement.js';
 import { effetTexte } from './fiche-membre.js';
@@ -148,7 +148,7 @@ export function ongletRecette(id) {
   if (!r) return 'materiaux';
   if (r.outil) return 'outils';
   // (fiche 7c : les bêtes qu'on attire, le cheval : l'Élevage)
-  if (r.animal || r.cheval) return 'elevage';
+  if (r.animal || r.cheval || r.sacoche) return 'elevage';
   if (estEquipement(sortieDe(id)) || sortieDe(id) === DATA.EQUIPEMENT.TENTE) return 'equipement';
   const b = blocDe(id);
   return (b && categorieBloc(b)) || 'materiaux';
@@ -200,6 +200,7 @@ function icone(id) {
   const r = DATA.ATELIER.RECETTES[id];
   if (r.animal) return DATA.ANIMAUX[r.animal].icone;
   if (r.cheval) return DATA.CHEVAL.ICONE;
+  if (r.sacoche) return '👜';
   // (un bloc : la même icône que dans le menu Construire ; une machine, son dessin de la carte)
   const b = !r.outil && blocDe(id);
   if (b) return iconeBloc(b);
@@ -218,6 +219,7 @@ function stock(id) {
   const r = DATA.ATELIER.RECETTES[id];
   if (r.animal) return String(r.animal === 'poule' ? state.poulailler.poules : r.animal === 'mouton' ? sheepCount(state) : cowCount(state));
   if (r.cheval) return chevalPossede(state) ? '✓' : '';
+  if (r.sacoche) return sacocheCheval(state) ? '✓' : '';
   // (la pioche : ✓ sur celle qu'on a, et les niveaux d'avant)
   if (r.outil === 'pioche') return niveauPioche(state) >= (r.niveau || 1) ? '✓' : '';
   return r.outil ? (hasTool(state, r.outil) ? '✓' : '') : String(countItem(state, sortieDe(id)));
@@ -233,7 +235,7 @@ function caseRecette(id, choisie) {
 // le bouton Fabriquer (grisé, avec ce qui manque).
 function detailHtml(id) {
   const r = DATA.ATELIER.RECETTES[id], st = craftStatus(state, id), n = stock(id);
-  const garde = r.outil || r.cheval ? (n ? (r.cheval ? 'il est à l\'Écurie' : 'déjà dans ta barre d\'outils') : '') : r.animal ? `${n} à la ferme` : `${n} en stock`;
+  const garde = r.sacoche ? (n ? 'sur ton cheval' : '') : r.outil || r.cheval ? (n ? (r.cheval ? 'il est à l\'Écurie' : 'déjà dans ta barre d\'outils') : '') : r.animal ? `${n} à la ferme` : `${n} en stock`;
   // (un bloc : son icône du menu, en petit)
   const ico = (item) => (blocDe(id) && DATA.ATELIER.BLOCS[blocDe(id)].objet === item ? `<span class="atelier-mini">${icone(id)}</span>` : DATA.OBJETS[item].icone);
   const donne = r.sortie ? Object.entries(r.sortie).map(([item, q]) => `<span class="chip">${q} ${ico(item)}</span>`).join('') : `<span class="chip">${icone(id)}</span>`;

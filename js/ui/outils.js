@@ -17,6 +17,7 @@ import { buildSlotHtml } from './chantier.js';
 import { crucheSlotHtml } from './cruche.js';
 import { setBuildMode } from './store.js';
 import { chevalMonte, chevalOu, chevalPossede, toggleCheval } from '../engine/cheval.js';
+import { rangeeGalopHtml } from './galop.js';
 
 /* ---------- la barre d'outils, en bas de la carte ---------- */
 
@@ -64,7 +65,8 @@ export function toolBarHtml() {
     return `<button type="button" class="tool-slot${tenu ? ' active' : ''}" data-action="tool-use" data-outil="${id}" aria-pressed="${tenu}" aria-label="${lab}" title="${lab}">${pd ? pd.icone : def.ICONE}</button>`;
   }).join('') + cruche + (cheval ? chevalSlot() : '') + bati;
   const tab = `<button type="button" class="tool-bar-tab" data-action="toolbar-toggle" aria-expanded="${toolbarOpen}" aria-label="${toolbarOpen ? 'Ranger la barre d\'outils' : 'Sortir la barre d\'outils'}" title="Outils">${BARRE_FLECHE}</button>`;
-  return tab + `<div class="tool-bar-body" role="toolbar" aria-label="Outils"${toolbarOpen ? '' : ' inert'}>${cases}</div>`;
+  // (en selle, avec la sacoche : ses pommes, au-dessus de la languette ; js/ui/galop.js)
+  return rangeeGalopHtml() + tab + `<div class="tool-bar-body" role="toolbar" aria-label="Outils"${toolbarOpen ? '' : ' inert'}>${cases}</div>`;
 }
 
 // La case du cheval : allumée quand le personnage est en selle.
