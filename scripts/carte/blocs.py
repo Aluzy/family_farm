@@ -83,6 +83,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..'))  # scripts/pixel.py
 sys.path.insert(0, os.path.join(HERE, '..', 'batiments'))  # style_v2.py
 from pixel import ASSETS, BAYER, ROOT, T, contour, hasard, rangee  # noqa: E402
+from nuances import bruit, rampe, ton  # noqa: E402
 from style_v2 import PALETTE_SERRE as PS  # noqa: E402
 
 # les matières de brique et de pierre de taille (scripts/carte/briques.py, venues des immeubles
@@ -112,6 +113,85 @@ TERRE = [(40, 28, 18), (62, 44, 28), (86, 62, 40), (108, 82, 54)]
 VERT = [(30, 66, 36), (52, 104, 48), (88, 150, 64), (146, 196, 92)]
 CELLULE = [(22, 34, 62), (36, 62, 112), (62, 104, 164), (138, 182, 226)]
 OEUF = [(206, 192, 164), (238, 228, 206), (252, 248, 236)]
+
+# les rampes de nuances (scripts/carte/nuances.py) : 40 tons interpolés entre quelques couleurs clés,
+# pour les blocs dessinés avec dégradés (le nichoir, les blocs des chaînes de production)
+R_CHENE = rampe([(46, 30, 18), (82, 56, 34), (124, 88, 54), (164, 124, 80), (204, 166, 112), (232, 204, 150)])
+R_MIEL = rampe([(70, 40, 16), (118, 74, 30), (162, 112, 48), (200, 150, 70), (228, 186, 104), (246, 218, 150)])
+R_FER = rampe([(24, 26, 32), (52, 58, 68), (92, 100, 112), (142, 150, 160), (200, 206, 212), (240, 244, 248)])
+R_TOLE = rampe([(26, 40, 38), (46, 76, 70), (72, 118, 106), (110, 162, 144), (160, 206, 186), (214, 240, 226)])
+R_ROUGE = rampe([(52, 14, 12), (110, 30, 24), (166, 50, 40), (212, 88, 66), (240, 148, 118), (252, 206, 184)])
+R_GOMME = rampe([(14, 14, 18), (30, 30, 36), (50, 50, 58), (78, 78, 88), (112, 112, 124)])
+R_CUIVRE = rampe([(70, 34, 14), (130, 70, 30), (190, 116, 56), (232, 168, 96), (252, 222, 168)])
+R_VERRE = rampe([(20, 40, 52), (40, 78, 98), (74, 128, 156), (130, 184, 208), (214, 240, 248)])
+R_LAIT = rampe([(150, 148, 140), (200, 198, 188), (234, 232, 222), (252, 252, 246)])
+R_JUS = rampe([(110, 40, 8), (176, 78, 18), (226, 128, 36), (250, 186, 80), (255, 230, 160)])
+R_PAILLE = rampe([(112, 78, 30), (168, 124, 50), (214, 176, 90), (246, 226, 160)])
+R_OEUF = rampe([(168, 150, 120), (214, 200, 172), (240, 232, 214), (255, 252, 244)])
+R_FEU = rampe([(90, 20, 10), (190, 60, 20), (240, 130, 36), (255, 206, 90), (255, 248, 200)])
+R_VOYANT = rampe([(30, 60, 30), (60, 140, 60), (120, 230, 120), (220, 255, 220)])
+R_FONTE = rampe([(14, 14, 16), (32, 32, 36), (56, 56, 62), (90, 90, 98), (140, 140, 150)])
+
+
+def rcyl(t, x0, x1, y0, y1, r, base=0.52, ecl=0.30, reflet=True, s=0):
+    """La face d'un cylindre debout, de x0 à x1 et de y0 à y1 : un dégradé arrondi (clair à gauche,
+    sombre à droite), un reflet étroit, un peu plus sombre en bas."""
+    for x in range(x0, x1 + 1):
+        u = 2 * (x + .5 - x0) / max(1, x1 + 1 - x0) - 1          # -1 à gauche, 1 à droite
+        for y in range(y0, y1 + 1):
+            f = (y - y0) / max(1, y1 - y0)
+            lum = base - ecl * u - 0.12 * u * u - 0.08 * f + 0.02 * bruit(x, y, s)
+            if reflet and -0.62 < u < -0.38:
+                lum += 0.18
+            t.put(x, y, ton(r, lum))
+
+
+def rell(t, cx, cy, rx, ry, f):
+    """Une ellipse pleine ; f(u, v, d) : la couleur (u, v de -1 à 1 ; d : 0 au centre, 1 au bord)."""
+    for y in range(int(cy - ry) - 1, int(cy + ry) + 2):
+        for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
+            u, v = (x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry
+            d = u * u + v * v
+            if d <= 1:
+                t.put(x, y, f(u, v, d))
+
+
+def rboite(t, x0, x1, base, hf, hd, r, joints=None, s=0):
+    """Une boîte vue de haut à 45° : son dessus (hd px, éclairé, plus clair au fond), son arête
+    claire, sa face (hf px) en dégradé de gauche à droite et un peu plus sombre en bas ; joints :
+    tous les combien de px une planche (sur la face). Renvoie (haut du dessus, haut de la face)."""
+    yf, yd = base - hf + 1, base - hf - hd + 1
+    for y in range(yd, yf):
+        for x in range(x0, x1 + 1):
+            u = (x - x0) / max(1, x1 - x0)
+            t.put(x, y, ton(r, 0.80 - 0.12 * u + 0.06 * (yf - y) / max(1, hd) + 0.02 * bruit(x, y, s)))
+    for y in range(yf, base + 1):
+        for x in range(x0, x1 + 1):
+            u = (x - x0) / max(1, x1 - x0)
+            lum = 0.56 - 0.22 * u - 0.10 * (y - yf) / max(1, hf) + 0.025 * bruit(x, y, s + 1)
+            if joints and (y - yf) % joints == joints - 1:
+                lum -= 0.14
+            if x == x0:
+                lum += 0.16
+            elif x == x1:
+                lum -= 0.12
+            t.put(x, y, ton(r, lum))
+    for x in range(x0, x1 + 1):
+        t.put(x, yf - 1, ton(r, 0.95 - 0.15 * (x - x0) / max(1, x1 - x0)))
+    return yd, yf
+
+
+def rrivet(t, x, y, r=None):
+    t.put(x, y, ton(r or R_FER, 0.92))
+
+
+def rvoyant(t, x, y, allume):
+    """Le voyant : une lampe d'un pixel dans sa bague ; allumé, un halo vert autour."""
+    t.put(x, y, ton(R_VOYANT, 0.95 if allume else 0.12))
+    t.put(x, y + 1, ton(R_FER, 0.15))
+    if allume:
+        for dx, dy in ((-1, 0), (1, 0), (0, -1)):
+            t.put(x + dx, y + dy, ton(R_VOYANT, 0.55))
 FARINE = [(196, 188, 170), (236, 232, 222)]
 ROUGE, NOIR = (178, 52, 44), (40, 40, 44)
 INFRA = [(42, 24, 56), (72, 46, 104), (110, 74, 150), (152, 112, 196), (200, 164, 232)]   # le bois de l'infra-monde
@@ -1550,28 +1630,46 @@ def batterie():
 
 
 def nichoir():
-    """Le nichoir : une caisse de planches sur pieds, son toit à deux pentes, le nid de paille
-    et deux œufs dans l'ouverture."""
+    """Le nichoir, vu de haut à 45° : une caisse de planches de chêne sur pieds, son toit à deux
+    pentes en planches couleur miel à couvre-joints (faîte au milieu, pente gauche au soleil), son
+    ouverture sombre où l'on voit le nid de paille et deux œufs."""
     t = Toile()
-    pieds(t, (2, 12), 18, 22)
-    yd, yf = boite(t, 1, 14, 17, 9, 6, BOIS, planches(BOIS, pas=3))
-    t.rect(3, yf + 1, 12, 16, CADRE[0])          # l'ouverture
-    for x in range(3, 13):
-        t.put(x, 16, PAILLE[2] if x % 2 else PAILLE[3])
-        t.put(x, 15, PAILLE[1] if x % 3 else PAILLE[2])
-    for cx in (5, 9):
-        t.put(cx, 14, OEUF[1])
-        t.put(cx + 1, 14, OEUF[0])
-        t.put(cx, 13, OEUF[2])
-        t.put(cx + 1, 13, OEUF[1])
-    # le toit : deux pentes de bardeaux, vues de haut, le faîte au milieu
-    for y in range(3, yf):
+    for x in (2, 12):                                          # les pieds
+        for y in range(18, BAS + 1):
+            t.put(x, y, ton(R_CHENE, 0.58 - 0.03 * (y - 18)))
+            t.put(x + 1, y, ton(R_CHENE, 0.28))
+    for y in range(9, 18):                                     # la face de planches
+        for x in range(1, 15):
+            u = (x - 1) / 13
+            lum = 0.56 - 0.20 * u - 0.12 * max(0, 1 - (y - 9) / 3) + 0.03 * bruit(x, y, 91)
+            if (x - 1) % 3 == 0:
+                lum -= 0.15
+            t.put(x, y, ton(R_CHENE, lum + (0.15 if x == 1 else -0.1 if x == 14 else 0)))
+    for y in range(11, 17):                                    # l'ouverture, sombre au fond
+        for x in range(3, 13):
+            t.put(x, y, ton(R_FONTE, 0.08 + 0.05 * (y - 11)))
+    for x in range(3, 13):                                     # le nid de paille
+        t.put(x, 16, ton(R_PAILLE, 0.55 + 0.3 * bruit(x, 16, 92)))
+        t.put(x, 15, ton(R_PAILLE, 0.35 + 0.3 * bruit(x, 15, 93)))
+    for cx in (5, 9):                                          # deux œufs, éclairés en haut à gauche
+        t.put(cx, 13, ton(R_OEUF, 0.95))
+        t.put(cx + 1, 13, ton(R_OEUF, 0.70))
+        t.put(cx, 14, ton(R_OEUF, 0.65))
+        t.put(cx + 1, 14, ton(R_OEUF, 0.40))
+    for x in range(1, 15):
+        t.put(x, 17, ton(R_CHENE, 0.80 - 0.3 * (x - 1) / 13))     # l'appui
+    for y in range(2, 9):                                      # le toit : deux pentes de planches
         for x in range(W):
-            c = TOIT[4] if x < 8 else TOIT[2]
-            t.put(x, y, TOIT[1] if (y - 3) % 3 == 2 else c)
-        t.put(7, y, TOIT[5])
+            gauche = x < 8
+            lum = (0.80 if gauche else 0.46) - 0.03 * (y - 2)
+            if (y - 2) % 2 == 1:
+                lum -= 0.18                                    # le couvre-joint
+            t.put(x, y, ton(R_MIEL, lum + 0.03 * bruit(x, y, 94)))
+    for y in range(1, 9):                                      # le faîtage
+        t.put(7, y, ton(R_MIEL, 0.95))
+        t.put(8, y, ton(R_MIEL, 0.60))
     for x in range(W):
-        t.put(x, yf, CADRE[1])                   # le bord du toit
+        t.put(x, 9, ton(R_MIEL, 0.32))                         # la rive, son ombre
     return t.fini()
 
 
@@ -1982,39 +2080,36 @@ VOYANT = [(40, 70, 40), (110, 220, 110)]         # le voyant de la machine : ét
 
 
 def entonnoir():
-    """L'entonnoir : un grand cône de tôle sur un bâti de bois, vu de haut (son ouverture
-    ronde et sombre, le bord éclairé à gauche), qui se resserre en un tuyau coudé vers la droite,
-    vers la machine."""
+    """L'entonnoir : un grand cône de tôle sur un bâti de bois, vu de haut : sa bouche ronde (le
+    fond sombre, quelques brins de fibre), son rebord roulé éclairé ; le cône arrondi qui se
+    resserre en un bec, puis le tuyau coudé vers la droite, vers la machine."""
     t = Toile()
-    pieds(t, (3, 10), 17, BAS - 1)
-    for x in range(2, 13):                       # la traverse du bâti
-        t.put(x, 17, BOIS[3] if x == 2 else BOIS[2])
-        t.put(x, 18, BOIS[1])
-    # le cône : des rangées de plus en plus étroites, de la bouche (y 5) au bec (y 14)
-    for y in range(5, 15):
+    for x in (3, 10):                                          # le bâti
+        for y in range(17, BAS):
+            t.put(x, y, ton(R_CHENE, 0.62 - 0.02 * (y - 17)))
+            t.put(x + 1, y, ton(R_CHENE, 0.32))
+    for x in range(2, 13):
+        t.put(x, 17, ton(R_CHENE, 0.80 - 0.25 * (x - 2) / 10))
+        t.put(x, 18, ton(R_CHENE, 0.35))
+    for y in range(5, 15):                                     # le cône, arrondi
         r = 7 - (y - 5) * 0.55
         x0, x1 = round(7.5 - r), round(7.5 + r) - 1
-        for x in range(x0, x1 + 1):
-            k = 4 if x <= x0 + 1 else 1 if x >= x1 - 1 else 3 if x < 8 else 2
-            t.put(x, y, FER[k])
-    # la bouche : une ellipse sombre (l'intérieur), son rebord
-    for y in range(2, 9):
-        for x in range(W):
-            d = ((x + 0.5 - 7.5) / 7.2) ** 2 + ((y + 0.5 - 5) / 3.2) ** 2
-            if d <= 1:
-                inner = ((x + 0.5 - 7.5) / 5.8) ** 2 + ((y + 0.5 - 5) / 2.2) ** 2
-                t.put(x, y, (CAOUTCHOUC[0] if y >= 5 else CAOUTCHOUC[1]) if inner <= 1 else FER[4] if x < 8 and y < 6 else FER[3])
-    for x in (5, 7, 9):                          # quelques brins de fibre au fond
-        t.put(x, 6, VERT[1])
-    t.put(8, 5, VERT[2])
-    # le bec, puis le tuyau coudé vers la droite (jusqu'au bord : il entre dans la machine)
-    for y in range(15, BOTTE_ENTREE + 2):
-        t.put(7, y, FER[3])
-        t.put(8, y, FER[1])
-    for x in range(7, W):
-        t.put(x, BOTTE_ENTREE, FER[3])
-        t.put(x, BOTTE_ENTREE + 1, FER[1])
-    t.put(12, BOTTE_ENTREE, FER[4])
+        rcyl(t, x0, x1, y, y, R_FER, base=0.60 - 0.02 * (y - 5), s=81)
+    for y in range(15, BOTTE_ENTREE + 2):                      # le bec
+        t.put(7, y, ton(R_FER, 0.75))
+        t.put(8, y, ton(R_FER, 0.35))
+
+    def bouche(u, v, d):
+        if d > 0.62:
+            return ton(R_FER, 0.95 - 0.35 * (u + v) / 2 - 0.1 * d)
+        return ton(R_FONTE, 0.10 + 0.25 * max(0, v) + 0.05 * bruit(int(u * 9), int(v * 9), 82))
+    rell(t, 7.5, 5, 7.3, 3.3, bouche)
+    for x, y in ((5, 6), (7, 6), (9, 6), (8, 5)):              # des brins de fibre au fond
+        t.put(x, y, VERT[1] if x != 8 else VERT[2])
+    for x in range(7, W):                                      # le tuyau coudé vers la droite
+        t.put(x, BOTTE_ENTREE, ton(R_FER, 0.78))
+        t.put(x, BOTTE_ENTREE + 1, ton(R_FER, 0.36))
+    t.put(12, BOTTE_ENTREE, ton(R_FER, 0.95))
     return t.fini()
 
 
@@ -2057,30 +2152,40 @@ def botteleuse(marche=False):
 
 
 def convoyeur(phase=0, bout=False):
-    """Un segment de convoyeur : une bande de caoutchouc vue de haut entre deux longerons de
-    bois, sur des pieds bas ; ses tasseaux défilent vers la droite (`phase` : 0 ou 1, deux
-    images qui alternent quand elle tourne). `bout` : le dernier segment, avec le rouleau
-    d'extrémité d'où la botte tombe."""
+    """Un segment de convoyeur : une bande de caoutchouc vue de haut entre deux longerons de chêne,
+    sur des pieds bas ; ses tasseaux défilent vers la droite (`phase` : 0 ou 1, deux images qui
+    alternent quand elle tourne) ; les rouleaux se devinent sous la bande. `bout` : le dernier
+    segment, avec le rouleau d'extrémité d'où la botte tombe. Les motifs ont une période qui
+    divise 16 : les cases s'enchaînent sans couture."""
     t = Toile()
-    pieds(t, (2, 12), BAS - 3, BAS)
+    for x in (2, 12):
+        for y in range(BAS - 3, BAS + 1):
+            t.put(x, y, ton(R_CHENE, 0.55))
+            t.put(x + 1, y, ton(R_CHENE, 0.28))
     fin = 13 if bout else W - 1
-    # la bande (le dessus), puis son épaisseur
-    for y in range(BANDE, BANDE + 4):
+    for y in range(BANDE, BANDE + 4):                          # la bande, plus claire au fond
         for x in range(0, fin + 1):
-            raye = (x + 2 * phase) % 4 == 0
-            t.put(x, y, CAOUTCHOUC[2] if raye else CAOUTCHOUC[1] if y > BANDE else CAOUTCHOUC[2] if x % 2 else CAOUTCHOUC[1])
+            lum = 0.62 - 0.12 * (y - BANDE)
+            if (x + 2 * phase) % 4 == 0:
+                lum += 0.30                                    # un tasseau
+            elif (x + 2 * phase) % 4 == 1:
+                lum -= 0.12                                    # son ombre
+            t.put(x, y, ton(R_GOMME, lum))
     for x in range(0, fin + 1):
-        t.put(x, BANDE + 4, CAOUTCHOUC[0])
-    # les longerons (devant et derrière)
-    for x in range(0, fin + 1):
-        t.put(x, BANDE - 1, BOIS[3])
-        t.put(x, BANDE + 5, BOIS[2])
-        t.put(x, BANDE + 6, BOIS[1])
-    if bout:                                     # le rouleau d'extrémité
+        t.put(x, BANDE + 4, ton(R_GOMME, 0.15 + (0.25 if x % 8 == 3 else 0)))   # l'épaisseur, les rouleaux
+    for x in range(0, fin + 1):                                # les longerons
+        t.put(x, BANDE - 1, ton(R_CHENE, 0.85 - 0.03 * (x % 4)))
+        t.put(x, BANDE + 5, ton(R_CHENE, 0.58 - 0.04 * (x % 4)))
+        t.put(x, BANDE + 6, ton(R_CHENE, 0.32))
+    for x in (4, 12):
+        if x <= fin:
+            t.put(x, BANDE + 5, ton(R_FER, 0.85))              # les boulons
+    if bout:                                                   # le rouleau d'extrémité
         for y in range(BANDE - 1, BANDE + 6):
-            t.put(14, y, FER[3] if y < BANDE + 2 else FER[2])
-            t.put(15, y, FER[1])
-        t.put(14, BANDE + 2, FER[4])
+            u = (y - (BANDE - 1)) / 6
+            t.put(14, y, ton(R_FER, 0.85 - 0.5 * u))
+            t.put(15, y, ton(R_FER, 0.45 - 0.3 * u))
+        t.put(14, BANDE + 2, ton(R_FER, 1.0))
     return t.fini()
 
 
@@ -2314,157 +2419,248 @@ def ch_ellipse(t, cx, cy, rx, ry, f):
 
 
 def ch_tuyaux(t):
-    """Le tuyau d'entrée (à gauche) et celui de sortie (à droite)."""
+    """Le tuyau d'entrée (à gauche) et celui de sortie (à droite), arrondis (reflet en haut), leur
+    bride de raccord sombre contre la machine."""
     for x in (0, 1, 14, 15):
-        t.put(x, BOTTE_ENTREE, FER[3])
-        t.put(x, BOTTE_ENTREE + 1, FER[1])
+        t.put(x, BOTTE_ENTREE, ton(R_FER, 0.78))
+        t.put(x, BOTTE_ENTREE + 1, ton(R_FER, 0.36))
+    for x in (1, 14):
+        for y in (BOTTE_ENTREE - 1, BOTTE_ENTREE + 2):
+            t.put(x, y, ton(R_FER, 0.25))
 
 
 def ch_socle(t):
+    """Le socle de fer, plus sombre vers la droite."""
     for x in range(1, 15):
-        t.put(x, BAS, FER[1] if 1 < x < 14 else FER[0])
+        t.put(x, BAS, ton(R_FER, 0.30 - 0.12 * (x - 1) / 13))
+
 
 
 def ch_bocal(t, x, y, c):
-    """Un petit bocal de 3 × 3 (c : ses deux tons), son couvercle rouge."""
-    for dy in range(3):
+    """Un petit bocal de verre de 3 × 4 (c : la rampe de ce qu'il contient), son reflet, son
+    couvercle rouge."""
+    for dy in range(4):
         for dx in range(3):
-            t.put(x + dx, y + dy, c[1] if dx < 2 else c[0])
-    for dx, k in ((0, 2), (1, 3), (2, 2)):
-        t.put(x + dx, y - 1, CH_ROUGE[k])
+            lum = 0.65 - 0.2 * dx - 0.08 * dy
+            t.put(x + dx, y + dy, ton(c, lum))
+    t.put(x, y + 1, ton(R_VERRE, 0.95))                         # le reflet du verre
+    for dx in range(3):
+        t.put(x + dx, y - 1, ton(R_ROUGE, 0.75 - 0.2 * dx))
 
 
 def reservoir(niveau):
-    """Le réservoir : un silo de tôle et sa jauge, une fenêtre étroite où la matière monte
-    (`niveau` : de 0, vide, à 1, plein)."""
+    """Le réservoir : un silo de tôle vert d'eau, rond, rivé par viroles, son dôme éclairé ; une
+    jauge de verre où la matière monte (`niveau` : de 0, vide, à 1, plein), graduée."""
     t = Toile()
     ch_socle(t)
-    ch_cylindre(t, 3, 12, 3, BAS - 1, CH_TOLE)
-    for y in range(3, BAS, 4):
-        for x in range(3, 13):
-            t.put(x, y, CH_TOLE[3] if x == 3 else CH_TOLE[1])
-    ch_ellipse(t, 7.5, 3, 4.6, 1.8, lambda x, y, d: CH_TOLE[4] if d > 0.5 else CH_TOLE[3])
-    for y in range(6, 19):
-        t.put(10, y, CH_JAUGE if y >= 6 + (1 - niveau) * 13 else CAOUTCHOUC[0])
-    t.put(10, 5, FER[3])
-    t.put(10, 19, FER[3])
+    for x in (3, 11):                                          # les pieds
+        for y in range(BAS - 3, BAS):
+            t.put(x, y, ton(R_FER, 0.55))
+            t.put(x + 1, y, ton(R_FER, 0.30))
+    rcyl(t, 2, 13, 4, BAS - 3, R_TOLE, s=11)
+    for y in (8, 13, 18):                                      # les viroles, leurs rivets
+        for x in range(2, 14):
+            t.put(x, y, ton(R_TOLE, 0.25 + 0.15 * (x < 6)))
+            t.put(x, y + 1, ton(R_TOLE, 0.62 - 0.25 * (x - 2) / 11))
+        for x in (4, 9):
+            rrivet(t, x, y)
+    rell(t, 7.5, 4, 6.0, 2.4, lambda u, v, d: ton(R_TOLE, 0.95 - 0.25 * (u + v) / 2 - 0.2 * d))   # le dôme
+    t.put(7, 3, ton(R_FER, 0.6))
+    t.put(8, 3, ton(R_FER, 0.35))                              # la bouche de remplissage
+    haut, bas = 6, 19                                          # la jauge
+    for y in range(haut - 1, bas + 2):
+        t.put(9, y, ton(R_FER, 0.70))
+        t.put(12, y, ton(R_FER, 0.30))
+    for y in range(haut, bas + 1):
+        plein = y >= haut + (1 - niveau) * (bas - haut + 1)
+        for x in (10, 11):
+            if plein:
+                c = ton(R_JUS, 0.80 - 0.25 * (x - 10) - 0.25 * (y - haut) / (bas - haut))
+            else:
+                c = ton(R_VERRE, 0.30 - 0.1 * (x - 10) + (0.5 if x == 10 and y % 4 == 0 else 0))
+            t.put(x, y, c)
+    for y in range(haut, bas + 1, 3):
+        t.put(12, y, ton(R_FER, 0.85))                         # les graduations
     ch_tuyaux(t)
     return t.fini()
 
 
 def pressoir(marche=False):
-    """La presse : un bâti de tôle rouge, le vérin qui descend le plateau sur la cuve."""
+    """La presse : un bâti de tôle rouge (deux colonnes, une traverse rivée), la vis qui descend le
+    plateau sur la cuve de bois cerclée ; le jus qui perle au bec ; un voyant."""
     t = Toile()
     ch_socle(t)
-    ch_cylindre(t, 2, 3, 3, BAS - 1, CH_ROUGE)
-    ch_cylindre(t, 12, 13, 3, BAS - 1, CH_ROUGE)
-    boite(t, 1, 14, 5, 3, 3, CH_ROUGE, CH_ROUGE)
+    rcyl(t, 1, 3, 5, BAS - 1, R_ROUGE, s=21)
+    rcyl(t, 12, 14, 5, BAS - 1, R_ROUGE, s=22)
+    rboite(t, 0, 15, 6, 3, 3, R_ROUGE, s=23)
+    for x in (2, 13):
+        rrivet(t, x, 5)
     d = 4 if marche else 1
-    for y in range(6, 8 + d):
-        t.put(7, y, FER[4])
-        t.put(8, y, FER[2])
-    boite(t, 4, 11, 9 + d, 2, 2, FER, FER)
-    boite(t, 4, 11, BAS - 2, 5, 4, CH_GOMME, CH_GOMME)
-    for x in range(5, 11):
-        t.put(x, BAS - 6, CH_JUS[1] if x % 2 else CH_JUS[2])
+    for y in range(7, 9 + d):                                  # la vis, son filet
+        t.put(7, y, ton(R_FER, 0.85 if y % 2 else 0.55))
+        t.put(8, y, ton(R_FER, 0.45 if y % 2 else 0.25))
+    rboite(t, 4, 11, 10 + d, 2, 2, R_FER, s=24)                # le plateau
+    for y in range(BAS - 7, BAS - 1):                          # la cuve, ses douelles
+        for x in range(4, 12):
+            u = 2 * (x + .5 - 4) / 8 - 1
+            lum = 0.58 - 0.28 * u - 0.1 * u * u - (0.15 if (x - 4) % 2 == 1 else 0)
+            t.put(x, y, ton(R_CHENE, lum))
+    for x in range(4, 12):
+        t.put(x, BAS - 5, ton(R_FER, 0.70 - 0.3 * (x - 4) / 7))   # le cercle
+        t.put(x, BAS - 8, ton(R_JUS, 0.85 if marche and x % 2 else 0.60))   # le jus dans la cuve
+    t.put(11, BAS - 3, ton(R_JUS, 0.9))                        # le bec
+    if marche:
+        t.put(12, BAS - 2, ton(R_JUS, 0.75))
     ch_tuyaux(t)
-    t.put(5, 3, VOYANT[1] if marche else VOYANT[0])
+    rvoyant(t, 5, 3, marche)
     return t.fini()
 
 
 def centrifugeuse(marche=False):
-    """La centrifugeuse : un carter de tôle, son hublot rond où le lait tourne."""
+    """La centrifugeuse : un carter de tôle vert d'eau, rivé, son hublot rond cerclé de cuivre où le
+    lait tourne (en marche, la spirale a tourné), son cadran ; un voyant."""
     t = Toile()
     ch_socle(t)
-    yd, yf = boite(t, 1, 14, BAS - 1, 15, 6, CH_TOLE, CH_TOLE)
-    ph = 0.8 if marche else 0
-    ch_ellipse(t, 7.5, yf + 6, 4.5, 4.5, lambda x, y, d: FER[3] if d > 0.72 else (
-        CH_LAIT[2] if (math.atan2(y - yf - 6, x - 7) + ph) % 1.2 < 0.6 else CH_LAIT[1]))
-    for x in (3, 12):
-        t.put(x, yf + 1, FER[4])
+    yd, yf = rboite(t, 1, 14, BAS - 1, 14, 5, R_TOLE, s=31)
+    for x, y in ((2, yf + 1), (13, yf + 1), (2, BAS - 2), (13, BAS - 2)):
+        rrivet(t, x, y)
+    cx, cy = 7.5, yf + 7
+    ph = 1.6 if marche else 0
+
+    def hublot(u, v, d):
+        if d > 0.70:
+            return ton(R_CUIVRE, 0.85 - 0.35 * (u + v) / 2)
+        a = math.atan2(v, u) + ph + 3.2 * d
+        lum = 0.55 + 0.25 * math.sin(2 * a) - 0.15 * (u + v) / 2
+        if u < -0.25 and v < -0.25 and d < 0.5:
+            lum += 0.35                                        # le reflet sur la vitre
+        return ton(R_LAIT, lum)
+    rell(t, cx, cy, 4.8, 4.6, hublot)
+    rell(t, 11.5, yd + 2, 1.6, 0.9, lambda u, v, d: ton(R_FER, 0.85) if d > 0.5 else ton(R_FER, 0.2))   # le cadran
+    t.put(12 if marche else 11, yd + 2, ton(R_ROUGE, 0.7))
     ch_tuyaux(t)
-    t.put(12, yd + 2, VOYANT[1] if marche else VOYANT[0])
+    rvoyant(t, 3, yd + 2, marche)
     return t.fini()
 
 
 def mixeur(marche=False):
-    """Le mixeur : un socle-moteur de tôle, un grand bol de fer, l'hélice au-dessus."""
+    """Le mixeur : un socle-moteur de tôle, son bol de fer bombé, le jus dedans (en marche, il fait un
+    tourbillon) ; l'arbre et l'hélice au-dessus ; un voyant."""
     t = Toile()
     ch_socle(t)
-    boite(t, 2, 13, BAS - 1, 5, 4, CH_TOLE, CH_TOLE)
-    ch_cylindre(t, 3, 12, 6, 15, FER)
-    ch_ellipse(t, 7.5, 6, 4.8, 1.6, lambda x, y, d: FER[4] if d > 0.55 else CH_JUS[1])
-    for y in range(1, 6):
-        t.put(7, y, FER[2])
-    for x in range(4 if marche else 5, (11 if marche else 10) + 1):
-        t.put(x, 2, FER[3])
+    yd, yf = rboite(t, 2, 13, BAS - 1, 5, 3, R_TOLE, s=41)
+    for y in range(6, 16):                                     # le bol, bombé
+        r = 5.6 - max(0, (y - 12)) * 0.6
+        x0, x1 = round(7.5 - r), round(7.5 + r) - 1
+        rcyl(t, x0, x1, y, y, R_FER, base=0.55, s=42)
+    ph = 1.0 if marche else 0
+
+    def dessus(u, v, d):
+        if d > 0.7:
+            return ton(R_FER, 0.92 - 0.3 * (u + v) / 2)
+        a = math.atan2(v, u) + ph
+        return ton(R_JUS, 0.55 + (0.3 * math.sin(3 * a + 4 * d) if marche else 0.12 * u) - 0.1 * v)
+    rell(t, 7.5, 6, 5.6, 2.0, dessus)
+    for y in range(0, 6):                                      # l'arbre
+        t.put(7, y, ton(R_FER, 0.80))
+        t.put(8, y, ton(R_FER, 0.40))
+    pales = [(4, 1), (5, 1), (6, 2), (9, 2), (10, 1), (11, 1)] if marche else [(5, 2), (6, 2), (9, 2), (10, 2)]
+    for x, y in pales:                                         # l'hélice
+        t.put(x, y, ton(R_FER, 0.75 if x < 8 else 0.45))
     ch_tuyaux(t)
-    t.put(4, BAS - 3, VOYANT[1] if marche else VOYANT[0])
+    rvoyant(t, 4, BAS - 4, marche)
     return t.fini()
 
 
 def chaudron(marche=False):
-    """Le chaudron : de fonte, sur son trépied, la grande cuillère ; en marche, le feu dessous."""
+    """Le chaudron : de fonte, ronde et luisante, sur son trépied ; la soupe dedans (en marche, elle
+    bouillonne) ; la grande cuillère de bois ; en marche, le feu de bûches dessous."""
     t = Toile()
-    for x in (2, 12):
+    for x in (2, 12):                                          # le trépied
         for y in range(16, BAS + 1):
-            t.put(x, y, FER[1])
-            t.put(x + 1, y, FER[0])
-    ch_ellipse(t, 7.5, 12, 6.5, 6, lambda x, y, d: CAOUTCHOUC[2] if x < 6 else CAOUTCHOUC[1])
-    ch_ellipse(t, 7.5, 7.5, 6, 2, lambda x, y, d: FER[2] if d > 0.6 else (CH_JUS[1] if (x + y) % 2 else CH_JUS[2]))
-    for k in range(6):
-        t.put(10 + k // 2, 1 + k, BOIS[3])
-    if marche:
+            t.put(x, y, ton(R_FONTE, 0.55))
+            t.put(x + 1, y, ton(R_FONTE, 0.25))
+    if marche:                                                 # le feu de bûches
+        for x in range(4, 12):
+            t.put(x, BAS, ton(R_CHENE, 0.35 + 0.1 * (x % 2)))
         for x in range(5, 11):
-            t.put(x, BAS - 1, FEU[2] if x % 2 else FEU[3])
+            for y in range(BAS - 3, BAS):
+                if bruit(x, y, 51) > -0.3 + 0.3 * (BAS - y):
+                    t.put(x, y, ton(R_FEU, 0.95 - 0.2 * (BAS - y) + 0.1 * bruit(x, y, 52)))
+    rell(t, 7.5, 12.5, 6.6, 6.2, lambda u, v, d: ton(R_FONTE, 0.62 - 0.40 * (u + v) / 2 - 0.25 * d
+                                                       + (0.35 if -0.7 < u < -0.35 and -0.6 < v < -0.1 else 0)))
+    ph = 1 if marche else 0
+
+    def soupe(u, v, d):
+        if d > 0.62:
+            return ton(R_FONTE, 0.80 - 0.3 * (u + v) / 2)
+        lum = 0.55 - 0.15 * v
+        if marche and bruit(int(u * 6), int(v * 3), 53 + ph) > 0.4:
+            lum += 0.35                                        # une bulle
+        return ton(R_JUS, lum)
+    rell(t, 7.5, 7.5, 6.2, 2.2, soupe)
+    for k in range(7):                                         # la cuillère
+        t.put(10 + k // 2, k, ton(R_CHENE, 0.85 - 0.05 * k))
+        t.put(11 + k // 2, k, ton(R_CHENE, 0.45))
     ch_tuyaux(t)
-    t.put(3, 13, VOYANT[1] if marche else VOYANT[0])
+    rvoyant(t, 3, 13, marche)
     return t.fini()
 
 
 def tonneau(marche=False):
-    """Le tonneau : debout, cerclé de fer, son barboteur de verre (des bulles quand il travaille)."""
+    """Le tonneau : debout, en douelles de chêne bombées et cerclées de fer, arrondi en bas, son fond
+    de planches ;
+    son barboteur de verre (des bulles qui montent quand il travaille) ; un voyant."""
     t = Toile()
-    # le bas arrondi : les douelles se resserrent d'un pixel, puis de deux, sur les deux dernières rangées
-    retrait = {BAS - 1: 1, BAS: 2}
-    for x in range(2, 14):
-        u = (x - 2) / 11
-        k = 4 if u < 0.15 else 3 if u < 0.45 else 2 if u < 0.8 else 1
-        for y in range(7, BAS + 1):
-            r = retrait.get(y, 0)
-            if not 2 + r <= x < 14 - r:
-                continue
-            t.put(x, y, BOIS[0] if y == BAS or (x - 2) % 3 == 2 else BOIS[min(4, k)])
-    for y in (9, 15, 21):
+    arrondi = {BAS - 2: 0.8, BAS - 1: 1.8, BAS: 3.2}           # le bas arrondi : les douelles se resserrent
+    for y in range(7, BAS + 1):
+        bombe = 1 - ((y - 15) / 9) ** 2                       # plus large au milieu
+        r = 5.6 + 0.6 * bombe - arrondi.get(y, 0)
+        x0, x1 = round(7.5 - r), round(7.5 + r) - 1
+        for x in range(x0, x1 + 1):
+            u = 2 * (x + .5 - x0) / (x1 + 1 - x0) - 1
+            lum = 0.58 - 0.30 * u - 0.1 * u * u + 0.03 * bruit(x, y, 61)
+            if (x - x0) % 3 == 2:
+                lum -= 0.18                                    # le joint des douelles
+            lum -= 0.10 * arrondi.get(y, 0)                    # le dessous, qui tourne vers l'ombre
+            t.put(x, y, ton(R_CHENE, lum))
+    for y in (9, 14, 20):                                      # les cercles de fer
         for x in range(2, 14):
-            t.put(x, y, FER[3] if x == 2 else FER[1] if x == 13 else FER[2])
-    ch_ellipse(t, 7.5, 7, 6, 2.2, lambda x, y, d: BOIS[4] if d > 0.6 else BOIS[3])
-    for y in range(1, 7):
-        t.put(9, y, VERRE[2])
-        t.put(10, y, VERRE[1])
+            if t.get(x, y)[3]:
+                u = 2 * (x + .5 - 2) / 12 - 1
+                t.put(x, y, ton(R_FER, 0.70 - 0.35 * u))
+    rell(t, 7.5, 7, 6.0, 2.2, lambda u, v, d: ton(R_CHENE, 0.88 - 0.2 * (u + v) / 2 - (0.12 if int((u + 1) * 3) % 2 else 0))
+         if d < 0.75 else ton(R_CHENE, 0.55))
+    for y in range(1, 7):                                      # le barboteur
+        t.put(9, y, ton(R_VERRE, 0.70))
+        t.put(10, y, ton(R_VERRE, 0.40))
+    t.put(9, 0, ton(R_VERRE, 0.95))
     if marche:
-        t.put(9, 2, VERRE[3])
-        t.put(10, 4, VERRE[3])
+        t.put(9, 2, ton(R_VERRE, 1.0))
+        t.put(10, 4, ton(R_VERRE, 0.95))
     ch_tuyaux(t)
-    t.put(4, 12, VOYANT[1] if marche else VOYANT[0])
+    rvoyant(t, 4, 12, marche)
     return t.fini()
 
 
 def ensacheuse(marche=False):
-    """L'ensacheuse : une capsuleuse de tôle, sa tête qui descend sur le bocal, un levier rouge."""
+    """L'ensacheuse : un socle de tôle vert d'eau, sa colonne, la tête qui descend capsuler le bocal
+    de verre (en marche, elle est en bas), son levier rouge ; un voyant."""
     t = Toile()
     ch_socle(t)
-    boite(t, 1, 14, BAS - 1, 6, 4, CH_TOLE, CH_TOLE)
-    for y in range(2, 15):
-        t.put(12, y, CH_TOLE[2])
-        t.put(13, y, CH_TOLE[1])
+    yd, yf = rboite(t, 1, 14, BAS - 1, 6, 4, R_TOLE, s=71)
+    rcyl(t, 11, 13, 2, yd, R_TOLE, s=72)                       # la colonne
     d = 2 if marche else 0
-    boite(t, 4, 11, 6 + d, 3, 2, CH_TOLE, CH_TOLE)
-    for k in range(4):
-        t.put(1 + k, 4 + k // 2, CH_ROUGE[3])
-    ch_bocal(t, 6, 10 + d, [CH_JUS[1], CH_JUS[2]])
+    rboite(t, 3, 11, 7 + d, 3, 2, R_TOLE, s=73)                # la tête
+    t.put(7, 8 + d, ton(R_FER, 0.3))
+    for k in range(5):                                         # le levier rouge et sa boule
+        t.put(13 - k, 2 + k // 2 - (0 if marche else 1), ton(R_ROUGE, 0.75 - 0.05 * k))
+    t.put(8, 1 if not marche else 2, ton(R_ROUGE, 0.95))
+    ch_bocal(t, 6, 10 + d, R_JUS)
+    for x in (2, 13):
+        rrivet(t, x, yf + 1)
     ch_tuyaux(t)
-    t.put(3, BAS - 3, VOYANT[1] if marche else VOYANT[0])
+    rvoyant(t, 3, BAS - 3, marche)
     return t.fini()
 
 
