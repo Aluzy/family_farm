@@ -82,6 +82,7 @@ après 26 et 28. Les pistes de `docs/chantier-allegement.md` restent valables à
 | [30 — le corps du personnage : collision, coins, accélération](30-corps-du-personnage.md) | — | moyen | fait (réglage B, choisi sur film) |
 | [31 — le socle des comportements : états, perception, séparation](31-socle-des-comportements.md) | 30 | moyen | fait (la faune y est passée ; pas de Timeline pour la visite) |
 | [32 — une vie plus crédible : faune, bêtes de la ferme, habitants](32-vie-plus-credible.md) | 31 | moyen | fait (2026-11-10 : la faune du monde, les bêtes de la ferme et les compagnons, les habitants) |
+| [32 bis — la famille de la ferme : la pluie, l'écart entre les membres, les bêtes](32b-famille-pluie-et-ecarts.md) | 32 | faible | fait (2026-11-11) |
 | [33 — l'ordonnanceur de la scène, les événements, le hasard à graine](33-ordonnanceur-de-la-scene.md) | 25 | faible | fait (2026-11-10) |
 | [34 — l'essai des objets GPU (TilemapGPULayer, SpriteGPULayer)](34-essai-objets-gpu.md) | 26, 28 | élevé | fait (2026-11-10) : le sol GPU puis écarté sur le téléphone (fiche 35), le décor GPU écarté |
 | [35 — le sol du grand monde en TilemapGPULayer](35-sol-du-monde-gpu.md) | 34 | moyen | écartée (2026-11-10) : moins fluide sur le téléphone (31–32 images/s au lieu de 55) |

@@ -111,6 +111,8 @@ Le réglage filmé, gardé tel quel :
 
 ## Groupe 3, les habitants : fait (2026-11-10)
 
+(La famille de la ferme, qui n'était dans aucun groupe : la fiche 32 bis, `32b-famille-pluie-et-ecarts.md`.)
+
 `js/carte/ferme/habitants.js` (`VOISINS`), le réglage « normal » du salut choisi sur film parmi trois
 (discret, normal, marqué), et le puits « comme filmé » :
 

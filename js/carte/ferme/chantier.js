@@ -626,7 +626,8 @@
       for (const c of cases) if (Math.hypot((c % cols) * T + T / 2 - p.x, Math.floor(c / cols) * T + T - 4 - p.y) <= A) pres.push(c);
       return pres.length ? pres[Math.floor(h() * pres.length)] : null;
     },
-    // (fiche 32) La bête `e` s'écarte de ses voisines de l'enclos et du personnage, sans quitter ses cases.
+    // (fiche 32) La bête `e` s'écarte de ses voisines de l'enclos et du personnage (fiche 32 bis : et des
+    // membres de la famille), sans quitter ses cases.
     troupeauEcart(e, cases, dt, P) {
       const S = e.casesSet && e.casesCle === cases ? e.casesSet : (e.casesSet = new Set(cases), e.casesCle = cases, e.casesSet);
       const cols = this.grid.cols, peut = (x, y) => S.has(Math.floor((y - 1) / T) * cols + Math.floor(x / T));
@@ -661,6 +662,8 @@
         P.vide();
         if (lieu === 'enclos') for (const e of this.beasts.values()) if (e.lieu === 'enclos') P.ajoute(e.x, e.y, e.plan ? e.plan.id : '', e, dt);
         if (joueur) P.ajoute(joueur.x, joueur.y, 'joueur', 'joueur', dt);
+        // (fiche 32 bis : les membres de la famille, comme le personnage : les bêtes s'en écartent)
+        if (lieu === 'enclos' && this.family && this.family.positions) for (const m of this.family.positions()) P.ajoute(m.x, m.y, 'joueur', m, dt);
       }
       for (const e of this.beasts.values()) {
         const cases = (e.plan && e.plan[lieu]) || [];
