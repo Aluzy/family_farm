@@ -468,6 +468,32 @@
       for (const [c, e] of M) if (!seen.has(c)) { e.img.destroy(); M.delete(c); }
     },
 
+    // Les rosiers grimpants (modèle.grimpants : [{ case, coloris }], la case de leur mur) : sur la face du
+    // mur, aussi hauts que lui (une image par bloc de sa hauteur, BLOCS_CARTE.etage.dy px plus haut à chaque
+    // bloc, comme le mur rehaussé), juste devant lui ; chaque image s'efface avec le bloc du mur qu'elle
+    // couvre (stepMurs : img.tableau).
+    syncGrimpants(list) {
+      if (!this.grimpants) this.grimpants = new Map();
+      const G = BLOCS_CARTE.grimpants, M = this.grimpants, cols = this.grid.cols, seen = new Set(), dy = BLOCS_CARTE.etage.dy;
+      if (!this.textures.exists(G.key)) return;
+      for (const t of list || []) {
+        const mur = this.blocks && this.blocks.get(t.case);
+        const h = (mur && mur.hauteur) || 1, f = G.coloris[t.coloris] || 0, cle = f + ':' + h;
+        seen.add(t.case);
+        let e = M.get(t.case);
+        if (e && e.cle !== cle) { e.imgs.forEach((i) => i.destroy()); e = null; }
+        if (!e) {
+          const x = (t.case % cols) * T + T / 2, y = (Math.floor(t.case / cols) + 1) * T;
+          const d = mur ? mur.img.depth : y;
+          // (d'un bloc à l'autre, le dessin retourné : la répétition se voit moins)
+          e = { cle, imgs: Array.from({ length: h }, (_, k) => this.add.image(x, y - dy * k, G.key, f).setOrigin(0.5, 1).setFlipX(k % 2 === 1).setDepth(d + 0.005 + 0.01 * k)) };
+          M.set(t.case, e);
+        }
+        if (mur) e.imgs.forEach((i, k) => { const m = k ? (mur.hauts || [])[k - 1] : mur.img; if (m) m.tableau = i; });
+      }
+      for (const [c, e] of M) if (!seen.has(c)) { e.imgs.forEach((i) => i.destroy()); M.delete(c); }
+    },
+
     // Le four qui cuit (modèle.fourAllume) : ses flammes bougent, une image de
     // BLOCS_CARTE.feu après l'autre (le four redessiné, sur deux cases : BLOCS_CARTE.feu.images) ; éteint, il
     // reprend son image (le four redessiné : BLOCS_CARTE.feu.eteint, le fond du foyer sombre). De même la meule quand le

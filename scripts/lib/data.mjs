@@ -136,6 +136,8 @@ export function sourcesOf(data, id) {
   if (data.FAUX && id === 'fibre') out.push('faux');
   if (data.BOTTELEUSE && data.PATURAGE && id === data.PATURAGE.NOURRITURE) out.push('botteleuse');
   if (it.trouvaille) out.push(`trouvaille du grand monde (${it.trouvaille})`);
+  // (la boutique du jeu en ligne, achetée avec des gemmes : worker/src/boutique.mjs ARTICLES)
+  if (it.boutique === true) out.push('boutique (gemmes)');
   for (const [nom, r0] of Object.entries((data.RECOLTE && data.RECOLTE.SORTES) || {})) for (const r of [r0, r0.aussi].filter(Boolean)) if (id in (r.fin || {}) || id in (r.coup || {}) || id in (r.chance || {})) out.push(`récolte du grand monde (${nom})`);
   if (it.cueillette) out.push(`cueillette (${it.cueillette})`);
   if (data.DEPART && id in data.DEPART.INVENTAIRE) out.push('DEPART.INVENTAIRE');

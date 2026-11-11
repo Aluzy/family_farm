@@ -1,3 +1,4 @@
+import { gemmesHtml } from './gemmes-solde.js';
 import { DATA } from '../engine/catalog.js';
 import { brume as brumeMeteo, pleut } from '../engine/meteo.js';
 import { demandesBouton } from './demandes.js';
@@ -511,6 +512,8 @@ export function renderIndicators() {
       `<button type="button" class="player-money" data-action="open-compta" title="Voir les comptes" aria-label="${argent}">` +
         `<span class="hud-pastille" aria-hidden="true">${state.pieces >= 0 ? pxText(Math.round(state.pieces).toLocaleString('fr-FR').replace(/\s/g, ' ')) : `<span class="num">${formatCoins(state.pieces)}</span>`}</span>` +
         `<i class="hud-ico piece" aria-hidden="true"></i></button>` +
+      // (connecté au jeu en ligne : le solde de gemmes, qui ouvre ses achats : js/ui/gemmes.js)
+      gemmesHtml() +
     `</span>`;
   if (html !== playerHtml) {
     playerHtml = html;

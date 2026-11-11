@@ -346,6 +346,10 @@ const CULTURE_MONTE = 0;
     // membre de la famille assis sur une chaise (js/famille-ferme.js) : ses pieds à `assisDy` px
     // au-dessus du bas de la case de la chaise
     litPieds: 27, tableau: { dy: 10 }, assisDy: 3,
+    // les rosiers grimpants (la boutique ; scripts/carte/rosiers.py : 4 coloris de 20 × 40 px, la hauteur de
+    // l'image d'un mur) : sur la face extérieure d'un mur, une image par bloc de sa hauteur, `dy` px plus haut à
+    // chaque bloc (comme le mur rehaussé : BLOCS_CARTE.etage.dy)
+    grimpants: { key: 'rosiers', file: 'rosiers.png', frame: { frameWidth: 20, frameHeight: 40 }, coloris: { multicolore: 0, rouge: 1, blanc: 2, jaune: 3 } },
     // un lit tourné (A-1 ; scripts/batiments/meubles_sens.py, lit_dos, lit_cote) : le dormeur pivote avec
     // lui (sa tête sur l'oreiller) ; de dos, la tête en bas, ses pieds à `dos` px sous le haut du lit ; de
     // profil, couché en travers, ses pieds à `cote` px du bord de la tête de lit, au milieu du matelas (dont

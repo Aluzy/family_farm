@@ -90,7 +90,7 @@ details summary { cursor: pointer; font-size: .86rem; font-weight: 600; }
 <header class="barre">
   <h1>Console Moon Bloom</h1>
   <nav aria-label="Écrans de la console">
-    <a href="#couts">Coûts</a><a href="#simulateur">Simulateur</a><a href="#joueurs">Joueurs</a><a href="#sessions">Sessions et retours</a><a href="#enligne">En ligne</a>
+    <a href="#couts">Coûts</a><a href="#simulateur">Simulateur</a><a href="#joueurs">Joueurs</a><a href="#sessions">Sessions et retours</a><a href="#enligne">En ligne</a><a href="#ventes">Ventes</a>
   </nav>
   <span class="qui" id="qui"></span>
 </header>
@@ -370,8 +370,31 @@ details summary { cursor: pointer; font-size: .86rem; font-weight: 600; }
     });
   }
 
+  /* ---------- Ventes (les gemmes) ---------- */
+  function ecranVentes() {
+    chargement('Ventes de gemmes');
+    api('ventes').then(function (r) {
+      if (ecranCourant() !== 'ventes') return;
+      if (!r.ok) { $('ecran').innerHTML = '<h2>Ventes de gemmes</h2>' + erreur(r.erreur); return; }
+      var eur = function (c) { return ((c || 0) / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }); };
+      var tuile = function (lib, val, sous) { return '<div class="tuile"><span class="lib">' + lib + '</span><span class="val">' + val + '</span>' + (sous ? '<span class="lib">' + sous + '</span>' : '') + '</div>'; };
+      var m = function (mode) { return (r.parMode || []).filter(function (x) { return x.mode === mode; })[0] || { paiements: 0, centimes: 0, gemmes: 0 }; };
+      var reel = m('live'), test = m('test');
+      var etat = !r.ouverte ? 'Fermée (secrets STRIPE_SECRET_KEY et STRIPE_WEBHOOK_SECRET absents)' : r.mode === 'test' ? 'Ouverte en mode test (paiements fictifs)' : 'Ouverte en mode réel';
+      $('ecran').innerHTML = '<div class="ligne"><h2 style="margin-right:auto">Ventes de gemmes</h2><button class="bouton" type="button" id="rafraichir">Actualiser</button></div>'
+        + '<p class="note">Boutique : ' + esc(etat) + '.</p>'
+        + '<div class="tuiles">' + tuile('Encaissé (réel)', eur(reel.centimes), nf(reel.paiements) + ' paiement' + (reel.paiements > 1 ? 's' : '') + ', ' + nf(reel.gemmes) + ' gemmes')
+        + tuile('Paiements de test', eur(test.centimes), nf(test.paiements) + ' paiement' + (test.paiements > 1 ? 's' : '')) + tuile('Payés en 30 jours', nf(r.payes30j), nf(r.ouverts) + ' paiements ouverts sans suite')
+        + tuile('Gemmes en circulation', nf(r.gemmesEnCirculation), 'pas encore dépensées') + '</div>'
+        + '<h3>Ce qui s\'achète</h3>' + ((r.articles || []).length ? '<div class="table-wrap"><table><thead><tr><th>Article</th><th class="n">Achats</th><th class="n">Gemmes</th></tr></thead><tbody>' + r.articles.map(function (a) { return '<tr><td>' + esc(a.article) + '</td><td class="n">' + nf(a.n) + '</td><td class="n">' + nf(a.gemmes) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="doux">Rien encore.</p>')
+        + '<h3>Derniers paiements</h3>' + ((r.recents || []).length ? '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Pack</th><th class="n">Gemmes</th><th class="n">Montant</th><th>Mode</th></tr></thead><tbody>' + r.recents.map(function (x) { return '<tr><td>' + date(x.paye) + '</td><td>' + esc(x.pack) + '</td><td class="n">' + nf(x.gemmes) + '</td><td class="n">' + eur(x.centimes) + '</td><td>' + (x.mode === 'live' ? 'réel' : 'test') + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="doux">Aucun paiement.</p>')
+        + '<p class="note">Montants toutes taxes comprises, avant les frais de Stripe. Les remboursements et litiges se voient dans le tableau de bord de Stripe. Jamais de compte ni d\'adresse e-mail ici.</p>';
+      $('rafraichir').onclick = ecranVentes;
+    });
+  }
+
   /* ---------- la navigation ---------- */
-  var ECRANS = { couts: ecranCouts, simulateur: ecranSimulateur, joueurs: ecranJoueurs, sessions: ecranSessions, enligne: ecranEnLigne };
+  var ECRANS = { couts: ecranCouts, simulateur: ecranSimulateur, joueurs: ecranJoueurs, sessions: ecranSessions, enligne: ecranEnLigne, ventes: ecranVentes };
   function ecranCourant() { var nom = (location.hash || '').slice(1); return ECRANS[nom] ? nom : 'couts'; }
   function ecran() {
     var nom = ecranCourant();

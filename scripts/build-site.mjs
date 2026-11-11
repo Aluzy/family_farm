@@ -47,7 +47,7 @@ try {
 }
 
 const OUT = join(ROOT, '_site');
-const PAGES = ['index.html', 'jeu.html', 'encyclopedie.html', 'cookies.html'];
+const PAGES = ['index.html', 'jeu.html', 'encyclopedie.html', 'cookies.html', 'cgv.html'];
 const FOLDERS = ['css', 'assets', 'vendor'];
 // Fichiers de assets/ jamais mis en ligne : le jeu ne les charge pas.
 const ASSETS_HORS_SITE = [

@@ -838,6 +838,46 @@ export const RAW_DATA = {
       "rachetable": false,
       "invendable": true
     },
+    "rosier_multicolore": {
+      "nom": "Rosier grimpant multicolore",
+      "icone": "🌹",
+      "prix": 25,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "rosier_rouge": {
+      "nom": "Rosier grimpant rouge",
+      "icone": "🌹",
+      "prix": 25,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "rosier_blanc": {
+      "nom": "Rosier grimpant blanc",
+      "icone": "🌹",
+      "prix": 25,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "rosier_jaune": {
+      "nom": "Rosier grimpant jaune",
+      "icone": "🌹",
+      "prix": 25,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -1652,6 +1692,10 @@ export const RAW_DATA = {
       "bassin": { "nom": "Bassin", "objet": "bassin", "dehors": true, "bloque": true, "bassin": true },
       "banc_pierre": { "nom": "Banc de pierre", "objet": "banc_pierre", "bloque": true, "terrasse": "siege", "tourne": true },
       "jardiniere_pierre": { "nom": "Jardinière de pierre", "objet": "jardiniere_pierre", "bloque": true, "tourne": "symetrique" },
+      "rosier_multicolore": { "nom": "Rosier grimpant multicolore", "objet": "rosier_multicolore", "sur": "mur", "grimpant": "multicolore" },
+      "rosier_rouge": { "nom": "Rosier grimpant rouge", "objet": "rosier_rouge", "sur": "mur", "grimpant": "rouge" },
+      "rosier_blanc": { "nom": "Rosier grimpant blanc", "objet": "rosier_blanc", "sur": "mur", "grimpant": "blanc" },
+      "rosier_jaune": { "nom": "Rosier grimpant jaune", "objet": "rosier_jaune", "sur": "mur", "grimpant": "jaune" },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -2013,7 +2057,11 @@ export const RAW_DATA = {
           "pergola",
           "bac_fleurs",
           "bac_lavande",
-          "bassin_nenuphars"
+          "bassin_nenuphars",
+          "rosier_multicolore",
+          "rosier_rouge",
+          "rosier_blanc",
+          "rosier_jaune"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
