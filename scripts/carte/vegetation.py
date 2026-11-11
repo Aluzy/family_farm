@@ -1370,6 +1370,10 @@ def dessins():
     # les champignons lumineux des forêts (scripts/carte/lumineux.py : ils brillent la nuit)
     from lumineux import champignons_lumineux
     out['champignons_lumineux'] = [champignons_lumineux(k) for k in range(3)]
+    # les dessins faits à la main, sans version générée (originaux/vegetation : fleurs des prés, pierre des
+    # montagnes, champignons des forêts)
+    for nom in ('fleur_rouge', 'fleur_mauve', 'pierre', 'champignon_blanc', 'champignon_jaune', 'champignon_bleu'):
+        out[nom] = [None]
     originaux(out)
     return out
 

@@ -866,6 +866,15 @@ export const MIGRATIONS = {
     if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 7) out.carte = { ...c, generateur: 8 };
     return out;
   },
+  // v85 → v86 : le générateur 9 ajoute les décors dessinés à la main (fleurs des prés, pierre des montagnes,
+  // champignons des forêts : de petites plantes peintes dans le sol, au bout des tables de leurs sols) ; une partie du
+  // générateur 8 y passe.
+  85: (state) => {
+    const out = { ...state, version: 86 };
+    const c = state.carte;
+    if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 8) out.carte = { ...c, generateur: 9 };
+    return out;
+  },
 };
 
 // La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;

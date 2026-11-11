@@ -4331,7 +4331,13 @@ export const RAW_DATA = {
       { "nom": "lavande", "genre": "basse", "variantes": 3 },
       { "nom": "lupin", "genre": "basse", "variantes": 2 },
       { "nom": "chataignier", "genre": "arbre", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
-      { "nom": "champignons_lumineux", "genre": "haute", "variantes": 3, "ecart": 1 }
+      { "nom": "champignons_lumineux", "genre": "haute", "variantes": 3, "ecart": 1 },
+      { "nom": "fleur_rouge", "genre": "basse", "variantes": 1 },
+      { "nom": "fleur_mauve", "genre": "basse", "variantes": 1 },
+      { "nom": "pierre", "genre": "basse", "variantes": 1 },
+      { "nom": "champignon_blanc", "genre": "basse", "variantes": 1 },
+      { "nom": "champignon_jaune", "genre": "basse", "variantes": 1 },
+      { "nom": "champignon_bleu", "genre": "basse", "variantes": 1 }
     ],
     "REMPLACE": [{ "biome": "foret", "sols": ["feuilles", "mousse"], "de": "feuillu", "vers": "chataignier", "part": 0.0625 }],
     "DENSITES": {
@@ -4346,7 +4352,10 @@ export const RAW_DATA = {
           "fougere": 0.07,
           "champignons": 0.015,
           "touffe_foret": 0.04,
-          "champignons_lumineux": 0.004
+          "champignons_lumineux": 0.004,
+          "champignon_blanc": 0.012,
+          "champignon_jaune": 0.01,
+          "champignon_bleu": 0.01
         },
         "aiguilles": {
           "sapin": 0.36,
@@ -4356,7 +4365,10 @@ export const RAW_DATA = {
           "fougere": 0.03,
           "champignons": 0.03,
           "touffe_foret": 0.02,
-          "champignons_lumineux": 0.005
+          "champignons_lumineux": 0.005,
+          "champignon_blanc": 0.012,
+          "champignon_jaune": 0.01,
+          "champignon_bleu": 0.01
         },
         "mousse": {
           "feuillu": 0.22,
@@ -4367,9 +4379,22 @@ export const RAW_DATA = {
           "ronces": 0.008,
           "fougere": 0.16,
           "champignons": 0.04,
-          "champignons_lumineux": 0.006
+          "champignons_lumineux": 0.006,
+          "champignon_blanc": 0.012,
+          "champignon_jaune": 0.01,
+          "champignon_bleu": 0.01
         },
-        "clairiere": { "touffe_foret": 0.1, "fougere": 0.05, "ronces": 0.01, "bouleau": 0.01, "myosotis": 0.012, "lupin": 0.006 }
+        "clairiere": {
+          "touffe_foret": 0.1,
+          "fougere": 0.05,
+          "ronces": 0.01,
+          "bouleau": 0.01,
+          "myosotis": 0.012,
+          "lupin": 0.006,
+          "champignon_blanc": 0.004,
+          "fleur_rouge": 0.004,
+          "fleur_mauve": 0.004
+        }
       },
       "lande": {
         "lande": {
@@ -4379,7 +4404,8 @@ export const RAW_DATA = {
           "bruyere": 0.18,
           "herbe_seche": 0.05,
           "lavande": 0.012,
-          "pavot_californie": 0.004
+          "pavot_californie": 0.004,
+          "pierre": 0.006
         },
         "terre": { "herbe_seche": 0.05, "bruyere": 0.03, "ajonc": 0.004, "pavot_californie": 0.006 }
       },
@@ -4388,7 +4414,9 @@ export const RAW_DATA = {
         "eau_basse": { "nenuphar": 0.12, "roseaux": 0.06, "massette": 0.05 }
       },
       "plage": { "sable": { "oyat": 0.12, "chardon": 0.025, "bois_flotte": 0.02 }, "galets": { "bois_flotte": 0.015, "oyat": 0.01 } },
-      "montagne": { "eboulis": { "sapin_nain": 0.05, "rhododendron": 0.02, "touffe_mont": 0.1, "lupin": 0.008 } },
+      "montagne": {
+        "eboulis": { "sapin_nain": 0.05, "rhododendron": 0.02, "touffe_mont": 0.1, "lupin": 0.008, "pierre": 0.06, "fleur_mauve": 0.002 }
+      },
       "prairie": {
         "herbe": {
           "arbre_pre": 0.004,
@@ -4399,7 +4427,11 @@ export const RAW_DATA = {
           "pavot_californie": 0.002,
           "tournesol_sauvage": 0.002,
           "lupin": 0.002,
-          "myosotis": 0.002
+          "myosotis": 0.002,
+          "fleur_rouge": 0.012,
+          "fleur_mauve": 0.012,
+          "pierre": 0.002,
+          "champignon_blanc": 0.001
         }
       }
     },

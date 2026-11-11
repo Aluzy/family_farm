@@ -17,7 +17,7 @@ export function mulberry32(seed) {
   };
 }
 
-export const STATE_VERSION = 85;
+export const STATE_VERSION = 86;
 // Version du générateur de la ferme et du grand monde (ferme-generee.js, monde-gen.js, monde-sol.js,
 // monde-hameaux.js… et leurs réglages de data/monde.json, data/terrain.json), notée dans chaque partie
 // (state.carte.generateur, à côté de sa graine). Une même graine ne refait le même monde qu'avec le même
@@ -41,7 +41,10 @@ export const STATE_VERSION = 85;
 // 8 : la fin de la mine (docs/gisements.md, lot 4) : ni le tas de la mine sur la ferme (sa place reste une
 // clairière : rien d'autre ne bouge), ni les entrées de grotte dans le monde (leur place reste dans le plan, la
 // végétation y repousse) ; la migration 84 → 85 garde les parties du 7.
-export const GENERATEUR_VERSION = 8;
+// 9 : les décors dessinés à la main (VEGETATION fleur_rouge, fleur_mauve des prés, pierre des montagnes,
+// champignon_blanc, _jaune, _bleu des forêts : de petites plantes au bout des tables de leurs sols, peintes dans le
+// sol) ; la migration 85 → 86 garde les parties du 8.
+export const GENERATEUR_VERSION = 9;
 // Version du jeu, affichée dans les Options (À propos) : la dernière version notée dans le
 // code et les données (« version 1.22 » : les objectifs « objet »).
 export const GAME_VERSION = '1.22.0';
