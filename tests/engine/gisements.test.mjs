@@ -112,7 +112,7 @@ test('migration 81 → 82 : le générateur 5 (les gisements)', () => {
   const v81 = JSON.parse(JSON.stringify({ ...s, version: 81 }));
   v81.carte = { ...(v81.carte || {}), graine: '7', generateur: 4 };
   const m = migrate(v81);
-  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 8], 'puis le 6, le 7, le 8');
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 9], 'puis le 6, le 7, le 8, le 9');
 });
 
 /* ---------- le lot 2 : ce qui brille la nuit ---------- */
@@ -145,7 +145,7 @@ test('migration 82 → 83 : le générateur 6 (ce qui brille la nuit)', () => {
   const v82 = JSON.parse(JSON.stringify({ ...s, version: 82 }));
   v82.carte = { ...(v82.carte || {}), graine: '7', generateur: 5 };
   const m = migrate(v82);
-  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 8], 'puis le 7, le 8');
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 9], 'puis le 7, le 8, le 9');
 });
 
 /* ---------- le lot 4 : la fin de la mine ---------- */
@@ -155,7 +155,7 @@ test('migration 84 → 85 : le générateur 8 (la fin de la mine) ; la ferme n\'
   const v84 = JSON.parse(JSON.stringify({ ...s, version: 84 }));
   v84.carte = { ...(v84.carte || {}), graine: '7', generateur: 7 };
   const m = migrate(v84);
-  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 8]);
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 9]);
   // la ferme : ni l'objet de la mine, ni ses tuiles
   const f = genererFerme('gis-mine');
   const objets = f.carte.layers.filter((l) => l.type === 'objectgroup').flatMap((l) => l.objects || []);
