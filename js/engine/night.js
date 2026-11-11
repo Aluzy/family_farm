@@ -30,6 +30,7 @@ import { remplirRuches } from './ruches.js';
 import { affinerTonnelets } from './tonnelets.js';
 import { composter } from './compost.js';
 import { pousserBacs } from './bacs.js';
+import { pousserMassifs } from './massifs.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 import { distribuerGrain } from './distributeur.js';
 import { chainesDeLaJournee } from './chaines.js';
@@ -335,6 +336,7 @@ export function runNight(state) {
   remplirRuches(state); // les abeilles remplissent les ruches
   affinerTonnelets(state); // la tomme s'affine, le moût fermente (tonnelets.js)
   pousserBacs(state); // les fleurs des bacs poussent (bacs.js)
+  pousserMassifs(state); // les fleurs semées dans l'herbe aussi (massifs.js)
   if (!state.mondePartage) state.nuit.demande = demandesNuit(state); // V-2 : les petites demandes des habitants (demandes.js)
   refreshUnlocks(state);
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil

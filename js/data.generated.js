@@ -1593,6 +1593,12 @@ export const RAW_DATA = {
       "escalier": { "nom": "Escalier", "objet": "escalier", "dedans": true, "escalier": true },
       "pomme_de_pin": { "nom": "Pomme de pin", "objet": "pomme_de_pin", "dehors": true, "semis": "pin" },
       "gland": { "nom": "Gland", "objet": "gland", "dehors": true, "semis": "arbre" },
+      "massif_coquelicot": { "nom": "Coquelicots", "objet": "graine_coquelicot", "dehors": true, "massif": "coquelicot" },
+      "massif_pavot": { "nom": "Pavots de Californie", "objet": "graine_pavot", "dehors": true, "massif": "pavot" },
+      "massif_tournesol": { "nom": "Tournesols", "objet": "graine_tournesol", "dehors": true, "massif": "tournesol" },
+      "massif_myosotis": { "nom": "Myosotis", "objet": "graine_myosotis", "dehors": true, "massif": "myosotis" },
+      "massif_lavande": { "nom": "Lavande", "objet": "graine_lavande", "dehors": true, "massif": "lavande" },
+      "massif_lupin": { "nom": "Lupins", "objet": "graine_lupin", "dehors": true, "massif": "lupin" },
       "ruche": { "nom": "Ruche", "objet": "ruche", "dehors": true, "bloque": true, "ruche": true, "marche": "Animaux" },
       "bac_fleurs": { "nom": "Bac à fleurs (ancien)", "objet": "bac_fleurs", "bloque": true, "fleurs": true },
       "bac_carre": {
@@ -3768,6 +3774,19 @@ export const RAW_DATA = {
       "myosotis": { "nom": "Myosotis", "graine": "graine_myosotis", "fleur": "fleur_myosotis" },
       "lavande": { "nom": "Lavande", "graine": "graine_lavande", "fleur": "fleur_lavande" },
       "lupin": { "nom": "Lupins", "graine": "graine_lupin", "fleur": "fleur_lupin" }
+    }
+  },
+  "MASSIFS": {
+    "NUITS": 3,
+    "CUEILLETTE": [2, 3],
+    "GRAINE": 25,
+    "DESSIN": {
+      "coquelicot": "coquelicot",
+      "pavot": "pavot_californie",
+      "tournesol": "tournesol_sauvage",
+      "myosotis": "myosotis",
+      "lavande": "lavande",
+      "lupin": "lupin"
     }
   },
   "DEHORS": { "bac_carre": { "nom": "Bac carré", "prix": 60 } },

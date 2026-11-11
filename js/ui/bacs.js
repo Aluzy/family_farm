@@ -2,7 +2,9 @@
    Un appui sur un bac posé (js/carte/ferme/bacs.js, le pont bacTouche) :
      - vide : la fenêtre « Semer » (les graines de fleurs, une espèce par bac) ;
      - semé, pas encore en fleurs : une bulle (ce qui pousse, dans combien de nuits) ;
-     - en fleurs : le personnage y va et les coupe à la faux (le pont bacRecolter) ; sans faux, une bulle. */
+     - en fleurs : le personnage y va et les coupe à la faux (le pont bacRecolter) ; sans faux, une bulle.
+   Et les fleurs semées dans l'herbe (js/engine/massifs.js, js/carte/ferme/massifs.js) : une bulle tant qu'elles
+   poussent ; en fleurs, le personnage les cueille à la main (les ponts massifTouche, massifCueillir). */
 
 import { DATA } from '../engine/catalog.js';
 import { formeBac, grainesDeFleurs, nuitsAvantFleurs, plantBac } from '../engine/bacs.js';
@@ -16,6 +18,8 @@ import { closeModal, openModal } from './modal.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { notify } from './toasts.js';
 import { refresh } from './render.js';
+import { persistState } from './storage.js';
+import { massifSurCase } from '../engine/massifs.js';
 
 const nomBac = (tile) => DATA.ATELIER.BLOCS[(state.blocs || {})[tile]].nom;
 
@@ -54,6 +58,27 @@ export function bacRecolter(tile) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
   const r = executer('bac.recolter', { case: tile });
   if (!r.ok) { notify(r.error); refresh(); return null; }
+  refresh();
+  return { items: r.items };
+}
+
+// Un appui sur des fleurs semées dans l'herbe (js/carte/ferme/massifs.js, le pont massifTouche) : { cueillir } (en fleurs :
+// le personnage y va), { bulle } (en train de pousser), ou null.
+export function massifTouche(tile) {
+  const p = massifSurCase(state, tile);
+  if (!p) return null;
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
+  const nom = DATA.BACS.FLEURS[p.fleur].nom, n = DATA.MASSIFS.NUITS - p.nuits;
+  if (n > 0) return { bulle: `${nom} : en fleurs ${n > 1 ? `dans ${n} nuits` : 'demain'}` };
+  return { cueillir: true };
+}
+
+// Le pont de la carte : le personnage cueille les fleurs semées de `tile`. → { items } ou null.
+export function massifCueillir(tile) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
+  const r = executer('massif.cueillir', { case: tile });
+  if (!r.ok) { notify(r.error); refresh(); return null; }
+  persistState();
   refresh();
   return { items: r.items };
 }

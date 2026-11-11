@@ -13,9 +13,10 @@ import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 
-/* ---------- planter un arbre depuis l'Inventaire ----------
+/* ---------- planter un arbre (ou semer des fleurs) depuis l'Inventaire ----------
    La fiche d'une graine d'arbre (pomme de pin, gland) ou d'un jeune arbre fruitier a un bouton
-   « Planter » : la fiche se ferme, les cases où il peut aller (autour du personnage) sont en
+   « Planter » ; celle d'une graine de fleur, « Semer dans l'herbe » (un massif de fleurs, js/engine/massifs.js), même
+   mécanique : la fiche se ferme, les cases où il peut aller (autour du personnage) sont en
    surbrillance sur la carte (js/carte/ferme/plantation.js) ; un appui sur l'une d'elles demande
    « Voulez-vous planter un arbre ici ? », et « Oui » le plante. Tant qu'il en reste dans
    l'inventaire, on continue : les cases se rallument (sans celle qui vient d'être plantée, ni
@@ -67,8 +68,9 @@ export function renderPlantation() {
   if (plante && autreMode()) fermer();
   if (!plante) { if (root.childElementCount) morph(root, ''); return; }
   const b = DATA.ATELIER.BLOCS[plante.sorte], o = DATA.OBJETS[b.objet], n = countItem(state, b.objet);
+  const quoi = b.massif ? `semer des ${b.nom.toLowerCase()}` : `planter ${b.semis ? 'une graine' : `un ${b.nom.toLowerCase()}`}`;
   morph(root, `<div class="plantation-bandeau" role="status">
-    <span>${o.icone} Touche une case en surbrillance pour y planter ${b.semis ? 'une graine' : `un ${b.nom.toLowerCase()}`} (<span class="num">${n}</span> ${n > 1 ? 'restent' : 'reste'}).</span>
+    <span>${o.icone} Touche une case en surbrillance pour y ${quoi} (<span class="num">${n}</span> ${n > 1 ? 'restent' : 'reste'}).</span>
     <button type="button" class="btn" data-action="arbre-annuler">${plante.plantes ? 'Terminer' : 'Annuler'}</button>
   </div>`);
 }
@@ -99,7 +101,7 @@ registerActions({
     // (déjà un de planté : les suivants, sans redemander)
     if (plante.plantes) { planter(c); return; }
     openModal(`
-      <p class="plantation-question" id="plantation-question">Voulez-vous planter un arbre ici ?</p>
+      <p class="plantation-question" id="plantation-question">${DATA.ATELIER.BLOCS[plante.sorte].massif ? `Voulez-vous semer des ${DATA.ATELIER.BLOCS[plante.sorte].nom.toLowerCase()} ici ?` : 'Voulez-vous planter un arbre ici ?'}</p>
       <div class="row plantation-choix">
         <button type="button" class="btn primary" data-action="arbre-oui" data-case="${c}">Oui</button>
         <button type="button" class="btn" data-action="close-modal">Non</button>
@@ -122,6 +124,6 @@ function planter(c) {
   const reste = countItem(state, b.objet);
   if (!reste) fermer();
   persistState();
-  notify(`🌱 ${b.semis ? 'Graine plantée : un arbre poussera ici.' : `${b.nom} planté.`}${reste ? ' Touche une autre case pour continuer.' : ''}`);
+  notify(`🌱 ${b.massif ? `${b.nom} semés : en fleurs dans ${DATA.MASSIFS.NUITS} nuits.` : b.semis ? 'Graine plantée : un arbre poussera ici.' : `${b.nom} planté.`}${reste ? ' Touche une autre case pour continuer.' : ''}`);
   refresh();
 }

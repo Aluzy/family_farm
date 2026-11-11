@@ -4,22 +4,23 @@ import { countItem } from './inventory.js';
 import { poserBloc, poseStatus } from './blocs.js';
 import { farmTerrain, tileCount } from './terrain.js';
 
-/* ---------- planter un arbre depuis l'Inventaire ----------
-   Une graine d'arbre (la pomme de pin, le gland) ou un jeune arbre fruitier se plante depuis
+/* ---------- planter un arbre (ou semer des fleurs) depuis l'Inventaire ----------
+   Une graine d'arbre (la pomme de pin, le gland), un jeune arbre fruitier ou une graine de fleur (un massif de
+   fleurs dans l'herbe, js/engine/massifs.js) se plante depuis
    sa fiche de l'Inventaire (« Planter ») : la carte montre en surbrillance les cases où il peut
    aller (casesAPlanter, autour du personnage), le joueur en touche une, confirme, et l'arbre y
    est planté (planterIci : comme un bloc posé, js/engine/blocs.js, qui ne reste pas un bloc). */
 
-// La sorte de bloc à planter pour l'objet `item` (une graine d'arbre, un jeune arbre), ou null.
+// La sorte de bloc à planter pour l'objet `item` (une graine d'arbre, un jeune arbre, une graine de fleur), ou null.
 export function sorteAPlanter(item) {
   const B = DATA.ATELIER.BLOCS;
-  return Object.keys(B).find((s) => B[s].objet === item && (B[s].semis || B[s].arbre)) || null;
+  return Object.keys(B).find((s) => B[s].objet === item && (B[s].semis || B[s].arbre || B[s].massif)) || null;
 }
 
 // Les sortes à planter (elles ne sont plus dans le menu Construire).
 export function sortesAPlanter() {
   const B = DATA.ATELIER.BLOCS;
-  return Object.keys(B).filter((s) => B[s].semis || B[s].arbre);
+  return Object.keys(B).filter((s) => B[s].semis || B[s].arbre || B[s].massif);
 }
 
 // Les cases où planter `sorte`, à au plus `rayon` cases de `centre` (en ligne ou en colonne).
@@ -38,7 +39,7 @@ export function casesAPlanter(state, sorte, centre, rayon) {
 // Plante `sorte` sur la case `tile` (la graine ou le jeune arbre quitte l'inventaire).
 export function planterIci(state, sorte, tile) {
   const s = DATA.ATELIER.BLOCS[sorte];
-  if (!s || !(s.semis || s.arbre)) return fail('Ce n\'est pas un arbre à planter.');
+  if (!s || !(s.semis || s.arbre || s.massif)) return fail('Ce n\'est pas un arbre ni une fleur à planter.');
   if (countItem(state, s.objet) < 1) return fail(`Plus de ${DATA.OBJETS[s.objet].nom.toLowerCase()} dans l'inventaire.`);
   return poserBloc(state, sorte, tile);
 }

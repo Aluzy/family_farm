@@ -19,6 +19,7 @@ import { ruchePosee, rucheReprise } from './ruches.js';
 import { tonneletPose, tonneletRepris } from './tonnelets.js';
 import { compostPose, compostRepris } from './compost.js';
 import { bacReplante, bacRepris } from './bacs.js';
+import { casesMassifs, massifSurCase, semerMassif } from './massifs.js';
 import { botteleuseReprise } from './botteleuse.js';
 import { distributeurReprise } from './distributeur.js';
 import { chainesReprise } from './chaines.js';
@@ -225,6 +226,7 @@ export function casesBaties(state) {
   for (const j of casesCouvertes(state).keys()) out.add(j);
   for (const a of (state.verger && state.verger.arbres) || []) if (Number.isInteger(a.case)) out.add(a.case);
   for (const a of foretArbres(state)) out.add(a.case);   // (les arbres plantés d'une graine : outils.js)
+  for (const t of casesMassifs(state)) out.add(t);        // (les fleurs semées dans l'herbe : massifs.js)
   return out;
 }
 
@@ -243,7 +245,7 @@ export function caseBatissable(state, tile, { herbe = false } = {}) {
   const c = tile % T.LARGEUR, r = Math.floor(tile / T.LARGEUR);
   if (c < 1 || r < 1 || c >= T.LARGEUR - 1 || r >= T.HAUTEUR - 1) return false;
   if (blocAt(state, tile) || solAt(state, tile) || casesCouvertes(state).has(tile)) return false;
-  if (arbreSurCase(state, tile) || foretSurCase(state, tile)) return false;
+  if (arbreSurCase(state, tile) || foretSurCase(state, tile) || massifSurCase(state, tile)) return false;
   const ch = T.LIGNES[r][c];
   if (ch !== '#' && ch !== '+') return false;
   if (!herbe && herbesSur(state, tile).length) return false;
@@ -856,7 +858,7 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (!s) return { ok: false, raison: 'Bloc inconnu.' };
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
-  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en un dans un hameau (l'ébéniste de Bois-Joli, les tapis des Genêts).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en un dans un hameau (l'ébéniste de Bois-Joli, les tapis des Genêts).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : s.massif ? `Plus de ${DATA.OBJETS[s.objet].nom.toLowerCase()} : on en trouve en cueillant les fleurs sauvages du grand monde.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
@@ -906,6 +908,8 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   else if (casesCouvertes(state).has(tile)) return { ok: false, raison: 'Un meuble occupe cette case.' };
   if (s.ferme && solAt(state, tile)) return { ok: false, raison: `Un ${sorteDe(solAt(state, tile)).nom.toLowerCase()} ici : reprends-le d'abord.` };
   if (arbreSurCase(state, tile) || foretSurCase(state, tile)) return { ok: false, raison: 'Un arbre pousse ici.' };
+  if (massifSurCase(state, tile)) return { ok: false, raison: 'Des fleurs sont semées ici.' };
+  if (s.massif && solAt(state, tile)) return { ok: false, raison: 'Les fleurs se sèment dans l\'herbe, pas sur un sol.' };
   // un arbre fruitier : loin des autres (son feuillage), à côté d'aucun bloc
   // (une graine d'arbre, la pomme de pin, le gland : n'importe quelle case d'herbe libre, dehors,
   // loin des autres arbres plantés)
@@ -1033,6 +1037,11 @@ function poser(state, sorte, tile, sens = 0) {
     const a = planterGraine(state, s.semis, tile);
     majPoulailler(state);
     return { ok: true, sorte, case: tile, arbre: a.id };
+  }
+  // une graine de fleur : semée dans l'herbe, un massif y pousse (massifs.js)
+  if (s.massif) {
+    semerMassif(state, tile, s.massif);
+    return { ok: true, sorte, case: tile, massif: s.massif };
   }
   // un arbre fruitier : planté dans le sol, il n'est pas un bloc (orchard.js)
   if (s.arbre) {

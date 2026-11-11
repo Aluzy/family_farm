@@ -73,6 +73,17 @@
       "lupin": { "nom": "Lupins", "graine": "graine_lupin", "fleur": "fleur_lupin" }
     }
   },
+  "//MASSIFS": [
+    "Les massifs de fleurs semés dans l'herbe de la ferme (js/engine/massifs.js ; ATELIER.BLOCS.massif_<espèce> : la graine",
+    "se plante depuis l'Inventaire, comme une graine d'arbre). Les espèces des bacs (BACS.FLEURS). Semé, il fleurit en NUITS",
+    "nuits, sans arrosage ; un appui le cueille à la main : CUEILLETTE fleurs (au moins, au plus), et une graine GRAINE fois",
+    "sur cent ; il repart de ses pousses et refleurit en NUITS nuits (une vivace). DESSIN : la fleur sauvage du grand monde",
+    "qui le dessine (data/monde.json, VEGETATION)."
+  ],
+  "MASSIFS": {
+    "NUITS": 3, "CUEILLETTE": [2, 3], "GRAINE": 25,
+    "DESSIN": { "coquelicot": "coquelicot", "pavot": "pavot_californie", "tournesol": "tournesol_sauvage", "myosotis": "myosotis", "lavande": "lavande", "lupin": "lupin" }
+  },
   "//DEHORS": [
     "Pour le dehors de la ferme générée (fabriqué à l'Atelier ; avant, au Marché) : il arrive dans",
     "l'inventaire (l'objet du même nom) et se pose comme un bloc (recipes.json, ATELIER.BLOCS.<id>).",
