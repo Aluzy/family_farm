@@ -8,10 +8,9 @@
  *   - une petite boussole dans le coin de l'écran, sous l'horloge (dans le style du HUD : un cadran de
  *     laiton en gros pixels, dessiné dans un canevas de BO.taille px agrandi sans lissage), dont
  *     l'aiguille montre le but, et dessous le nom du but et sa distance en cases ;
- *   - le but : le lieu choisi, sinon la ferme ; sans lieu choisi, elle se cache sur la ferme (elle y
- *     montrerait l'endroit où l'on est), et quand la page la retire (les Options : montree) ;
- *   - en début de partie (pas encore de foyer), sur la ferme : l'établi (modèle.etabli : l'Atelier
- *     posé, sinon le point de départ), dès que le personnage en est à plus de BO.pres cases ;
+ *   - le but : le lieu choisi, sinon la ferme ; sans lieu choisi, sur la ferme : la maison (modèle.etabli : la
+ *     porte du foyer, l'abri de départ compris ; sans foyer, l'Atelier posé, sinon le point de départ), dès que
+ *     le personnage en est à plus de BO.pres cases ; elle se cache quand la page la retire (les Options : montree) ;
  *   - un appui sur elle ouvre la carte du monde (ctx.bridge.act('carte-monde-open')).
  *
  * Elle n'est redessinée que quand l'aiguille tourne d'un cran (BO.crans par tour) ou que le texte
@@ -46,7 +45,7 @@
       if (m && m.montree && p && this.ctx.monde) {
         const R = m.surFerme;
         const surFerme = R && p.x >= R.x0 && p.x < R.x1 && p.y >= R.y0 && p.y < R.y1;
-        // (en début de partie, sur la ferme : l'établi, dès qu'on est à plus de BO.pres cases)
+        // (sur la ferme : la maison, dès qu'on est à plus de BO.pres cases)
         const E = m.etabli, loin = E && Math.hypot(E.x - p.x, E.y - p.y) > BO.pres * T;
         but = m.but || (surFerme ? (loin ? E : null) : m.ferme);
       }
