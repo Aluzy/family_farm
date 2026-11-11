@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Moon Bloom Village — retrouver ma partie</title>
+<!--
+  La page pont (le dépôt family_farm, pont-ancienne-adresse/ ; publiée par le dépôt aluzy.github.io, à la racine de
+  https://aluzy.github.io/). Le jeu était à https://aluzy.github.io/family_farm/ ; il est à https://moonbloom-village.com.
+  Le navigateur range ce qu'un site enregistre par adresse (https://aluzy.github.io) : cette page, à la même adresse que
+  l'ancien jeu, lit la partie qu'il avait enregistrée (localStorage) et la porte au nouveau jeu dans la fin de l'adresse
+  (#transfert=…, jamais envoyée à un serveur) ; le jeu la reprend (js/ui/transfert.js).
+    - ouverte par le jeu (?retour=<l'adresse du jeu>) : elle y revient tout de suite, avec la partie (ou « rien trouvé ») ;
+    - ouverte directement : elle dit ce qu'elle a trouvé, propose de l'emporter et de la télécharger (un fichier que
+      « Charger une partie » du jeu sait ouvrir).
+  Elle ne renvoie qu'au jeu (DESTINATIONS) : jamais ailleurs, quoi que dise l'adresse.
+-->
+<style>
+  :root { --fond: #3c6b2c; --carte: #f7f0e1; --encre: #2a1c32; --prune: #4b2a5c; --bouton: #444f9f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: var(--fond); color: var(--encre); font: 17px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { width: min(100%, 440px); background: var(--carte); border: 3px solid var(--prune); border-radius: 10px; padding: 18px 18px 14px;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3); }
+  h1 { margin: 0 0 10px; font-size: 1.3rem; color: var(--prune); }
+  p { margin: 0 0 12px; }
+  .boutons { display: grid; gap: 10px; margin-top: 6px; }
+  a.bouton, button { display: block; width: 100%; padding: 12px 14px; border: 0; border-radius: 8px; font: inherit; text-align: center;
+    text-decoration: none; cursor: pointer; background: #e6dcf3; color: var(--encre); }
+  a.bouton.principal, button.principal { background: var(--bouton); color: #fff; }
+  .info { font-size: 0.9rem; opacity: 0.8; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🌙 Moon Bloom Village</h1>
+  <div id="contenu"><p>Je cherche ta partie…</p></div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var JEU = 'https://moonbloom-village.com/jeu.html';
+  var DESTINATIONS = ['https://moonbloom-village.com', 'https://www.moonbloom-village.com'];
+  // (en local, pour les essais : la page ouverte sur localhost renvoie aussi vers localhost)
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') DESTINATIONS.push(location.protocol + '//localhost:8765', 'http://127.0.0.1:8765');
+  // ce que l'ancien jeu enregistrait et que le nouveau reprend (js/ui/transfert.js, CLES)
+  var CLES = ['ferme-save', 'ferme-save-avant-demenagement', 'ferme-position', 'ferme-son', 'ferme-qualite', 'ferme-carte-glissee',
+    'ferme-construire-favoris', 'ferme-construire-outils', 'ferme-construire-recents', 'ferme-planches'];
+  var contenu = document.getElementById('contenu');
+
+  function lire(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function texte(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+  // L'adresse où revenir : celle du jeu, si elle est permise ; sinon le jeu.
+  function destination() {
+    var r = new URLSearchParams(location.search).get('retour');
+    if (!r) return null;
+    try {
+      var u = new URL(r);
+      if (DESTINATIONS.indexOf(u.origin) >= 0) return u.origin + u.pathname;
+    } catch (e) { /* (une adresse illisible : le jeu) */ }
+    return JEU;
+  }
+
+  function base64url(octets) {
+    var s = '';
+    for (var i = 0; i < octets.length; i += 0x8000) s += String.fromCharCode.apply(null, octets.subarray(i, i + 0x8000));
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  // Les données → « z… » (compressées) ou « j… » (telles quelles, sans CompressionStream).
+  function coder(objet) {
+    var brut = new TextEncoder().encode(JSON.stringify(objet));
+    if (typeof CompressionStream === 'undefined') return Promise.resolve('j' + base64url(brut));
+    var flux = new Blob([brut]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    return new Response(flux).arrayBuffer().then(function (b) { return 'z' + base64url(new Uint8Array(b)); });
+  }
+
+  function donnees() {
+    var cles = {};
+    for (var i = 0; i < CLES.length; i++) { var v = lire(CLES[i]); if (v !== null) cles[CLES[i]] = v; }
+    return cles['ferme-save'] ? { v: 1, cles: cles } : { v: 1, vide: true };
+  }
+
+  // La ligne de la partie : la famille, le jour.
+  function ligne(save) {
+    try {
+      var p = JSON.parse(save), s = p.s || {}, nom = s.famille && s.famille.nom;
+      return (nom ? 'Famille ' + nom + ' · ' : '') + 'jour ' + (s.day || 1);
+    } catch (e) { return 'une partie enregistrée'; }
+  }
+
+  function emporter(vers) {
+    var d = donnees();
+    return coder(d).then(function (code) { location.replace(vers + '#transfert=' + code); });
+  }
+
+  function telecharger(save) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([save], { type: 'application/json' }));
+    a.download = 'moon-bloom-village-ma-partie.json';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  var vers = destination();
+  if (vers) {
+    // ouverte par le jeu : on y revient tout de suite
+    contenu.innerHTML = '<p>Je récupère ta partie et je te ramène au jeu…</p>';
+    emporter(vers).catch(function () { location.replace(vers + '#transfert=' + 'j' + base64url(new TextEncoder().encode('{"v":1,"vide":true}'))); });
+    return;
+  }
+  var save = lire('ferme-save');
+  if (!save) {
+    contenu.innerHTML = '<p>Aucune partie de Moon Bloom Village n\'est enregistrée ici, dans ce navigateur.</p>'
+      + '<p class="info">Si tu jouais sur un autre appareil ou un autre navigateur, ouvre cette page là-bas.</p>'
+      + '<div class="boutons"><a class="bouton principal" href="' + JEU + '">Aller au jeu</a></div>';
+    return;
+  }
+  contenu.innerHTML = '<p>Ta partie d\'avant est là : <strong>' + texte(ligne(save)) + '</strong>.</p>'
+    + '<p class="info">Le jeu a déménagé à moonbloom-village.com : emporte-la, tu la retrouveras là-bas.</p>'
+    + '<div class="boutons"><button type="button" class="principal" id="emporter">🌙 Emporter ma partie vers le jeu</button>'
+    + '<button type="button" id="fichier">📥 Télécharger ma partie (un fichier)</button></div>';
+  document.getElementById('emporter').addEventListener('click', function () { emporter(JEU); });
+  document.getElementById('fichier').addEventListener('click', function () { telecharger(save); });
+})();
+</script>
+</body>
+</html>
