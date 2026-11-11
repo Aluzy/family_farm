@@ -150,3 +150,78 @@ test('en ligne : le nom montré aux autres, le prénom du personnage (jamais l\'
   eq([nomAffiche(encodeURIComponent('Zoé')), nomAffiche(''), nomAffiche(null), nomAffiche('%E0%A4%A'), nomAffiche('<b>Léa</b>'), nomAffiche('a'.repeat(50)).length],
     ['Zoé', 'Voisin', 'Voisin', 'Voisin', 'b Léa /b', 20]);
 });
+
+/* ---------- les amis (worker/src/amis.mjs) ---------- */
+
+test('amis : code ami, demande, réponse, liste (prénom, allure, niveau, en ligne), jamais l\'e-mail', async () => {
+  const { r, horloge } = registre();
+  const { AMIS, rangerCode } = await import('../worker/src/amis.mjs');
+  const A = r.amis, a = 'c-alex', b = 'c-sam', c = 'c-lea';
+  const codeB = A.profil(b).code;
+  assert(/^MOON-[2-9A-HJ-NP-Z]{5}$/.test(codeB), 'un code ami : ' + codeB);
+  eq(A.profil(b).code, codeB, 'le même code ensuite');
+  eq([rangerCode(' moon ' + codeB.slice(5).toLowerCase()), rangerCode(codeB.slice(5)), rangerCode('MOON-O0I1L')], [codeB, codeB, null]);
+  A.publier(b, { prenom: 'Sam<b>', look: { perso: 7 }, niveau: 14.7, famille: 'Martin', monde: 'm-aaaaaaaaaaaaaaaaaaaa', proprio: true });
+  eq([A.ajouter(a, 'MOON-ZZZZZ').statut, A.ajouter(b, codeB).statut], [404, 400], 'code inconnu ; son propre code');
+  eq(A.ajouter(a, codeB), { ok: true, amis: false });
+  eq(A.ajouter(a, codeB), { ok: true, deja: true, amis: false }, 'déjà demandé');
+  const vb = A.vue(b);
+  eq([vb.demandes.length, vb.demandes[0].compte, vb.amis.length, A.vue(a).envoyees[0].prenom], [1, a, 0, 'Sam b']);
+  eq(A.repondre(b, a, true), { ok: true, amis: true });
+  const va = A.vue(a);
+  eq(va.amis.map((x) => [x.prenom, x.look, x.niveau, x.famille, x.enLigne, x.ou, x.monde]), [['Sam b', { perso: 7 }, 14, 'Martin', true, 'sa-ferme-en-ligne', null]], 'le monde de Sam : pas membre, pas dit');
+  assert(!JSON.stringify(va).includes('@'), 'aucune adresse');
+  // membre de son monde : le monde est dit (pour le rejoindre)
+  r.ajouterMonde(a, 'm-aaaaaaaaaaaaaaaaaaaa', 'Sa ferme', 'batisseur');
+  eq(A.vue(a).amis[0].monde, 'm-aaaaaaaaaaaaaaaaaaaa');
+  // hors ligne après EN_LIGNE_MS
+  horloge.t += AMIS.EN_LIGNE_MS + 1;
+  eq([A.vue(a).amis[0].enLigne, A.vue(a).amis[0].ou, A.vue(a).amis[0].monde], [false, null, null]);
+  // deux demandes croisées : amis tout de suite ; refuser ; retirer
+  const codeC = A.profil(c).code;
+  A.ajouter(c, A.profil(a).code);
+  eq(A.ajouter(a, codeC), { ok: true, amis: true }, 'il me l\'avait demandé : amis');
+  eq(A.retirer(a, c), { ok: true });
+  eq([A.sontAmis(a, c), A.sontAmis(c, a)], [false, false]);
+  A.ajouter(c, A.profil(a).code);
+  eq([A.repondre(a, c, false), A.vue(a).demandes.length, A.repondre(a, c, true).statut], [{ ok: true }, 0, 404]);
+});
+
+test('amis : la boîte (invitation, demande de visite, signe) entre amis seulement ; la suppression du compte efface tout', async () => {
+  const { r, horloge } = registre();
+  const { AMIS } = await import('../worker/src/amis.mjs');
+  const A = r.amis, a = 'c-alex', b = 'c-sam', z = 'c-zoe';
+  A.ajouter(a, A.profil(b).code); A.repondre(b, a, true);
+  A.publier(a, { prenom: 'Alex' });
+  eq(A.deposer(a, z, 'signe').statut, 403, 'pas amis : rien');
+  eq(A.deposer(a, b, 'bisou').statut, 400);
+  eq(A.deposer(a, b, 'invitation', { monde: 'm-x', code: 'm-x.s', titre: 'Les Glycines' }), { ok: true });
+  eq(A.deposer(a, b, 'signe'), { ok: true });
+  eq(A.deposer(a, b, 'signe'), { ok: true, deja: true }, 'un signe par minute');
+  horloge.t += AMIS.SIGNE_MS;
+  A.deposer(a, b, 'signe');
+  A.deposer(b, a, 'visite');
+  const boite = A.vue(b).boite;
+  eq(boite.map((m) => [m.type, m.prenom, m.titre]).sort(), [['invitation', 'Alex', 'Les Glycines'], ['signe', 'Alex', null]], 'un seul signe en attente');
+  eq(A.lu(b, boite.map((m) => m.id)), { ok: true });
+  eq([A.vue(b).boite.length, A.vue(a).boite.map((m) => m.type)], [0, ['visite']]);
+  horloge.t += AMIS.BOITE_JOURS * JOUR + 1;
+  eq(A.vue(a).boite.length, 0, 'trop vieux : parti');
+  // supprimer le compte : profil, amitiés, messages
+  const l = await r.demanderLien('alex@exemple.fr'), s = (await r.connecter(l.jeton));
+  A.ajouter(s.compte.id, A.profil(b).code); A.repondre(b, s.compte.id, true);
+  A.deposer(s.compte.id, b, 'signe');
+  await r.supprimer(s.session);
+  eq([A.vue(b).amis.map((x) => x.compte).includes(s.compte.id), A.vue(b).boite.length], [false, 0]);
+});
+
+test('amis : les routes /compte/amis (connecté seulement, profil publié et vue en un appel)', async () => {
+  const { r } = registre();
+  const l = await r.demanderLien('alex@exemple.fr'), s = await r.connecter(l.jeton);
+  const req = (chemin, corps, session = s.session) => routeCompte(new Request('https://x/compte/' + chemin, { method: corps ? 'POST' : 'GET', headers: { Authorization: `Bearer ${session}`, 'Content-Type': 'application/json' }, body: corps ? JSON.stringify(corps) : undefined }), r, {});
+  eq((await req('amis', {}, 'x'.repeat(43))).statut, 401);
+  const v = await req('amis', { prenom: 'Alex', niveau: 3 });
+  eq([v.statut, /^MOON-/.test(v.corps.code), v.corps.amis], [200, true, []]);
+  eq((await req('amis/ajouter', { code: v.corps.code })).statut, 400);
+  eq((await req('amis/rien', {})).statut, 404);
+});

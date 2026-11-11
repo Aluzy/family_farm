@@ -222,6 +222,22 @@ dernières gardées (≈ 100 Ko chacune). `GET` et `POST /mondes/<id>/sauvegarde
 /mondes/<id>/restaurer { cle }` (le propriétaire). Une restauration écrit un instantané et une marque
 `monde.restaurer` au journal ; la partie entière est diffusée.
 
+## Les amis
+
+`src/amis.mjs`, dans le Durable Object des comptes (mêmes base et instance) ; rien à configurer : les
+tables sont créées au premier appel, après le déploiement.
+
+- Chaque compte a un **code ami** (`MOON-K7Q2X`, sans 0/O ni 1/I), créé à sa première visite. Un ami se
+  trouve par ce code, ou par le lien `jeu.html#ami=MOON-K7Q2X` ; jamais par son adresse e-mail, qui n'est
+  montrée nulle part.
+- `POST /compte/amis` : le jeu publie le profil du personnage de sa partie solo (prénom, allure, niveau, nom
+  de famille, monde où il joue) et reçoit la vue du volet (amis, demandes, boîte). Il le fait à l'ouverture
+  du volet et toutes les 45 s : un ami vu depuis moins de 90 s est « en ligne ». Le monde où joue un ami
+  n'est dit que si l'on en est membre (pour le rejoindre).
+- `POST /compte/amis/ajouter | repondre | retirer | visite | signe | lu` ; `POST /mondes/<id>/inviter-ami`
+  (le propriétaire du monde, entre amis seulement) : un lien d'invitation, déposé dans la boîte de l'ami.
+- La suppression d'un compte efface son profil, ses amitiés et ses messages.
+
 ## Mise en route du rapport (une seule fois)
 
 1. **Créer un dépôt privé** pour les rapports, par exemple `family_farm_rapports`

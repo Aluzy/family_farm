@@ -140,10 +140,10 @@ function redessiner() {
   if (z) morph(z, compteHtml());
 }
 
-// (E-3 : posée par en-ligne.js : reprendre une invitation en attente, une fois connecté)
-let apresConnexion = null;
+// (E-3 : posées par en-ligne.js, amis.js : reprendre une invitation, une demande d'ami en attente, une fois connecté)
+const apresConnexion = [];
 export function quandConnecte(f) {
-  apresConnexion = f;
+  apresConnexion.push(f);
 }
 
 // Au démarrage : le jeu ouvert par le lien de l'e-mail (jeu.html#connexion=…) : la session. Le fragment
@@ -158,7 +158,7 @@ export async function connexionDuLien() {
     envoye = null;
     notify(`🌐 Connecté : ${r.compte.email}.`);
     // (E-3 : une invitation suivie avant d'être connecté : elle reprend)
-    if (apresConnexion) apresConnexion();
+    for (const f of apresConnexion) f();
   } else notify(`🌐 ${r.erreur || 'La connexion a échoué.'}`);
   redessiner();
 }

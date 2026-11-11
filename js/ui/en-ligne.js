@@ -102,6 +102,11 @@ function fermer() {
   if (typeof window !== 'undefined' && window.FermeEnLigne) window.FermeEnLigne.moi = null;
 }
 
+// Les amis (amis.js) : le monde où l'on joue, et son rôle dedans ; null en solo.
+export function mondeActuel() {
+  return lien && lien.etat !== 'refuse' ? { monde: lien.monde, role: lien.role || null, titre: lien.titre || '' } : null;
+}
+
 function envoyer(m) {
   if (lien && lien.ws && lien.ws.readyState === 1) { lien.ws.send(JSON.stringify(m)); return true; }
   return false;

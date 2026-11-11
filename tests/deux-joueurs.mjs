@@ -6,6 +6,9 @@
 //   1. le joueur A met sa ferme en ligne (⚙️ Options › Jeu en ligne) et y entre ;
 //   2. E-3 : A crée un lien d'invitation (👥 › Inviter un ami) ; B l'ouvre et entre dans le monde :
 //      les deux y sont, bandeau « à jour » ; ils ouvrent le mode Construire ;
+//   2b. les amis : B entre le code ami de A (💌 › Ajouter un ami), A accepte : amis ; A voit Sam (son personnage,
+//       son niveau, « Avec toi ») ; A l'invite (✉️) : l'invitation arrive dans la boîte de B ; B voit « Rejoindre
+//       sa ferme » sur la fiche de A (il est membre de son monde) ; jamais d'adresse e-mail ;
 //   3. un mur posé chez l'un est vu chez l'autre en moins d'une seconde, dans les deux sens ;
 //   3b. chacun joue son personnage à lui (celui de sa partie solo) ; l'autre le voit là où il est, son prénom
 //       au-dessus (E-4) ;
@@ -169,6 +172,44 @@ try {
   await pb.goto(lienInvitation);   // (le lien, dans l'onglet de B, son jeu déjà ouvert)
   await attendre(pb, () => /[?&]monde=/.test(location.search), null, 20000);
   verifie(/#invitation=/.test(lienInvitation) && (await attendre(pa, pret)) !== null && (await attendre(pb, pret)) !== null && /2/.test(await pa.evaluate(() => document.getElementById('en-ligne-bandeau').innerText)), '2. B a suivi le lien d\'invitation de A : les deux sont dans le monde, à jour');
+  // 2b. les amis
+  const voletOuvert = async (p) => { await action(p, 'amis-fermer'); await action(p, 'amis-ouvrir'); return attendre(p, () => !!document.querySelector('.amis-pied .btn'), null, 5000); };
+  await voletOuvert(pa);
+  await action(pa, 'amis-ajouter');
+  await attendre(pa, () => !!document.querySelector('.amis-code'), null, 5000);
+  const codeA = await pa.evaluate(() => document.querySelector('.amis-code').textContent);
+  await voletOuvert(pb);
+  await action(pb, 'amis-ajouter');
+  await attendre(pb, () => !!document.getElementById('amis-code'), null, 5000);
+  await pb.fill('#amis-code', codeA.slice(5).toLowerCase());
+  await action(pb, 'amis-envoyer');
+  await attendre(pb, () => /En attente/.test(document.getElementById('amis-volet').innerText), null, 5000);
+  await voletOuvert(pa);
+  const demande = await attendre(pa, () => /veut être ton ami/.test(document.getElementById('amis-volet').innerText), null, 5000);
+  await action(pa, 'amis-repondre', { compte: B.id, oui: '1' });
+  const amisA = await attendre(pa, (id) => !!document.querySelector(`.amis-qui[data-compte="${id}"]`) && /Avec toi/.test(document.getElementById('amis-volet').innerText), B.id, 5000);
+  const ligneSam = await pa.evaluate((id) => { const q = document.querySelector(`.amis-qui[data-compte="${id}"]`); return { texte: q.innerText, image: q.querySelector('.amis-av').style.backgroundImage, marche: q.querySelector('.amis-av').classList.contains('marche') }; }, B.id);
+  await action(pa, 'amis-fiche', { compte: B.id });
+  await attendre(pa, () => !!document.querySelector('.amis-fiche'), null, 3000);
+  await action(pa, 'amis-inviter', { compte: B.id });
+  const invite = await attendre(pa, () => /a reçu ton invitation/.test(document.body.innerText), null, 5000);
+  await voletOuvert(pb);
+  const recue = await attendre(pb, () => /t'invite dans/.test(document.getElementById('amis-volet').innerText), null, 5000);
+  await action(pb, 'amis-fiche', { compte: A.id });
+  const rejoindreA = await attendre(pb, () => !!document.querySelector('.amis-fiche [data-action="amis-rejoindre"]'), null, 3000);
+  const sansEmail = !/@exemple/.test(await pa.evaluate(() => document.getElementById('amis-volet').innerText + document.body.innerText)) && !/@exemple/.test(await pb.evaluate(() => document.getElementById('amis-volet').innerText));
+  verifie(demande !== null && amisA !== null && /Sam/.test(ligneSam.texte) && /\d/.test(ligneSam.texte) && /perso_07/.test(ligneSam.image) && ligneSam.marche && invite !== null && recue !== null && rejoindreA !== null && sansEmail,
+    `2b. B a demandé A en ami par son code, A a accepté ; A voit Sam (perso 7, en ligne, avec lui), l'invite : B le reçoit et peut rejoindre la ferme de A ; aucune adresse e-mail (${JSON.stringify(ligneSam.texte)})`);
+  if (process.env.CAPTURES) {
+    const sansMessages = (p) => p.evaluate(() => document.querySelectorAll('.toast').forEach((e) => e.remove()));
+    for (const p of [pa, pb]) await sansMessages(p);
+    await pa.screenshot({ path: process.env.CAPTURES + '/a-fiche.png' });
+    await action(pa, 'amis-fiche-fermer'); await pa.waitForTimeout(300); await sansMessages(pa);
+    await pa.screenshot({ path: process.env.CAPTURES + '/a-volet.png' });
+    await action(pb, 'amis-fiche-fermer'); await pb.waitForTimeout(300); await sansMessages(pb);
+    await pb.screenshot({ path: process.env.CAPTURES + '/b-volet.png' });
+  }
+  for (const p of [pa, pb]) await action(p, 'amis-fermer');
   for (const p of [pa, pb]) { await action(p, 'build-toggle'); await attendre(p, () => document.body.classList.contains('construction'), null, 5000); }
   const soloA = await pa.evaluate(() => localStorage.getItem('ferme-save'));
   const caseLibre = (p) => p.evaluate(() => { const sc = FarmStage.scene(), T0 = sc.ctx.bridge.trace, W = sc.grid.cols, v = sc.cameras.main.worldView; const cx = Math.floor((v.x + v.width / 2) / 16), cy = Math.floor((v.y + v.height / 2) / 16); for (let d = 0; d < 14; d++) for (let dy = -d; dy <= d; dy++) for (let dx = -d; dx <= d; dx++) { const t = (cy + dy) * W + cx + dx; if (T0.posable(t) === 'ok') return t; } return null; });
