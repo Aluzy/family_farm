@@ -716,20 +716,9 @@
           { nom: 'bulleDidacticiel', cadence: 10, pas: () => this.stepBulleDidacticiel() },     // (la bulle du didacticiel sur le personnage : camera.js)
           { nom: 'etiquettes', cadence: img, pas: () => { this.placeLabels(); this.placePiles(); this.placeGain(); this.placeGainAide(); this.stepAide(); } },
           { nom: 'vuePage', cadence: 10, pas: () => this.reportView() },                        // (ce que la page affiche selon la vue : camera.js)
-          // La cadence (fiche 25, js/carte/jeu.js) : quelque chose bouge-t-il ? Le personnage, la vue (son
-          // centre, son zoom, son glissement, son élan), un doigt posé ou la manette. (La vue qui suit le
-          // personnage s'approche de lui sans jamais l'atteindre tout à fait : sous 0,05 px de carte, elle ne
-          // bouge plus.)
-          { nom: 'cadence', cadence: img, pas: (I) => {
-            const fp = this.fermier && this.fermier.pos(), zoom = this.cameras.main.zoom;
-            const vu = this.cadenceVu || (this.cadenceVu = { cx: 0, cy: 0, zoom: 0, x: 0, y: 0 });
-            const loin = (a, b) => !(Math.abs(a - b) < 0.05);
-            const bouge = !!(this.drag || this.pince || this.pan || this.vx || this.vy || (this.manette && this.manette.dir()))
-              || loin(this.cx, vu.cx) || loin(this.cy, vu.cy) || zoom !== vu.zoom || (fp && (loin(fp.x, vu.x) || loin(fp.y, vu.y)));
-            vu.cx = this.cx; vu.cy = this.cy; vu.zoom = zoom;
-            if (fp) { vu.x = fp.x; vu.y = fp.y; }
-            if (global.CarteJeu && global.CarteJeu.cadence) global.CarteJeu.cadence(bouge, I.time);
-          } },
+          // La cadence (fiche 25, js/carte/jeu.js) : le plafond d'images par seconde, revu à chaque image (60 sur un
+          // écran rapide, 30 en économie).
+          { nom: 'cadence', cadence: img, pas: () => { if (global.CarteJeu && global.CarteJeu.cadence) global.CarteJeu.cadence(); } },
         ];
       }
 

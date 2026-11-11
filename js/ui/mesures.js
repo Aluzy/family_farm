@@ -2,10 +2,15 @@
    Un volet du mode test (jeu.html, « 📏 Mesures ») pour mesurer le jeu sur le téléphone de référence :
      - « Bâtir la ferme d'essai » : le scénario « ferme construite » (js/engine/testmode.js,
        testFermeConstruite), puis la page se recharge (la carte relit ses blocs) ;
-     - « Mesurer 30 s » : pendant 30 s, la durée de chaque image affichée (requestAnimationFrame), puis
-       le rapport : images par seconde, images lentes, la plus longue, la mémoire, le chargement, la
-       sauvegarde (taille, durée : js/ui/storage.js, statsSauvegarde), l'appareil et la partie ; chaque
-       budget de docs/perf.md marqué ✅ ou ❌ ;
+     - « Mesurer 30 s » : pendant 30 s, la durée de chaque image dessinée par la carte (l'événement
+       postrender de Phaser : avec le plafond de la cadence, js/carte/jeu.js, l'écran en montre moins que
+       requestAnimationFrame n'en compte ; sans carte, requestAnimationFrame), puis le rapport : images par
+       seconde, images lentes, la plus longue, la mémoire, le chargement, la sauvegarde (taille, durée :
+       js/ui/storage.js, statsSauvegarde), l'appareil et la partie ; chaque budget de docs/perf.md marqué
+       ✅ ou ❌. Et d'où viennent les images lentes : où l'on était (la ferme, le grand monde, un hameau,
+       Construire), les tâches longues du navigateur, les postes les plus lourds du chronomètre
+       (js/ui/chrono.js : l'interface, le moteur, chaque système de la carte, le dessin de Phaser) et les
+       plus longues images avec ce qui s'y est passé ;
      - « Mesurer Construire » : le jeu fait seul les gestes du mode Construire (l'ouvrir, attendre,
        poser un bloc près du centre de l'écran, prendre la gomme, l'effacer, fermer) ; pour chacun, le
        délai jusqu'à l'image affichée après lui, les images des secondes qui suivent, les tâches longues,
@@ -25,16 +30,20 @@ import { notify } from './toasts.js';
 import { fermeVenue } from './ferme-gardee.js';
 import { registerActions } from './actions.js';
 import { runAction } from './events.js';
-import { demarrer, noter, postes } from './chrono.js';
+import { chrono, demarrer, noter, postes } from './chrono.js';
+import { lieuDuPerso } from './stage.js';
 
 // Les budgets (docs/perf.md, « cosy standard ») sur le téléphone de référence (Redmi Note 13).
 export const BUDGETS = {
   IMAGES_MIN: 30,        // images par seconde : au moins 30 (60 visées)…
-  PART_LENTES_MAX: 5,    // … soit au plus 5 % d'images de plus de 1000/30 ms
+  PART_LENTES_MAX: 5,    // … soit au plus 5 % d'images lentes : plus de 1000/30 ms, à 10 % près (LENTE_MS)
   PRETE_MS: 5000,        // le jeu affiché (l'écran de chargement retiré) moins de 5 s après l'ouverture de la page
   SAUVEGARDE_MS: 16,     // une sauvegarde : moins de 16 ms (une image)
 };
 const DUREE_S = 30;
+// Une image lente : plus d'un trentième de seconde, à 10 % près (l'horloge de l'écran tremble un peu ; plafonnée
+// à 30 par la cadence, une image dure 33,3 ms, parfois un rien de plus : js/carte/jeu.js, CADENCE.TOLERANCE).
+const LENTE_MS = (1000 / BUDGETS.IMAGES_MIN) * 1.1;
 
 // Le moment où le jeu est jouable, mesuré depuis l'ouverture de la page : l'écran de chargement retiré
 // (jeu.html, Chargement.fini : la vue sous la caméra entièrement dessinée, js/farm-stage.js). Relevé
@@ -80,13 +89,13 @@ function partie() {
 
 const coche = (ok) => (ok ? '✅' : '❌');
 
-function faireRapport(images) {
-  const durees = [];
+function faireRapport(m) {
+  const images = m.images, durees = [];
   for (let i = 1; i < images.length; i++) durees.push(images[i] - images[i - 1]);
   const tri = durees.slice().sort((a, b) => a - b);
   const total = (images[images.length - 1] - images[0]) / 1000;
   const fps = total > 0 ? durees.length / total : 0;
-  const lent = 1000 / BUDGETS.IMAGES_MIN + 0.5;
+  const lent = LENTE_MS;
   const lentes = durees.filter((d) => d > lent).length, partLentes = durees.length ? (100 * lentes) / durees.length : 0;
   const s = statsSauvegarde();
   const mem = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null;
@@ -103,6 +112,9 @@ function faireRapport(images) {
     `Mesuré pendant ${total.toFixed(1)} s : ${durees.length} images · médiane ${quantile(tri, 0.5).toFixed(1)} ms · 95 % sous ${quantile(tri, 0.95).toFixed(1)} ms · 99 % sous ${quantile(tri, 0.99).toFixed(1)} ms · la plus longue ${(tri[tri.length - 1] || 0).toFixed(0)} ms`,
     `Mémoire du jeu : ${mem !== null ? mem + ' Mo' : 'non disponible dans ce navigateur'}`,
     nav ? `Page : HTML lu en ${Math.round(nav.responseEnd)} ms, scripts prêts en ${Math.round(nav.domContentLoadedEventEnd)} ms, chargée en ${Math.round(nav.loadEventEnd)} ms` : 'Page : temps de chargement non disponibles',
+    `Images comptées : ${m.source === 'carte' ? `celles que la carte a dessinées (plafond : ${m.plafond ? m.plafond + ' par seconde' : 'l\'écran'})` : 'celles de l\'écran (pas de carte)'}`,
+    '',
+    ...ouTempsPasse(m, durees),
     '',
     '— Appareil —',
     ...appareil(),
@@ -111,6 +123,23 @@ function faireRapport(images) {
     ...partie(),
   ];
   return lignes.join('\n');
+}
+
+// D'où viennent les images lentes : les lieux, les tâches longues, les postes les plus lourds, les plus longues images.
+function ouTempsPasse(m, durees) {
+  const L = ['— Où le temps passe —'];
+  const n = Object.values(m.lieux).reduce((a, x) => a + x, 0);
+  if (n) L.push(`Où : ${Object.entries(m.lieux).sort((a, b) => b[1] - a[1]).map(([l, k]) => `${l} ${Math.round((100 * k) / n)} %`).join(' · ')}`);
+  const lg = m.longues;
+  L.push(m.longuesOk ? `Tâches longues (plus de 50 ms) : ${lg.length}, ${Math.round(lg.reduce((a, x) => a + x, 0))} ms en tout, la plus longue ${Math.round(Math.max(0, ...lg))} ms` : 'Tâches longues : non mesurables dans ce navigateur');
+  const secondes = Math.max(1, durees.reduce((a, x) => a + x, 0) / 1000);
+  L.push('Postes les plus lourds (ms par seconde, inclus ; le plus long) :');
+  for (const p of m.postes.slice(0, 12)) L.push(`  ${(p.ms / secondes).toFixed(1).padStart(6)} ms/s  ${p.nom} (${Math.round(p.max)} ms au plus)`);
+  if (m.pires.length) {
+    L.push('Les plus longues images (ce qui y a pris le plus de temps) :');
+    for (const q of m.pires) L.push(`  ${Math.round(q.ms)} ms à ${q.t.toFixed(1)} s (${q.lieu}) : ${q.postes.map((p) => `${p.nom} ${Math.round(p.ms)}`).join(', ') || '—'}`);
+  }
+  return L;
 }
 
 function afficher() {
@@ -122,23 +151,76 @@ function afficher() {
   if (copier) copier.disabled = !rapport;
 }
 
+// Le lieu du personnage, pour le rapport.
+function lieuCourant() {
+  if (buildMode) return 'Construire';
+  const l = lieuDuPerso();
+  return !l ? 'hors de la carte' : l.hameau ? 'un hameau' : l.lieu === 'ferme' ? 'la ferme' : 'le grand monde';
+}
+
 function mesurer() {
   if (mesure) return;
-  mesure = { images: [], fin: performance.now() + DUREE_S * 1000 };
+  const sc = window.FarmStage && FarmStage.scene && FarmStage.scene();
+  const ev = sc && sc.game && sc.game.events;
+  const t0 = performance.now();
+  mesure = {
+    images: [], fin: t0 + DUREE_S * 1000, source: ev ? 'carte' : 'ecran', plafond: ev && sc.game.loop ? sc.game.loop.fpsLimit : 0,
+    lieux: {}, longues: [], longuesOk: false, postes: [], pires: [],
+  };
+  const M = mesure;
   notify(`📏 Mesure de ${DUREE_S} s : joue normalement (marche, construis, tourne la vue).`, { duree: 4000 });
   const bouton = document.querySelector('[data-action="test-perf-mesurer"]');
-  const image = (t) => {
-    if (!mesure) return;
-    mesure.images.push(t);
-    if (bouton) bouton.textContent = `Mesure en cours… ${Math.max(0, Math.ceil((mesure.fin - t) / 1000))} s`;
-    if (t < mesure.fin) { requestAnimationFrame(image); return; }
-    rapport = faireRapport(mesure.images);
+  // le chronomètre (les postes), et ce qu'il a noté à chaque image : le total d'avant, pour la différence
+  demarrer(true);
+  let avant = new Map(), lieu = lieuCourant(), dessin = 0;
+  const instantane = () => { const c = new Map(); for (const [k, p] of chrono.postes) c.set(k, p.ms); return c; };
+  const lieux = setInterval(() => { lieu = lieuCourant(); M.lieux[lieu] = (M.lieux[lieu] || 0) + 1; }, 1000);
+  M.lieux[lieu] = 1;
+  let obs = null;
+  try { obs = new PerformanceObserver((l) => { for (const e of l.getEntries()) M.longues.push(e.duration); }); obs.observe({ entryTypes: ['longtask'] }); M.longuesOk = true; } catch (e) { obs = null; }
+  const avantDessin = () => { dessin = performance.now(); };
+  let garde = null;
+  const finir = () => {
+    if (mesure !== M) return;
+    clearInterval(lieux);
+    clearTimeout(garde);
+    if (obs) obs.disconnect();
+    if (ev) { ev.off('prerender', avantDessin); ev.off('postrender', image); }
+    M.postes = postes();
+    demarrer(false);
+    rapport = faireRapport(M);
     mesure = null;
     if (bouton) bouton.textContent = `Mesurer ${DUREE_S} s`;
     afficher();
     notify('📏 Mesure terminée : le rapport est dans le mode test (📏 Mesures).');
   };
-  requestAnimationFrame(image);
+  const image = () => {
+    if (mesure !== M) return;
+    const t = performance.now();
+    if (dessin) { noter('Phaser : dessin de l\'image (JS)', t - dessin); dessin = 0; }
+    const n = M.images.length;
+    // (une image lente : ce que les postes y ont ajouté, les 3 plus lourds ; on garde les 5 plus longues)
+    const maintenant = instantane();
+    if (n && t - M.images[n - 1] > LENTE_MS) {
+      const ms = t - M.images[n - 1];
+      if (M.pires.length < 5 || ms > M.pires[M.pires.length - 1].ms) {
+        const d = [];
+        for (const [k, v] of maintenant) { const x = v - (avant.get(k) || 0); if (x >= 1) d.push({ nom: k, ms: x }); }
+        d.sort((a, b) => b.ms - a.ms);
+        M.pires.push({ ms, t: (t - t0) / 1000, lieu, postes: d.slice(0, 3) });
+        M.pires.sort((a, b) => b.ms - a.ms);
+        M.pires.length = Math.min(5, M.pires.length);
+      }
+    }
+    avant = maintenant;
+    M.images.push(t);
+    if (bouton) bouton.textContent = `Mesure en cours… ${Math.max(0, Math.ceil((M.fin - t) / 1000))} s`;
+    if (t >= M.fin) { finir(); return; }
+    if (!ev) requestAnimationFrame(image);
+  };
+  if (ev) { ev.on('prerender', avantDessin); ev.on('postrender', image); } else requestAnimationFrame(image);
+  // (la carte qui ne dessine plus, une fenêtre par-dessus ou la page cachée : la mesure finit quand même)
+  garde = setTimeout(finir, DUREE_S * 1000 + 3000);
 }
 
 async function copier() {

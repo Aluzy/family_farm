@@ -43,8 +43,8 @@ test('le pas plafonné : le temps donné à la scène est le temps écoulé (Pha
   }
 });
 
-test('la cadence : 60 au plus sur un écran rapide, 30 en économie une fois immobile, l\'écran sinon', () => {
-  assertEqual([J.CADENCE.RAPIDE, J.CADENCE.PLAFOND, J.CADENCE.ECONOMIE, J.CADENCE.CALME_MS], [100, 60, 30, 1000]);
+test('la cadence : 60 au plus sur un écran rapide, 30 en économie (tout le temps), l\'écran sinon', () => {
+  assertEqual([J.CADENCE.RAPIDE, J.CADENCE.PLAFOND, J.CADENCE.ECONOMIE], [100, 60, 30]);
 });
 
 test('le suivi de la vue : la même trajectoire à 30, 60 et 120 images par seconde', () => {
