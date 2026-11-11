@@ -8,6 +8,7 @@
  *   - 2, les boutons : les trois pieds, petits ;
  *   - 3, en fleurs : les trois pieds.
  *
+ *   - stepMassifs(dt) : à chaque image, ses pieds penchent quand quelqu'un les traverse (marcheurs.js) ;
  *   - massifAt(wx, wy) : le massif sous le doigt (appelé par hitAt), sa case, ou -1 ;
  *   - massifTouche(c) : un appui sur lui. La page décide (ctx.bridge.massifTouche, js/ui/bacs.js) : en train de
  *     pousser, une bulle au-dessus ; en fleurs, le personnage y va et les cueille à la main (un geste de la file,
@@ -52,10 +53,14 @@
       const liste = i >= 0 ? P.images[i] : null;
       if (!liste || !liste.length) return null;
       const k = TAILLE[m.etape] || 1;
+      // (une plante qui penche : cinq images par variante, la première droite)
+      const n5 = P.sortes[i].penche ? 5 : 1, nv = Math.max(1, Math.floor(liste.length / n5));
       return PIEDS.map(([dx, dy, v]) => {
-        const f = liste[(v + m.case) % liste.length], c = P.cadres[f];
+        const f = liste[((v + m.case) % nv) * n5], c = P.cadres[f];
         const yy = y + dy;
-        return this.add.image(x + dx, yy, P.cle, f).setOrigin(c.px / c.w, c.py / c.h).setScale(k).setDepth(yy);
+        const img = this.add.image(x + dx, yy, P.cle, f).setOrigin(c.px / c.w, c.py / c.h).setScale(k).setDepth(yy);
+        if (n5 === 5) img.herbe = { img, fleurs: null, x: x + dx, y: yy, base: f, t: -1, dir: 1, inside: false };
+        return img;
       });
     },
 
@@ -73,6 +78,17 @@
         this.massifs.set(m.case, { case: m.case, fleur: m.fleur, etape: m.etape, imgs: imgs || [], manque: !imgs, busy: false });
       }
       for (const [c, e] of this.massifs) if (!vus.has(c) && !e.busy) { e.imgs.forEach((im) => im.destroy()); this.massifs.delete(c); }
+      this.massifHerbes = null;
+    },
+
+    // À chaque image : les pieds qu'on traverse penchent (comme l'herbe haute : marcheurs.js).
+    stepMassifs(dt) {
+      if (!this.massifs || !this.massifs.size) return;
+      if (!this.massifHerbes) {
+        this.massifHerbes = [];
+        for (const e of this.massifs.values()) for (const im of e.imgs) if (im.herbe) this.massifHerbes.push(im.herbe);
+      }
+      if (this.massifHerbes.length) K.herbes(this.massifHerbes, this.marcheurs(), dt);
     },
 
     // Le massif sous le doigt : sa case, ou -1.
@@ -103,6 +119,7 @@
         // (les fleurs cueillies montent et s'effacent ; le massif repart de ses pousses, au prochain modèle)
         const imgs = e.imgs;
         e.imgs = [];
+        this.massifHerbes = null;
         e.manque = true;
         e.busy = false;
         for (const img of imgs) this.tweens.add({ targets: img, y: img.y - 6, alpha: 0, duration: K.reduit() ? 0 : 260, ease: 'Sine.easeOut', onComplete: () => img.destroy() });

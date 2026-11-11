@@ -333,7 +333,6 @@
         if (g.img) g.img.setTint(g.tint);
       });
       this.grassCheck = 0;
-      this.grassPrev = null;
     },
 
     // Les morceaux d'herbe haute près de la vue : leurs images créées ; loin : détruites.
@@ -463,8 +462,9 @@
       g.inside = false;
     },
 
-    // À chaque image : le personnage entre dans une touffe en marchant : elle penche dans le
-    // sens de sa marche (vers la droite s'il va à droite) et revient en se balançant.
+    // À chaque image : quelqu'un entre dans une touffe en marchant (le personnage, un habitant, une bête :
+    // marcheurs.js) : elle penche dans le sens de sa marche (vers la droite s'il va à droite) et revient en
+    // se balançant.
     stepTallGrass(dt) {
       const list = this.tallGrass;
       if (!list || !list.length) return;
@@ -473,8 +473,7 @@
         this.grassCheck = 500;
         for (const g of list) this.showGrass(g);
       }
-      const p = this.fermier ? this.fermier.pos() : null;
-      this.grassPrev = K.herbe(list, p, this.grassPrev, dt);
+      K.herbes(list, this.marcheurs(), dt);
     },
 
     /* ---------- hors de la vue : pas dessinés ---------- */

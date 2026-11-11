@@ -770,6 +770,7 @@
                                        // meubles soient sur la carte ; sans chemin, réessayé 3 s plus tard
       const breath = rand(1.1, 1.6);   // sommeil : secondes par souffle
       const s = scene.add.image(x, y, sheet, 0).setOrigin(0.5, 1);
+      s.marcheur = true;               // (l'herbe qu'il traverse penche : carte/ferme/marcheurs.js)
       const res = nouveauRessort();    // écrasé, étiré (js/carte/ressort.js)
       let vu = null;                   // l'image dessinée à l'image d'avant
       let tenu = 0;                    // la pose tenue à cette image (ramassé, en l'air, un bond)
@@ -1166,6 +1167,7 @@
       let path = [], speed = 0, stride = 2, walked = 0;   // déplacement en cours
       let vue = 'profil';                                 // profil, bas (vers nous), haut (de dos)
       const s = scene.add.image(0, 0, o.herd[kind], 0).setOrigin(0.5, 1).setVisible(false);
+      s.marcheur = true;                // (l'herbe qu'elle traverse penche : carte/ferme/marcheurs.js)
       const res = nouveauRessort();     // écrasée, étirée (js/carte/ressort.js)
       let vu = null, tenu = 0;          // l'image d'avant ; la pose tenue à cette image
       // (la poule a ses vues de face et de dos ; les autres, ou une planche d'avant : de profil seulement)

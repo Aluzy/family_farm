@@ -244,6 +244,7 @@
       this.fauneTerre(b);
       b.img = this.add.sprite(Math.round(b.x), Math.round(b.y), e.tex, this.fauneCadre(b, 'repos', 0)).setOrigin(e.ox, e.oy);
       if (e.lieu === 'air') b.img.setScale(AIR.echelle);
+      if (e.lieu === 'terre') b.img.marcheur = true;   // (l'herbe qu'elle traverse penche : marcheurs.js)
       if (e.lieu === 'terre') b.ombre = this.add.ellipse(b.x, b.y, Math.max(6, e.w * 0.45), 3, 0x1e1a18, 0.22);
       // (l'ombre d'un oiseau en vol : sa silhouette, sombre, au sol sous lui)
       if (e.lieu === 'air') b.ombre = this.add.sprite(b.x, b.y, e.tex, this.fauneCadre(b, 'vol', 0)).setOrigin(e.ox, e.oy).setTint(0x1e1a18).setTintMode(global.Phaser.TintModes.FILL).setAlpha(AIR.ombre).setDepth(1.5);
