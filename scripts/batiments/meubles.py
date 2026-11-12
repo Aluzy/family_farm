@@ -482,21 +482,99 @@ def drap(im, y0):
     return out
 
 
-def chevet():
-    # table de chevet : son dessus (la lampe posée dessus), sa face avec un tiroir
-    W, H = 14, 22
+# la lampe de chevet : son abat-jour a son milieu à la rangée LAMPE_Y de l'image dans les trois vues
+# (de face, de dos, de profil) et au milieu de sa largeur : la carte y pose sa lueur, le soir
+# (js/carte/ferme/config.js BLOCS_CARTE.lampeChevet, chantier.js stepLanterns)
+LAMPE_Y = 5
+
+
+def chevet_vue(vue='face'):
+    """La table de chevet, vue de haut à 45° et en nuances : un petit meuble de bois miel (son dessus
+    éclairé, le fil du bois, l'arête claire), de face son tiroir et son bouton de laiton, de dos ses
+    planches, de profil son flanc et le chant du tiroir ; ses pieds tournés ; la lampe posée dessus :
+    un pied de laiton bombé, sa tige, un abat-jour de tissu crème plissé, éclairé à gauche, son
+    ourlet et son bord du haut (l'intérieur sombre). vue : 'face', 'dos' ou 'cote'."""
+    W, H = (16, 22) if vue == 'cote' else (14, 22)
     im = canvas(W, H)
-    put, _ = painter(im)
-    box(put, 0, 9, W, 5, 8, 'w4', 'w2', edge='w3')
-    rect(put, 2, 15, 11, 15, 'w1'); put(7, 17, 'i3')
-    rect(put, 1, 21, 2, 21, 'w0'); rect(put, 11, 21, 12, 21, 'w0')
-    rect(put, 5, 9, 8, 11, 'i2')                      # pied de la lampe, posé sur le dessus
-    for y in range(2, 8):                             # abat-jour
-        for x in range(3, 11):
-            if abs(x - 6.5) <= 2 + (y - 2) * 0.5:
-                put(x, y, 'J2' if x < 7 else 'J1')
+    px = im.load()
+    BOIS = _rampe([(54, 26, 18), (96, 54, 32), (134, 82, 46), (170, 112, 64), (204, 150, 92), (234, 198, 142)])
+    LAITON = _rampe([(84, 56, 18), (150, 108, 36), (206, 164, 70), (240, 214, 132), (255, 246, 204)])
+    TISSU = _rampe([(150, 112, 56), (204, 166, 98), (236, 210, 148), (250, 236, 196), (255, 250, 232)])
+
+    def put(x, y, c):
+        if 0 <= x < W and 0 <= y < H:
+            px[int(x), int(y)] = tuple(c[:3]) + (255,)
+
+    x0, x1 = (3, 12) if vue == 'cote' else (0, W - 1)
+    cx = (W - 1) / 2
+    haut, face = 9, 14                                # le dessus : rangées 9 à 13 ; la face : 14 à 20
+    for y in range(haut, face):                       # le dessus, plus clair au fond, le fil du bois
+        for x in range(x0, x1 + 1):
+            u = (x - x0) / max(1, x1 - x0)
+            put(x, y, _ton(BOIS, 0.86 - 0.14 * u + 0.05 * (face - y) / 5 + 0.03 * _bruit(x // 3, y, 11)))
+    for x in range(x0, x1 + 1):
+        put(x, face - 1, _ton(BOIS, 0.97 - 0.15 * (x - x0) / max(1, x1 - x0)))     # l'arête
+    for y in range(face, 21):                         # la face
+        for x in range(x0, x1 + 1):
+            u = (x - x0) / max(1, x1 - x0)
+            lum = 0.56 - 0.22 * u - 0.08 * (y - face) / 6 + 0.03 * _bruit(x // 2, y, 12)
+            if x == x0:
+                lum += 0.16
+            elif x == x1:
+                lum -= 0.12
+            if vue == 'dos' and (x - x0) % 4 == 3:
+                lum -= 0.14                           # les planches du dos
+            put(x, y, _ton(BOIS, lum))
+    if vue == 'face':                                 # le tiroir : sa moulure, son bouton de laiton
+        for x in range(x0 + 2, x1 - 1):
+            put(x, 15, _ton(BOIS, 0.30))
+            put(x, 19, _ton(BOIS, 0.68 - 0.2 * (x - x0) / W))
+        for y in range(15, 20):
+            put(x0 + 2, y, _ton(BOIS, 0.30))
+            put(x1 - 2, y, _ton(BOIS, 0.66))
+        put(round(cx), 17, _ton(LAITON, 0.95))
+        put(round(cx) + 1, 17, _ton(LAITON, 0.45))
+        put(round(cx), 18, _ton(LAITON, 0.35))
+    elif vue == 'cote':                               # le chant du tiroir, son bouton, à droite
+        for y in range(15, 20):
+            put(x1, y, _ton(BOIS, 0.70))
+        put(x1, 17, _ton(LAITON, 0.9))
+        for x in range(x0 + 1, x1):
+            put(x, 20, _ton(BOIS, 0.28))
+    for xp in (x0 + 1, x1 - 1):                       # les pieds tournés
+        put(xp, 21, _ton(BOIS, 0.45 if xp == x0 + 1 else 0.25))
+        put(xp + (1 if xp == x0 + 1 else -1), 21, _ton(BOIS, 0.30))
+    # la lampe : le pied de laiton bombé (sur le dessus), la tige, l'abat-jour
+    c = round(cx - 0.5)
+    for x in range(c - 1, c + 3):
+        put(x, 11, _ton(LAITON, 0.80 - 0.18 * (x - c + 1)))
+        put(x, 12, _ton(LAITON, 0.45 - 0.08 * (x - c + 1)))
+    for y in (9, 10):
+        put(c, y, _ton(LAITON, 0.85))
+        put(c + 1, y, _ton(LAITON, 0.45))
+    for y in range(LAMPE_Y - 3, LAMPE_Y + 4):         # l'abat-jour : un cône tronqué plissé
+        r = 2.4 + (y - (LAMPE_Y - 3)) * 0.55
+        for x in range(W):
+            d = x + 0.5 - (cx + 0.5)
+            if abs(d) > r:
+                continue
+            u = d / r
+            lum = 0.80 - 0.32 * u - 0.10 * u * u + (0.06 if (x % 2 == 0) else -0.04)   # les plis
+            if y == LAMPE_Y - 3:
+                lum = 0.95 - 0.3 * (u + 1) / 2        # le bord du haut
+            elif y == LAMPE_Y + 3:
+                lum = 0.40 - 0.15 * u                 # l'ourlet du bas
+            put(x, y, _ton(TISSU, lum))
+    for x in range(round(cx - 1), round(cx + 2)):     # l'intérieur, sombre, vu par le haut
+        put(x, LAMPE_Y - 3, _ton(TISSU, 0.25))
     outline(im)
     return im
+
+
+def chevet():
+    # table de chevet, de face (ses vues de dos et de profil : meubles_sens.py, avec chevet_vue)
+    return chevet_vue('face')
+
 
 def canape():
     # canapé vu de dessus à 45° : le haut du dossier, le dossier, les trois coussins de

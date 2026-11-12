@@ -305,6 +305,18 @@ const CULTURE_MONTE = 0;
       vitre: { rayon: 16, teinte: 0xffe2a8, alpha: 0.95, dx: 0, dy: -39 },
       halo: { couleur: 0xffb050, rayon: 22, intensite: 0.1, attenuation: 0.08 },
     },
+    // la lampe de la table de chevet (le meuble `dessin`, posé en bas ou à l'étage, de face, de dos ou de
+    // profil : chantier.js stepLanterns) : elle s'allume le soir avec les lanternes (le voile de l'heure plus
+    // sombre que `allume`) ; sa lumière, chaude, dans le voile : une flaque `sol` autour du meuble, la lueur
+    // de son abat-jour `abatJour` (son milieu : `dy` px au-dessus du bas de l'image, rangée LAMPE_Y de
+    // scripts/batiments/meubles.py, à la même place dans les trois vues), qui respire à peine ; un petit
+    // halo par-dessus (WebGL)
+    lampeChevet: {
+      dessin: 'chevet', allume: 0.12, respire: 0.04,
+      sol: { rayon: 38, aplati: 0.72, teinte: 0xffc878, alpha: 0.8, dx: 0, dy: -6 },
+      abatJour: { rayon: 10, teinte: 0xfff0c8, alpha: 0.95, dx: 0, dy: -17 },
+      halo: { couleur: 0xffc060, rayon: 16, intensite: 0.08, attenuation: 0.08 },
+    },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
     // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
     // murs `sortes` (`vitre` : `dy` px au-dessus du pied du mur) ; sur la face du mur du fond,
