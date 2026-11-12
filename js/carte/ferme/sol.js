@@ -21,6 +21,12 @@
   // ANNEAU cases autour (ce qui en déborde sur lui).
   const MORCEAU = 256, MORCEAUX_PAR_IMAGE = 2, ANNEAU = 2;
   const MORCEAUX_VERIFIES = 2;       // morceaux du sol vérifiés à chaque filet de sécurité (groundWiped)
+  // Le sol peint relu (lireSol : les traces de pas, les touffes au pied des murs) : chaque morceau est relu en
+  // entier, une fois, et gardé tant qu'il n'est pas repeint (m.lu) ; LUS morceaux gardés au plus (≈ 256 Ko
+  // chacun), les plus anciens oubliés. Sur un téléphone, chaque lecture rapatrie le canevas de la mémoire
+  // graphique et coûte des dizaines de ms, quelle que soit sa taille : relire un pixel à chaque pas, ou à
+  // chaque touffe refaite, faisait des images de 80 à 100 ms (docs/perf.md).
+  const LUS = 24;
   const { reducedMotion } = F;
 
   F.partie({
@@ -257,7 +263,7 @@
     dropMorceau(m) {
       if (m.img) m.img.destroy();
       if (m.tex) this.textures.remove(m.tex.key);
-      m.img = m.tex = null;
+      m.img = m.tex = m.lu = null;
     },
 
     // Les cases d'un morceau et l'anneau de ANNEAU cases autour (dans la région) : ce qui déborde d'une
@@ -281,6 +287,7 @@
     paintMorceau(r, m) {
       this.peindreSol(r, m.tex.getContext(), m.x, m.y, this.morceauCells(r, m), true);
       m.tex.refresh();
+      m.lu = null;                                    // (repeint : à relire)
       this.solPeint = (this.solPeint || 0) + 1;       // (les touffes d'herbe en lisent les couleurs : herbes.js)
       (this.solSale || (this.solSale = [])).push(m);  // (ce morceau-ci : seules les touffes qui le lisent sont refaites)
     },
@@ -300,12 +307,35 @@
       }
       // (les bords des régions se recouvrent d'une tuile : la même peinture, l'aire comptée deux fois)
       if (!morceaux.length || aire < w * h) return null;
-      if (morceaux.length === 1) return morceaux[0].tex.getContext().getImageData(x - morceaux[0].x, y - morceaux[0].y, w, h);
-      const cv = global.document.createElement('canvas');
-      cv.width = w; cv.height = h;
-      const ctx = cv.getContext('2d', { willReadFrequently: true });
-      for (const m of morceaux) ctx.drawImage(m.tex.getSourceImage(), m.x - x, m.y - y);
-      return ctx.getImageData(0, 0, w, h);
+      // (recopié depuis les morceaux relus : le rectangle, dans l'ordre des morceaux, comme le faisait drawImage)
+      const out = new Uint8ClampedArray(w * h * 4);
+      for (const m of morceaux) {
+        const lu = this.morceauLu(m);
+        if (!lu) return null;
+        const xa = Math.max(x, m.x), xb = Math.min(x + w, m.x + m.w), ya = Math.max(y, m.y), yb = Math.min(y + h, m.y + m.h);
+        for (let yy = ya; yy < yb; yy++) {
+          const de = ((yy - m.y) * m.w + (xa - m.x)) * 4;
+          out.set(lu.subarray(de, de + (xb - xa) * 4), ((yy - y) * w + (xa - x)) * 4);
+        }
+      }
+      return { data: out, width: w, height: h };
+    },
+
+    // Les pixels du morceau `m` (Uint8ClampedArray), relus une fois tant qu'il n'est pas repeint (LUS).
+    morceauLu(m) {
+      if (m.lu) return m.lu;
+      let d;
+      try { d = m.tex.getContext().getImageData(0, 0, m.w, m.h).data; } catch (e) { return null; }
+      return this.garderLu(m, d);
+    },
+    garderLu(m, d) {
+      const L = this.morceauxLus || (this.morceauxLus = []);
+      const k = L.indexOf(m);
+      if (k >= 0) L.splice(k, 1);
+      L.push(m);
+      while (L.length > LUS) { const v = L.shift(); if (v !== m) v.lu = null; }
+      m.lu = d;
+      return d;
     },
 
     // La part de la vue entièrement dessinée, de 0 à 1 (l'écran de chargement, jeu.html : il
@@ -344,6 +374,7 @@
         if (!cells.length) continue;
         this.peindreSol(r, m.tex.getContext(), m.x, m.y, cells, false);
         m.tex.refresh();
+        m.lu = null;
         this.solPeint = (this.solPeint || 0) + 1;
         (this.solSale || (this.solSale = [])).push(m);
       }
@@ -476,7 +507,12 @@
         try {
           const ctx = m.tex.getContext();
           if (ctx.isContextLost && ctx.isContextLost()) return false;   // pas encore rendu : on réessaiera
-          return [[0, 0], [m.w >> 1, m.h >> 1], [m.w - 1, m.h - 1]].some((p) => ctx.getImageData(p[0], p[1], 1, 1).data[3] === 0);
+          // (une seule lecture du morceau entier, au lieu d'une par point : sur un téléphone, chacune rapatrie
+          // le canevas ; et ce qu'elle lit sert de copie à lireSol, s'il n'est pas vidé)
+          const d = ctx.getImageData(0, 0, m.w, m.h).data;
+          const vide = [[0, 0], [m.w >> 1, m.h >> 1], [m.w - 1, m.h - 1]].some((p) => d[(p[1] * m.w + p[0]) * 4 + 3] === 0);
+          if (!vide) this.garderLu(m, d);
+          return vide;
         } catch (e) {
           return false;
         }

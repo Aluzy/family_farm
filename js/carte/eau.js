@@ -938,6 +938,8 @@ void main() {
         avant.x = q.x; avant.y = q.y;
         this.eauPas.set(q.id, avant);
         if (!bouge || avant.t > 0) continue;
+        // (loin de toute étendue d'eau : rien à chercher ; avant, chaque pas cherchait l'eau case par case)
+        if (!this.eauVive.some((e) => q.x >= e.a.x - R.rive - 4 && q.y >= e.a.y - R.rive && q.x < e.a.x + e.a.tex.width + R.rive + 4 && q.y < e.a.y + e.a.tex.height + 2)) continue;
         // (l'eau la plus proche de ses pieds, à `rive` px au plus)
         let best = null;
         for (let dy = -2; dy <= R.rive && !best; dy++) {
