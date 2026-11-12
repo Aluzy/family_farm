@@ -14,7 +14,10 @@
 // Options : --nuits N (80), --graine N (1), --strategie applique|minimal|toutes,
 //           --csv fichier (simulation.csv), --svg fichier (simulation-bonheur.svg),
 //           --racine dossier/du/jeu (une autre copie du dépôt), --lissage N (nuits de la moyenne mobile).
-// Code de sortie : 0 si toutes les vérifications sont OK, 1 sinon.
+// Code de sortie : 0 si toutes les vérifications sont OK, 1 sinon ; « l'argent qui s'empile » n'est qu'un
+// constat (fiche I0b) : son échec est dit, sans changer le code de sortie.
+// Le CSV porte aussi les comptes de chaque nuit, par poste (gain_*, depense_* : fiche I0b) ; la fin de la
+// sortie les résume (le revenu moyen par jour par tranche de nuits, les premiers postes).
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -29,7 +32,7 @@ function option(name, fallback) {
   return i >= 0 && i + 1 < args.length ? args[i + 1] : fallback;
 }
 if (args.includes('--aide') || args.includes('--help')) {
-  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 20).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 24).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
   process.exit(0);
 }
 
@@ -64,12 +67,21 @@ for (const id of ids) parties[id] = E.simulateGame(id, nuits, graine);
 
 /* ---------- CSV ---------- */
 
-const entete = ['strategie', 'nuit', 'chapitre', 'energie', 'bonheur', 'niveau', 'pieces', 'conserves', 'couverture_pct', 'tuiles'];
+// I0b : les comptes de chaque nuit, par poste (bot.js posteSimulation) : les pièces gagnées (gain_*) et
+// dépensées (depense_*) dans la journée, leurs totaux, et les matériaux bruts fournis au joueur simulé.
+const GAINS = ['vente_cultures', 'vente_plats', 'vente_produits', 'vente_autres', 'courrier', 'objectifs_du_jour'];
+const DEPENSES = ['graines', 'arbres', 'achats_hameaux', 'achats_autres', 'commandes', 'appareils', 'technologies', 'batiments', 'entretien'];
+const autres = (o, connus) => Object.entries(o).filter(([k]) => !connus.includes(k)).reduce((t, [, v]) => t + v, 0);
+const somme = (o) => Object.values(o).reduce((t, v) => t + v, 0);
+const entete = ['strategie', 'nuit', 'chapitre', 'energie', 'bonheur', 'niveau', 'pieces', 'conserves', 'couverture_pct', 'tuiles',
+  ...GAINS.map((k) => 'gain_' + k), 'gain_autres', 'gains_total', ...DEPENSES.map((k) => 'depense_' + k), 'depense_autres', 'depenses_total', 'materiaux_fournis'];
 const num = (x, d = 2) => String(Math.round(x * 10 ** d) / 10 ** d);
 const lignes = [entete.join(',')];
 for (const id of ids) {
   for (const r of parties[id]) {
-    lignes.push([id, r.nuit, r.chapitre, r.energie, num(r.bonheur), r.niveau, num(r.pieces), r.conserves, num(r.couverture * 100), r.tuiles].join(','));
+    lignes.push([id, r.nuit, r.chapitre, r.energie, num(r.bonheur), r.niveau, num(r.pieces), r.conserves, num(r.couverture * 100), r.tuiles,
+      ...GAINS.map((k) => num(r.gains[k] || 0)), num(autres(r.gains, GAINS)), num(somme(r.gains)),
+      ...DEPENSES.map((k) => num(r.depenses[k] || 0)), num(autres(r.depenses, DEPENSES)), num(somme(r.depenses)), somme(r.fournis)].join(','));
   }
 }
 const csvPath = resolve(option('csv', 'simulation.csv'));
@@ -134,12 +146,13 @@ for (const id of ids) {
 /* ---------- vérifications (joueur appliqué) ---------- */
 
 const resultats = [];
-function verifie(nom, ok, detail) {
-  resultats.push({ nom, ok });
-  console.log(`${ok ? '[OK]    ' : '[ÉCHEC] '}${nom}\n          ${detail}`);
+// `constat` : une vérification qui ne fait que constater (son échec ne change pas le code de sortie).
+function verifie(nom, ok, detail, { constat = false } = {}) {
+  resultats.push({ nom, ok, constat });
+  console.log(`${ok ? '[OK]     ' : constat ? '[CONSTAT]' : '[ÉCHEC]  '} ${nom}\n          ${detail}`);
 }
 
-console.log('\n== Vérifications (joueur appliqué, sections 8.10 et 8.11) ==');
+console.log('\n== Vérifications (joueur appliqué, sections 8.10 et 8.11, fiche I0b) ==');
 if (!parties.applique) {
   console.log('Stratégie « applique » non jouée : vérifications ignorées.');
 } else {
@@ -171,9 +184,55 @@ if (!parties.applique) {
     !!r30 && !!r30.depannage && r30.depannage.possible,
     r30 && r30.depannage ? `Nuit ${D.nuit} : prochaine unité à ${num(r30.depannage.prix)} 💰, le joueur avait de quoi l'acheter : ${r30.depannage.possible ? 'oui' : 'non'} (pièces au réveil : ${num(r30.pieces)}).` : 'Pas de donnée.',
   );
+
+  // 4. I0b : le chapitre 7 atteint avant la nuit N (SIMULATION.VERIFS.CHAPITRE_7_AVANT)
+  const N = S.VERIFS.CHAPITRE_7_AVANT;
+  const ch7 = rows.find((r) => r.chapitre >= 7);
+  verifie(
+    `Chapitre 7 atteint avant la nuit ${N}`,
+    !!ch7 && ch7.nuit < N,
+    ch7 ? `Chapitre 7 en cours dès la nuit ${ch7.nuit}.` : `Chapitre ${rows[rows.length - 1].chapitre} à la dernière nuit (${rows[rows.length - 1].nuit}).`,
+  );
+
+  // 5. I0b : l'argent qui s'empile (un constat : n'entraîne pas de code de sortie non nul) : les pièces en
+  // caisse à la dernière nuit, sous M fois la dépense des 20 dernières nuits (SIMULATION.VERIFS)
+  const M = S.VERIFS.CAISSE_FOIS_DEPENSE, K = S.VERIFS.NUITS_DEPENSE;
+  const fin = rows[rows.length - 1], depense = rows.slice(-K).reduce((t, r) => t + somme(r.depenses), 0);
+  verifie(
+    `Pièces en caisse à la nuit ${fin.nuit} sous ${M} fois la dépense des ${K} dernières nuits (l'argent qui s'empile)`,
+    fin.pieces < M * depense,
+    `En caisse : ${num(fin.pieces, 0)} 💰 ; dépensé sur les nuits ${rows[Math.max(0, rows.length - K)].nuit} à ${fin.nuit} : ${num(depense, 0)} 💰 (seuil : ${num(M * depense, 0)}).`,
+    { constat: true },
+  );
 }
 
-const echecs = resultats.filter((r) => !r.ok).length;
-console.log(`\nRapport : ${resultats.length - echecs} OK, ${echecs} ÉCHEC sur ${resultats.length} vérifications.`);
+/* ---------- résumé : le revenu par tranche de nuits, les postes ---------- */
+
+console.log('\n== Résumé des comptes ==');
+const T = S.VERIFS.NUITS_DEPENSE;
+for (const id of ids) {
+  const rows = parties[id];
+  console.log(`${S.STRATEGIES[id].nom} : revenu moyen par jour (gagné − dépensé = net), par tranche de ${T} nuits`);
+  for (let k = 0; k < rows.length; k += T) {
+    const t = rows.slice(k, k + T), g = t.reduce((a, r) => a + somme(r.gains), 0) / t.length, d = t.reduce((a, r) => a + somme(r.depenses), 0) / t.length;
+    console.log(`  nuits ${pad(t[0].nuit, 2)} à ${pad(t[t.length - 1].nuit, 2)} : ${pad(num(g, 0), 5)} − ${pad(num(d, 0), 5)} = ${pad(num(g - d, 0), 5)} 💰/jour`);
+  }
+  const cumul = (cle) => {
+    const o = {};
+    for (const r of rows) for (const [p, v] of Object.entries(r[cle])) o[p] = (o[p] || 0) + v;
+    const total = somme(o);
+    return Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([p, v]) => `${p} ${num(v, 0)} (${total ? Math.round((v * 100) / total) : 0} %)`).join(', ') || 'aucun';
+  };
+  console.log(`  premiers postes de gain : ${cumul('gains')}`);
+  console.log(`  premiers postes de dépense : ${cumul('depenses')}`);
+  const fournis = {};
+  for (const r of rows) for (const [p, v] of Object.entries(r.fournis)) fournis[p] = (fournis[p] || 0) + v;
+  console.log(`  matériaux bruts fournis (hors ce que la ferme offre) : ${Object.entries(fournis).sort((a, b) => b[1] - a[1]).map(([p, v]) => `${p} ${v}`).join(', ') || 'aucun'}`);
+}
+
+const echecs = resultats.filter((r) => !r.ok && !r.constat).length;
+const constats = resultats.filter((r) => !r.ok && r.constat);
+console.log(`\nRapport : ${resultats.filter((r) => r.ok).length} OK, ${echecs} ÉCHEC, ${constats.length} constat(s) sur ${resultats.length} vérifications.`);
+for (const c of constats) console.log(`Constat (n'entraîne pas d'échec) : ${c.nom} : non.`);
 console.log(`CSV : ${csvPath}\nGraphique : ${svgPath}`);
 process.exit(echecs ? 1 : 0);

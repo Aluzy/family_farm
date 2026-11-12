@@ -66,13 +66,17 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 - **Un villageois rapporterait 2 à 7 fois ce qu'il mange** aux prix actuels (bétail ≈ 48 pièces par
   jour, mine ≈ 36, bois ≈ 32, pêche ≈ 32, cueillette ≈ 15, contre 7 à 11 de nourriture).
 - **Le joueur automatique est périmé** : `node scripts/simulate.mjs` reste au chapitre 3, 71 nuits
-  sans repas sur 80, une vérification en échec.
+  sans repas sur 80, une vérification en échec. *Remis d'aplomb par I0b* : la famille mange toutes les
+  nuits, le chapitre 7 est atteint vers la nuit 42 (graine 1) ; et la simulation mesure maintenant
+  **l'argent qui s'empile** : vers 22 000 pièces en caisse à la nuit 80, aucune dépense sur les 20
+  dernières nuits, plus de 90 % des gains venant de la vente des cultures à la calèche (le constat de
+  `simulate.mjs`, ses comptes par poste dans `simulation.csv`).
 
 ## Les lots
 
 | Lot | Fiches | Ce qu'il apporte |
 |---|---|---|
-| 0. Le socle | I0a (fait), I0b | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
+| 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
 | 1. Le port | I1a, I1b, I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 | Le chemin de la ferme au port, modifiable ; porter la marchandise |
 | 3. Les villageois | I3a à I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |

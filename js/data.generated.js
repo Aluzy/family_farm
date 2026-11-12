@@ -5076,6 +5076,39 @@ export const RAW_DATA = {
     "FAIM_JOUR": 10,
     "LISSAGE": 7,
     "STRATEGIES": { "applique": { "nom": "Joueur appliqué", "eveilS": 60 }, "minimal": { "nom": "Joueur minimal", "eveilS": 30 } },
+    "BRUTS": [
+      "bois",
+      "pierre",
+      "fibre",
+      "minerai_fer",
+      "minerai_cuivre",
+      "minerai_or",
+      "minerai_platine",
+      "quartz",
+      "lingot_fer",
+      "lingot_cuivre",
+      "lingot_or",
+      "champignon_lumineux"
+    ],
+    "MATERIAUX_GARDES": 40,
+    "VIVRES_GARDES": 10,
+    "SEMENCES_GARDEES": 6,
+    "BATIR": {
+      "foyer": { "paillasse": 4 },
+      "puits": { "puits_pierre": 1 },
+      "boite": { "boite_nourriture": 1 },
+      "four": { "four_pierre": 1 },
+      "cuisine": { "cuisiniere": 1 },
+      "moulin": { "meule": 1 },
+      "poulailler": { "nichoir": 1 },
+      "etable": { "mangeoire": 1 },
+      "serre": { "bac_semis": 1 },
+      "silo": { "bloc_silo": 6 },
+      "panneau": { "panneau_solaire": 1 },
+      "batterie": { "batterie": 1 },
+      "pompe": { "pompe": 1 },
+      "reservoir": { "citerne": 1 }
+    },
     "CAISSE": 20,
     "CONSERVES_GARDEES": 96,
     "PRIX_GRAINE_MAX": 4,
@@ -5100,13 +5133,7 @@ export const RAW_DATA = {
     "MARGE_ENERGIE": 150,
     "MARGE_BATTERIE": 70,
     "PRIORITE": {
-      "1": [
-        { "type": "maison" },
-        { "type": "achat", "id": "panneau" },
-        { "type": "achat", "id": "pompe" },
-        { "type": "achat", "id": "reservoir" },
-        { "type": "houe" }
-      ],
+      "1": [{ "type": "maison" }, { "type": "houe" }],
       "2": [{ "type": "houe" }, { "type": "silo", "niveau": 2 }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
       "4": [{ "type": "station", "id": "four" }, { "type": "station", "id": "moulin" }, { "type": "station", "id": "cuisine" }],
@@ -5116,6 +5143,9 @@ export const RAW_DATA = {
     },
     "PLAN": [
       { "type": "houe" },
+      { "type": "achat", "id": "panneau" },
+      { "type": "achat", "id": "pompe" },
+      { "type": "achat", "id": "reservoir" },
       { "type": "achat", "id": "batterie" },
       { "type": "poulailler", "niveau": 1 },
       { "type": "silo", "niveau": 1 },
@@ -5156,6 +5186,7 @@ export const RAW_DATA = {
       { "type": "moutons", "n": 10 },
       { "type": "arbres", "n": 12 }
     ],
+    "VERIFS": { "CHAPITRE_7_AVANT": 60, "CAISSE_FOIS_DEPENSE": 2, "NUITS_DEPENSE": 20 },
     "DEPANNAGE": { "item": "carotte", "nuit": 30 }
   },
   "TERRAIN": {
