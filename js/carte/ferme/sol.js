@@ -252,7 +252,12 @@
       // en cours — fiche 9a)
       this.solN = (this.solN || 0) + 1;
       const key = 'sol_' + r.rx + '_' + r.ry + '_' + this.solN;
-      m.tex = this.textures.createCanvas(key, m.w, m.h);
+      // (un pixel de plus à droite et en bas, peint comme le morceau voisin (l'anneau de ses cases) : les deux
+      // images se chevauchent d'un pixel de carte. Bord à bord, au zoom non entier d'un téléphone, le calcul de
+      // la carte graphique laissait parfois une fente d'un pixel d'écran entre elles, une ligne claire ou
+      // sombre à travers toute la vue. Au bord de la région, rien : la région voisine la recouvre d'une case.)
+      const ew = m.x + m.w < r.x + r.w ? 1 : 0, eh = m.y + m.h < r.y + r.h ? 1 : 0;
+      m.tex = this.textures.createCanvas(key, m.w + ew, m.h + eh);
       m.img = this.add.image(m.x, m.y, key).setOrigin(0).setDepth(0);
       // (canevas rendu vide par le navigateur : on le redessine)
       const c = m.tex.getSourceImage();

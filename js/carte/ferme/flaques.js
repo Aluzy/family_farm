@@ -57,6 +57,66 @@
 
   F.partie({
 
+    // Le sol mouillé des étendues d'eau animées (les étangs de la ferme, les blocs d'eau du monde : sol.js, eau-monde.js).
+    // Leur image (ou leur eau vivante) est au-dessus du voile du sol mouillé ; elle porte aussi le sable, les
+    // galets ou l'herbe de leur rive, qui restaient clairs sous la pluie. Chacune près de la vue reçoit un voile
+    // sur ses pixels de terre seulement (l'eau, elle, ne fonce pas) : fait une fois par étendue (sa terre : la rive
+    // de l'eau vivante, eau.js eauRive, ou à défaut ce qui n'est pas une eau franchement bleue ou blanc bleuté),
+    // au-dessus d'elle.
+    mouilleRives(alpha, v) {
+      const faits = this.mouilleFaits || (this.mouilleFaits = new Map());
+      const vus = new Set();
+      if (alpha > 0) {
+        for (const a of this.animAreas || []) {
+          if (!a.tex || !a.sprite || a.x > v.right || a.y > v.bottom || a.x + a.tex.width < v.x || a.y + a.tex.height < v.y) continue;
+          const vive = this.eauVive && this.eauVive.find((e) => e.a === a && e.eauPx);
+          if (!a.sprite.visible && !vive) continue;
+          let f = faits.get(a);
+          // (refait si l'étendue a une autre texture, ou si son eau vivante est arrivée depuis)
+          if (f && (f.tex !== a.tex || (vive && !f.vive))) { f.img.destroy(); this.textures.remove(f.key); f = null; }
+          if (!f) { f = this.voileRive(a, vive); if (!f) continue; faits.set(a, f); }
+          f.img.setAlpha(alpha).setVisible(true);
+          vus.add(a);
+        }
+      }
+      for (const [a, f] of faits) {
+        if (vus.has(a)) continue;
+        // (loin de la vue ou au sec : caché ; l'étendue partie : défait)
+        if (!a.tex || f.tex !== a.tex) { f.img.destroy(); this.textures.remove(f.key); faits.delete(a); } else f.img.setVisible(false);
+      }
+    },
+
+    // Le voile de la rive de l'étendue `a` : ses pixels de terre, de la couleur du sol mouillé.
+    voileRive(a, vive) {
+      const w = a.tex.width, h = a.tex.height;
+      // (l'eau vivante dessine sa rive elle-même, d'après son image de terre (eau.js eauRive : v.rive) ; sans
+      // elle, l'image de l'étendue, où l'on reconnaît l'eau à sa couleur)
+      const rive = vive && vive.rive && vive.rive.getContext ? vive.rive : null;
+      let d;
+      try { d = (rive || a.tex).getContext().getImageData(0, 0, w, h).data; } catch (e) { return null; }
+      this.mouilleN = (this.mouilleN || 0) + 1;
+      const key = 'mouille_rive_' + this.mouilleN;
+      const cv = this.textures.createCanvas(key, w, h), g = cv.getContext(), im = g.createImageData(w, h), o = im.data;
+      const c = FLAQUES.MOUILLE.couleur, cr = (c >> 16) & 255, cg = (c >> 8) & 255, cb = c & 255;
+      let n = 0;
+      for (let p = 0; p < w * h; p++) {
+        const k = p * 4;
+        if (!d[k + 3]) continue;
+        let eau;
+        if (rive) eau = false;
+        else if (vive) eau = !!vive.eauPx[p];
+        else { const r = d[k], gg = d[k + 1], b = d[k + 2]; eau = (b >= r + 40 && b >= gg) || (Math.min(r, gg, b) >= 190 && b >= r && b >= gg - 8); }
+        if (eau) continue;
+        o[k] = cr; o[k + 1] = cg; o[k + 2] = cb; o[k + 3] = 255;
+        n++;
+      }
+      g.putImageData(im, 0, 0);
+      cv.refresh();
+      const img = this.add.image(a.x, a.y, key).setOrigin(0).setDepth(a.sprite.depth + 0.001).setVisible(false);
+      img.toujours = true;
+      return { key, img, tex: a.tex, vive: !!vive, n };
+    },
+
     // À chaque image : la pluie depuis quand, le sol mouillé, les flaques, leurs ronds.
     stepFlaques(time, dt) {
       const m = this.ctx.lastModel && this.ctx.lastModel.meteo, pleut = !!(m && m.pluie);
@@ -71,6 +131,7 @@
         if (!E.sol) { E.sol = this.add.rectangle(0, 0, 10, 10, FLAQUES.MOUILLE.couleur, 1).setOrigin(0, 0).setDepth(FLAQUES.PROFONDEUR_SOL); E.sol.toujours = true; }
         E.sol.setPosition(v.x, v.y).setSize(v.width, v.height).setAlpha(FLAQUES.MOUILLE.alpha * E.mouille).setVisible(true);
       } else if (E.sol) E.sol.setVisible(false);
+      this.mouilleRives(E.mouille > 0.001 ? FLAQUES.MOUILLE.alpha * E.mouille : 0, v);
       if (E.niveau <= 0.001) {
         for (const im of E.images.values()) im.setVisible(false);
         if (E.ronds) E.ronds.setVisible(false);
