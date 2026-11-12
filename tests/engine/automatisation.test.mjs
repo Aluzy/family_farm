@@ -224,6 +224,24 @@ test('automatisations : les 10 nouvelles cultures suivent les mêmes règles que
   assertEqual(findPlot(t, 'potager-3').arrose, true);
 });
 
+test('Serre : ses bacs arrosés par son irrigation sont notés (state.irrigation.serre) : le personnage n\'ira pas refaire le geste', () => {
+  const s = garden();
+  s.pieces = 5000;
+  testBatir(reach(s, 'serre'), 'serre');
+  s.serre.niveau = DATA.NIVEAU_MAX;
+  const p = findPlot(s, 'serre-1');
+  if (!Number.isInteger(p.case)) p.case = 4242;      // (une case de la carte, comme sur la ferme générée)
+  addItem(s, 'cacao', 1);
+  assert(plant(s, 'serre-1', 'cacao').ok);
+  grantTech(s, 'ea_irrigation');
+  grantTech(s, 'ea_serre');
+  s.awakeMs = awakeMsAtHour(DATA.TEMPS.ARROSAGE_HEURE);
+  const r = irrigate(s);
+  assert(r && r.arrosees === 1 && findPlot(s, 'serre-1').arrose, 'le bac est arrosé');
+  assertEqual(s.irrigation.serre, [p.case], 'noté pour la carte (js/ui/stage.js autoDone : « arroser:<case> »)');
+  assertEqual(s.irrigation.cases, [], 'pas d\'asperseur du potager pour lui');
+});
+
 test('Serre : automatisée seulement par ses nœuds (Irrigation de la Serre, Serre autonome)', () => {
   const s = garden();
   s.pieces = 5000;
