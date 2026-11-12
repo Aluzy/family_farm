@@ -17,7 +17,7 @@ const VOULUES = args.filter((a) => !a.startsWith('--') && !a.includes('/'));
 const L = BROUILLON ? 960 : 1920, H = BROUILLON ? 540 : 1080, UNE_SUR = BROUILLON ? 3 : 1;
 const veut = (nom) => !VOULUES.length || VOULUES.includes(nom);
 
-const CACHE = '#player-card,#hud,#sleep-fab,#tool-bar,#side-menu,#toast-root,#god-bar,#amis-bouton,#en-ligne-bandeau,#objectifs-root,#didacticiel-root,#tuto-root,#modal-root,#window-root,.consent-banner,.stage-hud,.stage-nav,.stage-label,.stage-bubble,.stage-tip,.boussole,.caleche-heler{display:none!important} #farm-stage{top:0!important;bottom:0!important}';
+const CACHE = '#player-card,#hud,#sleep-fab,#tool-bar,#side-menu,#toast-root,#god-bar,#amis-bouton,#en-ligne-bandeau,#objectifs-root,#didacticiel-root,#tuto-root,#modal-root,#window-root,.consent-banner,.stage-hud,.stage-nav,.stage-label,.stage-bubble,.stage-tip,.stage-robot,.boussole,.caleche-heler{display:none!important} #farm-stage{top:0!important;bottom:0!important}';
 
 // Dans la page : la trousse du tournage (window.TR).
 function trousse() {
@@ -75,6 +75,7 @@ async function ouvre(sauve, opts = {}) {
 }
 
 const Z3 = 3 * (H / 1080), Z4 = 4 * (H / 1080), Z5 = 5 * (H / 1080);   // 3, 4 ou 5 pixels d'écran par pixel du jeu en 1080p
+const pose = async (pl, p, s = 1.5) => { await pl.passer(0.4); await p.waitForTimeout(2500); await pl.passer(s); };
 async function film(pl, p, nom, s, chaque) {
   console.log(`  ● ${nom} (${s} s)`);
   const t0 = await p.evaluate(() => Date.now());
@@ -136,7 +137,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
       TR.va(a.x - 40, a.y + 4);
       window.__arbre = a.t;
     });
-    await pl.passer(1.5);
+    await pose(pl, p);
     await p.evaluate(() => { TR.outil('hache'); });
     await pl.passer(0.3);
     await p.evaluate(() => { const sc = FarmStage.scene(); for (let i = 0; i < 3; i++) sc.chop(window.__arbre); });
@@ -156,11 +157,11 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
       TR.va(a.x - 36, a.y + 2);
       window.__roc = a.r;
     });
-    await pl.passer(1.5);
+    await pose(pl, p);
     await p.evaluate(() => TR.outil('pioche'));
     await pl.passer(0.3);
     await p.evaluate(() => { const sc = FarmStage.scene(); for (let i = 0; i < 3; i++) sc.mine(window.__roc); });
-    await film(pl, p, 'pioche', 6);
+    await film(pl, p, 'pioche', 8);
     await p.evaluate(() => TR.outil('pioche'));
     await pl.passer(0.5);
   }
@@ -180,7 +181,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
       window.__eau = { w, x: rang[0] + 8 + 32, y: y + 8 };
       TR.va(rang[0] - 40, y + 12);
     });
-    await pl.passer(1.5);
+    await pose(pl, p);
     await p.evaluate(() => TR.outil('canne'));
     await pl.passer(0.3);
     await p.evaluate(() => { const sc = FarmStage.scene(), e = window.__eau; sc.goFish(e.w, e.x, e.y); });
@@ -199,7 +200,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
       return { k, recettes: Object.keys(R).slice(0, 22), inv: Object.keys(FF.state.inventaire).filter((x) => /oeuf|huile|farine|tomate|carotte|courgette|patate|lait|pomme|fraise/.test(x)).map((x) => [x, TR.E().countItem(FF.state, x)]) };
     });
     console.log('  cuisine', JSON.stringify(c));
-    await pl.passer(2);
+    await pose(pl, p, 2);
     await p.evaluate((k) => FarmStage.scene().fermier.goTo(k.x, k.y + 18), c.k);
     await film(pl, p, 'cuisine', 6, async (i) => {
       if (i === 45) await p.evaluate(() => { for (const r of ['omelette', 'ratatouille', 'soupe_legumes', 'salade_tomates', 'gratin_patates', 'compote']) { TR.act('start-recipe', { recipe: r, n: '1' }); if (FarmStage.scene().ctx.lastModel.cuisineAllumee) break; } FF.render(); window.__cuit = !!FarmStage.scene().ctx.lastModel.cuisineAllumee; });
@@ -224,7 +225,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
       const pl = T.places[T.places.length - 1];
       const siege = [...sc.blocks.values()].filter((e) => SIEGES.has(e.sorte)).map((e) => ({ e, d: Math.hypot((e.case % sc.grid.cols) * 16 + 8 - pl.x, Math.floor(e.case / sc.grid.cols) * 16 + 12 - pl.y) })).sort((a, b) => a.d - b.d)[0];
       TR.va(pl.pied ? pl.pied.x : T.x, pl.pied ? pl.pied.y : T.y + 30);
-      TR.libre(T.x, T.y - 6);
+      TR.libre(T.x, T.y - 44);
       if (siege && siege.d < 20) sc.asseoirSur(siege.e);
       TR.voile({ invites: window.__inv });
       return { x: T.x, y: T.y, n: T.places.length, terrasse: T.terrasse, P: Object.keys(P) };
@@ -232,8 +233,8 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
     console.log('  table', JSON.stringify(t));
     if (t) {
       await pl.passer(3);
-      await film(pl, p, 'repas_arrivee', 8);
-      await pl.passer(14);
+      await film(pl, p, 'repas_arrivee', 9);
+      await pl.passer(13);
       await p.evaluate(() => { TR.voile({ invites: { ...window.__inv, etat: 'servie' } }); });
       await pl.passer(1);
       await film(pl, p, 'repas', 6);
@@ -245,7 +246,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
   // un panoramique lent sur la ferme : `de` et `vers` en cases, l'heure, le zoom
   const pano = async (nom, h, de, vers, s) => {
     await p.evaluate(([h, de, Z]) => { TR.heure(h); TR.zoom(Z); TR.va(de[0] * 16, (de[1] + 14) * 16); TR.libre(de[0] * 16, de[1] * 16); }, [h, de, Z3]);
-    await pl.passer(2);
+    await pose(pl, p, 2);
     await film(pl, p, nom, s, async (i, n) => { const k = i / (n - 1); await p.evaluate(([x, y]) => FarmStage.scene().setCentre(Math.round(x), Math.round(y)), [(de[0] + (vers[0] - de[0]) * k) * 16, (de[1] + (vers[1] - de[1]) * k) * 16]); });
     await p.evaluate((Z) => { TR.suivre(); TR.zoom(Z); }, Z5);
   };
@@ -255,7 +256,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
   }
   if (veut('fin')) {
     const k = await p.evaluate(() => TR.blocs('cuisiniere')[0]);
-    await pano('fin', 20.6, [k.c - 8, k.r + 2], [k.c - 4, k.r + 1], 4);
+    await pano('fin', 20.6, [k.c + 4, k.r + 10], [k.c - 2, k.r + 11], 4);
   }
 
   if (veut('balade')) {
@@ -321,7 +322,7 @@ if (['ensemble', 'rencontre'].some((n) => VOULUES.includes(n)) || !VOULUES.lengt
     await pa.evaluate(([x, y]) => TR.va(x, y), xy(rangs.houe[0], -20, 0));
     await pb.evaluate(([x, y]) => TR.va(x, y), xy(rangs.eau[rangs.eau.length - 1], 20, 0));
     await pc.evaluate(([x, y]) => TR.va(x, y), xy(rangs.recolte[0], -20, 0));
-    await pl.passer(2.5);
+    await pose(pl, pa, 2.5);
     const ids = await pa.evaluate((R) => { const P = TR.parcelles(), de = (L) => L.map((t) => (P.find((q) => q.case === t) || {}).id); return { eau: de(R.eau), recolte: de(R.recolte) }; }, rangs);
     await film(pl, pa, 'ensemble', 13, async (i) => {
       if (i === 15) await pa.evaluate((R) => { for (const t of R.houe) TR.act('hoe', { case: String(t) }); }, rangs);
@@ -339,7 +340,7 @@ if (['ensemble', 'rencontre'].some((n) => VOULUES.includes(n)) || !VOULUES.lengt
     await pa.evaluate((m) => TR.va(m.x - 110, m.y), m);
     await pb.evaluate((m) => TR.va(m.x + 120, m.y - 4), m);
     await pc.evaluate((m) => TR.va(m.x + 150, m.y + 12), m);
-    await pl.passer(2.5);
+    await pose(pl, pa, 2.5);
     await film(pl, pa, 'rencontre', 6, async (i) => {
       if (i === 5) { await pa.evaluate((m) => FarmStage.scene().fermier.goTo(m.x - 12, m.y), m); await pb.evaluate((m) => FarmStage.scene().fermier.goTo(m.x + 14, m.y - 2), m); await pc.evaluate((m) => FarmStage.scene().fermier.goTo(m.x + 30, m.y + 12), m); }
     });
