@@ -58,14 +58,46 @@ FEUILLES = {
 FLEUR_MAGNOLIA = rampe([(120, 70, 110), (190, 120, 160), (234, 186, 206), (252, 232, 236), (255, 252, 250)], 120)
 COEUR_MAGNOLIA = rampe([(110, 40, 90), (170, 70, 130), (214, 120, 170)], 60)
 
-# la forme de chaque couronne : (le milieu x, le milieu y, le rayon x, le rayon y, le nombre de touffes, leur rayon)
-COURONNES = {
-    'cerisier_japon': (CX, 24, 22, 15, 46, (4.0, 6.4)),
-    'erable_rouge': (CX, 23, 19, 18, 42, (4.2, 6.4)),
-    'magnolia': (CX, 23, 18, 16, 38, (4.0, 6.2)),
-    'saule_pleureur': (CX, 18, 20, 13, 26, (4.0, 6.0)),
+# les houppes : pour chaque espèce, plusieurs formes (FORMES[espèce][forme]) ; une forme est un ensemble de masses
+# (le milieu x, le milieu y, le rayon x, le rayon y, le nombre de touffes, leur rayon) et `pied`, le haut du tronc
+# visible (là où la couronne le cache)
+FORMES = {
+    'cerisier_japon': {
+        'parasol': {'pied': 40, 'masses': [(CX, 21, 22, 11, 36, (4.0, 6.4)), (CX, 28, 17, 7, 12, (3.6, 5.4))]},
+        'nuages': {'pied': 42, 'masses': [(CX - 11, 31, 10, 6, 12, (3.6, 5.4)), (CX + 11, 26, 10, 6, 12, (3.6, 5.4)),
+                                          (CX - 2, 16, 12, 7, 14, (3.8, 5.8)), (CX + 3, 7, 7, 4.5, 7, (3.4, 5.0))]},
+        'penche': {'pied': 40, 'masses': [(CX + 4, 21, 19, 15, 38, (4.0, 6.4)), (CX - 14, 30, 8, 6, 9, (3.4, 5.0))]},
+    },
+    'erable_rouge': {
+        'rond': {'pied': 40, 'masses': [(CX, 23, 19, 18, 42, (4.2, 6.4))]},
+        'colonne': {'pied': 43, 'masses': [(CX, 22, 12, 21, 38, (4.0, 6.0))]},
+        'coeur': {'pied': 40, 'masses': [(CX - 8, 20, 12, 14, 22, (4.0, 6.2)), (CX + 8, 20, 12, 14, 22, (4.0, 6.2)),
+                                         (CX, 30, 15, 8, 12, (3.8, 5.6))]},
+    },
+    'magnolia': {
+        'rond': {'pied': 39, 'masses': [(CX, 23, 18, 16, 38, (4.0, 6.2))]},
+        'coupe': {'pied': 40, 'masses': [(CX, 15, 21, 10, 30, (4.0, 6.0)), (CX, 29, 11, 8, 10, (3.6, 5.4))]},
+        'cone': {'pied': 42, 'masses': [(CX, 9, 7, 7, 8, (3.4, 5.0)), (CX, 20, 12, 9, 16, (3.8, 5.6)),
+                                        (CX, 32, 17, 9, 22, (4.0, 6.0))]},
+    },
+    'saule_pleureur': {
+        'dome': {'pied': 34, 'masses': [(CX, 18, 20, 13, 26, (4.0, 6.0))]},
+        'fontaine': {'pied': 34, 'masses': [(CX, 15, 13, 13, 22, (4.0, 5.8))]},
+        'large': {'pied': 36, 'masses': [(CX, 22, 22, 10, 28, (4.0, 6.0))]},
+    },
 }
-PIED = {'cerisier_japon': 40, 'erable_rouge': 40, 'magnolia': 39, 'saule_pleureur': 34}   # le haut du tronc visible
+FORME = {'cerisier_japon': 'parasol', 'erable_rouge': 'rond', 'magnolia': 'rond', 'saule_pleureur': 'dome'}   # celles du jeu
+
+
+def boite(forme):
+    """Le milieu et les demi-tailles de la couronne entière (l'éclairage d'ensemble, les pétales qui tombent)."""
+    M = forme['masses']
+    x0, x1 = min(m[0] - m[2] for m in M), max(m[0] + m[2] for m in M)
+    y0, y1 = min(m[1] - m[3] for m in M), max(m[1] + m[3] for m in M)
+    return (x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2, (y1 - y0) / 2
+
+
+HERBE = rampe([(30, 62, 30), (52, 96, 40), (78, 128, 50), (108, 156, 62), (146, 184, 82), (188, 210, 112)], 120)
 
 
 class Toile:
@@ -82,13 +114,14 @@ class Toile:
         return self.px[int(x), int(y)] if 0 <= x < W and 0 <= y < H else (0, 0, 0, 0)
 
 
-def tronc(t, esp, rng):
-    """Le tronc : un cylindre éclairé à gauche, l'écorce en stries, évasé au pied (les racines) ; une ou deux
-    branches maîtresses qui montent dans la couronne."""
+def tronc(t, esp, forme, rng):
+    """Le tronc : un cylindre éclairé à gauche, l'écorce en stries, évasé au pied (les racines) et arrondi en bas
+    (vu de haut à 45°, sa base est une ellipse : le milieu descend plus bas que les côtés) ; une ou deux branches
+    maîtresses qui montent dans la couronne."""
     R = rampe(ECORCES[esp], 140)
-    haut = PIED[esp] - 8
-    for y in range(haut, H - 1):
-        f = (y - haut) / (H - 1 - haut)
+    haut = forme['pied'] - 8
+    for y in range(haut, H - 2):
+        f = (y - haut) / (H - 2 - haut)
         demi = 2.2 + (0.6 if esp == 'erable_rouge' else 0) + max(0, f - 0.78) * 14      # évasé au pied
         if esp == 'cerisier_japon':
             cx = CX + 1.2 * math.sin(y * 0.22)                                         # un tronc un peu tors
@@ -96,12 +129,13 @@ def tronc(t, esp, rng):
             cx = CX
         for x in range(int(cx - demi - 1), int(cx + demi + 2)):
             u = (x + 0.5 - cx) / demi
-            if abs(u) > 1:
-                continue
+            if abs(u) > 1 or y > H - 3 - 3.2 * u * u + 0.4:
+                continue                                     # (le bas arrondi)
             lum = 0.62 - 0.42 * (u + 1) / 2 - 0.10 * (1 - math.sqrt(max(0, 1 - u * u)))
+            lum -= 0.16 * max(0, y - (H - 7)) / 4            # le pied dans l'ombre de l'herbe
             strie = esp in ('erable_rouge', 'saule_pleureur') and int(x * 1.7 + bruit(x, y // 3, 71) * 2) % 3 == 0
             anneau = esp in ('cerisier_japon', 'magnolia') and (y + int(bruit(x, 0, 72) * 2)) % 6 == 0   # lenticelles
-            lum += -0.12 * strie - 0.10 * anneau + 0.04 * bruit(x, y, 73) - 0.10 * (f > 0.9)
+            lum += -0.12 * strie - 0.10 * anneau + 0.04 * bruit(x, y, 73)
             t.put(x, y, ton(R, lum))
     # les branches maîtresses, qui partent vers la couronne
     for sens in (-1, 1):
@@ -113,39 +147,39 @@ def tronc(t, esp, rng):
                 t.put(x, y + k, ton(R, 0.42 - 0.2 * (sens > 0) + 0.05 * bruit(i, k, 74)))
 
 
-def touffes(esp, rng):
-    cx, cy, rx, ry, n, (r0, r1) = COURONNES[esp]
+def touffes(esp, forme, rng):
     out = []
-    for i in range(n * 4):
-        if len(out) >= n:
-            break
-        a, d = rng.random() * 2 * math.pi, math.sqrt(rng.random())
-        x, y = cx + math.cos(a) * d * (rx - r0), cy + math.sin(a) * d * (ry - r0 * 0.8)
-        out.append((x, y, r0 + rng.random() * (r1 - r0), rng.randrange(len(FEUILLES[esp]))))
+    for (cx, cy, rx, ry, n, (r0, r1)) in forme['masses']:
+        for i in range(n):
+            a, d = rng.random() * 2 * math.pi, math.sqrt(rng.random())
+            x, y = cx + math.cos(a) * d * max(0.5, rx - r0), cy + math.sin(a) * d * max(0.5, ry - r0 * 0.8)
+            out.append((x, y, r0 + rng.random() * (r1 - r0), rng.randrange(len(FEUILLES[esp]))))
     out.sort(key=lambda c: c[1])                          # du fond vers l'avant : celles de devant recouvrent
     return out
 
 
-def couronne(t, esp, rng):
+def couronne(t, esp, forme, rng):
     """Les touffes, une à une, du fond vers l'avant : chacune une demi-sphère vue de haut à 45° (sa normale donne la
     lumière), le grain des feuilles, un liseré sombre en bas à droite qui la détache de la touffe de derrière."""
     rampes = [rampe(c, 160) for c in FEUILLES[esp]]
-    cx0, cy0, rx0, ry0 = COURONNES[esp][:4]
+    cx0, cy0, rx0, ry0 = boite(forme)
     R0 = rampes[0]
-    for y in range(int(cy0 - ry0), int(cy0 + ry0) + 1):   # le cœur de la couronne, dans l'ombre (l'occlusion)
-        for x in range(int(cx0 - rx0), int(cx0 + rx0) + 1):
-            if ((x + 0.5 - cx0) / (rx0 - 3)) ** 2 + ((y + 0.5 - cy0) / (ry0 - 3)) ** 2 <= 1:
-                t.put(x, y, ton(R0, 0.10 + 0.08 * bruit(x, y, 78) - 0.04 * (y - cy0) / ry0))
+    for (mx, my, mrx, mry, _, _) in forme['masses']:      # le cœur de chaque masse, dans l'ombre (l'occlusion)
+        for y in range(int(my - mry), int(my + mry) + 1):
+            for x in range(int(mx - mrx), int(mx + mrx) + 1):
+                if ((x + 0.5 - mx) / max(1, mrx - 3)) ** 2 + ((y + 0.5 - my) / max(1, mry - 3)) ** 2 <= 1:
+                    t.put(x, y, ton(R0, 0.10 + 0.08 * bruit(x, y, 78) - 0.04 * (y - cy0) / ry0))
     if esp in ('cerisier_japon', 'magnolia'):              # les rameaux sombres qu'on voit entre les touffes
         E = rampe(ECORCES[esp], 100)
         for i in range(7):
             a = -math.pi / 2 + (i - 3) * 0.42
-            x, y = cx0, cy0 + ry0 * 0.55
+            x, y = CX, cy0 + ry0 * 0.55
             for j in range(int(rx0 * 0.8)):
                 x += math.cos(a) * 1.0
                 y += math.sin(a) * 0.7
-                t.put(x, y, ton(E, 0.25 + 0.1 * (j % 2)))
-    for (x0, y0, r, k) in touffes(esp, rng):
+                if any(((x + 0.5 - m[0]) / m[2]) ** 2 + ((y + 0.5 - m[1]) / m[3]) ** 2 <= 0.8 for m in forme['masses']):
+                    t.put(x, y, ton(E, 0.25 + 0.1 * (j % 2)))   # (dans la couronne seulement)
+    for (x0, y0, r, k) in touffes(esp, forme, rng):
         R = rampes[k]
         for y in range(int(y0 - r) - 1, int(y0 + r) + 2):
             for x in range(int(x0 - r) - 1, int(x0 + r) + 2):
@@ -179,11 +213,11 @@ def fleur(t, x0, y0, rng):
     t.put(x0, y0 - 1, ton(COEUR_MAGNOLIA, 0.6))
 
 
-def rameaux_saule(t, rng, devant):
+def rameaux_saule(t, forme, rng, devant):
     """Les rameaux du saule qui retombent : des fils de feuilles fines, courbés, du bord de la couronne vers le sol ;
     ceux de derrière plus sombres (sous la couronne), ceux de devant éclairés à gauche."""
     rampes = [rampe(c, 160) for c in FEUILLES['saule_pleureur']]
-    cx, cy, rx, ry = COURONNES['saule_pleureur'][:4]
+    cx, cy, rx, ry = boite(forme)
     for i in range(22):
         a = (i / 22) * math.pi + (math.pi if not devant else 0)
         x = cx + math.cos(a) * (rx - 1) * (0.55 + 0.45 * rng.random())
@@ -202,22 +236,50 @@ def rameaux_saule(t, rng, devant):
                 t.put(xx + (1 if (yy // 3) % 2 else -1), yy, ton(R, lum - 0.06))      # une feuille de côté
 
 
-def arbre(esp):
-    rng = random.Random(hash(esp) % 1000 + 7)
+def herbe_au_pied(im, esp, rng):
+    """Des brins d'herbe au pied du tronc, devant et sur les côtés, plus serrés au milieu : ils mangent le bas du
+    contour et fondent l'arbre dans le sol ; chacun sa hauteur, son ton, sa pointe plus claire (chaude), sa base
+    plus sombre (froide) ; quelques-uns derrière le tronc, plus sombres."""
+    px = im.load()
+    large = 8 if esp != 'saule_pleureur' else 11
+    pris = set()
+    for i in range(80):
+        if len(pris) >= 30:
+            break
+        dx = max(-large, min(large, rng.gauss(0, large / 2.2)))
+        x = int(round(CX + dx))
+        if not 0 <= x < W or (x, 0) in pris or ((x - 1, 0) in pris and rng.random() < 0.6):
+            continue                                     # (des brins séparés : on voit le pied entre eux)
+        pris.add((x, 0))
+        pres = max(0.0, 1 - abs(dx) / large)               # 1 contre le tronc, 0 au bord de la touffe
+        base = H - 1 - (rng.random() < 0.3)
+        h = 2 + int(round(pres * 3.5 + rng.random() * 1.5))
+        pente = rng.choice((-1, 0, 0, 1)) if h > 2 else 0
+        teinte = rng.uniform(-0.07, 0.07)
+        for j in range(h):
+            xx = x + (pente if j == h - 1 else 0)
+            yy = base - j
+            if 0 <= xx < W and 0 <= yy < H:
+                l = 0.18 + 0.52 * (j + 1) / h + teinte + 0.04 * bruit(xx, yy, 79) - 0.10 * (pres > 0.7 and j == 0)
+                px[xx, yy] = ton(HERBE, l) + (255,)
+
+
+def arbre(esp, nom_forme=None):
+    forme = FORMES[esp][nom_forme or FORME[esp]]
     rng = random.Random({'cerisier_japon': 11, 'erable_rouge': 23, 'magnolia': 37, 'saule_pleureur': 41}[esp])
     t = Toile()
     if esp == 'saule_pleureur':
-        rameaux_saule(t, random.Random(5), devant=False)
-    tronc(t, esp, rng)
-    couronne(t, esp, rng)
+        rameaux_saule(t, forme, random.Random(5), devant=False)
+    tronc(t, esp, forme, rng)
+    couronne(t, esp, forme, rng)
     if esp == 'saule_pleureur':
-        rameaux_saule(t, random.Random(6), devant=True)
+        rameaux_saule(t, forme, random.Random(6), devant=True)
     im = contour(t.im, OUT)
-    if esp == 'cerisier_japon':                            # quelques pétales déjà tombés, au pied (sans contour)
+    herbe_au_pied(im, esp, random.Random(len(esp) + 3))
+    if esp == 'cerisier_japon':                            # quelques pétales déjà tombés, dans l'herbe
         px, R = im.load(), rampe(FEUILLES[esp][0], 100)
         for i, (x, y) in enumerate(((15, 62), (18, 63), (30, 62), (33, 63), (12, 63), (36, 62))):
-            if not px[x, y][3]:
-                px[x, y] = ton(R, 0.78 + 0.04 * i) + (255,)
+            px[x, y] = ton(R, 0.78 + 0.04 * i) + (255,)
     return im
 
 
@@ -237,7 +299,7 @@ def chute(esp, k):
     im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     px = im.load()
     rng = random.Random(len(esp) * 13)
-    cx, cy, rx, ry = COURONNES[esp][:4]
+    cx, cy, rx, ry = boite(FORMES[esp][FORME[esp]])
     for i in range(n):
         x0 = cx + rng.uniform(-rx * 0.85, rx * 0.85)
         y0 = cy + rng.uniform(0, ry * 0.7)
@@ -263,12 +325,12 @@ def main():
     planche.save(os.path.join(ASSETS, 'ornements_chute.png'))
     print(f'arbres d\'ornement : {len(ESPECES)} espèces de {W} × {H} ; ce qui tombe : {CHUTE_IMAGES} images par espèce')
     if '--apercu' in sys.argv:
-        ap = Image.new('RGBA', ((W + 6) * len(ESPECES), H + 6), (92, 146, 62, 255))
-        for i, e in enumerate(ESPECES):
-            f = arbre(e)
-            f.alpha_composite(chute(e, 2))
-            ap.alpha_composite(f, (i * (W + 6) + 3, 3))
-        ap.resize((ap.width * 5, ap.height * 5), Image.NEAREST).save(os.path.join(ROOT, 'apercu_ornements.png'))
+        n = max(len(f) for f in FORMES.values())
+        ap = Image.new('RGBA', ((W + 6) * n, (H + 6) * len(ESPECES)), (92, 146, 62, 255))
+        for j, e in enumerate(ESPECES):
+            for i, f in enumerate(FORMES[e]):
+                ap.alpha_composite(arbre(e, f), (i * (W + 6) + 3, j * (H + 6) + 3))
+        ap.resize((ap.width * 4, ap.height * 4), Image.NEAREST).save(os.path.join(ROOT, 'apercu_ornements.png'))
 
 
 if __name__ == '__main__':
