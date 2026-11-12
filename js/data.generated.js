@@ -1098,6 +1098,69 @@ export const RAW_DATA = {
       "invendable": true,
       "boutique": true
     },
+    "enseigne_bois": {
+      "nom": "Enseigne de ferme en bois gravé",
+      "icone": "🪧",
+      "prix": 50,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "avec": "boite_lettres_bois"
+    },
+    "boite_lettres_bois": {
+      "nom": "Boîte aux lettres en bois",
+      "icone": "📮",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "enseigne_email": {
+      "nom": "Enseigne de ferme émaillée",
+      "icone": "🪧",
+      "prix": 50,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "avec": "boite_lettres_email"
+    },
+    "boite_lettres_email": {
+      "nom": "Boîte aux lettres émaillée",
+      "icone": "📮",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "enseigne_fer": {
+      "nom": "Enseigne de ferme en fer forgé",
+      "icone": "🪧",
+      "prix": 50,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "avec": "boite_lettres_fer"
+    },
+    "boite_lettres_fer": {
+      "nom": "Boîte aux lettres en fer forgé",
+      "icone": "📮",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -2038,6 +2101,63 @@ export const RAW_DATA = {
         "hauteur": 2,
         "ornement": true
       },
+      "enseigne_bois": {
+        "nom": "Enseigne de ferme en bois gravé",
+        "objet": "enseigne_bois",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "enseigne_bois",
+        "largeur": 2,
+        "peinture": "enseigne_bois",
+        "enseigne": "bois"
+      },
+      "boite_lettres_bois": {
+        "nom": "Boîte aux lettres en bois",
+        "objet": "boite_lettres_bois",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "boite_lettres_bois",
+        "peinture": "enseigne_bois",
+        "boite_lettres": true
+      },
+      "enseigne_email": {
+        "nom": "Enseigne de ferme émaillée",
+        "objet": "enseigne_email",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "enseigne_email",
+        "largeur": 2,
+        "peinture": "enseigne_email",
+        "enseigne": "email"
+      },
+      "boite_lettres_email": {
+        "nom": "Boîte aux lettres émaillée",
+        "objet": "boite_lettres_email",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "boite_lettres_email",
+        "peinture": "enseigne_email",
+        "boite_lettres": true
+      },
+      "enseigne_fer": {
+        "nom": "Enseigne de ferme en fer forgé",
+        "objet": "enseigne_fer",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "enseigne_fer",
+        "largeur": 2,
+        "peinture": "enseigne_fer",
+        "enseigne": "fer"
+      },
+      "boite_lettres_fer": {
+        "nom": "Boîte aux lettres en fer forgé",
+        "objet": "boite_lettres_fer",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "boite_lettres_fer",
+        "peinture": "enseigne_fer",
+        "boite_lettres": true
+      },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -2415,7 +2535,13 @@ export const RAW_DATA = {
           "ornement_cerisier_japon",
           "ornement_erable_rouge",
           "ornement_magnolia",
-          "ornement_saule_pleureur"
+          "ornement_saule_pleureur",
+          "enseigne_bois",
+          "boite_lettres_bois",
+          "enseigne_email",
+          "boite_lettres_email",
+          "enseigne_fer",
+          "boite_lettres_fer"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
@@ -4174,7 +4300,22 @@ export const RAW_DATA = {
     "bac_bandeau_bleu": ["#3468c4", "#64a0ec", "#b4dcff"],
     "bac_cerclage_bleu": ["#3468c4", "#64a0ec", "#b4dcff"],
     "bac_bandeau_violet": ["#703ea4", "#9c6ed6", "#d6baf4"],
-    "bac_cerclage_violet": ["#703ea4", "#9c6ed6", "#d6baf4"]
+    "bac_cerclage_violet": ["#703ea4", "#9c6ed6", "#d6baf4"],
+    "enseigne_bois": ["#3a2214", "#5a3620", "#7a4e2c", "#9a6a3c", "#b88850", "#d2a868", "#e8c890"],
+    "enseigne_bois_rouge": ["#4a1414", "#6e1e1c", "#962c24", "#b8402e", "#d45e40", "#e88460", "#f6b08c"],
+    "enseigne_bois_vert": ["#14301e", "#1e4a2a", "#2c6438", "#3e7e48", "#58985c", "#7cb47a", "#a8d0a0"],
+    "enseigne_bois_bleu": ["#142438", "#1e3654", "#2a4c70", "#3c648c", "#5480a8", "#78a0c4", "#a4c4dc"],
+    "enseigne_bois_blanc": ["#6a6458", "#8a8476", "#a8a294", "#c4beb0", "#dad6c8", "#ece8dc", "#faf8f0"],
+    "enseigne_email": ["#0e1c4a", "#16286a", "#1e3888", "#2a4aa4", "#3c62bc", "#5a80d0", "#86a6e4"],
+    "enseigne_email_vert": ["#0c3424", "#124a32", "#186242", "#227a52", "#349466", "#52ae80", "#80caa2"],
+    "enseigne_email_rouge": ["#4a0c12", "#6c121a", "#8e1a22", "#ae242c", "#c83a3c", "#de5c58", "#f08a82"],
+    "enseigne_email_noir": ["#0c0c12", "#16161e", "#20202a", "#2c2c38", "#3c3c4a", "#52525e", "#6e6e7a"],
+    "enseigne_email_creme": ["#8a7a5a", "#a69674", "#c0b08c", "#d6c8a4", "#e6dabc", "#f2ead0", "#fcf6e6"],
+    "enseigne_fer": ["#0e0e12", "#18181e", "#22222a", "#2e2e38", "#3e3e4a", "#545462", "#70707e"],
+    "enseigne_fer_vert": ["#0c2418", "#123422", "#1a462e", "#24583a", "#326c48", "#48845c", "#66a078"],
+    "enseigne_fer_bleu": ["#0e1a30", "#142440", "#1c3052", "#263e66", "#344e7a", "#4a6692", "#6882ac"],
+    "enseigne_fer_rouge": ["#2a0a10", "#3c0e16", "#50141e", "#661c28", "#7e2834", "#983c46", "#b25a60"],
+    "enseigne_fer_blanc": ["#6e6c66", "#8c8a84", "#a8a6a0", "#c2c0ba", "#d8d6d0", "#eae8e2", "#f8f6f2"]
   },
   "PEINTURES": {
     "bandeau": [
@@ -4194,6 +4335,27 @@ export const RAW_DATA = {
       { "id": "vert", "nom": "peint en vert", "remplace": { "bac_cerclage": "bac_cerclage_vert" } },
       { "id": "bleu", "nom": "peint en bleu", "remplace": { "bac_cerclage": "bac_cerclage_bleu" } },
       { "id": "violet", "nom": "peint en violet", "remplace": { "bac_cerclage": "bac_cerclage_violet" } }
+    ],
+    "enseigne_bois": [
+      { "id": "naturel", "nom": "bois naturel", "texte": "#2a170c" },
+      { "id": "rouge", "nom": "peint en rouge", "remplace": { "enseigne_bois": "enseigne_bois_rouge" }, "texte": "#f2dcb0" },
+      { "id": "vert", "nom": "peint en vert", "remplace": { "enseigne_bois": "enseigne_bois_vert" }, "texte": "#f2dcb0" },
+      { "id": "bleu", "nom": "peint en bleu", "remplace": { "enseigne_bois": "enseigne_bois_bleu" }, "texte": "#f2dcb0" },
+      { "id": "blanc", "nom": "peint en blanc", "remplace": { "enseigne_bois": "enseigne_bois_blanc" }, "texte": "#4a3826" }
+    ],
+    "enseigne_email": [
+      { "id": "bleu", "nom": "émail bleu", "texte": "#f6f2e6" },
+      { "id": "vert", "nom": "émail vert", "remplace": { "enseigne_email": "enseigne_email_vert" }, "texte": "#f6f2e6" },
+      { "id": "rouge", "nom": "émail rouge", "remplace": { "enseigne_email": "enseigne_email_rouge" }, "texte": "#f6f2e6" },
+      { "id": "noir", "nom": "émail noir", "remplace": { "enseigne_email": "enseigne_email_noir" }, "texte": "#f6f2e6" },
+      { "id": "creme", "nom": "émail crème", "remplace": { "enseigne_email": "enseigne_email_creme" }, "texte": "#1e3888" }
+    ],
+    "enseigne_fer": [
+      { "id": "noir", "nom": "fer noir", "texte": "#e6c068" },
+      { "id": "vert", "nom": "vert anglais", "remplace": { "enseigne_fer": "enseigne_fer_vert" }, "texte": "#e6c068" },
+      { "id": "bleu", "nom": "bleu nuit", "remplace": { "enseigne_fer": "enseigne_fer_bleu" }, "texte": "#e6c068" },
+      { "id": "rouge", "nom": "bordeaux", "remplace": { "enseigne_fer": "enseigne_fer_rouge" }, "texte": "#e6c068" },
+      { "id": "blanc", "nom": "fer blanc", "remplace": { "enseigne_fer": "enseigne_fer_blanc" }, "texte": "#3a3428" }
     ]
   },
   "BACS": {

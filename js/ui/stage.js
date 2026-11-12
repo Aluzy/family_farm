@@ -9,7 +9,7 @@ import { arroseesParLaPluie, brume as brumeDuMoment, pleut } from '../engine/met
 import { fetesDuJour } from '../engine/fetes.js';
 import { ouvrirSecret } from '../engine/secrets.js';
 import { entreeEncyclopedie } from '../engine/encyclopedie.js';
-import { mainCharacter, setupPending } from '../engine/depart.js';
+import { familyName, mainCharacter, setupPending } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
@@ -630,7 +630,9 @@ function meubleDe(sorte, tile, etage = false) {
     // (un bac à fleurs : ce qui y pousse, sa peinture ; js/engine/bacs.js)
     const teinte = b.peinture && Number.isInteger(tile) && !etage ? varianteBloc(state, tile) : null;
     const couleurs = teinte ? couleursVariante(sorte, teinte) : null;
-    return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: false, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}) } };
+    // (une enseigne de ferme : le nom de la famille, dans la couleur que sa peinture donne au texte)
+    const enseigne = b.enseigne ? { matiere: b.enseigne, nom: familyName(state), texte: texteEnseigne(b, teinte) } : null;
+    return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: false, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
   }
   const sens = b && b.tourne && Number.isInteger(tile) ? (etage ? sensEtage(state, tile) : sensBloc(state, tile)) : 0;
   if (!b || !b.meuble) return sens ? { sens } : {};
@@ -639,6 +641,13 @@ function meubleDe(sorte, tile, etage = false) {
   const teinte = Number.isInteger(tile) ? (etage ? varianteEtage(state, tile) : varianteBloc(state, tile)) : null;
   const couleurs = teinte ? couleursVariante(sorte, teinte) : null;
   return { meuble: { dessin: b.meuble, largeur: mes.largeur, hauteur: mes.hauteur, bloque: !!b.bloque, plat: !!b.plat, lit: !!b.lit, ...(sens ? { sens, vue: v.vue, miroir: v.miroir } : {}), ...(couleurs ? { variante: teinte, couleurs } : {}) } };
+}
+
+// La couleur du nom sur une enseigne de ferme : celle que donne sa peinture (data/meubles.json PEINTURES, `texte`).
+function texteEnseigne(b, teinte) {
+  const L = (DATA.PEINTURES || {})[b.peinture] || [];
+  const v = L.find((x) => x.id === teinte) || L[0];
+  return (v && v.texte) || '#2a170c';
 }
 
 // L'image d'un bloc dessiné comme un meuble : le distributeur selon son blé (assets/

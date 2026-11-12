@@ -56,6 +56,10 @@ export const BOUTIQUE = {
     ornement_erable_rouge: { prix: 90, nom: 'Érable rouge' },
     ornement_magnolia: { prix: 90, nom: 'Magnolia' },
     ornement_saule_pleureur: { prix: 90, nom: 'Saule pleureur' },
+    // les enseignes de ferme : le panneau au nom de la famille et sa boîte aux lettres (DATA.OBJETS[].avec), 5 couleurs
+    enseigne_bois: { prix: 50, nom: 'Enseigne de ferme en bois gravé et sa boîte aux lettres' },
+    enseigne_email: { prix: 50, nom: 'Enseigne de ferme émaillée et sa boîte aux lettres' },
+    enseigne_fer: { prix: 50, nom: 'Enseigne de ferme en fer forgé et sa boîte aux lettres' },
     // les papiers peints : un motif acheté est débloqué pour toujours (js/engine/papiers.js)
     papier_peint_fleurettes: { prix: 40, nom: 'Papier peint fleurettes' },
     papier_peint_rayures: { prix: 40, nom: 'Papier peint rayures' },

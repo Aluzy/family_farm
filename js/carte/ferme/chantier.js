@@ -431,7 +431,7 @@
       // (A-3 : dans sa couleur, l'image recolorée au premier besoin : imageTeinte)
       const tourne = 'meuble_' + M.dessin + (M.vue || ''), key = this.imageTeinte(this.textures.exists(tourne) ? tourne : 'meuble_' + M.dessin, M.variante, M.couleurs);
       const sens = M.sens || 0, variante = M.variante || null;
-      if (e && e.sorte === b.sorte && e.dessin === M.dessin && (e.sens || 0) === sens && (e.variante || null) === variante) return false;   // (l'image suit son contenu)
+      if (e && e.sorte === b.sorte && e.dessin === M.dessin && (e.sens || 0) === sens && (e.variante || null) === variante) { e.enseigne = M.enseigne || null; return false; }   // (l'image suit son contenu ; le nom de l'enseigne, stepEnseignes)
       if (e) e.img.destroy();
       B.delete(b.case);
       if (!this.textures.exists(key)) return !!e;
@@ -441,7 +441,7 @@
       const img = this.add.image(x, y - 1, key).setOrigin(0.5, 1).setDepth(depth).setFlipX(!!M.miroir);
       const cases = [];
       for (let dy = 0; dy < M.hauteur; dy++) for (let dx = 0; dx < M.largeur; dx++) cases.push(b.case - dy * cols + dx);
-      B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img, cases, bloque: M.bloque, plat: M.plat, lit: M.lit, dessin: M.dessin, sens, variante, couleurs: M.couleurs || null });
+      B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img, cases, bloque: M.bloque, plat: M.plat, lit: M.lit, dessin: M.dessin, sens, variante, couleurs: M.couleurs || null, enseigne: M.enseigne || null });
       return true;
     },
 
@@ -603,6 +603,40 @@
       }
     },
 
+    // Les enseignes de ferme (BLOCS_CARTE.enseigne ; e.enseigne = { matiere, nom, texte } : js/ui/stage.js meubleDe) :
+    // le nom de la famille écrit sur la plaque, dans la couleur de sa peinture, rapetissé s'il est trop long ; il
+    // suit l'image (visible, transparente, détruite avec elle).
+    stepEnseignes() {
+      const C = BLOCS_CARTE.enseigne;
+      for (const e of (this.blocks || new Map()).values()) {
+        const E = e.enseigne;
+        if (!E || !e.img || !e.img.active) { if (e.nomTxt && (!E || !e.img || !e.img.active)) { e.nomTxt.destroy(); e.nomTxt = null; } continue; }
+        if (!e.nomTxt || !e.nomTxt.active) {
+          e.nomTxt = this.add.text(0, 0, '', { fontFamily: global.CarteKit.TEXTE.fontFamily, fontSize: C.taille + 'px', color: E.texte })
+            .setOrigin(0.5, 0.5).setResolution(global.CarteKit.TEXTE.resolution).setShadow(0.5, 0.5, C.ombre, 0, false, true);
+          e.nomVu = null;
+          e.img.once('destroy', () => { if (e.nomTxt) { e.nomTxt.destroy(); e.nomTxt = null; } });
+        }
+        const cle = E.nom + '|' + E.texte;
+        if (e.nomVu !== cle) {
+          e.nomVu = cle;
+          const L = C.largeur[E.matiere] || 16;
+          e.nomTxt.setText(E.nom).setColor(E.texte).setScale(1);
+          // (trop long : sur deux lignes, coupé à l'espace ou au trait d'union le plus près du milieu, s'il y en a)
+          if (e.nomTxt.width > L / C.deuxLignes) {
+            const coupes = [...E.nom].map((c, i) => (c === ' ' || c === '-' ? i : -1)).filter((i) => i > 0);
+            if (coupes.length) {
+              const i = coupes.reduce((a, b) => (Math.abs(b - E.nom.length / 2) < Math.abs(a - E.nom.length / 2) ? b : a));
+              e.nomTxt.setText(E.nom.slice(0, i + (E.nom[i] === '-' ? 1 : 0)) + '\n' + E.nom.slice(i + 1)).setLineSpacing(-2);
+            }
+          }
+          if (e.nomTxt.width > L) e.nomTxt.setScale(L / e.nomTxt.width);
+        }
+        e.nomTxt.setPosition(e.img.x, Math.round(e.img.y - (C.dy[E.matiere] || 16))).setDepth(e.img.depth + 0.02)
+          .setVisible(e.img.visible && !!E.nom).setAlpha(e.img.alpha);
+      }
+    },
+
     stepLanterns(time, dt) {
       const V = this.lumiere;
       // (les lumières posées : relevées parmi tous les blocs quand ils changent (blocsN), pas à chaque image)
@@ -629,6 +663,7 @@
         for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith(C.prefixe)) liste.push(e);
         this.stepSurcouches(liste, C, dt);
       }
+      this.stepEnseignes();
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
       const guirlandes = this.guirlandes && this.guirlandes.size ? [...this.guirlandes.values()] : [];
