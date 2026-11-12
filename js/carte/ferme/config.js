@@ -366,6 +366,18 @@ const CULTURE_MONTE = 0;
     // l'image d'un mur) : sur la face extérieure d'un mur, une image par bloc de sa hauteur, `dy` px plus haut à
     // chaque bloc (comme le mur rehaussé : BLOCS_CARTE.etage.dy)
     grimpants: { key: 'rosiers', file: 'rosiers.png', frame: { frameWidth: 20, frameHeight: 40 }, coloris: { multicolore: 0, rouge: 1, blanc: 2, jaune: 3 } },
+    // les guirlandes lumineuses de la boutique (scripts/carte/guirlandes.py ; chantier.js syncGuirlandes) : un
+    // segment de 16 × 12 en haut de la face extérieure du mur (`dy` px sous le haut de sa face, au bloc le plus
+    // haut du mur), qui se raccorde à ses voisins ; par coloris (sa rangée), trois images : éteinte, allumée A,
+    // allumée B. Le soir (le voile de l'heure plus sombre que `allume`), elles alternent au hasard (`fps` au
+    // plus : elles scintillent) et chaque segment pose sa lueur (`lueur` : rayon, aplatie, alpha ; sa teinte
+    // par coloris) dans le voile, sous lui (`lueur.dy`)
+    guirlandes: {
+      key: 'guirlandes', file: 'guirlandes.png', frame: { frameWidth: 16, frameHeight: 12 }, dy: 1, dz: 0.006,
+      coloris: { blanche: 0, multicolore: 1, etoiles: 2, coeurs: 3 }, allume: 0.12, fps: 3,
+      teintes: { blanche: 0xffe2a0, multicolore: 0xffc8c0, etoiles: 0xfff0a0, coeurs: 0xffa0c8 },
+      lueur: { rayon: 18, aplati: 0.7, alpha: 0.95, dy: 8 },
+    },
     // un lit tourné (A-1 ; scripts/batiments/meubles_sens.py, lit_dos, lit_cote) : le dormeur pivote avec
     // lui (sa tête sur l'oreiller) ; de dos, la tête en bas, ses pieds à `dos` px sous le haut du lit ; de
     // profil, couché en travers, ses pieds à `cote` px du bord de la tête de lit, au milieu du matelas (dont

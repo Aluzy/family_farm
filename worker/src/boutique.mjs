@@ -1,5 +1,5 @@
 // La boutique du jeu en ligne : les gemmes (💎), achetées avec de l'argent réel par Stripe Checkout, et
-// ce qu'elles achètent (les rosiers grimpants, les papiers peints). Tout se tient ici, sur le serveur : le solde de gemmes, les
+// ce qu'elles achètent (les rosiers grimpants, les guirlandes lumineuses, les papiers peints). Tout se tient ici, sur le serveur : le solde de gemmes, les
 // paiements et les achats sont dans la base du Durable Object Comptes (une partie solo, sur l'appareil, se
 // modifie à la main : elle ne garde jamais de gemmes). Un compte est nécessaire pour acheter.
 //
@@ -37,6 +37,11 @@ export const BOUTIQUE = {
     rosier_rouge: { prix: 25, nom: 'Rosier grimpant rouge' },
     rosier_blanc: { prix: 25, nom: 'Rosier grimpant blanc' },
     rosier_jaune: { prix: 25, nom: 'Rosier grimpant jaune' },
+    // les guirlandes lumineuses : un lot de 8 segments (DATA.OBJETS[].lot), sur les façades, allumées le soir
+    guirlande_blanche: { prix: 60, nom: 'Guirlande lumineuse blanche (8 segments)' },
+    guirlande_multicolore: { prix: 60, nom: 'Guirlande lumineuse multicolore (8 segments)' },
+    guirlande_etoiles: { prix: 60, nom: 'Guirlande d\'étoiles (8 segments)' },
+    guirlande_coeurs: { prix: 60, nom: 'Guirlande de cœurs (8 segments)' },
     // les papiers peints : un motif acheté est débloqué pour toujours (js/engine/papiers.js)
     papier_peint_fleurettes: { prix: 40, nom: 'Papier peint fleurettes' },
     papier_peint_rayures: { prix: 40, nom: 'Papier peint rayures' },

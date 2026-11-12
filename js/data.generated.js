@@ -944,6 +944,50 @@ export const RAW_DATA = {
       "boutique": true,
       "papier": "etoiles"
     },
+    "guirlande_blanche": {
+      "nom": "Guirlande lumineuse blanche",
+      "icone": "✨",
+      "prix": 60,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "lot": 8
+    },
+    "guirlande_multicolore": {
+      "nom": "Guirlande lumineuse multicolore",
+      "icone": "🎆",
+      "prix": 60,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "lot": 8
+    },
+    "guirlande_etoiles": {
+      "nom": "Guirlande d'étoiles",
+      "icone": "⭐",
+      "prix": 60,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "lot": 8
+    },
+    "guirlande_coeurs": {
+      "nom": "Guirlande de cœurs",
+      "icone": "💖",
+      "prix": 60,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "lot": 8
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -1762,6 +1806,15 @@ export const RAW_DATA = {
       "rosier_rouge": { "nom": "Rosier grimpant rouge", "objet": "rosier_rouge", "sur": "mur", "grimpant": "rouge" },
       "rosier_blanc": { "nom": "Rosier grimpant blanc", "objet": "rosier_blanc", "sur": "mur", "grimpant": "blanc" },
       "rosier_jaune": { "nom": "Rosier grimpant jaune", "objet": "rosier_jaune", "sur": "mur", "grimpant": "jaune" },
+      "guirlande_blanche": { "nom": "Guirlande lumineuse blanche", "objet": "guirlande_blanche", "sur": "mur", "guirlande": "blanche" },
+      "guirlande_multicolore": {
+        "nom": "Guirlande lumineuse multicolore",
+        "objet": "guirlande_multicolore",
+        "sur": "mur",
+        "guirlande": "multicolore"
+      },
+      "guirlande_etoiles": { "nom": "Guirlande d'étoiles", "objet": "guirlande_etoiles", "sur": "mur", "guirlande": "etoiles" },
+      "guirlande_coeurs": { "nom": "Guirlande de cœurs", "objet": "guirlande_coeurs", "sur": "mur", "guirlande": "coeurs" },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -2127,7 +2180,11 @@ export const RAW_DATA = {
           "rosier_multicolore",
           "rosier_rouge",
           "rosier_blanc",
-          "rosier_jaune"
+          "rosier_jaune",
+          "guirlande_blanche",
+          "guirlande_multicolore",
+          "guirlande_etoiles",
+          "guirlande_coeurs"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },

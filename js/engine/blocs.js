@@ -858,7 +858,7 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (!s) return { ok: false, raison: 'Bloc inconnu.' };
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
-  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en un dans un hameau (l'ébéniste de Bois-Joli, les tapis des Genêts).` : s.grimpant ? `Plus de ${s.nom.toLowerCase()} : achète-en un avec des gemmes (💎, avec le jeu en ligne).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : s.massif ? `Plus de ${DATA.OBJETS[s.objet].nom.toLowerCase()} : on en trouve en cueillant les fleurs sauvages du grand monde.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en un dans un hameau (l'ébéniste de Bois-Joli, les tapis des Genêts).` : s.grimpant || s.guirlande ? `Plus de ${s.nom.toLowerCase()} : achète-en avec des gemmes (💎, avec le jeu en ligne).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : s.massif ? `Plus de ${DATA.OBJETS[s.objet].nom.toLowerCase()} : on en trouve en cueillant les fleurs sauvages du grand monde.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
@@ -899,7 +899,8 @@ export function poseStatus(state, sorte, tile, sens = 0) {
     if (dessous && dessous.ferme) return { ok: false, raison: `${s.nom} : sur un mur dont on voit la face (sans mur ni porte juste en dessous).` };
     // (un rosier grimpant : sur la face extérieure du mur, côté jardin : la case devant lui n'est dans aucune
     // pièce close ; et dehors seulement, sur un mur au sol)
-    if (s.grimpant && pieceDe(state, tile + T.LARGEUR)) return { ok: false, raison: `${s.nom} : sur la face extérieure d'un mur, côté jardin (pas dans une pièce).` };
+    // (une guirlande lumineuse aussi : en haut de la façade, côté jardin)
+    if ((s.grimpant || s.guirlande) && pieceDe(state, tile + T.LARGEUR)) return { ok: false, raison: `${s.nom} : sur la face extérieure d'un mur, côté jardin (pas dans une pièce).` };
     return { ok: true };
   }
   // un sol (le plancher) : sous les blocs, pas sous ce qui ferme une pièce

@@ -578,6 +578,8 @@ export function stageModel() {
     tableaux: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].meuble).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
     // (les rosiers grimpants de la boutique : sur la face extérieure d'un mur)
     grimpants: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].grimpant).map(([c, sorte]) => ({ case: Number(c), coloris: DATA.ATELIER.BLOCS[sorte].grimpant })),
+    // (les guirlandes lumineuses de la boutique : en haut de la face extérieure d'un mur)
+    guirlandes: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].guirlande).map(([c, sorte]) => ({ case: Number(c), coloris: DATA.ATELIER.BLOCS[sorte].guirlande })),
     // les papiers peints posés dans les pièces (js/engine/papiers.js) : [{ case du mur, motif, frame }], en bas et à l'étage
     papiers: papiersVisibles(state, 0),
     papiersEtage: papiersVisibles(state, 1),

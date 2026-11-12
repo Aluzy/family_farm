@@ -93,6 +93,7 @@
       this.syncChaines(model.chaines);                                           // (après les blocs : leurs images, chaines.js)
       this.syncTableaux(model.tableaux);                                         // (après les blocs : sur leurs murs)
       this.syncGrimpants(model.grimpants);                                       // (les rosiers grimpants : sur les murs aussi)
+      this.syncGuirlandes(model.guirlandes);                                     // (les guirlandes lumineuses : en haut des façades)
       this.syncEtage(model.etage, model.niveau, model.vueNiveau);                // (après les blocs : ceux sous l'étage se cachent)
       this.syncPapiers(model.papiers, model.papiersEtage);                     // (les papiers peints : sur les murs, en bas et à l'étage)
       this.syncToits(model.toits);
