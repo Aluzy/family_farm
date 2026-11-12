@@ -80,7 +80,7 @@ async function livrer() {
       deja.add(l.id);
       notify(DATA.OBJETS[l.article].contenu
         ? `🛋️ ${DATA.OBJETS[l.article].nom} : tout est dans ton inventaire (le lit, le chevet, le tapis, le tableau, le plancher, et le papier peint débloqué). Meuble une chambre avec 🔨 Construire : onglet Meubles, Bâtir pour le plancher, 🧻 pour le papier.`
-        : String(l.article).startsWith('chalet_') || DATA.OBJETS[l.article].lot && DATA.ATELIER.BLOCS[l.article] && DATA.ATELIER.BLOCS[l.article].sol
+        : DATA.ATELIER.BLOCS[l.article] && DATA.ATELIER.BLOCS[l.article].boutique
         ? `🛋️ ${DATA.OBJETS[l.article].nom}${DATA.OBJETS[l.article].lot ? ` (${DATA.OBJETS[l.article].lot})` : ''} : dans ton inventaire. Pose-le avec 🔨 Construire (${DATA.ATELIER.BLOCS[l.article] && DATA.ATELIER.BLOCS[l.article].sol ? 'onglet Bâtir' : 'onglet Meubles'}).`
         : DATA.OBJETS[l.article].papier
         ? `🧻 ${DATA.OBJETS[l.article].nom} : débloqué. Pose-le avec 🔨 Construire, outil 🧻, en touchant une pièce close.`

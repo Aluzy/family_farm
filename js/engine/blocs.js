@@ -197,10 +197,13 @@ function setSens(state, tile, sens) {
   const v = ((Math.floor(Number(sens) || 0) % 4) + 4) % 4;
   if (v) state.sens[tile] = v; else delete state.sens[tile];
 }
-// La largeur et la hauteur (en cases) du meuble `sorte` dans le sens `sens`.
+// La largeur et la hauteur (en cases) du meuble `sorte` dans le sens `sens`. De profil, un meuble qui tourne échange
+// les deux ; un tapis peut avoir ses mesures de profil à lui (ATELIER.BLOCS[].profil : [largeur, hauteur]) : son
+// dessin tourné de 90° est plus large qu'une case.
 export function mesuresMeuble(sorte, sens = 0) {
   const s = sorteDe(sorte), l = (s && s.largeur) || 1, h = (s && s.hauteur) || 1;
-  return s && s.tourne === true && sens % 2 === 1 ? { largeur: h, hauteur: l } : { largeur: l, hauteur: h };
+  if (!(s && s.tourne === true && sens % 2 === 1)) return { largeur: l, hauteur: h };
+  return Array.isArray(s.profil) ? { largeur: s.profil[0], hauteur: s.profil[1] } : { largeur: h, hauteur: l };
 }
 
 // Les cases qu'un meuble posé en `tile` couvre (DATA.ATELIER.BLOCS : largeur vers la droite,

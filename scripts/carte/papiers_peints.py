@@ -190,7 +190,42 @@ def lambris():
     return finir(im)
 
 
-DESSINS = {'fleurettes': fleurettes, 'rayures': rayures, 'vichy': vichy, 'damas': damas, 'feuillages': feuillages, 'etoiles': etoiles, 'lambris': lambris}
+def roses():
+    """Les roses anglaises du cottage (l'ensemble de la boutique) : de grosses roses épanouies (un cœur sombre, des
+    pétales en spirale plus clairs vers la lumière) et leurs feuilles, sur un fond crème rayé de vert pâle, en
+    quinconce (période 8 × 10)."""
+    im = toile()
+    CREME = rampe([(212, 200, 172), (236, 228, 206), (250, 246, 232)])
+    VERT_PALE = rampe([(176, 196, 160), (204, 218, 188)])
+    ROSE = rampe([(110, 26, 52), (168, 52, 80), (214, 96, 120), (240, 156, 170), (255, 214, 220)])
+    FEUILLE = rampe([(46, 84, 50), (82, 124, 72), (130, 168, 104)])
+    px = im.load()
+    for y in range(H):
+        for x in range(W):
+            px[x, y] = (ton(VERT_PALE, 0.5) if x % 8 == 7 else ton(CREME, 0.62 + 0.04 * bruit(x, y, 321))) + (255,)
+    for y0 in range(-6, H, 10):
+        for x0, dy in ((0, 0), (8, 5)):
+            cx, cy = x0 + 3, y0 + dy + 4
+            for (fx, fy, t) in ((-3, 2, 0.6), (-2, 2, 0.4), (2, -2, 0.7), (3, -1, 0.45)):   # les feuilles
+                x, y = (cx + fx) % 16, cy + fy
+                if 0 <= y < H:
+                    px[x, y] = ton(FEUILLE, t) + (255,)
+            for dyy in range(-2, 3):                       # la rose : un disque, la spirale de ses pétales
+                for dx in range(-2, 3):
+                    d = dx * dx + dyy * dyy
+                    if d > 5:
+                        continue
+                    t = 0.82 - 0.12 * (dx + dyy) / 2 - 0.25 * (d < 2) + (0.12 if (dx * 2 + dyy) % 3 == 0 else 0)
+                    x, y = (cx + dx) % 16, cy + dyy
+                    if 0 <= y < H:
+                        px[x, y] = ton(ROSE, t) + (255,)
+            x, y = cx % 16, cy
+            if 0 <= y < H:
+                px[x, y] = ton(ROSE, 0.15) + (255,)
+    return finir(im)
+
+
+DESSINS = {'fleurettes': fleurettes, 'rayures': rayures, 'vichy': vichy, 'damas': damas, 'feuillages': feuillages, 'etoiles': etoiles, 'lambris': lambris, 'roses': roses}
 
 
 def main():

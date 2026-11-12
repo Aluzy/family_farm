@@ -1234,6 +1234,79 @@ export const RAW_DATA = {
       "boutique": true,
       "contenu": { "chalet_lit": 1, "chalet_chevet": 1, "chalet_tapis": 1, "chalet_tableau": 1, "sol_meleze": 24, "papier_peint_lambris": 1 }
     },
+    "cottage_lit": {
+      "nom": "Lit de cottage",
+      "icone": "🛏️",
+      "prix": 80,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "cottage_chevet": {
+      "nom": "Chevet de cottage",
+      "icone": "🛋️",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "cottage_tapis": {
+      "nom": "Tapis aux roses",
+      "icone": "🧶",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "cottage_tableau": {
+      "nom": "Tableau : le jardin du cottage",
+      "icone": "🖼️",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "sol_blanchi": {
+      "nom": "Plancher blanchi",
+      "icone": "🤍",
+      "prix": 50,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "lot": 24
+    },
+    "papier_peint_roses": {
+      "nom": "Papier peint roses anglaises",
+      "icone": "🧻",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "papier": "roses"
+    },
+    "ensemble_cottage": {
+      "nom": "Ensemble cottage anglais",
+      "icone": "🌹",
+      "prix": 220,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "contenu": { "cottage_lit": 1, "cottage_chevet": 1, "cottage_tapis": 1, "cottage_tableau": 1, "sol_blanchi": 24, "papier_peint_roses": 1 }
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -2260,6 +2333,7 @@ export const RAW_DATA = {
         "plat": true,
         "largeur": 3,
         "tourne": true,
+        "profil": [2, 3],
         "piece": "chambre",
         "boutique": true
       },
@@ -2272,6 +2346,48 @@ export const RAW_DATA = {
         "boutique": true
       },
       "sol_meleze": { "nom": "Plancher de mélèze", "objet": "sol_meleze", "sol": true, "boutique": true },
+      "cottage_lit": {
+        "nom": "Lit de cottage",
+        "objet": "cottage_lit",
+        "meuble": "cottage_lit",
+        "dedans": true,
+        "lit": true,
+        "hauteur": 2,
+        "tourne": true,
+        "piece": "chambre",
+        "boutique": true
+      },
+      "cottage_chevet": {
+        "nom": "Chevet de cottage",
+        "objet": "cottage_chevet",
+        "meuble": "cottage_chevet",
+        "dedans": true,
+        "bloque": true,
+        "tourne": true,
+        "piece": "chambre",
+        "boutique": true
+      },
+      "cottage_tapis": {
+        "nom": "Tapis aux roses",
+        "objet": "cottage_tapis",
+        "meuble": "cottage_tapis",
+        "dedans": true,
+        "plat": true,
+        "largeur": 3,
+        "tourne": true,
+        "profil": [2, 3],
+        "piece": "chambre",
+        "boutique": true
+      },
+      "cottage_tableau": {
+        "nom": "Tableau : le jardin du cottage",
+        "objet": "cottage_tableau",
+        "meuble": "cottage_tableau",
+        "sur": "mur",
+        "piece": "chambre",
+        "boutique": true
+      },
+      "sol_blanchi": { "nom": "Plancher blanchi", "objet": "sol_blanchi", "sol": true, "boutique": true },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -2313,7 +2429,8 @@ export const RAW_DATA = {
         "dedans": true,
         "plat": true,
         "largeur": 3,
-        "tourne": true
+        "tourne": true,
+        "profil": [2, 3]
       },
       "meuble_tapis_2": {
         "nom": "Tapis rouge",
@@ -2332,7 +2449,8 @@ export const RAW_DATA = {
         "dedans": true,
         "plat": true,
         "largeur": 3,
-        "tourne": true
+        "tourne": true,
+        "profil": [2, 3]
       },
       "meuble_lit_adulte": {
         "nom": "Lit adulte",
@@ -2587,6 +2705,7 @@ export const RAW_DATA = {
           "sol_paves",
           "sol_mosaique",
           "sol_meleze",
+          "sol_blanchi",
           "chemin",
           "sol_pas_ardoise",
           "sol_pas_pierre",
@@ -4389,7 +4508,8 @@ export const RAW_DATA = {
     "damas": { "nom": "Damas", "objet": "papier_peint_damas" },
     "feuillages": { "nom": "Feuillages", "objet": "papier_peint_feuillages" },
     "etoiles": { "nom": "Étoiles", "objet": "papier_peint_etoiles" },
-    "lambris": { "nom": "Lambris de pin", "objet": "papier_peint_lambris" }
+    "lambris": { "nom": "Lambris de pin", "objet": "papier_peint_lambris" },
+    "roses": { "nom": "Roses anglaises", "objet": "papier_peint_roses" }
   },
   "PALETTES": {
     "bois_miel": ["#3c1e16", "#603620", "#86522e", "#aa7040", "#cc965c"],

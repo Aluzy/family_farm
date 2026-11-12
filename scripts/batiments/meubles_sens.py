@@ -141,37 +141,9 @@ def table_cote():
 
 
 def tapis_tourne(n):
-    """Un tapis tourné d'un quart de tour, aux mesures des cases qu'il couvre de profil (3 de haut ; le
-    rouge : 2 de large) : le même motif que de face (meubles.py tapis), les franges en haut et en bas,
-    les rayures du bleu dans l'autre sens."""
-    W, H = (14, 44) if n != 2 else (30, 44)
-    im = M.canvas(W, H)
-    put, _ = M.painter(im)
-    cx, cy = (W - 1) / 2, (H - 1) / 2
-    for y in range(H):
-        for x in range(W):
-            if n == 1:
-                d = ((x - cx) / (W / 2)) ** 2 + ((y - cy) / (H / 2)) ** 2
-                if d > 1:
-                    continue
-                put(x, y, ('c2', 'c1', 'c0', 'c1', 'c0')[int(d * 5) % 5])
-            elif n == 2:
-                if y in (0, H - 1):
-                    if x % 2 == 0:
-                        put(x, y, 'c1')
-                    continue
-                if 3 <= x <= W - 4 and 3 <= y <= H - 4:
-                    k = 'R2' if (abs(x - cx) + abs(y - cy)) % 6 < 2 else 'R1'
-                else:
-                    k = 'J1' if (x + y) % 4 == 0 else 'R0'
-                put(x, y, k)
-            else:
-                k = 'B1' if (x // 3) % 2 else 'B2'
-                if x in (1, W - 2):
-                    k = 'c2'
-                put(x, y, k)
-    M.outline(im)
-    return im
+    """Un tapis tourné d'un quart de tour : son dessin de face (meubles.py tapis) tourné de 90°, tel quel (le même
+    tapis, ses franges en haut et en bas) ; il couvre 2 cases sur 3 (data/recipes.json ATELIER.BLOCS[].profil)."""
+    return M.tapis(n).rotate(90, expand=True)
 
 
 def chevet_dos():
