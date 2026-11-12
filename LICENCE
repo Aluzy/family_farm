@@ -1,0 +1,52 @@
+Moon Bloom Village
+Copyright © 2026 Alexandre Fuzy. Tous droits réservés.
+
+1. Objet
+
+Ce dépôt et tout ce qu'il contient (le code source et le code compilé, les scripts, les données, les
+graphismes, les icônes, les illustrations, les polices, la musique et les sons synthétisés, les textes
+du jeu, la documentation, ainsi que le nom et l'univers de « Moon Bloom Village ») sont des œuvres
+protégées par le droit d'auteur (Code de la propriété intellectuelle, livre I) et par les conventions
+internationales. Ils appartiennent à leur auteur, sous réserve des éléments de tiers listés à l'article 4.
+
+2. Aucune licence n'est accordée
+
+Le fait que ce code soit consultable, par exemple sur GitHub, ou que le jeu soit jouable sur
+moonbloom-village.com ne donne aucun droit sur son contenu. Sauf autorisation écrite et préalable de
+l'auteur, il est interdit, en tout ou en partie et par quelque moyen que ce soit :
+
+  - de reproduire, copier ou télécharger le contenu du dépôt pour le réutiliser ;
+  - de le modifier, l'adapter, le traduire, ou d'en créer une œuvre dérivée ;
+  - de le distribuer, le publier, le vendre, le louer, le prêter ou le céder ;
+  - de l'héberger ou de le mettre à disposition du public, y compris en ligne ;
+  - de l'utiliser à des fins commerciales ;
+  - d'en extraire les graphismes, les sons, les données ou les textes ;
+  - de s'en servir pour entraîner ou alimenter un système d'intelligence artificielle.
+
+Les seules exceptions sont celles que la loi impose (notamment l'article L122-5 et, pour le logiciel,
+les articles L122-6-1 et L122-6-2 du Code de la propriété intellectuelle).
+
+3. Jouer au jeu
+
+Jouer à Moon Bloom Village sur son site officiel est régi par ses conditions générales de vente et
+d'utilisation (cgv.html). Ce droit d'usage est personnel et ne transfère aucun droit sur le jeu ni sur
+ce dépôt.
+
+4. Éléments de tiers
+
+Certains fichiers ne sont pas de l'auteur et restent sous leur propre licence, qui prime sur ce texte
+pour ces fichiers seulement :
+
+  - vendor/phaser.min.js : Phaser, © Phaser Studio Inc., licence MIT ;
+  - les enregistrements sonores listés dans assets/son/CREDITS.md : licences CC0, domaine public,
+    CC BY 3.0 ou CC BY-SA 3.0, avec leurs auteurs et sources fichier par fichier ;
+  - les dépendances de développement installées par npm (node_modules/, hors du dépôt) : la licence
+    de chaque paquet.
+
+5. Contact
+
+Pour toute demande d'autorisation, contacter l'auteur via le dépôt GitHub (Aluzy/family_farm) ou
+l'adresse de contact indiquée dans les conditions générales du jeu.
+
+Toute utilisation non autorisée constitue une contrefaçon (articles L335-2 et suivants du Code de la
+propriété intellectuelle).
