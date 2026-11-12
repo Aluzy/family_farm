@@ -8627,6 +8627,40 @@ export const RAW_DATA = {
         "{prenom}, pour te servir : me voilà chez moi."
       ]
     },
+    "HORAIRE": {
+      "LEVER": 6.5,
+      "SORTIE": 7.5,
+      "MIDI": 12,
+      "REPRISE": 13.25,
+      "SOUPER": 18.5,
+      "VEILLEE": 19.5,
+      "COUCHER": 21.25,
+      "DECALE": 0.5,
+      "CRENEAU": 0.75,
+      "FLANER": [0.35, 0.6],
+      "PLACE": 3,
+      "PROMENADE": 8,
+      "VITESSE": 0.9,
+      "CHEMIN": 2
+    },
+    "PHRASES": {
+      "ACTIVITE": {
+        "lever": ["Je me lève à peine.", "Encore un peu de café et je sors.", "Le jour se lève sur l'île."],
+        "dehors": ["Je fais le tour de la ferme.", "Je me dégourdis les jambes.", "Il fait bon marcher par ici."],
+        "repas": ["C'est l'heure de manger.", "À table !", "Ça sent bon, ce midi."],
+        "flaner": ["Je prends le temps de souffler.", "On est bien, sur ce banc.", "Je regarde pousser tes cultures."],
+        "rentrer": ["Je rentre à la maison.", "La journée s'achève, je rentre.", "Une veillée au chaud, et au lit."],
+        "dormir": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
+        "repos": ["Je me repose aujourd'hui.", "Une journée tranquille à la maison.", "Je reprends des forces."],
+        "abri": ["Quelle averse ! Je reste à l'abri.", "J'attends que la pluie passe.", "Il pleut des cordes."]
+      },
+      "HUMEUR": {
+        "heureux": ["On vit bien, sur l'île.", "La vie est douce, ici.", "Je suis bien, dans ma maison."],
+        "content": ["Ça va, ça va.", "Tout va bien, merci !", "Encore une belle journée."],
+        "triste": ["J'ai eu une petite semaine. Ça ira mieux demain !", "Un peu de soleil me ferait du bien."],
+        "faim": ["La boîte à nourriture est un peu légère, ces jours-ci.", "Je mangerais bien une bonne soupe."]
+      }
+    },
     "PALIERS": [
       {
         "titre": "S'installer",

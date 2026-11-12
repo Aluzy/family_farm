@@ -37,6 +37,64 @@
         "{prenom}, pour te servir : me voilà chez moi."
       ]
     },
+    "//HORAIRE": [
+      "La journée d'un villageois sur la ferme (fiche I3b, js/engine/villageois-journee.js ; la scène :",
+      "js/carte/ferme/villageois.js), d'après celle des habitants des hameaux (HABITANTS.HORAIRE). Il dort jusqu'à LEVER,",
+      "se lève et reste chez lui jusqu'à SORTIE, sort ; il mange assis de MIDI à REPRISE et de SOUPER à VEILLEE (à la",
+      "table de sa maison, sinon à la table commune dehors : une table de jardin ou en rondins et ses sièges ; sans place,",
+      "chez lui) ; il rentre à VEILLEE (ses fenêtres s'éclairent) et se couche à COUCHER. Chacun a son retard, tiré de",
+      "la graine, du jour et de son id : de 0 à DECALE h au lever, à la sortie et à la veillée, la moitié aux repas et au",
+      "coucher (ils ne partent pas tous à la même minute). Entre les repas, la journée est faite de créneaux de CRENEAU h",
+      "(les mêmes pour tous) : à chacun, il va et vient dehors (un point des chemins posés, de la place ou des abords de",
+      "sa maison) ou, une fois sur FLANER[0] le matin et FLANER[1] l'après-midi, il flâne (assis sur un banc libre, sinon",
+      "debout sur la place, autour du puits ou de la table commune, à PLACE cases au plus). Sans chemin ni place, il se",
+      "promène à PROMENADE cases au plus de sa porte. Mal nourri ou sans lit la nuit d'avant (repos), il reste chez lui",
+      "entre les repas. Sous la pluie (meteo.js), il s'abrite chez lui (sans maison : dans l'abri de départ), repas du",
+      "dehors compris. Tout se déduit de l'heure (le même villageois au même endroit pour deux joueurs, I9d) ; loin de la",
+      "vue, la scène le pose où il doit être, sans trajet. VITESSE : sa marche, en fois celle d'un adulte de la famille ;",
+      "CHEMIN : le prix d'un pas hors des chemins posés (1 : aucune préférence) ; il les prend s'ils ne l'allongent pas",
+      "de plus de ce prix."
+    ],
+    "HORAIRE": {
+      "LEVER": 6.5,
+      "SORTIE": 7.5,
+      "MIDI": 12,
+      "REPRISE": 13.25,
+      "SOUPER": 18.5,
+      "VEILLEE": 19.5,
+      "COUCHER": 21.25,
+      "DECALE": 0.5,
+      "CRENEAU": 0.75,
+      "FLANER": [0.35, 0.6],
+      "PLACE": 3,
+      "PROMENADE": 8,
+      "VITESSE": 0.9,
+      "CHEMIN": 2
+    },
+    "//PHRASES": [
+      "Ce que dit un villageois qu'on touche (fiche I3b, js/engine/villageois-journee.js paroleVillageois) : une bulle,",
+      "sans fenêtre. Le salut de l'heure (HABITANTS.PHRASES.salut, sans ce qui parle du hameau), puis une phrase de ce",
+      "qu'il fait (ACTIVITE : lever, dehors, repas, flaner, rentrer, dormir, repos, abri) et une de son humeur (HUMEUR :",
+      "heureux, content, triste, faim ; humeurVillageois). Tirées de la graine, du jour et du rang de l'appui."
+    ],
+    "PHRASES": {
+      "ACTIVITE": {
+        "lever": ["Je me lève à peine.", "Encore un peu de café et je sors.", "Le jour se lève sur l'île."],
+        "dehors": ["Je fais le tour de la ferme.", "Je me dégourdis les jambes.", "Il fait bon marcher par ici."],
+        "repas": ["C'est l'heure de manger.", "À table !", "Ça sent bon, ce midi."],
+        "flaner": ["Je prends le temps de souffler.", "On est bien, sur ce banc.", "Je regarde pousser tes cultures."],
+        "rentrer": ["Je rentre à la maison.", "La journée s'achève, je rentre.", "Une veillée au chaud, et au lit."],
+        "dormir": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
+        "repos": ["Je me repose aujourd'hui.", "Une journée tranquille à la maison.", "Je reprends des forces."],
+        "abri": ["Quelle averse ! Je reste à l'abri.", "J'attends que la pluie passe.", "Il pleut des cordes."]
+      },
+      "HUMEUR": {
+        "heureux": ["On vit bien, sur l'île.", "La vie est douce, ici.", "Je suis bien, dans ma maison."],
+        "content": ["Ça va, ça va.", "Tout va bien, merci !", "Encore une belle journée."],
+        "triste": ["J'ai eu une petite semaine. Ça ira mieux demain !", "Un peu de soleil me ferait du bien."],
+        "faim": ["La boîte à nourriture est un peu légère, ces jours-ci.", "Je mangerais bien une bonne soupe."]
+      }
+    },
     "//PALIERS": [
       "Les paliers de l'île (fiche I7a, js/engine/paliers.js) : avec ACTIF, une partie neuve suit ces sept paliers à la",
       "place des sept chapitres de la campagne (data/campaign.json), sans introduction ni personnage : un titre, une",

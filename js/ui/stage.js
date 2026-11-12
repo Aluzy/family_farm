@@ -50,7 +50,7 @@ import { garantiDuHameau, HABITANTS, habitantsPourLaCarte } from '../engine/habi
 import { tousLesToitsUses } from '../engine/usure.js';
 import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
-import { villageoisDepuisCarte, villageoisModele } from './villageois.js';
+import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
 import {
   activeTab, axeMode, buildMode, coucher, ecranFerme, enLigne, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
@@ -537,6 +537,8 @@ export function stageModel() {
     // l'île à bâtir (fiche I3a, js/engine/villageois.js) : les villageois (celui qui arrive du port, ceux qui dorment
     // dans leur lit : js/carte/ferme/villageois.js) ; null le chantier éteint ou sans villageois
     villageois: villageoisModele(),
+    // (fiche I3b : l'heure, pour que la scène les fasse vivre entre deux modèles)
+    villageoisHeure: villageoisHorloge(),
     // une scène du récit qui se joue sur la carte (js/ui/scene.js : l'arrivée de Fernand ;
     // js/carte/ferme/rencontre.js) ; null le reste du temps
     sceneCarte: sceneCarteModele(),

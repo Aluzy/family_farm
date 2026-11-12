@@ -79,7 +79,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
 | 1. Le port | I1a (fait), I1b (fait), I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 | Le chemin de la ferme au port, modifiable ; porter la marchandise |
-| 3. Les villageois | I3a (fait), I3b à I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |
+| 3. Les villageois | I3a (fait), I3b (fait), I3c, I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a, I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
@@ -212,6 +212,50 @@ Ce qui est posé (I1b) :
 - **La nuit** (`villageoisNuit`, dans `runNight`) : il mange à la boîte commune (le besoin d'un adulte), dort dans
   son lit ; son bonheur suit la règle de la famille ; mal nourri ou sans lit, il se repose le lendemain (`repos`),
   il ne part jamais. Sa maison retirée, il dort à l'abri et prend la prochaine maison libre.
+
+## Les villageois : la vie sur la ferme (I3b, fait)
+
+Ce qui est posé (I3b) :
+
+- **La journée déduite de l'heure** (`js/engine/villageois-journee.js`) : `journeeDuVillage(state, jour)` donne à
+  chaque villageois ses segments de 0 à 24 h (`{ de, a, etat, lieu: { genre, case } }`), tirés de la graine, du jour
+  et de son id, sans rien garder dans la partie ; `positionVillageois(state, id, heure)` dit où il est et ce qu'il
+  fait. Les états de la fiche : `dormir` (son lit), `lever` (chez lui), `dehors` (un point des chemins posés, de la
+  place, sinon des abords de sa porte), `flaner` (un banc libre, sinon la place), `repas` (assis : la table de sa
+  maison, sinon la table commune dehors ; un siège chacun ; sans place, chez lui), `rentrer` (la veillée chez lui),
+  `repos` (mal nourri ou sans lit la nuit d'avant : chez lui entre les repas), et `abri` (sous la pluie de
+  `meteo.js`, chez lui, repas du dehors compris ; sans maison, l'abri de départ). Les lieux (`lieuxDuVillage`) sont
+  gardés tant que les blocs ne changent pas ; jamais une case de mur (le test d'un lot de fermes générées).
+- **L'horaire** (`VILLAGE.HORAIRE`, d'après `HABITANTS.HORAIRE`) : lever 6 h 30, sortie 7 h 30, repas de 12 h à
+  13 h 15 et de 18 h 30 à 19 h 30, veillée chez lui jusqu'au coucher (21 h 15), chacun son retard (`DECALE`, 0,5 h
+  au plus) ; entre les repas, des créneaux de 0,75 h (communs à tous) où il flâne une fois sur `FLANER` (0,35 le
+  matin, 0,6 l'après-midi), sinon va et vient. `VITESSE` 0,9 (fois un adulte de la famille), `CHEMIN` 2 (le prix
+  d'un pas hors des chemins posés). Ces réglages sont ceux proposés ; ils n'ont pas encore été choisis sur film.
+- **La scène** (`js/carte/ferme/villageois.js`), sur le socle des comportements : `CarteKit.machine` (un état par
+  état de la fiche, une transition revue quatre fois par seconde qui le fait passer au segment de l'heure), la
+  grille de l'image (`CarteKit.perception` : villageois, famille, bêtes de la ferme) et le pas des habitants
+  (`habAvancer` : il contourne le personnage et les autres). Il marche par `fermier.path`, qui prend maintenant un
+  prix par case (`info.cout`, `CarteKit.chemin` : `g.cout`) : il préfère les chemins posés ; les portes s'ouvrent à
+  son passage. Un trajet impossible : hors de la vue il y est d'un coup, dans la vue il renonce et flâne où il est.
+  Loin de la vue (320 px), ni trajet ni image : il est posé où l'heure le veut. L'heure lui vient du modèle
+  (`villageoisHeure`, avancée entre deux modèles).
+- **Parler** : un appui ouvre sa bulle (`paroleVillageois` : le salut de l'heure, ce qu'il fait, son humeur, tirés
+  de `VILLAGE.PHRASES` et `HABITANTS.PHRASES.salut`), avec un bouton pour sa fiche ; l'objectif du jour `parler`
+  compte. Plus de fenêtre au toucher.
+- **La nuit** : il dort dans son lit, sous la couverture (le toit effacé le montre) ; les fenêtres de sa maison
+  s'éclairent le soir tant qu'il y est éveillé, et s'éteignent quand il dort (`fenetres.js` : chaque maison de
+  villageois a sa lumière, `villageoisLumiere` ; les autres maisons comme avant).
+- **Les mesures** (Chromium, téléphone émulé : 412 × 915, DPR 2, processeur ralenti × 4 ; la place d'essai, 15 h,
+  vue dézoomée ; trois répétitions, médianes ; la machine chargée, charge 2,7 à 4,2 sur 4 cœurs) : le temps d'une
+  image (de « prestep » à « postrender », le dessin compris), avant → après : 0 villageois 6,1 → 7,2 ms ; 5 : 8,1 →
+  9,3 ms ; 10 : 11,2 → 8,6 ms ; 15 : 15,0 → 8,1 ms (moyennes 37,9 → 13,1 ms). Le système « villageois » coûte 0,41
+  ms par passage pour 15 villageois à l'écran (0,7 à 0,8 ms rapporté aux images dessinées), sous la borne de 1 ms ;
+  ses pointes (5 à 8 ms, rares) sont les recherches de chemin (deux par image au plus) et le chargement des
+  planches. Avant, sans eux à l'écran, l'image s'alourdissait déjà avec le nombre de villageois : le modèle de la
+  carte (`villageoisPourLaCarte`, refait à chaque rendu de la page) relevait les maisons et les lits de la famille
+  pour chacun (≈ 15 ms pour 15) ; il est maintenant gardé tant que rien ne change (0,04 ms).
+- Reste : les réglages (horaire, vitesse, prix des chemins) à faire choisir sur deux ou trois films, comme la fiche
+  32 ; les tâches (I3c) prendront la place des créneaux « dehors ».
 
 ## Les règles qui ne changent pas
 

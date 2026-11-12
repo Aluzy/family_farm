@@ -12,7 +12,8 @@
   'use strict';
 
   // Le chemin de la case `depart` à la case `but` (numéros de case : rangée × cols + colonne).
-  //   g = { cols, rows, libre(i) → la case i se traverse-t-elle ? }
+  //   g = { cols, rows, libre(i) → la case i se traverse-t-elle ?, cout(i) (facultatif) → le prix d'un
+  //         pas vers la case i, au moins 1 (fiche I3b : les villageois préfèrent les chemins posés) }
   //   o = { diag (coût d'un pas en diagonale, 1,414 par défaut), max (cases examinées au plus),
   //         boite ({ c0, r0, c1, r1 } : la recherche ne sort pas des colonnes c0 à c1 - 1 ni des
   //         rangées r0 à r1 - 1 ; par défaut toute la grille), info (un objet : sans chemin,
@@ -66,6 +67,7 @@
       return top;
     };
     const ok = (c, r) => dans(c, r) && libre(r * cols + c);
+    const prix = g.cout || null;
     const s0 = loc(sc, sr), g0 = loc(gc, gr);
     cout[s0] = 0;
     push(s0, h(sc, sr));
@@ -81,7 +83,7 @@
           const nc = c + dc, nr = r + dr;
           if (!ok(nc, nr)) continue;
           if (dc && dr && (!ok(c + dc, r) || !ok(c, r + dr))) continue;
-          const j = loc(nc, nr), ng = cout[i] + (dc && dr ? diag : 1);
+          const j = loc(nc, nr), ng = cout[i] + (dc && dr ? diag : 1) * (prix ? prix(nr * cols + nc) : 1);
           if (ng < cout[j]) { cout[j] = ng; from[j] = i; push(j, ng + h(nc, nr)); }
         }
       }
