@@ -12,6 +12,8 @@ import { newTechPoints } from './techtree.js';
 import { remboursementCommerce } from './ile.js';
 import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
+import { villageActif } from './village.js';
+import { commencerPaliers } from './paliers.js';
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
@@ -160,6 +162,8 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
   }
   s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s), caseDepart(farmTerrain(s))), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
+  // le chantier « l'île à bâtir » allumé : la partie suit les paliers de l'île (paliers.js, fiche I7a)
+  if (villageActif(s)) commencerPaliers(s);
   return s;
 }
 

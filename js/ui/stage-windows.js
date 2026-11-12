@@ -48,6 +48,7 @@ import { couchages } from '../engine/blocs.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js';
 import { renderChapterBanner } from './chapitres.js';
+import { paliersSuivis } from '../engine/paliers.js';
 import { renderBoite } from './boite.js';
 import { renderTonnelets } from './tonnelet.js';
 import { tonneletsPoses } from '../engine/tonnelets.js';
@@ -371,7 +372,12 @@ export const STAGE_WINDOWS = {
     detail: () => `${state.potager.parcelles.length} parcelles`,
     corps: () => renderPotager(),
   },
-  chapitres: { nom: 'Chapitres', icone: '📜', ok: () => true, corps: () => renderChapterBanner() },
+  // (le chantier « l'île à bâtir », fiche I7a : une partie qui suit les paliers de l'île a la fenêtre « L'île »)
+  chapitres: {
+    get nom() { return paliersSuivis(state) ? 'L\'île' : 'Chapitres'; },
+    get icone() { return paliersSuivis(state) ? '🏝️' : '📜'; },
+    ok: () => true, corps: () => renderChapterBanner(),
+  },
   // Le Silo : sur la carte dès qu'il est débloqué (comme le Poulailler) ; on le construit,
   // l'agrandit et on voit son blé dans sa fenêtre.
   silo: { nom: 'Silo', icone: '🌾', ok: () => isUnlocked(state, 'silo') || state.silo.construit, sansTitre: true, corps: () => renderSilo() },
@@ -400,7 +406,7 @@ export function renderStageWindow() {
       <section class="stage-window ${w.flottante ? 'flottante' : w.haute ? 'tall' : 'half'}${w.bois === false ? '' : ' bois'}" role="dialog" aria-modal="true" aria-labelledby="stage-window-title">
         <header class="window-head">
           ${w.enTete ? `<h2 id="stage-window-title" class="visually-hidden">${w.nom}</h2>${w.enTete()}` : `<h2 id="stage-window-title"><span aria-hidden="true">${w.icone}</span> ${w.nom}${detail ? `<span class="window-detail"> · ${detail}</span>` : ''}</h2>`}
-          ${stageWindow !== 'chapitres' && !w.enTete ? '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
+          ${stageWindow !== 'chapitres' && !w.enTete ? (paliersSuivis(state) ? '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le palier de l\'île en cours" title="L\'île">🏝️</button>' : '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>') : ''}
           <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer" title="Fermer">✕</button>
         </header>
         ${onglets ? `<div class="window-tabs">${onglets}</div>` : ''}

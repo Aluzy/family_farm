@@ -13,7 +13,7 @@ import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, store
 import { arbreProche, openVerger } from './orchard.js';
 import { foretProche } from './outils.js';
 import { grantTechPoints, refreshUnlocks } from './techtree.js';
-import { chapterCount, completeChapter, newCampaignCounters } from './campaign.js';
+import { chapterCount, completeChapter, newCampaignCounters, poserChapitre } from './campaign.js';
 import { sleep } from './night.js';
 import { setFarmSeed } from './depart.js';
 import { gainXp, levelBlock, levelCount } from './levels.js';
@@ -217,11 +217,11 @@ export function testCompleteChapter(state) {
 export function testGoToChapter(state, n) {
   const c = state.campagne;
   const target = Math.floor(Number(n));
-  if (!c || !(target >= 1 && target <= chapterCount() + 1)) return fail('Chapitre inconnu.');
+  if (!c || !(target >= 1 && target <= chapterCount(state) + 1)) return fail('Chapitre inconnu.');
   c.compteurs = newCampaignCounters();
   c.annonces = [];
-  c.fini = target > chapterCount();
-  c.chapitre = c.fini ? chapterCount() : target;
+  c.fini = target > chapterCount(state);
+  poserChapitre(state, c.fini ? chapterCount(state) : target); // (fiche I7a : le palier aussi, s'il y en a)
   // version 1.7 : et au niveau d'un joueur arrivé à ce chapitre (NIVEAUX.CHAPITRE_NIVEAU)
   testSetLevel(state, DATA.NIVEAUX.CHAPITRE_NIVEAU[target - 1]);
   return { ok: true, chapitre: c.chapitre, fini: c.fini };

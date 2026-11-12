@@ -6,6 +6,7 @@ import { farmOpen, pumpFlow } from '../engine/devices.js';
 import { energyStats } from '../engine/energy.js';
 import { cropProduct, hasHoe, seedStock } from '../engine/crops.js';
 import { chapterCount, chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
+import { paliersSuivis } from '../engine/paliers.js';
 import { setupPending } from '../engine/depart.js';
 import { unlockLevel } from '../engine/levels.js';
 import { farmTerrain } from '../engine/terrain.js';
@@ -356,6 +357,10 @@ const HELP = {
   },
   chapitres: () => {
     const c = state.campagne;
+    // (le chantier « l'île à bâtir », fiche I7a : les paliers de l'île, sans texte à lire)
+    if (paliersSuivis(state)) {
+      return { nom: 'L\'île', icone: '🏝️', lignes: [['Paliers', `L'île se bâtit en ${chapterCount(state)} paliers. Remplis tous les objectifs d'un palier pour passer au suivant : son XP, ses points de technologie et sa récompense (des plans de meubles de collection et du décor) tombent aussitôt. Le dernier franchi, l'île est à toi.`]] };
+    }
     const lignes = [['Chapitres', `La campagne compte ${chapterCount()} chapitres. Remplis tous les objectifs d'un chapitre pour passer au suivant et gagner son XP, ses points de technologie et sa récompense : des plans de meubles de collection et du décor, chacun de son style. Le dernier ouvre le jeu libre.`]];
     if (!c.fini) lignes.push(['Ce chapitre', chapterProgress(state).intro]);
     else lignes.push(['Jeu libre', 'Aménage, invite, aide les hameaux, complète tes collections de plans : à ton rythme.']);

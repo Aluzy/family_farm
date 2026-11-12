@@ -42,7 +42,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I6a — l'amitié avec les villageois](I6a-amitie.md) | 6 | I3b | à faire |
 | [I6b — les liens entre villageois](I6b-liens.md) | 6 | I6a | à faire |
 | [I6c — les traits de personnalité](I6c-traits.md) | 6 | I6b, I3c | à faire |
-| [I7a — les objectifs sans récit](I7a-objectifs.md) | 7 | I0a | à faire |
+| [I7a — les objectifs sans récit](I7a-objectifs.md) | 7 | I0a | fait, sauf le point 6 (le joueur automatique suit les paliers : après I0b) |
 | [I7b — le nouveau départ](I7b-nouveau-depart.md) | 7 | I7a, I1b, I3a | à faire |
 | [I7c — le récit retiré du moteur](I7c-recit-moteur.md) | 7 | I7a, I6a | à faire |
 | [I7d — le récit retiré de l'interface, de l'aide et de l'encyclopédie](I7d-recit-interface.md) | 7 | I7c | à faire |

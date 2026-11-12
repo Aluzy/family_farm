@@ -83,7 +83,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a, I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
-| 7. La page blanche | I7a à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
+| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a, I8b | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
@@ -128,6 +128,42 @@ Ce qui est posé (I0a) :
   d'avant le chantier.
 - L'archive : le mainteneur la crée depuis `main`, avant la première fiche qui change le jeu publié
   (`git fetch origin main && git push origin origin/main:refs/heads/archive/jeu-avant-ile`).
+
+## Les paliers de l'île (I7a)
+
+Ce qui est posé (I7a) :
+
+- Les sept chapitres deviennent sept **paliers de l'île** (`VILLAGE.PALIERS`, `data/village.json` ;
+  `js/engine/paliers.js`) : un titre, une icône, des objectifs, une récompense, aucun texte à lire.
+  S'installer ; la première vente au port ; le premier villageois ; les bêtes ; trois villageois au
+  travail ; le premier commerce ; un village de dix. La mécanique reste celle de `campaign.js` : le palier
+  n tient la place du chapitre n (mêmes points de technologie, même XP, mêmes paliers de l'arbre ; les
+  plans et le décor du chapitre, et les graines de la serre que le courrier offrait).
+- La partie : `state.palier` (1 à 7, la forme de `state.campagne.chapitre`, que `poserChapitre` tient
+  égal) n'existe que dans une partie neuve faite le réglage allumé (ou rendue d'essai) : pas de nouveau
+  format. Une partie d'avant garde ses chapitres même le réglage allumé, jusqu'à I7f. Les compteurs
+  restent dans `state.campagne.compteurs`.
+- Le réglage allumé : plus de courrier (ni lettres ni cartes postales) ; la semaine des objectifs du
+  jour est celle de `VILLAGE.OBJECTIFS.SEMAINE` (sans phrase d'ambiance, ni hameau ni calèche) et les
+  objectifs tirés gagnent ceux du port et du village (`VILLAGE.OBJECTIFS.TIRES`).
+- L'interface : la fenêtre des chapitres devient « L'île » (le palier en cours, ses objectifs cochés, la
+  récompense, les paliers passés) ; un palier franchi donne une notification et sa récompense, pas
+  d'écran à lire.
+- **Ce que les fiches suivantes remplissent** (lu de façon défensive : un champ absent compte 0) :
+
+| Objectif | Ce qu'il lit | Fiche |
+|---|---|---|
+| `ventesPort` | `state.campagne.compteurs.ventesPort` : les pièces gagnées au port (`bumpCounter(state, 'ventesPort', gain)`) | I1b |
+| `portNiveau` | `state.port.niveau` | I1c |
+| `villageois` | `state.villageois` : ceux qui ont une maison (`v.maison` non nul) | I3a |
+| `taches` | `state.villageois` : ceux qui ont une tâche (`v.tache` non nul) | I3c |
+| `commerces` | `state.commerces` (tableau ou objet) : ceux qui ne sont pas `ouvert: false` | I5a |
+| `amitieVillageois` | `palierAmitie(state, v.id)` d'`amitie.js` (`state.amitie.pnj[v.id]`), au palier `palier` ou plus | I6a |
+
+  Les objectifs du jour du chantier comptent `vendre` (une vente, I1b), `parler` (I3b, I6a),
+  `cadeau_villageois` (I6a) et `commande_bac` (I1c) par `noterObjectif` ; ils paraissent quand
+  `state.villageois` compte un villageois ou `state.port.commandes` une commande.
+- Reste à faire : le joueur automatique suit les paliers (point 6, après I0b).
 
 ## Les règles qui ne changent pas
 

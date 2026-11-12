@@ -13,6 +13,8 @@ import { escapeHtml } from '../engine/format.js';
 import { PLANS } from '../engine/plans.js';
 import { projetsFaits } from '../engine/projets.js';
 import { styleDe, styleInfo, styleMaison } from '../engine/styles.js';
+import { listeDesChapitres, paliersSuivis } from '../engine/paliers.js';
+import { notify } from './toasts.js';
 
 /* ---------- Lot 9 : chapitres ---------- */
 
@@ -28,7 +30,9 @@ export function objectiveValueText(o) {
       return o.ok ? '✅' : '';
     case 'niveau': return `niv. ${n(o.valeur)} / ${formatNumber(o.cible)}`;
     // fiche 9b : le grand monde
-    case 'caleche': return `${n(o.valeur)} / ${formatNumber(o.cible)} 💰`;
+    case 'caleche': case 'ventesPort': return `${n(o.valeur)} / ${formatNumber(o.cible)} 💰`;
+    // le chantier « l'île à bâtir » (fiche I7a) : le niveau du port
+    case 'portNiveau': return `niv. ${n(o.valeur)} / ${formatNumber(o.cible)}`;
     case 'monde': return `${n(o.valeur)} / ${formatNumber(o.cible)} %`;
     default: return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
   }
@@ -74,8 +78,57 @@ function jeuLibreHtml() {
   </ul>`;
 }
 
+/* -- le chantier « l'île à bâtir » (fiche I7a) : les paliers de l'île, sans texte à lire -- */
+
+// La fenêtre « L'île » : le palier en cours (ses objectifs cochés, sa récompense), puis les paliers passés.
+function renderIle() {
+  const c = state.campagne, L = listeDesChapitres(state), N = chapterCount(state);
+  const passes = (c.fini ? L : L.slice(0, Math.max(0, state.palier - 1))).map((d, i) => `<li>✅ ${d.icone} ${escapeHtml(d.titre)} <span class="muted">${i + 1} / ${N}</span></li>`);
+  const passesHtml = passes.length ? `<span class="muted ile-passes-titre">Paliers passés</span><ul class="ile-passes">${passes.reverse().join('')}</ul>` : '';
+  if (c.fini) {
+    return `
+    <div class="card chapter-card ile-card done">
+      <span class="card-title"><span>🏝️ Tous les paliers franchis</span><span class="chips"><span class="chip">${N} / ${N}</span>${helpBtn('chapitres')}</span></span>
+      ${passesHtml}
+    </div>`;
+  }
+  const p = chapterProgress(state);
+  const rec = recompenseItems(L[p.chapitre - 1].recompense || {});
+  return `
+    <div class="card chapter-card ile-card">
+      <span class="card-title"><span>${p.icone} ${escapeHtml(p.titre)}</span><span class="chips"><span class="chip" title="Palier de l'île">${p.chapitre} / ${N}</span><span class="chip" title="Récompense du palier">⭐ ${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[p.chapitre - 1] || 0)} XP</span><span class="chip" title="Points de technologie">🔬 ${formatNumber(DATA.ARBRE.POINTS.CHAPITRES[p.chapitre - 1] || 0)}</span>${helpBtn('chapitres')}</span></span>
+      <ul class="objectives">${p.objectifs.map(objectiveHtml).join('')}</ul>
+      ${rec.length ? `<span class="muted chapitre-recompense-titre">🎁 ${rec.join(' · ')}</span>` : ''}
+      ${passesHtml}
+    </div>`;
+}
+
+// La récompense en texte simple (une notification n'a pas de balises) : ['📜 plan : Pergola', '2 × 🏮 Lanterne'].
+function recompenseTextes(r) {
+  const nom = (id) => { const o = DATA.OBJETS[id] || DATA.ATELIER.BLOCS[id]; return o ? `${o.icone || ''} ${o.nom}`.trim() : id; };
+  return [
+    ...(r.plans || []).map((id) => `📜 plan : ${nom(id)}`),
+    ...Object.entries(r.objets || {}).map(([id, n]) => `${n > 1 ? `${n} × ` : ''}${nom(id)}`),
+  ];
+}
+
+// Un palier franchi : une notification (et la récompense, déjà donnée), pas d'écran à lire ; touchée, elle
+// ouvre la fenêtre « L'île ».
+function annoncerPaliers() {
+  const c = state.campagne, L = listeDesChapitres(state);
+  while (c.annonces.length) {
+    const a = c.annonces[0], d = L[a.chapitre - 1];
+    const gains = [`+${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[a.chapitre - 1] || 0)} XP`, `+${formatNumber(DATA.ARBRE.POINTS.CHAPITRES[a.chapitre - 1] || 0)} PT`, ...recompenseTextes(a.recompense || {})];
+    const suite = L[a.chapitre] ? ` Palier suivant : ${L[a.chapitre].icone} ${L[a.chapitre].titre}.` : ' L\'île est à toi.';
+    notify(`🏝️ Palier ${a.chapitre} franchi : ${d.icone} ${d.titre} ! ${gains.join(' · ')}.${suite}`, { kind: 'succes', son: 'chapitre', cible: { fenetre: 'chapitres' } });
+    acknowledgeChapter(state);
+  }
+  refresh();
+}
+
 // Bandeau de chapitre, en haut de la Ferme : titre, objectifs et progression.
 export function renderChapterBanner() {
+  if (paliersSuivis(state)) return renderIle();
   const c = state.campagne;
   if (c.fini) {
     const der = DATA.CHAPITRES.liste[chapterCount() - 1];
@@ -132,6 +185,7 @@ function openChapterModal() {
 // Ouvre l'écran de fin d'un chapitre dès qu'aucune autre fenêtre n'est ouverte.
 export function watchChapters() {
   if (!state.campagne || !state.campagne.annonces.length) return;
+  if (paliersSuivis(state)) { annoncerPaliers(); return; }
   if (document.getElementById('modal-root').childElementCount === 0) openChapterModal();
 }
 
