@@ -80,13 +80,13 @@ FORMES = {
         'cone': {'pied': 42, 'masses': [(CX, 9, 7, 7, 8, (3.4, 5.0)), (CX, 20, 12, 9, 16, (3.8, 5.6)),
                                         (CX, 32, 17, 9, 22, (4.0, 6.0))]},
     },
+    # le saule n'a pas de touffes : ses lianes partent toutes du haut, au milieu (une raie), suivent le dôme puis
+    # retombent jusqu'au sol (lianes_saule) ; sa masse ne sert qu'à situer la couronne (boite)
     'saule_pleureur': {
-        'dome': {'pied': 34, 'masses': [(CX, 18, 20, 13, 26, (4.0, 6.0))]},
-        'fontaine': {'pied': 34, 'masses': [(CX, 15, 13, 13, 22, (4.0, 5.8))]},
-        'large': {'pied': 36, 'masses': [(CX, 22, 22, 10, 28, (4.0, 6.0))]},
+        'raie': {'pied': 46, 'masses': [(CX, 18, 20, 13, 0, (4.0, 6.0))]},
     },
 }
-FORME = {'cerisier_japon': 'parasol', 'erable_rouge': 'rond', 'magnolia': 'rond', 'saule_pleureur': 'dome'}   # celles du jeu
+FORME = {'cerisier_japon': 'nuages', 'erable_rouge': 'coeur', 'magnolia': 'coupe', 'saule_pleureur': 'raie'}   # celles du jeu
 
 
 def boite(forme):
@@ -213,27 +213,57 @@ def fleur(t, x0, y0, rng):
     t.put(x0, y0 - 1, ton(COEUR_MAGNOLIA, 0.6))
 
 
-def rameaux_saule(t, forme, rng, devant):
-    """Les rameaux du saule qui retombent : des fils de feuilles fines, courbés, du bord de la couronne vers le sol ;
-    ceux de derrière plus sombres (sous la couronne), ceux de devant éclairés à gauche."""
+RAIE_Y, DOME_RX, DOME_RY = 4, 20.5, 14            # la raie en haut du saule, la largeur et la hauteur de son dôme
+
+
+def lianes_saule(t, rng, devant):
+    """Les lianes du saule, comme une chevelure : chacune part de la raie, en haut au milieu, descend le long du
+    dôme (un quart d'ellipse vers son côté), puis retombe presque droite jusqu'au sol en ondulant. Celles de
+    derrière, plus sombres et froides, remplissent ; celles de devant sont éclairées sur le haut gauche du dôme et
+    plus sombres en bas (l'ombre de la chevelure) ; un trou entre elles au milieu en bas, où l'on voit le tronc.
+    Chaque liane a sa rampe et son ton ; ses feuilles fines alternent de part et d'autre."""
     rampes = [rampe(c, 160) for c in FEUILLES['saule_pleureur']]
-    cx, cy, rx, ry = boite(forme)
-    for i in range(22):
-        a = (i / 22) * math.pi + (math.pi if not devant else 0)
-        x = cx + math.cos(a) * (rx - 1) * (0.55 + 0.45 * rng.random())
-        y = cy + math.sin(a) * ry * 0.6
-        bas = H - 4 - rng.randrange(8) - (6 if not devant else 0)
-        R = rampes[i % 3]
-        if devant and abs(x - cx) < 4:
-            continue                                     # (on voit le tronc entre les rameaux de devant)
-        for yy in range(int(y), bas):
-            f = (yy - y) / max(1, bas - y)
-            xx = x + (x - cx) * 0.18 * f + math.sin(yy * 0.4 + i) * 0.5
-            lum = (0.62 if devant else 0.34) - 0.30 * (xx - cx + rx) / (2 * rx) * (1 if devant else 0.5) - 0.12 * f
-            lum += 0.10 * (((yy + i) % 3) == 0) + 0.05 * bruit(xx, yy, 77)
-            t.put(xx, yy, ton(R, lum))
-            if ((yy + i) % 3) == 0:
-                t.put(xx + (1 if (yy // 3) % 2 else -1), yy, ton(R, lum - 0.06))      # une feuille de côté
+    n = 24 if devant else 40
+    for i in range(n):
+        a = -1 + 2 * (i + 0.5 + rng.uniform(-0.25, 0.25)) / n   # de la gauche (-1) à la droite (1)
+        R = rampes[rng.randrange(3)]
+        teinte = rng.uniform(-0.05, 0.05)
+        rx = DOME_RX * (0.96 + 0.06 * rng.random()) * (0.92 if not devant else 1)
+        bas = H - 3 - rng.randrange(6) - (0 if devant else 3)
+        if devant and abs(a) < 0.22:
+            bas = min(bas, 40 + rng.randrange(6))         # (le tronc se voit entre les lianes du milieu)
+        pts = []
+        for k in range(40):                                # le dôme, de la raie vers le côté
+            u = k / 39 * math.pi / 2
+            pts.append((CX + (1 if a > 0 else -1) * 0.5 + a * rx * math.sin(u), RAIE_Y + DOME_RY * (1 - math.cos(u)) * (0.45 + 0.55 * abs(a))))
+        x1, y1 = pts[-1]
+        for y in range(int(y1) + 1, bas):                  # la chute, presque droite, qui ondule et s'écarte à peine
+            f = (y - y1) / max(1, bas - y1)
+            pts.append((x1 + a * 3.0 * f + 0.6 * math.sin(y * 0.35 + i), y))
+        vus = set()
+        for j, (x, y) in enumerate(pts):
+            if (int(x), int(y)) in vus:
+                continue
+            vus.add((int(x), int(y)))
+            chute = max(0.0, (y - y1) / max(1, bas - y1)) if j >= 40 else 0.0
+            haut = (y - RAIE_Y) / (H - RAIE_Y)
+            lum = 0.80 - 0.34 * (a + 1) / 2 - 0.30 * chute - 0.10 * haut + teinte + 0.05 * bruit(x, y, 77)
+            if devant:                                      # le reflet sur l'arrondi du haut, côté lumière
+                lum += 0.22 * math.exp(-((y - (RAIE_Y + DOME_RY * 0.55)) / 4.5) ** 2) * (1 - (a + 1) / 2)
+            else:
+                lum -= 0.42
+            if j < 3:
+                lum -= 0.18                                 # la raie, au creux du haut
+            lum += 0.08 * (((int(y) + i) % 3) == 0)
+            t.put(x, y, ton(R, lum))
+            if j >= 40 and ((int(y) + i) % 4) == 0:      # une feuille fine de côté, dans la chute
+                t.put(x + (1 if (int(y) // 4 + i) % 2 else -1), y, ton(R, lum - 0.08))
+            elif devant and j < 40 and j % 2:              # (sur le dôme, la liane fait deux pixels : la chevelure)
+                t.put(x + (1 if a > 0 else -1), y, ton(R, lum - 0.06))
+    if devant:                                              # la raie : le creux au milieu du haut, d'où tout part
+        Rr = rampes[0]
+        for y in range(RAIE_Y, RAIE_Y + 5):
+            t.put(CX, y, ton(Rr, 0.20 + 0.04 * (y - RAIE_Y)))
 
 
 def herbe_au_pied(im, esp, rng):
@@ -268,12 +298,13 @@ def arbre(esp, nom_forme=None):
     forme = FORMES[esp][nom_forme or FORME[esp]]
     rng = random.Random({'cerisier_japon': 11, 'erable_rouge': 23, 'magnolia': 37, 'saule_pleureur': 41}[esp])
     t = Toile()
-    if esp == 'saule_pleureur':
-        rameaux_saule(t, forme, random.Random(5), devant=False)
-    tronc(t, esp, forme, rng)
-    couronne(t, esp, forme, rng)
-    if esp == 'saule_pleureur':
-        rameaux_saule(t, forme, random.Random(6), devant=True)
+    if esp == 'saule_pleureur':                            # la chevelure : derrière, le tronc, devant
+        lianes_saule(t, random.Random(5), devant=False)
+        tronc(t, esp, forme, rng)
+        lianes_saule(t, random.Random(6), devant=True)
+    else:
+        tronc(t, esp, forme, rng)
+        couronne(t, esp, forme, rng)
     im = contour(t.im, OUT)
     herbe_au_pied(im, esp, random.Random(len(esp) + 3))
     if esp == 'cerisier_japon':                            # quelques pétales déjà tombés, dans l'herbe
