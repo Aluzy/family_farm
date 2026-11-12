@@ -332,7 +332,7 @@ const CULTURE_MONTE = 0;
     // chantier.js stepLanterns) : jour et nuit, ses `images` (une rangée par modèle, dans l'ordre de `modeles`)
     // défilent (`fps`) par-dessus la fontaine, au même endroit ; fixe en mode réduit
     fontaine: {
-      key: 'fontaine_eau', file: 'fontaine_eau.png', frame: { frameWidth: 32, frameHeight: 44 }, images: 4, fps: 6,
+      key: 'fontaine_eau', file: 'fontaine_eau.png', frame: { frameWidth: 32, frameHeight: 47 }, images: 4, fps: 6,
       modeles: ['pierre', 'marbre', 'grenouille', 'angelot'],
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur

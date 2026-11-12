@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.join(HERE, '..', 'carte'))  # scripts/carte/nuances.p
 from pixel import ASSETS, ROOT, contour  # noqa: E402
 from nuances import bruit, rampe, ton  # noqa: E402
 
-W, H = 32, 44
+W, H = 32, 47                                # (le bas de la face du bassin : rangée 45 ; son contour : 46)
 OUT = (30, 26, 30)
 EAU_IMAGES = 4
 CX = 15.5                                   # le milieu
