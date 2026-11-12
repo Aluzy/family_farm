@@ -12,7 +12,8 @@ import { IPS, RACINE } from './studio.mjs';
 const [DOSSIER, SORTIE = 'trailer.mp4', PLAN = ''] = process.argv.slice(2);
 const L = 1920, H = 1080;
 
-// Le plan de montage : { scene, debut (s dans la prise), duree (s), texte (le mot du plan), carton }.
+// Le plan de montage : { scene, debut (s dans la prise), duree (s), texte (le mot du plan), carton ('titre',
+// 'fin'), tenu / suite (le mot reste d'un plan au suivant), muet }.
 const PLANS = JSON.parse(readFileSync(PLAN || join(RACINE, 'scripts/trailer/montage.json'), 'utf8'));
 
 /* ---------- les cartons : des PNG transparents, dessinés par le navigateur ---------- */
@@ -63,8 +64,10 @@ for (const [i, p] of PLANS.entries()) {
   if (cartons[i]) {
     entrees.push('-loop', '1', '-framerate', String(IPS), '-t', String(p.duree), '-i', cartons[i]);
     const c = n++;
-    const fin = p.carton === 'fin' ? '' : `,fade=t=out:st=${(p.duree - 0.3).toFixed(2)}:d=0.3:alpha=1`;
-    filtres.push(`[${c}:v]format=rgba,fade=t=in:st=${p.carton ? 0.3 : 0.1}:d=${p.carton ? 0.6 : 0.25}:alpha=1${fin}[c${i}]`);
+    // (un mot tenu sur plusieurs plans : « suite » ne le fait pas réapparaître, « tenu » ne l'efface pas)
+    const debut = p.suite ? '' : `,fade=t=in:st=${p.carton ? 0.3 : 0.1}:d=${p.carton ? 0.6 : 0.25}:alpha=1`;
+    const fin = p.carton === 'fin' || p.tenu ? '' : `,fade=t=out:st=${(p.duree - 0.3).toFixed(2)}:d=0.3:alpha=1`;
+    filtres.push(`[${c}:v]format=rgba${debut}${fin}[c${i}]`);
     filtres.push(`${flux}[b${i}];[b${i}][c${i}]overlay=shortest=1[p${i}]`);
   } else filtres.push(`${flux}[p${i}]`);
   sorties.push(`[p${i}]`);
@@ -98,5 +101,5 @@ pistes.push(`${voix.join('')}amix=inputs=${voix.length}:normalize=0:duration=fir
 
 writeFileSync(join(DOSSIER, 'filtre.txt'), [...filtres, ...pistes].join(';\n'));
 execFileSync('ffmpeg', ['-v', 'error', '-y', ...entrees, '-filter_complex_script', join(DOSSIER, 'filtre.txt'), '-map', '[v]', '-map', '[a]',
-  '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-r', String(IPS), '-c:a', 'aac', '-b:a', '192k', '-t', String(total), '-movflags', '+faststart', SORTIE], { stdio: 'inherit' });
+  '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-pix_fmt', 'yuv420p', '-r', String(IPS), '-c:a', 'aac', '-b:a', '192k', '-t', String(total), '-movflags', '+faststart', SORTIE], { stdio: 'inherit' });
 console.log(`${SORTIE} : ${total.toFixed(1)} s, ${PLANS.length} plans, ${voix.length - 1} sons.`);

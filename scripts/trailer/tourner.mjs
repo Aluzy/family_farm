@@ -214,7 +214,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
   if (veut('repas')) {
     // le repas du soir à la terrasse : les invités arrivent, la famille s'attable, le repas est servi
     const t = await p.evaluate(() => {
-      const sc = FarmStage.scene(); TR.heure(19.3); TR.zoom(6 * innerHeight / 1080);
+      const sc = FarmStage.scene(); TR.heure(19.3); TR.zoom(7 * innerHeight / 1080);
       const T = sc.placesTable();
       if (!T) return null;
       const P = TR.E().DATA.AMITIE.INVITATION.PAROLES || {};
@@ -228,7 +228,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
       const pl = T.places[T.places.length - 1];
       const siege = [...sc.blocks.values()].filter((e) => SIEGES.has(e.sorte)).map((e) => ({ e, d: Math.hypot((e.case % sc.grid.cols) * 16 + 8 - pl.x, Math.floor(e.case / sc.grid.cols) * 16 + 12 - pl.y) })).sort((a, b) => a.d - b.d)[0];
       TR.va(pl.pied ? pl.pied.x : T.x, pl.pied ? pl.pied.y : T.y + 30);
-      TR.libre(T.x, T.y - 44);
+      TR.libre(T.x, T.y - 12);
       if (siege && siege.d < 20) sc.asseoirSur(siege.e);
       TR.voile({ invites: window.__inv });
       return { x: T.x, y: T.y, n: T.places.length, terrasse: T.terrasse, P: Object.keys(P) };
