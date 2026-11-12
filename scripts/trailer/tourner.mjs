@@ -4,6 +4,7 @@
 //   --partie : la ferme du tournage (⚙️ Options › Exporter) ; sans elle, une ferme d'essai (partie.mjs).
 //   --brouillon : en 960 × 540, une image sur trois (pour régler une scène vite).
 // Le montage : scripts/trailer/monter.mjs.
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { action, attendre, ouvrirStudio, plateau, scenePrete } from './studio.mjs';
 import { miseEnScene, partieDe, partieExportee, partieTrailer, sauvegarde } from './partie.mjs';
@@ -28,7 +29,14 @@ function trousse() {
   let heureTenue = null, E = null;
   import('/js/engine/index.js').then((m) => { E = m; });
   setInterval(() => { if (heureTenue !== null && E) FF.state.awakeMs = E.awakeMsAtHour(heureTenue); }, 200);
+  // les sons que le jeu joue (js/son.js), notés avec leur instant : le montage les replace sur le film
+  const sons = [];
+  if (window.FermeSon) for (const nom of ['joue', 'prise']) {
+    const f0 = FermeSon[nom];
+    FermeSon[nom] = (cle, o = {}) => { sons.push({ cle: nom === 'prise' ? 'prise' : cle, t: Date.now(), depuis: (o && o.depuis) || 0, gain: (o && o.gain) || 1 }); return f0(cle, o); };
+  }
   window.TR = {
+    sons,
     act, ov,
     E: () => E,
     // le zoom entier Z (les pixels du jeu nets), la vue qui suit le personnage ou libre
@@ -67,7 +75,14 @@ async function ouvre(sauve, opts = {}) {
 }
 
 const Z3 = 3 * (H / 1080), Z4 = 4 * (H / 1080), Z5 = 5 * (H / 1080);   // 3, 4 ou 5 pixels d'écran par pixel du jeu en 1080p
-const film = (pl, p, nom, s, chaque) => { console.log(`  ● ${nom} (${s} s)`); return pl.filmer(p, join(DOSSIER, nom), s, chaque, UNE_SUR); };
+async function film(pl, p, nom, s, chaque) {
+  console.log(`  ● ${nom} (${s} s)`);
+  const t0 = await p.evaluate(() => Date.now());
+  const n = await pl.filmer(p, join(DOSSIER, nom), s, chaque, UNE_SUR);
+  const sons = await p.evaluate((t0) => TR.sons.filter((x) => x.t >= t0).map((x) => ({ cle: x.cle, s: (x.t - t0) / 1000, depuis: x.depuis, gain: x.gain })), t0);
+  writeFileSync(join(DOSSIER, nom, 'sons.json'), JSON.stringify(sons));
+  return n;
+}
 const SOLO = ['lieux', 'champ', 'hache', 'pioche', 'peche', 'cuisine', 'repas'];
 
 /* ------------------------------------------------------------------ les scènes en solo */
