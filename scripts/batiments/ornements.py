@@ -179,6 +179,7 @@ def couronne(t, esp, forme, rng):
                 y += math.sin(a) * 0.7
                 if any(((x + 0.5 - m[0]) / m[2]) ** 2 + ((y + 0.5 - m[1]) / m[3]) ** 2 <= 0.8 for m in forme['masses']):
                     t.put(x, y, ton(E, 0.25 + 0.1 * (j % 2)))   # (dans la couronne seulement)
+    fleurs = []
     for (x0, y0, r, k) in touffes(esp, forme, rng):
         R = rampes[k]
         for y in range(int(y0 - r) - 1, int(y0 + r) + 2):
@@ -196,9 +197,71 @@ def couronne(t, esp, forme, rng):
                 lum += 0.08 * g + (0.06 if (x * 3 + y * 5 + k) % 7 == 0 else 0)           # le grain des feuilles
                 if d > 0.72 and (dx + dy) > 0.4:
                     lum -= 0.16                                                         # le liseré d'ombre
-                t.put(x, y, ton(R, 0.12 + 0.82 * max(0, min(1, lum))))
+                fond = 0.08 if esp in FEUILLE_FORMES else 0       # (sous les feuilles, la touffe plus sombre)
+                t.put(x, y, ton(R, 0.12 + 0.82 * max(0, min(1, lum - fond))))
+        feuillage(t, esp, R, x0, y0, r, (cx0, cy0, rx0, ry0), rng)
         if esp == 'magnolia' and rng.random() < 0.75:      # une fleur en tulipe sur la touffe, tournée vers le ciel
-            fleur(t, x0 + rng.uniform(-r / 2, r / 3), y0 - r * 0.45, rng)
+            fleurs.append((x0 + rng.uniform(-r / 2, r / 3), y0 - r * 0.45))
+    for (x, y) in fleurs:                                   # (les fleurs par-dessus tout le feuillage)
+        fleur(t, x, y, rng)
+
+
+def eclairage(x, y, x0, y0, r, b):
+    """La lumière d'un point (x, y) sur la touffe de milieu (x0, y0), de rayon r, dans la couronne de boîte b."""
+    cx0, cy0, rx0, ry0 = b
+    dx, dy = (x + 0.5 - x0) / r, (y + 0.5 - y0) / (r * 0.86)
+    nz = math.sqrt(max(0.0, 1 - min(1.0, dx * dx + dy * dy)))
+    lum = 0.5 + 0.5 * (dx * LUM[0] + dy * LUM[1] + nz * LUM[2])
+    gy, gx = (y + 0.5 - cy0) / ry0, (x + 0.5 - cx0) / rx0
+    return lum - 0.22 * gy - 0.12 * gx - 0.10 * max(0, gy - 0.4) * 2
+
+
+# Les petites formes du feuillage, posées sur les touffes : [(dx, dy, écart de lumière)] ; l'ombre portée de la
+# feuille (en bas à droite) est posée d'abord, la feuille par-dessus, son bord haut et gauche plus clair.
+FEUILLE_FORMES = {
+    'cerisier_japon': [   # une fleur de cerisier : cinq pétales autour d'un cœur plus pâle
+        [(0, -1, 0.06), (-1, 0, 0.04), (1, 0, -0.04), (0, 1, -0.08), (0, 0, 0.14)],
+        [(0, 0, 0.10), (1, 0, 0.0), (0, 1, -0.06), (1, 1, -0.10)],
+    ],
+    'erable_rouge': [     # une feuille d'érable : trois pointes
+        [(0, -1, 0.10), (-1, 0, 0.06), (0, 0, 0.0), (1, 0, -0.06), (0, 1, -0.10)],
+        [(-1, -1, 0.10), (1, -1, 0.02), (0, 0, 0.0), (0, 1, -0.10)],
+        [(0, -1, 0.08), (-1, 0, 0.04), (0, 0, -0.02), (1, 1, -0.10)],
+    ],
+    'magnolia': [         # une feuille de magnolia : longue, ovale, penchée
+        [(-1, -1, 0.10), (0, 0, 0.02), (1, 1, -0.08)],
+        [(1, -1, 0.06), (0, 0, 0.0), (-1, 1, -0.06)],
+        [(0, -1, 0.10), (0, 0, 0.02), (0, 1, -0.08), (1, 0, -0.04)],
+        [(-1, 0, 0.08), (0, 0, 0.02), (1, 0, -0.06)],
+    ],
+}
+
+
+def feuillage(t, esp, R, x0, y0, r, b, rng):
+    """Un semblant de feuillage sur la touffe : de petites feuilles (des fleurs pour le cerisier), chacune éclairée
+    selon sa place sur la touffe, son bord haut gauche plus clair, son ombre portée en bas à droite ; quelques-unes
+    débordent du bord, la silhouette devient feuillue."""
+    formes = FEUILLE_FORMES.get(esp)
+    if not formes:
+        return
+    n = int(r * r * 0.40)
+    for _ in range(n):
+        a, d = rng.random() * 2 * math.pi, math.sqrt(rng.random()) * 1.08
+        x, y = round(x0 + math.cos(a) * d * r), round(y0 + math.sin(a) * d * r * 0.86)
+        if 0.6 < d < 0.98 and (math.cos(a) + math.sin(a)) > 0.5:
+            continue                                        # (le liseré d'ombre de la touffe reste libre : son volume)
+        forme = rng.choice(formes)
+        base = eclairage(x, y, x0, y0, r, b) + rng.uniform(-0.07, 0.07)
+        if d > 0.95 and (math.cos(a) + math.sin(a)) > 0.3:
+            base -= 0.10                                    # (au bord, côté ombre)
+        ombre = max(0, min(1, base - 0.46))
+        for (dx, dy, _) in forme:                           # l'ombre de la feuille, décalée en bas à droite
+            if not t.get(x + dx + 1, y + dy + 1)[3]:
+                continue
+            if (dx + 1, dy + 1) not in [(u, v) for (u, v, _) in forme]:
+                t.put(x + dx + 1, y + dy + 1, ton(R, 0.12 + 0.82 * ombre))
+        for (dx, dy, e) in forme:
+            t.put(x + dx, y + dy, ton(R, 0.12 + 0.82 * max(0, min(1, base + 0.04 + 1.8 * e))))
 
 
 def fleur(t, x0, y0, rng):
