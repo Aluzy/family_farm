@@ -378,18 +378,27 @@
 
     // Un escalier sous ce point (son bas, ou son haut à l'étage) : sa case, ou -1.
     escalierAt(wx, wy) {
-      return this.escalierVers(wx, wy) >= 0 ? this.tileAtPoint(this.etagePoint(wx, wy).x, this.etagePoint(wx, wy).y) : -1;
+      if (this.escalierVers(wx, wy) < 0) return -1;
+      const q = this.etagePoint(wx, wy), c = this.tileAtPoint(q.x, q.y), e = this.ctx.lastModel.etage;
+      const tous = [...e.escaliers, ...((e.etage2 && e.etage2.escaliers) || [])];
+      return tous.includes(c) ? c : this.tileAtPoint(q.x, q.y + E.depasse);
     },
     // Où mène l'escalier sous ce point : le niveau où l'on arrive, ou -1. En bas, celui du bas
     // monte à l'étage ; à l'étage, son haut redescend, celui de l'étage monte au niveau 2 ; au
     // niveau 2, le haut de celui de l'étage redescend.
+    // (l'image de l'escalier dépasse de sa case vers le haut, BLOCS_CARTE.etage.depasse px : un appui
+    // sur ce qui dépasse compte aussi)
     escalierVers(wx, wy) {
       const e = this.ctx.lastModel && this.ctx.lastModel.etage;
       if (!e) return -1;
-      const q = this.etagePoint(wx, wy), c = this.tileAtPoint(q.x, q.y), n = this.niveau || 0, e2 = e.etage2;
-      if (n === 0) return e.escaliers.includes(c) ? 1 : -1;
-      if (n === 1) return e.escaliers.includes(c) ? 0 : e2 && e2.escaliers.includes(c) ? 2 : -1;
-      return e2 && e2.escaliers.includes(c) ? 1 : -1;
+      const q = this.etagePoint(wx, wy), n = this.niveau || 0, e2 = e.etage2;
+      const vers = (c) => {
+        if (n === 0) return e.escaliers.includes(c) ? 1 : -1;
+        if (n === 1) return e.escaliers.includes(c) ? 0 : e2 && e2.escaliers.includes(c) ? 2 : -1;
+        return e2 && e2.escaliers.includes(c) ? 1 : -1;
+      };
+      const v = vers(this.tileAtPoint(q.x, q.y));
+      return v >= 0 ? v : vers(this.tileAtPoint(q.x, q.y + E.depasse));
     },
   });
 })(window);

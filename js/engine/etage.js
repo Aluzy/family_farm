@@ -23,7 +23,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, takeItem } from './inventory.js';
-import { blocsEnMain, blocsPoses, changeMur, changeSol, empriseMeuble, genreBloc, hauteurMur, hauteurPile, mesuresMeuble, piecesCloses, raisonFixe, solsPoses, tourneBloc, variantesBloc } from './blocs.js';
+import { blocsEnMain, blocsPoses, changeMur, changeSol, empriseMeuble, genreBloc, hauteurMur, hauteurPile, matiereDessus, mesuresMeuble, piecesCloses, raisonFixe, solsPoses, tourneBloc, variantesBloc } from './blocs.js';
 import { farmTerrain } from './terrain.js';
 
 // Les blocs qui se posent à l'étage : un escalier (vers le niveau 2), des murs, des portes, une paillasse, une lanterne, un
@@ -60,6 +60,12 @@ export function etageBlocs(state) {
 // comme celles du bas (blocs.js fenetresPosees).
 export function fenetresEtage(state) {
   return state.fenetresEtage && typeof state.fenetresEtage === 'object' ? state.fenetresEtage : {};
+}
+// Les fenêtres de l'étage percées dans le haut d'un mur du bas rehaussé jusqu'à l'étage (ou plus
+// haut) : { [case]: sorte de la fenêtre } (state.fenetresHautes). Le mur garde sa hauteur
+// (state.hauteurs) : la pièce du niveau 1 reste close (piecesNiveau).
+export function fenetresHautes(state) {
+  return state.fenetresHautes && typeof state.fenetresHautes === 'object' ? state.fenetresHautes : {};
 }
 const estFen = (sorte) => !!(DATA.ATELIER.BLOCS[sorte] && DATA.ATELIER.BLOCS[sorte].fenetre);
 const murPlein = (sorte) => !!(DATA.ATELIER.BLOCS[sorte] && DATA.ATELIER.BLOCS[sorte].mur && !estFen(sorte)) && sorte !== 'paroi_vitree';
@@ -293,7 +299,15 @@ export function poseEtageStatus(state, sorte, tile, sens = 0) {
   }
   if (dessusEtage(state)[tile]) return { ok: false, raison: 'Un tableau est accroché ici : reprends-le d\'abord.' };
   if (blocsPoses(state)[tile] === 'escalier') return { ok: false, raison: 'Ici, c\'est le haut de l\'escalier.' };
-  if (hauteurPile(state, tile) >= 2) return { ok: false, raison: 'Le mur du bas monte jusqu\'ici : il est déjà le mur de l\'étage.' };
+  if (hauteurPile(state, tile) >= 2) {
+    // (une fenêtre se perce dans le haut d'un mur du bas rehaussé jusqu'à l'étage, qui reste rehaussé :
+    // state.fenetresHautes ; la pièce du niveau 1 reste close)
+    if (!estFen(sorte)) return { ok: false, raison: 'Le mur du bas monte jusqu\'ici : il est déjà le mur de l\'étage.' };
+    if (fenetresHautes(state)[tile]) return { ok: false, raison: 'Une fenêtre est déjà percée ici : reprends-la d\'abord.' };
+    if (!murPlein(matiereDessus(state, tile))) return { ok: false, raison: 'Ici, le haut du mur n\'est pas un mur plein.' };
+    if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+    return { ok: true, percerHaut: true };
+  }
   // (le second escalier : dans une pièce dont les murs montent tous au niveau 2)
   if (sorte === 'escalier' && !casesSolEtage(state, 2).has(tile)) return { ok: false, raison: 'L\'escalier de l\'étage se pose dans une pièce dont les murs montent tous au niveau 2.' };
   if (etageBlocs(state)[tile] && !changeMur(etageBlocs(state)[tile], sorte)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
@@ -320,6 +334,13 @@ export function poserEtage(state, sorte, tile, sens = 0, variante = null) {
     if (!state.dessusEtage || typeof state.dessusEtage !== 'object') state.dessusEtage = {};
     state.dessusEtage[tile] = sorte;
     return { ok: true, sorte, case: tile, etage: true, dessus: true };
+  }
+  // une fenêtre dans le haut d'un mur du bas rehaussé : le mur reste (state.hauteurs), la fenêtre est
+  // notée à part (state.fenetresHautes) ; reprise, elle laisse le mur
+  if (st.percerHaut) {
+    if (!state.fenetresHautes || typeof state.fenetresHautes !== 'object') state.fenetresHautes = {};
+    state.fenetresHautes[tile] = sorte;
+    return { ok: true, sorte, case: tile, etage: true, haute: true, perce: matiereDessus(state, tile) };
   }
   const ancien = etageBlocs(state)[tile], dans = fenetresEtage(state)[tile];
   if (!state.etage || typeof state.etage !== 'object') state.etage = {};
@@ -352,6 +373,13 @@ export function reprendreEtage(state, tile) {
     delete state.dessusEtage[tile];
     addItem(state, DATA.ATELIER.BLOCS[haut].objet, 1);
     return { ok: true, sorte: haut, case: tile, etage: true, dessus: true };
+  }
+  // (une fenêtre percée dans le haut d'un mur du bas rehaussé : reprise, le mur reste)
+  const fh = fenetresHautes(state)[tile];
+  if (fh && !etageBlocs(state)[tile]) {
+    delete state.fenetresHautes[tile];
+    addItem(state, DATA.ATELIER.BLOCS[fh].objet, 1);
+    return { ok: true, sorte: fh, case: tile, etage: true, haute: true, reste: matiereDessus(state, tile) };
   }
   if (!etageBlocs(state)[tile] && etageCouvertes(state).has(tile)) tile = etageCouvertes(state).get(tile);
   const sorte = etageBlocs(state)[tile];

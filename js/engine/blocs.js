@@ -1105,6 +1105,8 @@ export function reprendreBloc(state, tile, opts) {
   // un mur rehaussé, une colonne du silo : le bloc du dessus d'abord
   // (au-dessus d'une fenêtre ou d'une porte : un bloc de la matière posée au-dessus)
   if (!dessus && bloc && hauteurEmpilee(state, tile) > 1) {
+    // (une fenêtre de l'étage percée dans ce haut : elle d'abord, à l'étage — etage.js fenetresHautes)
+    if (hauteurEmpilee(state, tile) === 2 && state.fenetresHautes && state.fenetresHautes[tile]) return fail('Une fenêtre de l\'étage est percée dans le haut de ce mur : reprends-la d\'abord, à l\'étage.');
     const haut = rehaussesPosees(state)[tile] || bloc;
     setHauteur(state, tile, hauteurEmpilee(state, tile) - 1);
     addItem(state, sorteDe(haut).objet, 1);
