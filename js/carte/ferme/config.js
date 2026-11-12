@@ -557,6 +557,8 @@ const CULTURE_MONTE = 0;
     'sapin_noel', 'couronne_noel', 'bonhomme_neige',
     // (les décors d'Halloween : scripts/batiments/halloween.py ; leur bougie, BLOCS_CARTE.citrouilles)
     'citrouille_halloween', 'tas_citrouilles',
+    // (les décors de Pâques : scripts/batiments/paques.py)
+    'panier_oeufs', 'oeuf_geant',
     // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
     'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',
