@@ -79,6 +79,12 @@ export const BOUTIQUE = {
     mer_tapis: { prix: 40, nom: 'Tapis de jute' },
     mer_tableau: { prix: 30, nom: 'Tableau : le phare' },
     sol_flotte: { prix: 50, nom: 'Plancher flotté (24 lames)' },
+    ensemble_fee: { prix: 220, nom: 'Ensemble chambre d\'enfant féerique (lit, chevet, tapis, tableau, parquet, papier peint)' },
+    fee_lit: { prix: 80, nom: 'Lit féerique' },
+    fee_chevet: { prix: 40, nom: 'Chevet féerique et sa lampe champignon' },
+    fee_tapis: { prix: 40, nom: 'Tapis arc-en-ciel' },
+    fee_tableau: { prix: 30, nom: 'Tableau : la licorne' },
+    sol_pastel: { prix: 50, nom: 'Parquet pastel (24 lames)' },
     // les papiers peints : un motif acheté est débloqué pour toujours (js/engine/papiers.js)
     papier_peint_fleurettes: { prix: 40, nom: 'Papier peint fleurettes' },
     papier_peint_rayures: { prix: 40, nom: 'Papier peint rayures' },
@@ -89,6 +95,7 @@ export const BOUTIQUE = {
     papier_peint_lambris: { prix: 40, nom: 'Papier peint lambris de pin' },
     papier_peint_roses: { prix: 40, nom: 'Papier peint roses anglaises' },
     papier_peint_vagues: { prix: 40, nom: 'Papier peint vagues' },
+    papier_peint_nuages: { prix: 40, nom: 'Papier peint nuages et étoiles' },
   },
   TOLERANCE_S: 300,          // l'âge maximal d'une notification de Stripe (5 minutes, comme ses bibliothèques)
   PAIEMENTS_PAR_HEURE: 10,   // paiements ouverts au plus par compte en une heure

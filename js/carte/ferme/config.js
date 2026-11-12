@@ -198,7 +198,7 @@ const CULTURE_MONTE = 0;
     // vertical (MODELES_PORTES) : leur image
     modelesSols: { sol_dalles: 90, sol_carrelage: 106, sol_tomettes: 122, sol_chevrons: 138, sol_marbre: 154, sol_paves: 170, sol_mosaique: 186,
       // (les sols de la boutique de gemmes, au bout de la planche : scripts/carte/blocs.py SOLS_BOUTIQUE)
-      sol_meleze: 258, sol_blanchi: 274, sol_flotte: 290 },
+      sol_meleze: 258, sol_blanchi: 274, sol_flotte: 290, sol_pastel: 306 },
     // les pas japonais (scripts/carte/pas_japonais.py) : des sols du dehors, à part (assets/pas_japonais.png,
     // images de 16 × 16 posées par le bas de la case), enfoncés dans l'herbe, qui la laisse voir. Par sorte,
     // 64 images depuis la sienne : (côté + 2 × forme) × 16 + masque des voisins ; le côté alterne d'une
@@ -314,7 +314,7 @@ const CULTURE_MONTE = 0;
     // scripts/batiments/meubles.py, à la même place dans les trois vues), qui respire à peine ; un petit
     // halo par-dessus (WebGL)
     lampeChevet: {
-      dessins: ['chevet', 'chalet_chevet', 'cottage_chevet', 'mer_chevet'], allume: 0.12, respire: 0.04,
+      dessins: ['chevet', 'chalet_chevet', 'cottage_chevet', 'mer_chevet', 'fee_chevet'], allume: 0.12, respire: 0.04,
       sol: { rayon: 38, aplati: 0.72, teinte: 0xffc878, alpha: 0.8, dx: 0, dy: -6 },
       abatJour: { rayon: 10, teinte: 0xfff0c8, alpha: 0.95, dx: 0, dy: -17 },
       halo: { couleur: 0xffc060, rayon: 16, intensite: 0.08, attenuation: 0.08 },
@@ -535,6 +535,7 @@ const CULTURE_MONTE = 0;
     'chalet_lit', 'chalet_chevet', 'chalet_tapis', 'chalet_tableau',
     'cottage_lit', 'cottage_chevet', 'cottage_tapis', 'cottage_tableau',
     'mer_lit', 'mer_chevet', 'mer_tapis', 'mer_tableau',
+    'fee_lit', 'fee_chevet', 'fee_tapis', 'fee_tableau',
     // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
     'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',
@@ -560,14 +561,15 @@ const CULTURE_MONTE = 0;
     // (les ensembles à thème de la boutique de gemmes)
     'chalet_lit', 'chalet_chevet', 'chalet_tapis', 'cottage_lit', 'cottage_chevet', 'cottage_tapis',
     'mer_lit', 'mer_chevet', 'mer_tapis',
+    'fee_lit', 'fee_chevet', 'fee_tapis',
   ];
   // La couverture seule de chaque lit (meuble_<lit>_drap.png) : posée par-dessus le personnage
   // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.
   // (le lit double : deux lits adulte côte à côte, sur la ferme générée, js/carte/ferme/chantier.js)
-  const LITS = ['lit_adulte', 'lit_enfant', 'paillasse', 'lit_double', 'chalet_lit', 'cottage_lit', 'mer_lit'];
+  const LITS = ['lit_adulte', 'lit_enfant', 'paillasse', 'lit_double', 'chalet_lit', 'cottage_lit', 'mer_lit', 'fee_lit'];
   // (A-1) les lits qui tournent : la couverture de leurs vues de dos et de profil (meuble_<lit>_dos_drap.png,
   // _cote_drap.png)
-  const LITS_SENS = ['lit_adulte', 'lit_enfant', 'chalet_lit', 'cottage_lit', 'mer_lit'];
+  const LITS_SENS = ['lit_adulte', 'lit_enfant', 'chalet_lit', 'cottage_lit', 'mer_lit', 'fee_lit'];
   // Les bacs à fleurs (js/engine/bacs.js, dessinBac ; scripts/carte/bacs.py) : une planche, une image de
   // cellule[0] × cellule[1] par état (le bac rond et le carré : `largeur` px à gauche), découpée en images
   // « meuble_<nom> » (js/farm-stage.js, chargerTard), dessinées comme un meuble (et repeintes de même).

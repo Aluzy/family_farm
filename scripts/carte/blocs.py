@@ -3130,9 +3130,30 @@ def motif_flotte(x, v):
     return ton(R, lum + 0.05 * bruit(x, v, 33))
 
 
+# Le parquet pastel de la chambre féerique (BLOCS_CARTE.modelesSols.sol_pastel) : des lames (4 rangées) peintes en
+# menthe, rose et lilas, une couleur par lame, leur chant clair, le joint sombre, le bois qui transparaît à peine.
+PASTELS = [rampe([(80, 140, 128), (130, 188, 172), (176, 222, 206), (214, 242, 232)], 120),
+           rampe([(160, 96, 130), (214, 146, 178), (240, 190, 210), (252, 224, 234)], 120),
+           rampe([(110, 92, 160), (156, 136, 204), (194, 178, 230), (226, 216, 246)], 120)]
+
+
+def motif_pastel(x, v):
+    lame = v // 4
+    d = (x + (lame * 6) % 16) % 16
+    R = PASTELS[(lame + (x + (lame * 6) % 16) // 16) % 3]
+    i = v % 4
+    if i == 3:
+        return ton(R, 0.12)
+    if d == 0:
+        return ton(R, 0.2)
+    lum = 0.58 + 0.16 * (i == 0) - 0.10 * x / 16 + 0.05 * bruit(x, v, 34)
+    return ton(R, lum)
+
+
 SOLS_BOUTIQUE = {'sol_meleze': (motif_meleze, ton(MELEZES[2], 0.9), ton(MELEZES[0], 0.12)),
                  'sol_blanchi': (motif_blanchi, ton(BLANCHIS[0], 0.95), ton(BLANCHIS[0], 0.25)),
-                 'sol_flotte': (motif_flotte, ton(FLOTTES_SOL[2], 0.92), ton(FLOTTES_SOL[0], 0.16))}
+                 'sol_flotte': (motif_flotte, ton(FLOTTES_SOL[2], 0.92), ton(FLOTTES_SOL[0], 0.16)),
+                 'sol_pastel': (motif_pastel, ton(PASTELS[0], 0.95), ton(PASTELS[2], 0.15))}
 SOLS_BOUTIQUE_DEBUT = len(DESSINS)                # 16 images par sol (BLOCS_CARTE.modelesSols)
 DESSINS += [sol_modele(m, *SOLS_BOUTIQUE[k]) for k in SOLS_BOUTIQUE for m in range(16)]
 
