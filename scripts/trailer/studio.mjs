@@ -104,6 +104,8 @@ export async function ouvrirStudio() {
     await ctx.route((url) => !url.href.startsWith(BASE) && !url.href.startsWith('http://127.0.0.1:8787'), (route) => route.abort());
     const p = await ctx.newPage();
     await p.clock.install();
+    // (une image du jeu par image du film : le navigateur en demanderait deux)
+    await p.addInitScript(() => { window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 33); window.cancelAnimationFrame = (id) => clearTimeout(id); });
     p.on('pageerror', (e) => { erreurs.push(`${nom} : ${e.message}`); console.log(`  ! ${nom} : ${e.message}`); });
     return p;
   }
@@ -142,13 +144,14 @@ export function plateau(pages) {
     // Laisser passer `s` secondes de jeu sans filmer.
     async passer(s) { for (let i = 0; i < Math.round(s * IPS); i++) await pas(); },
     // Filmer `s` secondes de l'onglet `p` dans `dossier` ; `chaque(i, n)` est appelé avant chaque image.
-    async filmer(p, dossier, s, chaque = null) {
+    // (`une sur` : au brouillon, une image sur k seulement est capturée)
+    async filmer(p, dossier, s, chaque = null, uneSur = 1) {
       mkdirSync(dossier, { recursive: true });
       const n = Math.round(s * IPS);
       for (let i = 0; i < n; i++) {
         if (chaque) await chaque(i, n);
         await pas();
-        await p.screenshot({ path: join(dossier, `${String(i).padStart(4, '0')}.jpg`), type: 'jpeg', quality: 95 });
+        if (i % uneSur === 0) await p.screenshot({ path: join(dossier, `${String(i).padStart(4, '0')}.jpg`), type: 'jpeg', quality: 95, timeout: 120000 });
       }
       return n;
     },
