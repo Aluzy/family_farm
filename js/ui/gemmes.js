@@ -13,6 +13,7 @@
 //   fois) ; dans un monde partagé, elles attendent le retour dans sa ferme.
 // - Acheter une guirlande lumineuse (60 💎) : un lot de 8 segments (DATA.OBJETS[].lot) livré dans l'inventaire ;
 //   ils se posent en haut des façades et s'allument le soir.
+// - Acheter une cheminée (120 💎) : livrée dans l'inventaire, un meuble de deux cases ; son feu s'allume le soir.
 // - Acheter un papier peint (40 💎) : livré de même, son objet reste dans l'inventaire ; le motif est débloqué pour
 //   toujours, posé et retiré à volonté avec l'outil 🧻 de 🔨 Construire, dans les pièces closes (js/engine/papiers.js).
 // - Mode test (une clé de test de Stripe) : un bandeau le dit, avec la carte de test de Stripe.
@@ -76,6 +77,8 @@ async function livrer() {
       deja.add(l.id);
       notify(DATA.OBJETS[l.article].papier
         ? `🧻 ${DATA.OBJETS[l.article].nom} : débloqué. Pose-le avec 🔨 Construire, outil 🧻, en touchant une pièce close.`
+        : String(l.article).startsWith('cheminee_')
+        ? `🔥 ${DATA.OBJETS[l.article].nom} : dans ton inventaire. Pose-la dans une pièce avec 🔨 Construire (onglet Meubles) : son feu s'allume le soir.`
         : DATA.OBJETS[l.article].lot
         ? `✨ ${DATA.OBJETS[l.article].nom} : ${DATA.OBJETS[l.article].lot} segments dans ton inventaire. Pose-les avec 🔨 Construire (onglet Jardin), en haut des façades : ils s'allument le soir.`
         : `🌹 ${DATA.OBJETS[l.article].nom} : dans ton inventaire. Pose-le avec 🔨 Construire (onglet Jardin), sur un mur côté jardin.`, { duree: 7000 });
@@ -150,15 +153,18 @@ function papiersHtml() {
 // nom, leur prix (un lot : le nombre de pièces).
 function decorationsHtml() {
   const A = vue.articles || {}, rangs = ['blanche', 'multicolore', 'etoiles', 'coeurs'];
-  return `<div class="gemmes-papiers">${Object.entries(A).filter(([id]) => id.startsWith('guirlande_')).map(([id, a]) => {
+  return `<div class="gemmes-papiers">${Object.entries(A).filter(([id]) => id.startsWith('guirlande_') || id.startsWith('cheminee_')).map(([id, a]) => {
     const ok = vue.solde >= a.prix;
+    const img = id.startsWith('cheminee_')
+      ? `<img class="gemmes-cheminee-img" src="assets/meuble_${id}.png" alt="" draggable="false">`
+      : `<span class="gemmes-deco-img" style="--r:${Math.max(0, rangs.indexOf(id.replace('guirlande_', '')))}" aria-hidden="true"></span>`;
     return `<div class="gemmes-papier">
-      <span class="gemmes-deco-img" style="--r:${Math.max(0, rangs.indexOf(id.replace('guirlande_', '')))}" aria-hidden="true"></span>
+      ${img}
       <span class="gemmes-rosier-nom">${echapper(a.nom)}</span>
       <button type="button" class="btn${ok ? ' primary' : ''}" data-action="gemmes-acheter" data-article="${id}"${!ok || occupe ? ' disabled' : ''}>💎 ${a.prix}</button>
     </div>`;
   }).join('')}</div>
-  <p class="gemmes-aide">Une guirlande arrive en lot de 8 segments : pose-les avec 🔨 Construire (onglet Jardin), en haut des façades, côté jardin. Ils se raccordent d'un mur à l'autre et scintillent dès que le soir tombe.</p>`;
+  <p class="gemmes-aide">Une guirlande arrive en lot de 8 segments : pose-les avec 🔨 Construire (onglet Jardin), en haut des façades, côté jardin. Ils se raccordent d'un mur à l'autre et scintillent dès que le soir tombe. Une cheminée se pose dans une pièce de la maison (onglet Meubles) : son feu s'allume le soir.</p>`;
 }
 
 function contenu() {
