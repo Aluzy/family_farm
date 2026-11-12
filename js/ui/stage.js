@@ -775,7 +775,7 @@ function autoDone() {
     }
   }
   const I = state.irrigation;
-  if (I && I.jour === state.day) for (const c of I.faites || I.cases || []) out.push(`arroser:${c}`);
+  if (I && I.jour === state.day) for (const c of (I.faites || I.cases || []).concat(I.serre || [])) out.push(`arroser:${c}`);   // (le potager, et les bacs de la Serre)
   // (le compagnon arrose de lui-même, fiche 19 : il fait son geste, pas le personnage)
   for (const c of arroseesCompagnon(state)) out.push(`arroser:${c}`);
   // (la pluie arrose, G-1 : pas le personnage)
