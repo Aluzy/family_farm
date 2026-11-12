@@ -73,6 +73,7 @@ export const GAME_ACTIONS = {
   'tonnelet-remplir': 'Mettre une tomme ou un moût dans un tonnelet',
   'compost-jeter': 'Jeter des aliments dans un bac à compost',
   'engrais-many': 'Glisser l\'engrais sur des cultures arrosées',
+  'engrais-toggle': 'Prendre l\'engrais en main ou le ranger',
   'promesse-confier': 'Confier au cocher de quoi tenir une promesse de Maurice (le récit)',
   'carte-monde-but': 'Choisir le but de la boussole (carte du monde)',
   'carte-monde-ferme': 'Ramener la boussole à la ferme',

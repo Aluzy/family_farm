@@ -121,7 +121,7 @@ import {
   peindreBloc, reprendreBloc, sensBloc, solAt, basculerPortail, tournerBloc,
 } from './blocs.js';
 import { AUCUN, tapisserMurs, tapisserPiece } from './papiers.js';
-import { deplacerEtage, dessusEtage, etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
+import { deplacerEtage, dessusEtage, etageBlocs, etageCouvertes, fenetresHautes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
 import { harvest, hoe, plant, water } from './crops.js';
 import { harvestAll, plantAll, setSemis, upgradeRobotBattery, waterAll } from './automation.js';
 import { remplirCruche } from './cruche.js';
@@ -334,7 +334,7 @@ export const COMMANDES = {
     args: { case: 'case', attendu: 'sorte?' },
     executer(state, { case: c, attendu }) {
       // (ce que reprend un appui : le tableau accroché, sinon le bloc)
-      const avant = dessusEtage(state)[c] || etageBlocs(state)[c];
+      const avant = dessusEtage(state)[c] || etageBlocs(state)[c] || fenetresHautes(state)[c];
       if (attendu && avant !== attendu) return fail(CHANGE);
       const r = reprendreEtage(state, c);
       if (!r.ok) return r;

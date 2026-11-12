@@ -52,7 +52,7 @@ import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
 import {
-  activeTab, axeMode, buildMode, coucher, ecranFerme, enLigne, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
+  activeTab, axeMode, buildMode, coucher, ecranFerme, enLigne, engraisMode, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
 } from './store.js';
 import { telView } from './consent.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
@@ -83,7 +83,7 @@ import { caseDepart, ramassables } from '../engine/atelier.js';
 import { papiersVisibles } from '../engine/papiers.js';
 import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, enLot, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses, couleursVariante, varianteBloc } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable, vueMeuble } from './chantier.js';
-import { dessusEtage, escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
+import { dessusEtage, escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, fenetresHautes, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.js';
@@ -384,7 +384,7 @@ export function stageModel() {
   batiments.zone.visible = false;
   // le Moulin ne tourne que quand il moud (du blé en cours)
   batiments.moulin.enMarche = !!(state.stations && state.stations.moulin && state.stations.moulin.tache);
-  const hauteurs = hauteursPosees(state), fenetres = fenetresPosees(state), rehausses = rehaussesPosees(state);
+  const hauteurs = hauteursPosees(state), fenetres = fenetresPosees(state), rehausses = rehaussesPosees(state), hautes = fenetresHautes(state);
   const tour = etatMoulin(state);
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
@@ -566,7 +566,7 @@ export function stageModel() {
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
     // (un mur rehaussé, version 1.25 : sa hauteur en blocs)
     // (une fenêtre percée dans un mur : la matière de ce mur)
-    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(sorte === 'compost' ? { niveau: etatCompost(state, Number(c)).niveau } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}) })),
+    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(sorte === 'compost' ? { niveau: etatCompost(state, Number(c)).niveau } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}), ...(hautes[c] && hauteurs[c] > 1 ? { fenetreHaute: hautes[c] } : {}) })),
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)
@@ -613,7 +613,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), galop: !!friandiseGalop(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? semables() : null, engraissables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? casesEngraissables(state) : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), galop: !!friandiseGalop(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? semables() : null, engraissables: engraisMode && !buildMode ? casesEngraissables(state) : null,   // (l'engrais pris en main, js/ui/compost.js) serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -1322,6 +1322,16 @@ export function showHoeHint() {
   setTimeout(() => { if (window.FarmStage && FarmStage.showTiles) FarmStage.showTiles(tiles); }, 50);
 }
 
+// L'engrais en main : sa pastille (combien il en reste) ; la toucher le range. Une bulle dit quoi faire.
+let engraisPris = 0;   // (quand l'engrais a été pris en main : la bulle, les premières secondes)
+function engraisChipHtml() {
+  if (!engraisMode) engraisPris = 0;
+  if (!engraisMode || stageInterior) return '';
+  if (!engraisPris) engraisPris = Date.now();
+  const C = DATA.COMPOST, n = countItem(state, C.ENGRAIS), O = DATA.OBJETS[C.ENGRAIS];
+  return `<button type="button" class="stage-chip hoe" data-action="engrais-toggle" aria-pressed="true" aria-label="Engrais en main : ${n}. Le ranger" title="Glisse sur les cultures arrosées (les cases violettes) pour les engraisser"><span class="stage-chip-pill"><span aria-hidden="true">${O.icone}</span><span class="stage-chip-text">Engrais</span><span class="stage-chip-val num">${n}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>${Date.now() - engraisPris < 5000 ? '<span class="hoe-hint" role="status">Glisse sur les cultures arrosées (violettes)</span>' : ''}`;
+}
+
 function hoeChipHtml() {
   if (!hoeMode) hoeHintUntil = 0;                 // la houe rangée, la bulle ne revient pas
   if (!hoeMode || !state.potager.houe || stageInterior) return '';
@@ -1337,7 +1347,7 @@ function renderStageHud(el) {
   }
   // le mode Construire : son menu prend le haut de l'écran, le HUD du haut s'efface (jeu.css)
   document.body.classList.toggle('construction', !!buildMode && !stageInterior);
-  morph(hud, hoeChipHtml() + axeChipHtml() + pickChipHtml() + scytheChipHtml() + rodChipHtml() + buildChipHtml());
+  morph(hud, hoeChipHtml() + engraisChipHtml() + axeChipHtml() + pickChipHtml() + scytheChipHtml() + rodChipHtml() + buildChipHtml());
   if (!stageView) stageView = FarmStage.view();
   renderStageNav(el);
 }

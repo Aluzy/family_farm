@@ -515,7 +515,7 @@
     "Le bac à compost (docs/compost.md, js/engine/compost.js) : un bloc qu'on pose dehors. On y jette des aliments (sa",
     "fenêtre) ; la nuit, ce qui périme y irait aussi tout seul (la péremption est coupée, PENALITES). PAR_ENGRAIS",
     "aliment fait un engrais, au plus MAX_ENGRAIS par bac : ils attendent qu'on les prenne (une bulle, comme le miel).",
-    "L'engrais s'achète aussi à la calèche (OBJETS.engrais.comptoir). Il se glisse sur les cultures arrosées (des cases",
+    "L'engrais s'achète aussi à la calèche (OBJETS.engrais.comptoir). Pris en main (sa fiche de l'inventaire), il se glisse sur les cultures arrosées (des cases",
     "violettes) : chacune gagne un cycle tout de suite (un stade), une fois par arrosage."
   ],
   "COMPOST": { "NOM": "Bac à compost", "ICONE": "🪵‍🍂", "OBJET": "compost", "ENGRAIS": "engrais", "PAR_ENGRAIS": 1, "MAX_ENGRAIS": 20 },

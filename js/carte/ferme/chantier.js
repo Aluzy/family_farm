@@ -140,6 +140,9 @@
           }
           return repli;
         };
+        // (une fenêtre de l'étage percée dans le haut du mur, modèle.blocs : b.fenetreHaute : l'image du
+        // bloc du niveau 1, la fenêtre dans la matière du haut de ce mur)
+        const fenHaute = (b) => (b.fenetreHaute ? this.blocImage({ case: b.case, sorte: b.fenetreHaute, mur: b.dessus || b.sorte }, at, cols) : null);
         const linteau = (b) => {
           // (au-dessus d'une fenêtre ou d'une porte, des blocs posés : leur mur, raccordé aux voisins)
           if (b.dessus) return { h: b.hauteur || 1, frame: this.blocImage({ case: b.case, sorte: b.dessus }, at, cols) };
@@ -173,7 +176,7 @@
             if (e.img.flipX !== miroir) { e.img.setFlipX(miroir); changed = true; }
             e.sens = b.sens || 0;
             const li = linteau(b);
-            if (this.syncHauts(e, li ? li.h : haut1(b), li && li.frame)) changed = true;
+            if (this.syncHauts(e, li ? li.h : haut1(b), li && li.frame, fenHaute(b))) changed = true;
             this.syncDalle(e);
             continue;
           }
@@ -191,7 +194,7 @@
           B.set(b.case, ne);
           (this.sonPoses || (this.sonPoses = [])).push(ne);
           const li = linteau(b);
-          this.syncHauts(ne, li ? li.h : haut1(b), li && li.frame);
+          this.syncHauts(ne, li ? li.h : haut1(b), li && li.frame, fenHaute(b));
           this.syncDalle(ne);
           changed = true;
         }
@@ -370,17 +373,19 @@
     // Les blocs du dessus d'un mur rehaussé (`h` blocs de haut ; 0 : tous ôtés) : son image,
     // BLOCS_CARTE.etage.dy px plus haut par bloc, devant celle du dessous (`image` : [clé, image]
     // à la place de la sienne : le mur posé au-dessus d'une fenêtre ou d'une porte). Renvoie vrai s'ils ont changé.
-    syncHauts(e, h, image) {
+    syncHauts(e, h, image, bas) {
       const L = e.hauts || [], dy = BLOCS_CARTE.etage.dy, want = Math.max(0, h - 1);
       const [key, f] = image || [e.img.texture.key, e.img.frame.name];
+      // (`bas` : l'image du bloc du niveau 1, s'il diffère des autres : une fenêtre de l'étage)
+      const de = (k) => (k === 0 && bas ? bas : [key, f]);
       let changed = false;
       while (L.length > want) { L.pop().destroy(); changed = true; }
       while (L.length < want) {
-        const k = L.length + 1;
-        L.push(this.add.image(e.x, e.y - dy * k, key, f).setOrigin(0.5, 1).setDepth(e.img.depth + 0.01 * k));
+        const k = L.length + 1, [kk, ff] = de(k - 1);
+        L.push(this.add.image(e.x, e.y - dy * k, kk, ff).setOrigin(0.5, 1).setDepth(e.img.depth + 0.01 * k));
         changed = true;
       }
-      for (const i of L) if (i.frame.name !== f || i.texture.key !== key) i.setTexture(key, f);
+      L.forEach((i, k) => { const [kk, ff] = de(k); if (i.frame.name !== ff || i.texture.key !== kk) i.setTexture(kk, ff); });
       e.hauts = L;
       e.hauteur = h;
       e.img.hauts = L;
