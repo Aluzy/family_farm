@@ -28,7 +28,7 @@ const VU = 'ferme-titre-vu';          // (sessionStorage : l'écran déjà pass�
 export function ecranTitreVoulu() {
   if (typeof location === 'undefined' || /invitation=|connexion=|ami=|boutique=/.test(location.hash)) return false;
   const p = new URLSearchParams(location.search);
-  if (location.search && !p.get('carte') && !p.get('arrivee')) return false;
+  if (location.search && !p.get('carte') && !p.get('arrivee') && !p.get('village')) return false;
   try { return !sessionStorage.getItem(VU); } catch (e) { return true; }
 }
 

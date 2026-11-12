@@ -1,0 +1,136 @@
+# L'île à bâtir — le plan du chantier
+
+Ce document fait foi pour le chantier « l'île à bâtir » (novembre 2026). Il remplace, quand il sera
+fini, ce que `docs/grand-monde.md` dit des hameaux, des habitants et de la calèche, et tout
+`docs/recit/`. Les fiches sont dans [`docs/fiches/ile/`](fiches/ile/README.md).
+
+## Le jeu visé
+
+On arrive sur une île vierge, seul ou en famille. Il n'y a qu'un **abri** sur la terre de la ferme et
+un **port** au bout de l'île, reliés par un chemin. Tout le reste est à bâtir.
+
+1. On ramasse, on fabrique, on bâtit, on cultive.
+2. On porte ce qu'on a en trop au **port**, la seule interface économique : on y vend sans limite (le
+   bac emporte tout), on y achète des graines et de nouvelles espèces, on y honore les commandes du bac.
+3. Un **villageois** débarque. On lui bâtit une maison, on lui attribue des tâches, on se lie d'amitié.
+4. La ferme grossit, d'autres villageois arrivent, se lient entre eux, ouvrent des **commerces
+   d'artisans** (forge, mercerie, scierie…).
+5. L'île prend une **vocation** : un village convivial (fêtes, projets, repas), ou une ferme
+   productive et automatisée. Une troisième vocation viendra.
+
+Il n'y a pas de récit écrit : pas de personnages, de courrier, de scènes ni de fins. Le joueur nomme
+son île et son village ; une chronique note ce qui s'y passe.
+
+## Les décisions validées
+
+| # | Décision | Conséquence |
+|---|---|---|
+| D1 | Le port remplace la calèche et les hameaux. | `caleche.js`, `caleche-tournee.js`, `monde-hameaux.js`, `ile.js` sortent du jeu ; `market.js` reste. |
+| D2 | Le récit est retiré. | `recit.js`, `data/recit.json`, le courrier, les secrets du récit, `docs/recit/` ; 37 fichiers du jeu et 29 de tests y font référence. |
+| D3 | Les villageois vivent sur la terre du joueur, travaillent pour lui, ont une vie simple (repas, lit, bourse) et une vie sociale entre eux. | `habitants.js` devient le moteur des villageois ; `voisins.js` celui de leurs liens. |
+| D4 | Un tableau suit ce que chaque villageois coûte et produit par jour. | Journal de 7 jours par villageois, lu par une nouvelle fenêtre. |
+| D5 | Les commerces restent artisanaux : un établi, un artisan, peu de pièces par jour, pas d'électricité. | Le volume est réservé à la vocation productive (chaînes, robot). |
+| D6 | Des traits de personnalité, sans mimiques. | Les traits pèsent sur les horaires, les phrases, les postes préférés et les affinités. |
+| D7 | C'est le jeu par défaut, avec migration des parties en cours. | Pas de mode à côté. Le chantier avance derrière un réglage (`VILLAGE.ACTIF`), basculé à la fin. |
+| D8 | Le tronçon de chemin qui sort de la ferme reste ; les boucles vers les anciens hameaux sont retirées ; le joueur modifie le chemin. | Le chemin généré devient des blocs de chemin que le joueur possède, posés et retirés hors de la ferme aussi. |
+| D9 | En ligne, le monde partagé est l'île entière du joueur : les invités y co-construisent et y produisent. | La frontière E-8 de `docs/monde-partage.md` est levée ; la synchronisation est à optimiser. |
+| D10 | Le grand monde reste (biomes, grottes, pêche, faune, brouillard) : on y récolte. | Rien ne change dans `monde-sol.js`, `monde-vegetation.js`, `monde-roches.js`, `monde-recolte.js`, `monde-faune.js`. |
+| D11 | La vente au port n'est pas bornée : le bac emporte tout ce qu'on lui donne, il n'y a pas d'entrepôt. | La dépense longue repose sur les niveaux du port, les imports et la part des villageois (I1c). |
+| D12 | Le villageois garde une part de ce qu'il produit ; une tâche demande son outil, que le joueur fabrique et lui donne ; deux villageois assez proches peuvent former un foyer si on leur bâtit une maison ; chaque biome a ses plants sauvages. | I4, I3c, I6b, I7e. |
+| D13 | En ligne, l'horloge est commune et vivante. | Le serveur fait avancer le temps tant qu'un joueur est connecté (I9a2) ; F.2 est levée. |
+| D14 | En ligne, la caisse est commune. | I9c. |
+| D15 | C'est le joueur qui attribue les tâches. Un villageois ouvre un commerce quand il a une affinité suffisante avec le joueur, qu'il en manifeste l'envie et que le joueur le décide. | I5a ; en ligne, « le joueur » est lu comme le propriétaire de l'île (I9e, à confirmer). |
+
+## Ce qui reste à trancher (dans les fiches qui le portent)
+
+| Question | Fiche | Proposition par défaut |
+|---|---|---|
+| Comment le serveur fait avancer l'horloge commune, et à quel coût ? | I9a2 | Par pas de 5 s de jeu, tant qu'un joueur est connecté ; le monde dort sans joueur. |
+| En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs. |
+| L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | À mesurer par la simulation ; régler les prix des niveaux du port et la part. |
+| La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | Fixe au départ (un réglage), revue après simulation. |
+| La raison d'explorer sans hameaux à découvrir. | I1c, I8b | Des espèces sauvages à rapporter et à cultiver ; des sites à exploiter. |
+
+## Les constats d'où l'on part
+
+Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
+
+- **L'argent n'a pas de dépense récurrente.** Tout se vend sans limite à prix fixe ; les dépenses sont
+  ponctuelles (arbre des technologies ≈ 19 000, énergie et eau ≈ 12 000, frigo ≈ 6 100, robot jusqu'à
+  30 000) ; les pénalités sont coupées (`PENALITES`).
+- **Les bourses des habitants ne servent à rien** : `caleche.js` et `ile.js` les remplissent, aucun
+  code ne les dépense.
+- **La transformation détruit de la valeur** hors cuisine : 2 laines (24) → 1 tissu (18) ; 3 tissus
+  (54) + 20 de façon → un manteau (36) ; 2 bois (4) → 1 planche (4). Seul le lingot paie (minerai 2,
+  lingot 15).
+- **Un villageois rapporterait 2 à 7 fois ce qu'il mange** aux prix actuels (bétail ≈ 48 pièces par
+  jour, mine ≈ 36, bois ≈ 32, pêche ≈ 32, cueillette ≈ 15, contre 7 à 11 de nourriture).
+- **Le joueur automatique est périmé** : `node scripts/simulate.mjs` reste au chapitre 3, 71 nuits
+  sans repas sur 80, une vérification en échec.
+
+## Les lots
+
+| Lot | Fiches | Ce qu'il apporte |
+|---|---|---|
+| 0. Le socle | I0a (fait), I0b | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
+| 1. Le port | I1a, I1b, I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
+| 2. Le chemin | I2 | Le chemin de la ferme au port, modifiable ; porter la marchandise |
+| 3. Les villageois | I3a à I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |
+| 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
+| 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
+| 6. Les liens | I6a, I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
+| 7. La page blanche | I7a à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
+| 8. Les vocations | I8a, I8b | Le village convivial, la ferme productive |
+| 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
+
+## L'ordre et les dépendances
+
+```
+I0a ─┬─ I0b
+     ├─ I1a ── I1b ── I1c
+     │           └──── I2
+     ├─ I3a ── I3b ── I3c ── I3d ── I4 ─┬─ I6a ── I6b ── I6c
+     │                                  ├─ I5a (après I6a) ── I5b ── I5c
+     │                                  └─ I8a, I8b
+     └─ I7a ── I7b
+I1b + I3a ──── I7c ─┬─ I7d ── I7e ─┬─ I7f
+                    └─ I7g ────────┘
+I7f ────────── I9a ── I9a2 ── I9b ── I9c ── I9d ── I9e ── I9f
+tout ───────── I9g ── I9h (la bascule)
+```
+
+**Première version jouable** (derrière le réglage) : I0a, I0b, I1a, I1b, I1c, I3a, I3b, I3c, I3d, I4,
+I7a, I7b. On arrive sur la terre vierge, on vend au port, un villageois s'installe et travaille, le
+tableau donne ses coûts.
+
+## Le réglage de bascule
+
+`VILLAGE.ACTIF` (`data/village.json`, posé par I0a) vaut `false` tant que le chantier dure : le jeu
+publié ne change pas. Chaque fiche écrit son code pour `ACTIF: true` et le teste ainsi ; les tests
+d'avant restent verts avec `false`. I9h le passe à `true`, retire les branches mortes et le réglage
+lui-même. Entre-temps, `?village=1` dans l'adresse du jeu l'allume pour un essai (I0a).
+
+Ce qui est posé (I0a) :
+
+- `villageActif(state)` (`js/engine/village.js`) : la seule question que pose le code du chantier ;
+  elle rend `DATA.VILLAGE.ACTIF`, ou `true` pour une partie d'essai (`state.essais.village`).
+- L'essai (`js/ui/village.js`) : avec `jeu.html?village=1`, l'écran d'accueil s'affiche et une nouvelle
+  partie faite dans la page (l'accueil, « Recommencer à zéro », la première partie de l'appareil) devient
+  une partie d'essai, qui le reste en se rechargeant ; une partie déjà enregistrée n'est pas touchée. Un
+  bandeau discret, en bas à gauche, le dit (« 🏝️ Essai : l'île à bâtir »).
+- Les tests : `tests/engine/village-*.test.mjs` forment leur propre suite, jouée en dernier, réglage
+  forcé à `true` ; ailleurs, `avecVillage(fn)` (`tests/engine/aide.mjs`) l'allume le temps d'un test.
+  `tests/engine/reglage-village.test.mjs` vérifie qu'éteint, une nouvelle partie est identique à celle
+  d'avant le chantier.
+- L'archive : le mainteneur la crée depuis `main`, avant la première fiche qui change le jeu publié
+  (`git fetch origin main && git push origin origin/main:refs/heads/archive/jeu-avant-ile`).
+
+## Les règles qui ne changent pas
+
+- **Sans pénalité** (B-1) : un villageois mal nourri se repose, il ne part pas ; une commande du bac
+  manquée ne coûte rien ; rien ne se perd par absence.
+- **Chiffres entiers** partout (pièces, énergie, parts en %).
+- **Le hasard à graine** : villageois, traits, liens et commandes du bac se tirent de la graine de la
+  partie ; la même partie rejoue la même chose.
+- **La vue à 45°** pour tout nouveau dessin (`CLAUDE.md`).
+- **Le français** dans le code, les commentaires et les textes.

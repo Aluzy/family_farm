@@ -2,7 +2,8 @@
 // Point d'entrée de « npm test » : enchaîne, dans cet ordre,
 //   1. les fichiers générés (données, encyclopédie, cartes) : régénérés ou vérifiés à jour ;
 //      à la moindre erreur, on s'arrête là (les tests liraient des données fausses) ;
-//   2. les suites de tests (node tests/run-tests.mjs --tous : moteur, données, suivi, rapport) ;
+//   2. les suites de tests (node tests/run-tests.mjs --tous : moteur, données, suivi, rapport…, et en dernier
+//      celle du chantier de l'île, tests/engine/village-*.test.mjs, avec VILLAGE.ACTIF forcé à true) ;
 //   3. les vérifications de la page (actions de l'interface, modules chargés).
 // Les étapes 2 et 3 tournent toutes, même après un échec, puis le bilan dit lesquelles ont échoué.
 //

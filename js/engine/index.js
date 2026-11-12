@@ -91,3 +91,4 @@ export * from './plans.js';
 export * from './projets.js';
 export * from './usure.js';
 export * from './fil-lune.js';
+export * from './village.js';

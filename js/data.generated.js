@@ -8560,6 +8560,7 @@ export const RAW_DATA = {
       "carnet_voyageur_8"
     ]
   },
+  "VILLAGE": { "ACTIF": false },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

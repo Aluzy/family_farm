@@ -1,0 +1,13 @@
+{
+  "//VILLAGE": [
+    "Le chantier « l'île à bâtir » (novembre 2026) : on arrive sur une île vierge, on vend au port, des",
+    "villageois s'installent sur la ferme et y travaillent. Le plan, les décisions et l'ordre des fiches sont",
+    "dans docs/ile.md ; les fiches dans docs/fiches/ile/. ACTIF : le code du chantier est lu quand il vaut",
+    "true (js/engine/village.js, villageActif) ; tant que le chantier dure, il vaut false et le jeu publié ne",
+    "change pas. Pour un essai, jeu.html?village=1 l'allume pour une nouvelle partie (un bandeau le dit) ;",
+    "les tests tests/engine/village-*.test.mjs le forcent (tests/engine/aide.mjs, avecVillage). La fiche",
+    "I9h le passe à true, puis retire le réglage. Les sections PORT, TACHES, ARTISANS et TRAITS viendront",
+    "avec leurs fiches."
+  ],
+  "VILLAGE": { "ACTIF": false }
+}

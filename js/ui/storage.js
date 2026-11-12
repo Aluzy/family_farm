@@ -5,6 +5,7 @@ import { enLigne, SAVE_KEY, setState, state } from './store.js';
 import { setPendingAbsence, setSimulatedAt, simulatedAt, syncJobs } from './loop.js';
 import { notify } from './toasts.js';
 import { mesurer } from './chrono.js';
+import { partieNeuve } from './village.js';
 
 /* ---------- stockage : localStorage, toujours entouré de try/catch ---------- */
 
@@ -60,7 +61,7 @@ export const SAVE_AVANT_DEMENAGEMENT = 'ferme-save-avant-demenagement';
 
 // Une nouvelle partie : sur une terre sauvage (la ferme générée de sa graine).
 function nouvellePartie() {
-  return createNewGame(makeSeed());
+  return partieNeuve(createNewGame(makeSeed()));
 }
 
 // La ferme du grand-père (la carte de Tiled) n'existe plus : une partie qui y était encore a
