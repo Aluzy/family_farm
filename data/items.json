@@ -344,7 +344,7 @@
     "ensacheuse": { "nom": "Ensacheuse", "icone": "🫙‍⚙️", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "tonnelet": { "nom": "Tonnelet", "icone": "🛢️‍🧀", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//bac_compost": ["Le compost (docs/compost.md) : le bac se pose dehors ; on y jette des aliments, chacun fait un engrais",
-      "(COMPOST.PAR_ENGRAIS). L'engrais, glissé sur une culture arrosée, lui fait gagner un cycle ; il s'achète aussi à la calèche",
+      "(COMPOST.PAR_ENGRAIS). L'engrais, pris en main (sa fiche de l'inventaire) puis glissé sur une culture arrosée, lui fait gagner un cycle ; il s'achète aussi à la calèche",
       "(`comptoir` : vendu avec les semences, js/engine/market.js isBuyable)."],
     "bac_compost": { "nom": "Bac à compost", "icone": "🪵‍🍂", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "engrais": { "nom": "Engrais", "icone": "🟫‍✨", "prix": 5, "mangeable": false, "categorie": "matériau", "comptoir": true },

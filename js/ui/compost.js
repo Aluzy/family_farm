@@ -1,6 +1,9 @@
 import { DATA } from '../engine/catalog.js';
 import { aJeterAuCompost, compostsPoses, etatCompost } from '../engine/compost.js';
-import { state } from './store.js';
+import { engraisMode, setEngraisMode, state } from './store.js';
+import { countItem } from '../engine/inventory.js';
+import { closeModal } from './modal.js';
+import { closeStageWindow, stageWindow } from './stage-windows.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
 import { executer } from './commandes.js';
@@ -15,8 +18,10 @@ import { notify } from './toasts.js';
    jusqu'au plein), ses engrais à prendre (la bulle sur la carte) ; puis les aliments de l'inventaire à y jeter
    (1, ou 10 d'un coup) : chacun fait un engrais.
 
-   Glisser l'engrais (js/farm-stage.js engraisStart) : `engrais-many`, les cultures tracées, chacune gagne un
-   cycle (la commande potager.engrais) ; la carte les a fait scintiller avant (js/carte/ferme/engrais.js). */
+   L'engrais se prend d'abord en main (`engrais-toggle` : sa fiche de l'inventaire, ou cette fenêtre ; sa pastille sur
+   la carte le range) ; alors, glisser sur les cultures arrosées (js/farm-stage.js engraisStart) : `engrais-many`, les
+   cultures tracées, chacune gagne un cycle (la commande potager.engrais) ; la carte les a fait scintiller avant
+   (js/carte/ferme/engrais.js). Il se range tout seul quand il n'en reste plus. */
 
 const C = () => DATA.COMPOST;
 const nomDe = (item) => DATA.OBJETS[item].nom;
@@ -57,7 +62,8 @@ export function renderComposts() {
     <div class="cards">
       <div class="card">
         <span class="card-title"><span>${C().ICONE} Bacs à compost · <span class="num">${poses.length}</span></span></span>
-        <span class="muted">Chaque aliment jeté fait un engrais (au plus ${C().MAX_ENGRAIS} par bac). L'engrais s'achète aussi à la calèche. Il se glisse sur une culture arrosée (des cases violettes) : elle gagne un cycle.</span>
+        <span class="muted">Chaque aliment jeté fait un engrais (au plus ${C().MAX_ENGRAIS} par bac). L'engrais s'achète aussi à la calèche. Prends-le en main, puis glisse-le sur une culture arrosée (des cases violettes) : elle gagne un cycle.</span>
+        ${countItem(state, C().ENGRAIS) ? `<div class="row"><button type="button" class="btn${engraisMode ? '' : ' primary'}" data-action="engrais-toggle" aria-pressed="${engraisMode}">${icone(C().ENGRAIS)} ${engraisMode ? 'Ranger l\'engrais' : `Prendre l'engrais en main (${countItem(state, C().ENGRAIS)})`}</button></div>` : ''}
         ${liste}
       </div>
       <div class="card">
@@ -79,7 +85,10 @@ function engraisserCases(cases) {
     if (/Il te faut de l'engrais/.test(r.error)) break;
   }
   if (n) persistState();
+  const fini = countItem(state, C().ENGRAIS) < 1;
+  if (fini) setEngraisMode(false);                    // (plus d'engrais : il se range tout seul)
   refresh();
+  if (fini && n) setTimeout(() => notify('Plus d\'engrais : il est rangé.'), 50);
   if (n) notify(`${icone(C().ENGRAIS)} ${plural(n, 'culture')} ${accord(n, 'engraissée')} : ${n > 1 ? 'elles gagnent' : 'elle gagne'} un cycle.${raison ? ` · ${raison}` : ''}`, { kind: 'succes' });
   else if (raison) notify(raison, { son: 'erreur' });
 }
@@ -91,6 +100,16 @@ registerActions({
       persistState();
       notify(`${C().ICONE} ${nomDe(r.item)} × ${r.mis} au compost${r.etat.engrais ? ` · ${r.etat.engrais} engrais à prendre` : ''}.`);
     }
+  },
+  // Prendre l'engrais en main (sa fiche de l'inventaire, la fenêtre du compost) ou le ranger (sa pastille, sur la carte).
+  'engrais-toggle': () => {
+    if (!engraisMode && countItem(state, C().ENGRAIS) < 1) { notify('Il te faut de l\'engrais : le bac à compost, ou la calèche.'); return; }
+    setEngraisMode(!engraisMode);
+    if (engraisMode) {
+      closeModal();
+      if (stageWindow) { closeStageWindow(); return; }
+    }
+    refresh();
   },
   // Glisser l'engrais (js/farm-stage.js) : `cases`, les cultures tracées, dans l'ordre.
   'engrais-many': (target) => {
