@@ -1,0 +1,18 @@
+[
+  { "scene": "titre", "debut": 0.5, "duree": 2.0, "carton": "titre" },
+  { "scene": "ensemble", "debut": 0.8, "duree": 2.5, "texte": "Cultive à plusieurs" },
+  { "scene": "ensemble", "debut": 7.0, "duree": 2.0, "texte": "Sème, arrose, récolte" },
+  { "scene": "hache", "debut": 1.5, "duree": 2.4, "texte": "Récolte du bois" },
+  { "scene": "pioche", "debut": 0.3, "duree": 1.8, "texte": "Mine de la pierre" },
+  { "scene": "minerai", "debut": 3.9, "duree": 2.2, "texte": "Mine du minerai" },
+  { "scene": "peche", "debut": 1.0, "duree": 2.7, "texte": "Pêche" },
+  { "scene": "rencontre", "debut": 1.3, "duree": 1.8, "texte": "Retrouve tes amis" },
+  { "scene": "cuisine", "debut": 1.1, "duree": 1.9, "texte": "Cuisine" },
+  { "scene": "repas_arrivee", "debut": 7.4, "duree": 1.3, "texte": "Invite tes voisins" },
+  { "scene": "repas", "debut": 1.0, "duree": 1.8, "texte": "Partage un repas" },
+  { "scene": "galop", "debut": 1.0, "duree": 2.0, "texte": "Galope à cheval", "son": "galop" },
+  { "scene": "balade_Brumeval", "debut": 0.8, "duree": 0.95, "texte": "Explore l'île", "tenu": true },
+  { "scene": "balade_Le_Gu_", "debut": 0.8, "duree": 0.95, "texte": "Explore l'île", "suite": true, "tenu": true },
+  { "scene": "balade_Les_Mouettes", "debut": 1.6, "duree": 0.95, "texte": "Explore l'île", "suite": true },
+  { "scene": "fin", "debut": 0.4, "duree": 2.75, "carton": "fin", "texte": "Ta ferme, ta famille, tes amis", "muet": true }
+]

@@ -37,3 +37,24 @@ venir du grand monde). Les icônes ne sont plus dessinées par un script : leurs
 Une retouche de `pixel.py` touche toutes les images : relancer les générateurs et vérifier que
 leurs sorties (les pixels décodés, pas les octets : les PNG de `assets/` sont en palette) ne
 changent pas.
+
+## Le trailer : `scripts/trailer/`
+
+Un trailer de 30 secondes tourné dans le vrai jeu (Playwright, Chromium et ffmpeg requis) :
+
+    node scripts/trailer/tourner.mjs <dossier>/ --partie=<partie exportée>.json   # les prises, en 1080p
+    node scripts/trailer/monter.mjs <dossier>/ trailer.mp4                        # le montage
+
+- `studio.mjs` : le jeu servi tel quel, le Worker du jeu en ligne en mémoire (comme `tests/deux-joueurs.mjs`),
+  des onglets à l'horloge tenue et la prise de vue image par image (30 images par seconde, quelle que soit la
+  vitesse de la machine) ;
+- `tourner.mjs` : les scènes (le potager à trois joueurs en ligne, la hache, la pioche (un rocher, un gisement de cuivre), le galop à cheval, la pêche, la cuisine,
+  le repas avec des invités, la promenade dans les hameaux, le titre et la fin) ; `--brouillon` pour régler une
+  scène vite, le nom d'une scène pour ne tourner qu'elle. La partie n'est jamais écrite : le tournage joue sur
+  une copie. Les sons que le jeu joue sont notés avec leur instant (`sons.json`) ;
+- `monter.mjs` et `montage.json` : le plan de montage (prise, début, durée, mot du plan), les cartons dessinés
+  avec la police et le logo du jeu, la musique du jeu et les sons replacés sur l'image ;
+- `partie.mjs` : la mise en scène du potager, et une ferme d'essai quand on ne donne pas de partie ;
+  `reperage.mjs` : des vues fixes pour choisir les lieux.
+
+Ni les images ni la vidéo ne sont dans le dépôt.
