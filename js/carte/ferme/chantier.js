@@ -472,6 +472,39 @@
     // mur, aussi hauts que lui (une image par bloc de sa hauteur, BLOCS_CARTE.etage.dy px plus haut à chaque
     // bloc, comme le mur rehaussé), juste devant lui ; chaque image s'efface avec le bloc du mur qu'elle
     // couvre (stepMurs : img.tableau).
+    // Les papiers peints (modèle : papiers, papiersEtage : [{ case du mur, frame }], js/engine/papiers.js) :
+    // chacun sur la face du mur du fond d'une pièce, les 30 px du bas de l'image du mur, juste devant lui
+    // (BLOCS_CARTE.papiers.dz) ; à l'étage, sur la face du mur rehaussé (son image du niveau 1, e.hauts[0])
+    // ou du mur posé à l'étage (etageMurs, js/carte/ferme/etage.js). Ils s'effacent avec le mur (stepMurs :
+    // img.papier). Refaits quand l'image du mur change.
+    syncPapiers(bas, haut) {
+      const P = BLOCS_CARTE.papiers;
+      if (!this.papiers) this.papiers = new Map();
+      const M = this.papiers, seen = new Set(), dy = BLOCS_CARTE.etage.dy;
+      if (!this.textures.exists(P.key)) return;
+      const pose = (cle, mur, x, y, frame) => {
+        if (!mur || !mur.active) return;
+        seen.add(cle);
+        let e = M.get(cle);
+        if (e && (e.mur !== mur || e.frame !== frame || e.y !== y)) { e.img.destroy(); e = null; }
+        if (!e) {
+          e = { mur, frame, y, img: this.add.image(x, y, P.key, frame).setOrigin(0.5, 1).setDepth(mur.depth + P.dz).setAlpha(mur.alpha) };
+          M.set(cle, e);
+        }
+        mur.papier = e.img;
+      };
+      for (const p of bas || []) {
+        const e = this.blocks && this.blocks.get(p.case);
+        if (e && e.img.texture.key === BLOCS_CARTE.hauts.key) pose('0:' + p.case, e.img, e.x, e.y, p.frame);
+      }
+      for (const p of haut || []) {
+        const e = this.blocks && this.blocks.get(p.case), em = this.etageMurs && this.etageMurs.get(p.case);
+        if (em) pose('1:' + p.case, em.img, em.x, em.img.y, p.frame);
+        else if (e && e.hauts && e.hauts[0]) pose('1:' + p.case, e.hauts[0], e.x, e.y - dy, p.frame);
+      }
+      for (const [c, e] of M) if (!seen.has(c)) { e.img.destroy(); M.delete(c); }
+    },
+
     syncGrimpants(list) {
       if (!this.grimpants) this.grimpants = new Map();
       const G = BLOCS_CARTE.grimpants, M = this.grimpants, cols = this.grid.cols, seen = new Set(), dy = BLOCS_CARTE.etage.dy;
@@ -873,6 +906,7 @@
         const a = i.alpha < cible ? Math.min(cible, i.alpha + pas) : Math.max(cible, i.alpha - pas);
         i.setAlpha(a);
         if (i.tableau && i.tableau.active) i.tableau.setAlpha(a);
+        if (i.papier && i.papier.active) i.papier.setAlpha(a);
         if (a === base && !but.has(i)) this.mursEfface.delete(i);
       }
     },

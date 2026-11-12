@@ -358,6 +358,10 @@ const CULTURE_MONTE = 0;
     // membre de la famille assis sur une chaise (js/famille-ferme.js) : ses pieds à `assisDy` px
     // au-dessus du bas de la case de la chaise
     litPieds: 27, tableau: { dy: 10 }, assisDy: 3,
+    // les papiers peints (js/engine/papiers.js ; scripts/carte/papiers_peints.py) : une image de 16 × 30 par
+    // motif, sur la face du mur du fond d'une pièce (les 30 px du bas de l'image du mur), `dz` devant lui
+    // (derrière un tableau accroché, BLOCS_CARTE.tableau : y + 0.5) ; ils s'effacent avec lui (stepMurs)
+    papiers: { key: 'papiers_peints', file: 'papiers_peints.png', frame: { frameWidth: 16, frameHeight: 30 }, dz: 0.3 },
     // les rosiers grimpants (la boutique ; scripts/carte/rosiers.py : 4 coloris de 20 × 40 px, la hauteur de
     // l'image d'un mur) : sur la face extérieure d'un mur, une image par bloc de sa hauteur, `dy` px plus haut à
     // chaque bloc (comme le mur rehaussé : BLOCS_CARTE.etage.dy)

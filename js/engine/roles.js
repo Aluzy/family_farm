@@ -27,7 +27,7 @@ const PAR_FAMILLE = {
   moulin: 'jardinier', boite: 'jardinier', manger: 'jardinier', outil: 'jardinier', verger: 'jardinier',
   bloc: 'batisseur', mur: 'batisseur', etage: 'batisseur', solEtage: 'batisseur', arbre: 'batisseur',
   atelier: 'batisseur', tech: 'batisseur', appareil: 'batisseur', reservoir: 'batisseur', robot: 'batisseur',
-  serre: 'batisseur', poulailler: 'batisseur',
+  serre: 'batisseur', poulailler: 'batisseur', piece: 'batisseur', murs: 'batisseur',
   botteleuse: 'jardinier', chaine: 'jardinier', distributeur: 'jardinier', morceau: 'jardinier', cueillette: 'jardinier',
 };
 const PAR_TYPE = {

@@ -316,7 +316,7 @@ if (typeof window !== 'undefined') setInterval(envoyerPosition, POS_MS);
 // En ligne, pour l'instant : construire ensemble (les gestes du mode Construire), cultiver le potager (E-5)
 // et ce qui ne change pas la partie (ouvrir une fenêtre, lire l'aide, les réglages). `bloquees` : les
 // actions qui changent la partie (actions.js, SOMMEIL_BLOQUEES), sauf celles-là. Dormir : par le bandeau.
-const CONSTRUIRE = new Set(['bloc', 'bloc-many', 'build-toggle', 'build-pick', 'build-tab', 'build-groupe', 'build-filtre', 'meuble-ok', 'build-level-menu', 'build-level', 'build-piece', 'build-gomme', 'build-tourner', 'build-peindre', 'meuble-peindre', 'build-sens', 'meuble-tourner', 'build-annuler', 'bloc-pipette', 'bloc-deplacer', 'etage-toggle']);
+const CONSTRUIRE = new Set(['bloc', 'bloc-many', 'build-toggle', 'build-pick', 'build-tab', 'build-groupe', 'build-filtre', 'meuble-ok', 'build-level-menu', 'build-level', 'build-piece', 'build-gomme', 'build-tourner', 'build-peindre', 'build-tapisser', 'build-motif', 'meuble-peindre', 'build-sens', 'meuble-tourner', 'build-annuler', 'bloc-pipette', 'bloc-deplacer', 'etage-toggle']);
 // (E-5 : le potager ; E-6 : les bêtes ; E-7 : la cuisine, le Moulin, le frigo, la boîte, manger ; E-9 : les outils, le verger ; E-10 : la progression, l'Atelier, les appareils, planter un arbre)
 const FERME = new Set(['buy-tech', 'atelier-fabriquer', 'bloc-fabriquer', 'build-station', 'toggle', 'upgrade', 'upgrade-tank', 'robot-autonomie', 'maintain', 'repair', 'arbre-planter', 'arbre-case', 'arbre-oui', 'semis-set', 'silo-agrandir', 'tool-use', 'axe-toggle', 'pick-toggle', 'scythe-toggle', 'rod-toggle', 'harvest-tree', 'start-recipe', 'cancel-queued', 'stop-recipe', 'mill-start', 'mill-cancel', 'eat', 'sac-manger', 'fridge-in', 'fridge-out', 'fridge-in-all', 'fridge-in-urgent', 'frigo-ranger', 'build-fridge', 'upgrade-fridge', 'boite-deposer', 'boite-reprendre', 'feed-hen', 'feed-all', 'shear', 'cow-herbs', 'buy-pasture', 'upgrade-poulailler', 'plant', 'plant-many', 'plant-all', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'hoe', 'hoe-many', 'hoe-toggle', 'hoe-take', 'cruche-remplir', 'tonnelet-remplir', 'compost-jeter', 'engrais-many']);
 const JAMAIS = /^(test-|do-import|do-new-game|ask-new-game|demarrer|accueil-)/;
@@ -389,7 +389,7 @@ function ouvrirMembres() {
 // E-11 : ce qu'un geste du journal a fait, en mots.
 const GESTES = {
   'bloc.poser': 'a posé un bloc', 'bloc.reprendre': 'a repris un bloc', 'bloc.remettre': 'a remis un bloc', 'bloc.deplacer': 'a déplacé un bloc',
-  'bloc.tourner': 'a tourné un meuble', 'bloc.orienter': 'a tourné un meuble', 'bloc.peindre': 'a repeint un meuble', 'portail.basculer': 'a ouvert ou fermé un portail',
+  'bloc.tourner': 'a tourné un meuble', 'bloc.orienter': 'a tourné un meuble', 'bloc.peindre': 'a repeint un meuble', 'piece.tapisser': 'a posé du papier peint', 'murs.tapisser': 'a remis le papier peint', 'portail.basculer': 'a ouvert ou fermé un portail',
   'potager.planter': 'a semé', 'potager.arroser': 'a arrosé', 'potager.recolter': 'a récolté', 'potager.labourer': 'a labouré',
   'potager.toutPlanter': 'a tout planté', 'potager.toutArroser': 'a tout arrosé', 'potager.toutRecolter': 'a tout récolté', 'potager.semis': 'a réglé un semis',
   'cruche.remplir': 'a rempli la cruche', 'poules.nourrir': 'a nourri une poule', 'poules.toutNourrir': 'a nourri les poules',

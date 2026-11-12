@@ -65,6 +65,7 @@ export * from './outils.js';
 export * from './atelier.js';
 export * from './blocs.js';
 export * from './etage.js';
+export * from './papiers.js';
 export * from './commandes.js';
 export * from './roles.js';
 export * from './propos.js';

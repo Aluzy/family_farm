@@ -80,6 +80,7 @@ import { galopDepuisCarte } from './galop.js';
 import { countWithSilo } from '../engine/animals.js';
 import { countItem } from '../engine/inventory.js';
 import { caseDepart, ramassables } from '../engine/atelier.js';
+import { papiersVisibles } from '../engine/papiers.js';
 import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, enLot, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses, couleursVariante, varianteBloc } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable, vueMeuble } from './chantier.js';
 import { dessusEtage, escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
@@ -577,6 +578,9 @@ export function stageModel() {
     tableaux: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].meuble).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
     // (les rosiers grimpants de la boutique : sur la face extérieure d'un mur)
     grimpants: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].grimpant).map(([c, sorte]) => ({ case: Number(c), coloris: DATA.ATELIER.BLOCS[sorte].grimpant })),
+    // les papiers peints posés dans les pièces (js/engine/papiers.js) : [{ case du mur, motif, frame }], en bas et à l'étage
+    papiers: papiersVisibles(state, 0),
+    papiersEtage: papiersVisibles(state, 1),
     // les sols posés (le plancher, les dalles… : [{ case, sorte }] ; le chemin change les tuiles du sol, ci-dessous)
     sols: Object.entries(solsPoses(state)).filter(([, k]) => k !== 'chemin').map(([c, sorte]) => ({ case: Number(c), sorte })),
     // (les sols posés au niveau 1 : sur l'étage, ou dans une pièce dont les murs y montent)
