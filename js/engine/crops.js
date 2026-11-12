@@ -559,10 +559,10 @@ export function harvestPlot(state, plot, auto = false, direct = false) {
     const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
     gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
   }
-  // Version 1.18 : au clic, sur la carte, la récolte reste sur sa case jusqu'à ce que le
-  // personnage la ramasse ; sinon (automatisation, Serre, sans carte) elle va à l'inventaire
-  // (le blé d'abord au Silo).
-  const aRamasser = deposit(state, 'parcelle', plot.case, items, !auto && !direct && plot.lieu === 'potager' && Number.isInteger(plot.case));
+  // Version 1.18 : au clic, sur la carte (dehors comme dans la Serre), la récolte reste sur sa
+  // case jusqu'à ce que le personnage la ramasse ; sinon (automatisation, sans carte) elle va à
+  // l'inventaire (le blé d'abord au Silo).
+  const aRamasser = deposit(state, 'parcelle', plot.case, items, !auto && !direct && (plot.lieu === 'potager' || plot.lieu === 'serre') && Number.isInteger(plot.case));
   // (une culture vivace, la vigne : le pied reste, revenu à son feuillage ; il refait ses fruits)
   plot.culture = def.vivace ? culture : null;
   plot.stade = def.vivace ? def.vivace.stade : 0;

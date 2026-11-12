@@ -51,7 +51,7 @@
       };
       const vide = () => {
         const m = this.ctx.lastModel;
-        const p = m && (m.plots || []).find((q) => q.case === c);
+        const p = m && (m.plots || []).concat(m.serre || []).find((q) => q.case === c);   // (dehors ou dans la Serre)
         return !!p && !p.culture;
       };
       const coup = () => {

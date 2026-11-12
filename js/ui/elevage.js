@@ -526,7 +526,7 @@ function semerCases(cases, culture) {
   if (!def) return;
   const groupe = cases.length >= GROUPE_MIN;   // (un tracé : une action groupée, comme « Planter partout »)
   const plots = parcellesDeCases(cases).filter((p) => def.lieux.includes(p.lieu));   // (pas de graine des champs dans la Serre)
-  // sur la carte, le personnage va semer (la file des gestes) ; le reste (la Serre) tout de suite
+  // sur la carte, le personnage va semer (la file des gestes), dehors comme dans la Serre ; le reste tout de suite
   const restent = semerParLaCarte(plots, culture, groupe);
   let n = 0, raison = '';
   const avant = Number(state.energie) || 0;
@@ -546,11 +546,13 @@ function semerCases(cases, culture) {
 // La file des gestes (js/carte/ferme/semis.js) : sur les terres de la ferme, une graine posée
 // scintille sur chacune et le personnage va les semer une à une ; le jeu sème au geste
 // (semerFromStage). Autant que les graines et l'énergie le permettent, en comptant celles qui
-// attendent déjà. Renvoie les parcelles que la carte ne prend pas (la Serre, pas de carte) : la
-// page les sème tout de suite.
+// attendent déjà. Dans la Serre, les mêmes gestes que dehors : ses parcelles ont aussi leur case.
+// Renvoie les parcelles que la carte ne prend pas (sans case, pas de carte) : la page les sème
+// tout de suite.
+const SUR_LA_CARTE = ['potager', 'serre'];
 function semerParLaCarte(plots, culture, groupe) {
   const S = window.FarmStage;
-  const dehors = plots.filter((p) => p.lieu === 'potager' && Number.isInteger(p.case));
+  const dehors = plots.filter((p) => SUR_LA_CARTE.includes(p.lieu) && Number.isInteger(p.case));
   const autres = plots.filter((p) => !dehors.includes(p));
   if (!dehors.length || !S || !S.semer || asleep(state)) return plots;
   const graines = Math.floor(seedStock(state, culture)) - S.semisEnAttente(culture);
@@ -571,7 +573,7 @@ function semerParLaCarte(plots, culture, groupe) {
 // (le message est donné), ou plus rien à faire là.
 export function semerFromStage(c, culture, groupe) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return false; }
-  const p = allPlots(state).find((q) => q.case === c && q.lieu === 'potager');
+  const p = allPlots(state).find((q) => q.case === c && SUR_LA_CARTE.includes(q.lieu));
   if (!p || p.culture) return false;
   const avant = Number(state.energie) || 0;
   const r = executer('potager.planter', { parcelle: p.id, culture });
