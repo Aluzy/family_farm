@@ -30,7 +30,7 @@ function foyer() {
 }
 
 test('A-1 : chaque meuble posé au sol tourne (les lits et le réfrigérateur aussi), les tableaux non', () => {
-  assert(MEUBLES.length >= 30 && TABLEAUX.length === 5, `${MEUBLES.length} meubles, ${TABLEAUX.length} tableaux`);
+  assert(MEUBLES.length >= 30 && TABLEAUX.length === 6, `${MEUBLES.length} meubles, ${TABLEAUX.length} tableaux`);
   for (const m of MEUBLES) assert(tourneBloc(m), `${m} tourne`);
   for (const t of TABLEAUX) assertEqual(tourneBloc(t), false, t);
   for (const lit of ['meuble_lit_adulte', 'meuble_lit_enfant']) assertEqual(mesuresMeuble(lit, 1), { largeur: 2, hauteur: 1 }, `${lit} de profil : en long`);
