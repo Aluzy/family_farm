@@ -1307,6 +1307,79 @@ export const RAW_DATA = {
       "boutique": true,
       "contenu": { "cottage_lit": 1, "cottage_chevet": 1, "cottage_tapis": 1, "cottage_tableau": 1, "sol_blanchi": 24, "papier_peint_roses": 1 }
     },
+    "mer_lit": {
+      "nom": "Lit de bord de mer",
+      "icone": "🛏️",
+      "prix": 80,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "mer_chevet": {
+      "nom": "Chevet de bord de mer",
+      "icone": "🛋️",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "mer_tapis": {
+      "nom": "Tapis de jute",
+      "icone": "🧶",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "mer_tableau": {
+      "nom": "Tableau : le phare",
+      "icone": "🗼",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "sol_flotte": {
+      "nom": "Plancher flotté",
+      "icone": "🌊",
+      "prix": 50,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "lot": 24
+    },
+    "papier_peint_vagues": {
+      "nom": "Papier peint vagues",
+      "icone": "🧻",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "papier": "vagues"
+    },
+    "ensemble_mer": {
+      "nom": "Ensemble bord de mer",
+      "icone": "🐚",
+      "prix": 220,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "contenu": { "mer_lit": 1, "mer_chevet": 1, "mer_tapis": 1, "mer_tableau": 1, "sol_flotte": 24, "papier_peint_vagues": 1 }
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -2388,6 +2461,48 @@ export const RAW_DATA = {
         "boutique": true
       },
       "sol_blanchi": { "nom": "Plancher blanchi", "objet": "sol_blanchi", "sol": true, "boutique": true },
+      "mer_lit": {
+        "nom": "Lit de bord de mer",
+        "objet": "mer_lit",
+        "meuble": "mer_lit",
+        "dedans": true,
+        "lit": true,
+        "hauteur": 2,
+        "tourne": true,
+        "piece": "chambre",
+        "boutique": true
+      },
+      "mer_chevet": {
+        "nom": "Chevet de bord de mer",
+        "objet": "mer_chevet",
+        "meuble": "mer_chevet",
+        "dedans": true,
+        "bloque": true,
+        "tourne": true,
+        "piece": "chambre",
+        "boutique": true
+      },
+      "mer_tapis": {
+        "nom": "Tapis de jute",
+        "objet": "mer_tapis",
+        "meuble": "mer_tapis",
+        "dedans": true,
+        "plat": true,
+        "largeur": 3,
+        "tourne": true,
+        "profil": [2, 3],
+        "piece": "chambre",
+        "boutique": true
+      },
+      "mer_tableau": {
+        "nom": "Tableau : le phare",
+        "objet": "mer_tableau",
+        "meuble": "mer_tableau",
+        "sur": "mur",
+        "piece": "chambre",
+        "boutique": true
+      },
+      "sol_flotte": { "nom": "Plancher flotté", "objet": "sol_flotte", "sol": true, "boutique": true },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -2706,6 +2821,7 @@ export const RAW_DATA = {
           "sol_mosaique",
           "sol_meleze",
           "sol_blanchi",
+          "sol_flotte",
           "chemin",
           "sol_pas_ardoise",
           "sol_pas_pierre",
@@ -4509,7 +4625,8 @@ export const RAW_DATA = {
     "feuillages": { "nom": "Feuillages", "objet": "papier_peint_feuillages" },
     "etoiles": { "nom": "Étoiles", "objet": "papier_peint_etoiles" },
     "lambris": { "nom": "Lambris de pin", "objet": "papier_peint_lambris" },
-    "roses": { "nom": "Roses anglaises", "objet": "papier_peint_roses" }
+    "roses": { "nom": "Roses anglaises", "objet": "papier_peint_roses" },
+    "vagues": { "nom": "Vagues", "objet": "papier_peint_vagues" }
   },
   "PALETTES": {
     "bois_miel": ["#3c1e16", "#603620", "#86522e", "#aa7040", "#cc965c"],

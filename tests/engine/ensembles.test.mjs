@@ -6,6 +6,14 @@ import { assert, assertEqual, garden, test } from './aide.mjs';
 
 const CONTENU = { chalet_lit: 1, chalet_chevet: 1, chalet_tapis: 1, chalet_tableau: 1, sol_meleze: 24, papier_peint_lambris: 1 };
 
+test('ensembles : le bord de mer, même composition', () => {
+  const E = DATA.OBJETS.ensemble_mer;
+  assertEqual(E.contenu, { mer_lit: 1, mer_chevet: 1, mer_tapis: 1, mer_tableau: 1, sol_flotte: 24, papier_peint_vagues: 1 });
+  for (const k of Object.keys(E.contenu)) assert(DATA.OBJETS[k] && DATA.OBJETS[k].boutique, k);
+  assert(DATA.ATELIER.BLOCS.mer_lit.lit && tourneBloc('mer_lit') && tourneBloc('mer_chevet') && tourneBloc('mer_tapis'), 'ce qui tourne');
+  assert(motifsPapier().includes('vagues') && DATA.ATELIER.BLOCS.sol_flotte.sol, 'le papier, le sol');
+});
+
 test('ensembles : le cottage anglais, même composition que le chalet', () => {
   const E = DATA.OBJETS.ensemble_cottage;
   assertEqual(E.contenu, { cottage_lit: 1, cottage_chevet: 1, cottage_tapis: 1, cottage_tableau: 1, sol_blanchi: 24, papier_peint_roses: 1 });

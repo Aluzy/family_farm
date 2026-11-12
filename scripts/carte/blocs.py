@@ -3108,8 +3108,31 @@ def motif_blanchi(x, v):
     return ton(R, 0.70 - 0.10 * x / 16 + 0.06 * bruit(x // 2, v, 27) + 0.08 * (hasard(lame, 0, 28) - 0.5))
 
 
+# Le plancher flotté de l'ensemble « bord de mer » (BLOCS_CARTE.modelesSols.sol_flotte) : de larges lames grises
+# (4 rangées), argentées par le sel, chacune sa rampe, le fil du bois en traits plus clairs, le joint sombre.
+FLOTTES_SOL = [rampe([(70, 72, 78), (112, 112, 112), (150, 146, 138), (184, 178, 166), (212, 206, 192)], 120),
+               rampe([(66, 70, 80), (106, 108, 112), (144, 142, 138), (178, 174, 166), (208, 204, 194)], 120),
+               rampe([(76, 74, 74), (118, 114, 106), (158, 150, 136), (192, 182, 164), (218, 210, 190)], 120)]
+
+
+def motif_flotte(x, v):
+    lame = v // 4
+    d = (x + (lame * 9) % 16) % 16
+    R = FLOTTES_SOL[int(hasard(lame, (x + (lame * 9) % 16) // 16, 31) * 3) % 3]
+    i = v % 4
+    if i == 3:
+        return ton(R, 0.14)
+    if d == 0:
+        return ton(R, 0.2)
+    lum = 0.60 + 0.12 * (i == 0) - 0.08 * x / 16 + 0.08 * (hasard(lame, 0, 32) - 0.5)
+    if (x + lame * 5) % 7 == 0 and i == 1:
+        lum += 0.14                                       # le fil du bois, blanchi
+    return ton(R, lum + 0.05 * bruit(x, v, 33))
+
+
 SOLS_BOUTIQUE = {'sol_meleze': (motif_meleze, ton(MELEZES[2], 0.9), ton(MELEZES[0], 0.12)),
-                 'sol_blanchi': (motif_blanchi, ton(BLANCHIS[0], 0.95), ton(BLANCHIS[0], 0.25))}
+                 'sol_blanchi': (motif_blanchi, ton(BLANCHIS[0], 0.95), ton(BLANCHIS[0], 0.25)),
+                 'sol_flotte': (motif_flotte, ton(FLOTTES_SOL[2], 0.92), ton(FLOTTES_SOL[0], 0.16))}
 SOLS_BOUTIQUE_DEBUT = len(DESSINS)                # 16 images par sol (BLOCS_CARTE.modelesSols)
 DESSINS += [sol_modele(m, *SOLS_BOUTIQUE[k]) for k in SOLS_BOUTIQUE for m in range(16)]
 

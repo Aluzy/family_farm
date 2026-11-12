@@ -225,7 +225,33 @@ def roses():
     return finir(im)
 
 
-DESSINS = {'fleurettes': fleurettes, 'rayures': rayures, 'vichy': vichy, 'damas': damas, 'feuillages': feuillages, 'etoiles': etoiles, 'lambris': lambris, 'roses': roses}
+def vagues():
+    """Les vagues du bord de mer (l'ensemble de la boutique) : des rangées de vagues marines qui s'enroulent (leur
+    crête plus claire, l'écume blanche), sur un fond blanc cassé, décalées d'une rangée à l'autre (période 8 × 6)."""
+    im = toile()
+    FOND = rampe([(214, 220, 222), (236, 240, 240), (248, 250, 248)])
+    MARINE = rampe([(24, 46, 96), (44, 80, 140), (90, 130, 186), (170, 200, 230)])
+    px = im.load()
+    for y in range(H):
+        for x in range(W):
+            px[x, y] = ton(FOND, 0.62 + 0.03 * bruit(x, y, 331)) + (255,)
+    vague = ['..##....', '.#..#...', '#....###']
+    for y0 in range(0, H, 6):
+        dx = 4 if (y0 // 6) % 2 else 0
+        for j, ligne in enumerate(vague):
+            for i, ch in enumerate(ligne):
+                if ch == '#':
+                    for rep in (0, 8):
+                        x, y = (i + dx + rep) % 16, y0 + j
+                        if y < H:
+                            px[x, y] = ton(MARINE, 0.75 - 0.25 * j + (0.2 if j == 0 else 0)) + (255,)
+        x, y = (2 + dx) % 16, y0
+        if y < H:
+            px[x, y] = ton(FOND, 1.0) + (255,)            # l'écume
+    return finir(im)
+
+
+DESSINS = {'fleurettes': fleurettes, 'rayures': rayures, 'vichy': vichy, 'damas': damas, 'feuillages': feuillages, 'etoiles': etoiles, 'lambris': lambris, 'roses': roses, 'vagues': vagues}
 
 
 def main():
