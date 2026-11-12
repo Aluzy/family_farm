@@ -17,6 +17,7 @@ import { farmSeed } from './terrain.js';
 import { marcheOuvert } from './devices.js';
 import { hasTool } from './outils.js';
 import { cowCount } from './animals.js';
+import { villageActif } from './village.js';
 
 /* ---------- les objectifs du jour (la refonte du didacticiel, lot 2) ----------
    Une nouvelle partie (commencerObjectifs) commence dans son abri (abri-depart.js) avec la première semaine
@@ -32,9 +33,19 @@ import { cowCount } from './animals.js';
    objectifs-compte.js), atteints ([quoi] : les états atteints), base ({ pris : les prises du monde au début du
    jour }), recu (le jour du jeu où sa récompense a été donnée, ou null), tire (après la semaine : le jour tiré,
    { titre, intro, recompense, objectifs }), changes (les objectifs changés aujourd'hui) }.
-   Une partie d'avant (state.didacticiel) n'en a pas : elle garde son didacticiel. Voir docs/didacticiel.md. */
+   Une partie d'avant (state.didacticiel) n'en a pas : elle garde son didacticiel. Voir docs/didacticiel.md.
 
-const SEMAINE = () => DATA.OBJECTIFS.SEMAINE;
+   Le chantier « l'île à bâtir » allumé (villageActif, fiche I7a) : la semaine est celle du nouveau départ
+   (DATA.VILLAGE.OBJECTIFS.SEMAINE : sans phrase d'ambiance, ni hameau ni calèche) et les objectifs tirés gagnent
+   ceux du port et du village (DATA.VILLAGE.OBJECTIFS.TIRES.LISTE, ajoutés à la liste ; une entrée de même id
+   remplace celle d'avant). */
+
+const ileObjectifs = (state) => (villageActif(state) && DATA.VILLAGE && DATA.VILLAGE.OBJECTIFS) || null;
+export function semaineDe(state) {
+  const I = ileObjectifs(state);
+  return (I && Array.isArray(I.SEMAINE) && I.SEMAINE) || DATA.OBJECTIFS.SEMAINE;
+}
+const SEMAINE = (state) => semaineDe(state);
 const prises = (state) => Object.keys((state.monde && state.monde.pris) || {}).length;
 
 // Les états qu'une tâche « etat » peut demander : vrai quand c'est fait.
@@ -77,12 +88,26 @@ const SI = {
   poules: (s) => !!(s.poulailler && s.poulailler.poules > 0),
   vaches: (s) => cowCount(s) > 0,
   hameau: (s) => Object.keys(hameauxVus(s)).length > 0,
+  // le chantier « l'île à bâtir » (fiche I7a), lus de façon défensive : un villageois installé (state.villageois,
+  // fiche I3a), une commande du bac en cours (state.port.commandes, fiche I1c)
+  villageois: (s) => Array.isArray(s.villageois) && s.villageois.some((v) => v && typeof v === 'object'),
+  bac: (s) => !!(s.port && typeof s.port === 'object' && Array.isArray(s.port.commandes) && s.port.commandes.length > 0),
 };
 export const SI_OBJECTIFS = Object.keys(SI);
 
+// La liste des objectifs qui se tirent : celle d'OBJECTIFS.TIRES, et le chantier allumé, celle du port et du
+// village (une entrée de même id remplace celle d'avant, à sa place ; les autres s'ajoutent à la fin).
+export function listeTiree(state) {
+  const I = ileObjectifs(state), L = TIRES().LISTE;
+  const ile = (I && I.TIRES && Array.isArray(I.TIRES.LISTE) && I.TIRES.LISTE) || [];
+  if (!ile.length) return L;
+  const parId = new Map(ile.map((d) => [d.id, d]));
+  return [...L.map((d) => parId.get(d.id) || d), ...ile.filter((d) => !L.some((x) => x.id === d.id))];
+}
+
 // Les objectifs de la liste que la partie peut faire aujourd'hui.
 export function objectifsPossibles(state) {
-  return TIRES().LISTE.filter((d) => !d.si || (SI[d.si] && SI[d.si](state)));
+  return listeTiree(state).filter((d) => !d.si || (SI[d.si] && SI[d.si](state)));
 }
 
 // L'objectif tiré `d` à ce niveau : { id, icone, libelle, sous, taches: [une tâche « compte »] }.
@@ -110,7 +135,7 @@ function recompenseTiree(state) {
 // Le jour en cours : celui de la semaine, ou le jour tiré (state.objectifs.tire) ; null.
 function jourDef(state) {
   const o = state.objectifs;
-  return SEMAINE()[o.jour] || o.tire || null;
+  return SEMAINE(state)[o.jour] || o.tire || null;
 }
 
 // Changer l'objectif `id` du jour tiré (TIRES.CHANGER fois par jour) : un autre est tiré à sa place.
@@ -149,8 +174,8 @@ function entrer(state, k) {
   const o = state.objectifs;
   o.jour = k; o.debut = state.day; o.faits = {}; o.atteints = []; o.base = { pris: prises(state) }; o.recu = null; o.changes = 0;
   // (après la semaine : les objectifs tirés du jour)
-  o.tire = k >= SEMAINE().length ? { titre: 'Les objectifs du jour', intro: '', recompense: recompenseTiree(state), objectifs: tirer(state, TIRES().NOMBRE) } : null;
-  const J = SEMAINE()[k];
+  o.tire = k >= SEMAINE(state).length ? { titre: 'Les objectifs du jour', intro: '', recompense: recompenseTiree(state), objectifs: tirer(state, TIRES().NOMBRE) } : null;
+  const J = SEMAINE(state)[k];
   for (const [item, n] of Object.entries((J && J.offre) || {})) {
     if (item === 'sac') offrirSac(state);
     else addItem(state, item, n);

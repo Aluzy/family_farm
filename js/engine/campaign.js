@@ -16,6 +16,8 @@ import { offrirPlan } from './plans.js';
 import { habitantsDe } from './habitants.js';
 import { cleDe, palierAmitie } from './amitie.js';
 import { styleMaison } from './styles.js';
+import { villageActif } from './village.js';
+import { compterObjectifIle, listeDesChapitres, paliersSuivis } from './paliers.js';
 
 /* ---------- Lot 9 : chapitres ---------- */
 
@@ -61,15 +63,28 @@ export function newCampaignCounters() {
 
 /* -- chapitres et déblocages -- */
 
-export function chapterCount() {
-  return DATA.CHAPITRES.liste.length;
+// Le chantier « l'île à bâtir » (fiche I7a, paliers.js) : une partie qui suit les paliers de l'île les a à la
+// place des chapitres (listeDesChapitres : DATA.VILLAGE.PALIERS), autant qu'eux ; sans partie, les chapitres.
+export function chapterCount(state = null) {
+  return listeDesChapitres(state).length;
+}
+
+// Le numéro du chapitre (ou du palier) en cours : state.palier pour une partie qui suit les paliers,
+// state.campagne.chapitre sinon. poserChapitre les tient égaux (ce qui lit state.campagne.chapitre, le
+// compte rendu de la nuit, la mesure d'audience, les migrations, voit le palier).
+function numeroEnCours(state) {
+  return paliersSuivis(state) ? state.palier : state.campagne.chapitre;
+}
+export function poserChapitre(state, n) {
+  state.campagne.chapitre = n;
+  if (paliersSuivis(state)) state.palier = n;
 }
 
 // Chapitre atteint : 1 à 7 pendant la campagne, 8 en mode libre (tout est débloqué).
 export function chapterReached(state) {
   const c = state.campagne;
   if (!c) return chapterCount() + 1;
-  return c.fini ? chapterCount() + 1 : c.chapitre;
+  return c.fini ? chapterCount(state) + 1 : numeroEnCours(state);
 }
 
 // Version 1.7 : un élément (bâtiment, atelier) ou une culture est débloqué par
@@ -85,13 +100,13 @@ const LEGACY_CHAPTER = {
   paturage: 5, moutons: 5, serre: 6, verger: 6, frigo: 6,
 };
 
-// Numéro du premier chapitre qui porte un objectif de ce type.
-export function objectiveChapter(type) {
-  return DATA.CHAPITRES.liste.findIndex((ch) => ch.objectifs.some((o) => o.type === type)) + 1;
+// Numéro du premier chapitre qui porte un objectif de ce type (de la liste que suit `state` : ses paliers).
+export function objectiveChapter(type, state = null) {
+  return listeDesChapitres(state).findIndex((ch) => ch.objectifs.some((o) => o.type === type)) + 1;
 }
 
-export function objectiveDef(type) {
-  for (const ch of DATA.CHAPITRES.liste) {
+export function objectiveDef(type, state = null) {
+  for (const ch of listeDesChapitres(state)) {
     const o = ch.objectifs.find((x) => x.type === type);
     if (o) return o;
   }
@@ -145,19 +160,19 @@ export function noteRecipeDone(state, recette, qty) {
   const c = state.campagne;
   const r = DATA.RECETTES[recette];
   if (!c || !r || r.transformation) return;
-  const pain = objectiveDef('pains');
+  const pain = objectiveDef('pains', state);
   if (pain && recette === pain.recette) {
     c.compteurs.pains += qty;
     return;
   }
-  const exclus = (objectiveDef('plats') || {}).exclut || [];
+  const exclus = (objectiveDef('plats', state) || {}).exclut || [];
   if (!exclus.includes(recette) && !c.compteurs.plats.includes(recette)) c.compteurs.plats.push(recette);
 }
 
 // Version 1.22 : les objets suivis par un objectif « objet » (minerai de fer, lingot de
 // fer…), de tous les chapitres.
-function trackedItems() {
-  return [...new Set(DATA.CHAPITRES.liste.flatMap((ch) => ch.objectifs.filter((o) => o.type === 'objet').map((o) => o.item)))];
+function trackedItems(state) {
+  return [...new Set(listeDesChapitres(state).flatMap((ch) => ch.objectifs.filter((o) => o.type === 'objet').map((o) => o.item)))];
 }
 
 // Le record de chacun de ces objets dans l'inventaire : un minerai fondu ou un lingot
@@ -166,7 +181,7 @@ function trackedItems() {
 function noteItemRecords(state) {
   const c = state.campagne;
   if (!c) return;
-  for (const item of trackedItems()) {
+  for (const item of trackedItems(state)) {
     const n = countItem(state, item);
     if (!c.compteurs.objets || typeof c.compteurs.objets !== 'object') c.compteurs.objets = {};
     if (n > (c.compteurs.objets[item] || 0)) c.compteurs.objets[item] = n;
@@ -198,6 +213,9 @@ function amisAuPalier(state, palier) {
 // Valeur actuelle d'un objectif.
 export function objectiveValue(state, obj) {
   const k = state.campagne.compteurs;
+  // le chantier « l'île à bâtir » (fiche I7a) : le port, les villageois, leurs tâches, les commerces, l'amitié
+  const ile = compterObjectifIle(state, obj);
+  if (ile !== null) return ile;
   switch (obj.type) {
     case 'litres': return Math.floor((k.eauMl || 0) / 1000);
     case 'wh': return Math.floor((k.mwhMax || 0) / 1000);
@@ -242,17 +260,19 @@ export function objectiveValue(state, obj) {
 }
 
 // Progression d'un chapitre : { chapitre, titre, icone, intro, objectifs: [{ ...objectif,
-// valeur, ok, ratio }], fait }.
+// valeur, ok, ratio }], fait, palier }.
 // Sur une terre sauvage, l'intro et les libellés ont leur version (introSauvage,
 // libelleSauvage) quand elle existe ; les objectifs marqués sauvage: false n'y existent pas (le
 // panneau, la pompe, la citerne).
-export function chapterProgress(state, chapitre = state.campagne.chapitre) {
-  const def = DATA.CHAPITRES.liste[chapitre - 1];
+// Une partie qui suit les paliers de l'île (fiche I7a) : le palier en cours (palier: true), sans intro.
+export function chapterProgress(state, chapitre = numeroEnCours(state)) {
+  const palier = paliersSuivis(state);
+  const def = listeDesChapitres(state)[chapitre - 1];
   const objectifs = def.objectifs.filter((o) => o.sauvage !== false).map((o) => {
     const valeur = objectiveValue(state, o);
     return { ...o, libelle: o.libelleSauvage || o.libelle, valeur, ok: valeur + EPS >= o.cible, ratio: Math.max(0, Math.min(1, valeur / o.cible)) };
   });
-  return { chapitre, titre: def.titre, icone: def.icone, intro: def.introSauvage || def.intro, objectifs, fait: objectifs.every((o) => o.ok) };
+  return { chapitre, titre: def.titre, icone: def.icone, intro: palier ? '' : def.introSauvage || def.intro, objectifs, fait: objectifs.every((o) => o.ok), palier };
 }
 
 // Le texte de la lettre `id` : sa version d'une terre sauvage (texteSauvage) s'il y en a une. Une ligne
@@ -268,7 +288,7 @@ export function mailText(state, id) {
 // meuble lui-même) et ses objets de décor. `annonce` : les plans sont annoncés par l'écran de fin (true) ou au
 // matin (false : une ancienne partie, rattrapée). → { plans: [id], objets: { id: n } }
 export function recompenseChapitre(state, n, annonce = true) {
-  const c = state.campagne, r = (DATA.CHAPITRES.liste[n - 1] || {}).recompense || {};
+  const c = state.campagne, r = (listeDesChapitres(state)[n - 1] || {}).recompense || {};
   const out = { plans: [], objets: {} };
   if (!c) return out;
   if (!Array.isArray(c.recompenses)) c.recompenses = [];
@@ -290,10 +310,10 @@ function rattraperRecompenses(state) {
   const c = state.campagne;
   if (Array.isArray(c.recompenses)) return;
   c.recompenses = [];
-  const faits = c.fini ? chapterCount() : Math.max(0, (c.chapitre || 1) - 1);
+  const faits = c.fini ? chapterCount(state) : Math.max(0, (numeroEnCours(state) || 1) - 1);
   for (let n = 1; n <= faits; n++) {
     c.recompenses.push(n);
-    for (const id of (DATA.CHAPITRES.liste[n - 1].recompense || {}).plans || []) offrirPlan(state, id, false);
+    for (const id of (listeDesChapitres(state)[n - 1].recompense || {}).plans || []) offrirPlan(state, id, false);
   }
 }
 
@@ -302,14 +322,16 @@ function rattraperRecompenses(state) {
 export function completeChapter(state) {
   const c = state.campagne;
   if (!c || c.fini) return fail('La campagne est terminée.');
-  c.annonces.push({ chapitre: c.chapitre, nuit: state.day, recompense: recompenseChapitre(state, c.chapitre) });
+  // (fiche I7a : un palier de l'île compte comme le chapitre de son rang : mêmes points, même XP)
+  const n = numeroEnCours(state), palier = paliersSuivis(state);
+  c.annonces.push({ chapitre: n, nuit: state.day, recompense: recompenseChapitre(state, n) });
   // Arbre v2 : chaque chapitre terminé rapporte des points de technologie.
-  grantTechPoints(state, DATA.ARBRE.POINTS.CHAPITRES[c.chapitre - 1] || 0, `Chapitre ${c.chapitre} terminé`);
+  grantTechPoints(state, DATA.ARBRE.POINTS.CHAPITRES[n - 1] || 0, palier ? `Palier ${n} franchi` : `Chapitre ${n} terminé`);
   // Version 1.7 : et de l'expérience (le succès « chapitre n terminé »).
-  gainXp(state, DATA.NIVEAUX.CHAPITRES_XP[c.chapitre - 1] || 0);
-  if (c.chapitre >= chapterCount()) c.fini = true;
-  else c.chapitre += 1;
-  return { ok: true, chapitre: c.chapitre, fini: c.fini };
+  gainXp(state, DATA.NIVEAUX.CHAPITRES_XP[n - 1] || 0);
+  if (n >= chapterCount(state)) c.fini = true;
+  else poserChapitre(state, n + 1);
+  return { ok: true, chapitre: numeroEnCours(state), fini: c.fini };
 }
 
 // Passe au chapitre suivant tant que l'objectif du chapitre en cours est rempli.
@@ -320,12 +342,14 @@ export function updateChapters(state) {
   noteItemRecords(state);
   rattraperRecompenses(state);
   let done = 0;
-  while (!c.fini && done < chapterCount() && chapterProgress(state).fait) {
+  while (!c.fini && done < chapterCount(state) && chapterProgress(state).fait) {
     completeChapter(state);
     done++;
   }
   checkMastery(state); // Arbre v2 : jalons de maîtrise
-  deliverMail(state); // version 1.3 : le courrier que ce stade de la partie fait arriver
+  // version 1.3 : le courrier que ce stade de la partie fait arriver (le chantier « l'île à bâtir » allumé, il
+  // n'y en a plus : ce qu'il offrait est passé dans les récompenses des paliers, fiche I7a)
+  if (!villageActif(state)) deliverMail(state);
   return done;
 }
 
@@ -440,7 +464,7 @@ export function recordNight(state) {
   if (!c) return;
   const k = c.compteurs;
   // (B-1 : PENALITES.SERIE_REMISE coupée, une nuit sans œuf ne remet pas la série à zéro : les nuits se cumulent)
-  if (chapterReached(state) >= objectiveChapter('pontes')) k.serieOeufs = (state.nuit.oeufs || 0) > 0 ? k.serieOeufs + 1 : penalite('SERIE_REMISE') ? 0 : k.serieOeufs;
+  if (chapterReached(state) >= objectiveChapter('pontes', state)) k.serieOeufs = (state.nuit.oeufs || 0) > 0 ? k.serieOeufs + 1 : penalite('SERIE_REMISE') ? 0 : k.serieOeufs;
   if (c.fini) {
     const pt = techPoints(state);
     pt.libre += 1;

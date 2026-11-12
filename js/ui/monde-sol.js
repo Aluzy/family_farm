@@ -40,7 +40,8 @@ import { DATA } from '../engine/catalog.js';
 //     place, panneau… ; null tant que les éléments ne sont pas tirés), hameauSortes (HAMEAUX.SORTES :
 //     les dessins de assets/hameaux.png, posés comme la végétation : reg.hameau), hameauxStyles
 //     (HAMEAUX.STYLES : le toit de chaque style), hameauEnclos (HAMEAUX.ENCLOS : la taille de l'enclos
-//     du berger, où les habitants mènent ses moutons : fiche 7b) ;
+//     du berger, où les habitants mènent ses moutons : fiche 7b) ; portLanterne (PORT.LANTERNE : la lumière des
+//     lanternes du port, le soir, fiche I1a ; le port est un plan parmi ceux des hameaux) ;
 //   - la calèche (fiche 7c) : tournee() (sa tournée, js/engine/caleche-tournee.js : tirée avec les
 //     éléments ; null avant), que la page pose dans le moteur (js/ui/caleche.js, poserTournee) ;
 //   - la carte du monde (fiche 8) : carte(f) (l'image du monde, un pixel par case : js/engine/monde-carte.js ;
@@ -75,7 +76,8 @@ function nouveauWorker() {
 export function solDuMonde(T) {
   const M = T && T.MONDE;
   if (!M) return null;
-  if (courant && courant.graine === M.graine) return courant.sol;
+  // (le monde de la graine, ou le même avec son port : MONDE.cle, js/engine/monde.js)
+  if (courant && courant.cle === (M.cle || M.graine)) return courant.sol;
   if (courant) courant.fermer();
   courant = client(T, M);
   return courant.sol;
@@ -149,6 +151,7 @@ function client(T, M) {
     lieux: () => lieux, lieuxSortes: SORTES_LIEUX, coins: (DATA.CANNE.COINS && DATA.CANNE.COINS.RAYON) || 0,
     faune: { especes: ESPECES_FAUNE.map((cle) => ({ cle, ...FAUNE.ESPECES[cle] })), PRES: FAUNE.PRES, LOIN: FAUNE.LOIN, RAYON: FAUNE.RAYON },
     hameaux: () => hameaux, tournee: () => tournee, hameauSortes: SORTES_HAMEAUX, hameauxStyles: HAMEAUX.STYLES, hameauEnclos: HAMEAUX.ENCLOS,
+    portLanterne: (DATA.PORT && DATA.PORT.LANTERNE) || null,
     region(rx, ry) {
       const cle = rx + ',' + ry, r = regions.get(cle);
       if (r) return r;
@@ -173,7 +176,7 @@ function client(T, M) {
     mesures: () => mesures,
   };
   return {
-    graine: M.graine, sol,
+    graine: M.graine, cle: M.cle || M.graine, sol,
     fermer() { fini = true; if (worker) worker.terminate(); if (direct && direct.tache) clearTimeout(direct.tache); abonnes.length = 0; },
   };
 }

@@ -66,20 +66,24 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 - **Un villageois rapporterait 2 à 7 fois ce qu'il mange** aux prix actuels (bétail ≈ 48 pièces par
   jour, mine ≈ 36, bois ≈ 32, pêche ≈ 32, cueillette ≈ 15, contre 7 à 11 de nourriture).
 - **Le joueur automatique est périmé** : `node scripts/simulate.mjs` reste au chapitre 3, 71 nuits
-  sans repas sur 80, une vérification en échec.
+  sans repas sur 80, une vérification en échec. *Remis d'aplomb par I0b* : la famille mange toutes les
+  nuits, le chapitre 7 est atteint vers la nuit 42 (graine 1) ; et la simulation mesure maintenant
+  **l'argent qui s'empile** : vers 22 000 pièces en caisse à la nuit 80, aucune dépense sur les 20
+  dernières nuits, plus de 90 % des gains venant de la vente des cultures à la calèche (le constat de
+  `simulate.mjs`, ses comptes par poste dans `simulation.csv`).
 
 ## Les lots
 
 | Lot | Fiches | Ce qu'il apporte |
 |---|---|---|
-| 0. Le socle | I0a (fait), I0b | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
-| 1. Le port | I1a, I1b, I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
+| 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
+| 1. Le port | I1a (fait), I1b, I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 | Le chemin de la ferme au port, modifiable ; porter la marchandise |
-| 3. Les villageois | I3a à I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |
+| 3. Les villageois | I3a (fait), I3b à I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a, I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
-| 7. La page blanche | I7a à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
+| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a, I8b | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
@@ -124,6 +128,61 @@ Ce qui est posé (I0a) :
   d'avant le chantier.
 - L'archive : le mainteneur la crée depuis `main`, avant la première fiche qui change le jeu publié
   (`git fetch origin main && git push origin origin/main:refs/heads/archive/jeu-avant-ile`).
+
+## Les paliers de l'île (I7a)
+
+Ce qui est posé (I7a) :
+
+- Les sept chapitres deviennent sept **paliers de l'île** (`VILLAGE.PALIERS`, `data/village.json` ;
+  `js/engine/paliers.js`) : un titre, une icône, des objectifs, une récompense, aucun texte à lire.
+  S'installer ; la première vente au port ; le premier villageois ; les bêtes ; trois villageois au
+  travail ; le premier commerce ; un village de dix. La mécanique reste celle de `campaign.js` : le palier
+  n tient la place du chapitre n (mêmes points de technologie, même XP, mêmes paliers de l'arbre ; les
+  plans et le décor du chapitre, et les graines de la serre que le courrier offrait).
+- La partie : `state.palier` (1 à 7, la forme de `state.campagne.chapitre`, que `poserChapitre` tient
+  égal) n'existe que dans une partie neuve faite le réglage allumé (ou rendue d'essai) : pas de nouveau
+  format. Une partie d'avant garde ses chapitres même le réglage allumé, jusqu'à I7f. Les compteurs
+  restent dans `state.campagne.compteurs`.
+- Le réglage allumé : plus de courrier (ni lettres ni cartes postales) ; la semaine des objectifs du
+  jour est celle de `VILLAGE.OBJECTIFS.SEMAINE` (sans phrase d'ambiance, ni hameau ni calèche) et les
+  objectifs tirés gagnent ceux du port et du village (`VILLAGE.OBJECTIFS.TIRES`).
+- L'interface : la fenêtre des chapitres devient « L'île » (le palier en cours, ses objectifs cochés, la
+  récompense, les paliers passés) ; un palier franchi donne une notification et sa récompense, pas
+  d'écran à lire.
+- **Ce que les fiches suivantes remplissent** (lu de façon défensive : un champ absent compte 0) :
+
+| Objectif | Ce qu'il lit | Fiche |
+|---|---|---|
+| `ventesPort` | `state.campagne.compteurs.ventesPort` : les pièces gagnées au port (`bumpCounter(state, 'ventesPort', gain)`) | I1b |
+| `portNiveau` | `state.port.niveau` | I1c |
+| `villageois` | `state.villageois` : ceux qui ont une maison (`v.maison` non nul) | I3a |
+| `taches` | `state.villageois` : ceux qui ont une tâche (`v.tache` non nul) | I3c |
+| `commerces` | `state.commerces` (tableau ou objet) : ceux qui ne sont pas `ouvert: false` | I5a |
+| `amitieVillageois` | `palierAmitie(state, v.id)` d'`amitie.js` (`state.amitie.pnj[v.id]`), au palier `palier` ou plus | I6a |
+
+  Les objectifs du jour du chantier comptent `vendre` (une vente, I1b), `parler` (I3b, I6a),
+  `cadeau_villageois` (I6a) et `commande_bac` (I1c) par `noterObjectif` ; ils paraissent quand
+  `state.villageois` compte un villageois ou `state.port.commandes` une commande.
+- Reste à faire : le joueur automatique suit les paliers (point 6, après I0b).
+
+## Les villageois : l'arrivée (I3a, fait)
+
+- **Le modèle** (`js/engine/villageois.js`) : `state.villageois`, une liste d'adultes seuls (`id`, `prenom`, `genre`,
+  `perso`, `apparence`, `gouts`, `maison`, `lit`, `bourse`, `bonheur`, `faim`, `arrive`, `repos`, `accueil`,
+  `sansMaison`, `avis`, `journal`). Le champ ne naît qu'avec le premier villageois : éteint, une partie neuve est
+  celle d'avant (format 87 ; la migration 86 → 87 ne fait que réparer une liste abîmée).
+- **La maison libre** : une pièce close du genre maison, marquée par une **boîte aux lettres** (un bloc fabriqué à
+  l'Atelier, posé dehors contre sa porte : `blocs.js`, `maisonsMarquees`), avec un lit que la famille ne prend pas ;
+  la famille dort d'abord dans les autres lits (`couchages`). Un villageois par maison.
+- **L'arrivée** (`VILLAGE.ARRIVEE`) : un jour de bac (avant I1c, tous les `PERIODE` jours ; `jourDeBac` lira le bac
+  du port), de `HEURE` à `FIN` h ; le premier dès la première maison libre ; les suivants s'il y a de quoi manger
+  (`RESERVE_JOURS`) et si le port le permet (`PLAFOND[niveau]`, un port sans niveau compte pour 1). Il part de la
+  case du port (`caseArrivee` : `plan.lieux.port` quand I1a l'aura posé, sinon le bout du chemin de la ferme),
+  marche à sa porte, frappe, dit une ligne ; une notification ; la carte du joueur compte les villageois (un appui :
+  leur liste, puis la fiche de chacun).
+- **La nuit** (`villageoisNuit`, dans `runNight`) : il mange à la boîte commune (le besoin d'un adulte), dort dans
+  son lit ; son bonheur suit la règle de la famille ; mal nourri ou sans lit, il se repose le lendemain (`repos`),
+  il ne part jamais. Sa maison retirée, il dort à l'abri et prend la prochaine maison libre.
 
 ## Les règles qui ne changent pas
 

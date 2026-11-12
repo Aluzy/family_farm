@@ -1,6 +1,7 @@
 import { DATA } from './catalog.js';
 import { genererFerme } from './ferme-generee.js';
 import { casesDeRegion, genererMonde, regionDeCase, regionsDuRect } from './monde.js';
+import { niveauPort } from './port.js';
 
 /* ---------- le terrain de la ferme ---------- */
 
@@ -19,10 +20,13 @@ import { casesDeRegion, genererMonde, regionDeCase, regionsDuRect } from './mond
 // Une partie d'avant le grand monde (version < 52, pendant ses migrations) lit encore le terrain
 // de sa ferme seule (cases sur la largeur de la ferme) : la migration 51 → 52 (state.js) porte
 // ensuite ses cases dans celles du monde.
+//
+// Le chantier « l'île à bâtir » allumé (fiche I1a) : le monde de la partie a son port (niveauPort, port.js ;
+// monde.js genererMonde), le même terrain, son cadre et son plan avec lui.
 export function farmTerrain(state) {
   const g = farmSeed(state);
   if (g === null) return DATA.TERRAIN;
-  return avantLeMonde(state) ? genererFerme(g).terrain : genererMonde(g).terrain;
+  return avantLeMonde(state) ? genererFerme(g).terrain : genererMonde(g, niveauPort(state)).terrain;
 }
 
 const avantLeMonde = (state) => !!state && Number.isFinite(state.version) && state.version < 52;
@@ -109,7 +113,7 @@ export function farmSeed(state) {
 // tuiles : la scène y met ceux de la carte de Tiled), ou null : la scène charge la carte de Tiled.
 export function farmMap(state) {
   const g = farmSeed(state);
-  return g === null ? null : genererMonde(g).carte;
+  return g === null ? null : genererMonde(g, niveauPort(state)).carte;
 }
 
 // Un point de la carte de Tiled (en tuiles) sur la ferme de la partie : là où la cour de la

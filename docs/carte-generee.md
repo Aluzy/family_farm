@@ -825,9 +825,15 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
   (`boite`, `versBoite`, tests/engine/aide.mjs). Les tests des anciennes migrations s'arrêtent à
   la version 46 (`migreAvant`) ; le déménagement a les siens, sur de vraies sauvegardes d'avant
   (tests/engine/anciennes-parties.json).
-- **Le joueur automatique** (js/engine/bot.js) bâtit lui aussi d'un coup (`testBatir`) et paie le
-  prix qu'avait chaque bâtiment à la place des matériaux ; avant la pompe, il arrose à la cruche
-  (le puits posé d'un coup) ; la famille mange à la boîte à nourriture, qu'il remplit le soir.
+- **Le joueur automatique** (js/engine/bot.js ; remis à jour par la fiche I0b du chantier de l'île,
+  `docs/fiches/ile/I0b-joueur-automatique.md`) part de la partie neuve d'aujourd'hui (la terre
+  sauvage, l'abri, 300 pièces, les objectifs du jour). Il ramasse ce que la ferme offre chaque matin,
+  fabrique à l'Atelier ses outils et les pièces maîtresses de ses bâtiments (`SIMULATION.BATIR` : la
+  boîte, le four, la meule, le nichoir, les blocs du Silo…), qu'il pose d'un coup (`testBatir`, murs
+  compris), sans payer de pièces ; les matériaux bruts qu'il ne trouve pas sur la ferme
+  (`SIMULATION.BRUTS`) lui sont fournis et comptés (`materiauxFournis`). Avant la pompe, il arrose à
+  la cruche, remplie au puits ; la famille mange à la boîte à nourriture, qu'il remplit le soir ; il
+  ne commerce qu'au passage de la calèche, à partir de son niveau.
 
 ## Étapes
 

@@ -15,6 +15,38 @@
     "//LISSAGE": "nuits de la moyenne mobile des courbes de bonheur (mode test, scripts/simulate.mjs)",
     "LISSAGE": 7,
     "STRATEGIES": { "applique": { "nom": "Joueur appliqué", "eveilS": 60 }, "minimal": { "nom": "Joueur minimal", "eveilS": 30 } },
+    "//BRUTS": [
+      "I0b : les matériaux bruts que le joueur simulé fournit quand il en manque (il ne va pas les couper, les piocher,",
+      "les faucher ni les fondre pas à pas, hors de ce que la ferme offre chaque matin : js/engine/bot.js botRamasser) ;",
+      "ils ne coûtent pas de pièces dans le jeu et la simulation les compte (materiauxFournis)."
+    ],
+    "BRUTS": ["bois", "pierre", "fibre", "minerai_fer", "minerai_cuivre", "minerai_or", "minerai_platine", "quartz", "lingot_fer", "lingot_cuivre", "lingot_or", "champignon_lumineux"],
+    "//MATERIAUX_GARDES": "I0b : il ramasse les pierres et le bois de la ferme tant qu'il en a moins que ce nombre (les baies, toujours)",
+    "MATERIAUX_GARDES": 40,
+    "//VIVRES_GARDES": "I0b : des légumes, des fruits et des produits qui se mangent, il garde ce nombre de chacun (hors boîte) et vend le reste à la calèche",
+    "VIVRES_GARDES": 10,
+    "//SEMENCES_GARDEES": "I0b : d'une récolte qui est sa propre semence (la patate), il garde ce nombre pour ressemer : ni vendu, ni dans la boîte",
+    "SEMENCES_GARDEES": 6,
+    "//BATIR": [
+      "I0b : les pièces maîtresses de chaque bâtiment, fabriquées à l'Atelier avec leurs matériaux avant d'être posées",
+      "(js/engine/bot.js botBatir ; les murs, portes et barrières autour sont posés d'un coup). Aucun n'a de prix en pièces."
+    ],
+    "BATIR": {
+      "foyer": { "paillasse": 4 },
+      "puits": { "puits_pierre": 1 },
+      "boite": { "boite_nourriture": 1 },
+      "four": { "four_pierre": 1 },
+      "cuisine": { "cuisiniere": 1 },
+      "moulin": { "meule": 1 },
+      "poulailler": { "nichoir": 1 },
+      "etable": { "mangeoire": 1 },
+      "serre": { "bac_semis": 1 },
+      "silo": { "bloc_silo": 6 },
+      "panneau": { "panneau_solaire": 1 },
+      "batterie": { "batterie": 1 },
+      "pompe": { "pompe": 1 },
+      "reservoir": { "citerne": 1 }
+    },
     "//CAISSE": ["Ce que le joueur garde ou vise.", "pièces gardées en réserve (graines, blé) : les achats du plan ne les touchent pas"],
     "CAISSE": 20,
     "//CONSERVES_GARDEES": "il ne vend des conserves que pour payer un achat, jamais sous ce stock",
@@ -68,8 +100,8 @@
       "Un élément pas encore débloqué par un chapitre est sauté."
     ],
     "PRIORITE": {
-      "1": [{ "type": "maison" }, { "type": "achat", "id": "panneau" }, { "type": "achat", "id": "pompe" }, { "type": "achat", "id": "reservoir" }, { "type": "houe" }],
-      "//1": "version 1.12 : le départ v2 (maison, panneau, pompe, réservoir, houe) ; la batterie (facultative) vient avec le plan",
+      "1": [{ "type": "maison" }, { "type": "houe" }],
+      "//1": "I0b : la terre sauvage (l'abri est là, la houe se fabrique) ; le panneau, la pompe, la citerne et la batterie se fabriquent à l'Atelier au niveau de l'énergie : ils viennent avec le plan",
       "2": [{ "type": "houe" }, { "type": "silo", "niveau": 2 }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
       "4": [
@@ -84,6 +116,9 @@
     },
     "PLAN": [
       { "type": "houe" },
+      { "type": "achat", "id": "panneau" },
+      { "type": "achat", "id": "pompe" },
+      { "type": "achat", "id": "reservoir" },
       { "type": "achat", "id": "batterie" },
       { "type": "poulailler", "niveau": 1 },
       { "type": "silo", "niveau": 1 },
@@ -128,6 +163,14 @@
       { "type": "moutons", "n": 10 },
       { "type": "arbres", "n": 12 }
     ],
+    "//VERIFS": [
+      "I0b : les seuils des vérifications ajoutées à scripts/simulate.mjs (joueur appliqué) :",
+      "CHAPITRE_7_AVANT : le chapitre 7 doit être en cours avant cette nuit ;",
+      "CAISSE_FOIS_DEPENSE, NUITS_DEPENSE : les pièces en caisse à la dernière nuit restent sous ce multiple de la",
+      "dépense des NUITS_DEPENSE dernières nuits (l'argent qui s'empile : un constat, il ne fait pas échouer le script) ;",
+      "NUITS_DEPENSE est aussi la tranche du résumé (revenu moyen par jour)."
+    ],
+    "VERIFS": { "CHAPITRE_7_AVANT": 60, "CAISSE_FOIS_DEPENSE": 2, "NUITS_DEPENSE": 20 },
     "//DEPANNAGE": "Vérification de la section 8.11 : une unité de cet aliment achetée chaque nuit, encore payable à la nuit donnée.",
     "DEPANNAGE": { "item": "carotte", "nuit": 30 }
   }

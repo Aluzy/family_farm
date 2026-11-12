@@ -12,6 +12,8 @@ import { newTechPoints } from './techtree.js';
 import { remboursementCommerce } from './ile.js';
 import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
+import { villageActif } from './village.js';
+import { commencerPaliers } from './paliers.js';
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
@@ -160,6 +162,8 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
   }
   s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s), caseDepart(farmTerrain(s))), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
+  // le chantier « l'île à bâtir » allumé : la partie suit les paliers de l'île (paliers.js, fiche I7a)
+  if (villageActif(s)) commencerPaliers(s);
   return s;
 }
 
@@ -875,7 +879,44 @@ export const MIGRATIONS = {
     if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 8) out.carte = { ...c, generateur: 9 };
     return out;
   },
+  // v86 → v87 (le chantier « l'île à bâtir », fiche I3a) : les villageois (state.villageois, js/engine/villageois.js).
+  // Le champ ne naît qu'avec le premier villageois (une partie d'avant, ou le chantier éteint, n'en a pas : elle
+  // reste telle quelle) ; une liste abîmée est réparée : chacun garde ce qui se lit, ce qui manque prend sa valeur
+  // de départ (sans maison : il attend une maison libre).
+  86: (state) => {
+    const out = { ...state, version: 87 };
+    if ('villageois' in state) out.villageois = reparerVillageois(state.villageois);
+    return out;
+  },
 };
+
+// Les villageois d'une sauvegarde (la migration v86 → v87) : une liste de villageois lisibles (un id et un prénom) ;
+// chacun complété de ce qui lui manque.
+function reparerVillageois(liste) {
+  if (!Array.isArray(liste)) return [];
+  const entier = (v, d) => (Number.isInteger(v) ? v : d);
+  const caseOuNull = (v) => (Number.isInteger(v) && v >= 0 ? v : null);
+  return liste.filter((v) => v && typeof v === 'object' && typeof v.id === 'string' && typeof v.prenom === 'string').map((v) => {
+    const maison = caseOuNull(v.maison);
+    return {
+      ...v,
+      genre: v.genre === 'm' ? 'm' : 'f',
+      perso: entier(v.perso, 1),
+      gouts: v.gouts && typeof v.gouts === 'object' && !Array.isArray(v.gouts) ? v.gouts : {},
+      maison,
+      lit: maison === null ? null : (Number.isInteger(v.lit) || (typeof v.lit === 'string' && /^etage:\d+$/.test(v.lit)) ? v.lit : null),
+      bourse: Number.isFinite(v.bourse) ? v.bourse : 0,
+      bonheur: Number.isFinite(v.bonheur) ? Math.max(0, Math.min(DATA.BONHEUR.MAX, Math.round(v.bonheur))) : DATA.BONHEUR.DEPART,
+      faim: Number.isFinite(v.faim) && v.faim > 0 ? v.faim : 0,
+      arrive: entier(v.arrive, 1),
+      repos: !!v.repos,
+      accueil: v.accueil === 'en_route' ? 'en_route' : null,
+      sansMaison: maison === null ? entier(v.sansMaison, null) : null,
+      avis: Array.isArray(v.avis) ? v.avis.filter((a) => ['arrive', 'sans_maison', 'installe'].includes(a)) : [],
+      journal: Array.isArray(v.journal) ? v.journal.filter((j) => j && typeof j === 'object') : [],
+    };
+  });
+}
 
 // La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;
 // rendus par la migration 75 → 76).

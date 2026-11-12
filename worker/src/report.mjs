@@ -183,6 +183,8 @@ export const INTERFACE_ACTIONS = new Set([
   // (les amis : js/ui/amis.js)
   'amis-ouvrir', 'amis-fermer', 'amis-fiche', 'amis-fiche-fermer', 'amis-ajouter', 'amis-envoyer', 'amis-repondre', 'amis-inviter', 'amis-rejoindre',
   'amis-visite', 'amis-signe', 'amis-retirer', 'amis-retirer-non', 'amis-retirer-oui', 'amis-message', 'amis-copier', 'amis-partager', 'amis-connexion',
+  // (l'île à bâtir, fiche I3a : la liste des villageois, la fiche d'un villageois : js/ui/villageois.js)
+  'villageois-liste', 'villageois-fiche',
   // (les gemmes : js/ui/gemmes.js)
   'gemmes-ouvrir', 'gemmes-onglet', 'gemmes-pack', 'gemmes-payer', 'gemmes-acheter', 'gemmes-connexion',
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',

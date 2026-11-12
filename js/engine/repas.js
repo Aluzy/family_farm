@@ -196,6 +196,34 @@ function prochainAliment(store) {
   return best && best.item;
 }
 
+// Le chantier « l'île à bâtir » (fiche I3a, js/engine/villageois.js) : les villageois mangent au même rangement
+// que la famille (le réfrigérateur, sinon la boîte), dans le même ordre (prochainAliment), en énergie des objets
+// (DATA.OBJETS[].energie, comme le besoin FAMILLE.AJ). reserveRangement : l'énergie de tout ce qu'il contient ;
+// mangerAuRangement : des aliments jusqu'à `besoin`, tant qu'il y en a. → { mange: { objet: n }, energie, source }.
+export function reserveRangement(state) {
+  const store = rangement(state, sourceRepas(state));
+  let e = 0;
+  for (const item of Object.keys(store || {})) {
+    const def = DATA.OBJETS[item];
+    if (def && def.mangeable && def.energie > 0) e += def.energie * lotList(store, item).reduce((t, l) => t + l.qty, 0);
+  }
+  return e;
+}
+export function mangerAuRangement(state, besoin) {
+  const source = sourceRepas(state), store = rangement(state, source), mange = {};
+  let energie = 0;
+  while (store && energie < besoin) {
+    const item = prochainAliment(store);
+    if (!item || !(DATA.OBJETS[item].energie > 0)) break;
+    const lots = lotList(store, item);
+    pullLots(lots, 1);
+    keepLots(store, item, lots);
+    energie += DATA.OBJETS[item].energie;
+    mange[item] = (mange[item] || 0) + 1;
+  }
+  return { mange, energie, source };
+}
+
 // Ce que la famille a mangé aujourd'hui : { mange: { item: n }, energie } (points rendus), et les étapes
 // du jour faites.
 export function repasJour(state) {

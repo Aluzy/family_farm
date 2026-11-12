@@ -37,6 +37,7 @@ import { chainesDeLaJournee } from './chaines.js';
 import { demandesNuit } from './demandes.js';
 import { voisinsNuit } from './voisins.js';
 import { enExpedition, tentePortee } from './equipement.js';
+import { villageoisNuit } from './villageois.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
@@ -301,6 +302,10 @@ export function runNight(state) {
   for (const step of NIGHT_STEPS) step(state);
   // la ferme générée : qui n'a pas de paillasse dans une pièce close perd du bonheur
   const sansCouchage = nuitSansCouchage(state).map((m) => m.id);
+  // le chantier « l'île à bâtir » (fiche I3a, villageois.js) : les villageois mangent à la boîte commune, après la
+  // famille, et dorment dans leur lit ; un jour de bac, un nouveau venu qui pouvait venir est là (éteint : rien)
+  const villageois = villageoisNuit(state);
+  if (villageois) state.nuit.villageois = villageois;
   // E-8 : un monde partagé (state.mondePartage, posé à la mise en ligne : docs/monde-partage.md, M.3) n'est
   // que la ferme : sa nuit ne fait pas vivre le grand monde (les hameaux, l'amitié, les invitations, les
   // plans, les projets, la visite de bienvenue, le récit), qui reste à la partie solo du propriétaire

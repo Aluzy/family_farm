@@ -9,6 +9,7 @@
    ========================================================================== */
 
 import { DATA } from './catalog.js';
+import { commencerPaliers } from './paliers.js';
 
 // Le chantier est-il allumé pour cette partie ?
 export function villageActif(state) {
@@ -16,10 +17,11 @@ export function villageActif(state) {
   return !!(state && state.essais && state.essais.village === true);
 }
 
-// L'essai : la partie (neuve) devient une partie d'essai du chantier.
+// L'essai : la partie (neuve) devient une partie d'essai du chantier ; elle suit les paliers de l'île
+// (paliers.js, fiche I7a : state.palier).
 export function allumerEssaiVillage(state) {
   state.essais = { ...(state.essais || {}), village: true };
-  return state;
+  return commencerPaliers(state);
 }
 
 // La partie l'est-elle par l'essai (et non par le réglage) ? (le bandeau de l'essai)

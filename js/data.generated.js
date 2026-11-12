@@ -1562,6 +1562,15 @@ export const RAW_DATA = {
     "porte_blanche": { "nom": "Porte blanche", "icone": "🚪‍⬜", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "boite_nourriture": { "nom": "Boîte à nourriture", "icone": "🧺", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "boite_aux_lettres": {
+      "nom": "Boîte aux lettres",
+      "icone": "📫",
+      "prix": 4,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
     "casque_lampe": { "nom": "Casque à lampe", "icone": "⛑‍💡", "prix": 30, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "chapeau_paille": { "nom": "Chapeau de paille", "icone": "👒‍🌾", "prix": 6, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "bottes": { "nom": "Bottes de marche", "icone": "👢‍🟫", "prix": 10, "mangeable": false, "categorie": "équipement", "rachetable": false },
@@ -2069,6 +2078,7 @@ export const RAW_DATA = {
       "candelabre": { "entrees": { "lingot_fer": 2, "pierre": 1, "huile": 1, "fibre": 1 }, "sortie": { "candelabre": 1 } },
       "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 } },
       "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
+      "boite_aux_lettres": { "entrees": { "planche": 2, "bois": 1 }, "sortie": { "boite_aux_lettres": 1 }, "village": true },
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
       "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
       "mortier": { "entrees": { "pierre": 4, "planche": 1 }, "sortie": { "mortier": 1 } },
@@ -2187,6 +2197,14 @@ export const RAW_DATA = {
       "porte_blanche": { "nom": "Porte blanche", "objet": "porte_blanche", "porte": true, "ferme": true },
       "paillasse": { "nom": "Paillasse", "objet": "paillasse", "dedans": true },
       "boite_nourriture": { "nom": "Boîte à nourriture", "objet": "boite_nourriture", "dedans": true, "bloque": true, "unique": true, "boite": true },
+      "boite_aux_lettres": {
+        "nom": "Boîte aux lettres",
+        "objet": "boite_aux_lettres",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "boite_aux_lettres",
+        "villageois": true
+      },
       "refrigerateur": {
         "nom": "Réfrigérateur",
         "objet": "refrigerateur",
@@ -3049,7 +3067,7 @@ export const RAW_DATA = {
       "maison": {
         "nom": "Maison",
         "icone": "🏠",
-        "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"]
+        "blocs": ["paillasse", "boite_nourriture", "boite_aux_lettres", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"]
       },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
       "elevage": {
@@ -5076,6 +5094,39 @@ export const RAW_DATA = {
     "FAIM_JOUR": 10,
     "LISSAGE": 7,
     "STRATEGIES": { "applique": { "nom": "Joueur appliqué", "eveilS": 60 }, "minimal": { "nom": "Joueur minimal", "eveilS": 30 } },
+    "BRUTS": [
+      "bois",
+      "pierre",
+      "fibre",
+      "minerai_fer",
+      "minerai_cuivre",
+      "minerai_or",
+      "minerai_platine",
+      "quartz",
+      "lingot_fer",
+      "lingot_cuivre",
+      "lingot_or",
+      "champignon_lumineux"
+    ],
+    "MATERIAUX_GARDES": 40,
+    "VIVRES_GARDES": 10,
+    "SEMENCES_GARDEES": 6,
+    "BATIR": {
+      "foyer": { "paillasse": 4 },
+      "puits": { "puits_pierre": 1 },
+      "boite": { "boite_nourriture": 1 },
+      "four": { "four_pierre": 1 },
+      "cuisine": { "cuisiniere": 1 },
+      "moulin": { "meule": 1 },
+      "poulailler": { "nichoir": 1 },
+      "etable": { "mangeoire": 1 },
+      "serre": { "bac_semis": 1 },
+      "silo": { "bloc_silo": 6 },
+      "panneau": { "panneau_solaire": 1 },
+      "batterie": { "batterie": 1 },
+      "pompe": { "pompe": 1 },
+      "reservoir": { "citerne": 1 }
+    },
     "CAISSE": 20,
     "CONSERVES_GARDEES": 96,
     "PRIX_GRAINE_MAX": 4,
@@ -5100,13 +5151,7 @@ export const RAW_DATA = {
     "MARGE_ENERGIE": 150,
     "MARGE_BATTERIE": 70,
     "PRIORITE": {
-      "1": [
-        { "type": "maison" },
-        { "type": "achat", "id": "panneau" },
-        { "type": "achat", "id": "pompe" },
-        { "type": "achat", "id": "reservoir" },
-        { "type": "houe" }
-      ],
+      "1": [{ "type": "maison" }, { "type": "houe" }],
       "2": [{ "type": "houe" }, { "type": "silo", "niveau": 2 }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
       "4": [{ "type": "station", "id": "four" }, { "type": "station", "id": "moulin" }, { "type": "station", "id": "cuisine" }],
@@ -5116,6 +5161,9 @@ export const RAW_DATA = {
     },
     "PLAN": [
       { "type": "houe" },
+      { "type": "achat", "id": "panneau" },
+      { "type": "achat", "id": "pompe" },
+      { "type": "achat", "id": "reservoir" },
       { "type": "achat", "id": "batterie" },
       { "type": "poulailler", "niveau": 1 },
       { "type": "silo", "niveau": 1 },
@@ -5156,6 +5204,7 @@ export const RAW_DATA = {
       { "type": "moutons", "n": 10 },
       { "type": "arbres", "n": 12 }
     ],
+    "VERIFS": { "CHAPITRE_7_AVANT": 60, "CAISSE_FOIS_DEPENSE": 2, "NUITS_DEPENSE": 20 },
     "DEPANNAGE": { "item": "carotte", "nuit": 30 }
   },
   "TERRAIN": {
@@ -8560,7 +8609,331 @@ export const RAW_DATA = {
       "carnet_voyageur_8"
     ]
   },
-  "VILLAGE": { "ACTIF": false },
+  "VILLAGE": {
+    "ACTIF": false,
+    "ARRIVEE": {
+      "PERIODE": 3,
+      "HEURE": 9,
+      "FIN": 17,
+      "RESERVE_JOURS": 2,
+      "PLAFOND": { "1": 2, "2": 4, "3": 6, "4": 9, "5": 12 },
+      "BOURSE": 20,
+      "JOURNAL": 7,
+      "TOC": "Toc, toc !",
+      "PHRASES": [
+        "Je suis {prenom}, j'arrive par le bac : c'est ma maison ?",
+        "Moi, c'est {prenom}. Merci pour la maison, je m'installe !",
+        "{prenom}, pour te servir : me voilà chez moi."
+      ]
+    },
+    "PALIERS": [
+      {
+        "titre": "S'installer",
+        "icone": "🏕️",
+        "recompense": { "objets": { "bac_carre": 2, "lanterne": 2 } },
+        "objectifs": [
+          { "type": "maison", "cible": 1, "libelle": "Bâtir le foyer (une pièce close, une paillasse)", "unite": "" },
+          { "type": "houe", "cible": 1, "libelle": "Fabriquer une houe à l'Atelier", "unite": "" },
+          { "type": "labours", "cible": 6, "libelle": "Labourer 6 tuiles", "unite": "" },
+          { "type": "semis", "cible": 6, "libelle": "Planter 6 parcelles", "unite": "" },
+          { "type": "arrosees", "cible": 6, "libelle": "Arroser 6 parcelles le même jour", "unite": "" },
+          { "type": "recoltes", "cible": 1, "libelle": "Faire une première récolte", "unite": "" }
+        ]
+      },
+      {
+        "titre": "La première vente au port",
+        "icone": "⚓",
+        "recompense": { "plans": ["pergola"], "objets": { "banc_jardin": 1 } },
+        "objectifs": [
+          { "type": "niveau", "cible": 2, "libelle": "Atteindre le niveau 2", "unite": "" },
+          { "type": "cultures", "cible": 4, "libelle": "Récolter 4 cultures différentes", "unite": "" },
+          { "type": "silo", "cible": 1, "libelle": "Construire le Silo (niveau 3)", "unite": "" },
+          { "type": "ventesPort", "cible": 50, "libelle": "Vendre pour 50 pièces au port", "unite": "💰" }
+        ]
+      },
+      {
+        "titre": "Le premier villageois",
+        "icone": "🧑‍🌾",
+        "recompense": { "plans": ["banc_rondins"] },
+        "objectifs": [
+          { "type": "villageois", "cible": 1, "libelle": "Installer un villageois dans sa maison", "unite": "" },
+          { "type": "siloBle", "cible": 50, "libelle": "Stocker 50 blés au Silo", "unite": "" },
+          { "type": "objet", "item": "minerai_fer", "cible": 4, "libelle": "Rapporter 4 minerais de fer d'un gisement", "unite": "" }
+        ]
+      },
+      {
+        "titre": "Les bêtes",
+        "icone": "🐔",
+        "recompense": { "plans": ["table_rondins"] },
+        "objectifs": [
+          { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
+          { "type": "laines", "cible": 10, "libelle": "Tondre 10 laines", "unite": "" },
+          { "type": "portNiveau", "cible": 2, "libelle": "Agrandir le port (niveau 2)", "unite": "" }
+        ]
+      },
+      {
+        "titre": "Trois villageois au travail",
+        "icone": "🧺",
+        "recompense": { "plans": ["chaise_peinte"] },
+        "objectifs": [
+          { "type": "villageois", "cible": 3, "libelle": "Installer 3 villageois", "unite": "" },
+          { "type": "taches", "cible": 3, "libelle": "Confier une tâche à 3 villageois", "unite": "" },
+          { "type": "pains", "cible": 5, "recette": "pain", "libelle": "Cuire 5 pains", "unite": "" },
+          { "type": "plats", "cible": 3, "exclut": ["pain"], "libelle": "Préparer 3 plats différents (hors pain)", "unite": "" }
+        ]
+      },
+      {
+        "titre": "Le premier commerce",
+        "icone": "🔨",
+        "recompense": { "objets": { "bac_long": 1, "graine_lavande": 3, "cacao": 1, "vanille": 1, "cafe": 1 } },
+        "objectifs": [
+          { "type": "commerces", "cible": 1, "libelle": "Ouvrir un premier commerce", "unite": "" },
+          { "type": "amitieVillageois", "palier": 2, "cible": 1, "libelle": "Devenir « cordial » avec un villageois", "unite": "" },
+          { "type": "objet", "item": "lingot_fer", "cible": 1, "libelle": "Fondre un lingot de fer au Four", "unite": "" },
+          { "type": "portNiveau", "cible": 3, "libelle": "Agrandir le port (niveau 3)", "unite": "" }
+        ]
+      },
+      {
+        "titre": "Un village de dix",
+        "icone": "🏘️",
+        "recompense": { "plans": ["banc_pierre"], "objets": { "lanterne": 3 } },
+        "objectifs": [
+          { "type": "villageois", "cible": 10, "libelle": "Installer 10 villageois", "unite": "" },
+          { "type": "commerces", "cible": 2, "libelle": "Ouvrir 2 commerces", "unite": "" },
+          { "type": "amitieVillageois", "palier": 3, "cible": 3, "libelle": "Devenir « proche » de 3 villageois", "unite": "" },
+          { "type": "styles", "cible": 3, "libelle": "Mêler 3 styles à la ferme (ou un style complet)", "unite": "" }
+        ]
+      }
+    ],
+    "OBJECTIFS": {
+      "SEMAINE": [
+        {
+          "titre": "S'installer",
+          "offre": { "graine_carotte": 6 },
+          "recompense": { "xp": 30, "pieces": 20 },
+          "objectifs": [
+            {
+              "id": "atelier",
+              "icone": "🔨",
+              "libelle": "Poser l'Atelier",
+              "sous": "3 pierres et 3 bois, ramassés autour de toi",
+              "taches": [{ "type": "etat", "quoi": "atelier", "guide": "atelier" }]
+            },
+            {
+              "id": "potager",
+              "icone": "🌱",
+              "libelle": "Préparer le potager",
+              "sous": "La houe, 3 cases labourées, un semis",
+              "taches": [
+                { "type": "etat", "quoi": "houe", "guide": "houe" },
+                { "type": "compte", "quoi": "labourer", "n": 3, "guide": "labour" },
+                { "type": "compte", "quoi": "planter", "n": 1, "guide": "semis" }
+              ]
+            }
+          ]
+        },
+        {
+          "titre": "L'eau",
+          "recompense": { "xp": 40, "pieces": 20 },
+          "objectifs": [
+            {
+              "id": "eau",
+              "icone": "💧",
+              "libelle": "Arroser tes semis",
+              "sous": "Le puits, la cruche, puis arroser",
+              "taches": [
+                { "type": "etat", "quoi": "puits", "guide": "puits" },
+                { "type": "etat", "quoi": "cruche", "guide": "puits" },
+                { "type": "compte", "quoi": "arroser", "n": 1, "guide": "arroser" }
+              ]
+            },
+            {
+              "id": "faux",
+              "icone": "🌾",
+              "libelle": "Faucher l'herbe haute",
+              "sous": "La faux, puis 6 touffes fauchées",
+              "taches": [{ "type": "etat", "quoi": "faux", "guide": "faux" }, { "type": "compte", "quoi": "faucher", "n": 6, "guide": "fibres" }]
+            }
+          ]
+        },
+        {
+          "titre": "Les outils",
+          "recompense": { "xp": 50, "pieces": 20, "objets": { "planche": 4 } },
+          "objectifs": [
+            {
+              "id": "outils",
+              "icone": "🪓",
+              "libelle": "Fabriquer la hache et la pioche",
+              "sous": "Bois, pierres et fibres",
+              "taches": [{ "type": "etat", "quoi": "hache", "guide": "outils" }, { "type": "etat", "quoi": "pioche", "guide": "outils" }]
+            },
+            {
+              "id": "arbre",
+              "icone": "🌳",
+              "libelle": "Abattre un arbre",
+              "sous": "La hache en main, quelques coups",
+              "taches": [{ "type": "compte", "quoi": "abattu", "n": 1, "guide": "couper" }]
+            },
+            {
+              "id": "rocher",
+              "icone": "🪨",
+              "libelle": "Casser un rocher",
+              "sous": "La pioche en main",
+              "taches": [{ "type": "compte", "quoi": "casse", "n": 1, "guide": "casser" }]
+            }
+          ]
+        },
+        {
+          "titre": "Le confort",
+          "recompense": { "xp": 50, "pieces": 30 },
+          "objectifs": [
+            {
+              "id": "cuisiniere",
+              "icone": "🍳",
+              "libelle": "Poser la cuisinière dans l'abri",
+              "sous": "6 pierres, 4 planches",
+              "taches": [{ "type": "etat", "quoi": "cuisiniere", "guide": "cuisiniere" }]
+            },
+            {
+              "id": "cueillir",
+              "icone": "🫐",
+              "libelle": "Cueillir des baies",
+              "sous": "Touche un buisson qui en porte",
+              "taches": [{ "type": "compte", "quoi": "cueillir", "n": 1, "guide": "cueillir" }]
+            },
+            {
+              "id": "soigner",
+              "icone": "💧",
+              "libelle": "Arroser tes plantes",
+              "sous": "Chaque jour, elles grandissent",
+              "taches": [{ "type": "compte", "quoi": "arroser", "n": 1, "guide": "arroser" }]
+            }
+          ]
+        },
+        {
+          "titre": "L'île",
+          "offre": { "sac": 1 },
+          "recompense": { "xp": 60, "pieces": 30 },
+          "objectifs": [
+            {
+              "id": "carte",
+              "icone": "🧭",
+              "libelle": "Ouvrir la carte de l'île",
+              "taches": [{ "type": "compte", "quoi": "carte", "n": 1, "guide": "carte" }]
+            },
+            {
+              "id": "sortie",
+              "icone": "🛤",
+              "libelle": "Sortir de la ferme",
+              "sous": "Suis le chemin de terre",
+              "taches": [{ "type": "etat", "quoi": "sortie", "guide": "sortie" }]
+            },
+            {
+              "id": "prise",
+              "icone": "🍄",
+              "libelle": "Récolter quelque chose dehors",
+              "taches": [{ "type": "etat", "quoi": "prise_monde", "guide": "recolte_monde" }]
+            }
+          ]
+        },
+        {
+          "titre": "La première vente",
+          "recompense": { "xp": 80, "pieces": 40 },
+          "objectifs": [
+            {
+              "id": "recolte",
+              "icone": "🥕",
+              "libelle": "Récolter une culture",
+              "sous": "Touche une plante mûre",
+              "taches": [{ "type": "compte", "quoi": "recolter", "n": 1, "guide": "recolter" }]
+            },
+            {
+              "id": "vente",
+              "icone": "⚓",
+              "libelle": "Vendre une récolte au port",
+              "sous": "Sous la halle, au bout du chemin",
+              "taches": [{ "type": "compte", "quoi": "vendre", "n": 1, "guide": "caleche" }]
+            },
+            {
+              "id": "replanter",
+              "icone": "🌱",
+              "libelle": "Replanter",
+              "taches": [{ "type": "compte", "quoi": "planter", "n": 1, "guide": "semis" }]
+            }
+          ]
+        }
+      ],
+      "TIRES": {
+        "LISTE": [
+          {
+            "id": "vendre",
+            "icone": "⚓",
+            "libelle": "Gagner {n} pièce{s} au port",
+            "quoi": "vendre",
+            "n": [20, 10, 300],
+            "si": "marche",
+            "guide": "caleche"
+          },
+          {
+            "id": "parler",
+            "icone": "💬",
+            "libelle": "Parler à {n} villageois",
+            "quoi": "parler",
+            "n": [1, 0.25, 4],
+            "si": "villageois",
+            "guide": "parler"
+          },
+          {
+            "id": "cadeau",
+            "icone": "🎁",
+            "libelle": "Offrir un cadeau à un villageois",
+            "quoi": "cadeau_villageois",
+            "n": [1, 0, 1],
+            "si": "villageois",
+            "guide": "parler"
+          },
+          {
+            "id": "commande",
+            "icone": "📦",
+            "libelle": "Honorer {n} commande{s} du bac",
+            "quoi": "commande_bac",
+            "n": [1, 0.25, 3],
+            "si": "bac",
+            "guide": "port"
+          }
+        ]
+      }
+    }
+  },
+  "PORT": {
+    "NOM": "Le port",
+    "NIVEAU_DEPART": 1,
+    "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 70, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
+    "NIVEAUX": [
+      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },
+      { "quai": 8, "ajoute": ["caisses"] },
+      { "quai": 10, "ajoute": ["tonneaux", "mat"] },
+      { "quai": 10, "ajoute": ["caisses_terre"] },
+      { "quai": 12, "ajoute": ["tonneaux_terre"] }
+    ],
+    "SORTES": [
+      { "nom": "quai", "genre": "ponton", "variantes": 8 },
+      { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
+      { "nom": "poteau_halle", "genre": "objet", "variantes": 1 },
+      { "nom": "comptoir", "genre": "meuble", "variantes": 1, "largeur": 3 },
+      { "nom": "balance", "genre": "objet", "variantes": 1 },
+      { "nom": "caisses", "genre": "objet", "variantes": 2 },
+      { "nom": "tonneaux", "genre": "objet", "variantes": 2 },
+      { "nom": "mat_fanion", "genre": "objet", "variantes": 1 },
+      { "nom": "panneau_port", "genre": "objet", "variantes": 1 },
+      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 }
+    ],
+    "BLOQUE": ["poteau_halle", "comptoir", "balance", "caisses", "tonneaux", "mat_fanion", "panneau_port", "lanterne_port"],
+    "LANTERNE": {
+      "sol": { "rayon": 46, "aplati": 0.7, "teinte": 16761968, "alpha": 0.9, "dx": 0, "dy": -4 },
+      "vitre": { "rayon": 11, "teinte": 16769704, "alpha": 0.95, "dx": 0, "dy": -27 }
+    }
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

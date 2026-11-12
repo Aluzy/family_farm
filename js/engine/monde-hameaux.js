@@ -1,7 +1,8 @@
 import { mulberry32 } from './base.js';
 import { DATA } from './catalog.js';
 import { hache } from './ferme-generee.js';
-import { BIOME } from './monde-gen.js';
+import { BIOME, dispositionPort } from './monde-gen.js';
+import { contenuPort } from './port.js';
 
 /* ---------- les hameaux bâtis du grand monde (docs/grand-monde.md : fiche 7a) ----------
 
@@ -41,10 +42,12 @@ import { BIOME } from './monde-gen.js';
    variante], le pied en px (comme la végétation), la sorte : son rang dans HAMEAUX.SORTES. */
 
 export const HAMEAUX = DATA.HAMEAUX;
-export const SORTES_HAMEAUX = HAMEAUX.SORTES;
+// (les dessins du port, fiche I1a : data/village.json PORT.SORTES, à la suite de ceux des hameaux dans la
+// même planche ; scripts/carte/port.py)
+export const SORTES_HAMEAUX = [...HAMEAUX.SORTES, ...((DATA.PORT && DATA.PORT.SORTES) || [])];
 export const SORTE_HAMEAU = Object.fromEntries(SORTES_HAMEAUX.map((s, k) => [s.nom, k]));
 const BLOQUE = new Uint8Array(SORTES_HAMEAUX.length);
-for (const n of HAMEAUX.BLOQUE) BLOQUE[SORTE_HAMEAU[n]] = 1;
+for (const n of [...HAMEAUX.BLOQUE, ...((DATA.PORT && DATA.PORT.BLOQUE) || [])]) BLOQUE[SORTE_HAMEAU[n]] = 1;
 export const STYLES_HAMEAUX = Object.keys(HAMEAUX.STYLES);
 const T = 16;
 const MATIERES = { pierre: 'pierre', taille: 'taille', bois: 'bois' };
@@ -702,6 +705,107 @@ export function planBatisse(m, l) {
   };
 }
 
+/* ---------- le port (le chantier « l'île à bâtir », fiche I1a) ----------
+
+   Le port du plan (monde-gen.js, lieux.port : sa case, le sens de son quai) bâti au niveau `niveau`
+   (js/engine/port.js, contenuPort ; data/village.json PORT.NIVEAUX) avec les pièces des hameaux et les siennes
+   (PORT.SORTES), à la place que lui donne dispositionPort (monde-gen.js) :
+     - le quai : des planches sur la mer, deux cases de large, de la rive vers le large (sa longueur : celle du
+       niveau) ; ses cases s'ouvrent à la marche (ouvre) ; son bout montre sa face et ses pieux ;
+     - la cale : deux cases de pierre qui descendent dans l'eau, à côté du pied du quai (on y marche aussi) ;
+     - la halle : un plancher, un toit (la scène : js/carte/ferme/hameaux.js, comme celui d'une maison, qui
+       s'efface quand on y entre : sa « maison », toutes ses cases dedans) sur quatre poteaux, un comptoir et une
+       balance ;
+     - le panneau (son nom), deux lanternes (au pied du quai et à son bout : elles s'allument le soir, la
+       scène ; plan.lanternes), puis selon le niveau des caisses, des tonneaux, le mât à fanion ;
+     - ses abords en terre battue (peinte comme un chemin) ; tout ce qui est bâti et RESERVE cases autour,
+       le quai et une case autour, réservés (ni arbre, ni rocher, ni bête).
+   → { plan, pieces, basses, bloque, terre, emprise, ouvre } comme planBatisse (plan.batisse : « port » ; son
+   cadre couvre le quai : on n'y casse ni n'y bâtit rien). */
+export function planPort(m, port, niveau) {
+  const { W } = m, PP = DATA.PORT.PLAN, [HL, HH] = PP.HALLE;
+  const X = port.case % W, Y = Math.floor(port.case / W), sud = port.sens === 1;
+  const D = dispositionPort(X, Y, port.sens, PP.QUAI, HL, HH, W), C = contenuPort(niveau);
+  const pieces = [], basses = [], bloque = new Set(), ouvre = new Set(), emprise = new Set(), lanternes = [];
+  const ix = (x, y) => y * W + x;
+  const pose = (nom, cx, cy, v = 0) => {
+    const so = SORTES_HAMEAUX[SORTE_HAMEAU[nom]], lg = so.largeur || 1;
+    (so.genre === 'basse' ? basses : pieces).push(SORTE_HAMEAU[nom], cx * T + (lg * T) / 2, (cy + 1) * T - (so.pied || 0), v);
+    if (BLOQUE[SORTE_HAMEAU[nom]]) for (let k = 0; k < lg; k++) bloque.add(ix(cx + k, cy));
+  };
+  // le quai : ses planches (variantes : vers le sud, la gauche 0 et la droite 1, leur bout 2 et 3 ; vers l'est,
+  // le haut 4 et le bas 5, leur bout 6 et 7), de la rive vers le large
+  const Q = C.quai, quai = D.quai.slice(0, 2 * Q);
+  quai.forEach((i, n) => {
+    const k = (n >> 1) + 1, j = n & 1;
+    pose('quai', i % W, Math.floor(i / W), (sud ? 0 : 4) + j + (k === Q ? 2 : 0));
+    ouvre.add(i);
+  });
+  // la cale : une image de deux cases (vers le sud : de haut en bas, son pied au bas de la seconde ; vers l'est :
+  // de gauche à droite, son pied au milieu du bas des deux)
+  if (C.ajoute.has('cale')) {
+    const [[ax, ay], [bx, by]] = D.cale;
+    if (sud) pieces.push(SORTE_HAMEAU.cale_port, ax * T + T / 2, (by + 1) * T, 0);
+    else pieces.push(SORTE_HAMEAU.cale_port, ax * T + T, (ay + 1) * T, 1);
+    ouvre.add(ix(ax, ay));
+    ouvre.add(ix(bx, by));
+  }
+  // la halle : son plancher, ses poteaux, son comptoir, sa balance
+  const h = D.halle, dedans = [];
+  for (let y = h.y0; y < h.y0 + h.h; y++) for (let x = h.x0; x < h.x0 + h.l; x++) dedans.push(ix(x, y));
+  const sol = new Set(dedans);
+  for (const j of dedans) pose('sol_plancher', j % W, Math.floor(j / W), (sol.has(j - W) ? 1 : 0) + (sol.has(j + 1) ? 2 : 0) + (sol.has(j + W) ? 4 : 0) + (sol.has(j - 1) ? 8 : 0));
+  for (const [x, y] of D.poteaux) pose('poteau_halle', x, y);
+  const O = D.objets;
+  if (C.ajoute.has('comptoir')) pose('comptoir', ...O.comptoir);
+  if (C.ajoute.has('balance')) pose('balance', ...O.balance);
+  if (C.ajoute.has('panneau')) pose('panneau_port', ...O.panneau);
+  // les lanternes : au pied du quai, sur la terre, et au bout du quai (sa case de droite, vers le sud ; du bas,
+  // vers l'est)
+  const bout = quai[quai.length - 1];
+  if (C.ajoute.has('lanternes')) {
+    for (const [x, y] of [O.lanterne, [bout % W, Math.floor(bout / W)]]) {
+      pose('lanterne_port', x, y);
+      lanternes.push({ x: x * T + T / 2, y: (y + 1) * T });
+    }
+  }
+  // sur le quai (k : la case depuis la rive, sur la rangée de droite ou du bas), puis sur la terre
+  const surQuai = (k) => { const i = quai[2 * (k - 1) + 1]; return [i % W, Math.floor(i / W)]; };
+  if (C.ajoute.has('caisses')) pose('caisses', ...surQuai(2), 0);
+  if (C.ajoute.has('tonneaux')) pose('tonneaux', ...surQuai(3), 0);
+  if (C.ajoute.has('mat')) pose('mat_fanion', ...surQuai(Q - 2));
+  if (C.ajoute.has('caisses_terre')) pose('caisses', ...O.caisses_terre, 1);
+  if (C.ajoute.has('tonneaux_terre')) pose('tonneaux', ...O.tonneaux_terre, 1);
+  // la terre battue : ses abords, hors de la halle ; l'emprise : tout, RESERVE cases autour, le quai et une
+  // case autour (au niveau 5 : il s'allongera), la cale
+  const t = D.terre, terre = [];
+  for (let y = t.y0; y <= t.y1; y++) for (let x = t.x0; x <= t.x1; x++) if (!sol.has(ix(x, y))) terre.push(ix(x, y));
+  const RES = HAMEAUX.RESERVE;
+  for (let y = t.y0 - RES; y <= t.y1 + RES; y++) for (let x = t.x0 - RES; x <= t.x1 + RES; x++) emprise.add(ix(x, y));
+  for (const i of D.quai) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) emprise.add(i + dy * W + dx);
+  for (const [x, y] of D.cale) emprise.add(ix(x, y));
+  // le cadre : les abords, le quai entier, la cale
+  let x0 = t.x0, y0 = t.y0, x1 = t.x1, y1 = t.y1;
+  for (const i of [...D.quai, ...D.cale.map(([x, y]) => ix(x, y))]) {
+    const x = i % W, y = Math.floor(i / W);
+    x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+  }
+  const halle = {
+    id: 'port_halle', x0: h.x0, y0: h.y0, l: h.l, h: h.h, porte: null, devant: port.case,
+    pieces: [{ genre: 'halle', cases: dedans }], lits: [], foyer: null, fenetres: [], dedans,
+  };
+  const panneau = C.ajoute.has('panneau') ? ix(...O.panneau) : null;
+  return {
+    plan: {
+      id: 'port', nom: DATA.PORT.NOM, case: port.case, style: 'cote', metier: null, batisse: 'port', niveau,
+      cadre: { x0, y0, x1, y1 },
+      place: { centre: port.case, cases: [], puits: null, banc: null, panneau },
+      maisons: [halle], jardins: [], travail: [], ruelles: [], lanternes, quai,
+    },
+    pieces, basses, bloque: [...bloque], terre, emprise: [...emprise].sort((a, b) => a - b), ouvre: [...ouvre],
+  };
+}
+
 /* ---------- tous les hameaux d'un monde ---------- */
 
 // plansDesHameaux(m) → { plans (planHameau(…).plan de chacun, dans l'ordre du plan, puis les bâtisses du
@@ -712,17 +816,22 @@ export function plansDesHameaux(m) {
   const t0 = Date.now(), N = m.W * m.H;
   const bloque = new Uint8Array(N), terre = new Uint8Array(N), emprise = new Uint8Array(N);
   const plans = [], pieces = [], basses = [];
-  // (les hameaux, puis les bâtisses du récit : la cabane, l'atelier ; leurs plans sont marqués `batisse`)
+  // (les hameaux, puis les bâtisses du récit : la cabane, l'atelier ; leurs plans sont marqués `batisse` ; puis le
+  // port, fiche I1a, s'il y en a un : `m.niveauPort`, son niveau)
   const batisses = ((m.lieux && m.lieux.recit) || []).map((l) => planBatisse(m, l)).filter(Boolean);
-  for (const r of [...((m.lieux && m.lieux.hameaux) || []).map((h) => planHameau(m, h)), ...batisses]) {
+  const port = m.lieux && m.lieux.port && m.niveauPort ? [planPort(m, m.lieux.port, m.niveauPort)] : [];
+  let ouvre = null;
+  for (const r of [...((m.lieux && m.lieux.hameaux) || []).map((h) => planHameau(m, h)), ...batisses, ...port]) {
     plans.push(r.plan);
     pieces.push(r.pieces);
     basses.push(r.basses);
     for (const i of r.bloque) bloque[i] = 1;
     for (const i of r.terre) terre[i] = TERRE_HAMEAU;
     for (const i of r.emprise) emprise[i] = 1;
+    if (r.ouvre) { ouvre = ouvre || new Uint8Array(N); for (const i of r.ouvre) ouvre[i] = 1; }
   }
-  return { plans, pieces, basses, bloque, terre, emprise, ms: Date.now() - t0 };
+  // (ouvre : les cases qu'un plan ouvre à la marche, le quai et la cale du port ; null sans port)
+  return { plans, pieces, basses, bloque, terre, emprise, ouvre, ms: Date.now() - t0 };
 }
 
 /* ---------- une région ---------- */
@@ -741,7 +850,11 @@ export function hameauxDeRegion(ctx, g) {
     const c = p.cadre;
     if (c.x1 < cx0 - 3 || c.y1 < cy0 - 3 || c.x0 > cx0 + cl + 2 || c.y0 > cy0 + ch + 2) return;
     for (let y = Math.max(cy0, c.y0); y <= Math.min(cy0 + ch - 1, c.y1); y++) {
-      for (let x = Math.max(cx0, c.x0); x <= Math.min(cx0 + cl - 1, c.x1); x++) if (H.bloque[y * W + x]) marche[(y - cy0) * cl + x - cx0] = 0;
+      for (let x = Math.max(cx0, c.x0); x <= Math.min(cx0 + cl - 1, c.x1); x++) {
+        const i = y * W + x;
+        if (H.bloque[i]) marche[(y - cy0) * cl + x - cx0] = 0;
+        else if (H.ouvre && H.ouvre[i]) marche[(y - cy0) * cl + x - cx0] = 1;   // (le quai, la cale du port)
+      }
     }
     const pi = H.pieces[k], ba = H.basses[k];
     for (let q = 0; q < pi.length; q += 4) {
