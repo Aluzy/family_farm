@@ -1058,6 +1058,46 @@ export const RAW_DATA = {
       "invendable": true,
       "boutique": true
     },
+    "ornement_cerisier_japon": {
+      "nom": "Cerisier du Japon",
+      "icone": "🌳",
+      "prix": 90,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "ornement_erable_rouge": {
+      "nom": "Érable rouge",
+      "icone": "🌳",
+      "prix": 90,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "ornement_magnolia": {
+      "nom": "Magnolia",
+      "icone": "🌳",
+      "prix": 90,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "ornement_saule_pleureur": {
+      "nom": "Saule pleureur",
+      "icone": "🌳",
+      "prix": 90,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -1958,6 +1998,46 @@ export const RAW_DATA = {
         "hauteur": 2,
         "fontaine": true
       },
+      "ornement_cerisier_japon": {
+        "nom": "Cerisier du Japon",
+        "objet": "ornement_cerisier_japon",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "ornement_cerisier_japon",
+        "largeur": 2,
+        "hauteur": 2,
+        "ornement": true
+      },
+      "ornement_erable_rouge": {
+        "nom": "Érable rouge",
+        "objet": "ornement_erable_rouge",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "ornement_erable_rouge",
+        "largeur": 2,
+        "hauteur": 2,
+        "ornement": true
+      },
+      "ornement_magnolia": {
+        "nom": "Magnolia",
+        "objet": "ornement_magnolia",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "ornement_magnolia",
+        "largeur": 2,
+        "hauteur": 2,
+        "ornement": true
+      },
+      "ornement_saule_pleureur": {
+        "nom": "Saule pleureur",
+        "objet": "ornement_saule_pleureur",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "ornement_saule_pleureur",
+        "largeur": 2,
+        "hauteur": 2,
+        "ornement": true
+      },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -2331,7 +2411,11 @@ export const RAW_DATA = {
           "fontaine_pierre",
           "fontaine_marbre",
           "fontaine_grenouille",
-          "fontaine_angelot"
+          "fontaine_angelot",
+          "ornement_cerisier_japon",
+          "ornement_erable_rouge",
+          "ornement_magnolia",
+          "ornement_saule_pleureur"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },

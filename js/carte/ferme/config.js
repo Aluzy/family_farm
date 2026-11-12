@@ -333,7 +333,14 @@ const CULTURE_MONTE = 0;
     // défilent (`fps`) par-dessus la fontaine, au même endroit ; fixe en mode réduit
     fontaine: {
       key: 'fontaine_eau', file: 'fontaine_eau.png', frame: { frameWidth: 32, frameHeight: 47 }, images: 4, fps: 6,
-      modeles: ['pierre', 'marbre', 'grenouille', 'angelot'],
+      modeles: ['pierre', 'marbre', 'grenouille', 'angelot'], prefixe: 'fontaine_',
+    },
+    // ce qui tombe des arbres d'ornement (le bloc ornement_<espèce>, deux cases sur deux ; scripts/batiments/ornements.py) :
+    // jour et nuit, les pétales (les feuilles) descendent en tournoyant, ses `images` (une rangée par espèce)
+    // défilent (`fps`) par-dessus l'arbre ; fixe en mode réduit
+    ornement: {
+      key: 'ornements_chute', file: 'ornements_chute.png', frame: { frameWidth: 64, frameHeight: 80 }, images: 8, fps: 5,
+      modeles: ['cerisier_japon', 'erable_rouge', 'magnolia', 'saule_pleureur'], prefixe: 'ornement_',
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
     // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
@@ -510,6 +517,8 @@ const CULTURE_MONTE = 0;
     'cheminee_pierre', 'cheminee_briques', 'cheminee_marbre',
     // (les fontaines de jardin : scripts/batiments/fontaines.py ; leur eau, BLOCS_CARTE.fontaine)
     'fontaine_pierre', 'fontaine_marbre', 'fontaine_grenouille', 'fontaine_angelot',
+    // (les arbres d'ornement : scripts/batiments/ornements.py ; ce qui en tombe, BLOCS_CARTE.ornement)
+    'ornement_cerisier_japon', 'ornement_erable_rouge', 'ornement_magnolia', 'ornement_saule_pleureur',
     // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
     'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',

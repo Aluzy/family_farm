@@ -583,14 +583,14 @@
     // au hasard (la lanterne scintille, la lueur du réverbère vacille) et chacun pose sa lumière
     // dans le voile de l'heure (CarteKit.voile, eclaire : une flaque sur l'herbe, cyan ou chaude, et
     // la lueur de la vitre), qui vacille un peu ; un petit halo par-dessus (WebGL).
-    // Les fontaines de jardin (BLOCS_CARTE.fontaine) : jour et nuit, l'eau qui coule (une image par-dessus la
-    // fontaine, au même endroit, sa rangée selon le modèle) défile ; fixe en mode réduit.
-    stepFontaines(fontaines, dt) {
-      const C = BLOCS_CARTE.fontaine;
-      if (!fontaines.length || !this.textures.exists(C.key)) return;
+    // Les surcouches animées d'un décor (C : BLOCS_CARTE.fontaine, l'eau qui coule ; BLOCS_CARTE.ornement, les
+    // pétales qui tombent) : jour et nuit, une image par-dessus le décor, au même endroit, sa rangée selon le
+    // modèle, défile ; fixe en mode réduit.
+    stepSurcouches(liste, C, dt) {
+      if (!liste.length || !this.textures.exists(C.key)) return;
       const calme = global.CarteKit.reduit();
-      for (const e of fontaines) {
-        const rang = C.modeles.indexOf(String(e.dessin).replace('fontaine_', ''));
+      for (const e of liste) {
+        const rang = C.modeles.indexOf(String(e.dessin).replace(C.prefixe, ''));
         if (rang < 0) continue;
         if (!e.eau || !e.eau.active || e.eau.x !== e.img.x || e.eau.y !== e.img.y) {
           if (e.eau) e.eau.destroy();
@@ -622,10 +622,13 @@
       const cheminees = [];
       for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('cheminee_')) cheminees.push({ img: e.img, x: e.x, y: e.y - 1, e });
       for (const e of this.etageCheminees || []) if (e.img && e.img.active) cheminees.push({ img: e.img, x: e.x, y: e.y, e });
-      // (les fontaines de jardin : BLOCS_CARTE.fontaine ; leur eau coule jour et nuit)
-      const fontaines = [];
-      for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('fontaine_')) fontaines.push(e);
-      this.stepFontaines(fontaines, dt);
+      // (les fontaines de jardin et les arbres d'ornement : leur eau coule, leurs pétales tombent, jour et nuit ;
+      // BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement)
+      for (const C of [BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement]) {
+        const liste = [];
+        for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith(C.prefixe)) liste.push(e);
+        this.stepSurcouches(liste, C, dt);
+      }
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
       const guirlandes = this.guirlandes && this.guirlandes.size ? [...this.guirlandes.values()] : [];
