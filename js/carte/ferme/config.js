@@ -339,7 +339,7 @@ const CULTURE_MONTE = 0;
     // jour et nuit, les pétales (les feuilles) descendent en tournoyant, ses `images` (une rangée par espèce)
     // défilent (`fps`) par-dessus l'arbre ; fixe en mode réduit
     ornement: {
-      key: 'ornements_chute', file: 'ornements_chute.png', frame: { frameWidth: 48, frameHeight: 64 }, images: 8, fps: 5,
+      key: 'ornements_chute', file: 'ornements_chute.png', frame: { frameWidth: 64, frameHeight: 80 }, images: 8, fps: 5,
       modeles: ['cerisier_japon', 'erable_rouge', 'magnolia', 'saule_pleureur'], prefixe: 'ornement_',
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur

@@ -25,10 +25,11 @@ sys.path.insert(0, os.path.join(HERE, '..', 'carte'))
 from pixel import ASSETS, ROOT, contour  # noqa: E402
 from nuances import bruit, rampe, ton  # noqa: E402
 
-W, H = 48, 64
+W, H = 64, 80                                # (la couronne déborde de ses 2 × 2 cases, au-dessus et sur les côtés)
+DY = 16                                      # (les formes sont décrites dans 48 × 64 : décalées vers le bas de DY)
 OUT = (30, 24, 28)
 CHUTE_IMAGES = 8
-CX = 23.5
+CX = 31.5
 LUM = (-0.55, -0.62, 0.56)                       # la lumière, en haut à gauche, un peu devant
 ESPECES = ['cerisier_japon', 'erable_rouge', 'magnolia', 'saule_pleureur']
 
@@ -86,6 +87,26 @@ FORMES = {
         'raie': {'pied': 46, 'masses': [(CX, 18, 20, 13, 0, (4.0, 6.0))]},
     },
 }
+for _formes in FORMES.values():               # (décrites dans 48 × 64 : vers le bas de DY)
+    for _f in _formes.values():
+        _f['pied'] += DY
+        _f['masses'] = [(m[0], m[1] + DY) + tuple(m[2:]) for m in _f['masses']]
+
+
+def agrandie(forme, sx, sy):
+    """La même houppe, plus large (sx) et plus haute (sy) : ses masses s'écartent du milieu et montent depuis le bas
+    de la couronne (le tronc ne change pas) ; autant de touffes par surface."""
+    bas = max(m[1] + m[3] for m in forme['masses'])
+    return {'pied': forme['pied'], 'masses': [(CX + (m[0] - CX) * sx, bas - (bas - m[1]) * sy, m[2] * sx, m[3] * sy,
+                                                round(m[4] * sx * sy), m[5]) for m in forme['masses']]}
+
+
+# les propositions : plus haute, plus large, les deux (sur la houppe choisie)
+GRANDES = {'haute': (1.0, 1.35), 'large': (1.35, 1.0), 'ample': (1.3, 1.3)}
+for _e, _n in (('cerisier_japon', 'nuages'), ('erable_rouge', 'coeur'), ('magnolia', 'coupe')):
+    for _g, (_sx, _sy) in GRANDES.items():
+        FORMES[_e][_n + '_' + _g] = agrandie(FORMES[_e][_n], _sx, _sy)
+
 FORME = {'cerisier_japon': 'nuages', 'erable_rouge': 'coeur', 'magnolia': 'coupe', 'saule_pleureur': 'raie'}   # celles du jeu
 
 
@@ -276,7 +297,7 @@ def fleur(t, x0, y0, rng):
     t.put(x0, y0 - 1, ton(COEUR_MAGNOLIA, 0.6))
 
 
-RAIE_Y, DOME_RX, DOME_RY = 4, 20.5, 14            # la raie en haut du saule, la largeur et la hauteur de son dôme
+RAIE_Y, DOME_RX, DOME_RY = 4 + DY, 20.5, 14            # la raie en haut du saule, la largeur et la hauteur de son dôme
 
 
 def lianes_saule(t, rng, devant):
@@ -372,7 +393,7 @@ def arbre(esp, nom_forme=None):
     herbe_au_pied(im, esp, random.Random(len(esp) + 3))
     if esp == 'cerisier_japon':                            # quelques pétales déjà tombés, dans l'herbe
         px, R = im.load(), rampe(FEUILLES[esp][0], 100)
-        for i, (x, y) in enumerate(((15, 62), (18, 63), (30, 62), (33, 63), (12, 63), (36, 62))):
+        for i, (x, y) in enumerate(((23, 78), (26, 79), (38, 78), (41, 79), (20, 79), (44, 78))):
             px[x, y] = ton(R, 0.78 + 0.04 * i) + (255,)
     return im
 
