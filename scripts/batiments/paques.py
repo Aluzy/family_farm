@@ -50,13 +50,19 @@ def oeuf(t, cx, cy, rx, ry, k, motif):
     R = TEINTES[k % len(TEINTES)]
     for y in range(int(cy - ry) - 1, int(cy + ry) + 2):
         for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
+            # la forme d'un œuf : une ellipse dont la largeur, à la hauteur v (−1 en haut, 1 en bas), est multipliée
+            # par (1 + 0.16 v) : plus large un peu sous le milieu, le haut plus étroit mais rond
             v = (y + 0.5 - cy) / ry
-            r = rx * (0.82 + 0.18 * v) if v < 0 else rx
-            u = (x + 0.5 - cx) / r
-            d = u * u + v * v
-            if d > 1:
+            if abs(v) > 1:
                 continue
-            nz = math.sqrt(1 - d)
+            demi = rx * math.sqrt(1 - v * v) * (1 + 0.16 * v)
+            if demi <= 0:
+                continue
+            u = (x + 0.5 - cx) / demi
+            if abs(u) > 1:
+                continue
+            d = u * u * (1 - v * v) + v * v
+            nz = math.sqrt(max(0.0, 1 - d))
             lum = 0.45 + 0.5 * (-0.55 * u - 0.6 * v + 0.55 * nz)
             peint = (motif == 'bandes' and abs(v) < 0.18) or (motif == 'bandes' and abs(v + 0.55) < 0.1) \
                 or (motif == 'pois' and (x + y * 2) % 4 == 0) \
@@ -111,12 +117,16 @@ def oeuf_geant():
                 continue
             lum = 0.6 - 0.3 * (u + 1) / 2 - 0.15 * v + (0.15 if (x * 2 + y) % 3 == 0 else -0.05)
             t.put(x, y, ton(PAILLE, lum))
-    oeuf(t, cx + 0.5, 12.5, 7.0, 10.0, 0, 'zigzag')
-    for y in (8, 9, 15, 16):                                 # deux bandes d'or
-        for x in range(W):
-            if t.px[x, y][3] and t.px[x, y][:3] != (0, 0, 0):
-                u = (x - cx) / 7
-                t.put(x, y, ton(TEINTES[2], 0.85 - 0.4 * (u + 1) / 2))
+    oeuf(t, cx + 0.5, 12.5, 7.6, 9.6, 0, 'zigzag')
+    for x in range(W):                                       # deux bandes d'or, qui épousent le ventre de l'œuf (vues
+        u = (x - cx) / 7.6                                   # d'en haut à 45° : plus basses au milieu)
+        if abs(u) > 1:
+            continue
+        creux = round(1.4 * (1 - u * u))
+        for y0 in (7, 15):
+            for y in (y0 + creux, y0 + creux + 1):
+                if 0 <= y < H and t.px[x, y][3]:
+                    t.put(x, y, ton(TEINTES[2], 0.9 - 0.45 * (u + 1) / 2 - 0.1 * (y - y0 - creux)))
     for (x, y) in ((6, 12), (10, 11), (13, 13), (8, 19), (12, 20)):
         t.put(x, y, ton(DECOR, 1.0))
     for x in range(W):                                       # le bord du nid devant l'œuf
