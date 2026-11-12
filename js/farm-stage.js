@@ -1295,6 +1295,7 @@
         if (hit.visiteur) { if (this.visiteur) this.visiteParle(this.visiteur); return; }
         if (hit.villageois) { if (this.ctx.bridge.villageois) this.ctx.bridge.villageois('fiche', hit.villageois); return; }
         if (hit.invite) { const G = this.invitesVus; if (G) this.inviteBulle(hit.invite, (G.paroles.table || [])[Math.floor(Math.random() * (G.paroles.table || []).length)], 4500); return; }
+        if (hit.comptoir) { this.comptoirTouche(hit.comptoir); return; }
         if (hit.panneau) { if (this.ctx.bridge.hameauPanneau) this.ctx.bridge.hameauPanneau({ id: hit.panneau.id, nom: hit.panneau.nom, style: hit.panneau.style }); return; }
         if (hit.hameauRefus) { if (this.ctx.bridge.hameauRefus) this.ctx.bridge.hameauRefus(hit.hameauRefus.outil, hit.hameauRefus.nom); return; }
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien

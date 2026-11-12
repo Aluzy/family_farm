@@ -33,7 +33,8 @@
  *     js/engine/monde-hameaux.js planPort) : le toit de sa halle s'efface quand on y entre, comme celui d'une
  *     maison ; ses lanternes s'allument le soir (stepLanternesPort : leur image allumée, qui vacille, et leur
  *     lumière chaude, PORT.LANTERNE de data/village.json, ctx.monde.portLanterne) ; son panneau dit son nom ; on
- *     n'y casse ni n'y bâtit rien (hameauOutil, son cadre couvre le quai).
+ *     n'y casse ni n'y bâtit rien (hameauOutil, son cadre couvre le quai) ; un appui sur son comptoir (plan.comptoir,
+ *     ses cases) ouvre la fenêtre du port (fiche I1b : ctx.bridge.portComptoir, js/ui/port.js), le personnage y va.
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
  */
@@ -417,6 +418,8 @@
       const h = this.hameauDeCase(t, 1);
       if (!h) return null;
       const m = this.ctx.lastModel || {};
+      // (le comptoir du port, fiche I1b : sa fenêtre ; ses cases et celle du dessus, où monte son dessin)
+      if (h.comptoir && h.comptoir.length && !m.bati && (h.comptoir.includes(t) || h.comptoir.includes(t + W))) return { comptoir: h };
       if (h.place.panneau !== null && h.place.panneau !== undefined && !m.bati) {
         const px = (h.place.panneau % W) * T + T / 2, py = (Math.floor(h.place.panneau / W) + 1) * T;
         if (Math.abs(wx - px) <= PANNEAU.l && wy <= py + 2 && wy >= py - PANNEAU.h) return { panneau: h };
@@ -430,6 +433,15 @@
       else if (m.faux && jardin) outil = 'faux';
       else if (m.pioche && this.ctx.monde.marchable && !this.ctx.monde.marchable(t)) outil = 'pioche';
       return outil ? { hameauRefus: { outil, nom: h.nom } } : null;
+    },
+
+    // Un appui sur le comptoir du port (fiche I1b) : le personnage va devant lui (la case sous sa case du milieu,
+    // dans la halle), et la fenêtre du port s'ouvre tout de suite (elle suit le personnage : « approche-toi »,
+    // puis le commerce quand il est là).
+    comptoirTouche(h) {
+      const W = this.grid.cols, B = this.ctx.bridge, c = h.comptoir[h.comptoir.length >> 1] + W;
+      if (this.fermier && this.fermier.goTo) this.fermier.goTo((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2);
+      if (B && B.portComptoir) B.portComptoir();
     },
 
     // Un arbre fruitier d'un jardin sous le doigt (son image) ?

@@ -27,6 +27,14 @@
     "VIVRES_GARDES": 10,
     "//SEMENCES_GARDEES": "I0b : d'une récolte qui est sa propre semence (la patate), il garde ce nombre pour ressemer : ni vendu, ni dans la boîte",
     "SEMENCES_GARDEES": 6,
+    "//PORT": [
+      "I1b : le chantier « l'île à bâtir » allumé (VILLAGE.ACTIF, ou --village pour scripts/simulate.mjs), la calèche ne",
+      "commerce plus : le joueur simulé va au port (js/engine/bot.js, botSortiePort) quand ce qu'il a à vendre vaut",
+      "SEUIL pièces ou plus, ou qu'il lui manque des graines ; une sortie par jour au plus. Sa marche se compte en",
+      "temps d'éveil : le chemin du port (et la moitié de la ferme) à VITESSE cases par seconde, à l'aller et au",
+      "retour (le personnage marche à 58 px par seconde, 3,6 cases)."
+    ],
+    "PORT": { "SEUIL": 60, "VITESSE": 3.6 },
     "//BATIR": [
       "I0b : les pièces maîtresses de chaque bâtiment, fabriquées à l'Atelier avec leurs matériaux avant d'être posées",
       "(js/engine/bot.js botBatir ; les murs, portes et barrières autour sont posés d'un coup). Aucun n'a de prix en pièces."

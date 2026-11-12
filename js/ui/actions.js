@@ -22,14 +22,14 @@ export const SOMMEIL_MESSAGE = '💤 Tu dors : attends le réveil.';
 export const SOMMEIL_PERMISES = new Set([
   'sleep', 'monde-coucher', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'meuble-annule', 'meuble-place',
-  'carte-monde-but', 'carte-monde-ferme', // (fiche 8 : choisir le but de la boussole, rien ne bouge)
+  'carte-monde-but', 'carte-monde-ferme', 'port-boussole', // (fiche 8 : choisir le but de la boussole, rien ne bouge ; le port, I1b)
   'fiche-case', 'fiche-equiper', 'fiche-tente', // (fiche 11 : habiller la famille ; le récit, lot 8 : la tente)
   'cheval-fiche', 'cheval-aide', // (le galop : voir la fiche du cheval)
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'portail',
   'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
-  'sell-item', 'buy-item', 'caleche-heler', 'deposer-item', 'malle-reprendre', 'commander-item', 'malle-annuler', 'malle-prendre', 'promesse-confier', 'ile-commander', 'ile-meuble', 'cheval-toggle', 'galop-pomme', 'cheval-remplir', 'cheval-reprendre', 'plant-all', 'plant-many', 'hoe-many', 'ami-offrir', 'evt-inviter', 'evt-annuler', 'repas-servir',
+  'sell-item', 'buy-item', 'caleche-heler', 'port-vendre', 'port-acheter', 'deposer-item', 'malle-reprendre', 'commander-item', 'malle-annuler', 'malle-prendre', 'promesse-confier', 'ile-commander', 'ile-meuble', 'cheval-toggle', 'galop-pomme', 'cheval-remplir', 'cheval-reprendre', 'plant-all', 'plant-many', 'hoe-many', 'ami-offrir', 'evt-inviter', 'evt-annuler', 'repas-servir',
   'toit-reparer', 'projet-apporter', 'enveloppe-ouvrir', // (le récit, lot 9 : réparer un toit de hameau, ouvrir l'enveloppe de Maurice)
   'pierre-poser', // (le récit, lot 10 : poser la pierre de lune sur la ferme)
   'harvest-tree',

@@ -170,13 +170,13 @@
         { "titre": "La première vente", "recompense": { "xp": 80, "pieces": 40 },
           "objectifs": [
             { "id": "recolte", "icone": "🥕", "libelle": "Récolter une culture", "sous": "Touche une plante mûre", "taches": [{ "type": "compte", "quoi": "recolter", "n": 1, "guide": "recolter" }] },
-            { "id": "vente", "icone": "⚓", "libelle": "Vendre une récolte au port", "sous": "Sous la halle, au bout du chemin", "taches": [{ "type": "compte", "quoi": "vendre", "n": 1, "guide": "caleche" }] },
+            { "id": "vente", "icone": "⚓", "libelle": "Vendre une récolte au port", "sous": "Sous la halle, au bout du chemin", "taches": [{ "type": "compte", "quoi": "vendre", "n": 1, "guide": "port" }] },
             { "id": "replanter", "icone": "🌱", "libelle": "Replanter", "taches": [{ "type": "compte", "quoi": "planter", "n": 1, "guide": "semis" }] }
           ] }
       ],
       "TIRES": {
         "LISTE": [
-          { "id": "vendre", "icone": "⚓", "libelle": "Gagner {n} pièce{s} au port", "quoi": "vendre", "n": [20, 10, 300], "si": "marche", "guide": "caleche" },
+          { "id": "vendre", "icone": "⚓", "libelle": "Gagner {n} pièce{s} au port", "quoi": "vendre", "n": [20, 10, 300], "si": "marche", "guide": "port" },
           { "id": "parler", "icone": "💬", "libelle": "Parler à {n} villageois", "quoi": "parler", "n": [1, 0.25, 4], "si": "villageois", "guide": "parler" },
           { "id": "cadeau", "icone": "🎁", "libelle": "Offrir un cadeau à un villageois", "quoi": "cadeau_villageois", "n": [1, 0, 1], "si": "villageois", "guide": "parler" },
           { "id": "commande", "icone": "📦", "libelle": "Honorer {n} commande{s} du bac", "quoi": "commande_bac", "n": [1, 0.25, 3], "si": "bac", "guide": "port" }
@@ -210,11 +210,21 @@
     "HAMEAUX.SORTES ; le quai et la cale sont du genre « ponton » (sur l'eau, sous ce qui marche dessus).",
     "BLOQUE : celles qui ferment leur case à la marche (le quai et la cale s'ouvrent).",
     "LANTERNE : la lumière des lanternes, le soir (js/carte/ferme/hameaux.js) : une flaque au sol, la lueur de",
-    "la vitre (rayon, aplati, teinte, alpha, dx et dy px depuis le pied), comme le réverbère de la ferme."
+    "la vitre (rayon, aplati, teinte, alpha, dx et dy px depuis le pied), comme le réverbère de la ferme.",
+    "Le commerce (fiche I1b, js/engine/port.js ; la fenêtre : js/ui/port.js) : au comptoir de la halle, on vend",
+    "tout ce qui se vendait à la calèche, au même prix, et on achète les semences débloquées, à leur cours",
+    "(js/engine/market.js) ; la calèche ne commerce plus. PORTEE : à combien de cases au plus d'une case du comptoir",
+    "le personnage commerce (toute la halle). HEURES : l'heure d'ouverture et celle de fermeture du comptoir (de 6 h,",
+    "le réveil, à 21 h). ICONE : celle du port (la fenêtre, le menu, les messages). ELEMENT : ce que l'écran d'un",
+    "niveau dit du commerce qu'il ouvre (à la place de NIVEAUX.ELEMENTS.marche, la calèche)."
   ],
   "PORT": {
     "NOM": "Le port",
+    "ICONE": "⚓",
     "NIVEAU_DEPART": 1,
+    "PORTEE": 3,
+    "HEURES": [6, 21],
+    "ELEMENT": { "nom": "Le port", "icone": "⚓", "note": "au comptoir de la halle, au bout du chemin : vends tes récoltes, achète des graines" },
     "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 70, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
     "NIVEAUX": [
       { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },

@@ -2,6 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { acknowledgeLevel, levelCount, levelProgress, levelUnlocks } from '../engine/levels.js';
 import { formatNumber } from '../engine/format.js';
 import { state } from './store.js';
+import { villageActif } from '../engine/village.js';
 import { tel } from './consent.js';
 import { refresh } from './render.js';
 import { registerActions } from './actions.js';
@@ -15,7 +16,8 @@ export function unlocksHtml(niveau) {
   const u = levelUnlocks(niveau);
   const items = [
     ...u.elements.map((id) => {
-      const e = DATA.NIVEAUX.ELEMENTS[id];
+      // (le chantier « l'île à bâtir » allumé, fiche I1b : le commerce, c'est le port, PORT.ELEMENT)
+      const e = id === 'marche' && villageActif(state) ? DATA.PORT.ELEMENT : DATA.NIVEAUX.ELEMENTS[id];
       return `<li><strong>${e.icone} ${e.nom}</strong><br><span class="muted">${e.note}</span></li>`;
     }),
     ...(u.cultures.length

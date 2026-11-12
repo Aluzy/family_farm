@@ -5111,6 +5111,7 @@ export const RAW_DATA = {
     "MATERIAUX_GARDES": 40,
     "VIVRES_GARDES": 10,
     "SEMENCES_GARDEES": 6,
+    "PORT": { "SEUIL": 60, "VITESSE": 3.6 },
     "BATIR": {
       "foyer": { "paillasse": 4 },
       "puits": { "puits_pierre": 1 },
@@ -8852,7 +8853,7 @@ export const RAW_DATA = {
               "icone": "⚓",
               "libelle": "Vendre une récolte au port",
               "sous": "Sous la halle, au bout du chemin",
-              "taches": [{ "type": "compte", "quoi": "vendre", "n": 1, "guide": "caleche" }]
+              "taches": [{ "type": "compte", "quoi": "vendre", "n": 1, "guide": "port" }]
             },
             {
               "id": "replanter",
@@ -8872,7 +8873,7 @@ export const RAW_DATA = {
             "quoi": "vendre",
             "n": [20, 10, 300],
             "si": "marche",
-            "guide": "caleche"
+            "guide": "port"
           },
           {
             "id": "parler",
@@ -8907,7 +8908,11 @@ export const RAW_DATA = {
   },
   "PORT": {
     "NOM": "Le port",
+    "ICONE": "⚓",
     "NIVEAU_DEPART": 1,
+    "PORTEE": 3,
+    "HEURES": [6, 21],
+    "ELEMENT": { "nom": "Le port", "icone": "⚓", "note": "au comptoir de la halle, au bout du chemin : vends tes récoltes, achète des graines" },
     "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 70, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
     "NIVEAUX": [
       { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },

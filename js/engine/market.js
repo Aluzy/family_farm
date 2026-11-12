@@ -74,8 +74,9 @@ export function buyQuote(state, item, qty = 1) {
 // Achète jusqu'à `qty` unités, une par une : le prix monte entre deux unités.
 // S'arrête quand les pièces manquent. Un item acheté arrive avec sa
 // conservation pleine et l'origine « acheté ». Le blé acheté va au Silo s'il y
-// a de la place (il n'y périme pas), le reste dans l'inventaire.
-export function buyItem(state, item, qty = 1) {
+// a de la place (il n'y périme pas), le reste dans l'inventaire. `libelle` : le début de l'écriture des
+// Comptes (« Achat », « Port » : le port, fiche I1b, js/engine/port.js).
+export function buyItem(state, item, qty = 1, libelle = 'Achat') {
   const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
   if (!marcheOuvert(state)) return fail(marcheFerme(state));
@@ -84,7 +85,7 @@ export function buyItem(state, item, qty = 1) {
   let cost = 0;
   for (let i = 0; i < qty; i++) {
     const price = buyPrice(state, item);
-    if (!pay(state, price, `Achat : ${def.nom}`)) break;
+    if (!pay(state, price, `${libelle} : ${def.nom}`)) break;
     addLot(state, item, 1, DATA.ORIGINE.ACHETE);
     setMarketCoef(state, item, marketCoef(state, item) + DATA.MARCHE.PAS);
     bought += 1;
@@ -105,8 +106,9 @@ export function sellableCount(state, item) {
 // Les articles rangés au frigo se vendent aussi : on vend d'abord ce qui est
 // dans l'inventaire (il périt), puis ce qui est au frais.
 // Version 1.12 : le Marché de la ferme ouvre quand le panneau et la pompe sont achetés (sur une
-// terre sauvage : à un niveau, devices.js marcheOuvert).
-export function sellItem(state, item, qty) {
+// terre sauvage : à un niveau, devices.js marcheOuvert). `libelle` : le début de l'écriture des Comptes
+// (« Vente », « Port » : fiche I1b).
+export function sellItem(state, item, qty, libelle = 'Vente') {
   const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
   if (def.invendable) return fail(`${def.nom} ne se vend pas : il sert à l'arbre des technologies.`);
@@ -114,15 +116,15 @@ export function sellItem(state, item, qty) {
   const wanted = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
   const n = takeStock(state, item, wanted);
   if (n <= 0) return fail('Rien à vendre.');
-  const gain = encaisserVente(state, item, n);
+  const gain = encaisserVente(state, item, n, libelle);
   return { ok: true, sold: n, gain };
 }
 
 // Le paiement de `n` unités vendues (déjà sorties du stock : sellItem, ou la malle de la calèche, caleche.js) :
 // les pièces au prix de vente, l'XP, le cours qui baisse d'un pas par unité, les déblocages. → le gain.
-export function encaisserVente(state, item, n) {
+export function encaisserVente(state, item, n, libelle = 'Vente') {
   const gain = n * sellPrice(item);
-  earn(state, gain, `Vente : ${DATA.OBJETS[item].nom}`, n);
+  earn(state, gain, `${libelle} : ${DATA.OBJETS[item].nom}`, n);
   gainActionXp(state, 'vendre', gain); // version 1.7 : 1 XP par pièce gagnée
   setMarketCoef(state, item, marketCoef(state, item) - DATA.MARCHE.PAS * n);
   refreshUnlocks(state);

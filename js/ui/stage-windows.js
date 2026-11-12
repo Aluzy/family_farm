@@ -48,6 +48,8 @@ import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js';
+import { portTabsHtml, renderPort } from './port.js';
+import { villageActif } from '../engine/village.js';
 import { renderChapterBanner } from './chapitres.js';
 import { paliersSuivis } from '../engine/paliers.js';
 import { renderBoite } from './boite.js';
@@ -250,11 +252,14 @@ export const STAGE_WINDOWS = {
     corps: () => renderAtelier(),
   },
   // La calèche (menu latéral ; fiche 7c, js/ui/caleche.js) : fenêtre flottante comme l'Inventaire ;
-  // en-tête : les onglets en icônes seules et le « ? » de l'onglet ouvert.
+  // en-tête : les onglets en icônes seules et le « ? » de l'onglet ouvert. Le chantier « l'île à bâtir »
+  // allumé (fiche I1b), c'est la fenêtre du port (js/ui/port.js) : la calèche ne commerce plus.
   comptoir: {
-    nom: 'La calèche', icone: '🐴', ok: () => tabAvailable('comptoir'), bois: true, flottante: true,
-    enTete: () => marketTabsHtml(),
-    corps: () => renderComptoir(true),
+    get nom() { return villageActif(state) ? DATA.PORT.NOM : 'La calèche'; },
+    get icone() { return villageActif(state) ? DATA.PORT.ICONE : '🐴'; },
+    ok: () => tabAvailable('comptoir'), bois: true, flottante: true,
+    enTete: () => (villageActif(state) ? portTabsHtml() : marketTabsHtml()),
+    corps: () => (villageActif(state) ? renderPort(true) : renderComptoir(true)),
   },
   // Notifications (menu latéral) : fenêtre flottante dans le cadre bois, comme l'Inventaire.
   notifications: {

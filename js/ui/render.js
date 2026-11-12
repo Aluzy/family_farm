@@ -15,6 +15,7 @@ import { renderDidacticiel } from './didacticiel.js';
 import { renderObjectifs } from './objectifs.js';
 import { renderItemModal } from './inventaire.js';
 import { renderShopModal } from './caleche.js';
+import { renderPortModal } from './port.js';
 import { pixelize, watch } from './pixel-emoji.js';
 import { renderRecipeBook } from './livre.js';
 import { renderEncyclopedie } from './encyclopedie.js';
@@ -79,6 +80,7 @@ function rendre() {
   renderPlantation();
   renderItemModal();
   renderShopModal();
+  renderPortModal();   // (le port, fiche I1b)
   renderTestPanel();
   bandeauVillage(state);
 }

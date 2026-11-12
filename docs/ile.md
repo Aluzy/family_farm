@@ -77,7 +77,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | Lot | Fiches | Ce qu'il apporte |
 |---|---|---|
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
-| 1. Le port | I1a (fait), I1b, I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
+| 1. Le port | I1a (fait), I1b (fait), I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 | Le chemin de la ferme au port, modifiable ; porter la marchandise |
 | 3. Les villageois | I3a (fait), I3b à I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
@@ -164,6 +164,35 @@ Ce qui est posé (I7a) :
   `cadeau_villageois` (I6a) et `commande_bac` (I1c) par `noterObjectif` ; ils paraissent quand
   `state.villageois` compte un villageois ou `state.port.commandes` une commande.
 - Reste à faire : le joueur automatique suit les paliers (point 6, après I0b).
+
+## Le commerce au port (I1b, fait)
+
+Ce qui est posé (I1b) :
+
+- **Le moteur** (`js/engine/port.js`) : `portOuvert(state, ou)` (le personnage à `PORT.PORTEE` = 3 cases au plus
+  d'une case du comptoir, de `PORT.HEURES` = 6 h à 21 h, au niveau de l'élément `marche` comme la calèche avant) ;
+  `vendreAuPort` et `acheterAuPort` passent par `market.js` (`sellItem`, `buyItem`, qui prennent maintenant le début
+  de leur libellé) : mêmes prix, mêmes cours ; les Comptes disent « Port : … ». À l'achat, les semences (`isBuyable`)
+  que le niveau a débloquées (`enVenteAuPort`) ; les produits des hameaux ne s'y vendent pas. Chaque vente fait
+  `bumpCounter(state, 'ventesPort', gain)` ; l'objectif du jour `vendre` se note par l'XP de la vente. Les
+  commandes `port.vendre` et `port.acheter` (`{ objet, quantite, case }`, `commandes.js`).
+- **Le comptoir** : le lieu du port (sa case, le sens du quai) est posé dans le moteur par la page dès que le
+  Worker a tiré les éléments (`poserPort`, `js/ui/port.js` `watchPort`), ou calculé d'après le plan dans Node
+  (`portDuMonde`) ; ses cases viennent de `dispositionPort`. Le plan du port porte `comptoir` (ses cases) : un
+  appui dessus (`js/carte/ferme/hameaux.js`) mène le personnage devant lui et ouvre la fenêtre.
+- **La fenêtre** (`js/ui/port.js`) : la fenêtre du commerce (menu « Port » ⚓) devient celle du port le chantier
+  allumé : Vendre et Acheter ; loin du port, elle dit où il est et ses heures, et propose d'y mener la boussole.
+- **Avec `ACTIF`** : la calèche roule mais ne commerce plus (`CALECHE_AU_PORT` : vente, achat, malle et commandes
+  refusés) ; un appui sur elle ou sur sa malle ouvre la fenêtre du port ; `marcheFerme` parle du port ; l'objectif
+  de campagne `caleche` compte aussi `ventesPort` ; l'aide, l'écran des niveaux (`PORT.ELEMENT`) et le guide
+  « Montre-moi » (`guide: "port"` dans `VILLAGE.OBJECTIFS`) parlent du port.
+- **Le joueur automatique** (`bot.js`, `botSortiePort`) : une sortie par jour au plus, quand ce qu'il a à vendre
+  vaut `SIMULATION.PORT.SEUIL` (60) pièces ou qu'il lui manque des graines ; la marche (le chemin du port, environ
+  660 cases pour la graine 1, et la moitié de la ferme, à 3,6 cases par seconde) se compte en temps d'éveil, à
+  l'aller et au retour. `node scripts/simulate.mjs --village` allume le réglage (le chapitre 7 et le dépannage n'y
+  sont que des constats : les paliers demandent des villageois).
+- **Les tests** : `tests/engine/village-commerce.test.mjs` (dont 25 nuits du joueur automatique, le réglage allumé).
+- Reste : le chemin du port est long (I2 : le portage) ; le bac, les commandes et l'import (I1c) ; les prix (I4).
 
 ## Les villageois : l'arrivée (I3a, fait)
 
