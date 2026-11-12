@@ -107,7 +107,7 @@ for _e, _n in (('cerisier_japon', 'nuages'), ('erable_rouge', 'coeur'), ('magnol
     for _g, (_sx, _sy) in GRANDES.items():
         FORMES[_e][_n + '_' + _g] = agrandie(FORMES[_e][_n], _sx, _sy)
 
-FORME = {'cerisier_japon': 'nuages', 'erable_rouge': 'coeur', 'magnolia': 'coupe', 'saule_pleureur': 'raie'}   # celles du jeu
+FORME = {'cerisier_japon': 'nuages_ample', 'erable_rouge': 'coeur_ample', 'magnolia': 'coupe_ample', 'saule_pleureur': 'raie'}   # celles du jeu
 
 
 def boite(forme):
@@ -158,6 +158,23 @@ def tronc(t, esp, forme, rng):
             anneau = esp in ('cerisier_japon', 'magnolia') and (y + int(bruit(x, 0, 72) * 2)) % 6 == 0   # lenticelles
             lum += -0.12 * strie - 0.10 * anneau + 0.04 * bruit(x, y, 73)
             t.put(x, y, ton(R, lum))
+    if esp == 'cerisier_japon':                            # le tronc monte jusqu'au nuage du sommet, en s'affinant
+        som = min(forme['masses'], key=lambda m: m[1])
+        x0, y0 = CX + 1.2 * math.sin(haut * 0.22), haut + 1
+        x1, y1 = som[0], som[1] + som[3] * 0.35
+        n = int(y0 - y1) + 1
+        for i in range(n):
+            f = i / max(1, n - 1)
+            y = y0 - f * (y0 - y1)
+            cx = x0 + (x1 - x0) * (f * f * 0.6 + f * 0.4) + 1.3 * math.sin(f * 5.5)   # (un peu tors, comme le bas)
+            demi = 2.2 - 1.1 * f
+            for x in range(int(cx - demi - 1), int(cx + demi + 2)):
+                u = (x + 0.5 - cx) / demi
+                if abs(u) > 1:
+                    continue
+                lum = 0.58 - 0.40 * (u + 1) / 2 - 0.08 * (1 - math.sqrt(max(0, 1 - u * u))) + 0.04 * bruit(x, y, 80)
+                lum -= 0.10 * ((int(y) + int(bruit(x, 0, 72) * 2)) % 6 == 0)       # les lenticelles
+                t.put(x, y, ton(R, lum))
     # les branches maîtresses, qui partent vers la couronne
     for sens in (-1, 1):
         x, y = CX, haut + 2
