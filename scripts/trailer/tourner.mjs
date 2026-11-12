@@ -17,7 +17,7 @@ const VOULUES = args.filter((a) => !a.startsWith('--') && !a.includes('/'));
 const L = BROUILLON ? 960 : 1920, H = BROUILLON ? 540 : 1080, UNE_SUR = BROUILLON ? 3 : 1;
 const veut = (nom) => !VOULUES.length || VOULUES.includes(nom);
 
-const CACHE = '#player-card,#hud,#sleep-fab,#tool-bar,#side-menu,#toast-root,#god-bar,#amis-bouton,#en-ligne-bandeau,#objectifs-root,#didacticiel-root,#tuto-root,#modal-root,#window-root,.consent-banner,.stage-hud,.stage-nav,.stage-label,.stage-bubble,.stage-tip,.stage-robot,.boussole,.caleche-heler{display:none!important} #farm-stage{top:0!important;bottom:0!important}';
+const CACHE = '#player-card,#hud,#sleep-fab,#tool-bar,#side-menu,#toast-root,#god-bar,#amis-bouton,#en-ligne-bandeau,#objectifs-root,#didacticiel-root,#tuto-root,#modal-root,#window-root,.consent-banner,.stage-hud,.stage-nav,.stage-label,.stage-bubble,.stage-tip,.stage-robot,.boussole,.caleche-heler,.caleche-signe{display:none!important} #farm-stage{top:0!important;bottom:0!important}';
 
 // Dans la page : la trousse du tournage (window.TR).
 function trousse() {
@@ -87,7 +87,7 @@ async function film(pl, p, nom, s, chaque) {
   writeFileSync(join(DOSSIER, nom, 'sons.json'), JSON.stringify(sons));
   return n;
 }
-const SOLO = ['lieux', 'champ', 'hache', 'pioche', 'peche', 'cuisine', 'repas', 'titre', 'fin', 'balade'];
+const SOLO = ['lieux', 'champ', 'hache', 'pioche', 'minerai', 'galop', 'peche', 'cuisine', 'repas', 'titre', 'fin', 'balade'];
 const BALADE = ['Brumeval', 'Le Gué', 'Pré-Fleuri', 'Les Mouettes'];   // les hameaux de la promenade
 
 /* ------------------------------------------------------------------ les scènes en solo */
@@ -167,6 +167,54 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
     await film(pl, p, 'pioche', 8);
     await p.evaluate(() => TR.outil('pioche'));
     await pl.passer(0.5);
+  }
+
+  if (veut('minerai')) {
+    // un gisement de cuivre de la ferme (sinon un autre métal) : les coups de pioche jusqu'au minerai
+    const g = await p.evaluate(() => {
+      const sc = FarmStage.scene(); TR.plein(); TR.zoom(7 * innerHeight / 1080);
+      const G = sc.rocks.filter((r) => !r.gone && r.box && r.gisement).map((r) => ({ r, x: (r.box.x0 + r.box.x1) / 2, y: r.foot }));
+      const a = G.find((q) => q.r.gisement === 'cuivre') || G[0];
+      if (!a) return { tous: sc.rocks.filter((r) => r.gisement).map((r) => [r.gisement, !!r.gone]) };
+      TR.va(a.x - 40, a.y + 2);
+      window.__gis = a.r;
+      return { metal: a.r.gisement, n: G.length };
+    });
+    console.log('  gisement', JSON.stringify(g));
+    if (g.metal) {
+      await pose(pl, p);
+      await p.evaluate(() => TR.outil('pioche'));
+      await pl.passer(0.3);
+      await p.evaluate(() => { const sc = FarmStage.scene(); for (let i = 0; i < 8; i++) sc.mine(window.__gis); });
+      await film(pl, p, 'minerai', 10);
+      await p.evaluate(() => TR.outil('pioche'));
+      await pl.passer(0.5);
+    }
+  }
+
+  if (veut('galop')) {
+    // en selle, une pomme de la sacoche : le galop sur le chemin de la ferme
+    const k = await p.evaluate(() => TR.blocs('cuisiniere')[0]);
+    const etat = await p.evaluate((k) => {
+      TR.plein(); TR.heure(10); TR.zoom(5 * innerHeight / 1080);
+      const c = FF.state.cheval || (FF.state.cheval = { monte: false, attache: null });
+      c.nourri = true;
+      if (!Array.isArray(c.sacoche) || !c.sacoche.some((q) => q && q.reste >= 1)) c.sacoche = [{ sorte: 'pomme', reste: 1 }, { sorte: 'pomme', reste: 1 }];
+      TR.va((k.c - 6) * 16, (k.r + 6) * 16 + 14);
+      return JSON.stringify(c);
+    }, k);
+    console.log('  cheval', etat);
+    await pose(pl, p);
+    await p.evaluate(() => TR.act('cheval-toggle'));
+    await pl.passer(0.5);
+    await action(p, 'close-modal');
+    await p.evaluate(() => { const c = FF.state.cheval; TR.act('galop-pomme', { place: String(c.sacoche.findIndex((q) => q && q.reste >= 1)) }); });
+    await pl.passer(0.5);
+    console.log('  en selle :', await p.evaluate(() => JSON.stringify({ monte: FF.state.cheval.monte, galop: FF.state.cheval.galop })));
+    await p.evaluate((k) => FarmStage.scene().fermier.goTo((k.c + 50) * 16, (k.r + 6) * 16 + 14), k);
+    await film(pl, p, 'galop', 6);
+    await p.evaluate(() => { FarmStage.scene().fermier.goTo(FarmStage.scene().fermier.info().x, FarmStage.scene().fermier.info().y); TR.act('cheval-toggle'); });
+    await pl.passer(1);
   }
 
   if (veut('peche')) {

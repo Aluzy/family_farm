@@ -13,7 +13,7 @@ const [DOSSIER, SORTIE = 'trailer.mp4', PLAN = ''] = process.argv.slice(2);
 const L = 1920, H = 1080;
 
 // Le plan de montage : { scene, debut (s dans la prise), duree (s), texte (le mot du plan), carton ('titre',
-// 'fin'), tenu / suite (le mot reste d'un plan au suivant), muet }.
+// 'fin'), tenu / suite (le mot reste d'un plan au suivant), muet, son (un son du jeu tenu le temps du plan) }.
 const PLANS = JSON.parse(readFileSync(PLAN || join(RACINE, 'scripts/trailer/montage.json'), 'utf8'));
 
 /* ---------- les cartons : des PNG transparents, dessinés par le navigateur ---------- */
@@ -93,6 +93,13 @@ for (const p of PLANS) {
     entrees.push('-ss', String(s.depuis || 0), '-i', join(RACINE, 'assets/son', `${variantes[k % variantes.length]}.ogg`));
     const a = n++;
     pistes.push(`[${a}:a]aformat=channel_layouts=stereo,volume=${(VOLUME[s.cle] * Math.min(1.3, s.gain || 1)).toFixed(2)},adelay=${Math.round((t0 + dans) * 1000)}:all=1[s${a}]`);
+    voix.push(`[s${a}]`);
+  }
+  // (« son » : un son du jeu tenu le temps du plan, le galop par exemple)
+  if (p.son && FICHIERS[p.son]) {
+    entrees.push('-t', String(p.duree), '-i', join(RACINE, 'assets/son', `${FICHIERS[p.son][0]}.ogg`));
+    const a = n++;
+    pistes.push(`[${a}:a]aformat=channel_layouts=stereo,volume=0.8,afade=t=out:st=${(p.duree - 0.25).toFixed(2)}:d=0.25,adelay=${Math.round(t0 * 1000)}:all=1[s${a}]`);
     voix.push(`[s${a}]`);
   }
   t0 += p.duree;

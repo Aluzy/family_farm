@@ -48,7 +48,7 @@ Un trailer de 30 secondes tourné dans le vrai jeu (Playwright, Chromium et ffmp
 - `studio.mjs` : le jeu servi tel quel, le Worker du jeu en ligne en mémoire (comme `tests/deux-joueurs.mjs`),
   des onglets à l'horloge tenue et la prise de vue image par image (30 images par seconde, quelle que soit la
   vitesse de la machine) ;
-- `tourner.mjs` : les scènes (le potager à trois joueurs en ligne, la hache, la pioche, la pêche, la cuisine,
+- `tourner.mjs` : les scènes (le potager à trois joueurs en ligne, la hache, la pioche (un rocher, un gisement de cuivre), le galop à cheval, la pêche, la cuisine,
   le repas avec des invités, la promenade dans les hameaux, le titre et la fin) ; `--brouillon` pour régler une
   scène vite, le nom d'une scène pour ne tourner qu'elle. La partie n'est jamais écrite : le tournage joue sur
   une copie. Les sons que le jeu joue sont notés avec leur instant (`sons.json`) ;
