@@ -664,6 +664,7 @@
           { nom: 'caleche', cadence: img, actif: () => !fige() && !!this.stepCaleche, pas: (I) => this.stepCaleche(I.s) },   // (la calèche : caleche.js)
           { nom: 'malle', cadence: img, actif: () => !fige() && !!this.stepMalle, pas: () => this.stepMalle() },               // (sa malle : malle.js)
           { nom: 'visite', cadence: img, actif: () => !fige() && !!this.stepVisite, pas: (I) => this.stepVisite(I.s) },       // (la visite de bienvenue : visite.js, fiche 18)
+          { nom: 'villageois', cadence: img, actif: () => !fige() && !!this.stepVillageois && !!(this.ctx.lastModel && (this.ctx.lastModel.villageois || this.villageoisVus && this.villageoisVus.size)), pas: (I) => this.stepVillageois(I.s) },   // (l'île à bâtir, fiche I3a : villageois.js)
           { nom: 'rencontre', cadence: img, actif: () => !fige() && !!this.stepRencontre, pas: (I) => this.stepRencontre(I.s) },   // (une scène du récit sur la carte : rencontre.js)
           // (les présents des amis devant la porte : amis.js ; seulement quand il y en a : l'événement modele:presents)
           { nom: 'presents', cadence: img, actif: () => !fige() && !!this.stepPresents && (this.presentsLa || !!this.presentsPaquet), pas: () => this.stepPresents() },
@@ -994,6 +995,11 @@
         if (!hoeing && this.malleAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.malleAt(wx, wy)) return { malle: true };
         // le visiteur de la visite de bienvenue (js/carte/ferme/visite.js) : il redit sa phrase
         if (!hoeing && this.visiteurAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.visiteurAt(wx, wy)) return { visiteur: true };
+        // un villageois (l'île à bâtir, fiche I3a : js/carte/ferme/villageois.js) : sa fiche
+        if (!hoeing && this.villageoisAt && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
+          const vg = this.villageoisAt(wx, wy);
+          if (vg) return { villageois: vg };
+        }
         // un invité d'un repas (js/carte/ferme/invites.js) : un mot
         if (!hoeing && this.inviteAt && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
           const inv = this.inviteAt(wx, wy);
@@ -1287,6 +1293,7 @@
         if (hit.habitant) { this.habitantParle(hit.habitant); return; }
         if (hit.compagnon) { if (this.ctx.bridge.compagnonTouche) this.ctx.bridge.compagnonTouche(); return; }
         if (hit.visiteur) { if (this.visiteur) this.visiteParle(this.visiteur); return; }
+        if (hit.villageois) { if (this.ctx.bridge.villageois) this.ctx.bridge.villageois('fiche', hit.villageois); return; }
         if (hit.invite) { const G = this.invitesVus; if (G) this.inviteBulle(hit.invite, (G.paroles.table || [])[Math.floor(Math.random() * (G.paroles.table || []).length)], 4500); return; }
         if (hit.panneau) { if (this.ctx.bridge.hameauPanneau) this.ctx.bridge.hameauPanneau({ id: hit.panneau.id, nom: hit.panneau.nom, style: hit.panneau.style }); return; }
         if (hit.hameauRefus) { if (this.ctx.bridge.hameauRefus) this.ctx.bridge.hameauRefus(hit.hameauRefus.outil, hit.hameauRefus.nom); return; }

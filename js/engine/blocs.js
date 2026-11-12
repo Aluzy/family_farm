@@ -26,6 +26,7 @@ import { chainesReprise } from './chaines.js';
 import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
+import { villageActif } from './village.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -590,7 +591,8 @@ export function pieceDe(state, tile) {
 let conseilsCle = null, conseilsListe = null;
 export function conseilsPieces(state) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR, max = DATA.ATELIER.PIECE_MAX;
-  const cle = W + ':' + JSON.stringify(B);
+  const village = villageActif(state);
+  const cle = W + ':' + village + ':' + JSON.stringify(B);
   if (cle === conseilsCle) return conseilsListe;
   const F = casesQuiFerment(B), ferme = (t, plus) => t === plus || F.has(t);
   const voisins = (i) => { const c = i % W, r = Math.floor(i / W); return [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, r > 0 ? i - W : -1, r < H - 1 ? i + W : -1]; };
@@ -652,10 +654,12 @@ export function conseilsPieces(state) {
   const portesDe = (e) => [...e.bord].filter((t) => sorteDe(B[t]).porte);
   const sansPorte = enceintes.filter((e) => !portesDe(e).length).map((e) => e.cases.sort((x, y) => x - y));
   const NOMS = { maison: 'Maison', poulailler: 'Le Poulailler', paturage: 'L\'Étable', serre: 'La Serre', silo: 'Le Silo', moulin: 'Le Moulin', ecurie: 'L\'Écurie' };
+  // (fiche I3a : une maison marquée d'une boîte aux lettres est celle d'un villageois)
+  const marquees = village ? new Set(maisonsMarquees(state).map((m) => m.piece)) : new Set();
   const pieces = piecesCloses(state).map((p) => {
     const genre = genreDe(B, p);
     const lits = p.paillasses.length;
-    const texte = genre === 'maison' ? `Maison${lits ? ` · ${lits} couchage${lits > 1 ? 's' : ''}` : ' · sans lit : pose une paillasse'}`
+    const texte = genre === 'maison' ? `${marquees.has(p) ? 'Maison d\'un villageois' : 'Maison'}${lits ? ` · ${lits} couchage${lits > 1 ? 's' : ''}` : ' · sans lit : pose une paillasse'}`
       : genre ? NOMS[genre] || genre
         : 'Pièce vide : une paillasse en fait une maison ; un bloc clé (nichoir, mangeoire, bac à semis, meule), un bâtiment';
     return { cases: p.cases, genre, texte };
@@ -718,10 +722,57 @@ export function dansPiece(state, tile) {
 // d'autre ne change de lit. Un lit choisi qui n'est plus un couchage (repris, sa pièce ouverte)
 // ne compte plus : l'ordre des pièces revient.
 export function couchages(state) {
-  const l = piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
+  let l = piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
+  // (le chantier « l'île à bâtir », fiche I3a : les lits d'une maison marquée d'une boîte aux lettres, celle d'un
+  // villageois, passent après les autres ; la famille n'y dort que s'il ne lui reste pas d'autre lit)
+  if (villageActif(state)) {
+    const reserves = new Set(maisonsMarquees(state).flatMap((m) => m.piece.paillasses));
+    if (reserves.size) l = l.filter((c) => !reserves.has(c)).concat(l.filter((c) => reserves.has(c)));
+  }
   const k = l.indexOf(state.litPrincipal);
   if (k > 0) [l[0], l[k]] = [l[k], l[0]];
   return l;
+}
+
+/* ---------- la maison d'un villageois (le chantier « l'île à bâtir », fiche I3a) ----------
+
+   Une boîte aux lettres (un bloc « villageois », fabriqué à l'Atelier) posée dehors, contre une porte (l'une
+   des huit cases qui l'entourent), marque « à un villageois » la maison de cette porte : une pièce close du genre
+   maison. Le moteur des villageois (js/engine/villageois.js) y installe un nouveau venu ; la famille n'y dort que
+   s'il ne lui reste pas d'autre lit (couchages). La maison se nomme par la case de sa boîte. */
+
+// Les cases des boîtes aux lettres des villageois posées, dans l'ordre des cases.
+export function boitesVillage(state) {
+  const B = blocsPoses(state);
+  return Object.keys(B).map(Number).filter((t) => sorteDe(B[t]) && sorteDe(B[t]).villageois).sort((a, b) => a - b);
+}
+
+// La maison que marque la boîte aux lettres de la case `boite` : la pièce close du genre maison (ou encore
+// vide) dont une porte touche la boîte ; la première dans l'ordre des pièces. null : aucune.
+export function maisonDeBoite(state, boite) {
+  const W = farmTerrain(state).LARGEUR, c = boite % W, B = blocsPoses(state);
+  const autour = new Set();
+  for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if ((dr || dc) && c + dc >= 0 && c + dc < W) autour.add(boite + dr * W + dc);
+  return piecesCloses(state).find((p) => p.portes.some((d) => autour.has(d)) && (genreDe(B, p) || 'maison') === 'maison') || null;
+}
+
+// Les maisons marquées : [{ boite (sa case), piece }], une par pièce (la première boîte d'une pièce la nomme).
+export function maisonsMarquees(state) {
+  return memoLot(state, 'maisonsVillage', () => {
+    const out = [], vues = new Set();
+    for (const b of boitesVillage(state)) {
+      const p = maisonDeBoite(state, b);
+      if (!p || vues.has(p)) continue;
+      vues.add(p);
+      out.push({ boite: b, piece: p });
+    }
+    return out;
+  });
+}
+
+// Les couchages où dort la famille cette nuit (les premiers de couchages, un par personne) : un Set.
+export function litsDeLaFamille(state) {
+  return new Set(couchages(state).slice(0, dormeurs(state).length));
 }
 
 // Un couchage (une case du bas, ou « etage:<case> ») tel que couchages() l'écrit, ou null.

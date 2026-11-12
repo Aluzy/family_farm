@@ -4129,3 +4129,25 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
   opacity: 0.85;
   pointer-events: none;
 }
+
+/* L'île à bâtir (fiche I3a, js/ui/villageois.js) : le compte des villageois sur la carte du joueur, leur liste et
+   la fiche d'un villageois. */
+.player-card .player-villageois {
+  display: inline-flex; align-items: center; gap: 3px; margin-top: 3px; padding: 1px 7px 1px 4px;
+  border-radius: 9px; border: 2px solid #3f7f6a; background: #e6f6ef; color: #1f4a3c;
+  font-weight: 700; font-size: 0.78rem; line-height: 1.2; cursor: pointer;
+}
+.player-card .player-villageois:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+.modal.villageois-modal { max-width: min(440px, 94vw); }
+.villageois-modal h2 { display: flex; align-items: center; gap: 8px; }
+.villageois-portrait { display: inline-flex; flex-shrink: 0; }
+.villageois-portrait .perso-px { --s: var(--portrait-64, 64px); }
+.villageois-fiche { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 10px 0 12px; }
+.villageois-fiche dt { font-weight: 700; }
+.villageois-fiche dd { margin: 0; }
+.villageois-fiche .bar { display: inline-block; width: 90px; vertical-align: middle; }
+.villageois-liste { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 6px; }
+.villageois-ligne {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 4px 8px; text-align: left;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card, #fff8ee); color: var(--text); cursor: pointer;
+}

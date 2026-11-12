@@ -28,6 +28,7 @@ import { aFait, acteEnCours, deHameau } from '../engine/recit.js';
 import { veilleeFerme, veilleeFermePossible } from '../engine/ile.js';
 import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
+import { watchVillageois } from './villageois.js';
 import { watchPresents } from './amitie.js';
 import { watchDemandes } from './demandes.js';
 import { watchFetes } from './fetes.js';
@@ -332,6 +333,7 @@ function veiller(ticked) {
   watchMail();
   watchCaleche(); // fiche 7c : la tournée posée, les arrêts aux hameaux, son arrivée à la ferme
   watchBienvenue(); // fiche 18 : la visite de bienvenue du deuxième jour se met en route
+  watchVillageois(); // l'île à bâtir (fiche I3a) : un jour de bac, un villageois arrive ; ses maisons, ses avis
   watchRobot();
   watchPresents();
   watchDemandes(); // V-2 : les petites demandes des habitants, annoncées au matin

@@ -483,6 +483,23 @@ export function testBatir(state, id) {
   return r.ok ? { ok: true, coin: at(0, 0) } : r;
 }
 
+// Le chantier « l'île à bâtir » (fiche I3a) : bâtit d'un coup, sur un coin d'herbe libre, la maison d'un
+// villageois : une pièce close de 5 × 4 cases (la porte au milieu du bas), `lits` paillasses dedans, et la boîte
+// aux lettres dehors, contre la porte (en bas à gauche). → { ok, coin, porte, boite, lits: [cases] } ou un refus.
+export function testMaisonVillageois(state, lits = 1) {
+  const z = coinLibre(state, 5, 5);
+  if (!z) return fail('Plus de place libre sur la ferme.');
+  const at = piece(state, z, 5, 4);
+  const poses = [];
+  for (let x = 1; x <= Math.max(1, Math.min(3, lits)); x++) {
+    const r = poserDonne(state, 'paillasse', at(x, 1));
+    if (!r.ok) return r;
+    poses.push(at(x, 1));
+  }
+  const r = poserDonne(state, 'boite_aux_lettres', at(1, 4));
+  return r.ok ? { ok: true, coin: at(0, 0), porte: at(2, 3), boite: at(1, 4), lits: poses } : r;
+}
+
 // Laboure d'un coup les cases libres de la Serre (sans houe ni énergie) :
 // toutes ses cases libres (serreCap). Renvoie combien de parcelles de plus.
 export function testLabourerSerre(state) {

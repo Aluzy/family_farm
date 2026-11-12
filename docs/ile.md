@@ -79,7 +79,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
 | 1. Le port | I1a, I1b, I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 | Le chemin de la ferme au port, modifiable ; porter la marchandise |
-| 3. Les villageois | I3a à I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |
+| 3. Les villageois | I3a (fait), I3b à I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a, I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
@@ -164,6 +164,25 @@ Ce qui est posé (I7a) :
   `cadeau_villageois` (I6a) et `commande_bac` (I1c) par `noterObjectif` ; ils paraissent quand
   `state.villageois` compte un villageois ou `state.port.commandes` une commande.
 - Reste à faire : le joueur automatique suit les paliers (point 6, après I0b).
+
+## Les villageois : l'arrivée (I3a, fait)
+
+- **Le modèle** (`js/engine/villageois.js`) : `state.villageois`, une liste d'adultes seuls (`id`, `prenom`, `genre`,
+  `perso`, `apparence`, `gouts`, `maison`, `lit`, `bourse`, `bonheur`, `faim`, `arrive`, `repos`, `accueil`,
+  `sansMaison`, `avis`, `journal`). Le champ ne naît qu'avec le premier villageois : éteint, une partie neuve est
+  celle d'avant (format 87 ; la migration 86 → 87 ne fait que réparer une liste abîmée).
+- **La maison libre** : une pièce close du genre maison, marquée par une **boîte aux lettres** (un bloc fabriqué à
+  l'Atelier, posé dehors contre sa porte : `blocs.js`, `maisonsMarquees`), avec un lit que la famille ne prend pas ;
+  la famille dort d'abord dans les autres lits (`couchages`). Un villageois par maison.
+- **L'arrivée** (`VILLAGE.ARRIVEE`) : un jour de bac (avant I1c, tous les `PERIODE` jours ; `jourDeBac` lira le bac
+  du port), de `HEURE` à `FIN` h ; le premier dès la première maison libre ; les suivants s'il y a de quoi manger
+  (`RESERVE_JOURS`) et si le port le permet (`PLAFOND[niveau]`, un port sans niveau compte pour 1). Il part de la
+  case du port (`caseArrivee` : `plan.lieux.port` quand I1a l'aura posé, sinon le bout du chemin de la ferme),
+  marche à sa porte, frappe, dit une ligne ; une notification ; la carte du joueur compte les villageois (un appui :
+  leur liste, puis la fiche de chacun).
+- **La nuit** (`villageoisNuit`, dans `runNight`) : il mange à la boîte commune (le besoin d'un adulte), dort dans
+  son lit ; son bonheur suit la règle de la famille ; mal nourri ou sans lit, il se repose le lendemain (`repos`),
+  il ne part jamais. Sa maison retirée, il dort à l'abri et prend la prochaine maison libre.
 
 ## Les règles qui ne changent pas
 

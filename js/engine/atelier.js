@@ -1,4 +1,5 @@
 import { DATA } from './catalog.js';
+import { villageActif } from './village.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
@@ -235,6 +236,8 @@ function refusNiveau(state, r) {
 // Une recette « debloque » (le bloc de silo) : à partir du niveau de cet élément (NIVEAUX).
 export function recetteDebloquee(state, id) {
   const r = DATA.ATELIER.RECETTES[id];
+  // (une recette du chantier « l'île à bâtir », la boîte aux lettres des villageois : le chantier allumé)
+  if (r && r.village && !villageActif(state)) return false;
   return !!r && (!r.debloque || isUnlocked(state, r.debloque)) && (!r.plan || planTrouve(state, id));
 }
 // Un meuble de collection (le lot 4) : son plan est-il trouvé ? (state.plans.connus, js/engine/plans.js ; lu

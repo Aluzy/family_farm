@@ -1562,6 +1562,15 @@ export const RAW_DATA = {
     "porte_blanche": { "nom": "Porte blanche", "icone": "🚪‍⬜", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "boite_nourriture": { "nom": "Boîte à nourriture", "icone": "🧺", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "boite_aux_lettres": {
+      "nom": "Boîte aux lettres",
+      "icone": "📫",
+      "prix": 4,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
     "casque_lampe": { "nom": "Casque à lampe", "icone": "⛑‍💡", "prix": 30, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "chapeau_paille": { "nom": "Chapeau de paille", "icone": "👒‍🌾", "prix": 6, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "bottes": { "nom": "Bottes de marche", "icone": "👢‍🟫", "prix": 10, "mangeable": false, "categorie": "équipement", "rachetable": false },
@@ -2069,6 +2078,7 @@ export const RAW_DATA = {
       "candelabre": { "entrees": { "lingot_fer": 2, "pierre": 1, "huile": 1, "fibre": 1 }, "sortie": { "candelabre": 1 } },
       "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 } },
       "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
+      "boite_aux_lettres": { "entrees": { "planche": 2, "bois": 1 }, "sortie": { "boite_aux_lettres": 1 }, "village": true },
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
       "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
       "mortier": { "entrees": { "pierre": 4, "planche": 1 }, "sortie": { "mortier": 1 } },
@@ -2187,6 +2197,14 @@ export const RAW_DATA = {
       "porte_blanche": { "nom": "Porte blanche", "objet": "porte_blanche", "porte": true, "ferme": true },
       "paillasse": { "nom": "Paillasse", "objet": "paillasse", "dedans": true },
       "boite_nourriture": { "nom": "Boîte à nourriture", "objet": "boite_nourriture", "dedans": true, "bloque": true, "unique": true, "boite": true },
+      "boite_aux_lettres": {
+        "nom": "Boîte aux lettres",
+        "objet": "boite_aux_lettres",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "boite_aux_lettres",
+        "villageois": true
+      },
       "refrigerateur": {
         "nom": "Réfrigérateur",
         "objet": "refrigerateur",
@@ -3049,7 +3067,7 @@ export const RAW_DATA = {
       "maison": {
         "nom": "Maison",
         "icone": "🏠",
-        "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"]
+        "blocs": ["paillasse", "boite_nourriture", "boite_aux_lettres", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"]
       },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
       "elevage": {
@@ -8593,6 +8611,21 @@ export const RAW_DATA = {
   },
   "VILLAGE": {
     "ACTIF": false,
+    "ARRIVEE": {
+      "PERIODE": 3,
+      "HEURE": 9,
+      "FIN": 17,
+      "RESERVE_JOURS": 2,
+      "PLAFOND": { "1": 2, "2": 4, "3": 6, "4": 9, "5": 12 },
+      "BOURSE": 20,
+      "JOURNAL": 7,
+      "TOC": "Toc, toc !",
+      "PHRASES": [
+        "Je suis {prenom}, j'arrive par le bac : c'est ma maison ?",
+        "Moi, c'est {prenom}. Merci pour la maison, je m'installe !",
+        "{prenom}, pour te servir : me voilà chez moi."
+      ]
+    },
     "PALIERS": [
       {
         "titre": "S'installer",

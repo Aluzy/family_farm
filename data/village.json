@@ -7,10 +7,36 @@
     "change pas. Pour un essai, jeu.html?village=1 l'allume pour une nouvelle partie (un bandeau le dit) ;",
     "les tests tests/engine/village-*.test.mjs le forcent (tests/engine/aide.mjs, avecVillage). La fiche",
     "I9h le passe à true, puis retire le réglage. Les sections PORT, TACHES, ARTISANS et TRAITS viendront",
-    "avec leurs fiches."
+    "avec leurs fiches.",
+    "ARRIVEE (fiche I3a, js/engine/villageois.js) : l'arrivée d'un villageois. Il débarque un jour de bac : avant",
+    "le bac de la fiche I1c, tous les PERIODE jours (les jours multiples de PERIODE), de HEURE à FIN h (la page le",
+    "met en route ; une journée finie avant, la nuit l'installe d'un coup). Il lui faut une maison libre (une pièce",
+    "close du genre maison, marquée par une boîte aux lettres posée dehors contre sa porte, avec un lit que la",
+    "famille ne prend pas) ; à partir du deuxième, de quoi nourrir une bouche de plus (le rangement des repas, le",
+    "réfrigérateur ou la boîte à nourriture, couvre RESERVE_JOURS jours du besoin de tous les villageois, lui",
+    "compris : FAMILLE.AJ.adulte chacun, en énergie des objets) et un port du niveau qu'il faut (PLAFOND[niveau du",
+    "port] : combien de villageois au plus ; un port sans niveau compte pour le niveau 1). Le premier vient dès la",
+    "première maison libre. Un seul par passage. BOURSE : ses pièces à l'arrivée. JOURNAL : les jours que garde son",
+    "journal. TOC : sa bulle quand il frappe ; PHRASES : la ligne qu'il dit ensuite ({prenom} : son prénom), après",
+    "le salut de l'heure (HABITANTS.PHRASES.salut)."
   ],
   "VILLAGE": {
     "ACTIF": false,
+    "ARRIVEE": {
+      "PERIODE": 3,
+      "HEURE": 9,
+      "FIN": 17,
+      "RESERVE_JOURS": 2,
+      "PLAFOND": { "1": 2, "2": 4, "3": 6, "4": 9, "5": 12 },
+      "BOURSE": 20,
+      "JOURNAL": 7,
+      "TOC": "Toc, toc !",
+      "PHRASES": [
+        "Je suis {prenom}, j'arrive par le bac : c'est ma maison ?",
+        "Moi, c'est {prenom}. Merci pour la maison, je m'installe !",
+        "{prenom}, pour te servir : me voilà chez moi."
+      ]
+    },
     "//PALIERS": [
       "Les paliers de l'île (fiche I7a, js/engine/paliers.js) : avec ACTIF, une partie neuve suit ces sept paliers à la",
       "place des sept chapitres de la campagne (data/campaign.json), sans introduction ni personnage : un titre, une",

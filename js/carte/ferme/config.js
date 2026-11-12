@@ -548,6 +548,8 @@ const CULTURE_MONTE = 0;
     'ornement_cerisier_japon', 'ornement_erable_rouge', 'ornement_magnolia', 'ornement_saule_pleureur',
     // (les enseignes de ferme et leurs boîtes aux lettres : scripts/batiments/enseignes.py ; le nom, BLOCS_CARTE.enseigne)
     'enseigne_bois', 'enseigne_email', 'enseigne_fer', 'boite_lettres_bois', 'boite_lettres_email', 'boite_lettres_fer',
+    // (la boîte aux lettres d'un villageois, l'île à bâtir : scripts/batiments/boite_villageois.py)
+    'boite_aux_lettres',
     // (les ensembles à thème : scripts/batiments/ensemble_chalet.py)
     'chalet_lit', 'chalet_chevet', 'chalet_tapis', 'chalet_tableau',
     'cottage_lit', 'cottage_chevet', 'cottage_tapis', 'cottage_tableau',

@@ -39,6 +39,7 @@ import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } from './cuisine.js';
 import { renderTechno } from './techno.js';
+import { villageoisCarteHtml } from './villageois.js';
 import { membrePortraitHtml, persoHtml, renderFamille } from './famille.js';
 import { renderNotifications } from './notifications.js';
 import { inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
@@ -520,6 +521,8 @@ export function renderIndicators() {
         `<i class="hud-ico piece" aria-hidden="true"></i></button>` +
       // (connecté au jeu en ligne : le solde de gemmes, qui ouvre ses achats : js/ui/gemmes.js)
       gemmesHtml() +
+      // (l'île à bâtir, fiche I3a : le compte des villageois, qui ouvre leur liste ; rien le chantier éteint)
+      villageoisCarteHtml() +
     `</span>`;
   if (html !== playerHtml) {
     playerHtml = html;
