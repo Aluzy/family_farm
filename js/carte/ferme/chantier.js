@@ -583,6 +583,26 @@
     // au hasard (la lanterne scintille, la lueur du réverbère vacille) et chacun pose sa lumière
     // dans le voile de l'heure (CarteKit.voile, eclaire : une flaque sur l'herbe, cyan ou chaude, et
     // la lueur de la vitre), qui vacille un peu ; un petit halo par-dessus (WebGL).
+    // Les fontaines de jardin (BLOCS_CARTE.fontaine) : jour et nuit, l'eau qui coule (une image par-dessus la
+    // fontaine, au même endroit, sa rangée selon le modèle) défile ; fixe en mode réduit.
+    stepFontaines(fontaines, dt) {
+      const C = BLOCS_CARTE.fontaine;
+      if (!fontaines.length || !this.textures.exists(C.key)) return;
+      const calme = global.CarteKit.reduit();
+      for (const e of fontaines) {
+        const rang = C.modeles.indexOf(String(e.dessin).replace('fontaine_', ''));
+        if (rang < 0) continue;
+        if (!e.eau || !e.eau.active || e.eau.x !== e.img.x || e.eau.y !== e.img.y) {
+          if (e.eau) e.eau.destroy();
+          e.eau = this.add.image(e.img.x, e.img.y, C.key, rang * C.images).setOrigin(0.5, 1).setDepth(e.img.depth + 0.01);
+          e.eauT = Math.random() / C.fps; e.eauF = Math.floor(Math.random() * C.images);
+          e.img.once('destroy', () => { if (e.eau) { e.eau.destroy(); e.eau = null; } });
+        }
+        if (!calme && (e.eauT -= dt) <= 0) { e.eauT = 1 / C.fps; e.eauF = (e.eauF + 1) % C.images; }
+        e.eau.setVisible(e.img.visible).setAlpha(e.img.alpha).setFrame(rang * C.images + (calme ? 0 : e.eauF));
+      }
+    },
+
     stepLanterns(time, dt) {
       const V = this.lumiere;
       // (les lumières posées : relevées parmi tous les blocs quand ils changent (blocsN), pas à chaque image)
@@ -602,6 +622,10 @@
       const cheminees = [];
       for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('cheminee_')) cheminees.push({ img: e.img, x: e.x, y: e.y - 1, e });
       for (const e of this.etageCheminees || []) if (e.img && e.img.active) cheminees.push({ img: e.img, x: e.x, y: e.y, e });
+      // (les fontaines de jardin : BLOCS_CARTE.fontaine ; leur eau coule jour et nuit)
+      const fontaines = [];
+      for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('fontaine_')) fontaines.push(e);
+      this.stepFontaines(fontaines, dt);
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
       const guirlandes = this.guirlandes && this.guirlandes.size ? [...this.guirlandes.values()] : [];

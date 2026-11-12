@@ -2738,6 +2738,7 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .gemmes-papier-img { width: 48px; height: 60px; border-radius: 4px; box-shadow: 0 0 0 2px rgba(60, 40, 20, .6); background: url('../assets/papiers_peints.png') no-repeat; background-size: auto 90px; background-position: calc(var(--f) * -48px) -6px; image-rendering: pixelated; }
 .gemmes-deco-img { width: 64px; height: 48px; border-radius: 4px; background: #182042 url('../assets/guirlandes.png') no-repeat; background-size: 192px auto; background-position: -64px calc(var(--r) * -48px); image-rendering: pixelated; box-shadow: 0 0 0 2px rgba(60, 40, 20, .6); }
 .gemmes-cheminee-img { width: 64px; height: 92px; image-rendering: pixelated; }
+.gemmes-fontaine-img { width: 64px; height: 88px; image-rendering: pixelated; }
 .build-motif-img { display: inline-block; width: 18px; height: 22px; border-radius: 3px; box-shadow: 0 0 0 1px rgba(40, 26, 14, .7); background: url('../assets/papiers_peints.png') no-repeat; background-size: auto 33.75px; background-position: calc(var(--f) * -18px) -2px; image-rendering: pixelated; font-size: 13px; line-height: 22px; }
 .build-motif-img.aucun { background: #efe6d2; color: #8a3b2e; }
 .gemmes-rosier-nom { font-size: 0.82rem; }
