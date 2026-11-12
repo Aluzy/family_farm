@@ -333,6 +333,11 @@
       "mer_tapis": { "nom": "Tapis de jute", "objet": "mer_tapis", "meuble": "mer_tapis", "dedans": true, "plat": true, "largeur": 3, "tourne": true, "profil": [2, 3], "piece": "chambre", "boutique": true },
       "mer_tableau": { "nom": "Tableau : le phare", "objet": "mer_tableau", "meuble": "mer_tableau", "sur": "mur", "piece": "chambre", "boutique": true },
       "sol_flotte": { "nom": "Plancher flotté", "objet": "sol_flotte", "sol": true, "boutique": true },
+      "fee_lit": { "nom": "Lit féerique", "objet": "fee_lit", "meuble": "fee_lit", "dedans": true, "lit": true, "hauteur": 2, "tourne": true, "piece": "chambre", "boutique": true },
+      "fee_chevet": { "nom": "Chevet féerique", "objet": "fee_chevet", "meuble": "fee_chevet", "dedans": true, "bloque": true, "tourne": true, "piece": "chambre", "boutique": true },
+      "fee_tapis": { "nom": "Tapis arc-en-ciel", "objet": "fee_tapis", "meuble": "fee_tapis", "dedans": true, "plat": true, "largeur": 3, "tourne": true, "profil": [2, 3], "piece": "chambre", "boutique": true },
+      "fee_tableau": { "nom": "Tableau : la licorne", "objet": "fee_tableau", "meuble": "fee_tableau", "sur": "mur", "piece": "chambre", "boutique": true },
+      "sol_pastel": { "nom": "Parquet pastel", "objet": "sol_pastel", "sol": true, "boutique": true },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -408,7 +413,7 @@
       "ne se montre que débloqué (blocs.js, blocDebloque), un onglet que s'il en a un."
     ],
     "CATEGORIES": {
-      "batir": { "nom": "Bâtir", "icone": "🧱", "murs": true, "blocs": ["porte", "porte_chene", "porte_vitree", "porte_grange", "porte_bleue", "porte_fer", "porte_ecurie", "porte_blanche", "plancher", "sol_dalles", "sol_carrelage", "sol_tomettes", "sol_chevrons", "sol_marbre", "sol_paves", "sol_mosaique", "sol_meleze", "sol_blanchi", "sol_flotte", "chemin", "sol_pas_ardoise", "sol_pas_pierre", "sol_pas_bois", "barriere", "barriere_blanche", "barriere_rouge", "barriere_grise", "barriere_chene", "barriere_verte", "barriere_lavande", "portail", "escalier"] },
+      "batir": { "nom": "Bâtir", "icone": "🧱", "murs": true, "blocs": ["porte", "porte_chene", "porte_vitree", "porte_grange", "porte_bleue", "porte_fer", "porte_ecurie", "porte_blanche", "plancher", "sol_dalles", "sol_carrelage", "sol_tomettes", "sol_chevrons", "sol_marbre", "sol_paves", "sol_mosaique", "sol_meleze", "sol_blanchi", "sol_flotte", "sol_pastel", "chemin", "sol_pas_ardoise", "sol_pas_pierre", "sol_pas_bois", "barriere", "barriere_blanche", "barriere_rouge", "barriere_grise", "barriere_chene", "barriere_verte", "barriere_lavande", "portail", "escalier"] },
       "maison": { "nom": "Maison", "icone": "🏠", "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"] },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
       "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "compost", "bloc_silo", "meule"] },

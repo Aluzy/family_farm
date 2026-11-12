@@ -251,7 +251,32 @@ def vagues():
     return finir(im)
 
 
-DESSINS = {'fleurettes': fleurettes, 'rayures': rayures, 'vichy': vichy, 'damas': damas, 'feuillages': feuillages, 'etoiles': etoiles, 'lambris': lambris, 'roses': roses, 'vagues': vagues}
+def nuages():
+    """Les nuages de la chambre féerique (l'ensemble de la boutique) : de petits nuages blancs bombés (éclairés en haut,
+    leur dessous bleuté) et des étoiles dorées sur un bleu ciel pastel, en quinconce (période 8 × 10)."""
+    im = toile()
+    CIEL = rampe([(150, 186, 222), (186, 212, 238), (214, 230, 246)])
+    BLANC = rampe([(170, 186, 214), (226, 234, 246), (255, 255, 255)])
+    OR = rampe([(214, 170, 70), (250, 222, 130), (255, 248, 210)])
+    fond(im, CIEL, 0.55)
+    px = im.load()
+    nuage = ['.##..', '####.', '#####']
+    for y0 in range(-6, H, 10):
+        for x0, dy in ((0, 0), (8, 5)):
+            for j, ligne in enumerate(nuage):
+                for i, ch in enumerate(ligne):
+                    if ch == '#':
+                        x, y = (x0 + 1 + i) % 16, y0 + dy + j
+                        if 0 <= y < H:
+                            px[x, y] = ton(BLANC, 1.0 - 0.35 * j / 2 - 0.1 * i / 4) + (255,)
+            x, y = (x0 + 6) % 16, y0 + dy + 6
+            for dx, dyy, t in ((0, 0, 1.0), (-1, 0, 0.55), (1, 0, 0.55), (0, -1, 0.7), (0, 1, 0.45)):
+                if 0 <= y + dyy < H:
+                    px[(x + dx) % 16, y + dyy] = ton(OR, t) + (255,)
+    return finir(im)
+
+
+DESSINS = {'fleurettes': fleurettes, 'rayures': rayures, 'vichy': vichy, 'damas': damas, 'feuillages': feuillages, 'etoiles': etoiles, 'lambris': lambris, 'roses': roses, 'vagues': vagues, 'nuages': nuages}
 
 
 def main():

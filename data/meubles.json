@@ -36,7 +36,8 @@
     "etoiles": { "nom": "Étoiles", "objet": "papier_peint_etoiles" },
     "lambris": { "nom": "Lambris de pin", "objet": "papier_peint_lambris" },
     "roses": { "nom": "Roses anglaises", "objet": "papier_peint_roses" },
-    "vagues": { "nom": "Vagues", "objet": "papier_peint_vagues" }
+    "vagues": { "nom": "Vagues", "objet": "papier_peint_vagues" },
+    "nuages": { "nom": "Nuages et étoiles", "objet": "papier_peint_nuages" }
   },
   "PALETTES": {
     "bois_miel": ["#3c1e16", "#603620", "#86522e", "#aa7040", "#cc965c"],
