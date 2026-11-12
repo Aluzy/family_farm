@@ -122,6 +122,7 @@
         L.spritesheet(F.C.BLOCS_CARTE.guirlandes.key, v(F.C.BLOCS_CARTE.guirlandes.file), F.C.BLOCS_CARTE.guirlandes.frame);
         L.spritesheet(F.C.BLOCS_CARTE.cheminee.key, v(F.C.BLOCS_CARTE.cheminee.file), F.C.BLOCS_CARTE.cheminee.frame);
         L.spritesheet(F.C.BLOCS_CARTE.fontaine.key, v(F.C.BLOCS_CARTE.fontaine.file), F.C.BLOCS_CARTE.fontaine.frame);
+        L.spritesheet(F.C.BLOCS_CARTE.ornement.key, v(F.C.BLOCS_CARTE.ornement.file), F.C.BLOCS_CARTE.ornement.frame);
         A.feuille(this, F.C.BLOCS_CARTE.grimpants.key, F.C.BLOCS_CARTE.grimpants.file, F.C.BLOCS_CARTE.grimpants.frame, v);
         L.spritesheet(F.C.BLOCS_CARTE.clotures.key, v(F.C.BLOCS_CARTE.clotures.file), F.C.BLOCS_CARTE.clotures.frame);
         A.feuille(this, F.C.BLOCS_CARTE.portails.key, F.C.BLOCS_CARTE.portails.file, F.C.BLOCS_CARTE.portails.frame, v);

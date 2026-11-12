@@ -51,6 +51,11 @@ export const BOUTIQUE = {
     fontaine_marbre: { prix: 120, nom: 'Fontaine en marbre' },
     fontaine_grenouille: { prix: 120, nom: 'Fontaine à la grenouille' },
     fontaine_angelot: { prix: 120, nom: 'Fontaine à l\'angelot' },
+    // les arbres d'ornement : deux cases sur deux, dehors ; leurs pétales (leurs feuilles) tombent doucement
+    ornement_cerisier_japon: { prix: 90, nom: 'Cerisier du Japon' },
+    ornement_erable_rouge: { prix: 90, nom: 'Érable rouge' },
+    ornement_magnolia: { prix: 90, nom: 'Magnolia' },
+    ornement_saule_pleureur: { prix: 90, nom: 'Saule pleureur' },
     // les papiers peints : un motif acheté est débloqué pour toujours (js/engine/papiers.js)
     papier_peint_fleurettes: { prix: 40, nom: 'Papier peint fleurettes' },
     papier_peint_rayures: { prix: 40, nom: 'Papier peint rayures' },
