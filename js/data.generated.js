@@ -2333,6 +2333,7 @@ export const RAW_DATA = {
         "plat": true,
         "largeur": 3,
         "tourne": true,
+        "profil": [2, 3],
         "piece": "chambre",
         "boutique": true
       },
@@ -2374,6 +2375,7 @@ export const RAW_DATA = {
         "plat": true,
         "largeur": 3,
         "tourne": true,
+        "profil": [2, 3],
         "piece": "chambre",
         "boutique": true
       },
@@ -2427,7 +2429,8 @@ export const RAW_DATA = {
         "dedans": true,
         "plat": true,
         "largeur": 3,
-        "tourne": true
+        "tourne": true,
+        "profil": [2, 3]
       },
       "meuble_tapis_2": {
         "nom": "Tapis rouge",
@@ -2446,7 +2449,8 @@ export const RAW_DATA = {
         "dedans": true,
         "plat": true,
         "largeur": 3,
-        "tourne": true
+        "tourne": true,
+        "profil": [2, 3]
       },
       "meuble_lit_adulte": {
         "nom": "Lit adulte",

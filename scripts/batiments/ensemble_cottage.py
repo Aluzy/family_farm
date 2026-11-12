@@ -318,7 +318,7 @@ IMAGES = {
     'cottage_chevet': lambda: chevet_vue('face'), 'cottage_chevet_dos': lambda: chevet_vue('dos'),
     'cottage_chevet_cote': lambda: chevet_vue('cote'),
     'cottage_tapis': lambda: tapis(40, 22), 'cottage_tapis_dos': lambda: tapis(40, 22).transpose(Image.FLIP_LEFT_RIGHT),
-    'cottage_tapis_cote': lambda: tapis(14, 44, False),
+    'cottage_tapis_cote': lambda: tapis(40, 22).rotate(90, expand=True),  # (le dessin de face, tourné de 90°)
     'cottage_tableau': tableau,
 }
 

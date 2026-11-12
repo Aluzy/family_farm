@@ -351,7 +351,7 @@ IMAGES = {
     'chalet_chevet': lambda: chevet_vue('face'), 'chalet_chevet_dos': lambda: chevet_vue('dos'),
     'chalet_chevet_cote': lambda: chevet_vue('cote'),
     'chalet_tapis': lambda: tapis(40, 22), 'chalet_tapis_dos': lambda: tapis(40, 22).transpose(Image.FLIP_LEFT_RIGHT),
-    'chalet_tapis_cote': lambda: tapis(14, 44, False),
+    'chalet_tapis_cote': lambda: tapis(40, 22).rotate(90, expand=True),  # (le dessin de face, tourné de 90°)
     'chalet_tableau': tableau,
 }
 
