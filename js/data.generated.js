@@ -1483,6 +1483,26 @@ export const RAW_DATA = {
       "invendable": true,
       "boutique": true
     },
+    "citrouille_halloween": {
+      "nom": "Citrouille sculptée",
+      "icone": "🎃",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "tas_citrouilles": {
+      "nom": "Tas de citrouilles",
+      "icone": "🎃",
+      "prix": 70,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -2674,6 +2694,23 @@ export const RAW_DATA = {
         "dessin": "bonhomme_neige",
         "boutique": true
       },
+      "citrouille_halloween": {
+        "nom": "Citrouille sculptée",
+        "objet": "citrouille_halloween",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "citrouille_halloween",
+        "boutique": true
+      },
+      "tas_citrouilles": {
+        "nom": "Tas de citrouilles",
+        "objet": "tas_citrouilles",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "tas_citrouilles",
+        "largeur": 2,
+        "boutique": true
+      },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -3064,7 +3101,9 @@ export const RAW_DATA = {
           "boite_lettres_email",
           "enseigne_fer",
           "boite_lettres_fer",
-          "bonhomme_neige"
+          "bonhomme_neige",
+          "citrouille_halloween",
+          "tas_citrouilles"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },

@@ -236,6 +236,8 @@
     "sapin_noel": { "nom": "Sapin de Noël", "icone": "🎄", "prix": 120, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true, "boutique": true },
     "couronne_noel": { "nom": "Couronne de Noël", "icone": "🎀", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true, "boutique": true },
     "bonhomme_neige": { "nom": "Bonhomme de neige", "icone": "⛄", "prix": 60, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true, "boutique": true },
+    "citrouille_halloween": { "nom": "Citrouille sculptée", "icone": "🎃", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true, "boutique": true },
+    "tas_citrouilles": { "nom": "Tas de citrouilles", "icone": "🎃", "prix": 70, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true, "boutique": true },
     "pergola": { "nom": "Pergola fleurie", "icone": "🌸", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "bac_lavande": { "nom": "Bac de lavande", "icone": "🪻", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true, "retire": true },
     "bac_carre": { "nom": "Bac carré", "icone": "🪴‍🟫", "prix": 60, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
