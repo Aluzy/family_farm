@@ -342,6 +342,14 @@ const CULTURE_MONTE = 0;
       key: 'ornements_chute', file: 'ornements_chute.png', frame: { frameWidth: 64, frameHeight: 80 }, images: 8, fps: 5,
       modeles: ['cerisier_japon', 'erable_rouge', 'magnolia', 'saule_pleureur'], prefixe: 'ornement_',
     },
+    // le nom de la famille sur les enseignes de ferme (le bloc enseigne_<matière> ; chantier.js stepEnseignes) : écrit
+    // sur la plaque, son milieu `dy` px au-dessus du bas de l'image, rapetissé s'il dépasse `largeur` px (sur deux
+    // lignes s'il devait l'être plus que `deuxLignes` et qu'il a un espace ou un trait d'union) ; sa couleur
+    // suit la peinture (data/meubles.json PEINTURES enseigne_<matière>, `texte`)
+    enseigne: {
+      taille: 7, ombre: 'rgba(0,0,0,0.35)', deuxLignes: 0.7,
+      dy: { bois: 17.5, email: 17, fer: 16.5 }, largeur: { bois: 19, email: 19, fer: 15 },
+    },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
     // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
     // murs `sortes` (`vitre` : `dy` px au-dessus du pied du mur) ; sur la face du mur du fond,
@@ -519,6 +527,8 @@ const CULTURE_MONTE = 0;
     'fontaine_pierre', 'fontaine_marbre', 'fontaine_grenouille', 'fontaine_angelot',
     // (les arbres d'ornement : scripts/batiments/ornements.py ; ce qui en tombe, BLOCS_CARTE.ornement)
     'ornement_cerisier_japon', 'ornement_erable_rouge', 'ornement_magnolia', 'ornement_saule_pleureur',
+    // (les enseignes de ferme et leurs boîtes aux lettres : scripts/batiments/enseignes.py ; le nom, BLOCS_CARTE.enseigne)
+    'enseigne_bois', 'enseigne_email', 'enseigne_fer', 'boite_lettres_bois', 'boite_lettres_email', 'boite_lettres_fer',
     // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
     'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',

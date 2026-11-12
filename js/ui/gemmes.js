@@ -74,9 +74,12 @@ async function livrer() {
     if (!deja.has(l.id)) {
       if (!DATA.OBJETS[l.article]) continue;
       addItem(state, l.article, DATA.OBJETS[l.article].lot || 1);
+      if (DATA.OBJETS[l.article].avec && DATA.OBJETS[DATA.OBJETS[l.article].avec]) addItem(state, DATA.OBJETS[l.article].avec, 1);   // (l'enseigne et sa boîte aux lettres)
       deja.add(l.id);
       notify(DATA.OBJETS[l.article].papier
         ? `🧻 ${DATA.OBJETS[l.article].nom} : débloqué. Pose-le avec 🔨 Construire, outil 🧻, en touchant une pièce close.`
+        : String(l.article).startsWith('enseigne_')
+        ? `🪧 ${DATA.OBJETS[l.article].nom} et sa boîte aux lettres : dans ton inventaire. Pose-les dehors avec 🔨 Construire (onglet Jardin) : le nom de ta famille s'écrit sur l'enseigne. 🎨 change leur couleur.`
         : String(l.article).startsWith('ornement_')
         ? `🌳 ${DATA.OBJETS[l.article].nom} : dans ton inventaire. Plante-le dehors avec 🔨 Construire (onglet Jardin) : il prend deux cases sur deux.`
         : String(l.article).startsWith('fontaine_')
@@ -153,14 +156,14 @@ function papiersHtml() {
   <p class="gemmes-aide">Un papier peint acheté est débloqué pour toujours : avec 🔨 Construire, l'outil 🧻, touche une pièce close et tous ses murs du fond le prennent, en bas comme à l'étage. Le changer ou le retirer est gratuit.</p>`;
 }
 
-// Les décorations (les guirlandes lumineuses, les cheminées, les fontaines, les arbres d'ornement) : leur dessin allumé sur un fond de nuit, leur
+// Les décorations (les guirlandes lumineuses, les cheminées, les fontaines, les arbres d'ornement, les enseignes) : leur dessin allumé sur un fond de nuit, leur
 // nom, leur prix (un lot : le nombre de pièces).
 function decorationsHtml() {
   const A = vue.articles || {}, rangs = ['blanche', 'multicolore', 'etoiles', 'coeurs'];
-  return `<div class="gemmes-papiers">${Object.entries(A).filter(([id]) => id.startsWith('guirlande_') || id.startsWith('cheminee_') || id.startsWith('fontaine_') || id.startsWith('ornement_')).map(([id, a]) => {
+  return `<div class="gemmes-papiers">${Object.entries(A).filter(([id]) => id.startsWith('guirlande_') || id.startsWith('cheminee_') || id.startsWith('fontaine_') || id.startsWith('ornement_') || id.startsWith('enseigne_')).map(([id, a]) => {
     const ok = vue.solde >= a.prix;
-    const img = id.startsWith('cheminee_') || id.startsWith('fontaine_') || id.startsWith('ornement_')
-      ? `<img class="gemmes-${id.startsWith('fontaine_') ? 'fontaine' : id.startsWith('ornement_') ? 'ornement' : 'cheminee'}-img" src="assets/meuble_${id}.png" alt="" draggable="false">`
+    const img = id.startsWith('cheminee_') || id.startsWith('fontaine_') || id.startsWith('ornement_') || id.startsWith('enseigne_')
+      ? `<img class="gemmes-${id.startsWith('fontaine_') ? 'fontaine' : id.startsWith('ornement_') ? 'ornement' : id.startsWith('enseigne_') ? 'enseigne' : 'cheminee'}-img" src="assets/meuble_${id}.png" alt="" draggable="false">`
       : `<span class="gemmes-deco-img" style="--r:${Math.max(0, rangs.indexOf(id.replace('guirlande_', '')))}" aria-hidden="true"></span>`;
     return `<div class="gemmes-papier">
       ${img}
@@ -168,7 +171,7 @@ function decorationsHtml() {
       <button type="button" class="btn${ok ? ' primary' : ''}" data-action="gemmes-acheter" data-article="${id}"${!ok || occupe ? ' disabled' : ''}>💎 ${a.prix}</button>
     </div>`;
   }).join('')}</div>
-  <p class="gemmes-aide">Une guirlande arrive en lot de 8 segments : pose-les avec 🔨 Construire (onglet Jardin), en haut des façades, côté jardin. Ils se raccordent d'un mur à l'autre et scintillent dès que le soir tombe. Une cheminée se pose dans une pièce de la maison (onglet Meubles) : son feu s'allume le soir. Une fontaine se pose dehors, dans le jardin (onglet Jardin, deux cases sur deux) : son eau coule jour et nuit. Un arbre d'ornement se plante aussi dehors (deux cases sur deux) : ses pétales, ses feuilles tombent doucement.</p>`;
+  <p class="gemmes-aide">Une guirlande arrive en lot de 8 segments : pose-les avec 🔨 Construire (onglet Jardin), en haut des façades, côté jardin. Ils se raccordent d'un mur à l'autre et scintillent dès que le soir tombe. Une cheminée se pose dans une pièce de la maison (onglet Meubles) : son feu s'allume le soir. Une fontaine se pose dehors, dans le jardin (onglet Jardin, deux cases sur deux) : son eau coule jour et nuit. Un arbre d'ornement se plante aussi dehors (deux cases sur deux) : ses pétales, ses feuilles tombent doucement. Une enseigne de ferme arrive avec sa boîte aux lettres : le nom de ta famille s'y écrit, et 🎨 leur donne cinq couleurs.</p>`;
 }
 
 function contenu() {
