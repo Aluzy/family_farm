@@ -1,6 +1,8 @@
 {
   "name": "ferme-familiale",
   "private": true,
+  "license": "UNLICENSED",
+  "author": "Alexandre Fuzy",
   "type": "module",
   "scripts": {
     "build:data": "node scripts/build-data.mjs",

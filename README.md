@@ -620,3 +620,9 @@ son nom brut suivi de « (non répertorié) ». `node scripts/check-actions.mjs`
   enregistrements libres de droits, auteurs et licences dans
   [`assets/son/CREDITS.md`](assets/son/CREDITS.md)
 - Moteur d'affichage : Phaser 4 (licence MIT)
+
+## Licence
+
+© 2026 Alexandre Fuzy, tous droits réservés : le code, les graphismes, les sons et les textes de ce
+dépôt ne peuvent être copiés, modifiés, redistribués ni hébergés sans autorisation écrite. Les
+conditions exactes et les éléments de tiers (Phaser, sons libres) sont dans [`LICENCE`](LICENCE).
