@@ -658,7 +658,7 @@
       for (const e of this.etageCheminees || []) if (e.img && e.img.active) cheminees.push({ img: e.img, x: e.x, y: e.y, e });
       // (les fontaines de jardin et les arbres d'ornement : leur eau coule, leurs pétales tombent, jour et nuit ;
       // BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement)
-      for (const C of [BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement]) {
+      for (const C of [BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement, BLOCS_CARTE.sapin]) {
         const liste = [];
         for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith(C.prefixe)) liste.push(e);
         this.stepSurcouches(liste, C, dt);
@@ -762,7 +762,7 @@
         if (e.haloLampe) e.haloLampe.setVisible(allumee);
         if (!allumee) continue;
         const k = (calme ? 1 : 1 - LC.respire + LC.respire * Math.sin(time / 900 + e.phaseLampe)) * Math.min(1, nuit / 0.4);
-        const S = LC.sol, A = LC.abatJour;
+        const P = (LC.par && LC.par[e.dessin]) || LC, S = P.sol, A = P.abatJour;   // (le sapin : sa lueur à lui)
         out.push({ key: 'lueur', x: l.x + S.dx, y: l.y + S.dy, tint: S.teinte, alpha: S.alpha * k, scaleX: S.rayon / R, scaleY: (S.rayon * S.aplati) / R });
         out.push({ key: 'lueur', x: l.x + A.dx, y: l.y + A.dy, tint: A.teinte, alpha: A.alpha * k, scaleX: A.rayon / R, scaleY: A.rayon / R });
         if (webgl && !e.haloLampe) {

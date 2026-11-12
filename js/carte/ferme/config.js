@@ -314,7 +314,9 @@ const CULTURE_MONTE = 0;
     // scripts/batiments/meubles.py, à la même place dans les trois vues), qui respire à peine ; un petit
     // halo par-dessus (WebGL)
     lampeChevet: {
-      dessins: ['chevet', 'chalet_chevet', 'cottage_chevet', 'mer_chevet', 'fee_chevet'], allume: 0.12, respire: 0.04,
+      dessins: ['chevet', 'chalet_chevet', 'cottage_chevet', 'mer_chevet', 'fee_chevet', 'sapin_noel'],
+      // (le sapin de Noël : sa lueur plus large, au milieu de ses branches)
+      par: { sapin_noel: { sol: { rayon: 46, aplati: 0.7, teinte: 0xffd890, alpha: 0.85, dx: 0, dy: -6 }, abatJour: { rayon: 18, teinte: 0xfff0c0, alpha: 0.8, dx: 0, dy: -24 } } }, allume: 0.12, respire: 0.04,
       sol: { rayon: 38, aplati: 0.72, teinte: 0xffc878, alpha: 0.8, dx: 0, dy: -6 },
       abatJour: { rayon: 10, teinte: 0xfff0c8, alpha: 0.95, dx: 0, dy: -17 },
       halo: { couleur: 0xffc060, rayon: 16, intensite: 0.08, attenuation: 0.08 },
@@ -336,6 +338,12 @@ const CULTURE_MONTE = 0;
     fontaine: {
       key: 'fontaine_eau', file: 'fontaine_eau.png', frame: { frameWidth: 32, frameHeight: 47 }, images: 4, fps: 6,
       modeles: ['pierre', 'marbre', 'grenouille', 'angelot'], prefixe: 'fontaine_',
+    },
+    // les guirlandes du sapin de Noël (le meuble sapin_noel ; scripts/batiments/noel.py) : leurs ampoules clignotent
+    // jour et nuit, ses `images` défilent par-dessus lui ; fixe en mode réduit
+    sapin: {
+      key: 'sapin_lumieres', file: 'sapin_lumieres.png', frame: { frameWidth: 26, frameHeight: 46 }, images: 4, fps: 3,
+      modeles: ['noel'], prefixe: 'sapin_',
     },
     // ce qui tombe des arbres d'ornement (le bloc ornement_<espèce>, deux cases sur deux ; scripts/batiments/ornements.py) :
     // jour et nuit, les pétales (les feuilles) descendent en tournoyant, ses `images` (une rangée par espèce)
@@ -536,6 +544,8 @@ const CULTURE_MONTE = 0;
     'cottage_lit', 'cottage_chevet', 'cottage_tapis', 'cottage_tableau',
     'mer_lit', 'mer_chevet', 'mer_tapis', 'mer_tableau',
     'fee_lit', 'fee_chevet', 'fee_tapis', 'fee_tableau',
+    // (les décors de Noël : scripts/batiments/noel.py ; les guirlandes du sapin, BLOCS_CARTE.sapin)
+    'sapin_noel', 'couronne_noel', 'bonhomme_neige',
     // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
     'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',

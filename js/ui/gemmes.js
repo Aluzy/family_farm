@@ -81,7 +81,7 @@ async function livrer() {
       notify(DATA.OBJETS[l.article].contenu
         ? `🛋️ ${DATA.OBJETS[l.article].nom} : tout est dans ton inventaire (le lit, le chevet, le tapis, le tableau, le plancher, et le papier peint débloqué). Meuble une chambre avec 🔨 Construire : onglet Meubles, Bâtir pour le plancher, 🧻 pour le papier.`
         : DATA.ATELIER.BLOCS[l.article] && DATA.ATELIER.BLOCS[l.article].boutique
-        ? `🛋️ ${DATA.OBJETS[l.article].nom}${DATA.OBJETS[l.article].lot ? ` (${DATA.OBJETS[l.article].lot})` : ''} : dans ton inventaire. Pose-le avec 🔨 Construire (${DATA.ATELIER.BLOCS[l.article] && DATA.ATELIER.BLOCS[l.article].sol ? 'onglet Bâtir' : 'onglet Meubles'}).`
+        ? `${DATA.OBJETS[l.article].icone || '🛋️'} ${DATA.OBJETS[l.article].nom}${DATA.OBJETS[l.article].lot ? ` (${DATA.OBJETS[l.article].lot})` : ''} : dans ton inventaire. Pose-le avec 🔨 Construire (${DATA.ATELIER.BLOCS[l.article].sol ? 'onglet Bâtir' : DATA.ATELIER.BLOCS[l.article].dehors ? 'onglet Jardin' : 'onglet Meubles'}).`
         : DATA.OBJETS[l.article].papier
         ? `🧻 ${DATA.OBJETS[l.article].nom} : débloqué. Pose-le avec 🔨 Construire, outil 🧻, en touchant une pièce close.`
         : String(l.article).startsWith('enseigne_')
@@ -166,14 +166,14 @@ function papiersHtml() {
 // nom, leur prix (un lot : le nombre de pièces).
 function decorationsHtml() {
   const A = vue.articles || {}, rangs = ['blanche', 'multicolore', 'etoiles', 'coeurs'];
-  return `<div class="gemmes-papiers">${Object.entries(A).filter(([id]) => id.startsWith('guirlande_') || id.startsWith('cheminee_') || id.startsWith('fontaine_') || id.startsWith('ornement_') || id.startsWith('enseigne_')).map(([id, a]) => {
+  return `<div class="gemmes-papiers">${Object.entries(A).filter(([id]) => id.startsWith('guirlande_') || id.startsWith('cheminee_') || id.startsWith('fontaine_') || id.startsWith('ornement_') || id.startsWith('enseigne_') || vue.articles[id].fete).map(([id, a]) => {
     const ok = vue.solde >= a.prix;
-    const img = id.startsWith('cheminee_') || id.startsWith('fontaine_') || id.startsWith('ornement_') || id.startsWith('enseigne_')
-      ? `<img class="gemmes-${id.startsWith('fontaine_') ? 'fontaine' : id.startsWith('ornement_') ? 'ornement' : id.startsWith('enseigne_') ? 'enseigne' : 'cheminee'}-img" src="assets/meuble_${id}.png" alt="" draggable="false">`
+    const img = id.startsWith('cheminee_') || id.startsWith('fontaine_') || id.startsWith('ornement_') || id.startsWith('enseigne_') || a.fete
+      ? `<img class="gemmes-${id.startsWith('fontaine_') ? 'fontaine' : id.startsWith('ornement_') ? 'ornement' : id.startsWith('enseigne_') ? 'enseigne' : a.fete ? 'ensemble' : 'cheminee'}-img" src="assets/meuble_${id}.png" alt="" draggable="false">`
       : `<span class="gemmes-deco-img" style="--r:${Math.max(0, rangs.indexOf(id.replace('guirlande_', '')))}" aria-hidden="true"></span>`;
     return `<div class="gemmes-papier">
       ${img}
-      <span class="gemmes-rosier-nom">${echapper(a.nom)}</span>
+      <span class="gemmes-rosier-nom">${a.fete ? '🎄 ' : ''}${echapper(a.nom)}${a.fete ? '<br><small>en vente pendant les fêtes seulement</small>' : ''}</span>
       <button type="button" class="btn${ok ? ' primary' : ''}" data-action="gemmes-acheter" data-article="${id}"${!ok || occupe ? ' disabled' : ''}>💎 ${a.prix}</button>
     </div>`;
   }).join('')}</div>

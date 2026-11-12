@@ -170,7 +170,7 @@
               if (M.bloque || M.hauteur < 2) {
                 const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setDepth(p.y + (M.bloque ? 0.9 : M.lit ? 0.75 : 0.6)).setFlipX(!!M.miroir));
                 // (une table de chevet : sa lampe s'allume le soir, comme en bas)
-                if (BLOCS_CARTE.lampeChevet.dessins.includes(M.dessin)) this.etageLampes.push({ img, x, y: p.y - dy - 1 });
+                if (BLOCS_CARTE.lampeChevet.dessins.includes(M.dessin)) this.etageLampes.push({ img, x, y: p.y - dy - 1, dessin: M.dessin });
                 // (une cheminée : son feu s'allume le soir, comme en bas)
                 if (String(M.dessin).startsWith('cheminee_')) this.etageCheminees.push({ img, x, y: p.y - dy - 1 });
                 // (un lit de profil, sur une rangée : on y dort aussi)
