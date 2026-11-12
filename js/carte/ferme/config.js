@@ -317,6 +317,17 @@ const CULTURE_MONTE = 0;
       abatJour: { rayon: 10, teinte: 0xfff0c8, alpha: 0.95, dx: 0, dy: -17 },
       halo: { couleur: 0xffc060, rayon: 16, intensite: 0.08, attenuation: 0.08 },
     },
+    // le feu des cheminées (le meuble cheminee_<matière>, en bas ou à l'étage ; scripts/batiments/cheminees.py ;
+    // chantier.js stepLanterns) : le soir (le voile de l'heure plus sombre que `allume`), ses `images` dansent
+    // (`fps`) dans le foyer, le bas de l'image `dy` px au-dessus du bas de la cheminée ; sa lumière chaude dans
+    // le voile : une large flaque `sol` devant elle, la lueur du `foyer`, qui vacille ; un halo (WebGL)
+    cheminee: {
+      key: 'cheminee_feu', file: 'cheminee_feu.png', frame: { frameWidth: 14, frameHeight: 12 }, images: 4, fps: 8, dy: 6,
+      allume: 0.12, vacille: 0.12,
+      sol: { rayon: 58, aplati: 0.7, teinte: 0xffa860, alpha: 0.95, dx: 0, dy: 4 },
+      foyer: { rayon: 16, teinte: 0xffd090, alpha: 0.95, dx: 0, dy: -12 },
+      halo: { couleur: 0xff9040, rayon: 22, intensite: 0.1, attenuation: 0.08 },
+    },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
     // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
     // murs `sortes` (`vitre` : `dy` px au-dessus du pied du mur) ; sur la face du mur du fond,
@@ -488,6 +499,8 @@ const CULTURE_MONTE = 0;
     'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
     'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3', 'paillasse',
     'lit_double', 'refrigerateur',
+    // (les cheminées de la boutique de gemmes : scripts/batiments/cheminees.py ; leur feu, BLOCS_CARTE.cheminee)
+    'cheminee_pierre', 'cheminee_briques', 'cheminee_marbre',
     // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
     'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',

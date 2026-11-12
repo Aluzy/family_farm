@@ -988,6 +988,36 @@ export const RAW_DATA = {
       "boutique": true,
       "lot": 8
     },
+    "cheminee_pierre": {
+      "nom": "Cheminée en pierre",
+      "icone": "🔥",
+      "prix": 120,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "cheminee_briques": {
+      "nom": "Cheminée en briques",
+      "icone": "🔥",
+      "prix": 120,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "cheminee_marbre": {
+      "nom": "Cheminée en marbre",
+      "icone": "🔥",
+      "prix": 120,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -1815,6 +1845,39 @@ export const RAW_DATA = {
       },
       "guirlande_etoiles": { "nom": "Guirlande d'étoiles", "objet": "guirlande_etoiles", "sur": "mur", "guirlande": "etoiles" },
       "guirlande_coeurs": { "nom": "Guirlande de cœurs", "objet": "guirlande_coeurs", "sur": "mur", "guirlande": "coeurs" },
+      "cheminee_pierre": {
+        "nom": "Cheminée en pierre",
+        "objet": "cheminee_pierre",
+        "meuble": "cheminee_pierre",
+        "dedans": true,
+        "bloque": true,
+        "largeur": 2,
+        "cheminee": true,
+        "piece": "salon",
+        "tourne": "symetrique"
+      },
+      "cheminee_briques": {
+        "nom": "Cheminée en briques",
+        "objet": "cheminee_briques",
+        "meuble": "cheminee_briques",
+        "dedans": true,
+        "bloque": true,
+        "largeur": 2,
+        "cheminee": true,
+        "piece": "salon",
+        "tourne": "symetrique"
+      },
+      "cheminee_marbre": {
+        "nom": "Cheminée en marbre",
+        "objet": "cheminee_marbre",
+        "meuble": "cheminee_marbre",
+        "dedans": true,
+        "bloque": true,
+        "largeur": 2,
+        "cheminee": true,
+        "piece": "salon",
+        "tourne": "symetrique"
+      },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },

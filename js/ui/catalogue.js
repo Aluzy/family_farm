@@ -70,7 +70,8 @@ export const PIECES = [
 ];
 export const pieceDe = (sorte) => {
   const b = DATA.ATELIER.BLOCS[sorte], m = b && b.meuble && DATA.MEUBLES && DATA.MEUBLES[b.meuble];
-  return (m && m.piece) || (b && b.frigo ? 'cuisine' : null);   // (le réfrigérateur : pas au Marché des meubles)
+  // (le réfrigérateur, les meubles de la boutique de gemmes : pas au Marché des meubles ; leur pièce sur leur bloc)
+  return (m && m.piece) || (b && b.piece) || (b && b.frigo ? 'cuisine' : null);
 };
 export const STYLES = () => Object.entries((DATA.STYLES && DATA.STYLES.LISTE) || {}).map(([id, s]) => ({ id, nom: s.nom, icone: s.icone, blocs: new Set(s.blocs || []) }));
 const dansStyle = (style, sorte) => { const st = STYLES().find((x) => x.id === style); return !!(st && st.blocs.has(sorte)); };

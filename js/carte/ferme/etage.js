@@ -80,6 +80,7 @@
         this.etageLits = new Map();      // les couchages de l'étage : case → { img, x, y, dessin }
         this.etageLumieres = [];         // les lanternes et les réverbères de l'étage (chantier.js stepLanterns)
         this.etageLampes = [];           // les lampes de chevet de l'étage (chantier.js stepLanterns)
+        this.etageCheminees = [];        // les cheminées de l'étage (chantier.js stepLanterns)
         this.etageEscaliers = on ? etage.escaliers.slice() : [];
         // le niveau 2 (par l'escalier de l'étage) : ses objets, son emprise, ce qui y arrête
         if (this.etage2Objs) this.etage2Objs.forEach((o) => o.destroy());
@@ -170,6 +171,8 @@
                 const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setDepth(p.y + (M.bloque ? 0.9 : M.lit ? 0.75 : 0.6)).setFlipX(!!M.miroir));
                 // (une table de chevet : sa lampe s'allume le soir, comme en bas)
                 if (M.dessin === BLOCS_CARTE.lampeChevet.dessin) this.etageLampes.push({ img, x, y: p.y - dy - 1 });
+                // (une cheminée : son feu s'allume le soir, comme en bas)
+                if (String(M.dessin).startsWith('cheminee_')) this.etageCheminees.push({ img, x, y: p.y - dy - 1 });
                 // (un lit de profil, sur une rangée : on y dort aussi)
                 if (M.lit) this.etageLits.set(b.case, { img, x, y: p.y - dy - 1, haut: this.textures.getFrame(k).height, dessin: M.dessin, sens: M.sens || 0, variante: M.variante || null, couleurs: M.couleurs || null });
               } else {

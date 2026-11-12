@@ -598,10 +598,14 @@
       const LC = BLOCS_CARTE.lampeChevet, lampes = [];
       for (const e of (this.blocks || new Map()).values()) if (e.dessin === LC.dessin && e.img) lampes.push({ img: e.img, x: e.x, y: e.y - 1, e });
       for (const e of this.etageLampes || []) if (e.img && e.img.active) lampes.push({ img: e.img, x: e.x, y: e.y, e });
+      // (les cheminées, en bas et à l'étage : BLOCS_CARTE.cheminee)
+      const cheminees = [];
+      for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('cheminee_')) cheminees.push({ img: e.img, x: e.x, y: e.y - 1, e });
+      for (const e of this.etageCheminees || []) if (e.img && e.img.active) cheminees.push({ img: e.img, x: e.x, y: e.y, e });
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
       const guirlandes = this.guirlandes && this.guirlandes.size ? [...this.guirlandes.values()] : [];
-      if (!list.length && !lampes.length && !guirlandes.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !this.calecheSprite && !luit) return;
+      if (!list.length && !lampes.length && !guirlandes.length && !cheminees.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !this.calecheSprite && !luit) return;
       if (!this.lanternLights) {
         this.lanternLights = [];
         lueur(this.textures);
@@ -657,6 +661,35 @@
           if (g.img.frame.name !== f) g.img.setFrame(f);
           const L = G.lueur;
           out.push({ key: 'lueur', x: g.x, y: g.y + L.dy, tint: G.teintes[g.coloris] || G.teintes.blanche, alpha: L.alpha * k0 * g.img.alpha, scaleX: L.rayon / R, scaleY: (L.rayon * L.aplati) / R });
+        }
+      }
+      // les cheminées : le soir, le feu danse dans le foyer (ses images, une par une ; fixe en mode réduit) et sa
+      // lumière chaude vacille dans le voile ; le jour, il est éteint (les bûches seules)
+      {
+        const C = BLOCS_CARTE.cheminee, allume = nuit > C.allume && this.textures.exists(C.key);
+        for (const c of cheminees) {
+          const e = c.e;
+          if (!allume) { if (e.feu) e.feu.setVisible(false); if (e.haloFeu) e.haloFeu.setVisible(false); continue; }
+          if (!e.feu || !e.feu.active || e.feu.x !== c.x || e.feu.y !== c.y - C.dy) {
+            if (e.feu) e.feu.destroy();
+            e.feu = this.add.image(c.x, c.y - C.dy, C.key, 0).setOrigin(0.5, 1).setDepth(c.img.depth + 0.01);
+            e.feuK = 1; e.feuT = 0; e.feuF = 0;
+            c.img.once('destroy', () => { if (e.feu) { e.feu.destroy(); e.feu = null; } if (e.haloFeu) { e.haloFeu.destroy(); e.haloFeu = null; } });
+          }
+          if (!calme && (e.feuT -= dt) <= 0) {
+            e.feuT = 1 / C.fps;
+            e.feuF = (e.feuF + 1 + (Math.random() < 0.3 ? 1 : 0)) % C.images;
+            e.feuK = 1 - C.vacille + Math.random() * C.vacille * 2;
+          }
+          e.feu.setVisible(c.img.visible).setAlpha(c.img.alpha).setFrame(calme ? 0 : e.feuF);
+          const k = (calme ? 1 : e.feuK) * Math.min(1, nuit / 0.4) * c.img.alpha, S = C.sol, F = C.foyer;
+          out.push({ key: 'lueur', x: c.x + S.dx, y: c.y + S.dy, tint: S.teinte, alpha: S.alpha * k, scaleX: S.rayon / R, scaleY: (S.rayon * S.aplati) / R });
+          out.push({ key: 'lueur', x: c.x + F.dx, y: c.y + F.dy, tint: F.teinte, alpha: F.alpha * k, scaleX: F.rayon / R, scaleY: F.rayon / R });
+          if (webgl && !e.haloFeu) {
+            const Hh = C.halo;
+            e.haloFeu = this.add.pointlight(c.x + F.dx, c.y + F.dy, Hh.couleur, Hh.rayon, Hh.intensite, Hh.attenuation).setDepth(V.depth + 1);
+          }
+          if (e.haloFeu) e.haloFeu.setVisible(true).setPosition(c.x + F.dx, c.y + F.dy).setAlpha(k);
         }
       }
       // les lampes de chevet : allumées le soir, une lueur chaude qui respire à peine ; leur halo (WebGL)
