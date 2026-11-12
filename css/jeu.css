@@ -4110,3 +4110,20 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
 .amis-fiche-actions { margin-top: 12px; gap: 6px; }
 .amis-fiche-actions .row { display: flex; gap: 6px; }
 .amis-fiche-actions .row .btn { flex: 1; }
+
+/* Le bandeau de l'essai du chantier « l'île à bâtir » (js/ui/village.js, jeu.html?village=1) : discret,
+   en bas à gauche, sous les fenêtres et le bandeau des cookies, sans prendre le toucher. */
+.village-bandeau {
+  position: fixed;
+  left: calc(8px + env(safe-area-inset-left, 0px));
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card, #ebdcf4);
+  color: var(--text);
+  font-size: 0.75rem;
+  opacity: 0.85;
+  pointer-events: none;
+}

@@ -26,6 +26,7 @@
     "projets.json",
     "naturaliste.json",
     "meteo.json",
-    "secrets.json"
+    "secrets.json",
+    "village.json"
   ]
 }

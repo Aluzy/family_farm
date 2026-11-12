@@ -13,7 +13,13 @@ hameaux et leurs habitants, des gisements et des cristaux qui luisent la nuit, d
 au fil des rencontres ([`docs/recit/`](docs/recit/README.md)). Les anciennes autres cartes (la
 ville, le chemin de transition, la montagne, la plage, le train, l'école, l'infra-monde) ont
 été retirées pour faire place au grand monde ; le jeu d'avant est gardé tel quel sur la branche
-`archive/jeu-avant-grand-monde`.
+`archive/jeu-avant-grand-monde`. Le jeu d'avant l'île à bâtir (ci-dessous) le sera sur la branche
+`archive/jeu-avant-ile`.
+
+- **Chantier en cours** : « l'île à bâtir » ([`docs/ile.md`](docs/ile.md), fiches dans
+  [`docs/fiches/ile/`](docs/fiches/ile/README.md)) : une île vierge, un port, des villageois. Il avance
+  derrière le réglage `VILLAGE.ACTIF` (`data/village.json`, éteint : le jeu publié ne change pas) ;
+  `jeu.html?village=1` l'allume pour une nouvelle partie d'essai.
 
 - **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 70)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi, et

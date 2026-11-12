@@ -79,6 +79,24 @@ export function reglagesDuJeu() {
   poserPenalites(PENALITES_DU_JEU);
 }
 
+// Le chantier « l'île à bâtir » (docs/ile.md, fiche I0a) : son code se lit quand DATA.VILLAGE.ACTIF vaut true
+// (js/engine/village.js). Les fichiers tests/engine/village-*.test.mjs tournent avec le réglage forcé à true,
+// tout le fichier (leur processus est le leur : tests/run-tests.mjs) ; les autres avec celui du jeu (false
+// tant que le chantier dure), sauf le temps d'un test posé dans avecVillage (ou avecVillage(fn, false)).
+const VILLAGE_DU_JEU = DATA.VILLAGE.ACTIF;
+export const FICHIER_DU_VILLAGE = /[\\/]village-[^\\/]*\.test\.mjs$/.test(process.argv[1] || '');
+if (FICHIER_DU_VILLAGE) DATA.VILLAGE.ACTIF = true;
+export function avecVillage(fn, actif = true) {
+  const avant = DATA.VILLAGE.ACTIF;
+  DATA.VILLAGE.ACTIF = actif;
+  try {
+    return fn();
+  } finally {
+    DATA.VILLAGE.ACTIF = avant;
+  }
+}
+export { VILLAGE_DU_JEU };
+
 // Un test : test(nom, () => { … }), celui de node:test tel quel (pour que chaque test soit
 // rattaché à son fichier). Tous les tests du moteur sont des fonctions synchrones sans
 // paramètre : node:test les lance dans l'ordre du fichier, une fois le fichier entièrement

@@ -8,7 +8,7 @@
 // chargement, exception hors test) est compté en échec sans arrêter les autres.
 //
 // Usage :
-//   node tests/run-tests.mjs                  tests du moteur (tous les fichiers de tests/engine/)
+//   node tests/run-tests.mjs                  tests du moteur (tous les fichiers de tests/engine/, ceux du chantier de l'île à part)
 //   node tests/run-tests.mjs --tous           toutes les suites (moteur, données, suivi, rapport)
 //   node tests/run-tests.mjs cuisine nuit     seulement les fichiers dont le nom contient « cuisine » ou « nuit »
 //   node tests/run-tests.mjs --grep "Moulin"  seulement les tests dont le nom correspond (expression régulière)
@@ -26,8 +26,13 @@ const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE = join(ICI, '..');
 
 // Suites, dans l'ordre d'affichage.
+// Les tests du chantier « l'île à bâtir » (tests/engine/village-*.test.mjs, docs/ile.md) forment leur
+// propre suite, jouée après les autres : ils tournent avec VILLAGE.ACTIF forcé à true (tests/engine/aide.mjs),
+// la suite du moteur avec le réglage du jeu (false tant que le chantier dure).
+const MOTEUR = readdirSync(join(ICI, 'engine')).filter((f) => f.endsWith('.test.mjs')).sort();
+const DU_VILLAGE = (f) => f.startsWith('village-');
 const SUITES = [
-  { nom: 'moteur', titre: 'tests du moteur', fichiers: readdirSync(join(ICI, 'engine')).filter((f) => f.endsWith('.test.mjs')).sort().map((f) => join(ICI, 'engine', f)) },
+  { nom: 'moteur', titre: 'tests du moteur', fichiers: MOTEUR.filter((f) => !DU_VILLAGE(f)).map((f) => join(ICI, 'engine', f)) },
   { nom: 'données', titre: 'tests des données', fichiers: [join(ICI, 'test-data.mjs')] },
   { nom: 'suivi', titre: 'tests du suivi de session', fichiers: [join(ICI, 'test-telemetry.mjs')] },
   { nom: 'rapport', titre: 'tests du rapport quotidien', fichiers: [join(ICI, 'test-report.mjs')] },
@@ -36,6 +41,7 @@ const SUITES = [
   { nom: 'synchro', titre: 'tests de la synchro en ligne', fichiers: [join(ICI, 'test-synchro.mjs')] },
   { nom: 'console', titre: 'tests de la console d\'administration', fichiers: [join(ICI, 'test-admin.mjs')] },
   { nom: 'boutique', titre: 'tests de la boutique (gemmes, Stripe)', fichiers: [join(ICI, 'test-boutique.mjs')] },
+  { nom: 'village', titre: 'tests du chantier de l\'île (VILLAGE.ACTIF forcé)', fichiers: MOTEUR.filter(DU_VILLAGE).map((f) => join(ICI, 'engine', f)) },
 ];
 
 const args = process.argv.slice(2);
@@ -63,7 +69,7 @@ if (motifs.some((m) => !m)) {
 const nomCourt = (f) => basename(f).replace(/\.test\.mjs$|\.mjs$/, '').replace(/^test-/, '');
 const choisis = SUITES.map((s) => ({
   ...s,
-  fichiers: s.fichiers.filter((f) => (filtres.length ? filtres.some((m) => nomCourt(f).includes(m)) : tous || s.nom === 'moteur')),
+  fichiers: s.fichiers.filter((f) => (filtres.length ? filtres.some((m) => nomCourt(f).includes(m)) : tous || s.nom === 'moteur' || s.nom === 'village')),
 })).filter((s) => s.fichiers.length);
 if (!choisis.length) {
   console.error(`Aucun fichier de tests ne correspond à : ${filtres.join(', ')}.`);

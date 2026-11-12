@@ -1,6 +1,7 @@
 import {
   activeTab, FERME_LINKS, RENDER_THROTTLE_MS, setActiveTab, setEcranFerme, state, tabAvailable,
 } from './store.js';
+import { bandeauVillage } from './village.js';
 import { objectifsARevoir } from '../engine/campaign.js';
 import { renderTestPanel } from './testmode.js';
 import { renderStage, stageUsable } from './stage.js';
@@ -79,6 +80,7 @@ function rendre() {
   renderItemModal();
   renderShopModal();
   renderTestPanel();
+  bandeauVillage(state);
 }
 
 // Rafraîchit tout de suite (après une action du joueur).
