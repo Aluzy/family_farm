@@ -878,6 +878,72 @@ export const RAW_DATA = {
       "invendable": true,
       "boutique": true
     },
+    "papier_peint_fleurettes": {
+      "nom": "Papier peint fleurettes",
+      "icone": "🧻",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "papier": "fleurettes"
+    },
+    "papier_peint_rayures": {
+      "nom": "Papier peint rayures",
+      "icone": "🧻",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "papier": "rayures"
+    },
+    "papier_peint_vichy": {
+      "nom": "Papier peint carreaux vichy",
+      "icone": "🧻",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "papier": "vichy"
+    },
+    "papier_peint_damas": {
+      "nom": "Papier peint damas",
+      "icone": "🧻",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "papier": "damas"
+    },
+    "papier_peint_feuillages": {
+      "nom": "Papier peint feuillages",
+      "icone": "🧻",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "papier": "feuillages"
+    },
+    "papier_peint_etoiles": {
+      "nom": "Papier peint étoiles",
+      "icone": "🧻",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "papier": "etoiles"
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -3786,6 +3852,14 @@ export const RAW_DATA = {
     "TUILES": [12, 24, 40, 60, 84, 112, 144, 180, 220, 264],
     "CHAPITRES_XP": [200, 500, 1000, 2500, 2000, 4000, 8000],
     "CHAPITRE_NIVEAU": [1, 2, 3, 6, 6, 8, 8, 8]
+  },
+  "PAPIERS_PEINTS": {
+    "fleurettes": { "nom": "Fleurettes", "objet": "papier_peint_fleurettes" },
+    "rayures": { "nom": "Rayures", "objet": "papier_peint_rayures" },
+    "vichy": { "nom": "Carreaux vichy", "objet": "papier_peint_vichy" },
+    "damas": { "nom": "Damas", "objet": "papier_peint_damas" },
+    "feuillages": { "nom": "Feuillages", "objet": "papier_peint_feuillages" },
+    "etoiles": { "nom": "Étoiles", "objet": "papier_peint_etoiles" }
   },
   "PALETTES": {
     "bois_miel": ["#3c1e16", "#603620", "#86522e", "#aa7040", "#cc965c"],

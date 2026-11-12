@@ -1,0 +1,192 @@
+# Les papiers peints (data/meubles.json PAPIERS_PEINTS, js/engine/papiers.js) : une image de 16 × 30 par
+# motif, posée par la carte sur la face d'un mur du fond d'une pièce (les 30 px du bas de l'image du mur,
+# assets/murs_hauts.png ; js/carte/ferme/chantier.js syncPapiers). Vue de haut à 45° : la face du mur est
+# droite, éclairée d'en haut à gauche ; sous la corniche, une ombre ; en bas, la plinthe de bois. Les motifs
+# ont une période qui divise 16 : posés côte à côte, les murs s'enchaînent sans couture.
+#
+#   python3 scripts/carte/papiers_peints.py            écrit assets/papiers_peints.png (6 images côte à côte)
+#   python3 scripts/carte/papiers_peints.py --apercu   écrit aussi apercu_papiers_peints.png (agrandi, en mur)
+import json
+import os
+import sys
+
+from PIL import Image
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, '..'))  # scripts/pixel.py
+sys.path.insert(0, HERE)
+from pixel import ASSETS, ROOT  # noqa: E402
+from nuances import bruit, rampe, ton  # noqa: E402
+
+W, H = 16, 30
+PLINTHE = 3                                       # les rangées de la plinthe, en bas
+BOIS = rampe([(54, 26, 18), (96, 54, 32), (134, 82, 46), (170, 112, 64), (204, 150, 92), (232, 196, 140)])
+
+
+def toile():
+    return Image.new('RGBA', (W, H), (0, 0, 0, 255))
+
+
+def finir(im):
+    """L'ombre sous la corniche (les deux rangées du haut), la plinthe de bois en bas (son chant clair,
+    sa face, son ombre sur le sol), un grain léger qui ne dépend que de (x mod 16, y)."""
+    px = im.load()
+    for y in range(H - PLINTHE):
+        for x in range(W):
+            r, g, b, a = px[x, y]
+            k = 0.72 if y == 0 else 0.86 if y == 1 else 1.0
+            k *= 1 + 0.025 * bruit(x, y, 301)
+            px[x, y] = (min(255, round(r * k)), min(255, round(g * k)), min(255, round(b * k)), 255)
+    for x in range(W):
+        px[x, H - PLINTHE] = ton(BOIS, 0.92) + (255,)
+        px[x, H - PLINTHE + 1] = ton(BOIS, 0.55 + 0.04 * bruit(x // 4, 1, 302)) + (255,)
+        px[x, H - 1] = ton(BOIS, 0.30) + (255,)
+    return im
+
+
+def fond(im, R, t):
+    px = im.load()
+    for y in range(H):
+        for x in range(W):
+            px[x, y] = ton(R, t) + (255,)
+
+
+def fleurettes():
+    """Des fleurettes roses et leur feuille sur un fond crème, en quinconce (période 8)."""
+    im = toile()
+    CREME = rampe([(214, 196, 164), (238, 226, 200), (250, 244, 228)])
+    ROSE = rampe([(150, 50, 80), (210, 96, 120), (244, 160, 176), (255, 214, 220)])
+    FEUILLE = rampe([(70, 110, 60), (118, 160, 92)])
+    fond(im, CREME, 0.62)
+    px = im.load()
+    for y0 in range(-4, H, 8):
+        for x0 in range(0, 16, 8):
+            for (cx, cy) in ((x0 + 3, y0 + 3), (x0 + 7, y0 + 7)):
+                for dx, dy, t in ((0, -1, 0.85), (-1, 0, 0.75), (1, 0, 0.55), (0, 1, 0.45), (0, 0, 0.98)):
+                    x, y = (cx + dx) % 16, cy + dy
+                    if 0 <= y < H:
+                        px[x, y] = ton(ROSE, t) + (255,)
+                x, y = (cx + 1) % 16, cy + 1
+                if 0 <= y < H:
+                    px[x, y] = ton(FEUILLE, 0.8) + (255,)
+    return finir(im)
+
+
+def rayures():
+    """Des rayures vert sauge et crème, un filet doré entre elles (période 8)."""
+    im = toile()
+    SAUGE = rampe([(96, 124, 98), (132, 160, 128), (168, 192, 158)])
+    CREME = rampe([(214, 204, 176), (238, 230, 206)])
+    OR = rampe([(170, 130, 60), (226, 190, 110)])
+    px = im.load()
+    for y in range(H):
+        for x in range(W):
+            u = x % 8
+            if u < 4:
+                c = ton(SAUGE, 0.62 - 0.12 * (u == 3) + 0.12 * (u == 0))
+            elif u == 4:
+                c = ton(OR, 0.7)
+            else:
+                c = ton(CREME, 0.7 - 0.2 * (u == 7))
+            px[x, y] = c + (255,)
+    return finir(im)
+
+
+def vichy():
+    """Des carreaux vichy rouges et blancs (période 8) : les bandes croisées plus foncées."""
+    im = toile()
+    ROUGE = rampe([(150, 40, 44), (196, 70, 66), (230, 140, 132), (250, 236, 230)])
+    px = im.load()
+    for y in range(H):
+        for x in range(W):
+            a, b = (x % 8) < 4, (y % 8) < 4
+            t = 0.08 if a and b else 0.45 if a or b else 0.98
+            px[x, y] = ton(ROUGE, t + 0.02 * ((x + y) % 2)) + (255,)
+    return finir(im)
+
+
+def damas():
+    """Un damas : des fleurons dorés sur un bleu nuit profond, en quinconce (période 8 × 10)."""
+    im = toile()
+    BLEU = rampe([(22, 34, 62), (36, 54, 92), (52, 74, 120)])
+    OR = rampe([(120, 86, 34), (182, 140, 64), (226, 190, 110), (250, 228, 168)])
+    fond(im, BLEU, 0.55)
+    px = im.load()
+    fleuron = ['..#..', '.###.', '##.##', '.###.', '..#..', '..#..']
+    for y0 in range(-6, H, 10):
+        for x0, dy in ((0, 0), (8, 5)):
+            for j, ligne in enumerate(fleuron):
+                for i, ch in enumerate(ligne):
+                    if ch != '#':
+                        continue
+                    x, y = (x0 + 1 + i) % 16, y0 + dy + j
+                    if 0 <= y < H:
+                        px[x, y] = ton(OR, 0.85 - 0.12 * i / 4 - 0.08 * j / 5) + (255,)
+    return finir(im)
+
+
+def feuillages():
+    """Des brins de feuillage vert sur un fond vert d'eau pâle, en biais (période 8)."""
+    im = toile()
+    PALE = rampe([(196, 214, 196), (222, 234, 218)])
+    VERT = rampe([(46, 92, 60), (76, 132, 82), (120, 170, 110), (170, 204, 150)])
+    fond(im, PALE, 0.6)
+    px = im.load()
+    for y0 in range(-8, H, 8):
+        for x0 in (0, 8):
+            for k in range(6):                         # la tige, en biais
+                x, y = (x0 + k) % 16, y0 + 6 - k
+                if 0 <= y < H:
+                    px[x, y] = ton(VERT, 0.25) + (255,)
+            for (dx, dy) in ((1, 3), (3, 1), (2, 5), (4, 3)):   # les feuilles
+                for (ex, ey, t) in ((0, 0, 0.75), (1, 0, 0.55), (0, 1, 0.45)):
+                    x, y = (x0 + dx + ex) % 16, y0 + dy + ey
+                    if 0 <= y < H:
+                        px[x, y] = ton(VERT, t) + (255,)
+    return finir(im)
+
+
+def etoiles():
+    """Des étoiles jaunes et des points sur un bleu de nuit (période 8 × 10)."""
+    im = toile()
+    NUIT = rampe([(20, 26, 58), (34, 44, 92), (52, 64, 124)])
+    JAUNE = rampe([(200, 160, 60), (246, 214, 110), (255, 246, 200)])
+    fond(im, NUIT, 0.5)
+    px = im.load()
+    for y0 in range(-6, H, 10):
+        for x0, dy in ((0, 0), (8, 5)):
+            cx, cy = x0 + 3, y0 + dy + 3
+            for dx, dyy, t in ((0, 0, 1.0), (-1, 0, 0.6), (1, 0, 0.6), (0, -1, 0.7), (0, 1, 0.45)):
+                x, y = (cx + dx) % 16, cy + dyy
+                if 0 <= y < H:
+                    px[x, y] = ton(JAUNE, t) + (255,)
+            x, y = (x0 + 6) % 16, y0 + dy + 7
+            if 0 <= y < H:
+                px[x, y] = ton(JAUNE, 0.35) + (255,)
+    return finir(im)
+
+
+DESSINS = {'fleurettes': fleurettes, 'rayures': rayures, 'vichy': vichy, 'damas': damas, 'feuillages': feuillages, 'etoiles': etoiles}
+
+
+def main():
+    motifs = list(json.load(open(os.path.join(ROOT, 'data', 'meubles.json'), encoding='utf-8'))['PAPIERS_PEINTS'])
+    manque = [m for m in motifs if m not in DESSINS]
+    if manque:
+        raise SystemExit(f'pas de dessin pour : {", ".join(manque)} (data/meubles.json PAPIERS_PEINTS)')
+    planche = Image.new('RGBA', (W * len(motifs), H), (0, 0, 0, 0))
+    for k, m in enumerate(motifs):
+        planche.alpha_composite(DESSINS[m](), (k * W, 0))
+    planche.save(os.path.join(ASSETS, 'papiers_peints.png'))
+    print(f'assets/papiers_peints.png : {len(motifs)} motifs de {W} × {H}')
+    if '--apercu' in sys.argv:
+        ap = Image.new('RGBA', (len(motifs) * (W * 3 + 4), H), (40, 30, 20, 255))
+        for k, m in enumerate(motifs):
+            im = DESSINS[m]()
+            for j in range(3):
+                ap.alpha_composite(im, (k * (W * 3 + 4) + j * W, 0))
+        ap.resize((ap.width * 6, ap.height * 6), Image.NEAREST).save(os.path.join(ROOT, 'apercu_papiers_peints.png'))
+
+
+if __name__ == '__main__':
+    main()

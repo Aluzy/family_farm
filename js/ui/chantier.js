@@ -28,6 +28,7 @@ import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { iconeBloc } from './icone-bloc.js';
 import { closeModal, openModal } from './modal.js';
 import { styleDe, styleInfo } from '../engine/styles.js';
+import { AUCUN, papiersDebloques } from '../engine/papiers.js';
 import { surCase as surCaseMoteur } from '../engine/commandes.js';
 import { commandesJouees, defaireCommandes, executer } from './commandes.js';
 import { itemsText } from './common.js';
@@ -248,6 +249,10 @@ export function buildChipHtml() {
     + (sensEnMain ? `<button type="button" class="build-piece build-sens" data-action="build-sens" aria-label="Le prochain se posera ${SENS_NOMS[sensPose]} : le tourner" title="Le prochain se posera ${SENS_NOMS[sensPose]} (touche pour le tourner)"><span aria-hidden="true">${FLECHES[sensPose]}</span></button>` : '') : '';
   // l'outil 🎨 (A-3) : allumé, un appui sur un meuble posé qui a plusieurs couleurs le repeint de la suivante
   const outilPeindre = auSol ? `<button type="button" class="build-piece build-peindre${modePeindre ? ' on' : ''}" data-action="build-peindre" aria-pressed="${modePeindre}" aria-label="Repeindre : touche un meuble posé pour changer sa couleur" title="Repeindre : touche un meuble posé pour changer sa couleur"><span aria-hidden="true">🎨</span></button>` : '';
+  // l'outil 🧻 (les papiers peints) : en bas et à l'étage (niveau 1) ; allumé, le bouton du motif à poser
+  const tapisPossible = niveau() <= 1;
+  const outilTapis = tapisPossible ? `<button type="button" class="build-piece build-tapisser${modeTapis ? ' on' : ''}" data-action="build-tapisser" aria-pressed="${modeTapis}" aria-label="Papier peint : touche une pièce close pour tapisser ses murs" title="Papier peint : touche une pièce close pour tapisser ses murs"><span aria-hidden="true">🧻</span></button>`
+    + (modeTapis ? `<button type="button" class="build-piece build-motif" data-action="build-motif" aria-label="Motif : ${nomMotif(motifCourant())}. En changer" title="Motif : ${nomMotif(motifCourant())} (touche pour en changer)"><span class="build-motif-img${motifCourant() === AUCUN ? ' aucun' : ''}" style="--f:${Math.max(0, Object.keys(DATA.PAPIERS_PEINTS || {}).indexOf(motifCourant()))}" aria-hidden="true">${motifCourant() === AUCUN ? '✖' : ''}</span></button>` : '') : '';
   const outilPiece = murEnMain ? `<button type="button" class="build-piece${modePiece ? ' on' : ''}" data-action="build-piece" aria-pressed="${modePiece}" aria-label="Outil pièce : glisser d'un coin à l'autre pour poser tous les murs d'une pièce" title="Outil pièce : glisse d'un coin à l'autre pour poser les murs du pourtour"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="7" y="11.5" width="2.6" height="2.6" fill="#fbd98c"/></svg></button>` : '';
   const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}><span class="build-level-titre" aria-hidden="true">Niveau</span>${niveaux}</div></div>`;
   // la pose d'un meuble : ✔️ le pose là où est son aperçu, ❌ sort de ce mode
@@ -256,7 +261,7 @@ export function buildChipHtml() {
   // les outils (annuler, la gomme, l'outil pièce, le niveau) : une petite fenêtre à part, qu'un
   // appui long rend déplaçable (outilsPos : où on l'a laissée)
   const pos = outilsPos ? ` style="left:${outilsPos.x}px;top:${outilsPos.y}px;right:auto"` : '';
-  const outils = `<div class="build-outils${outilsDeplace ? ' deplace' : ''}" role="toolbar" aria-label="Outils de construction (appui long : la déplacer)" title="Appui long : déplacer"${pos}><span class="build-outils-prise" aria-hidden="true">⠿</span>${annuler}${gomme}${outilTourner}${outilPeindre}${outilPiece}${choixNiveau}</div>`;
+  const outils = `<div class="build-outils${outilsDeplace ? ' deplace' : ''}" role="toolbar" aria-label="Outils de construction (appui long : la déplacer)" title="Appui long : déplacer"${pos}><span class="build-outils-prise" aria-hidden="true">⠿</span>${annuler}${gomme}${outilTourner}${outilPeindre}${outilTapis}${outilPiece}${choixNiveau}</div>`;
   return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases">${filtresHtml(o)}<div class="build-bar-grid">${cases || '<span class="build-vide">Rien avec ces filtres.</span>'}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons"><button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>${outils}`;
 }
 
@@ -299,6 +304,20 @@ if (typeof document !== 'undefined') {
   document.addEventListener('click', (e) => {
     if (sansClic && e.target.closest && e.target.closest('.build-level-btn')) { sansClic = false; e.stopPropagation(); e.preventDefault(); }
   }, true);
+}
+
+// Les papiers peints : pose le motif choisi (ou le retire) sur les murs de la pièce close de la case `c`,
+// au niveau où l'on construit (en bas, ou l'étage).
+function tapisser(c) {
+  const n = niveau();
+  if (n > 1) { notify('Le papier peint se pose en bas ou à l\'étage.'); return; }
+  const motif = motifCourant();
+  const r = executer('piece.tapisser', { case: c, motif, niveau: n });
+  if (!r.ok) { notify(r.error); return; }
+  noter(r.inverses);
+  notify(motif === AUCUN ? '🧻 Papier peint retiré.' : `🧻 Papier peint « ${nomMotif(motif)} » posé : ${r.murs.length} pan${r.murs.length > 1 ? 's' : ''} de mur.`, { duree: CONSEIL_MS });
+  persistState();
+  refresh();
 }
 
 // A-3 : repeindre le meuble de la case `c` (une de ses cases ; `etage` : à l'étage) de sa couleur suivante.
@@ -519,6 +538,13 @@ let sensPose = 0, modeTourner = false;
 // (modePeindre) : un appui sur un meuble posé le repeint de sa couleur suivante.
 const variantePose = {};
 let modePeindre = false;
+// Les papiers peints (js/engine/papiers.js) : l'outil 🧻 allumé (modeTapis), un appui dans une pièce close pose
+// sur ses murs le motif choisi (motifTapis : un motif débloqué, ou AUCUN : le retirer) ; le bouton du motif
+// passe au suivant.
+let modeTapis = false, motifTapis = null;
+const motifsTapis = () => [...papiersDebloques(state), AUCUN];
+const motifCourant = () => (motifsTapis().includes(motifTapis) ? motifTapis : motifsTapis()[0]);
+const nomMotif = (m) => (m === AUCUN ? 'retirer le papier' : (DATA.PAPIERS_PEINTS[m] || {}).nom || m);
 const varianteDe = (sorte) => (variantesBloc(sorte).some((v) => v.id === variantePose[sorte]) ? variantePose[sorte] : null);
 // Le sens du prochain meuble, s'il tourne (sinon 0).
 const sensDe = (sorte) => (tourneBloc(sorte) ? sensPose : 0);
@@ -645,7 +671,7 @@ function blocDuNiveau() {
 registerActions({
   'build-toggle': () => {
     onglet = null; bulle = null;
-    if (buildMode) { poseMeuble = null; histoire = []; modeGomme = false; modeTourner = false; modePeindre = false; setBuildMode(null); refresh(); return; }
+    if (buildMode) { poseMeuble = null; histoire = []; modeGomme = false; modeTourner = false; modePeindre = false; modeTapis = false; setBuildMode(null); refresh(); return; }
     if (!chantierOuvert()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     if (stageWindow) setStageWindow(null);    // (depuis le menu latéral : on revient sur la carte)
@@ -768,6 +794,8 @@ registerActions({
     if (!buildMode) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const c = Number(target.dataset.case);
+    // (l'outil 🧻 allumé : un appui dans une pièce close tapisse ses murs du motif choisi)
+    if (modeTapis) { tapisser(c); return; }
     // au niveau 1, un sol en main : le poser (un autre sol : le changer), ou reprendre le même
     const genre = niveau() ? genreCase(c) : null;
     if (genre === 'sol') {
@@ -898,7 +926,7 @@ registerActions({
   'build-gomme': () => {
     if (!buildMode) return;
     modeGomme = !modeGomme;
-    if (modeGomme) { modeTourner = false; modePeindre = false; }
+    if (modeGomme) { modeTourner = false; modePeindre = false; modeTapis = false; }
     if (modeGomme) notify('🧽 Gomme : glisse sur des blocs de cette sorte pour les reprendre (ils reviennent dans l\'inventaire).', { duree: CONSEIL_MS * 2 });
     refresh();
   },
@@ -1012,14 +1040,38 @@ registerActions({
   'build-tourner': () => {
     if (!buildMode) return;
     modeTourner = !modeTourner;
-    if (modeTourner) { modeGomme = false; modePeindre = false; notify('↻ Touche un meuble posé pour le tourner d\'un quart de tour, en bas comme à l\'étage. Les tableaux, accrochés au mur, le suivent.', { duree: CONSEIL_MS * 2 }); }
+    if (modeTourner) { modeGomme = false; modePeindre = false; modeTapis = false; notify('↻ Touche un meuble posé pour le tourner d\'un quart de tour, en bas comme à l\'étage. Les tableaux, accrochés au mur, le suivent.', { duree: CONSEIL_MS * 2 }); }
     refresh();
   },
   // L'outil 🎨 de la barre (A-3) : allumé, un appui sur un meuble posé le repeint.
   'build-peindre': () => {
     if (!buildMode) return;
     modePeindre = !modePeindre;
-    if (modePeindre) { modeGomme = false; modeTourner = false; notify('🎨 Touche un meuble posé pour changer sa couleur (chaise, table, canapé, lit, commode, bac à fleurs). C\'est gratuit.', { duree: CONSEIL_MS * 2 }); }
+    if (modePeindre) { modeGomme = false; modeTourner = false; modeTapis = false; notify('🎨 Touche un meuble posé pour changer sa couleur (chaise, table, canapé, lit, commode, bac à fleurs). C\'est gratuit.', { duree: CONSEIL_MS * 2 }); }
+    refresh();
+  },
+  // L'outil 🧻 de la barre : allumé, un appui dans une pièce close tapisse ses murs (les papiers peints achetés
+  // dans la boutique 💎).
+  'build-tapisser': () => {
+    if (!buildMode) return;
+    if (!modeTapis && !papiersDebloques(state).length) {
+      notify('🧻 Les papiers peints s\'achètent avec des gemmes 💎 (sur ta carte de joueur, sous tes pièces) : un motif acheté se pose ensuite dans toutes les pièces que tu veux, gratuitement.', { duree: CONSEIL_MS * 2 });
+      return;
+    }
+    modeTapis = !modeTapis;
+    if (modeTapis) {
+      modeGomme = false; modeTourner = false; modePeindre = false;
+      motifTapis = motifCourant();
+      notify(`🧻 Touche une case d'une pièce close : ses murs prennent le papier « ${nomMotif(motifTapis)} ». Le bouton d'à côté change de motif.`, { duree: CONSEIL_MS * 2 });
+    }
+    refresh();
+  },
+  // Le motif suivant (le dernier : retirer le papier).
+  'build-motif': () => {
+    if (!modeTapis) return;
+    const M = motifsTapis();
+    motifTapis = M[(M.indexOf(motifCourant()) + 1) % M.length];
+    notify(`🧻 ${motifTapis === AUCUN ? 'Retirer le papier peint' : `Papier peint : ${nomMotif(motifTapis)}`}`, { duree: CONSEIL_MS });
     refresh();
   },
   // 🎨 dans la pose d'un meuble : sa couleur suivante (l'aperçu la montre ; il se posera ainsi).

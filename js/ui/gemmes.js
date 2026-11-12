@@ -1,4 +1,4 @@
-// Les gemmes (jeu en ligne) : les gemmes 💎 et ce qu'elles achètent (les rosiers grimpants).
+// Les gemmes (jeu en ligne) : les gemmes 💎 et ce qu'elles achètent (les rosiers grimpants, les papiers peints).
 //
 // - Connecté (⚙️ Options › Jeu en ligne), la carte du joueur montre son solde de gemmes, sous les pièces : un
 //   appui ouvre la boutique. Le solde est sur le serveur (worker/src/boutique.mjs), jamais dans la partie.
@@ -11,9 +11,11 @@
 //   l'inventaire de la partie solo (il se pose ensuite avec 🔨 Construire, onglet Jardin, sur la face d'un mur
 //   côté jardin), puis confirme la livraison. Les livraisons déjà reçues sont notées sur l'appareil (jamais deux
 //   fois) ; dans un monde partagé, elles attendent le retour dans sa ferme.
+// - Acheter un papier peint (40 💎) : livré de même, son objet reste dans l'inventaire ; le motif est débloqué pour
+//   toujours, posé et retiré à volonté avec l'outil 🧻 de 🔨 Construire, dans les pièces closes (js/engine/papiers.js).
 // - Mode test (une clé de test de Stripe) : un bandeau le dit, avec la carte de test de Stripe.
 
-import { addItem } from '../engine/index.js';
+import { addItem, countItem } from '../engine/index.js';
 import { DATA } from '../engine/catalog.js';
 import { registerActions } from './actions.js';
 import { appelServeur, compteGarde, quandConnecte } from './compte.js';
@@ -30,7 +32,7 @@ const echapper = (t) => String(t ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&am
 const euros = (c) => (c / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
 let vue = null;            // la dernière réponse du serveur : { ouverte, mode, packs, articles, solde, aLivrer }
-let ecran = 'gemmes';      // l'onglet ouvert : 'gemmes' ou 'rosiers'
+let ecran = 'gemmes';      // l'onglet ouvert : 'gemmes', 'rosiers' ou 'papiers'
 let choix = null;          // le pack choisi (l'étape du paiement)
 let question = null;       // la question réservée aux adultes : { a, b }
 let occupe = false, erreur = '';
@@ -70,7 +72,9 @@ async function livrer() {
       if (!DATA.OBJETS[l.article]) continue;
       addItem(state, l.article, 1);
       deja.add(l.id);
-      notify(`🌹 ${DATA.OBJETS[l.article].nom} : dans ton inventaire. Pose-le avec 🔨 Construire (onglet Jardin), sur un mur côté jardin.`, { duree: 7000 });
+      notify(DATA.OBJETS[l.article].papier
+        ? `🧻 ${DATA.OBJETS[l.article].nom} : débloqué. Pose-le avec 🔨 Construire, outil 🧻, en touchant une pièce close.`
+        : `🌹 ${DATA.OBJETS[l.article].nom} : dans ton inventaire. Pose-le avec 🔨 Construire (onglet Jardin), sur un mur côté jardin.`, { duree: 7000 });
     }
     faits.push(l.id);
   }
@@ -108,7 +112,7 @@ function paiementHtml() {
 
 function rosiersHtml() {
   const A = vue.articles || {};
-  return `<div class="gemmes-rosiers">${Object.entries(A).map(([id, a]) => {
+  return `<div class="gemmes-rosiers">${Object.entries(A).filter(([id]) => id.startsWith('rosier_')).map(([id, a]) => {
     const f = COLORIS.indexOf(String(id).replace('rosier_', ''));
     const ok = vue.solde >= a.prix;
     return `<div class="gemmes-rosier">
@@ -118,6 +122,24 @@ function rosiersHtml() {
     </div>`;
   }).join('')}</div>
   <p class="gemmes-aide">Un rosier acheté arrive dans ton inventaire : pose-le avec 🔨 Construire (onglet Jardin), sur la face d'un mur côté jardin. Il grimpe sur toute la hauteur du mur.</p>`;
+}
+
+// Les papiers peints : leur échantillon (assets/papiers_peints.png), leur nom, leur prix ; un motif déjà débloqué
+// (son objet dans l'inventaire, ou en route) ne se rachète pas.
+function papiersHtml() {
+  const A = vue.articles || {}, motifs = Object.keys(DATA.PAPIERS_PEINTS || {});
+  const enRoute = new Set((vue.aLivrer || []).map((l) => l.article));
+  return `<div class="gemmes-papiers">${Object.entries(A).filter(([id]) => id.startsWith('papier_peint_')).map(([id, a]) => {
+    const f = motifs.findIndex((m) => DATA.PAPIERS_PEINTS[m].objet === id);
+    const a_deja = countItem(state, id) > 0 || enRoute.has(id);
+    const ok = !a_deja && vue.solde >= a.prix;
+    return `<div class="gemmes-papier">
+      <span class="gemmes-papier-img" style="--f:${Math.max(0, f)}" aria-hidden="true"></span>
+      <span class="gemmes-rosier-nom">${echapper(a.nom)}</span>
+      <button type="button" class="btn${ok ? ' primary' : ''}" data-action="gemmes-acheter" data-article="${id}"${!ok || occupe ? ' disabled' : ''}>${a_deja ? '✓ Débloqué' : `💎 ${a.prix}`}</button>
+    </div>`;
+  }).join('')}</div>
+  <p class="gemmes-aide">Un papier peint acheté est débloqué pour toujours : avec 🔨 Construire, l'outil 🧻, touche une pièce close et tous ses murs du fond le prennent, en bas comme à l'étage. Le changer ou le retirer est gratuit.</p>`;
 }
 
 function contenu() {
@@ -130,8 +152,9 @@ function contenu() {
     <div class="gemmes-onglets" role="tablist">
       <button type="button" role="tab" aria-selected="${ecran === 'gemmes'}" class="gemmes-onglet${ecran === 'gemmes' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="gemmes">💎 Gemmes</button>
       <button type="button" role="tab" aria-selected="${ecran === 'rosiers'}" class="gemmes-onglet${ecran === 'rosiers' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="rosiers">🌹 Rosiers grimpants</button>
+      <button type="button" role="tab" aria-selected="${ecran === 'papiers'}" class="gemmes-onglet${ecran === 'papiers' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="papiers">🧻 Papiers peints</button>
     </div>
-    ${ecran === 'gemmes' ? packsHtml() + paiementHtml() : rosiersHtml()}
+    ${ecran === 'gemmes' ? packsHtml() + paiementHtml() : ecran === 'papiers' ? papiersHtml() : rosiersHtml()}
     ${erreur ? `<p class="gemmes-erreur" role="alert">${echapper(erreur)}</p>` : ''}`;
 }
 
@@ -203,7 +226,7 @@ async function retourPaiement() {
 
 registerActions({
   'gemmes-ouvrir': () => ouvrirGemmes(),
-  'gemmes-onglet': (el) => { ecran = el.dataset.ecran === 'rosiers' ? 'rosiers' : 'gemmes'; erreur = ''; dessiner(); },
+  'gemmes-onglet': (el) => { ecran = ['rosiers', 'papiers'].includes(el.dataset.ecran) ? el.dataset.ecran : 'gemmes'; erreur = ''; dessiner(); },
   'gemmes-pack': (el) => { choix = el.dataset.pack; erreur = ''; reponse = ''; coche = false; nouvelleQuestion(); dessiner(); },
   'gemmes-payer': () => payer(),
   'gemmes-acheter': (el) => acheter(el.dataset.article),

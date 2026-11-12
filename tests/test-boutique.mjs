@@ -39,7 +39,8 @@ function faussesApi(id = SESSION) {
 test('boutique : le mode vient de la clé (test, live, clé restreinte) ; sans clé ni secret, fermée', () => {
   eq([modeStripe({ STRIPE_SECRET_KEY: 'sk_test_x' }), modeStripe({ STRIPE_SECRET_KEY: 'rk_live_x' }), modeStripe({ STRIPE_SECRET_KEY: 'pk_test_x' }), modeStripe({})], ['test', 'live', null, null]);
   eq(BOUTIQUE.PACKS, { petit: { gemmes: 200, centimes: 199 }, moyen: { gemmes: 550, centimes: 499 }, grand: { gemmes: 1200, centimes: 999 } }, 'les prix validés');
-  for (const a of Object.values(BOUTIQUE.ARTICLES)) eq(a.prix, 25, 'un rosier : 25 gemmes');
+  for (const [id, a] of Object.entries(BOUTIQUE.ARTICLES)) eq(a.prix, id.startsWith('papier_peint_') ? 40 : 25, id.startsWith('papier_peint_') ? 'un papier peint : 40 gemmes' : 'un rosier : 25 gemmes');
+  eq(Object.keys(BOUTIQUE.ARTICLES).filter((id) => id.startsWith('papier_peint_')).length, 6, 'six papiers peints');
 });
 
 test('boutique : la signature de Stripe (v1, HMAC SHA-256 de « t.corps »), l\'horodatage à 5 minutes près', async () => {

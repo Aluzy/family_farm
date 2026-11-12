@@ -120,6 +120,7 @@ import {
   blocAt, blocDessus, casesCouvertes, deplacerBloc, hauteurPile, matiereDessus, poserBloc, rehausser,
   peindreBloc, reprendreBloc, sensBloc, solAt, basculerPortail, tournerBloc,
 } from './blocs.js';
+import { AUCUN, tapisserMurs, tapisserPiece } from './papiers.js';
 import { deplacerEtage, dessusEtage, etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
 import { harvest, hoe, plant, water } from './crops.js';
 import { harvestAll, plantAll, setSemis, upgradeRobotBattery, waterAll } from './automation.js';
@@ -184,6 +185,12 @@ const CONTROLES = {
   mode: (v) => typeof v === 'string' && /^[a-z_]{1,20}$/.test(v),
   fleur: (v) => typeof v === 'string' && !!(DATA.BACS && DATA.BACS.FLEURS[v]),
   quantite: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e6,   // (0 : le moteur dit pourquoi)
+  // les papiers peints (js/engine/papiers.js) : un motif, ou « aucun » ; le niveau 0 (en bas) ou 1 (l'étage) ;
+  // des murs et leur motif (l'annulation : { [case du mur]: motif | aucun }, 400 au plus)
+  motif: (v) => v === AUCUN || (typeof v === 'string' && !!(DATA.PAPIERS_PEINTS || {})[v]),
+  niveauPapier: (v) => v === 0 || v === 1,
+  murs: (v) => !!v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length > 0 && Object.keys(v).length <= 400
+    && Object.entries(v).every(([k, m]) => /^\d{1,7}$/.test(k) && (m === AUCUN || (typeof m === 'string' && !!(DATA.PAPIERS_PEINTS || {})[m]))),
 };
 
 export const COMMANDES = {
@@ -275,6 +282,23 @@ export const COMMANDES = {
       const r = peindreBloc(state, c, variante);
       if (!r.ok) return r;
       return { ...r, inverses: [cmd('bloc.peindre', { case: r.case, variante: r.avant })] };
+    },
+  },
+  // les papiers peints : poser un motif (ou « aucun ») sur les murs d'une pièce close ; l'annulation remet ceux d'avant
+  'piece.tapisser': {
+    args: { case: 'case', motif: 'motif', niveau: 'niveauPapier' },
+    executer(state, { case: c, motif, niveau }) {
+      const r = tapisserPiece(state, c, motif, niveau);
+      if (!r.ok) return r;
+      return { ...r, inverses: [cmd('murs.tapisser', { murs: r.avant, niveau })] };
+    },
+  },
+  'murs.tapisser': {
+    args: { murs: 'murs', niveau: 'niveauPapier' },
+    executer(state, { murs, niveau }) {
+      const r = tapisserMurs(state, murs, niveau);
+      if (!r.ok) return r;
+      return { ...r, inverses: [cmd('murs.tapisser', { murs: r.avant, niveau })] };
     },
   },
   'mur.rehausser': {

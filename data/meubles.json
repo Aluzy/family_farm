@@ -21,6 +21,20 @@
     "Les tissus ont 9 tons : leurs 3 tons d'origine (les dessins anciens) et 6 tons interpolés de la même façon pour chaque tissu",
     "(un plus sombre, deux intermédiaires, trois reflets), pour les dessins nuancés (le lit double : scripts/batiments/meubles.py)."
   ],
+  "//PAPIERS_PEINTS": [
+    "Les papiers peints (la boutique de gemmes : worker/src/boutique.mjs ARTICLES, 40 💎 chacun) : un motif acheté est débloqué",
+    "pour toujours (son objet reste dans l'inventaire) ; dans Construire, l'outil 🧻 le pose sur les murs d'une pièce close (la face",
+    "de ses murs du fond, tournée vers la pièce), en bas ou à l'étage, et le retire, gratuitement (js/engine/papiers.js). L'ordre : celui",
+    "des images de assets/papiers_peints.png (scripts/carte/papiers_peints.py)."
+  ],
+  "PAPIERS_PEINTS": {
+    "fleurettes": { "nom": "Fleurettes", "objet": "papier_peint_fleurettes" },
+    "rayures": { "nom": "Rayures", "objet": "papier_peint_rayures" },
+    "vichy": { "nom": "Carreaux vichy", "objet": "papier_peint_vichy" },
+    "damas": { "nom": "Damas", "objet": "papier_peint_damas" },
+    "feuillages": { "nom": "Feuillages", "objet": "papier_peint_feuillages" },
+    "etoiles": { "nom": "Étoiles", "objet": "papier_peint_etoiles" }
+  },
   "PALETTES": {
     "bois_miel": ["#3c1e16", "#603620", "#86522e", "#aa7040", "#cc965c"],
     "bois_noyer": ["#2c1810", "#4a2a1a", "#66402a", "#845a3c", "#a27654"],

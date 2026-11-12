@@ -1,5 +1,5 @@
 // La boutique du jeu en ligne : les gemmes (💎), achetées avec de l'argent réel par Stripe Checkout, et
-// ce qu'elles achètent (les rosiers grimpants). Tout se tient ici, sur le serveur : le solde de gemmes, les
+// ce qu'elles achètent (les rosiers grimpants, les papiers peints). Tout se tient ici, sur le serveur : le solde de gemmes, les
 // paiements et les achats sont dans la base du Durable Object Comptes (une partie solo, sur l'appareil, se
 // modifie à la main : elle ne garde jamais de gemmes). Un compte est nécessaire pour acheter.
 //
@@ -37,6 +37,13 @@ export const BOUTIQUE = {
     rosier_rouge: { prix: 25, nom: 'Rosier grimpant rouge' },
     rosier_blanc: { prix: 25, nom: 'Rosier grimpant blanc' },
     rosier_jaune: { prix: 25, nom: 'Rosier grimpant jaune' },
+    // les papiers peints : un motif acheté est débloqué pour toujours (js/engine/papiers.js)
+    papier_peint_fleurettes: { prix: 40, nom: 'Papier peint fleurettes' },
+    papier_peint_rayures: { prix: 40, nom: 'Papier peint rayures' },
+    papier_peint_vichy: { prix: 40, nom: 'Papier peint carreaux vichy' },
+    papier_peint_damas: { prix: 40, nom: 'Papier peint damas' },
+    papier_peint_feuillages: { prix: 40, nom: 'Papier peint feuillages' },
+    papier_peint_etoiles: { prix: 40, nom: 'Papier peint étoiles' },
   },
   TOLERANCE_S: 300,          // l'âge maximal d'une notification de Stripe (5 minutes, comme ses bibliothèques)
   PAIEMENTS_PAR_HEURE: 10,   // paiements ouverts au plus par compte en une heure
