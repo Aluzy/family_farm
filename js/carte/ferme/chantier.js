@@ -505,6 +505,33 @@
       for (const [c, e] of M) if (!seen.has(c)) { e.img.destroy(); M.delete(c); }
     },
 
+    // Les guirlandes lumineuses (modèle.guirlandes : [{ case, coloris }], la case de leur mur) : un segment en
+    // haut de la face extérieure du mur, au bloc le plus haut (BLOCS_CARTE.guirlandes.dy px sous le haut de sa
+    // face), juste devant lui ; il s'efface avec ce bloc (stepMurs : img.tableau). Le soir, stepLanterns les
+    // allume (leurs images allumées, leur lueur).
+    syncGuirlandes(list) {
+      if (!this.guirlandes) this.guirlandes = new Map();
+      const G = BLOCS_CARTE.guirlandes, M = this.guirlandes, cols = this.grid.cols, seen = new Set(), dy = BLOCS_CARTE.etage.dy;
+      if (!this.textures.exists(G.key)) return;
+      const hFace = dy;   // (l'image d'un mur : son dessus, puis sa face de dy px en bas)
+      for (const t of list || []) {
+        const mur = this.blocks && this.blocks.get(t.case);
+        const h = (mur && mur.hauteur) || 1, rang = G.coloris[t.coloris] || 0, cle = rang + ':' + h;
+        seen.add(t.case);
+        let e = M.get(t.case);
+        if (e && e.cle !== cle) { e.img.destroy(); e = null; }
+        if (!e) {
+          const x = (t.case % cols) * T + T / 2, bas = (Math.floor(t.case / cols) + 1) * T - dy * (h - 1);
+          const y = bas - hFace + G.dy;
+          const d = mur ? mur.img.depth : bas;
+          e = { cle, coloris: t.coloris, base: rang * 3, x, y, img: this.add.image(x, y, G.key, rang * 3).setOrigin(0.5, 0).setDepth(d + G.dz + 0.01 * (h - 1)) };
+          M.set(t.case, e);
+        }
+        if (mur) { const m = h > 1 ? (mur.hauts || [])[h - 2] : mur.img; if (m) m.tableau = e.img; }
+      }
+      for (const [c, e] of M) if (!seen.has(c)) { e.img.destroy(); M.delete(c); }
+    },
+
     syncGrimpants(list) {
       if (!this.grimpants) this.grimpants = new Map();
       const G = BLOCS_CARTE.grimpants, M = this.grimpants, cols = this.grid.cols, seen = new Set(), dy = BLOCS_CARTE.etage.dy;
@@ -573,7 +600,8 @@
       for (const e of this.etageLampes || []) if (e.img && e.img.active) lampes.push({ img: e.img, x: e.x, y: e.y, e });
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
-      if (!list.length && !lampes.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !this.calecheSprite && !luit) return;
+      const guirlandes = this.guirlandes && this.guirlandes.size ? [...this.guirlandes.values()] : [];
+      if (!list.length && !lampes.length && !guirlandes.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !this.calecheSprite && !luit) return;
       if (!this.lanternLights) {
         this.lanternLights = [];
         lueur(this.textures);
@@ -613,6 +641,23 @@
           e.img.once('destroy', () => { if (e.halo) e.halo.destroy(); });
         }
         if (e.halo) e.halo.setVisible(true).setAlpha(k);
+      }
+      // les guirlandes lumineuses : éteintes le jour ; le soir, leurs images allumées alternent au hasard (elles
+      // scintillent) et chaque segment pose une lueur de son coloris sous lui (BLOCS_CARTE.guirlandes)
+      {
+        const G = BLOCS_CARTE.guirlandes, allumees = nuit > G.allume, k0 = Math.min(1, nuit / 0.4);
+        for (const g of guirlandes) {
+          if (!g.img.active) continue;
+          if (!allumees) { if (g.img.frame.name !== g.base) g.img.setFrame(g.base); continue; }
+          if (!calme && ((g.flip = (g.flip == null ? Math.random() / G.fps : g.flip) - dt) <= 0)) {
+            g.flip = (0.5 + Math.random()) / G.fps;
+            g.etat = Math.random() < 0.5 ? 1 : 2;
+          }
+          const f = g.base + (calme ? 1 : g.etat || 1);
+          if (g.img.frame.name !== f) g.img.setFrame(f);
+          const L = G.lueur;
+          out.push({ key: 'lueur', x: g.x, y: g.y + L.dy, tint: G.teintes[g.coloris] || G.teintes.blanche, alpha: L.alpha * k0 * g.img.alpha, scaleX: L.rayon / R, scaleY: (L.rayon * L.aplati) / R });
+        }
       }
       // les lampes de chevet : allumées le soir, une lueur chaude qui respire à peine ; leur halo (WebGL)
       for (const l of lampes) {

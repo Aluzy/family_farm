@@ -11,6 +11,8 @@
 //   l'inventaire de la partie solo (il se pose ensuite avec 🔨 Construire, onglet Jardin, sur la face d'un mur
 //   côté jardin), puis confirme la livraison. Les livraisons déjà reçues sont notées sur l'appareil (jamais deux
 //   fois) ; dans un monde partagé, elles attendent le retour dans sa ferme.
+// - Acheter une guirlande lumineuse (60 💎) : un lot de 8 segments (DATA.OBJETS[].lot) livré dans l'inventaire ;
+//   ils se posent en haut des façades et s'allument le soir.
 // - Acheter un papier peint (40 💎) : livré de même, son objet reste dans l'inventaire ; le motif est débloqué pour
 //   toujours, posé et retiré à volonté avec l'outil 🧻 de 🔨 Construire, dans les pièces closes (js/engine/papiers.js).
 // - Mode test (une clé de test de Stripe) : un bandeau le dit, avec la carte de test de Stripe.
@@ -32,7 +34,7 @@ const echapper = (t) => String(t ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&am
 const euros = (c) => (c / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
 let vue = null;            // la dernière réponse du serveur : { ouverte, mode, packs, articles, solde, aLivrer }
-let ecran = 'gemmes';      // l'onglet ouvert : 'gemmes', 'rosiers' ou 'papiers'
+let ecran = 'gemmes';      // l'onglet ouvert : 'gemmes', 'rosiers', 'deco' (les lumières) ou 'papiers'
 let choix = null;          // le pack choisi (l'étape du paiement)
 let question = null;       // la question réservée aux adultes : { a, b }
 let occupe = false, erreur = '';
@@ -70,10 +72,12 @@ async function livrer() {
   for (const l of vue.aLivrer) {
     if (!deja.has(l.id)) {
       if (!DATA.OBJETS[l.article]) continue;
-      addItem(state, l.article, 1);
+      addItem(state, l.article, DATA.OBJETS[l.article].lot || 1);
       deja.add(l.id);
       notify(DATA.OBJETS[l.article].papier
         ? `🧻 ${DATA.OBJETS[l.article].nom} : débloqué. Pose-le avec 🔨 Construire, outil 🧻, en touchant une pièce close.`
+        : DATA.OBJETS[l.article].lot
+        ? `✨ ${DATA.OBJETS[l.article].nom} : ${DATA.OBJETS[l.article].lot} segments dans ton inventaire. Pose-les avec 🔨 Construire (onglet Jardin), en haut des façades : ils s'allument le soir.`
         : `🌹 ${DATA.OBJETS[l.article].nom} : dans ton inventaire. Pose-le avec 🔨 Construire (onglet Jardin), sur un mur côté jardin.`, { duree: 7000 });
     }
     faits.push(l.id);
@@ -142,6 +146,21 @@ function papiersHtml() {
   <p class="gemmes-aide">Un papier peint acheté est débloqué pour toujours : avec 🔨 Construire, l'outil 🧻, touche une pièce close et tous ses murs du fond le prennent, en bas comme à l'étage. Le changer ou le retirer est gratuit.</p>`;
 }
 
+// Les décorations (les guirlandes lumineuses pour l'instant) : leur dessin allumé sur un fond de nuit, leur
+// nom, leur prix (un lot : le nombre de pièces).
+function decorationsHtml() {
+  const A = vue.articles || {}, rangs = ['blanche', 'multicolore', 'etoiles', 'coeurs'];
+  return `<div class="gemmes-papiers">${Object.entries(A).filter(([id]) => id.startsWith('guirlande_')).map(([id, a]) => {
+    const ok = vue.solde >= a.prix;
+    return `<div class="gemmes-papier">
+      <span class="gemmes-deco-img" style="--r:${Math.max(0, rangs.indexOf(id.replace('guirlande_', '')))}" aria-hidden="true"></span>
+      <span class="gemmes-rosier-nom">${echapper(a.nom)}</span>
+      <button type="button" class="btn${ok ? ' primary' : ''}" data-action="gemmes-acheter" data-article="${id}"${!ok || occupe ? ' disabled' : ''}>💎 ${a.prix}</button>
+    </div>`;
+  }).join('')}</div>
+  <p class="gemmes-aide">Une guirlande arrive en lot de 8 segments : pose-les avec 🔨 Construire (onglet Jardin), en haut des façades, côté jardin. Ils se raccordent d'un mur à l'autre et scintillent dès que le soir tombe.</p>`;
+}
+
 function contenu() {
   if (!compteGarde()) return `<p>Les gemmes sont réservées au jeu en ligne : connecte-toi d'abord (⚙️ Options › Jeu en ligne).</p>
     <button type="button" class="btn primary" data-action="gemmes-connexion">Me connecter</button>`;
@@ -152,9 +171,10 @@ function contenu() {
     <div class="gemmes-onglets" role="tablist">
       <button type="button" role="tab" aria-selected="${ecran === 'gemmes'}" class="gemmes-onglet${ecran === 'gemmes' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="gemmes">💎 Gemmes</button>
       <button type="button" role="tab" aria-selected="${ecran === 'rosiers'}" class="gemmes-onglet${ecran === 'rosiers' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="rosiers">🌹 Rosiers grimpants</button>
+      <button type="button" role="tab" aria-selected="${ecran === 'deco'}" class="gemmes-onglet${ecran === 'deco' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="deco">✨ Lumières</button>
       <button type="button" role="tab" aria-selected="${ecran === 'papiers'}" class="gemmes-onglet${ecran === 'papiers' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="papiers">🧻 Papiers peints</button>
     </div>
-    ${ecran === 'gemmes' ? packsHtml() + paiementHtml() : ecran === 'papiers' ? papiersHtml() : rosiersHtml()}
+    ${ecran === 'gemmes' ? packsHtml() + paiementHtml() : ecran === 'papiers' ? papiersHtml() : ecran === 'deco' ? decorationsHtml() : rosiersHtml()}
     ${erreur ? `<p class="gemmes-erreur" role="alert">${echapper(erreur)}</p>` : ''}`;
 }
 
@@ -226,7 +246,7 @@ async function retourPaiement() {
 
 registerActions({
   'gemmes-ouvrir': () => ouvrirGemmes(),
-  'gemmes-onglet': (el) => { ecran = ['rosiers', 'papiers'].includes(el.dataset.ecran) ? el.dataset.ecran : 'gemmes'; erreur = ''; dessiner(); },
+  'gemmes-onglet': (el) => { ecran = ['rosiers', 'papiers', 'deco'].includes(el.dataset.ecran) ? el.dataset.ecran : 'gemmes'; erreur = ''; dessiner(); },
   'gemmes-pack': (el) => { choix = el.dataset.pack; erreur = ''; reponse = ''; coche = false; nouvelleQuestion(); dessiner(); },
   'gemmes-payer': () => payer(),
   'gemmes-acheter': (el) => acheter(el.dataset.article),

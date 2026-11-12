@@ -25,6 +25,8 @@ export function iconeBloc(sorte) {
   if (machine) return machine;
   // (un rosier grimpant de la boutique : son dessin, dans son coloris)
   if (b.grimpant) return `<span class="build-slot-rosier" style="--f:${['multicolore', 'rouge', 'blanc', 'jaune'].indexOf(b.grimpant)}"></span>`;
+  // (une guirlande lumineuse de la boutique : son segment allumé, dans son coloris : sa rangée de guirlandes.png)
+  if (b.guirlande) return `<span class="build-slot-guirlande" style="--r:${['blanche', 'multicolore', 'etoiles', 'coeurs'].indexOf(b.guirlande)}"></span>`;
   if (b.meuble) return `<img class="build-slot-img" src="${meubleSrc(b.meuble)}" alt="" draggable="false">`;
   // (le four redessiné : son dessin, éteint)
   if (b.dessin === 'four') return `<img class="build-slot-img" src="${meubleSrc('four')}" alt="" draggable="false">`;
