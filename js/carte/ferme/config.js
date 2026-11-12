@@ -314,9 +314,12 @@ const CULTURE_MONTE = 0;
     // scripts/batiments/meubles.py, à la même place dans les trois vues), qui respire à peine ; un petit
     // halo par-dessus (WebGL)
     lampeChevet: {
-      dessins: ['chevet', 'chalet_chevet', 'cottage_chevet', 'mer_chevet', 'fee_chevet', 'sapin_noel'],
+      dessins: ['chevet', 'chalet_chevet', 'cottage_chevet', 'mer_chevet', 'fee_chevet', 'sapin_noel', 'citrouille_halloween', 'tas_citrouilles'],
       // (le sapin de Noël : sa lueur plus large, au milieu de ses branches)
-      par: { sapin_noel: { sol: { rayon: 46, aplati: 0.7, teinte: 0xffd890, alpha: 0.85, dx: 0, dy: -6 }, abatJour: { rayon: 18, teinte: 0xfff0c0, alpha: 0.8, dx: 0, dy: -24 } } }, allume: 0.12, respire: 0.04,
+      par: { sapin_noel: { sol: { rayon: 46, aplati: 0.7, teinte: 0xffd890, alpha: 0.85, dx: 0, dy: -6 }, abatJour: { rayon: 18, teinte: 0xfff0c0, alpha: 0.8, dx: 0, dy: -24 } },
+        // (les citrouilles d'Halloween : une lueur orangée au ras du sol, celle de la bougie dans le visage)
+        citrouille_halloween: { sol: { rayon: 30, aplati: 0.7, teinte: 0xff9a40, alpha: 0.85, dx: 0, dy: -2 }, abatJour: { rayon: 9, teinte: 0xffc060, alpha: 0.9, dx: 0, dy: -8 } },
+        tas_citrouilles: { sol: { rayon: 40, aplati: 0.7, teinte: 0xff9a40, alpha: 0.85, dx: 0, dy: -2 }, abatJour: { rayon: 10, teinte: 0xffc060, alpha: 0.9, dx: 0, dy: -8 } } }, allume: 0.12, respire: 0.04,
       sol: { rayon: 38, aplati: 0.72, teinte: 0xffc878, alpha: 0.8, dx: 0, dy: -6 },
       abatJour: { rayon: 10, teinte: 0xfff0c8, alpha: 0.95, dx: 0, dy: -17 },
       halo: { couleur: 0xffc060, rayon: 16, intensite: 0.08, attenuation: 0.08 },
@@ -344,6 +347,12 @@ const CULTURE_MONTE = 0;
     sapin: {
       key: 'sapin_lumieres', file: 'sapin_lumieres.png', frame: { frameWidth: 26, frameHeight: 46 }, images: 4, fps: 3,
       modeles: ['noel'], prefixe: 'sapin_',
+    },
+    // la bougie des citrouilles d'Halloween (scripts/batiments/halloween.py) : sa lumière vacille dans les trous du
+    // visage, jour et nuit (une rangée par décor, `dessins`) ; le soir, elles éclairent (lampeChevet.par)
+    citrouilles: {
+      key: 'citrouilles_bougie', file: 'citrouilles_bougie.png', frame: { frameWidth: 32, frameHeight: 24 }, images: 3, fps: 7,
+      dessins: ['citrouille_halloween', 'tas_citrouilles'],
     },
     // ce qui tombe des arbres d'ornement (le bloc ornement_<espèce>, deux cases sur deux ; scripts/batiments/ornements.py) :
     // jour et nuit, les pétales (les feuilles) descendent en tournoyant, ses `images` (une rangée par espèce)
@@ -546,6 +555,8 @@ const CULTURE_MONTE = 0;
     'fee_lit', 'fee_chevet', 'fee_tapis', 'fee_tableau',
     // (les décors de Noël : scripts/batiments/noel.py ; les guirlandes du sapin, BLOCS_CARTE.sapin)
     'sapin_noel', 'couronne_noel', 'bonhomme_neige',
+    // (les décors d'Halloween : scripts/batiments/halloween.py ; leur bougie, BLOCS_CARTE.citrouilles)
+    'citrouille_halloween', 'tas_citrouilles',
     // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
     'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',

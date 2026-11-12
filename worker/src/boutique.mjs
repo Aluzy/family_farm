@@ -89,6 +89,8 @@ export const BOUTIQUE = {
     sapin_noel: { prix: 120, nom: 'Sapin de Noël décoré (ses guirlandes s\'allument le soir)', fete: 'noel' },
     couronne_noel: { prix: 40, nom: 'Couronne de Noël', fete: 'noel' },
     bonhomme_neige: { prix: 60, nom: 'Bonhomme de neige', fete: 'noel' },
+    citrouille_halloween: { prix: 30, nom: 'Citrouille sculptée (sa bougie s\'allume le soir)', fete: 'halloween' },
+    tas_citrouilles: { prix: 70, nom: 'Tas de citrouilles', fete: 'halloween' },
     // les papiers peints : un motif acheté est débloqué pour toujours (js/engine/papiers.js)
     papier_peint_fleurettes: { prix: 40, nom: 'Papier peint fleurettes' },
     papier_peint_rayures: { prix: 40, nom: 'Papier peint rayures' },
@@ -103,7 +105,10 @@ export const BOUTIQUE = {
   },
   // les périodes des fêtes (mois et jour, en temps universel, bornes comprises) : un article `fete` n'est en vente
   // que pendant la sienne (enVente)
-  FETES: { noel: { du: [12, 1], au: [12, 31], nom: 'en décembre' } },
+  FETES: {
+    noel: { du: [12, 1], au: [12, 31], nom: 'en décembre' },
+    halloween: { du: [10, 15], au: [11, 2], nom: 'du 15 octobre au 2 novembre' },
+  },
   TOLERANCE_S: 300,          // l'âge maximal d'une notification de Stripe (5 minutes, comme ses bibliothèques)
   PAIEMENTS_PAR_HEURE: 10,   // paiements ouverts au plus par compte en une heure
   CORPS_MAX: 64 * 1024,      // une notification de Stripe : 64 Ko au plus

@@ -584,13 +584,14 @@
     // dans le voile de l'heure (CarteKit.voile, eclaire : une flaque sur l'herbe, cyan ou chaude, et
     // la lueur de la vitre), qui vacille un peu ; un petit halo par-dessus (WebGL).
     // Les surcouches animées d'un décor (C : BLOCS_CARTE.fontaine, l'eau qui coule ; BLOCS_CARTE.ornement, les
-    // pétales qui tombent) : jour et nuit, une image par-dessus le décor, au même endroit, sa rangée selon le
+    // pétales qui tombent ; BLOCS_CARTE.sapin, ses guirlandes ; BLOCS_CARTE.citrouilles, la bougie ; C.dessins, ou
+    // C.prefixe et C.modeles : quels dessins, dans quelle rangée) : jour et nuit, une image par-dessus le décor, au même endroit, sa rangée selon le
     // modèle, défile ; fixe en mode réduit.
     stepSurcouches(liste, C, dt) {
       if (!liste.length || !this.textures.exists(C.key)) return;
       const calme = global.CarteKit.reduit();
       for (const e of liste) {
-        const rang = C.modeles.indexOf(String(e.dessin).replace(C.prefixe, ''));
+        const rang = C.dessins ? C.dessins.indexOf(e.dessin) : C.modeles.indexOf(String(e.dessin).replace(C.prefixe, ''));
         if (rang < 0) continue;
         if (!e.eau || !e.eau.active || e.eau.x !== e.img.x || e.eau.y !== e.img.y) {
           if (e.eau) e.eau.destroy();
@@ -658,9 +659,9 @@
       for (const e of this.etageCheminees || []) if (e.img && e.img.active) cheminees.push({ img: e.img, x: e.x, y: e.y, e });
       // (les fontaines de jardin et les arbres d'ornement : leur eau coule, leurs pétales tombent, jour et nuit ;
       // BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement)
-      for (const C of [BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement, BLOCS_CARTE.sapin]) {
+      for (const C of [BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement, BLOCS_CARTE.sapin, BLOCS_CARTE.citrouilles]) {
         const liste = [];
-        for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith(C.prefixe)) liste.push(e);
+        for (const e of (this.blocks || new Map()).values()) if (e.img && (C.dessins ? C.dessins.includes(e.dessin) : String(e.dessin || '').startsWith(C.prefixe))) liste.push(e);
         this.stepSurcouches(liste, C, dt);
       }
       this.stepEnseignes();
