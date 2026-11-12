@@ -2739,6 +2739,9 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .gemmes-deco-img { width: 64px; height: 48px; border-radius: 4px; background: #182042 url('../assets/guirlandes.png') no-repeat; background-size: 192px auto; background-position: -64px calc(var(--r) * -48px); image-rendering: pixelated; box-shadow: 0 0 0 2px rgba(60, 40, 20, .6); }
 .gemmes-cheminee-img { width: 64px; height: 92px; image-rendering: pixelated; }
 .gemmes-fontaine-img { width: 64px; height: 94px; image-rendering: pixelated; }
+.gemmes-ensemble { margin: 0 0 10px; padding: 6px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
+.gemmes-ensemble-img { max-width: 64px; max-height: 64px; image-rendering: pixelated; }
+.gemmes-ensemble-icone { font-size: 28px; }
 .gemmes-enseigne-img { width: 64px; height: 72px; image-rendering: pixelated; }
 .gemmes-ornement-img { width: 76px; height: 95px; image-rendering: pixelated; }
 .build-motif-img { display: inline-block; width: 18px; height: 22px; border-radius: 3px; box-shadow: 0 0 0 1px rgba(40, 26, 14, .7); background: url('../assets/papiers_peints.png') no-repeat; background-size: auto 33.75px; background-position: calc(var(--f) * -18px) -2px; image-rendering: pixelated; font-size: 13px; line-height: 22px; }

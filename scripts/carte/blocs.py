@@ -3056,6 +3056,41 @@ COMPOST = len(DESSINS)                           # le bac à compost, vide, peu 
 DESSINS += [_compost(0), _compost(1), _compost(2)]
 
 
+# ---------- les sols de la boutique de gemmes (ajoutés au bout : les images d'avant gardent leur place) ----------
+# Le plancher de mélèze de l'ensemble « chalet » (BLOCS_CARTE.modelesSols.sol_meleze) : de larges lames couchées,
+# quatre par case (4 rangées chacune), leurs bouts décalés d'une lame à l'autre ; chaque lame sa rampe et son ton,
+# son chant du haut clair, le joint sombre dessous, le fil du bois, quelques nœuds, un clou à chaque bout.
+MELEZES = [rampe([(70, 40, 26), (118, 72, 42), (158, 104, 60), (194, 138, 84), (224, 176, 118)], 120),
+           rampe([(66, 38, 28), (112, 68, 44), (152, 100, 62), (188, 134, 86), (220, 172, 120)], 120),
+           rampe([(76, 44, 24), (126, 78, 40), (168, 112, 56), (204, 148, 80), (232, 186, 114)], 120)]
+
+
+def motif_meleze(x, v):
+    lame = v // 4
+    d = (x + (lame * 7) % 16) % 16                        # (le bout de chaque lame, décalé)
+    R = MELEZES[int((hasard(lame, (x + (lame * 7) % 16) // 16, 21) * 3)) % 3]
+    lum = 0.62 + 0.10 * (hasard(lame, 0, 22) - 0.5) - 0.10 * x / 16
+    i = v % 4
+    if i == 3:
+        return ton(R, 0.12)                               # le joint
+    if i == 0:
+        lum += 0.16                                       # le chant éclairé
+    if d == 0:
+        return ton(R, 0.16)                               # le bout de la lame
+    if d in (1, 15) and i == 1:
+        return ton(FER_CLOU, 0.8 if d == 1 else 0.4)      # un clou
+    lum += 0.06 * bruit(x, v, 23) - 0.06 * ((x * 3 + lame) % 5 == 0)
+    if (x * 5 + lame * 3) % 23 == 0 and i == 1:
+        lum -= 0.22                                       # un nœud
+    return ton(R, lum)
+
+
+FER_CLOU = rampe([(40, 40, 46), (110, 110, 118), (190, 190, 196)], 40)
+SOLS_BOUTIQUE = {'sol_meleze': (motif_meleze, ton(MELEZES[2], 0.9), ton(MELEZES[0], 0.12))}
+SOLS_BOUTIQUE_DEBUT = len(DESSINS)                # 16 images par sol (BLOCS_CARTE.modelesSols)
+DESSINS += [sol_modele(m, *SOLS_BOUTIQUE[k]) for k in SOLS_BOUTIQUE for m in range(16)]
+
+
 def masque(g, x, y):
     """Comme js/carte/ferme/chantier.js (wallMask) : les murs voisins, et les portes à gauche
     et à droite."""

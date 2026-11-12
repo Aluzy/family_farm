@@ -166,7 +166,31 @@ def etoiles():
     return finir(im)
 
 
-DESSINS = {'fleurettes': fleurettes, 'rayures': rayures, 'vichy': vichy, 'damas': damas, 'feuillages': feuillages, 'etoiles': etoiles}
+def lambris():
+    """Le lambris de pin du chalet (l'ensemble de la boutique) : des lames debout de 4 px, chacune sa rampe et son
+    ton, son bord gauche éclairé, la rainure sombre à droite, le fil du bois qui ondule, des nœuds ; une cimaise
+    (une baguette moulurée) au tiers du bas (période 4 × 30)."""
+    im = toile()
+    PINS = [rampe([(92, 56, 34), (140, 92, 54), (182, 132, 80), (214, 170, 110), (238, 204, 148)]),
+            rampe([(88, 52, 36), (134, 88, 58), (176, 126, 84), (210, 164, 114), (236, 200, 152)]),
+            rampe([(98, 60, 32), (148, 98, 50), (190, 140, 74), (222, 178, 104), (244, 212, 142)]),
+            rampe([(84, 50, 32), (130, 84, 52), (172, 122, 76), (206, 160, 104), (232, 196, 140)])]
+    px = im.load()
+    for y in range(H):
+        for x in range(W):
+            lame, i = x // 4, x % 4
+            R = PINS[lame % 4]
+            lum = 0.58 + 0.10 * (i == 0) - 0.30 * (i == 3) + 0.05 * bruit(lame, y // 3 + int(2 * bruit(lame, y // 6, 311)), 312)
+            if (y * 3 + lame * 11) % 29 == 0 and i in (1, 2):
+                lum -= 0.22                                # un nœud
+            if y in (19, 20, 21):                          # la cimaise
+                lum = (0.86, 0.60, 0.30)[y - 19]
+                R = PINS[2]
+            px[x, y] = ton(R, lum) + (255,)
+    return finir(im)
+
+
+DESSINS = {'fleurettes': fleurettes, 'rayures': rayures, 'vichy': vichy, 'damas': damas, 'feuillages': feuillages, 'etoiles': etoiles, 'lambris': lambris}
 
 
 def main():

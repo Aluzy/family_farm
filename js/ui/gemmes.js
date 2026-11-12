@@ -35,7 +35,7 @@ const echapper = (t) => String(t ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&am
 const euros = (c) => (c / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
 let vue = null;            // la dernière réponse du serveur : { ouverte, mode, packs, articles, solde, aLivrer }
-let ecran = 'gemmes';      // l'onglet ouvert : 'gemmes', 'rosiers', 'deco' (les lumières) ou 'papiers'
+let ecran = 'gemmes';      // l'onglet ouvert : 'gemmes', 'rosiers', 'deco' (les lumières), 'papiers' ou 'ensembles'
 let choix = null;          // le pack choisi (l'étape du paiement)
 let question = null;       // la question réservée aux adultes : { a, b }
 let occupe = false, erreur = '';
@@ -73,10 +73,16 @@ async function livrer() {
   for (const l of vue.aLivrer) {
     if (!deja.has(l.id)) {
       if (!DATA.OBJETS[l.article]) continue;
-      addItem(state, l.article, DATA.OBJETS[l.article].lot || 1);
+      const O = DATA.OBJETS[l.article];
+      if (O.contenu) { for (const [k, n] of Object.entries(O.contenu)) if (DATA.OBJETS[k]) addItem(state, k, n); }   // (un ensemble : ce qu'il contient)
+      else addItem(state, l.article, O.lot || 1);
       if (DATA.OBJETS[l.article].avec && DATA.OBJETS[DATA.OBJETS[l.article].avec]) addItem(state, DATA.OBJETS[l.article].avec, 1);   // (l'enseigne et sa boîte aux lettres)
       deja.add(l.id);
-      notify(DATA.OBJETS[l.article].papier
+      notify(DATA.OBJETS[l.article].contenu
+        ? `🛋️ ${DATA.OBJETS[l.article].nom} : tout est dans ton inventaire (le lit, le chevet, le tapis, le tableau, le plancher, et le papier peint débloqué). Meuble une chambre avec 🔨 Construire : onglet Meubles, Bâtir pour le plancher, 🧻 pour le papier.`
+        : String(l.article).startsWith('chalet_') || DATA.OBJETS[l.article].lot && DATA.ATELIER.BLOCS[l.article] && DATA.ATELIER.BLOCS[l.article].sol
+        ? `🛋️ ${DATA.OBJETS[l.article].nom}${DATA.OBJETS[l.article].lot ? ` (${DATA.OBJETS[l.article].lot})` : ''} : dans ton inventaire. Pose-le avec 🔨 Construire (${DATA.ATELIER.BLOCS[l.article] && DATA.ATELIER.BLOCS[l.article].sol ? 'onglet Bâtir' : 'onglet Meubles'}).`
+        : DATA.OBJETS[l.article].papier
         ? `🧻 ${DATA.OBJETS[l.article].nom} : débloqué. Pose-le avec 🔨 Construire, outil 🧻, en touchant une pièce close.`
         : String(l.article).startsWith('enseigne_')
         ? `🪧 ${DATA.OBJETS[l.article].nom} et sa boîte aux lettres : dans ton inventaire. Pose-les dehors avec 🔨 Construire (onglet Jardin) : le nom de ta famille s'écrit sur l'enseigne. 🎨 change leur couleur.`
@@ -174,6 +180,25 @@ function decorationsHtml() {
   <p class="gemmes-aide">Une guirlande arrive en lot de 8 segments : pose-les avec 🔨 Construire (onglet Jardin), en haut des façades, côté jardin. Ils se raccordent d'un mur à l'autre et scintillent dès que le soir tombe. Une cheminée se pose dans une pièce de la maison (onglet Meubles) : son feu s'allume le soir. Une fontaine se pose dehors, dans le jardin (onglet Jardin, deux cases sur deux) : son eau coule jour et nuit. Un arbre d'ornement se plante aussi dehors (deux cases sur deux) : ses pétales, ses feuilles tombent doucement. Une enseigne de ferme arrive avec sa boîte aux lettres : le nom de ta famille s'y écrit, et 🎨 leur donne cinq couleurs.</p>`;
 }
 
+// Les ensembles à thème pour une pièce : l'ensemble (sa remise, ce qu'il contient), puis chacun de ses objets seul.
+function ensemblesHtml() {
+  const A = vue.articles || {};
+  const bouton = (id, a) => {
+    const ok = vue.solde >= a.prix;
+    return `<button type="button" class="btn${ok ? ' primary' : ''}" data-action="gemmes-acheter" data-article="${id}"${!ok || occupe ? ' disabled' : ''}>💎 ${a.prix}</button>`;
+  };
+  const image = (k) => (DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].meuble ? `<img class="gemmes-ensemble-img" src="assets/meuble_${k}.png" alt="" draggable="false">` : `<span class="gemmes-ensemble-icone" aria-hidden="true">${(DATA.OBJETS[k] || {}).icone || '🎁'}</span>`);
+  return Object.entries(A).filter(([id]) => id.startsWith('ensemble_')).map(([id, a]) => {
+    const C = (DATA.OBJETS[id] || {}).contenu || {};
+    const seuls = Object.keys(C).filter((k) => A[k]);
+    const total = seuls.reduce((n, k) => n + A[k].prix, 0);
+    return `<div class="gemmes-ensemble">
+      <div class="gemmes-papier"><span class="gemmes-rosier-nom"><b>${echapper(a.nom)}</b>${total > a.prix ? `<br><small>au lieu de 💎 ${total} pièce par pièce (−${Math.round((1 - a.prix / total) * 100)} %)</small>` : ''}</span>${bouton(id, a)}</div>
+      <div class="gemmes-papiers">${seuls.map((k) => `<div class="gemmes-papier">${image(k)}<span class="gemmes-rosier-nom">${echapper(A[k].nom)}</span>${bouton(k, A[k])}</div>`).join('')}</div>
+    </div>`;
+  }).join('') + `<p class="gemmes-aide">Un ensemble meuble toute une chambre d'un seul style : le lit, le chevet et sa lampe qui s'allume le soir, le tapis, le tableau, 24 lames de plancher et le papier peint, débloqué pour toujours. Chaque objet s'achète aussi seul.</p>`;
+}
+
 function contenu() {
   if (!compteGarde()) return `<p>Les gemmes sont réservées au jeu en ligne : connecte-toi d'abord (⚙️ Options › Jeu en ligne).</p>
     <button type="button" class="btn primary" data-action="gemmes-connexion">Me connecter</button>`;
@@ -186,8 +211,9 @@ function contenu() {
       <button type="button" role="tab" aria-selected="${ecran === 'rosiers'}" class="gemmes-onglet${ecran === 'rosiers' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="rosiers">🌹 Rosiers grimpants</button>
       <button type="button" role="tab" aria-selected="${ecran === 'deco'}" class="gemmes-onglet${ecran === 'deco' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="deco">✨ Lumières</button>
       <button type="button" role="tab" aria-selected="${ecran === 'papiers'}" class="gemmes-onglet${ecran === 'papiers' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="papiers">🧻 Papiers peints</button>
+      <button type="button" role="tab" aria-selected="${ecran === 'ensembles'}" class="gemmes-onglet${ecran === 'ensembles' ? ' actif' : ''}" data-action="gemmes-onglet" data-ecran="ensembles">🛋️ Ensembles</button>
     </div>
-    ${ecran === 'gemmes' ? packsHtml() + paiementHtml() : ecran === 'papiers' ? papiersHtml() : ecran === 'deco' ? decorationsHtml() : rosiersHtml()}
+    ${ecran === 'gemmes' ? packsHtml() + paiementHtml() : ecran === 'papiers' ? papiersHtml() : ecran === 'ensembles' ? ensemblesHtml() : ecran === 'deco' ? decorationsHtml() : rosiersHtml()}
     ${erreur ? `<p class="gemmes-erreur" role="alert">${echapper(erreur)}</p>` : ''}`;
 }
 
@@ -259,7 +285,7 @@ async function retourPaiement() {
 
 registerActions({
   'gemmes-ouvrir': () => ouvrirGemmes(),
-  'gemmes-onglet': (el) => { ecran = ['rosiers', 'papiers', 'deco'].includes(el.dataset.ecran) ? el.dataset.ecran : 'gemmes'; erreur = ''; dessiner(); },
+  'gemmes-onglet': (el) => { ecran = ['rosiers', 'papiers', 'deco', 'ensembles'].includes(el.dataset.ecran) ? el.dataset.ecran : 'gemmes'; erreur = ''; dessiner(); },
   'gemmes-pack': (el) => { choix = el.dataset.pack; erreur = ''; reponse = ''; coche = false; nouvelleQuestion(); dessiner(); },
   'gemmes-payer': () => payer(),
   'gemmes-acheter': (el) => acheter(el.dataset.article),

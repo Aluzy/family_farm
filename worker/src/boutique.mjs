@@ -60,6 +60,13 @@ export const BOUTIQUE = {
     enseigne_bois: { prix: 50, nom: 'Enseigne de ferme en bois gravé et sa boîte aux lettres' },
     enseigne_email: { prix: 50, nom: 'Enseigne de ferme émaillée et sa boîte aux lettres' },
     enseigne_fer: { prix: 50, nom: 'Enseigne de ferme en fer forgé et sa boîte aux lettres' },
+    // les ensembles à thème pour une pièce : chaque objet seul, ou l'ensemble (DATA.OBJETS[].contenu) avec ~20 % de remise
+    ensemble_chalet: { prix: 220, nom: 'Ensemble chalet de montagne (lit, chevet, tapis, tableau, plancher, lambris)' },
+    chalet_lit: { prix: 80, nom: 'Lit de chalet' },
+    chalet_chevet: { prix: 40, nom: 'Chevet de chalet et sa lampe' },
+    chalet_tapis: { prix: 40, nom: 'Tapis alpin' },
+    chalet_tableau: { prix: 30, nom: 'Tableau : le sommet enneigé' },
+    sol_meleze: { prix: 50, nom: 'Plancher de mélèze (24 lames)' },
     // les papiers peints : un motif acheté est débloqué pour toujours (js/engine/papiers.js)
     papier_peint_fleurettes: { prix: 40, nom: 'Papier peint fleurettes' },
     papier_peint_rayures: { prix: 40, nom: 'Papier peint rayures' },
@@ -67,6 +74,7 @@ export const BOUTIQUE = {
     papier_peint_damas: { prix: 40, nom: 'Papier peint damas' },
     papier_peint_feuillages: { prix: 40, nom: 'Papier peint feuillages' },
     papier_peint_etoiles: { prix: 40, nom: 'Papier peint étoiles' },
+    papier_peint_lambris: { prix: 40, nom: 'Papier peint lambris de pin' },
   },
   TOLERANCE_S: 300,          // l'âge maximal d'une notification de Stripe (5 minutes, comme ses bibliothèques)
   PAIEMENTS_PAR_HEURE: 10,   // paiements ouverts au plus par compte en une heure

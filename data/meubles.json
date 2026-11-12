@@ -33,7 +33,8 @@
     "vichy": { "nom": "Carreaux vichy", "objet": "papier_peint_vichy" },
     "damas": { "nom": "Damas", "objet": "papier_peint_damas" },
     "feuillages": { "nom": "Feuillages", "objet": "papier_peint_feuillages" },
-    "etoiles": { "nom": "Étoiles", "objet": "papier_peint_etoiles" }
+    "etoiles": { "nom": "Étoiles", "objet": "papier_peint_etoiles" },
+    "lambris": { "nom": "Lambris de pin", "objet": "papier_peint_lambris" }
   },
   "PALETTES": {
     "bois_miel": ["#3c1e16", "#603620", "#86522e", "#aa7040", "#cc965c"],
