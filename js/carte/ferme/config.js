@@ -322,10 +322,10 @@ const CULTURE_MONTE = 0;
     // (`fps`) dans le foyer, le bas de l'image `dy` px au-dessus du bas de la cheminée ; sa lumière chaude dans
     // le voile : une large flaque `sol` devant elle, la lueur du `foyer`, qui vacille ; un halo (WebGL)
     cheminee: {
-      key: 'cheminee_feu', file: 'cheminee_feu.png', frame: { frameWidth: 14, frameHeight: 12 }, images: 4, fps: 8, dy: 6,
+      key: 'cheminee_feu', file: 'cheminee_feu.png', frame: { frameWidth: 14, frameHeight: 12 }, images: 4, fps: 8, dy: 9,
       allume: 0.12, vacille: 0.12,
       sol: { rayon: 58, aplati: 0.7, teinte: 0xffa860, alpha: 0.95, dx: 0, dy: 4 },
-      foyer: { rayon: 16, teinte: 0xffd090, alpha: 0.95, dx: 0, dy: -12 },
+      foyer: { rayon: 16, teinte: 0xffd090, alpha: 0.95, dx: 0, dy: -15 },
       halo: { couleur: 0xff9040, rayon: 22, intensite: 0.1, attenuation: 0.08 },
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur

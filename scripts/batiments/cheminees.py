@@ -1,7 +1,7 @@
 # Les cheminées d'intérieur de la boutique de gemmes (worker/src/boutique.mjs ARTICLES) : un meuble de deux
-# cases de large posé dans la maison (data/recipes.json ATELIER.BLOCS cheminee_<matière>), vu de haut à 45° :
-# la hotte qui monte contre le mur, le manteau (sa tablette éclairée, ce qui est posé dessus), le foyer (ses
-# piédroits, son ouverture noircie, les chenets et les bûches), la sole devant. Lumière en haut à gauche.
+# cases de large posé dans la maison (data/recipes.json ATELIER.BLOCS cheminee_<matière>), vu de haut à 45°
+# (CLAUDE.md, la règle de dessin) : chaque surface horizontale (le dessus de la hotte, la tablette du manteau,
+# le sol de l'âtre, la sole) se voit d'en haut, au-dessus de sa face. Lumière en haut à gauche.
 #
 # Le feu est à part (assets/cheminee_feu.png : FEU_IMAGES images de FEU_L × FEU_H) : la carte le pose dans le
 # foyer, le soir, et fait danser ses images (js/carte/ferme/chantier.js syncCheminees, stepLanterns) ; son
@@ -21,9 +21,9 @@ sys.path.insert(0, os.path.join(HERE, '..', 'carte'))  # scripts/carte/nuances.p
 from pixel import ASSETS, ROOT, contour  # noqa: E402
 from nuances import bruit, rampe, ton  # noqa: E402
 
-W, H = 32, 46
+W, H = 32, 52
 OUT = (34, 22, 16)
-FEU_L, FEU_H, FEU_IMAGES, FEU_BAS = 14, 12, 4, 40
+FEU_L, FEU_H, FEU_IMAGES, FEU_BAS = 14, 12, 4, 42
 SUIE = rampe([(10, 8, 8), (30, 22, 18), (58, 40, 30)])
 FER = rampe([(24, 24, 28), (60, 60, 68), (120, 120, 130)])
 BUCHE = rampe([(40, 24, 14), (90, 56, 32), (150, 104, 62), (220, 176, 120)])
@@ -52,6 +52,11 @@ def appareil(nom, x, y, lum):
 
 
 def cheminee(nom):
+    """La cheminée vue de haut à 45° (CLAUDE.md, la règle de dessin) : de haut en bas, le dessus de la hotte
+    (une bande raccourcie, éclairée) puis sa face ; le dessus de la tablette du manteau, qui avance devant la
+    hotte (ce qui est posé dessus y tient debout), puis son chant ; la face du foyer et son ouverture vue d'en
+    haut : le contrecœur noirci au fond, puis le sol de l'âtre qui vient vers nous, plus clair vers l'avant, les
+    chenets et les bûches couchés dessus ; enfin la sole qui avance dans la pièce : son dessus, puis son chant."""
     R = MATIERES[nom]
     im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     px = im.load()
@@ -60,67 +65,79 @@ def cheminee(nom):
         if 0 <= x < W and 0 <= y < H:
             px[x, y] = tuple(c[:3]) + (255,)
 
-    for y in range(0, 18):                                    # la hotte, contre le mur
-        for x in range(6, 26):
-            u = (x - 6) / 19
-            lum = 0.62 - 0.22 * u - 0.10 * (y / 17)
-            if x == 6:
-                lum += 0.15
-            put(x, y, ton(R, appareil(nom, x, y, lum)))
-    for x in range(6, 26):
-        put(x, 0, ton(R, 0.9 - 0.2 * (x - 6) / 19))           # son arête
-    for y in range(18, 21):                                   # la tablette du manteau, vue de dessus
-        for x in range(1, 31):
-            put(x, y, ton(R, 0.92 - 0.14 * x / 30 - 0.04 * (y - 18) + 0.02 * bruit(x, y, 14)))
-    for y in (21, 22):                                        # son chant
-        for x in range(1, 31):
-            put(x, y, ton(R, (0.55 if y == 21 else 0.38) - 0.12 * x / 30))
-    for y in range(23, 42):                                   # le foyer : les piédroits, le linteau
-        for x in range(2, 30):
-            if 9 <= x <= 22 and y >= 26:
-                continue
-            u = (x - 2) / 27
-            lum = 0.58 - 0.22 * u - 0.08 * (y - 23) / 18
-            if x == 2:
-                lum += 0.16
-            put(x, y, ton(R, appareil(nom, x, y, lum)))
-    for y in range(26, 42):                                   # l'ouverture noircie (cintrée en pierre, en briques)
+    def dessus(x0, x1, y0, y1, t0=0.92):
+        """Une surface horizontale vue d'en haut : plus claire au fond, à gauche."""
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                put(x, y, ton(R, t0 - 0.12 * (x - x0) / max(1, x1 - x0) - 0.05 * (y - y0) / max(1, y1 - y0) + 0.02 * bruit(x, y, 14)))
+
+    def face(x0, x1, y0, y1, appar=True):
+        """Une face verticale : en dégradé de gauche à droite, plus sombre en bas, l'appareil de la matière."""
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                u = (x - x0) / max(1, x1 - x0)
+                lum = 0.58 - 0.22 * u - 0.10 * (y - y0) / max(1, y1 - y0)
+                if x == x0:
+                    lum += 0.15
+                elif x == x1:
+                    lum -= 0.10
+                put(x, y, ton(R, appareil(nom, x, y, lum) if appar else lum))
+
+    # la hotte, contre le mur : son dessus (4 rangées), sa face
+    dessus(7, 24, 0, 3)
+    face(7, 24, 4, 19)
+    # la tablette du manteau : elle avance devant la hotte, son dessus (5 rangées), son chant (2)
+    dessus(1, 30, 20, 24, 0.95)
+    for x in range(1, 31):
+        put(x, 25, ton(R, 0.60 - 0.14 * x / 30))
+        put(x, 26, ton(R, 0.40 - 0.10 * x / 30))
+    # la face du foyer, ses piédroits et son linteau
+    face(2, 29, 27, 45)
+    # l'ouverture, vue d'en haut : le contrecœur au fond, puis le sol de l'âtre qui vient vers nous
+    for y in range(30, 46):
         for x in range(9, 23):
-            arc = nom != 'marbre' and y < 29 and abs(x - 15.5) > 4 + (y - 26) * 1.5
+            arc = nom != 'marbre' and y < 33 and abs(x - 15.5) > 4 + (y - 30) * 1.5
             if arc:
-                put(x, y, ton(R, appareil(nom, x, y, 0.45)))
                 continue
-            put(x, y, ton(SUIE, 0.15 + 0.5 * (y - 26) / 15 * (1 - abs(x - 15.5) / 8)))
-    for x in (10, 21):                                        # les chenets
-        for y in range(37, 42):
-            put(x, y, ton(FER, 0.75 if y == 37 else 0.4))
-    for k, (x0, x1, y) in enumerate(((11, 20, 39), (12, 19, 37))):   # les bûches
+            if y < 37:                                        # le contrecœur, au fond, noirci
+                c = ton(SUIE, 0.10 + 0.25 * (y - 30) / 6)
+            else:                                             # le sol de l'âtre, vu d'en haut : plus clair vers l'avant
+                c = ton(R, appareil(nom, x, y, 0.18 + 0.30 * (y - 37) / 8) - 0.05 * abs(x - 15.5) / 7)
+            put(x, y, c)
+    for x in (11, 20):                                        # les chenets, debout sur l'âtre
+        for y in range(39, 44):
+            put(x, y, ton(FER, 0.8 if y == 39 else 0.45))
+    for (x0, x1, y) in ((12, 19, 41), (13, 18, 39)):          # les bûches couchées, vues d'en haut
         for x in range(x0, x1 + 1):
-            put(x, y, ton(BUCHE, 0.75 - 0.04 * (x - x0)))
-            put(x, y + 1, ton(BUCHE, 0.40))
-        put(x0, y, ton(BUCHE, 0.95)); put(x0, y + 1, ton(BUCHE, 0.7))   # le bout scié
-    for y in range(42, H):                                    # la sole, devant
-        for x in range(0, W):
-            put(x, y, ton(R, (0.85 if y == 42 else 0.6 - 0.1 * (y - 43)) - 0.12 * x / 31))
-    # ce qui est posé sur le manteau
+            put(x, y, ton(BUCHE, 0.80 - 0.04 * (x - x0)))     # leur dessus, éclairé
+            put(x, y + 1, ton(BUCHE, 0.42))
+        put(x0, y, ton(BUCHE, 0.98)); put(x0, y + 1, ton(BUCHE, 0.72))   # le bout scié
+    # la sole, qui avance dans la pièce : son dessus (4 rangées), son chant (2)
+    dessus(0, 31, 46, 49, 0.90)
+    for x in range(0, W):
+        put(x, 50, ton(R, 0.55 - 0.14 * x / 31))
+        put(x, 51, ton(R, 0.35 - 0.10 * x / 31))
+    # ce qui est posé sur le manteau : debout sur le dessus de la tablette (leur pied à la rangée 23)
     if nom == 'pierre':
         for x in (5, 26):                                     # deux bougeoirs
-            put(x, 17, ton(LAITON, 0.8)); put(x, 16, ton(CIRE, 0.9)); put(x, 15, ton(CIRE, 0.8)); put(x, 14, ton(FEU, 0.9))
+            put(x, 23, ton(LAITON, 0.85)); put(x + 1, 23, ton(LAITON, 0.5))
+            put(x, 22, ton(CIRE, 0.95)); put(x, 21, ton(CIRE, 0.85)); put(x, 20, ton(CIRE, 0.75)); put(x, 19, ton(FEU, 0.95))
     elif nom == 'briques':
-        for x in range(4, 8):                                 # un pot de fleurs
-            put(x, 17, ton(BUCHE, 0.6)); put(x, 16, ton(BUCHE, 0.7))
-        for (x, y) in ((4, 15), (6, 14), (7, 15), (5, 14)):
-            put(x, y, (110, 170, 90))
-        put(5, 13, (230, 120, 150)); put(7, 13, (240, 200, 90))
+        for x in range(4, 8):                                 # un pot de fleurs : son bord vu d'en haut, son flanc
+            put(x, 20, ton(BUCHE, 0.85)); put(x, 21, ton(BUCHE, 0.6)); put(x, 22, ton(BUCHE, 0.5)); put(x, 23, ton(BUCHE, 0.4))
+        for (x, y, c) in ((4, 18, (110, 170, 90)), (6, 17, (110, 170, 90)), (7, 18, (90, 150, 80)), (5, 19, (130, 190, 100)),
+                          (5, 16, (230, 120, 150)), (7, 16, (240, 200, 90)), (6, 19, (100, 160, 84))):
+            put(x, y, c)
     else:
-        for y in range(11, 18):                               # une pendule : son cadran rond cerclé d'or, son socle
+        for y in range(15, 23):                               # une pendule : son cadran rond cerclé d'or, son socle
             for x in range(12, 20):
-                d = (x - 15.5) ** 2 + (y - 13.5) ** 2
+                d = (x - 15.5) ** 2 + (y - 17.5) ** 2
                 if d <= 7.5:
                     put(x, y, (250, 246, 232) if d <= 3.2 else ton(LAITON, 0.85 - 0.1 * (x - 12) / 7))
         for x in range(12, 20):
-            put(x, 17, ton(LAITON, 0.8 - 0.1 * (x - 12) / 7))
-        put(15, 13, (40, 30, 20)); put(15, 12, (40, 30, 20)); put(16, 13, (40, 30, 20))
+            put(x, 22, ton(LAITON, 0.95 - 0.1 * (x - 12) / 7))  # le dessus du socle
+            put(x, 23, ton(LAITON, 0.55 - 0.1 * (x - 12) / 7))
+        put(15, 17, (40, 30, 20)); put(15, 16, (40, 30, 20)); put(16, 17, (40, 30, 20))
     return contour(im, OUT)
 
 
