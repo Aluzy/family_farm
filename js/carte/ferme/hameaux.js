@@ -28,7 +28,12 @@
  *     hameau où il est, ou null (ctx.bridge.hameauIci : le récit, la veillée au Gué) ;
  *   - le panneau qu'on touche dit le nom du hameau ; les outils qui n'y ont rien à faire le disent
  *     (on n'y casse rien, on n'y bâtit pas, on n'y laboure pas, on n'y coupe pas les arbres des
- *     jardins : hameauOutil, appelé en premier par hitAt, js/farm-stage.js).
+ *     jardins : hameauOutil, appelé en premier par hitAt, js/farm-stage.js) ;
+ *   - le port (le chantier « l'île à bâtir », fiche I1a : un plan comme ceux des hameaux, `batisse` « port »,
+ *     js/engine/monde-hameaux.js planPort) : le toit de sa halle s'efface quand on y entre, comme celui d'une
+ *     maison ; ses lanternes s'allument le soir (stepLanternesPort : leur image allumée, qui vacille, et leur
+ *     lumière chaude, PORT.LANTERNE de data/village.json, ctx.monde.portLanterne) ; son panneau dit son nom ; on
+ *     n'y casse ni n'y bâtit rien (hameauOutil, son cadre couvre le quai).
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
  */
@@ -310,6 +315,7 @@
     stepFenetresHameaux(out, nuit) {
       if (!this.hameauxVus || !this.hameauxVus.size) return;
       const on = nuit > BLOCS_CARTE.lanterne.allume ? Math.min(1, nuit / 0.4) : 0;
+      this.stepLanternesPort(out, on);
       if (on <= 0) return;
       const L = BLOCS_CARTE.lumiereMaison, W = this.grid.cols, v = this.cameras.main.worldView;
       for (const e of this.hameauxVus.values()) {
@@ -325,6 +331,34 @@
             const m = t.maison;
             out.push({ key: 'lueur', x: (m.x0 + m.l / 2) * T, y: (m.y0 + m.h / 2) * T, tint: L.teinte, alpha: NUIT.dedans.alpha * ouvert, scaleX: (m.l * T * 0.7) / 32, scaleY: (m.h * T * 0.7) / 32 });
           }
+        }
+      }
+    },
+
+    // Les lanternes du port (fiche I1a) : le jour, leur image éteinte ; le soir (`on` : de 0 à 1, comme les
+    // fenêtres), leur image allumée — ses deux images alternent au hasard, elle vacille (fixe avec « animations
+    // réduites ») — et leur lumière dans le voile : une flaque chaude au sol, la lueur de la vitre (plan.lanternes,
+    // leur pied ; PORT.LANTERNE). Leurs images sont celles de la planche des hameaux (vegetation.js : o.lanternePort,
+    // les numéros de leurs trois variantes).
+    stepLanternesPort(out, on) {
+      const calme = reducedMotion(), now = performance.now();
+      for (const o of this.vegListe || []) {
+        const v = o.lanternePort;
+        if (!v) continue;
+        if (on > 0 && !calme && !(o.flip > now)) { o.flip = now + 120 + Math.random() * 260; o.lueur = Math.random() < 0.5 ? 1 : 2; }
+        const f = on > 0 ? v[calme ? 1 : o.lueur || 1] : v[0];
+        if (f !== undefined && o.img.frame.name !== f) o.img.setFrame(f);
+      }
+      const L = this.ctx.monde && this.ctx.monde.portLanterne;
+      if (on <= 0 || !L) return;
+      const vue = this.cameras.main.worldView;
+      for (const e of this.hameauxVus.values()) {
+        for (const l of e.plan.lanternes || []) {
+          if (l.x < vue.x - 96 || l.x > vue.right + 96 || l.y < vue.y - 96 || l.y > vue.bottom + 128) continue;
+          const k = on * (calme ? 1 : 0.9 + 0.1 * Math.sin(now / 260 + l.x));
+          const S = L.sol, V = L.vitre;
+          out.push({ key: 'lueur', x: l.x + S.dx, y: l.y + S.dy, tint: S.teinte, alpha: S.alpha * k, scaleX: S.rayon / 32, scaleY: (S.rayon * S.aplati) / 32 });
+          out.push({ key: 'lueur', x: l.x + V.dx, y: l.y + V.dy, tint: V.teinte, alpha: V.alpha * k, scaleX: V.rayon / 32, scaleY: V.rayon / 32 });
         }
       }
     },

@@ -27,7 +27,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 |---|---|---|---|
 | [I0a — le réglage de bascule et l'archive](I0a-reglage-et-archive.md) | 0 | — | fait |
 | [I0b — le joueur automatique remis d'aplomb](I0b-joueur-automatique.md) | 0 | I0a | fait |
-| [I1a — le port sur l'île](I1a-port-sur-l-ile.md) | 1 | I0a | à faire |
+| [I1a — le port sur l'île](I1a-port-sur-l-ile.md) | 1 | I0a | fait |
 | [I1b — le commerce au port](I1b-commerce-au-port.md) | 1 | I1a | à faire |
 | [I1c — le bac, les commandes et le catalogue d'import](I1c-bac-commandes-import.md) | 1 | I1b | à faire |
 | [I2 — le chemin du port, modifiable, et le portage](I2-chemin-et-portage.md) | 2 | I1b | à faire |

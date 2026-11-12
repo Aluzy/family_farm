@@ -38,7 +38,7 @@ import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmTerrain, tileCount, voirRegion } from '../engine/terrain.js';
 import { MONDE } from '../engine/monde.js';
 import { BIOMES } from '../engine/monde-gen.js';
-import { boussoleMontree, butBoussole, choisirBut, etatBoussole, lieuxDeLaCarte, voirAutour, vuDe } from '../engine/monde-vu.js';
+import { boussoleMontree, butBoussole, choisirBut, etatBoussole, lieuxDeLaCarte, listeDuBut, voirAutour, vuDe } from '../engine/monde-vu.js';
 import { LIEUX_ICONES, carteMondeVu } from './carte-monde.js';
 import { tuilesChemins } from '../engine/ferme-generee.js';
 import { solDuMonde } from './monde-sol.js';
@@ -926,7 +926,7 @@ function boussoleModele() {
   const b = butBoussole(state), lieux = sol.lieux();
   let but = null;
   if (b && lieux) {
-    const L = lieuxDeLaCarte(state, lieux, T), l = (b.sorte === 'hameau' ? L.hameaux : L.peche).find((q) => q.id === b.id);
+    const l = listeDuBut(lieuxDeLaCarte(state, lieux, T), b.sorte).find((q) => q.id === b.id);
     if (l) but = { ...px(l.case), nom: l.nom, icone: LIEUX_ICONES[b.sorte] };
   }
   return {
@@ -1056,6 +1056,8 @@ function stageCabane() {
 }
 
 function stageMaison(m) {
+  // (la halle du port, fiche I1a : y entrer ne raconte rien ; le commerce viendra avec la fiche I1b)
+  if (m && m.batisse === 'port') return;
   // (une bâtisse du récit, l'observatoire de Maurice (la « cabane »), l'atelier de Frida : y entrer, c'est la découvrir)
   if (m && m.batisse === 'cabane') { stageCabane(); return; }
   if (m && m.batisse === 'atelier' && aFait(state, 'lieu.atelier')) {
@@ -1083,6 +1085,8 @@ function banniereHameau(h) {
 // Un appui sur le panneau d'un hameau : sa fiche (ses familles, sa réserve : js/ui/habitants.js), ou
 // son nom tant qu'il n'a pas d'habitants.
 function stageHameauPanneau(h) {
+  // (le panneau du port, fiche I1a : son nom ; le commerce viendra avec la fiche I1b)
+  if (h && h.id === 'port') { notify(`⚓ ${h.nom} : le bac y accoste. On y vendra, on y achètera.`, { kind: 'info' }); return; }
   openFicheHameau(h);
 }
 
@@ -1098,7 +1102,15 @@ const REFUS_HAMEAU = {
   bati: (n) => `🏘️ On ne bâtit pas ${aNom(n)} : on ne bâtit que sur la ferme.`,
   planter: (n) => `On ne plante pas d'arbre ${aNom(n)} : on ne plante que sur la ferme.`,
 };
+// (le port, fiche I1a : on n'y bâtit, n'y casse, n'y laboure ni n'y plante rien)
+const REFUS_PORT = {
+  pioche: '⛏️ On ne casse rien au port : le quai, la halle et ses lanternes servent à tous.',
+  houe: 'On ne laboure pas au port : c\'est un quai, pas un champ.',
+  bati: '⚓ On ne bâtit pas au port : on ne bâtit que sur la ferme.',
+  planter: 'On ne plante pas d\'arbre au port : on ne plante que sur la ferme.',
+};
 function stageHameauRefus(outil, nom) {
+  if (nom === DATA.PORT.NOM) { if (REFUS_PORT[outil]) notify(REFUS_PORT[outil], { kind: 'info' }); return; }
   const f = REFUS_HAMEAU[outil];
   if (f) notify(f(String(nom)), { kind: 'info' });
 }

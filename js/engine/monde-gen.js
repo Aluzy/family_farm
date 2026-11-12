@@ -624,8 +624,11 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
   // (`longe` : pour rejoindre un chemin posé, qui coûte alors LONGE_COUT ; sinon COUTS.chemin, à
   // peine moins que la prairie : un chemin qui ferait le grand tour par les chemins déjà posés
   // n'est pas moins cher qu'un chemin neuf, et la boucle se ferme)
+  // (le chemin du port, tiré en dernier : les cases que son tracé évite, la montagne comprise ; null avant)
+  let evitePort = null;
   const cout = (i, longe = false) => {
     if (auBord(i, 2) || dansFerme(i)) return -1;
+    if (evitePort !== null && (evitePort[i] || bio(i) === montagne)) return -1;
     if (surChemin[i]) return longe ? PC.LONGE_COUT : PC.COUTS.chemin;
     const c = coutDe[bio(i)];
     if (c < 0) return -1;
@@ -942,7 +945,156 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
     }
   }
 
-  return { rivieres, finRivieres, lacs, eaux, chemins, lieux: { hameaux, grottes, peche, recit, secrets } };
+  /* -- le port (le chantier « l'île à bâtir », fiche I1a : data/village.json PORT ; js/engine/port.js) -- */
+  // Seulement si le cadre le demande (cadre.PORT : son niveau) ; en dernier, sans tirage : rien d'autre ne bouge.
+  const port = cadre.PORT ? placerPort() : null;
+
+  return { rivieres, finRivieres, lacs, eaux, chemins, lieux: port ? { hameaux, grottes, peche, recit, secrets, port } : { hameaux, grottes, peche, recit, secrets } };
+
+  // La case du port : une case de terre (plage, prairie, lande, forêt) au bord de la mer, d'où le quai avance droit
+  // vers le sud (sens 1) ou vers l'est (sens 3) — la mer est au sud et à l'est — sur l'eau libre (dispoPort),
+  // la terre derrière pour la halle et ses abords ; loin de la ferme, des hameaux et des autres lieux ; qu'on
+  // joint à pied depuis la sortie de la ferme sans passer la montagne. Parmi elles, la plus loin de la ferme
+  // dont le chemin se trouve (PORT.PLAN.ESSAIS tentés, des plus loin aux moins loin) et coûte PRIX_MAX au plus ;
+  // sinon la plus loin qui a un chemin, à n'importe quel prix ; sinon, la plus loin, sans chemin.
+  // → { id, nom, case, sens, quai (ses cases au niveau 5, de la rive vers le large, rangée par rangée de
+  // largeur), halle: { x0, y0, l, h }, terre: { x0, y0, x1, y1 } (ses abords), chemin (de la sortie de la
+  // ferme à sa case), prix }, ou null (aucune côte ne convient).
+  function placerPort() {
+    const PP = DATA.PORT.PLAN, Q = PP.QUAI, E = PP.EAU, [HL, HH] = PP.HALLE;
+    const terreOk = (x, y) => {
+      if (x < 3 || y < 3 || x >= W - 3 || y >= H - 3) return false;
+      const j = y * W + x, b = bio(j);
+      return (b === plage || b === prairie || b === lande || b === foret) && !dansFerme(j);
+    };
+    const merOk = (x, y) => x >= 1 && y >= 1 && x < W - 1 && y < H - 1 && estMer(y * W + x) && eaux[y * W + x] === AUCUNE_EAU;
+    const autres = [...grottes, ...peche, ...recit, ...secrets].map((l) => l.case);
+    // (une côte trop découpée, trop de lieux sur elle : on relâche, pas à pas, l'eau libre de côté puis la
+    // distance aux autres lieux, jusqu'à trouver)
+    const cands = [];
+    for (const [e, dl] of [[E, PP.LIEUX], [Math.min(E, 2), PP.LIEUX], [1, PP.LIEUX / 2], [0, PP.LIEUX / 3]]) {
+      for (let y = 4; y < H - 4; y += PP.PAS) {
+        for (let x = 4; x < W - 4; x += PP.PAS) {
+          const i = y * W + x;
+          if (distFerme(i) < PP.FERME) continue;
+          for (const sens of [1, 3]) {
+            // (d'abord la mer juste devant, puis la terre de la case : la plupart des cases s'arrêtent là)
+            if (!merOk(x + (sens === 3 ? 1 : 0), y + (sens === 1 ? 1 : 0)) || !terreOk(x, y)) continue;
+            const d = dispoPort(x, y, sens, terreOk, merOk, Q, e, HL, HH, W);
+            if (!d) continue;
+            const bout = d.quai[d.quai.length - 1];
+            if (!loin(autres, i, dl) || !loin(autres, bout, dl) || !loin(hameaux.map((h) => h.case), i, PP.HAMEAU)) continue;
+            if (d.cases.some((j) => surChemin[j])) continue;
+            cands.push({ i, sens, d, loin: distFerme(i) });
+            break;
+          }
+        }
+      }
+      if (cands.length) break;
+    }
+    if (!cands.length) return null;
+    // les cases grossières qu'on joint à pied depuis la sortie, sans la montagne (un parcours, sur la grille
+    // grossière, de ses prix : coutGros)
+    evitePort = new Uint8Array(N);
+    for (const l of [...recit, ...secrets]) {
+      for (let dy = -4; dy <= 1; dy++) for (let dx = -4; dx <= 4; dx++) { const x = col(l.case) + dx, y = rang(l.case) + dy; if (x >= 0 && y >= 0 && x < W && y < H) evitePort[y * W + x] = 1; }
+    }
+    const joint = new Uint8Array(CW * CH), file = [gros(cadre.SORTIE)];
+    joint[file[0]] = 1;
+    for (let k = 0; k < file.length; k++) {
+      const u = file[k], ux = u % CW, uy = Math.floor(u / CW);
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const vx = ux + dx, vy = uy + dy, v = vy * CW + vx;
+        if (vx < 0 || vy < 0 || vx >= CW || vy >= CH || joint[v] || coutGros(v) < 0) continue;
+        joint[v] = 1; file.push(v);
+      }
+    }
+    const atteint = (i) => {
+      const u = gros(i), ux = u % CW, uy = Math.floor(u / CW);
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const vx = ux + dx, vy = uy + dy; if (vx >= 0 && vy >= 0 && vx < CW && vy < CH && joint[vy * CW + vx]) return true; }
+      return false;
+    };
+    cands.sort((a, b) => b.loin - a.loin || a.i - b.i);
+    const prix = (pas) => pas.reduce((s, j, n) => s + (n ? Math.max(0, cout(j)) : 0), 0);
+    let choisi = null, secours = null;
+    const essayer = (c) => {
+      for (const j of c.d.evite) evitePort[j] = 1;
+      const pas = relier(cadre.SORTIE, c.i);
+      for (const j of c.d.evite) evitePort[j] = 0;
+      return pas && pas[pas.length - 1] === c.i ? pas : null;
+    };
+    let n = 0;
+    for (const c of cands) {
+      if (n >= PP.ESSAIS) break;
+      if (!atteint(c.i)) continue;
+      n++;
+      const pas = essayer(c);
+      if (!pas) continue;
+      const p = prix(pas);
+      if (!secours) secours = { c, pas, p };
+      if (p <= PP.PRIX_MAX) { choisi = { c, pas, p }; break; }
+    }
+    const r = choisi || secours;
+    evitePort = null;
+    const c = r ? r.c : cands[0];
+    return {
+      id: 'port', nom: DATA.PORT.NOM, case: c.i, sens: c.sens, quai: c.d.quai, halle: c.d.halle, terre: c.d.terre,
+      chemin: r ? r.pas : [], prix: r ? Math.round(r.p) : null,
+    };
+  }
+}
+
+// Le port tient-il à la case de terre (x, y), son quai vers le `sens` (1 : le sud, 3 : l'est) ? Q : la longueur
+// du quai (au niveau 5), E : l'eau libre de chaque côté, HL × HH : la halle. La place de tout (dispositionPort),
+// puis : sa terre (la halle, ses abords, la case du quai et sa voisine), la mer sous le quai, sous la cale et,
+// au-delà des deux premières cases du quai, sur E cases de chaque côté et deux cases plus loin que son bout.
+// → { quai, halle, terre, cases (celles du port, terre et quai), evite (celles que le chemin évite : la halle
+// et ce qui ferme) }, ou null.
+function dispoPort(x, y, sens, terreOk, merOk, Q, E, HL, HH, W) {
+  const D = dispositionPort(x, y, sens, Q, HL, HH, W);
+  const t = D.terre;
+  for (let yy = t.y0; yy <= t.y1; yy++) for (let xx = t.x0; xx <= t.x1; xx++) if (!terreOk(xx, yy)) return null;
+  const [dx, dy] = sens === 1 ? [0, 1] : [1, 0], [bx, by] = sens === 1 ? [1, 0] : [0, 1];
+  for (let k = 1; k <= Q + 2; k++) {
+    for (let j = k <= 2 ? 0 : -E; j <= (k <= 2 ? 1 : 1 + E); j++) if (!merOk(x + dx * k + bx * j, y + dy * k + by * j)) return null;
+  }
+  for (const [cx, cy] of D.cale) if (!merOk(cx, cy)) return null;
+  return D;
+}
+
+// La place de tout le port, sa case (x, y) au bord de l'eau, son quai vers le `sens` (1 : le sud, 3 : l'est), sur
+// un monde de W de large (les cases : rangée × W + colonne) — la même pour le plan (dispoPort) et le bâti
+// (monde-hameaux.js, planPort) :
+//   - le quai : 2 cases de large, de la case voisine de (x, y) vers le large ;
+//   - la halle, HL × HH cases : vers le sud, à l'est du quai, sa rangée du bas au bord de l'eau ; vers l'est,
+//     au nord de la case du port, au-dessus d'elle ;
+//   - la cale : à côté du pied du quai, du côté de l'eau, deux cases ;
+//   - les places de ses objets (objets : { nom: [x, y] }, la case de leur pied ; `quai` : sur le quai, à k cases
+//     de la rive, k compté depuis son bout si négatif) ;
+//   - ses abords (terre : le rectangle de terre qu'il lui faut, la halle comprise).
+// → { quai (ses cases au niveau 5, de la rive vers le large, par paires), halle: { x0, y0, l, h }, cale: [[x, y]…],
+// objets, terre: { x0, y0, x1, y1 }, cases, evite }.
+export function dispositionPort(x, y, sens, Q, HL, HH, W = 0) {
+  const sud = sens === 1;
+  const halle = sud ? { x0: x + 2, y0: y - HH + 1, l: HL, h: HH } : { x0: x - HL + 1, y0: y - HH, l: HL, h: HH };
+  const terre = sud ? { x0: x - 2, y0: y - HH, x1: x + HL + 2, y1: y } : { x0: x - HL - 1, y0: y - HH - 1, x1: x, y1: y + 1 };
+  const cale = sud ? [[x - 1, y + 1], [x - 1, y + 2]] : [[x + 1, y - 1], [x + 2, y - 1]];
+  const quai = [];
+  for (let k = 1; k <= Q; k++) for (let j = 0; j <= 1; j++) quai.push(sud ? [x + j, y + k] : [x + k, y + j]);
+  const hx1 = halle.x0 + HL - 1, hy1 = halle.y0 + HH - 1;
+  const objets = sud
+    ? { comptoir: [halle.x0 + 1, halle.y0 + 1], balance: [halle.x0 + 4, halle.y0 + 1], panneau: [x - 2, y - 1], lanterne: [x - 1, y],
+      caisses_terre: [hx1 + 1, hy1], tonneaux_terre: [hx1 + 1, hy1 - 1] }
+    : { comptoir: [halle.x0 + 1, halle.y0 + 1], balance: [halle.x0 + 4, halle.y0 + 1], panneau: [x - 3, y + 1], lanterne: [x - 1, y + 1],
+      caisses_terre: [halle.x0 - 1, hy1], tonneaux_terre: [halle.x0 - 1, hy1 - 1] };
+  const poteaux = [[halle.x0, halle.y0], [hx1, halle.y0], [halle.x0, hy1], [hx1, hy1]];
+  const ix = (cx, cy) => cy * W + cx;
+  const cases = [], evite = [];
+  for (let yy = terre.y0; yy <= terre.y1; yy++) for (let xx = terre.x0; xx <= terre.x1; xx++) cases.push(ix(xx, yy));
+  for (const [cx, cy] of quai) cases.push(ix(cx, cy));
+  for (let yy = halle.y0; yy <= hy1; yy++) for (let xx = halle.x0; xx <= hx1; xx++) evite.push(ix(xx, yy));
+  for (const k of ['panneau', 'lanterne', 'caisses_terre', 'tonneaux_terre']) evite.push(ix(...objets[k]));
+  return { quai: quai.map(([cx, cy]) => ix(cx, cy)), halle, cale, objets, poteaux, terre, cases, evite };
 }
 
 // La cale du bac (le récit) : depuis la case de terre `i`, une jetée de L cases peut-elle avancer droit dans

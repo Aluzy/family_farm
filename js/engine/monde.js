@@ -71,19 +71,35 @@ export function casesDeRegion(cle, largeur = MONDE.LARGEUR, hauteur = MONDE.HAUT
 const mondes = new Map();
 const MONDES_GARDES = 3;
 
-export function genererMonde(graine) {
-  const cle = String(graine);
+// `port` (le chantier « l'île à bâtir », fiche I1a) : le niveau du port de la partie (1 à 5), ou 0 : pas de
+// port (le jeu publié, VILLAGE.ACTIF faux : le monde d'avant, le même objet). Le monde d'un port est celui de
+// la graine, sa carte et son terrain les mêmes, seul son cadre porte PORT (le plan y place le port : monde-gen.js,
+// elementsDuMonde) et MONDE.cle le distingue (les sols gardés par monde : monde-sol.js solDirect,
+// js/ui/monde-sol.js).
+export function genererMonde(graine, port = 0) {
+  const g = String(graine), n = Number.isInteger(port) && port > 0 ? port : 0, cle = n ? g + '|port' + n : g;
   let m = mondes.get(cle);
   if (m) mondes.delete(cle);
-  else m = fabriquer(cle);
+  else m = n ? avecPort(genererMonde(g), n) : fabriquer(g);
   mondes.set(cle, m);
   while (mondes.size > MONDES_GARDES) mondes.delete(mondes.keys().next().value);
   return m;
 }
 
 // Le plan du monde de la graine (monde-gen.js : fairePlan), tiré à la première demande.
-export function planDuMonde(graine) {
-  return genererMonde(graine).plan;
+export function planDuMonde(graine, port = 0) {
+  return genererMonde(graine, port).plan;
+}
+
+// Le monde `m` (celui de la graine, sans port) avec le port au niveau n : sa carte, son terrain (les mêmes
+// propriétés : ses coins se calculent une fois), son cadre avec PORT, son plan à part.
+function avecPort(m, n) {
+  const T = m.terrain, M = T.MONDE, cadre = { ...M.cadre, PORT: n };
+  const { MONDE: _m, ...props } = Object.getOwnPropertyDescriptors(T);
+  const terrain = Object.defineProperties({}, props);
+  Object.defineProperty(terrain, 'MONDE', { value: { ...M, cadre, cle: M.graine + '|port' + n } });
+  let planFait = null;
+  return { get carte() { return m.carte; }, terrain, get plan() { return planFait || (planFait = fairePlan(M.graine, cadre)); } };
 }
 
 // Une case de la ferme (rangée × largeur de la ferme + colonne) → la même case du monde.
@@ -194,7 +210,7 @@ function fabriquer(graine) {
   // (pour que la prairie autour s'y raccorde), la taille des régions. Pas énumérable : le terrain
   // garde sa forme.
   Object.defineProperty(terrain, 'MONDE', {
-    value: { graine, cadre, ferme: { sommets: tf.SOMMETS, teintes: tf.TEINTES }, taille: MONDE.REGION },
+    value: { graine, cle: graine, cadre, ferme: { sommets: tf.SOMMETS, teintes: tf.TEINTES }, taille: MONDE.REGION },
   });
   return { get carte() { return carte(); }, terrain, get plan() { return plan(); } };
 }

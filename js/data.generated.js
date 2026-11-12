@@ -8905,6 +8905,35 @@ export const RAW_DATA = {
       }
     }
   },
+  "PORT": {
+    "NOM": "Le port",
+    "NIVEAU_DEPART": 1,
+    "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 70, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
+    "NIVEAUX": [
+      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },
+      { "quai": 8, "ajoute": ["caisses"] },
+      { "quai": 10, "ajoute": ["tonneaux", "mat"] },
+      { "quai": 10, "ajoute": ["caisses_terre"] },
+      { "quai": 12, "ajoute": ["tonneaux_terre"] }
+    ],
+    "SORTES": [
+      { "nom": "quai", "genre": "ponton", "variantes": 8 },
+      { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
+      { "nom": "poteau_halle", "genre": "objet", "variantes": 1 },
+      { "nom": "comptoir", "genre": "meuble", "variantes": 1, "largeur": 3 },
+      { "nom": "balance", "genre": "objet", "variantes": 1 },
+      { "nom": "caisses", "genre": "objet", "variantes": 2 },
+      { "nom": "tonneaux", "genre": "objet", "variantes": 2 },
+      { "nom": "mat_fanion", "genre": "objet", "variantes": 1 },
+      { "nom": "panneau_port", "genre": "objet", "variantes": 1 },
+      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 }
+    ],
+    "BLOQUE": ["poteau_halle", "comptoir", "balance", "caisses", "tonneaux", "mat_fanion", "panneau_port", "lanterne_port"],
+    "LANTERNE": {
+      "sol": { "rayon": 46, "aplati": 0.7, "teinte": 16761968, "alpha": 0.9, "dx": 0, "dy": -4 },
+      "vitre": { "rayon": 11, "teinte": 16769704, "alpha": 0.95, "dx": 0, "dy": -27 }
+    }
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

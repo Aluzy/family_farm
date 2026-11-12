@@ -77,7 +77,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | Lot | Fiches | Ce qu'il apporte |
 |---|---|---|
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
-| 1. Le port | I1a, I1b, I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
+| 1. Le port | I1a (fait), I1b, I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 | Le chemin de la ferme au port, modifiable ; porter la marchandise |
 | 3. Les villageois | I3a (fait), I3b à I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |

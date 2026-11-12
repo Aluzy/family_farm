@@ -183,5 +183,62 @@
         ]
       }
     }
+  },
+  "//PORT": [
+    "Le port (fiche I1a) : avec l'abri, le seul bâtiment de l'île au début d'une partie. Un quai de planches sur",
+    "la mer, une cale de pierre à côté de lui, une halle ouverte (un toit sur quatre poteaux, un comptoir, une",
+    "balance) au bord de l'eau, au bout de l'île, relié à la sortie de la ferme par un chemin. Il n'est posé que",
+    "le chantier allumé (villageActif) : le monde de la partie le reçoit alors dans son cadre (cadre.PORT : le",
+    "niveau du port), et le plan le place (js/engine/monde-gen.js, elementsDuMonde, après tous les autres lieux :",
+    "ils ne bougent pas) ; le bâti se fait avec les hameaux (js/engine/monde-hameaux.js, planPort).",
+    "NOM : son nom (le panneau, la carte du monde, la boussole). NIVEAU_DEPART : le niveau d'une partie neuve",
+    "(I1c les fera payer, state.port.niveau).",
+    "PLAN : l'emplacement. Une case de terre (plage, prairie, lande) au bord de la mer, d'où un quai de QUAI",
+    "cases (celui du niveau 5) avance droit vers le sud ou vers l'est, sur LARGEUR cases de large, l'eau libre",
+    "sur EAU cases de chaque côté au-delà des deux premières cases et deux cases plus loin que son bout ; la terre",
+    "derrière pour la halle (HALLE : largeur, profondeur, en cases) et ses abords. À FERME cases au moins de la",
+    "ferme, HAMEAU d'un hameau, LIEUX des autres lieux (coins de pêche, grottes, lieux du récit, secrets). On",
+    "y va à pied depuis la sortie de la ferme sans passer la montagne (le chemin la contourne) et pour PRIX_MAX",
+    "au plus (la somme des prix des pas, PLAN_MONDE.CHEMINS.COUTS) ; parmi ces cases (une sur PAS de chaque",
+    "côté), la plus loin de la ferme. ESSAIS : les chemins tentés, des plus loin aux moins loin. Si aucune côte",
+    "ne convient (trop découpée, trop de lieux), l'eau libre de côté puis la distance aux lieux se relâchent.",
+    "NIVEAUX : du niveau 1 au niveau 5, la longueur du quai et ce que le niveau ajoute (le niveau 1 : le quai",
+    "court, la halle, sa cale, son panneau et ses deux lanternes ; ensuite des caisses, des tonneaux, le mât à",
+    "fanion, un quai plus long).",
+    "SORTES : les dessins du port (scripts/carte/port.py), rangés à la suite de ceux des hameaux dans leur",
+    "planche (assets/hameaux.png : HAMEAUX.SORTES puis celles-ci ; à n'allonger qu'à la fin), même forme que",
+    "HAMEAUX.SORTES ; le quai et la cale sont du genre « ponton » (sur l'eau, sous ce qui marche dessus).",
+    "BLOQUE : celles qui ferment leur case à la marche (le quai et la cale s'ouvrent).",
+    "LANTERNE : la lumière des lanternes, le soir (js/carte/ferme/hameaux.js) : une flaque au sol, la lueur de",
+    "la vitre (rayon, aplati, teinte, alpha, dx et dy px depuis le pied), comme le réverbère de la ferme."
+  ],
+  "PORT": {
+    "NOM": "Le port",
+    "NIVEAU_DEPART": 1,
+    "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 70, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
+    "NIVEAUX": [
+      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },
+      { "quai": 8, "ajoute": ["caisses"] },
+      { "quai": 10, "ajoute": ["tonneaux", "mat"] },
+      { "quai": 10, "ajoute": ["caisses_terre"] },
+      { "quai": 12, "ajoute": ["tonneaux_terre"] }
+    ],
+    "SORTES": [
+      { "nom": "quai", "genre": "ponton", "variantes": 8 },
+      { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
+      { "nom": "poteau_halle", "genre": "objet", "variantes": 1 },
+      { "nom": "comptoir", "genre": "meuble", "variantes": 1, "largeur": 3 },
+      { "nom": "balance", "genre": "objet", "variantes": 1 },
+      { "nom": "caisses", "genre": "objet", "variantes": 2 },
+      { "nom": "tonneaux", "genre": "objet", "variantes": 2 },
+      { "nom": "mat_fanion", "genre": "objet", "variantes": 1 },
+      { "nom": "panneau_port", "genre": "objet", "variantes": 1 },
+      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 }
+    ],
+    "BLOQUE": ["poteau_halle", "comptoir", "balance", "caisses", "tonneaux", "mat_fanion", "panneau_port", "lanterne_port"],
+    "LANTERNE": {
+      "sol": { "rayon": 46, "aplati": 0.7, "teinte": 16761968, "alpha": 0.9, "dx": 0, "dy": -4 },
+      "vitre": { "rayon": 11, "teinte": 16769704, "alpha": 0.95, "dx": 0, "dy": -27 }
+    }
   }
 }

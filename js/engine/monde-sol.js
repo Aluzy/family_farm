@@ -180,7 +180,10 @@ export function elementsSol(ctx) {
   const el = elementsDuMonde(ctx.graine, cadre, lire);
   const chemins = new Uint8Array(W * H);
   const { riviere } = BIOME;
-  for (const ch of el.chemins) {
+  // (le chemin du port, fiche I1a : à part dans le plan, lieux.port.chemin, la tournée de la calèche ne le suit
+  // pas ; il se peint et se marche comme les autres)
+  const traces = el.lieux.port && el.lieux.port.chemin.length ? [...el.chemins, el.lieux.port.chemin] : el.chemins;
+  for (const ch of traces) {
     for (const i of ch) {
       const c = i % W, r = Math.floor(i / W);
       for (let dr = -1; dr <= 1; dr++) {
@@ -201,7 +204,7 @@ export function elementsSol(ctx) {
   // carré autour de chacune ; près de la ferme, sans bruit (sa sortie a ses trois cases de large).
   const S = SOLS_MONDE, cv = W + 1, coins = new Uint8Array(cv * (H + 1));
   const pres = (X, Y) => X >= F.X - S.PRES_FERME && Y >= F.Y - S.PRES_FERME && X <= F.X + F.LARGEUR + S.PRES_FERME && Y <= F.Y + F.HAUTEUR + S.PRES_FERME;
-  for (const ch of el.chemins) {
+  for (const ch of traces) {
     const n = ch.length, px = new Float64Array(n), py = new Float64Array(n);
     for (let k = 0; k < n; k++) {
       let sx = 0, sy = 0, c = 0;
@@ -232,7 +235,8 @@ export function elementsSol(ctx) {
   ctx.cheminCoins = coins;
   // les hameaux bâtis (monde-hameaux.js, fiche 7a) : leur plan, une fois ; ce qu'ils bâtissent est
   // réservé (ni arbre, ni rocher, ni bête), leur terre battue se peint comme un chemin
-  ctx.hameaux = plansDesHameaux({ graine: ctx.graine, W, H, F, lieux: el.lieux, chemins, biome: (i) => biomeDe(ctx, i) });
+  // (et le port, fiche I1a : cadre.PORT, son niveau)
+  ctx.hameaux = plansDesHameaux({ graine: ctx.graine, W, H, F, lieux: el.lieux, chemins, biome: (i) => biomeDe(ctx, i), niveauPort: cadre.PORT || 0 });
   for (let i = 0; i < W * H; i++) if (ctx.hameaux.emprise[i]) ctx.reserves[i] = 1;
   ctx.mesures.hameaux = ctx.hameaux.ms;
   ctx.mesures.elements = Date.now() - t0;
@@ -531,7 +535,7 @@ const directs = new Map();
 export function solDirect(T) {
   const m = T && T.MONDE;
   if (!m) return null;
-  let s = directs.get(m.graine);
+  let s = directs.get(m.cle || m.graine);
   if (!s) {
     const ctx = contexteSol(m.graine, m.cadre, m.ferme, m.taille);
     const regions = new Map();
@@ -543,7 +547,7 @@ export function solDirect(T) {
         return regions.get(cle);
       },
     };
-    directs.set(m.graine, s);
+    directs.set(m.cle || m.graine, s);
     while (directs.size > 2) directs.delete(directs.keys().next().value);
   }
   return s;
