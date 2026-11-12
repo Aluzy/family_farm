@@ -6,7 +6,7 @@
 // Le montage : scripts/trailer/monter.mjs.
 import { join } from 'node:path';
 import { action, attendre, ouvrirStudio, plateau, scenePrete } from './studio.mjs';
-import { partieDe, partieExportee, partieTrailer, sauvegarde } from './partie.mjs';
+import { miseEnScene, partieDe, partieExportee, partieTrailer, sauvegarde } from './partie.mjs';
 
 const args = process.argv.slice(2);
 const DOSSIER = args.find((a) => !a.startsWith('--') && a.includes('/')) || 'trailer-images';
@@ -50,15 +50,19 @@ function trousse() {
 const st = await ouvrirStudio();
 const S0 = PARTIE ? partieExportee(PARTIE) : partieTrailer().s;
 
+// Une page du jeu prête pour le tournage (après chaque chargement) : l'interface cachée, la trousse.
+async function prepare(p, enLigne = false) {
+  await scenePrete(p);
+  await p.addStyleTag({ content: CACHE });
+  await p.evaluate(trousse);
+  await attendre(p, (l) => !!TR.E() && (l || !!FarmStage.scene().ctx.monde.lieux()), enLigne);
+  await action(p, 'close-modal');
+}
 async function ouvre(sauve, opts = {}) {
   const p = await st.onglet({ sauvegarde: sauve, largeur: L, hauteur: H, ...opts });
   await p.addInitScript(() => { try { localStorage.setItem('ferme-qualite', 'normale'); } catch (e) { /* rien */ } });
   await p.goto(`${st.BASE}/jeu.html`);
-  await scenePrete(p);
-  await p.addStyleTag({ content: CACHE });
-  await p.evaluate(trousse);
-  await attendre(p, () => !!TR.E() && !!FarmStage.scene().ctx.monde.lieux());
-  await action(p, 'close-modal');
+  await prepare(p);
   return p;
 }
 
@@ -212,6 +216,79 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
     }
   }
   await p.context().close();
+}
+
+/* ------------------------------------------------------------------ les scènes en ligne (trois joueurs) */
+if (['ensemble', 'rencontre'].some((n) => VOULUES.includes(n)) || !VOULUES.length) {
+  const { s: SM, rangs } = miseEnScene(S0);
+  const A = await st.compte('camille@exemple.fr'), B = await st.compte('sam@exemple.fr'), C = await st.compte('noa@exemple.fr');
+  // A met sa ferme en ligne (⚙️ Options › Jeu en ligne), y entre, invite B et C (👥 › Inviter un ami)
+  const pa = await st.onglet({ sauvegarde: sauvegarde(SM), qui: A, largeur: L, hauteur: H, nom: 'A' });
+  await pa.addInitScript(() => { try { localStorage.setItem('ferme-qualite', 'normale'); } catch (e) { /* rien */ } });
+  await pa.goto(`${st.BASE}/jeu.html`);
+  await scenePrete(pa);
+  await action(pa, 'open-options');
+  await attendre(pa, () => !!document.querySelector('[data-action="monde-creer"]'));
+  await action(pa, 'monde-creer');
+  await attendre(pa, () => /Entrer/.test((document.getElementById('compte-zone') || {}).innerText || ''));
+  const idMonde = [...st.mondes.keys()][0];
+  const enLigne = () => /à jour/.test((document.getElementById('en-ligne-bandeau') || {}).innerText || '') && !!(window.FarmStage && FarmStage.ready && FarmStage.ready());
+  await pa.goto(`${st.BASE}/jeu.html?monde=${idMonde}`);
+  await attendre(pa, enLigne);
+  const autres = [];
+  for (const [qui, prenom, perso] of [[B, 'Sam', 7], [C, 'Noa', 14]]) {
+    await action(pa, 'monde-membres');
+    await attendre(pa, () => !!document.querySelector('[data-action="monde-inviter"]'));
+    await action(pa, 'monde-inviter');
+    await attendre(pa, () => !!document.getElementById('invitation-lien'));
+    const lien = await pa.evaluate(() => document.getElementById('invitation-lien').value);
+    await action(pa, 'close-modal');
+    const p = await st.onglet({ sauvegarde: sauvegarde(partieDe(SM, prenom, perso)), qui, largeur: 640, hauteur: 360, nom: prenom });
+    await p.goto(`${st.BASE}/jeu.html`);
+    await scenePrete(p);
+    await p.goto(lien);
+    await attendre(p, () => /[?&]monde=/.test(location.search));
+    await attendre(p, enLigne);
+    autres.push(p);
+  }
+  const [pb, pc] = autres;
+  for (const p of [pa, pb, pc]) await prepare(p, true);
+  console.log('  en ligne :', await pa.evaluate(() => document.getElementById('en-ligne-bandeau').innerText.replace(/\s+/g, ' ')));
+  const pl = plateau([pa, pb, pc]);
+  await pa.evaluate((Z) => TR.zoom(Z), Z5);
+  await pl.figer();
+  const W = await pa.evaluate(() => FarmStage.scene().grid.cols);
+  const xy = (t, dx = 0, dy = 0) => [(t % W) * 16 + 8 + dx, Math.floor(t / W) * 16 + 14 + dy];
+
+  if (veut('ensemble') && rangs) {
+    // le potager à trois : A laboure puis sème, Sam arrose, Noa récolte
+    await pa.evaluate(([x, y]) => TR.va(x, y), xy(rangs.houe[0], -20, 0));
+    await pb.evaluate(([x, y]) => TR.va(x, y), xy(rangs.eau[rangs.eau.length - 1], 20, 0));
+    await pc.evaluate(([x, y]) => TR.va(x, y), xy(rangs.recolte[0], -20, 0));
+    await pl.passer(2.5);
+    const ids = await pa.evaluate((R) => { const P = TR.parcelles(), de = (L) => L.map((t) => (P.find((q) => q.case === t) || {}).id); return { eau: de(R.eau), recolte: de(R.recolte) }; }, rangs);
+    await film(pl, pa, 'ensemble', 16, async (i) => {
+      if (i === 15) await pa.evaluate((R) => { for (const t of R.houe) TR.act('hoe', { case: String(t) }); }, rangs);
+      if (i === 30) await pb.evaluate((L) => { for (const id of L.slice().reverse()) TR.act('water', { id }); }, ids.eau);
+      if (i === 45) await pc.evaluate((L) => { for (const id of L) TR.act('harvest', { id }); }, ids.recolte);
+      if (i === 240) await pa.evaluate((R) => FarmStage.semer(R.semis, 'carotte'), rangs);
+    });
+    console.log('  après :', JSON.stringify(await pa.evaluate((R) => { const P = TR.parcelles(); return Object.fromEntries(Object.entries(R).map(([k, L]) => [k, L.map((t) => { const q = P.find((x) => x.case === t); return q ? (q.culture || '_') + (q.arrose ? '~' : '') : '.'; }).join(' ')])); }, rangs)));
+  }
+
+  if (veut('rencontre')) {
+    // les trois joueurs se retrouvent sur le chemin, devant la maison
+    const k = await pa.evaluate(() => TR.blocs('cuisiniere')[0]);
+    const m = { x: k.c * 16 + 8, y: (k.r + 6) * 16 + 14 };
+    await pa.evaluate((m) => TR.va(m.x - 110, m.y), m);
+    await pb.evaluate((m) => TR.va(m.x + 120, m.y - 4), m);
+    await pc.evaluate((m) => TR.va(m.x + 150, m.y + 12), m);
+    await pl.passer(2.5);
+    await film(pl, pa, 'rencontre', 6, async (i) => {
+      if (i === 5) { await pa.evaluate((m) => FarmStage.scene().fermier.goTo(m.x - 12, m.y), m); await pb.evaluate((m) => FarmStage.scene().fermier.goTo(m.x + 14, m.y - 2), m); await pc.evaluate((m) => FarmStage.scene().fermier.goTo(m.x + 30, m.y + 12), m); }
+    });
+  }
+  for (const p of [pa, pb, pc]) await p.context().close();
 }
 
 await st.fermer();

@@ -1,7 +1,7 @@
 // La partie du trailer : une ferme bâtie et vivante sur la graine 42, fabriquée par les aides du mode
 // test du moteur (comme tests/deux-joueurs.mjs). `partieTrailer()` renvoie l'état ; `sauvegarde(s)` son texte.
 import {
-  addItem, DATA, farmTerrain, findPlot, maxStage, plant, poserBloc, takeItem, testAddCows, testAddEggs, testAddFlour, testAddFood,
+  addItem, awakeMsAtHour, DATA, farmTerrain, findPlot, maxStage, plant, poserBloc, takeItem, testAddCows, testAddEggs, testAddFlour, testAddFood,
   testAddHens, testAddOil, testAddSeeds, testAddSheep, testAllTools, testBatir, testFarmMap, testFillEnergy, testFillTank, hoe,
   testSetLevel, toutVoir,
 } from '../../js/engine/index.js';
@@ -79,4 +79,34 @@ export function partieExportee(fichier) {
   const j = JSON.parse(readFileSync(fichier, 'utf8'));
   if (!j || !j.s) throw new Error('Ce fichier n\'est pas une partie exportée du jeu.');
   return j.s;
+}
+
+// La mise en scène du potager, sur une copie de la partie : au bas du plus grand champ, quatre rangs de
+// LARGEUR cases prêts pour les quatre gestes (de haut en bas : à récolter, à arroser, à semer, à labourer),
+// l'énergie et l'eau pleines, l'heure du matin. Renvoie { s, rangs: { recolte, eau, semis, houe } } (des
+// cases du monde, de gauche à droite).
+export function miseEnScene(s0, largeur = 5) {
+  const s = JSON.parse(JSON.stringify(s0));
+  const W = farmTerrain(s).LARGEUR, P = s.potager.parcelles;
+  const par = new Map(P.map((p) => [p.case, p]));
+  // le rang du bas le plus long, puis les trois au-dessus, sur les mêmes colonnes
+  let best = null;
+  for (const p of P) {
+    let n = 0;
+    while (n < 12 && [0, 1, 2, 3].every((k) => par.has(p.case + n - k * W))) n += 1;
+    const dessous = par.has(p.case + W);
+    if (n >= largeur && !dessous && (!best || n > best.n)) best = { t: p.case, n };
+  }
+  if (!best) return { s, rangs: null };
+  const rang = (k) => Array.from({ length: largeur }, (_, i) => best.t + i - k * W);
+  const rangs = { houe: rang(0), semis: rang(1), eau: rang(2), recolte: rang(3) };
+  const culture = (par.get(rangs.recolte[0]).culture) || 'ble';
+  for (const t of rangs.recolte) { const p = par.get(t); if (!p.culture) p.culture = culture; p.stade = maxStage(p); p.arrose = true; }
+  for (const t of rangs.eau) { const p = par.get(t); if (!p.culture) p.culture = culture; p.stade = Math.max(1, maxStage(p) - 2); p.arrose = false; }
+  for (const t of rangs.semis) { const p = par.get(t); p.culture = null; p.stade = 0; p.arrose = false; }
+  s.potager.parcelles = P.filter((p) => !rangs.houe.includes(p.case));
+  s.potager.houe = true;
+  testAllTools(s); testFillEnergy(s); testFillTank(s); testAddSeeds(s);
+  s.awakeMs = awakeMsAtHour(10);
+  return { s, rangs };
 }
