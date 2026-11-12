@@ -525,8 +525,13 @@
     // la lueur de la vitre), qui vacille un peu ; un petit halo par-dessus (WebGL).
     stepLanterns(time, dt) {
       const V = this.lumiere;
-      const list = [];
-      for (const e of (this.blocks || new Map()).values()) if (LUMIERES.includes(e.sorte)) list.push(e);
+      // (les lumières posées : relevées parmi tous les blocs quand ils changent (blocsN), pas à chaque image)
+      if (this.lumieresN !== this.blocsN || !this.lumieresPosees) {
+        this.lumieresN = this.blocsN;
+        this.lumieresPosees = [];
+        for (const e of (this.blocks || new Map()).values()) if (LUMIERES.includes(e.sorte)) this.lumieresPosees.push(e);
+      }
+      const list = this.lumieresPosees.filter((e) => e.img && e.img.active);
       // (et celles de l'étage, js/carte/ferme/etage.js)
       for (const e of this.etageLumieres || []) if (e.img && e.img.active) list.push(e);
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)

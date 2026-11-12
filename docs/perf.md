@@ -222,6 +222,29 @@ ne lit que MORCEAUX_VERIFIES morceaux (2), à tour de rôle (le navigateur les v
 suffisent à le voir) ; au retour de la page au premier plan (`visibilitychange`), là où le vidage arrive,
 tous sont vérifiés à l'image suivante.
 
+## Le sol relu une fois par morceau, les lanternes et les rives (2026-11-12)
+
+Rapport « Mesurer 30 s » du téléphone (la ferme, la partie du jour 75, économie à 30 images par seconde) :
+36 % d'images lentes, 25 tâches longues ; les pires images venaient de `regions` (165 ms), `fond` (148 ms),
+`herbes` (99 ms) et `traces` (86 ms ; 56,6 ms/s en moyenne). Les trois derniers relisaient le sol peint
+(`getImageData` sur les canevas du sol) : une trace de pas, un pixel à chaque case nouvelle (et toutes à
+nouveau dès qu'un morceau du sol était repeint) ; les touffes au pied des murs, leur rectangle ; le filet de
+sécurité, trois points de deux morceaux toutes les 3 s. Sur un téléphone, chaque lecture rapatrie le
+canevas de la mémoire graphique, quelle que soit sa taille.
+
+- `lireSol` (`js/carte/ferme/sol.js`) lit chaque morceau en entier, une fois, et garde ses pixels tant qu'il
+  n'est pas repeint (`m.lu`, 24 morceaux au plus, ≈ 256 Ko chacun) ; le filet de sécurité lit un morceau en
+  une fois (au lieu de trois), et sa lecture sert de copie.
+- `stepLanterns` (`chantier.js`) ne parcourt plus tous les blocs (711 sur cette partie) à chaque image : la
+  liste des lumières est refaite quand les blocs changent (`blocsN`).
+- `stepRives` (`js/carte/eau.js`) : loin de toute étendue d'eau, plus de recherche de l'eau autour des pieds.
+
+Chromium, la même partie, 15 s de marche sur la ferme avec un morceau du sol repeint en route, avant →
+après : lectures des canevas du sol 56–61 → 19–20 (celles qui restent : le filet de sécurité et la
+première lecture de chaque morceau) ; touffes identiques au pixel près ; `stepLanterns` (ralenti ×4)
+4,2–5,7 → 2,6–3,1 ms/s. Le gain sur les traces et les touffes ne se voit pas dans Chromium (relire y
+est presque gratuit) : à vérifier sur le téléphone.
+
 ## Près des automates, sur la partie du jour 75 (un étang, les chaînes, le délestage)
 
 Le joueur trouvait le jeu lent en s'approchant de ses automates (trois chaînes de production, une botteleuse,
