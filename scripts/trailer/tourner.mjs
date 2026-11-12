@@ -35,6 +35,9 @@ function trousse() {
     const f0 = FermeSon[nom];
     FermeSon[nom] = (cle, o = {}) => { sons.push({ cle: nom === 'prise' ? 'prise' : cle, t: Date.now(), depuis: (o && o.depuis) || 0, gain: (o && o.gain) || 1 }); return f0(cle, o); };
   }
+  // le reflet irisé d'une cible qui attend son geste (file.js) : adouci, pour qu'on voie l'arbre ou le rocher
+  const scn = sc(), pasFile = scn.stepFile;
+  scn.stepFile = function (dt) { pasFile.call(this, dt); if (this.reflets) for (const [, r] of this.reflets) for (const c of r.copies) c.img.setAlpha(c.img.alpha * 0.3); };
   window.TR = {
     sons,
     act, ov,
@@ -74,7 +77,7 @@ async function ouvre(sauve, opts = {}) {
   return p;
 }
 
-const Z3 = 3 * (H / 1080), Z4 = 4 * (H / 1080), Z5 = 5 * (H / 1080);   // 3, 4 ou 5 pixels d'écran par pixel du jeu en 1080p
+const Zn = (n) => n * (H / 1080), Z3 = Zn(3), Z4 = Zn(4), Z5 = Zn(5);   // 3, 4 ou 5 pixels d'écran par pixel du jeu en 1080p
 const pose = async (pl, p, s = 1.5) => { await pl.passer(0.4); await p.waitForTimeout(2500); await pl.passer(s); };
 async function film(pl, p, nom, s, chaque) {
   console.log(`  ● ${nom} (${s} s)`);
@@ -131,7 +134,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
   if (veut('hache')) {
     // un arbre de la ferme, près de l'étang : le personnage s'en approche et l'abat en trois coups
     await p.evaluate(() => {
-      const sc = FarmStage.scene(), i = sc.fermier.info(); TR.plein();
+      const sc = FarmStage.scene(), i = sc.fermier.info(); TR.plein(); TR.zoom(7 * innerHeight / 1080);
       const A = sc.mapTrees().filter((t) => sc.choppable(t) && !t.buisson && t.kind).map((t) => ({ t, x: t.foot.x, y: t.foot.y })).sort((a, b) => Math.hypot(a.x - i.x, a.y - i.y) - Math.hypot(b.x - i.x, b.y - i.y));
       const a = A[0];
       TR.va(a.x - 40, a.y + 4);
@@ -149,7 +152,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
   if (veut('pioche')) {
     // un gros rocher de la ferme : trois coups de pioche, il se brise
     await p.evaluate(() => {
-      const sc = FarmStage.scene(), i = sc.fermier.info(); TR.plein();
+      const sc = FarmStage.scene(), i = sc.fermier.info(); TR.plein(); TR.zoom(7 * innerHeight / 1080);
       // (le plus gros rocher des environs)
       const R = sc.rocks.filter((r) => !r.gone && r.box && r.box.x1 - r.box.x0 > 12).map((r) => ({ r, x: (r.box.x0 + r.box.x1) / 2, y: r.foot, aire: (r.box.x1 - r.box.x0) * (r.box.y1 - r.box.y0) }))
         .filter((a) => Math.hypot(a.x - i.x, a.y - i.y) < 900).sort((a, b) => b.aire - a.aire);
@@ -169,7 +172,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
   if (veut('peche')) {
     // l'étang de la ferme : le lancer, la touche, la prise
     await p.evaluate(() => {
-      const sc = FarmStage.scene(); TR.plein();
+      const sc = FarmStage.scene(); TR.plein(); TR.zoom(6 * innerHeight / 1080);
       CarteKit.PECHE.attente = [1.6, 1.6];
       const f0 = sc.ctx.bridge.fish;
       sc.ctx.bridge.fish = (...a) => { let g = null; for (let i = 0; i < 30 && !(g && g.poisson); i++) g = f0(...a); return g; };
@@ -193,7 +196,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
   if (veut('cuisine')) {
     // la cuisine de la maison : le personnage devant la cuisinière, une recette lancée (le feu, la vapeur)
     const c = await p.evaluate(() => {
-      TR.plein(); TR.heure(12);
+      TR.plein(); TR.zoom(7 * innerHeight / 1080); TR.heure(12);
       const k = TR.blocs('cuisiniere')[0];
       TR.va(k.x - 28, k.y + 26);
       const R = TR.E().DATA.RECETTES || TR.E().DATA.RECIPES;
@@ -211,7 +214,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
   if (veut('repas')) {
     // le repas du soir à la terrasse : les invités arrivent, la famille s'attable, le repas est servi
     const t = await p.evaluate(() => {
-      const sc = FarmStage.scene(); TR.heure(19.3);
+      const sc = FarmStage.scene(); TR.heure(19.3); TR.zoom(6 * innerHeight / 1080);
       const T = sc.placesTable();
       if (!T) return null;
       const P = TR.E().DATA.AMITIE.INVITATION.PAROLES || {};

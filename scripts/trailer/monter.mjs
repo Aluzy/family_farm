@@ -1,7 +1,7 @@
 // Le montage du trailer : les plans tournés par scripts/trailer/tourner.mjs, coupés et mis bout à bout
 // (30 images par seconde), les cartons (le logo, un mot par plan, l'adresse du jeu : dessinés dans une page
 // avec la police et le logo du jeu), la musique du jeu et les sons des gestes notés à la prise de vue.
-// Usage : node scripts/trailer/monter.mjs <dossier des images> <sortie.mp4>
+// Usage : node scripts/trailer/monter.mjs <dossier des images> <sortie.mp4> [plan de montage.json]
 // ffmpeg, Playwright et Chromium requis.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -9,11 +9,11 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { IPS, RACINE } from './studio.mjs';
 
-const [DOSSIER, SORTIE = 'trailer.mp4'] = process.argv.slice(2);
+const [DOSSIER, SORTIE = 'trailer.mp4', PLAN = ''] = process.argv.slice(2);
 const L = 1920, H = 1080;
 
 // Le plan de montage : { scene, debut (s dans la prise), duree (s), texte (le mot du plan), carton }.
-export const PLANS = JSON.parse(readFileSync(join(RACINE, 'scripts/trailer/montage.json'), 'utf8'));
+const PLANS = JSON.parse(readFileSync(PLAN || join(RACINE, 'scripts/trailer/montage.json'), 'utf8'));
 
 /* ---------- les cartons : des PNG transparents, dessinés par le navigateur ---------- */
 const CARTONS = join(DOSSIER, 'cartons');

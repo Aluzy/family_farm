@@ -140,7 +140,15 @@ export function plateau(pages) {
     await Promise.all(pages.map((p) => p.clock.runFor(ms)));
   };
   return {
-    async figer() { for (const p of pages) { const t = await p.evaluate(() => Date.now()); await p.clock.pauseAt(new Date(t + 3000)); } },
+    // (l'horloge de la page peut être en avance sur ce qu'elle dit : on vise de plus en plus loin)
+    async figer() {
+      for (const p of pages) {
+        const t = await p.evaluate(() => Date.now());
+        for (const plus of [3000, 15000, 60000, 300000, 1800000]) {
+          try { await p.clock.pauseAt(new Date(t + plus)); break; } catch (e) { if (plus === 1800000) throw e; }
+        }
+      }
+    },
     // Laisser passer `s` secondes de jeu sans filmer.
     async passer(s) { for (let i = 0; i < Math.round(s * IPS); i++) await pas(); },
     // Filmer `s` secondes de l'onglet `p` dans `dossier` ; `chaque(i, n)` est appelé avant chaque image.
