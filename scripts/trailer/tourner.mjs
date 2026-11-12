@@ -133,7 +133,9 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
     // un gros rocher de la ferme : trois coups de pioche, il se brise
     await p.evaluate(() => {
       const sc = FarmStage.scene(), i = sc.fermier.info(); TR.plein();
-      const R = sc.rocks.filter((r) => !r.gone && r.box && r.box.x1 - r.box.x0 > 12).map((r) => ({ r, x: (r.box.x0 + r.box.x1) / 2, y: r.foot })).sort((a, b) => Math.hypot(a.x - i.x, a.y - i.y) - Math.hypot(b.x - i.x, b.y - i.y));
+      // (le plus gros rocher des environs)
+      const R = sc.rocks.filter((r) => !r.gone && r.box && r.box.x1 - r.box.x0 > 12).map((r) => ({ r, x: (r.box.x0 + r.box.x1) / 2, y: r.foot, aire: (r.box.x1 - r.box.x0) * (r.box.y1 - r.box.y0) }))
+        .filter((a) => Math.hypot(a.x - i.x, a.y - i.y) < 900).sort((a, b) => b.aire - a.aire);
       const a = R[0];
       TR.va(a.x - 36, a.y + 2);
       window.__roc = a.r;
