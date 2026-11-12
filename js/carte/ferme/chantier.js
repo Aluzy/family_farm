@@ -650,7 +650,7 @@
       for (const e of this.etageLumieres || []) if (e.img && e.img.active) list.push(e);
       // (les lampes de chevet, en bas et à l'étage : BLOCS_CARTE.lampeChevet)
       const LC = BLOCS_CARTE.lampeChevet, lampes = [];
-      for (const e of (this.blocks || new Map()).values()) if (e.dessin === LC.dessin && e.img) lampes.push({ img: e.img, x: e.x, y: e.y - 1, e });
+      for (const e of (this.blocks || new Map()).values()) if (LC.dessins.includes(e.dessin) && e.img) lampes.push({ img: e.img, x: e.x, y: e.y - 1, e });
       for (const e of this.etageLampes || []) if (e.img && e.img.active) lampes.push({ img: e.img, x: e.x, y: e.y, e });
       // (les cheminées, en bas et à l'étage : BLOCS_CARTE.cheminee)
       const cheminees = [];

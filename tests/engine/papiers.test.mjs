@@ -18,8 +18,8 @@ function maison() {
 const tapisser = (s, c, motif, niveau = 0) => executerCommande(s, { type: 'piece.tapisser', args: { case: c, motif, niveau } });
 const premiere = (s, n = 0) => (n ? piecesNiveau(s, n) : piecesCloses(s)).find((p) => facesPiece(s, p, n).length);
 
-test('papiers peints : six motifs, chacun son objet de la boutique (40 💎), qui ne se vend ni ne se rachète', () => {
-  assertEqual(motifsPapier(), ['fleurettes', 'rayures', 'vichy', 'damas', 'feuillages', 'etoiles']);
+test('papiers peints : sept motifs, chacun son objet de la boutique (40 💎), qui ne se vend ni ne se rachète', () => {
+  assertEqual(motifsPapier(), ['fleurettes', 'rayures', 'vichy', 'damas', 'feuillages', 'etoiles', 'lambris']);
   for (const m of motifsPapier()) {
     const o = DATA.OBJETS[DATA.PAPIERS_PEINTS[m].objet];
     assert(o && o.boutique && o.invendable && !o.rachetable, `${m} : un objet de la boutique`);

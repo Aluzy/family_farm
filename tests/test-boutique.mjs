@@ -5,6 +5,7 @@
 
 import { test as nodeTest } from 'node:test';
 import { createHmac } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -39,10 +40,18 @@ function faussesApi(id = SESSION) {
 test('boutique : le mode vient de la clé (test, live, clé restreinte) ; sans clé ni secret, fermée', () => {
   eq([modeStripe({ STRIPE_SECRET_KEY: 'sk_test_x' }), modeStripe({ STRIPE_SECRET_KEY: 'rk_live_x' }), modeStripe({ STRIPE_SECRET_KEY: 'pk_test_x' }), modeStripe({})], ['test', 'live', null, null]);
   eq(BOUTIQUE.PACKS, { petit: { gemmes: 200, centimes: 199 }, moyen: { gemmes: 550, centimes: 499 }, grand: { gemmes: 1200, centimes: 999 } }, 'les prix validés');
-  const prixDe = (id) => (id.startsWith('papier_peint_') ? 40 : id.startsWith('guirlande_') ? 60 : id.startsWith('cheminee_') || id.startsWith('fontaine_') ? 120 : id.startsWith('ornement_') ? 90 : id.startsWith('enseigne_') ? 50 : 25);
+  const PRIX = { ensemble_chalet: 220, chalet_lit: 80, chalet_chevet: 40, chalet_tapis: 40, chalet_tableau: 30, sol_meleze: 50 };
+  const prixDe = (id) => (PRIX[id] ? PRIX[id] : id.startsWith('papier_peint_') ? 40 : id.startsWith('guirlande_') ? 60 : id.startsWith('cheminee_') || id.startsWith('fontaine_') ? 120 : id.startsWith('ornement_') ? 90 : id.startsWith('enseigne_') ? 50 : 25);
   for (const [id, a] of Object.entries(BOUTIQUE.ARTICLES)) eq(a.prix, prixDe(id), `${id} : ${prixDe(id)} gemmes`);
   eq(Object.keys(BOUTIQUE.ARTICLES).filter((id) => id.startsWith('guirlande_')).length, 4, 'quatre guirlandes');
-  eq(Object.keys(BOUTIQUE.ARTICLES).filter((id) => id.startsWith('papier_peint_')).length, 6, 'six papiers peints');
+  eq(Object.keys(BOUTIQUE.ARTICLES).filter((id) => id.startsWith('papier_peint_')).length, 7, 'sept papiers peints');
+  // un ensemble coûte environ 20 % de moins que ses objets pris un à un, qui s'achètent aussi seuls
+  for (const [id, a] of Object.entries(BOUTIQUE.ARTICLES).filter(([k]) => k.startsWith('ensemble_'))) {
+    const C = JSON.parse(readFileSync(join(here, 'data', 'items.json'), 'utf8')).OBJETS[id].contenu, seuls = Object.keys(C).map((k) => BOUTIQUE.ARTICLES[k]);
+    assert(seuls.every(Boolean), `${id} : chaque objet s'achète seul`);
+    const total = seuls.reduce((n, x) => n + x.prix, 0);
+    assert(a.prix < total * 0.85 && a.prix > total * 0.7, `${id} : ${a.prix} pour ${total}`);
+  }
 });
 
 test('boutique : la signature de Stripe (v1, HMAC SHA-256 de « t.corps »), l\'horodatage à 5 minutes près', async () => {

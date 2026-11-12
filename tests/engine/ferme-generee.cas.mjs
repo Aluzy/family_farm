@@ -541,7 +541,7 @@ test('ferme générée : le plancher se pose à plat, sous les blocs, et se repr
 
 test('ferme générée : 7 modèles de portes et 7 de sols, qui se fabriquent, se posent et s\'échangent', () => {
   const B = DATA.ATELIER.BLOCS;
-  const portes = Object.keys(B).filter((k) => B[k].porte && k !== 'porte'), sols = Object.keys(B).filter((k) => B[k].sol && !B[k].dehors && k !== 'plancher');
+  const portes = Object.keys(B).filter((k) => B[k].porte && k !== 'porte'), sols = Object.keys(B).filter((k) => B[k].sol && !B[k].dehors && !B[k].boutique && k !== 'plancher');   // (les sols de la boutique de gemmes ne se fabriquent pas)
   assertEqual([portes.length, sols.length], [7, 7]);
   // chacun : un objet de l'inventaire, une recette de l'Atelier, l'onglet Bâtir, une icône à lui
   for (const k of [...portes, ...sols]) {

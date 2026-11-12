@@ -1161,6 +1161,79 @@ export const RAW_DATA = {
       "invendable": true,
       "boutique": true
     },
+    "chalet_lit": {
+      "nom": "Lit de chalet",
+      "icone": "🛏️",
+      "prix": 80,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "chalet_chevet": {
+      "nom": "Chevet de chalet",
+      "icone": "🛋️",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "chalet_tapis": {
+      "nom": "Tapis alpin",
+      "icone": "🧶",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "chalet_tableau": {
+      "nom": "Tableau : le sommet enneigé",
+      "icone": "🏔️",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "sol_meleze": {
+      "nom": "Plancher de mélèze",
+      "icone": "🪵",
+      "prix": 50,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "lot": 24
+    },
+    "papier_peint_lambris": {
+      "nom": "Papier peint lambris de pin",
+      "icone": "🧻",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "papier": "lambris"
+    },
+    "ensemble_chalet": {
+      "nom": "Ensemble chalet de montagne",
+      "icone": "🏔️",
+      "prix": 220,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true,
+      "contenu": { "chalet_lit": 1, "chalet_chevet": 1, "chalet_tapis": 1, "chalet_tableau": 1, "sol_meleze": 24, "papier_peint_lambris": 1 }
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -2158,6 +2231,47 @@ export const RAW_DATA = {
         "peinture": "enseigne_fer",
         "boite_lettres": true
       },
+      "chalet_lit": {
+        "nom": "Lit de chalet",
+        "objet": "chalet_lit",
+        "meuble": "chalet_lit",
+        "dedans": true,
+        "lit": true,
+        "hauteur": 2,
+        "tourne": true,
+        "piece": "chambre",
+        "boutique": true
+      },
+      "chalet_chevet": {
+        "nom": "Chevet de chalet",
+        "objet": "chalet_chevet",
+        "meuble": "chalet_chevet",
+        "dedans": true,
+        "bloque": true,
+        "tourne": true,
+        "piece": "chambre",
+        "boutique": true
+      },
+      "chalet_tapis": {
+        "nom": "Tapis alpin",
+        "objet": "chalet_tapis",
+        "meuble": "chalet_tapis",
+        "dedans": true,
+        "plat": true,
+        "largeur": 3,
+        "tourne": true,
+        "piece": "chambre",
+        "boutique": true
+      },
+      "chalet_tableau": {
+        "nom": "Tableau : le sommet enneigé",
+        "objet": "chalet_tableau",
+        "meuble": "chalet_tableau",
+        "sur": "mur",
+        "piece": "chambre",
+        "boutique": true
+      },
+      "sol_meleze": { "nom": "Plancher de mélèze", "objet": "sol_meleze", "sol": true, "boutique": true },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -2472,6 +2586,7 @@ export const RAW_DATA = {
           "sol_marbre",
           "sol_paves",
           "sol_mosaique",
+          "sol_meleze",
           "chemin",
           "sol_pas_ardoise",
           "sol_pas_pierre",
@@ -4273,7 +4388,8 @@ export const RAW_DATA = {
     "vichy": { "nom": "Carreaux vichy", "objet": "papier_peint_vichy" },
     "damas": { "nom": "Damas", "objet": "papier_peint_damas" },
     "feuillages": { "nom": "Feuillages", "objet": "papier_peint_feuillages" },
-    "etoiles": { "nom": "Étoiles", "objet": "papier_peint_etoiles" }
+    "etoiles": { "nom": "Étoiles", "objet": "papier_peint_etoiles" },
+    "lambris": { "nom": "Lambris de pin", "objet": "papier_peint_lambris" }
   },
   "PALETTES": {
     "bois_miel": ["#3c1e16", "#603620", "#86522e", "#aa7040", "#cc965c"],
