@@ -1018,6 +1018,46 @@ export const RAW_DATA = {
       "invendable": true,
       "boutique": true
     },
+    "fontaine_pierre": {
+      "nom": "Fontaine en pierre",
+      "icone": "⛲",
+      "prix": 120,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "fontaine_marbre": {
+      "nom": "Fontaine en marbre",
+      "icone": "⛲",
+      "prix": 120,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "fontaine_grenouille": {
+      "nom": "Fontaine à la grenouille",
+      "icone": "⛲",
+      "prix": 120,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "fontaine_angelot": {
+      "nom": "Fontaine à l'angelot",
+      "icone": "⛲",
+      "prix": 120,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -1878,6 +1918,46 @@ export const RAW_DATA = {
         "piece": "salon",
         "tourne": "symetrique"
       },
+      "fontaine_pierre": {
+        "nom": "Fontaine en pierre",
+        "objet": "fontaine_pierre",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "fontaine_pierre",
+        "largeur": 2,
+        "hauteur": 2,
+        "fontaine": true
+      },
+      "fontaine_marbre": {
+        "nom": "Fontaine en marbre",
+        "objet": "fontaine_marbre",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "fontaine_marbre",
+        "largeur": 2,
+        "hauteur": 2,
+        "fontaine": true
+      },
+      "fontaine_grenouille": {
+        "nom": "Fontaine à la grenouille",
+        "objet": "fontaine_grenouille",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "fontaine_grenouille",
+        "largeur": 2,
+        "hauteur": 2,
+        "fontaine": true
+      },
+      "fontaine_angelot": {
+        "nom": "Fontaine à l'angelot",
+        "objet": "fontaine_angelot",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "fontaine_angelot",
+        "largeur": 2,
+        "hauteur": 2,
+        "fontaine": true
+      },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -2247,7 +2327,11 @@ export const RAW_DATA = {
           "guirlande_blanche",
           "guirlande_multicolore",
           "guirlande_etoiles",
-          "guirlande_coeurs"
+          "guirlande_coeurs",
+          "fontaine_pierre",
+          "fontaine_marbre",
+          "fontaine_grenouille",
+          "fontaine_angelot"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },

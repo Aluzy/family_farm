@@ -46,6 +46,11 @@ export const BOUTIQUE = {
     cheminee_pierre: { prix: 120, nom: 'Cheminée en pierre' },
     cheminee_briques: { prix: 120, nom: 'Cheminée en briques' },
     cheminee_marbre: { prix: 120, nom: 'Cheminée en marbre' },
+    // les fontaines de jardin : deux cases sur deux, dehors ; leur eau coule jour et nuit
+    fontaine_pierre: { prix: 120, nom: 'Fontaine en pierre' },
+    fontaine_marbre: { prix: 120, nom: 'Fontaine en marbre' },
+    fontaine_grenouille: { prix: 120, nom: 'Fontaine à la grenouille' },
+    fontaine_angelot: { prix: 120, nom: 'Fontaine à l\'angelot' },
     // les papiers peints : un motif acheté est débloqué pour toujours (js/engine/papiers.js)
     papier_peint_fleurettes: { prix: 40, nom: 'Papier peint fleurettes' },
     papier_peint_rayures: { prix: 40, nom: 'Papier peint rayures' },

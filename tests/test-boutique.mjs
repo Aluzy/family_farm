@@ -39,7 +39,7 @@ function faussesApi(id = SESSION) {
 test('boutique : le mode vient de la clé (test, live, clé restreinte) ; sans clé ni secret, fermée', () => {
   eq([modeStripe({ STRIPE_SECRET_KEY: 'sk_test_x' }), modeStripe({ STRIPE_SECRET_KEY: 'rk_live_x' }), modeStripe({ STRIPE_SECRET_KEY: 'pk_test_x' }), modeStripe({})], ['test', 'live', null, null]);
   eq(BOUTIQUE.PACKS, { petit: { gemmes: 200, centimes: 199 }, moyen: { gemmes: 550, centimes: 499 }, grand: { gemmes: 1200, centimes: 999 } }, 'les prix validés');
-  const prixDe = (id) => (id.startsWith('papier_peint_') ? 40 : id.startsWith('guirlande_') ? 60 : id.startsWith('cheminee_') ? 120 : 25);
+  const prixDe = (id) => (id.startsWith('papier_peint_') ? 40 : id.startsWith('guirlande_') ? 60 : id.startsWith('cheminee_') || id.startsWith('fontaine_') ? 120 : 25);
   for (const [id, a] of Object.entries(BOUTIQUE.ARTICLES)) eq(a.prix, prixDe(id), `${id} : ${prixDe(id)} gemmes`);
   eq(Object.keys(BOUTIQUE.ARTICLES).filter((id) => id.startsWith('guirlande_')).length, 4, 'quatre guirlandes');
   eq(Object.keys(BOUTIQUE.ARTICLES).filter((id) => id.startsWith('papier_peint_')).length, 6, 'six papiers peints');

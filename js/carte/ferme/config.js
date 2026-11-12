@@ -328,6 +328,13 @@ const CULTURE_MONTE = 0;
       foyer: { rayon: 16, teinte: 0xffd090, alpha: 0.95, dx: 0, dy: -15 },
       halo: { couleur: 0xff9040, rayon: 22, intensite: 0.1, attenuation: 0.08 },
     },
+    // l'eau des fontaines de jardin (le bloc fontaine_<modèle>, deux cases sur deux ; scripts/batiments/fontaines.py ;
+    // chantier.js stepLanterns) : jour et nuit, ses `images` (une rangée par modèle, dans l'ordre de `modeles`)
+    // défilent (`fps`) par-dessus la fontaine, au même endroit ; fixe en mode réduit
+    fontaine: {
+      key: 'fontaine_eau', file: 'fontaine_eau.png', frame: { frameWidth: 32, frameHeight: 47 }, images: 4, fps: 6,
+      modeles: ['pierre', 'marbre', 'grenouille', 'angelot'],
+    },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
     // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
     // murs `sortes` (`vitre` : `dy` px au-dessus du pied du mur) ; sur la face du mur du fond,
@@ -501,6 +508,8 @@ const CULTURE_MONTE = 0;
     'lit_double', 'refrigerateur',
     // (les cheminées de la boutique de gemmes : scripts/batiments/cheminees.py ; leur feu, BLOCS_CARTE.cheminee)
     'cheminee_pierre', 'cheminee_briques', 'cheminee_marbre',
+    // (les fontaines de jardin : scripts/batiments/fontaines.py ; leur eau, BLOCS_CARTE.fontaine)
+    'fontaine_pierre', 'fontaine_marbre', 'fontaine_grenouille', 'fontaine_angelot',
     // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
     'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',
