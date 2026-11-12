@@ -458,6 +458,7 @@
     // arrivant, js/carte/ferme/semis.js) : le changement du modèle ne les fait pas rejouer
     const faits = new Set();
     let prevRaw = null;
+    let serreCases = new Set();     // les cases de la pièce de la Serre (modèle.serreCases)
     const tileXY = (c) => ({ x: (c % o.cols()) * T, y: Math.floor(c / o.cols()) * T });
 
     function release(c) {
@@ -540,9 +541,10 @@
     }
 
     function diff(prev, next) {
+      // (les terres de la ferme et les bacs de la Serre : les mêmes gestes, chacun sur sa case)
       const before = new Map(), after = new Map();
-      for (const p of prev.plots || []) before.set(p.case, p);
-      for (const p of next.plots || []) after.set(p.case, p);
+      for (const p of (prev.plots || []).concat(prev.serre || [])) before.set(p.case, p);
+      for (const p of (next.plots || []).concat(next.serre || [])) after.set(p.case, p);
       const found = {};
       // ce qu'a fait le robot ou un asperseur : pas un geste du personnage
       const auto = new Set(next.parAuto || []);
@@ -550,7 +552,7 @@
         if (auto.has(`${type}:${c}`)) return;
         if (faits.delete(`${type}:${c}`)) return;
         (found[type] = found[type] || []).push(c);
-        if (!holds.has(c)) holds.set(c, { view: view || NONE, t0: performance.now() });
+        if (!holds.has(c)) holds.set(c, { view: view || NONE, t0: performance.now(), serre: serreCases.has(c) });
       };
       for (const [c, p] of after) {
         const q = before.get(c);
@@ -576,6 +578,7 @@
       ctx.dort = !!raw.dort;
       pilesNow = new Map((raw.ramasser || []).map((p) => [p.id, p]));
       for (const id of [...claimed]) if (!pilesNow.has(id)) claimed.delete(id);
+      serreCases = new Set(raw.serreCases || []);
       if (prevRaw && raw.jour === prevRaw.jour && !(opts && opts.distant)) {
         const found = diff(prevRaw, raw);
         if (reduced()) holds.clear();
@@ -598,16 +601,22 @@
       // Une récolte qu'il va prendre au geste (case retenue ou prévue) n'a pas de bulle.
       const shownPiles = (raw.ramasser || []).filter((p) => !(p.lieu === 'parcelle' && (holds.has(p.ref) || claimed.has(p.id))));
       if (!holds.size) return shownPiles.length === (raw.ramasser || []).length ? raw : Object.assign({}, raw, { ramasser: shownPiles });
-      const plots = [];
+      // (la case retenue garde son ancien dessin, dans sa liste : les terres, ou les bacs de la Serre)
       const seen = new Set();
-      for (const p of raw.plots || []) {
-        seen.add(p.case);
-        const h = holds.get(p.case);
-        if (!h) plots.push(p);
-        else if (!h.view.none) plots.push(h.view);
-      }
-      for (const [c, h] of holds) if (!seen.has(c) && !h.view.none) plots.push(h.view);
-      return Object.assign({}, raw, { plots, ramasser: shownPiles });
+      const retenir = (list, serre) => {
+        const out = [];
+        for (const p of list || []) {
+          seen.add(p.case);
+          const h = holds.get(p.case);
+          if (!h) out.push(p);
+          else if (!h.view.none) out.push(h.view);
+        }
+        for (const [c, h] of holds) if (!seen.has(c) && !!h.serre === serre && !h.view.none) out.push(h.view);
+        return out;
+      };
+      const plots = retenir(raw.plots, false);
+      const serre = raw.serre ? retenir(raw.serre, true) : raw.serre;
+      return Object.assign({}, raw, { plots, serre, ramasser: shownPiles });
     }
 
     /* ---------- la journée ---------- */

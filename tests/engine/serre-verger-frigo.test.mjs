@@ -5,7 +5,7 @@
 
 import {
   addItem, addLot, allDevices, allPlots, availableEnergy, blocsPoses, buildFridge, CONSUMERS, countItem,
-  createInitialState, DATA, deviceStatus, findDevice, findPlot, fridgeCapacity, fridgeCount,
+  createInitialState, cropProduct, DATA, deviceStatus, findDevice, findPlot, fridgeCapacity, fridgeCount,
   fridgeCounts, fridgeCoversNight, fridgeLots, fridgeNight, fridgeNightNeed, fridgeRate,
   fridgeRoom, fridgeUnits, fridgeUpgradeCost, grantTech, harvest, harvestTree, harvestYield,
   isBroken, lotsOf, maintainCost, maxStage, migrate, migrateFridgeCapacity, migrateOrchard,
@@ -114,6 +114,24 @@ test('Serre : bâtie en blocs (une pièce close, le bac à semis), toutes ses ca
   assertEqual(testBatir(s, 'serre').ok, false, 'un seul bac à semis');
   assertEqual(allPlots(s).length, 6 + n, '6 du Potager et toute la Serre');
   assertEqual(findPlot(s, 'serre-3').lieu, 'serre');
+});
+
+test('Serre : les mêmes gestes que dehors : avec le personnage, la récolte au clic attend sur son bac', () => {
+  const s = garden();
+  testBatir(reach(s, 'serre'), 'serre');
+  testAddSeeds(s);
+  const culture = plantableCrops('serre').find((c) => DATA.CULTURES[c].lieux.includes('serre'));
+  const produit = cropProduct(culture);
+  s.ramassage = true;
+  const p = plantRipe(s, 'serre-1', culture);
+  const avant = countItem(s, produit);
+  const r = harvest(s, 'serre-1');
+  assertEqual([r.ok, r.aRamasser], [true, true]);
+  assertEqual(countItem(s, produit), avant, 'pas encore dans l\'inventaire : sur son bac');
+  assertEqual(Object.keys(s.aRamasser), [`parcelle:${p.case}`]);
+  // l'automatisation et le compagnon : directement, comme dehors
+  plantRipe(s, 'serre-2', culture);
+  assertEqual(harvest(s, 'serre-2', true).aRamasser, false);
 });
 
 test('Serre : plus de niveaux ; la taille de sa pièce décide (v76 : les niveaux payés sont rendus)', () => {

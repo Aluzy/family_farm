@@ -120,11 +120,15 @@ ajouter : le JSON donne l'ordre).
   moteur). Rien à y prendre : le double appui ouvre la fenêtre du bâtiment. L'appui simple ouvre
   toujours la fenêtre, 300 ms plus tard.
 - **Ce qui ne l'attend pas** : les automatisations (récolte et tonte de nuit, Arbre des
-  technologies), la Serre, et tout quand la carte n'a pas de personnage (pas de carte, joueur
+  technologies) et tout quand la carte n'a pas de personnage (pas de carte, joueur
   automatique, essais du moteur) : directement dans l'inventaire (`state.ramassage` faux, réglé
   par la page à chaque rendu ; ce qui attendait y entre alors). Au début de chaque nuit, ce qui
   traîne encore est rentré (`collectLeftovers`, première étape nocturne) : rien ne se perd et
   les repas de la nuit le trouvent.
+- **La Serre** : les mêmes gestes que dehors. Ses bacs ont chacun leur case de la carte : il
+  entre dans la Serre pour labourer, reboucher, semer (la file des gestes), arroser et récolter,
+  la case garde son ancien dessin jusqu'à son geste, et la récolte attend sur son bac qu'il la
+  ramasse (`diff` et `filter` de `js/fermier.js` lisent `modèle.serre` comme `modèle.plots`).
 - **Double appui** (version 1.19) : dehors, deux appuis rapprochés (300 ms, 30 px) sur l'herbe
   ou un chemin l'y envoient (`goTo`, au point libre le plus proche) : il y va avant ses gestes en
   attente, puis y reste. Rien ne marque l'arrivée. Sur l'herbe
