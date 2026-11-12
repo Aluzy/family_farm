@@ -83,7 +83,8 @@ async function film(pl, p, nom, s, chaque) {
   writeFileSync(join(DOSSIER, nom, 'sons.json'), JSON.stringify(sons));
   return n;
 }
-const SOLO = ['lieux', 'champ', 'hache', 'pioche', 'peche', 'cuisine', 'repas'];
+const SOLO = ['lieux', 'champ', 'hache', 'pioche', 'peche', 'cuisine', 'repas', 'titre', 'fin', 'balade'];
+const BALADE = ['Brumeval', 'Le Gué', 'Pré-Fleuri', 'Les Mouettes'];   // les hameaux de la promenade
 
 /* ------------------------------------------------------------------ les scènes en solo */
 if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
@@ -103,7 +104,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
     await p.evaluate((Z) => TR.zoom(Z), Z5);
   }
 
-  if (veut('champ')) {
+  if (VOULUES.includes('champ')) {
     // le potager : labourer, semer, arroser, récolter
     const plan = await p.evaluate(() => {
       const sc = FarmStage.scene(), W = sc.grid.cols, P = TR.parcelles();
@@ -139,7 +140,7 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
     await p.evaluate(() => { TR.outil('hache'); });
     await pl.passer(0.3);
     await p.evaluate(() => { const sc = FarmStage.scene(); for (let i = 0; i < 3; i++) sc.chop(window.__arbre); });
-    await film(pl, p, 'hache', 7);
+    await film(pl, p, 'hache', 6);
     await p.evaluate(() => TR.outil('hache'));
     await pl.passer(0.5);
   }
@@ -218,7 +219,13 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
         invites: [{ id: 'g1', hameau: H[0].id, hameauNom: H[0].nom, prenom: 'Odile', perso: 3, apparence: null, enfant: false, metier: '', depart: null, admire: null },
           { id: 'g2', hameau: H[1].id, hameauNom: H[1].nom, prenom: 'Basile', perso: 9, apparence: null, enfant: false, metier: '', depart: null, admire: null }],
         paroles: { arrive: P.ARRIVE, table: P.TABLE, merci: P.MERCI, seul: P.SEUL } };
-      TR.va(T.x - 60, T.y + 30);
+      // le personnage s'assoit à la dernière place ; la vue reste sur la table
+      const SIEGES = new Set(['chaise_jardin', 'banc_jardin', 'meuble_chaise', 'banc_rondins', 'chaise_peinte', 'banc_pierre']);
+      const pl = T.places[T.places.length - 1];
+      const siege = [...sc.blocks.values()].filter((e) => SIEGES.has(e.sorte)).map((e) => ({ e, d: Math.hypot((e.case % sc.grid.cols) * 16 + 8 - pl.x, Math.floor(e.case / sc.grid.cols) * 16 + 12 - pl.y) })).sort((a, b) => a.d - b.d)[0];
+      TR.va(pl.pied ? pl.pied.x : T.x, pl.pied ? pl.pied.y : T.y + 30);
+      TR.libre(T.x, T.y - 6);
+      if (siege && siege.d < 20) sc.asseoirSur(siege.e);
       TR.voile({ invites: window.__inv });
       return { x: T.x, y: T.y, n: T.places.length, terrasse: T.terrasse, P: Object.keys(P) };
     });
@@ -230,6 +237,38 @@ if (SOLO.some((n) => VOULUES.includes(n)) || !VOULUES.length) {
       await p.evaluate(() => { TR.voile({ invites: { ...window.__inv, etat: 'servie' } }); });
       await pl.passer(1);
       await film(pl, p, 'repas', 6);
+      await p.evaluate(() => { TR.voile({ invites: null }); TR.suivre(); FarmStage.scene().fermier.lever && FarmStage.scene().fermier.lever(); });
+      await pl.passer(1);
+    }
+  }
+
+  // un panoramique lent sur la ferme : `de` et `vers` en cases, l'heure, le zoom
+  const pano = async (nom, h, de, vers, s) => {
+    await p.evaluate(([h, de, Z]) => { TR.heure(h); TR.zoom(Z); TR.va(de[0] * 16, (de[1] + 14) * 16); TR.libre(de[0] * 16, de[1] * 16); }, [h, de, Z3]);
+    await pl.passer(2);
+    await film(pl, p, nom, s, async (i, n) => { const k = i / (n - 1); await p.evaluate(([x, y]) => FarmStage.scene().setCentre(Math.round(x), Math.round(y)), [(de[0] + (vers[0] - de[0]) * k) * 16, (de[1] + (vers[1] - de[1]) * k) * 16]); });
+    await p.evaluate((Z) => { TR.suivre(); TR.zoom(Z); }, Z5);
+  };
+  if (veut('titre')) {
+    const k = await p.evaluate(() => TR.blocs('cuisiniere')[0]);
+    await pano('titre', 8.5, [k.c - 6, k.r + 12], [k.c + 6, k.r + 10], 4);
+  }
+  if (veut('fin')) {
+    const k = await p.evaluate(() => TR.blocs('cuisiniere')[0]);
+    await pano('fin', 20.6, [k.c - 8, k.r + 2], [k.c - 4, k.r + 1], 4);
+  }
+
+  if (veut('balade')) {
+    // le grand monde : le personnage arrive dans des hameaux aux décors différents (le brouillard levé)
+    await p.evaluate((Z) => { TR.heure(11); TR.zoom(Z); TR.voile({ brouillard: null }); }, Z4);
+    const lieux = await p.evaluate(() => { const sc = FarmStage.scene(), W = sc.grid.cols, L = sc.ctx.monde.lieux(); return L.hameaux.map((h) => [h.nom, (h.case % W) * 16 + 8, Math.floor(h.case / W) * 16 + 14]); });
+    for (const nom of BALADE) {
+      const l = lieux.find((x) => x[0] === nom);
+      if (!l) { console.log(`  (pas de hameau « ${nom} »)`); continue; }
+      await p.evaluate(([, x, y]) => TR.va(x - 88, y + 34), l);
+      await pl.passer(0.5); await p.waitForTimeout(3000); await pl.passer(1.5);
+      await p.evaluate(([, x, y]) => FarmStage.scene().fermier.goTo(x + 60, y + 30), l);
+      await film(pl, p, 'balade_' + nom.replace(/\W+/g, '_'), 3);
     }
   }
   await p.context().close();
@@ -284,11 +323,11 @@ if (['ensemble', 'rencontre'].some((n) => VOULUES.includes(n)) || !VOULUES.lengt
     await pc.evaluate(([x, y]) => TR.va(x, y), xy(rangs.recolte[0], -20, 0));
     await pl.passer(2.5);
     const ids = await pa.evaluate((R) => { const P = TR.parcelles(), de = (L) => L.map((t) => (P.find((q) => q.case === t) || {}).id); return { eau: de(R.eau), recolte: de(R.recolte) }; }, rangs);
-    await film(pl, pa, 'ensemble', 16, async (i) => {
+    await film(pl, pa, 'ensemble', 13, async (i) => {
       if (i === 15) await pa.evaluate((R) => { for (const t of R.houe) TR.act('hoe', { case: String(t) }); }, rangs);
       if (i === 30) await pb.evaluate((L) => { for (const id of L.slice().reverse()) TR.act('water', { id }); }, ids.eau);
       if (i === 45) await pc.evaluate((L) => { for (const id of L) TR.act('harvest', { id }); }, ids.recolte);
-      if (i === 240) await pa.evaluate((R) => FarmStage.semer(R.semis, 'carotte'), rangs);
+      if (i === 200) await pa.evaluate((R) => FarmStage.semer(R.semis, 'carotte'), rangs);
     });
     console.log('  après :', JSON.stringify(await pa.evaluate((R) => { const P = TR.parcelles(); return Object.fromEntries(Object.entries(R).map(([k, L]) => [k, L.map((t) => { const q = P.find((x) => x.case === t); return q ? (q.culture || '_') + (q.arrose ? '~' : '') : '.'; }).join(' ')])); }, rangs)));
   }
