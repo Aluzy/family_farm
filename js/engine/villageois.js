@@ -1,4 +1,5 @@
 import { DATA } from './catalog.js';
+import { niveauPort } from './port.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { hache } from './ferme-generee.js';
@@ -150,11 +151,7 @@ export function prendreAvis(state) {
 
 /* ---------- l'arrivée ---------- */
 
-// Le niveau du port (fiche I1c ; un port sans niveau, ou pas encore de port : le niveau 1).
-export function niveauPort(state) {
-  const n = Math.floor(Number(state && state.port && state.port.niveau));
-  return n >= 1 ? n : 1;
-}
+// Le niveau du port : niveauPort (js/engine/port.js, fiche I1a ; un port sans niveau compte pour PORT.NIVEAU_DEPART).
 
 // Combien de villageois au plus avec ce port (PLAFOND[niveau] ; au-delà du dernier niveau réglé : le dernier).
 export function plafondVillageois(state) {
