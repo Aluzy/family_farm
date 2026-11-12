@@ -85,6 +85,10 @@ export const BOUTIQUE = {
     fee_tapis: { prix: 40, nom: 'Tapis arc-en-ciel' },
     fee_tableau: { prix: 30, nom: 'Tableau : la licorne' },
     sol_pastel: { prix: 50, nom: 'Parquet pastel (24 lames)' },
+    // les décors des fêtes : en vente seulement à la période de la fête (FETES, enVente) ; achetés, gardés pour toujours
+    sapin_noel: { prix: 120, nom: 'Sapin de Noël décoré (ses guirlandes s\'allument le soir)', fete: 'noel' },
+    couronne_noel: { prix: 40, nom: 'Couronne de Noël', fete: 'noel' },
+    bonhomme_neige: { prix: 60, nom: 'Bonhomme de neige', fete: 'noel' },
     // les papiers peints : un motif acheté est débloqué pour toujours (js/engine/papiers.js)
     papier_peint_fleurettes: { prix: 40, nom: 'Papier peint fleurettes' },
     papier_peint_rayures: { prix: 40, nom: 'Papier peint rayures' },
@@ -97,6 +101,9 @@ export const BOUTIQUE = {
     papier_peint_vagues: { prix: 40, nom: 'Papier peint vagues' },
     papier_peint_nuages: { prix: 40, nom: 'Papier peint nuages et étoiles' },
   },
+  // les périodes des fêtes (mois et jour, en temps universel, bornes comprises) : un article `fete` n'est en vente
+  // que pendant la sienne (enVente)
+  FETES: { noel: { du: [12, 1], au: [12, 31], nom: 'en décembre' } },
   TOLERANCE_S: 300,          // l'âge maximal d'une notification de Stripe (5 minutes, comme ses bibliothèques)
   PAIEMENTS_PAR_HEURE: 10,   // paiements ouverts au plus par compte en une heure
   CORPS_MAX: 64 * 1024,      // une notification de Stripe : 64 Ko au plus
@@ -113,6 +120,22 @@ export function modeStripe(env) {
   const k = String((env && env.STRIPE_SECRET_KEY) || '');
   return /^(sk|rk)_test_/.test(k) ? 'test' : /^(sk|rk)_live_/.test(k) ? 'live' : null;
 }
+// L'article `a` est-il en vente à la date `t` (ms) ? Un article sans fête, toujours ; un décor de fête, pendant sa
+// période (BOUTIQUE.FETES).
+export function enVente(a, t = Date.now()) {
+  if (!a || !a.fete) return !!a;
+  const F = BOUTIQUE.FETES[a.fete];
+  if (!F) return false;
+  const d = new Date(t), md = (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+  const du = F.du[0] * 100 + F.du[1], au = F.au[0] * 100 + F.au[1];
+  return du <= au ? md >= du && md <= au : md >= du || md <= au;
+}
+
+// Les articles en vente à la date `t` (ms).
+export function articlesEnVente(t = Date.now()) {
+  return Object.fromEntries(Object.entries(BOUTIQUE.ARTICLES).filter(([, a]) => enVente(a, t)));
+}
+
 export const boutiqueOuverte = (env) => !!(modeStripe(env) && env.STRIPE_WEBHOOK_SECRET);
 
 export function creerTablesBoutique(sql) {
@@ -181,6 +204,7 @@ export class Boutique {
   acheter(compte, article) {
     const a = BOUTIQUE.ARTICLES[article];
     if (!a) return refus(404, 'Cet article n\'existe pas.');
+    if (!enVente(a, this.maintenant())) return refus(410, `Cet article n'est en vente que ${(BOUTIQUE.FETES[a.fete] || {}).nom || 'à sa saison'}.`);
     const solde = this.solde(compte);
     if (solde < a.prix) return refus(402, `Il te faut ${a.prix} 💎 (tu en as ${solde}).`);
     this.faire('UPDATE gemmes SET solde = solde - ? WHERE compte = ?', a.prix, compte);
@@ -311,7 +335,7 @@ export async function routeBoutique(chemin, request, boutique, compte, env, jeuU
   const corpsJson = async () => { try { return await request.json(); } catch (e) { return {}; } };
   const mode = modeStripe(env);
   if (request.method === 'GET' && chemin === 'boutique') {
-    return { statut: 200, corps: { ok: true, ouverte: boutiqueOuverte(env), mode, packs: BOUTIQUE.PACKS, articles: BOUTIQUE.ARTICLES, devise: BOUTIQUE.DEVISE, ...boutique.etat(compte.id) } };
+    return { statut: 200, corps: { ok: true, ouverte: boutiqueOuverte(env), mode, packs: BOUTIQUE.PACKS, articles: articlesEnVente(boutique.maintenant()), devise: BOUTIQUE.DEVISE, ...boutique.etat(compte.id) } };
   }
   if (request.method === 'POST' && chemin === 'boutique/payer') {
     if (!boutiqueOuverte(env)) return { statut: 503, corps: { ok: false, erreur: 'La boutique n\'est pas encore ouverte.' } };

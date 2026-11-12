@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
-import { BOUTIQUE, Boutique, formulaire, modeStripe, recevoirStripe, routeBoutique, signatureValide } from '../worker/src/boutique.mjs';
+import { articlesEnVente, BOUTIQUE, Boutique, enVente, formulaire, modeStripe, recevoirStripe, routeBoutique, signatureValide } from '../worker/src/boutique.mjs';
 import { Registre, routeCompte } from '../worker/src/comptes.mjs';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -40,7 +40,7 @@ function faussesApi(id = SESSION) {
 test('boutique : le mode vient de la clé (test, live, clé restreinte) ; sans clé ni secret, fermée', () => {
   eq([modeStripe({ STRIPE_SECRET_KEY: 'sk_test_x' }), modeStripe({ STRIPE_SECRET_KEY: 'rk_live_x' }), modeStripe({ STRIPE_SECRET_KEY: 'pk_test_x' }), modeStripe({})], ['test', 'live', null, null]);
   eq(BOUTIQUE.PACKS, { petit: { gemmes: 200, centimes: 199 }, moyen: { gemmes: 550, centimes: 499 }, grand: { gemmes: 1200, centimes: 999 } }, 'les prix validés');
-  const PRIX = { ensemble_chalet: 220, chalet_lit: 80, chalet_chevet: 40, chalet_tapis: 40, chalet_tableau: 30, sol_meleze: 50, ensemble_cottage: 220, cottage_lit: 80, cottage_chevet: 40, cottage_tapis: 40, cottage_tableau: 30, sol_blanchi: 50, ensemble_mer: 220, mer_lit: 80, mer_chevet: 40, mer_tapis: 40, mer_tableau: 30, sol_flotte: 50, ensemble_fee: 220, fee_lit: 80, fee_chevet: 40, fee_tapis: 40, fee_tableau: 30, sol_pastel: 50 };
+  const PRIX = { ensemble_chalet: 220, chalet_lit: 80, chalet_chevet: 40, chalet_tapis: 40, chalet_tableau: 30, sol_meleze: 50, ensemble_cottage: 220, cottage_lit: 80, cottage_chevet: 40, cottage_tapis: 40, cottage_tableau: 30, sol_blanchi: 50, ensemble_mer: 220, mer_lit: 80, mer_chevet: 40, mer_tapis: 40, mer_tableau: 30, sol_flotte: 50, ensemble_fee: 220, fee_lit: 80, fee_chevet: 40, fee_tapis: 40, fee_tableau: 30, sol_pastel: 50, sapin_noel: 120, couronne_noel: 40, bonhomme_neige: 60 };
   const prixDe = (id) => (PRIX[id] ? PRIX[id] : id.startsWith('papier_peint_') ? 40 : id.startsWith('guirlande_') ? 60 : id.startsWith('cheminee_') || id.startsWith('fontaine_') ? 120 : id.startsWith('ornement_') ? 90 : id.startsWith('enseigne_') ? 50 : 25);
   for (const [id, a] of Object.entries(BOUTIQUE.ARTICLES)) eq(a.prix, prixDe(id), `${id} : ${prixDe(id)} gemmes`);
   eq(Object.keys(BOUTIQUE.ARTICLES).filter((id) => id.startsWith('guirlande_')).length, 4, 'quatre guirlandes');
@@ -52,6 +52,25 @@ test('boutique : le mode vient de la clé (test, live, clé restreinte) ; sans c
     const total = seuls.reduce((n, x) => n + x.prix, 0);
     assert(a.prix < total * 0.85 && a.prix > total * 0.7, `${id} : ${a.prix} pour ${total}`);
   }
+});
+
+test('boutique : les décors de Noël ne sont en vente qu\'en décembre ; les autres articles toute l\'année', () => {
+  const t = (m, j) => Date.UTC(2026, m - 1, j, 12);
+  for (const id of ['sapin_noel', 'couronne_noel', 'bonhomme_neige']) {
+    eq(BOUTIQUE.ARTICLES[id].fete, 'noel', id);
+    eq([enVente(BOUTIQUE.ARTICLES[id], t(12, 1)), enVente(BOUTIQUE.ARTICLES[id], t(12, 31)), enVente(BOUTIQUE.ARTICLES[id], t(11, 30)), enVente(BOUTIQUE.ARTICLES[id], t(1, 2))], [true, true, false, false], id);
+  }
+  assert(enVente(BOUTIQUE.ARTICLES.rosier_rouge, t(7, 14)), 'un rosier : toute l\'année');
+  assert(!articlesEnVente(t(6, 1)).sapin_noel && articlesEnVente(t(12, 24)).sapin_noel, 'la liste envoyée au jeu');
+  // acheter : refusé hors de la période, sans débiter ; accepté en décembre
+  let maintenant = t(6, 1);
+  const b = new Boutique(baseSql(), () => maintenant);
+  b.ajouter('c-1', 200);
+  eq(b.acheter('c-1', 'sapin_noel').statut, 410, 'en juin : pas en vente');
+  eq(b.solde('c-1'), 200, 'rien de débité');
+  maintenant = t(12, 20);
+  const r = b.acheter('c-1', 'sapin_noel');
+  assert(r.ok && r.solde === 80, 'en décembre : acheté');
 });
 
 test('boutique : la signature de Stripe (v1, HMAC SHA-256 de « t.corps »), l\'horodatage à 5 minutes près', async () => {

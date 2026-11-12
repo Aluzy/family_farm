@@ -1453,6 +1453,36 @@ export const RAW_DATA = {
       "boutique": true,
       "contenu": { "fee_lit": 1, "fee_chevet": 1, "fee_tapis": 1, "fee_tableau": 1, "sol_pastel": 24, "papier_peint_nuages": 1 }
     },
+    "sapin_noel": {
+      "nom": "Sapin de Noël",
+      "icone": "🎄",
+      "prix": 120,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "couronne_noel": {
+      "nom": "Couronne de Noël",
+      "icone": "🎀",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "bonhomme_neige": {
+      "nom": "Bonhomme de neige",
+      "icone": "⛄",
+      "prix": 60,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -2618,6 +2648,32 @@ export const RAW_DATA = {
         "boutique": true
       },
       "sol_pastel": { "nom": "Parquet pastel", "objet": "sol_pastel", "sol": true, "boutique": true },
+      "sapin_noel": {
+        "nom": "Sapin de Noël",
+        "objet": "sapin_noel",
+        "meuble": "sapin_noel",
+        "dedans": true,
+        "bloque": true,
+        "tourne": "symetrique",
+        "piece": "salon",
+        "boutique": true
+      },
+      "couronne_noel": {
+        "nom": "Couronne de Noël",
+        "objet": "couronne_noel",
+        "meuble": "couronne_noel",
+        "sur": "mur",
+        "piece": "salon",
+        "boutique": true
+      },
+      "bonhomme_neige": {
+        "nom": "Bonhomme de neige",
+        "objet": "bonhomme_neige",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "bonhomme_neige",
+        "boutique": true
+      },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -3007,7 +3063,8 @@ export const RAW_DATA = {
           "enseigne_email",
           "boite_lettres_email",
           "enseigne_fer",
-          "boite_lettres_fer"
+          "boite_lettres_fer",
+          "bonhomme_neige"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
