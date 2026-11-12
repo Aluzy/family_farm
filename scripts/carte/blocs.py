@@ -3086,7 +3086,30 @@ def motif_meleze(x, v):
 
 
 FER_CLOU = rampe([(40, 40, 46), (110, 110, 118), (190, 190, 196)], 40)
-SOLS_BOUTIQUE = {'sol_meleze': (motif_meleze, ton(MELEZES[2], 0.9), ton(MELEZES[0], 0.12))}
+
+# Le plancher blanchi de l'ensemble « cottage anglais » (BLOCS_CARTE.modelesSols.sol_blanchi) : des lames étroites
+# (deux rangées chacune) passées à la chaux, le bois qui transparaît par endroits, chaque lame son ton.
+BLANCHIS = [rampe([(120, 112, 104), (176, 168, 156), (214, 208, 196), (236, 232, 222), (250, 248, 240)], 120),
+            rampe([(116, 110, 106), (170, 164, 156), (208, 204, 194), (232, 228, 220), (248, 246, 240)], 120),
+            rampe([(124, 114, 100), (180, 168, 150), (218, 208, 190), (238, 230, 214), (252, 248, 236)], 120)]
+BOIS_DESSOUS = rampe([(120, 86, 56), (170, 130, 90)], 20)
+
+
+def motif_blanchi(x, v):
+    lame = v // 2
+    d = (x + (lame * 5) % 16) % 16
+    R = BLANCHIS[int(hasard(lame, (x + (lame * 5) % 16) // 16, 24) * 3) % 3]
+    if v % 2 == 1 and (x + lame) % 7 != 0:
+        return ton(R, 0.30)                               # le joint
+    if d == 0:
+        return ton(R, 0.26)                               # le bout de la lame
+    if bruit(x, v, 25) > 0.9 and hasard(lame, x // 4, 29) < 0.5:
+        return ton(BOIS_DESSOUS, 0.4 + 0.3 * hasard(x, v, 26))   # le bois sous la chaux
+    return ton(R, 0.70 - 0.10 * x / 16 + 0.06 * bruit(x // 2, v, 27) + 0.08 * (hasard(lame, 0, 28) - 0.5))
+
+
+SOLS_BOUTIQUE = {'sol_meleze': (motif_meleze, ton(MELEZES[2], 0.9), ton(MELEZES[0], 0.12)),
+                 'sol_blanchi': (motif_blanchi, ton(BLANCHIS[0], 0.95), ton(BLANCHIS[0], 0.25))}
 SOLS_BOUTIQUE_DEBUT = len(DESSINS)                # 16 images par sol (BLOCS_CARTE.modelesSols)
 DESSINS += [sol_modele(m, *SOLS_BOUTIQUE[k]) for k in SOLS_BOUTIQUE for m in range(16)]
 
