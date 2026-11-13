@@ -14,7 +14,9 @@ import { pickUp } from './ramassage.js';
 import { botteleuses, sortirBotte, verserFibres } from './botteleuse.js';
 import { recipeStatus, startRecipe } from './kitchen.js';
 import { casesCouvertes, piecesCloses } from './blocs.js';
-import { comptoirDuPort, lieuPort, vendreAuPort } from './port.js';
+import { comptoirDuPort, lieuPort, portOuvert } from './port.js';
+import { sellItem } from './market.js';
+import { bumpCounter } from './campaign.js';
 import { trouverVillageois, villageoisDe } from './villageois.js';
 import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
 
@@ -558,7 +560,14 @@ function uneAction(state, v, pres) {
         if (reste <= 0) break;
         const n = Math.min(reste, stock(state)[it] || 0);
         if (n <= 0) continue;
-        const r = commeLeJoueur(state, null, () => vendreAuPort(state, it, n, c.devant));
+        // (il porte lui-même ses objets, sans le portage du joueur (I2) : il vend depuis le stock, au comptoir ouvert)
+        const r = commeLeJoueur(state, null, () => {
+          const ici = portOuvert(state, c.devant);
+          if (!ici.ok) return fail(ici.raison);
+          const v = sellItem(state, it, n, 'Port');
+          if (v.ok) bumpCounter(state, 'ventesPort', v.gain);   // (les paliers de l'île, paliers.js : ventesPort)
+          return v;
+        });
         if (r && r.ok) { reste -= n; gain += r.gain || 0; vendu[it] = n; }
       }
       if (!gain) return fail('Rien à porter au port.');
