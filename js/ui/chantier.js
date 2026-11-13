@@ -53,7 +53,7 @@ const SOLS = () => Object.keys(DATA.ATELIER.BLOCS).filter(estSolPiece);
 const solEnMain = () => niveau() >= 1 && estSolPiece(buildMode);
 // Au niveau n ≥ 1, ce que fait la case `c` : 'sol' (un sol en main : le sol du niveau 1),
 // 'rang' (un mur, une fenêtre, une porte du bas : le rehausser ; ses blocs du dessus sont les murs
-// de l'étage), 'etage' (au-dessus de la pièce de l'escalier : un bloc de l'étage ; un tableau sur un mur
+// de l'étage), 'etage' (au-dessus d'une pièce à escalier ou dont les murs montent à l'étage : un bloc de l'étage ; un tableau sur un mur
 // rehaussé de l'étage aussi).
 // `lot` (facultatif, tracePosable) : le niveau et l'emprise de l'étage, lus une fois pour toutes les cases.
 function genreCase(c, lot = null) {
@@ -231,7 +231,7 @@ export function buildChipHtml() {
   // (sa flèche vers la case du groupe : sa colonne dans la barre ; la bulle, sous sa ligne)
   const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.floor(Math.max(0, rangs.indexOf(gb.id)) / LIGNES)};--ligne:${Math.max(0, rangs.indexOf(gb.id)) % LIGNES}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((s) => caseBloc(s)).join('')}</div></div>` : '';
   const dodo = couchages(state).length;
-  const tete = niveauBati() ? '<span title="À l\'étage : on bâtit au-dessus de la pièce de l\'escalier ; ailleurs, on rehausse les murs">🪜 Étage</span>'
+  const tete = niveauBati() ? '<span title="À l\'étage : on bâtit au-dessus d\'une pièce dont les murs montent à l\'étage ou qui a un escalier ; ailleurs, on rehausse les murs">🪜 Étage</span>'
     : niveau() ? `<span title="Niveau ${niveau()} : touche un mur haut de ${niveau()} bloc${niveau() > 1 ? 's' : ''} pour le rehausser, un mur plus haut pour reprendre son bloc du dessus">🧱 Rehausser</span>`
     : `<span class="num" title="Paillasses dans une pièce close">🛏 ${dodo}</span>`;
   // le niveau de construction : un petit carré au bout de la barre, et la liste des niveaux (le

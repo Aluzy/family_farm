@@ -25,17 +25,29 @@ import { fail } from './devices.js';
 import { addItem, takeItem } from './inventory.js';
 import { blocsEnMain, blocsPoses, changeMur, changeSol, empriseMeuble, genreBloc, hauteurMur, hauteurPile, matiereDessus, mesuresMeuble, piecesCloses, raisonFixe, solsPoses, tourneBloc, variantesBloc } from './blocs.js';
 import { farmTerrain } from './terrain.js';
+import { openStation } from './kitchen.js';
+import { viderBoite } from './repas.js';
+import { closeFridge, openFridge } from './fridge.js';
 
 // Les blocs qui se posent à l'étage : un escalier (vers le niveau 2), des murs, des portes, une paillasse, une lanterne, un
 // réverbère, une barrière, les meubles qui se posent au sol, les tableaux (sur un mur de l'étage :
 // state.dessusEtage) et la décoration du jardin (des bancs, des tables, des bacs, des jarres… : DECOR_ETAGE).
-// Ce qui fait quelque chose reste au sol (le créateur, « tout ce qui est possible au sol l'est aussi à
-// l'étage », novembre 2026) : le réfrigérateur, la boîte à nourriture, le four, la cuisinière, la meule, et
-// tout ce qui sert dehors (l'élevage, les machines, l'énergie, les arbres, la ruche, le puits, le silo).
+// Les stations aussi (le créateur, novembre 2026 : « le joueur peut poser les stations à n'importe quel
+// niveau ») : le réfrigérateur, la boîte à nourriture, le four, la cuisinière, le mortier, la meule
+// (STATIONS_ETAGE). Ce qui sert dehors reste au sol (l'élevage, les machines, l'énergie, les arbres, la
+// ruche, le puits, le silo).
 export const DECOR_ETAGE = ['bac_fleurs', 'table_jardin', 'chaise_jardin', 'banc_jardin', 'banc_rondins', 'table_rondins', 'chaise_peinte', 'jarre_coquillages', 'lanterne_papier', 'bassin_nenuphars', 'banc_pierre', 'jardiniere_pierre', 'pergola', 'bac_lavande'];
+export const STATIONS_ETAGE = ['refrigerateur', 'boite_nourriture', 'four', 'cuisiniere', 'mortier', 'meule'];
 export const ETAGE_BLOCS = ['escalier', 'mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'porte', 'porte_chene', 'porte_vitree', 'porte_grange', 'porte_bleue', 'porte_fer', 'porte_ecurie', 'porte_blanche', 'paillasse', 'lanterne', 'candelabre', 'barriere', 'barriere_blanche', 'barriere_rouge', 'barriere_grise', 'barriere_chene', 'barriere_verte', 'barriere_lavande']
   .concat(Object.keys(DATA.ATELIER.BLOCS).filter((k) => DATA.ATELIER.BLOCS[k].meuble && !DATA.ATELIER.BLOCS[k].frigo))
-  .concat(DECOR_ETAGE.filter((k) => DATA.ATELIER.BLOCS[k]));
+  .concat(DECOR_ETAGE.filter((k) => DATA.ATELIER.BLOCS[k]))
+  .concat(STATIONS_ETAGE.filter((k) => DATA.ATELIER.BLOCS[k]));
+
+// Le bloc `sorte` est-il posé quelque part, en bas ou à l'étage ? (une station : elle reste ouverte
+// tant qu'il en reste une)
+export function sortePosee(state, sorte) {
+  return Object.values(blocsPoses(state)).includes(sorte) || Object.values(etageBlocs(state)).includes(sorte);
+}
 
 // Ce qui est accroché sur les murs de l'étage (les tableaux) : { [tuile]: sorte } (state.dessusEtage), comme
 // state.blocsDessus en bas.
@@ -171,20 +183,23 @@ function avecMurs(state, cases) {
   return out;
 }
 
-// L'emprise de l'étage : les cases des pièces closes où un escalier est posé, et les murs et
-// les portes qui les bordent (les huit voisines). Un Set de tuiles.
-// (gardée tant que les pièces closes n'ont pas changé : la même liste, venue du cache de piecesCloses,
-// veut dire les mêmes blocs posés, escaliers compris. Le mode Construire la lit pour chaque case
-// affichée. Les appelants ne font que la lire.)
-let empPieces = null, empSet = null;
+// L'emprise de l'étage : les cases des pièces closes où un escalier est posé, et celles des pièces
+// dont tout le pourtour monte au niveau 1 (piecesNiveau : on y bâtit avant d'y mettre l'escalier, le
+// créateur, novembre 2026), avec les murs et les portes qui les bordent (les huit voisines). Un Set
+// de tuiles.
+// (gardée tant que les pièces closes et les hauteurs des murs n'ont pas changé : la même liste, venue
+// du cache de piecesCloses, veut dire les mêmes blocs posés, escaliers compris. Le mode Construire la
+// lit pour chaque case affichée. Les appelants ne font que la lire.)
+let empPieces = null, empCle = null, empSet = null;
 export function etageEmprise(state) {
-  const pieces = piecesCloses(state);
-  if (pieces === empPieces) return empSet;
+  const pieces = piecesCloses(state), cle = JSON.stringify(state.hauteurs || null);
+  if (pieces === empPieces && cle === empCle) return empSet;
   const out = new Set();
   const B = blocsPoses(state);
-  empPieces = pieces; empSet = out;
+  empPieces = pieces; empCle = cle; empSet = out;
+  const hautes = new Set(piecesNiveau(state, 1).map((p) => p.cases));
   for (const p of pieces) {
-    if (!p.cases.some((t) => B[t] === 'escalier')) continue;
+    if (!hautes.has(p.cases) && !p.cases.some((t) => B[t] === 'escalier')) continue;
     for (const t of avecMurs(state, p.cases)) out.add(t);
   }
   return out;
@@ -285,11 +300,28 @@ export function couchagesEtage(state) {
     .sort((a, b) => a - b).map((t) => 'etage:' + t);
 }
 
+// Une station posée à l'étage : elle est là, comme en bas (blocs.js poserBloc) ; reprise (ou rangée),
+// elle s'en va s'il n'en reste pas une autre, en bas ou à l'étage (blocs.js reprendreBloc).
+function stationPosee(state, sorte) {
+  const s = DATA.ATELIER.BLOCS[sorte];
+  if (!s) return;
+  if (s.frigo) openFridge(state);
+  if (s.station && s.station !== 'moulin' && state.stations && state.stations[s.station]) openStation(state, s.station);
+}
+function stationReprise(state, sorte) {
+  const s = DATA.ATELIER.BLOCS[sorte];
+  if (!s) return;
+  if (s.boite && !sortePosee(state, sorte)) viderBoite(state);
+  if (s.frigo && !sortePosee(state, sorte)) closeFridge(state);
+  if (s.station && s.station !== 'moulin' && state.stations && state.stations[s.station] && !sortePosee(state, sorte)) state.stations[s.station].construit = false;
+}
+
 // Peut-on poser `sorte` à l'étage, sur `tile` (dans le sens `sens` : un meuble qui tourne) ? { ok, raison }
 export function poseEtageStatus(state, sorte, tile, sens = 0) {
   const s = DATA.ATELIER.BLOCS[sorte];
-  if (!s || !ETAGE_BLOCS.includes(sorte)) return { ok: false, raison: `${s ? s.nom : 'Ce bloc'} : ne se pose pas à l'étage${s && (s.station || s.frigo || s.boite) ? ' (il sert en bas, où la famille cuisine et mange)' : ''}.` };
-  if (!etageEmprise(state).has(tile)) return { ok: false, raison: 'À l\'étage, on ne bâtit qu\'au-dessus d\'une pièce close qui a un escalier.' };
+  if (!s || !ETAGE_BLOCS.includes(sorte)) return { ok: false, raison: `${s ? s.nom : 'Ce bloc'} : ne se pose pas à l'étage (il sert dehors).` };
+  if (!etageEmprise(state).has(tile)) return { ok: false, raison: 'À l\'étage, on bâtit au-dessus d\'une pièce close dont les murs montent à l\'étage, ou qui a un escalier.' };
+  if (s.boite && state.frigo && state.frigo.construit) return { ok: false, raison: 'La famille mange au réfrigérateur : la boîte à nourriture ne sert plus.' };
   // (un tableau : sur un mur de l'étage, un seul par mur)
   if (s.sur === 'mur') {
     if (!murEtage(state, tile)) return { ok: false, raison: `${s.nom} : à accrocher sur un mur de l'étage.` };
@@ -360,6 +392,8 @@ export function poserEtage(state, sorte, tile, sens = 0, variante = null) {
   state.etage[tile] = sorte;
   setSensEtage(state, tile, tourneBloc(sorte) ? sens : 0);
   setVarianteEtage(state, tile, variante);
+  stationPosee(state, sorte);
+  if (ancien) stationReprise(state, ancien);
   const v = sensEtage(state, tile), t = varianteEtage(state, tile);
   return { ok: true, sorte, case: tile, etage: true, ...(ancien ? { remplace: ancien } : {}), ...(v ? { sens: v } : {}), ...(t ? { variante: t } : {}) };
 }
@@ -392,6 +426,7 @@ export function reprendreEtage(state, tile) {
   if (state.sensEtage) delete state.sensEtage[tile];
   if (state.teintesEtage) delete state.teintesEtage[tile];
   addItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
+  stationReprise(state, sorte);
   return { ok: true, sorte, case: tile, etage: true, ...(mur && estFen(sorte) ? { reste: mur } : {}), ...(sens ? { sens } : {}), ...(variante ? { variante } : {}) };
 }
 
@@ -469,9 +504,11 @@ export function rangerEtage(state) {
     const mur = fenetresEtage(state)[k];
     if (mur) addItem(state, DATA.ATELIER.BLOCS[mur].objet, 1);
     setFenetreEtage(state, k, null);
+    const sorte = E[k];
     delete E[k];
     if (state.sensEtage) delete state.sensEtage[k];
     if (state.teintesEtage) delete state.teintesEtage[k];
+    stationReprise(state, sorte);
   }
   // (un tableau dont le mur n'est plus là, ou hors de l'étage : il revient aussi)
   let tableaux = 0;

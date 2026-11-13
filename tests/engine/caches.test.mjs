@@ -24,14 +24,16 @@ test('caches : l\'emprise de l\'étage suit l\'escalier (repris, reposé), sans 
   const e1 = etageEmprise(s);
   assert(e1.size > 0);
   assert(etageEmprise(s) === e1, 'la même partie : la même emprise, gardée');
-  // l'étage de la maison vidé, son escalier repris : plus d'étage là
+  // l'étage de la maison vidé, son escalier repris : ses murs montent à l'étage, l'étage reste (on y
+  // bâtit sans escalier, novembre 2026) ; recalculée, l'emprise est la même
   for (const t of Object.keys(etageBlocs(s)).map(Number)) assert(reprendreEtage(s, t).ok);
   const esc = Object.entries(blocsPoses(s)).filter(([, k]) => k === 'escalier').map(([t]) => Number(t));
   assert(esc.length >= 1);
   const r = reprendreBloc(s, esc[0]);
   assert(r.ok, r.error);
   const e2 = etageEmprise(s);
-  assert(e2.size < e1.size && !e2.has(esc[0]), 'l\'escalier repris : son étage n\'y est plus');
+  assert(e2 !== e1 && e2.has(esc[0]), 'l\'escalier repris : l\'emprise recalculée ; les murs rehaussés gardent l\'étage');
+  assertEqual([...e2].sort((a, b) => a - b), [...e1].sort((a, b) => a - b));
   assert(poserBloc(s, 'escalier', esc[0]).ok);
   assertEqual([...etageEmprise(s)].sort((a, b) => a - b), [...e1].sort((a, b) => a - b), 'reposé : la même emprise qu\'avant');
   assertEqual(etage2Emprise(s).size, 0, 'pas d\'escalier à l\'étage : pas de niveau 2');

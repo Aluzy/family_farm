@@ -376,6 +376,19 @@
       return { x: wx, y: wy + n * E.dy };
     },
 
+    // Une station posée à l'étage où l'on est, sous ce point (sa case, ou celle du dessus où dépasse
+    // son image) : la fenêtre de sa station (BLOCS_CARTE.fenetres), ou null.
+    stationEtageAt(wx, wy) {
+      const e = this.ctx.lastModel && this.ctx.lastModel.etage;
+      if (!e || (this.niveau || 0) !== 1) return null;
+      const q = this.etagePoint(wx, wy), c = this.tileAtPoint(q.x, q.y), cols = this.grid.cols;
+      for (const b of e.blocs) {
+        const win = BLOCS_CARTE.fenetres[b.sorte];
+        if (win && (b.case === c || b.case === c + cols)) return win;
+      }
+      return null;
+    },
+
     // Un escalier sous ce point (son bas, ou son haut à l'étage) : sa case, ou -1.
     escalierAt(wx, wy) {
       if (this.escalierVers(wx, wy) < 0) return -1;
