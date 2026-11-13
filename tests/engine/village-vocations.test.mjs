@@ -117,13 +117,13 @@ test('le socle : une vocation enregistrée, son score, ses paliers notés la nui
     points = 12;
     assertEqual(vocationsNuit(s).filter((x) => x.id === 'essai').map((x) => x.palier), [2]);
     const L = listeVocations(s);
-    assertEqual(L.map((v) => v.id), ['village', 'essai'], 'deux vocations ensemble, dans l\'ordre des données');
-    assertEqual(L[1].paliers.map((p) => p.atteint), [true, true]);
-    assertEqual(L[1].suivant, null, 'le dernier palier atteint');
+    assertEqual(L.map((v) => v.id), [...Object.keys(DATA.VOCATIONS).filter((k) => k !== 'essai'), 'essai'], 'les vocations ensemble, dans l\'ordre des données');
+    assertEqual(L.find((v) => v.id === 'essai').paliers.map((p) => p.atteint), [true, true]);
+    assertEqual(L.find((v) => v.id === 'essai').suivant, null, 'le dernier palier atteint');
   } finally {
     if (avant === undefined) delete DATA.VOCATIONS.essai; else DATA.VOCATIONS.essai = avant;
   }
-  assertEqual(listeVocations(s).map((v) => v.id), ['village'], 'sans ses données, la vocation n\'est pas listée');
+  assertEqual(listeVocations(s).map((v) => v.id), Object.keys(DATA.VOCATIONS), 'sans ses données, la vocation n\'est pas listée');
 });
 
 /* ---------- la convivialité ---------- */

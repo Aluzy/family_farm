@@ -19,7 +19,7 @@ import {
   catalogueImport, chargerPortage, choisirVehicule, commanderImport, comptoirDuPort, contratsDuPort, countItem, craftStatus,
   createNewGame, DATA, debloque, etatChaine, executerCommande, farmSeed, farmTerrain, listeVocations, livrerContrat,
   machinesDeLaFerme, migrate, palierVocation, paiementContrat, porteeNavette, portDuMonde, poserBloc, postesDe,
-  prendreAvisContrats, productionNuit, robotTrip, runNight, scoreVocation, sellPrice, STATE_VERSION, tacheDef, tacheManque, tachesDuPoste,
+  prendreAvisContrats, productionNuit, prixIle, robotTrip, runNight, scoreVocation, sellPrice, STATE_VERSION, tacheDef, tacheManque, tachesDuPoste,
   tachesNuit, testBatir, testFillBatteries, testFillTank, testMaisonVillageois, tirerContrats, valeurContrat, vocationsNuit,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, avecVillage, boite, partie, runFor, setInv, test } from './aide.mjs';
@@ -110,7 +110,7 @@ test('le score de la ferme productive : la valeur exportée, les machines, l\'é
   // (la valeur exportée : une vente au port, au prix de vente)
   charger(s, 'carotte', 30);
   assert(executerCommande(s, { id: 'd', type: 'port.decharger', args: { case: ou } }).ok, 'déchargé, vendu');
-  const vendu = 30 * sellPrice('carotte');
+  const vendu = 30 * prixIle('carotte');
   const c1 = Object.fromEntries(calculProduction(s).causes.map((c) => [c.id, c.valeur]));
   assertEqual(c1.export, Math.floor(vendu / K.export.PIECES), 'un point par PIECES pièces exportées');
   // (une chaîne prête et le Moulin : deux machines)
@@ -145,15 +145,18 @@ test('les paliers : atteints, notés la nuit, ils le restent ; ce qu\'ils déblo
   assertEqual(debloque(s, 'contrats_gros'), false);
   s.production = s.production || { ventes: {}, energie: {}, contrats: { tire: 0, proposes: [], acceptes: [], honores: 0, primes: 0, avis: [] } };
   s.production.contrats.honores = Math.ceil(P[1].score / DATA.VOCATIONS.production.CAUSES.contrats.POINTS);
+  // (le socle d'I8a : palier, celui qui est gardé, passé la nuit ; atteint, celui que le score atteint maintenant)
   const p = palierVocation(s, 'production');
-  assertEqual(p.palier >= 2, true, 'deux paliers par le score');
+  assertEqual(p.atteint >= 2, true, 'deux paliers par le score');
+  assertEqual(p.palier, 0, 'passés la nuit seulement');
   assertEqual(p.suivant.score, P[p.palier].score, 'le suivant');
   assertEqual(debloque(s, 'contrats_gros'), false, 'débloqué à la nuit seulement');
-  assertEqual(vocationsNuit(s).production, p.palier, 'la nuit note les paliers');
+  const nuit = (vocationsNuit(s) || []).filter((x) => x.id === 'production').map((x) => x.palier);
+  assertEqual(Math.max(...nuit), p.atteint, 'la nuit note les paliers');
   assertEqual([debloque(s, 'contrats_gros'), debloque(s, 'machines_grandes'), debloque(s, 'robot_second')], [true, true, false]);
   s.production.contrats.honores = 0;
-  assertEqual(palierVocation(s, 'production').palier, p.palier, 'un palier atteint le reste');
-  assertEqual(vocationsNuit(s), null, 'rien de nouveau');
+  assertEqual(palierVocation(s, 'production').palier, p.atteint, 'un palier atteint le reste');
+  assertEqual((vocationsNuit(s) || []).filter((x) => x.id === 'production').length, 0, 'rien de nouveau');
 });
 
 /* ---------- les contrats d'export ---------- */
@@ -173,7 +176,7 @@ test('un contrat d\'export : proposé au bac, accepté, livré en trois passages
   // (premier passage : 40 pains)
   charger(s, 'pain', 40);
   let r = livrerContrat(s, 'kp', ou);
-  assertEqual([r.ok, r.n, r.complet, r.gain], [true, 40, false, 40 * sellPrice('pain')]);
+  assertEqual([r.ok, r.n, r.complet, r.gain], [true, 40, false, 40 * prixIle('pain')]);
   // (deuxième passage : 30)
   aller(s, 2 * PER);
   charger(s, 'pain', 30);
@@ -184,7 +187,7 @@ test('un contrat d\'export : proposé au bac, accepté, livré en trois passages
   charger(s, 'pain', 45);
   r = livrerContrat(s, 'kp', ou);
   assertEqual([r.n, r.complet, r.prime], [30, true, paiementContrat({ objet: 'pain', quantite: 100, prime: 40 }).prime], 'il ne prend que ce qui reste');
-  assertEqual(s.pieces - pieces, 100 * sellPrice('pain') + r.prime, 'le prix de vente de tout, plus la prime');
+  assertEqual(s.pieces - pieces, 100 * prixIle('pain') + r.prime, 'le prix de vente de tout, plus la prime');
   assert(s.progression.xp > xp, 'de l\'expérience');
   assertEqual([s.production.contrats.honores, contratsDuPort(s).acceptes.length], [1, 0]);
   assert(prendreAvisContrats(s).some((a) => a.quoi === 'honore'), 'la page le dira');

@@ -43,7 +43,6 @@ import { amitieVillageoisNuit } from './villageois-amitie.js';
 import { tachesNuit } from './taches.js';
 import { avancerContrats } from './contrats.js';
 import { productionNuit } from './production.js';
-import { vocationsNuit } from './vocations.js';
 import './vocation-production.js';   // (fiche I8b : le calcul de la ferme productive s'enregistre au socle des vocations)
 import { liensFinDeNuit, liensNuit } from './liens.js';
 import { avancerBac } from './bac.js';
@@ -333,13 +332,10 @@ export function runNight(state) {
   // (fiche I1c, bac.js : le bac du jour est passé et reparti ; un passage manqué est rattrapé)
   const bac = avancerBac(state, { nuit: true });
   if (bac && bac.arrivees.length) state.nuit.bac = bac;
-  // (fiche I8b : les contrats d'export suivent le bac ; l'énergie du jour notée ; les paliers des vocations atteints,
-  // notés : ce qu'ils débloquent s'ouvre)
+  // (fiche I8b : les contrats d'export suivent le bac ; l'énergie du jour notée ; les paliers des vocations, plus bas)
   avancerContrats(state);
   const production = productionNuit(state);
   if (production) state.nuit.production = production;
-  const vocations = vocationsNuit(state);
-  if (vocations) state.nuit.vocations = vocations;
   const villageois = villageoisNuit(state);
   if (villageois) state.nuit.villageois = villageois;
   // (I8a, fetes-village.js : la fête du jour est tenue ; vocations.js : les paliers que les vocations atteignent)
