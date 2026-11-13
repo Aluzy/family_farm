@@ -585,7 +585,9 @@
       const cuisine = this.cuisineOn ? (F.reducedMotion() ? Cu.frames[0] : image(Cu, true)) : BLOCS_CARTE.frames[Cu.sorte];
       // (le four redessiné, dessiné comme un meuble : son image éteinte, ou celle de son feu)
       const four = this.fireOn ? Fe.images[Math.floor(time * Fe.fps / 1000) % Fe.images.length] : Fe.eteint;
-      for (const e of this.blocks.values()) {
+      // (et ceux des niveaux du dessus, js/carte/ferme/etage.js : etageStations)
+      for (const e of [...this.blocks.values(), ...(this.etageStations || [])]) {
+        if (!e.img || !e.img.active) continue;
         if (e.sorte === Fe.sorte && e.dessin) {
           if (e.img.texture.key !== four && this.textures.exists(four)) e.img.setTexture(four);
           continue;
@@ -665,15 +667,22 @@
       }
       const list = this.lumieresPosees.filter((e) => e.img && e.img.active);
       // (et celles de l'étage, js/carte/ferme/etage.js)
-      for (const e of this.etageLumieres || []) if (e.img && e.img.active) list.push(e);
+      // (le niveau 2 : seulement quand on le voit, js/carte/ferme/etage.js stepEtage)
+      const vu = (e) => e.img && e.img.active && (e.niveau !== 2 || e.img.visible);
+      for (const e of this.etageLumieres || []) if (vu(e)) list.push(e);
+      // (cachées : leurs halos et leur feu aussi)
+      for (const e of [...(this.etageLumieres || []), ...(this.etageLampes || []), ...(this.etageCheminees || [])]) {
+        if (e.niveau !== 2 || vu(e)) continue;
+        for (const k of ['halo', 'haloLampe', 'haloFeu', 'feu']) if (e[k] && e[k].active) e[k].setVisible(false);
+      }
       // (les lampes de chevet, en bas et à l'étage : BLOCS_CARTE.lampeChevet)
       const LC = BLOCS_CARTE.lampeChevet, lampes = [];
       for (const e of (this.blocks || new Map()).values()) if (LC.dessins.includes(e.dessin) && e.img) lampes.push({ img: e.img, x: e.x, y: e.y - 1, e });
-      for (const e of this.etageLampes || []) if (e.img && e.img.active) lampes.push({ img: e.img, x: e.x, y: e.y, e });
+      for (const e of this.etageLampes || []) if (vu(e)) lampes.push({ img: e.img, x: e.x, y: e.y, e });
       // (les cheminées, en bas et à l'étage : BLOCS_CARTE.cheminee)
       const cheminees = [];
       for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('cheminee_')) cheminees.push({ img: e.img, x: e.x, y: e.y - 1, e });
-      for (const e of this.etageCheminees || []) if (e.img && e.img.active) cheminees.push({ img: e.img, x: e.x, y: e.y, e });
+      for (const e of this.etageCheminees || []) if (vu(e)) cheminees.push({ img: e.img, x: e.x, y: e.y, e });
       // (les fontaines de jardin et les arbres d'ornement : leur eau coule, leurs pétales tombent, jour et nuit ;
       // BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement)
       for (const C of [BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement, BLOCS_CARTE.sapin, BLOCS_CARTE.citrouilles]) {

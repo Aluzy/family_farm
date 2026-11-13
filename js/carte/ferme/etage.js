@@ -86,6 +86,7 @@
         this.etageLumieres = [];         // les lanternes et les réverbères de l'étage (chantier.js stepLanterns)
         this.etageLampes = [];           // les lampes de chevet de l'étage (chantier.js stepLanterns)
         this.etageCheminees = [];        // les cheminées de l'étage (chantier.js stepLanterns)
+        this.etageStations = [];         // le four, la cuisinière, la meule des niveaux du dessus (chantier.js stepFires)
         this.etageEscaliers = on ? etage.escaliers.slice() : [];
         // le niveau 2 (par l'escalier de l'étage) : ses objets, son emprise, ce qui y arrête
         if (this.etage2Objs) this.etage2Objs.forEach((o) => o.destroy());
@@ -139,7 +140,8 @@
           }
           // les blocs d'un niveau (1 : l'étage ; 2 : au-dessus ; les mêmes dessins, ETAGE.dy plus haut par
           // niveau) : les murs raccordés entre eux, hauts comme en bas ; les meubles ; les tableaux. Seuls
-          // ceux de l'étage s'allument, se couchent (etageLits, etageLumieres…)
+          // couchages vont dans etageLits (l'étage) ou etageLits2 ; ses lumières dans etageLumieres, etageLampes,
+          // etageCheminees (niveau : 1 ou 2 ; celles du niveau 2 ne luisent que quand on les voit)
           const dessine = (blocs, tableaux, niv, add, bloque) => {
           const dy = E.dy * niv, un = niv === 1, lits = un ? this.etageLits : this.etageLits2;
           const at = new Map(blocs.map((b) => [b.case, b.sorte]));
@@ -180,10 +182,12 @@
               // sous le personnage qui y est, etageDepth)
               if (M.bloque || M.hauteur < 2) {
                 const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setDepth(p.y + (M.bloque ? 0.9 : M.lit ? 0.75 : 0.6)).setFlipX(!!M.miroir));
+                // (le four dessiné comme un meuble : ses flammes, comme en bas)
+                if (b.sorte === BLOCS_CARTE.feu.sorte) this.etageStations.push({ sorte: b.sorte, img, dessin: M.dessin });
                 // (une table de chevet : sa lampe s'allume le soir, comme en bas)
-                if (un && BLOCS_CARTE.lampeChevet.dessins.includes(M.dessin)) this.etageLampes.push({ img, x, y: p.y - dy - 1, dessin: M.dessin });
+                if (BLOCS_CARTE.lampeChevet.dessins.includes(M.dessin)) this.etageLampes.push({ img, x, y: p.y - dy - 1, dessin: M.dessin, niveau: niv });
                 // (une cheminée : son feu s'allume le soir, comme en bas)
-                if (un && String(M.dessin).startsWith('cheminee_')) this.etageCheminees.push({ img, x, y: p.y - dy - 1 });
+                if (String(M.dessin).startsWith('cheminee_')) this.etageCheminees.push({ img, x, y: p.y - dy - 1, niveau: niv });
                 // (un lit de profil, sur une rangée : on y dort aussi)
                 if (M.lit) lits.set(b.case, { img, x, y: p.y - dy - 1, haut: this.textures.getFrame(k).height, dessin: M.dessin, sens: M.sens || 0, variante: M.variante || null, couleurs: M.couleurs || null });
               } else {
@@ -208,7 +212,8 @@
             const img = add(this.add.image(p.x, p.y - dy - F.piedBloc(b.sorte), key, f).setOrigin(0.5, 1).setDepth(p.y + (plat ? 0.7 : 1)).setFlipX(miroir));
             if (b.sorte === 'paillasse') lits.set(b.case, { img, x: p.x, y: p.y - dy, paillasse: true });
             // (une lanterne, un réverbère : ils s'allument la nuit comme en bas, à la hauteur de l'étage)
-            if (un && (b.sorte === 'lanterne' || b.sorte === 'candelabre')) this.etageLumieres.push({ case: b.case, sorte: b.sorte, img, x: p.x, y: p.y - dy });
+            if ([BLOCS_CARTE.feu.sorte, BLOCS_CARTE.meule.sorte, BLOCS_CARTE.cuisine.sorte].includes(b.sorte)) this.etageStations.push({ sorte: b.sorte, img });
+            if (b.sorte === 'lanterne' || b.sorte === 'candelabre') this.etageLumieres.push({ case: b.case, sorte: b.sorte, img, x: p.x, y: p.y - dy, niveau: niv });
             if (BLOCS_CARTE.bloquent.includes(b.sorte)) bloque.add(b.case);
             if (key === BLOCS_CARTE.hauts.key) (un ? this.etageMurs : this.etageMurs2).set(b.case, { img, x: p.x, sorte: b.sorte });
           }
