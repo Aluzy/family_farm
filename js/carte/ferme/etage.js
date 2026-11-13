@@ -52,6 +52,16 @@
     etage2VoileZ() {
       return this.etageVoileZ() + 0.5;
     },
+    // La profondeur « en bas » d'une image, quelle que soit celle qu'elle a maintenant : passée devant le
+    // voile de l'étage (etageZ) ou du niveau 2 (etage2Z), on retrouve celle d'avant. Ce que stepEtage et
+    // chantier.js syncRang gardent pour remettre une image à sa place (etageZ, rangZ) se lit par là :
+    // jamais une profondeur déjà remontée (sinon l'image reste devant le voile, ou remonte deux fois).
+    profondeurBase(d) {
+      const v1 = this.etageVoileZ(), v2 = this.etage2VoileZ();
+      if (d > v2) return (d - v2 - 0.01) / 1e-5;
+      if (d > v1) return (d - v1 - 0.01) / 1e-5;
+      return d;
+    },
     // La profondeur, au niveau `n` (1 ou 2), de ce qui a la profondeur `d` en bas.
     niveauZ(n, d) {
       return n >= 2 ? this.etage2Z(d) : this.etageZ(d);
@@ -275,41 +285,45 @@
         // 2, chantier.js syncRang), devant son voile ; sinon cachés, sous le toit)
         const r2 = this.etageRangVu === 2;
         for (const o of this.etageN2Objs || []) {
-          if (o.etageZ === undefined) o.etageZ = o.depth;
+          if (o.etageZ === undefined) o.etageZ = this.profondeurBase(o.depth);
           o.setVisible(n2 || r2).setDepth(n2 ? this.etage2Z(o.etageZ) : r2 ? this.etageZ(o.etageZ + 0.02) : o.etageZ);
         }
         const haut = vue === 'bas' ? (this.vueNiveau != null ? E.transparent : E.dedans) : 1;
         // (le niveau 2 : seulement quand on y est, devant son voile, qui couvre l'étage)
         for (const o of this.etage2Objs || []) {
           if (o === this.etage2Voile) { o.setVisible(n2); continue; }
-          if (o.etageZ === undefined) o.etageZ = o.depth;
+          if (o.etageZ === undefined) o.etageZ = this.profondeurBase(o.depth);
           o.setVisible(n2).setDepth(n2 ? this.etage2Z(o.etageZ) : o.etageZ);
         }
         // (à l'étage, tout ce qui est de l'étage passe devant le voile)
         const pose = (o, a) => {
-          if (o.etageZ === undefined) o.etageZ = o.depth;
+          if (o.etageZ === undefined) o.etageZ = this.profondeurBase(o.depth);
           o.setDepth(z ? this.etageZ(o.etageZ) : o.etageZ);
           if (a !== undefined) o.setAlpha(a);
         };
         for (const o of this.etageObjs || []) { if (o === this.etageVoile) continue; pose(o, haut); o.etageA = haut; }
         if (this.etageVoile) this.etageVoile.setVisible(z);
         // (à l'étage : les blocs du bas, sous l'emprise, en transparence, devant le voile)
+        // (en mode Construire, au niveau où l'on rehausse les murs : chantier.js syncRang place les blocs du bas
+        // et leurs rangs ; on oublie seulement où on les avait mis)
+        const rangeur = !!this.rang;
         for (const e of (this.blocks || new Map()).values()) {
+          if (rangeur) { e.img.etageZ = undefined; e.img.etageA = undefined; for (const i of e.hauts || []) i.etageZ = undefined; continue; }
           const sous = z && this.etageEmprise.has(e.case);
           if (!sous && e.img.etageZ === undefined) continue;
           e.img.etageA = sous ? E.transparent : undefined;
-          if (e.img.etageZ === undefined) e.img.etageZ = e.img.depth;
+          if (e.img.etageZ === undefined) e.img.etageZ = this.profondeurBase(e.img.depth);
           e.img.setDepth(sous ? this.etageZ(e.img.etageZ) : e.img.etageZ).setAlpha(sous ? E.transparent : 1);
           if (!sous) e.img.etageZ = undefined;
         }
         // (à l'étage : le premier bloc du dessus des murs rehaussés est un mur de l'étage, devant
         // son voile ; celui d'au-dessus, un mur du niveau 2, reste derrière, sous son plancher ;
         // au niveau 2, il passe devant le second voile)
-        for (const e of (this.blocks || new Map()).values()) {
+        for (const e of rangeur ? [] : (this.blocks || new Map()).values()) {
           (e.hauts || []).forEach((i, k) => {
             if (!i.active) return;
             const niv = k + 1, devant = z && (niv === 1 || (n2 && niv === 2));
-            if (devant) { if (i.etageZ === undefined) i.etageZ = i.depth; i.setDepth(this.niveauZ(niv, i.etageZ)).setAlpha(1); }
+            if (devant) { if (i.etageZ === undefined) i.etageZ = this.profondeurBase(i.depth); i.setDepth(this.niveauZ(niv, i.etageZ)).setAlpha(1); }
             else if (i.etageZ !== undefined) { i.setDepth(i.etageZ); i.etageZ = undefined; }
           });
         }

@@ -338,7 +338,9 @@
       for (const e of (this.blocks || new Map()).values()) {
         if (e.cases) continue;
         const rangs = [e.img, ...(e.hauts || [])];
-        const z0 = e.img.depth;              // (remis : les blocs du dessus juste devant lui)
+        // (remis : les blocs du dessus juste devant lui ; sa profondeur en bas, même s'il est devant le voile de
+        // l'étage : js/carte/ferme/etage.js profondeurBase)
+        const z0 = this.profondeurBase ? this.profondeurBase(e.img.depth) : e.img.depth;
         rangs.forEach((i, k) => {
           i.rangZ = z0 + 0.01 * k;
           i.setDepth(i.rangZ);
@@ -383,7 +385,7 @@
       while (L.length > want) { L.pop().destroy(); changed = true; }
       while (L.length < want) {
         const k = L.length + 1, [kk, ff] = de(k - 1);
-        L.push(this.add.image(e.x, e.y - dy * k, kk, ff).setOrigin(0.5, 1).setDepth(e.img.depth + 0.01 * k));
+        L.push(this.add.image(e.x, e.y - dy * k, kk, ff).setOrigin(0.5, 1).setDepth((this.profondeurBase ? this.profondeurBase(e.img.depth) : e.img.depth) + 0.01 * k));
         changed = true;
       }
       L.forEach((i, k) => { const [kk, ff] = de(k); if (i.frame.name !== ff || i.texture.key !== kk) i.setTexture(kk, ff); });
