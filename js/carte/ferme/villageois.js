@@ -41,6 +41,10 @@
  * I3c (les tâches, villageois-travail.js) : l'état « travail » ; à son poste, il fait le geste de sa tâche
  * (villageoisAuTravail, villageoisGesteImage) ; une action du moteur vue, son emoji (villageoisTravailPas).
  *
+ * I6c (les traits, js/engine/traits.js) : une fois par seconde, la page apprend qui est dans la vue
+ * (ctx.bridge.villageois('vus', null, { ids })) : ce qu'on le voit faire (le matinal dehors avant les autres)
+ * révèle ses traits ; aucune animation nouvelle. Le bavard s'attarde quand il salue (villageois-social.js).
+ *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
  */
 (function (global) {
@@ -64,6 +68,7 @@
   const DEHORS = new Set(['dehors', 'flaner']);
   const JOIE = { reaction: 'joie' };              // (I3b+ : il sourit quand il salue)
   const EMOTION_MS = 2600;                        // (I6a : une réaction, un cadeau, le temps qu'elle dure)
+  const VUS_MS = 1000;                            // (I6c : la page apprend qui est dans la vue, une fois par seconde)
 
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // (le hasard à graine de chacun : son id ; les mêmes coups d'œil pour le même villageois)
@@ -130,6 +135,13 @@
         this.villageoisImage(m, dt, c);
       }
       for (const id of [...vus.keys()]) if (!ids.has(id)) this.villageoisFin(id);
+      // (I6c : une fois par seconde, la page apprend qui est dans la vue : ce qu'on le voit faire révèle ses traits)
+      if (c.now >= (this.villageoisVusT || 0)) {
+        this.villageoisVusT = c.now + VUS_MS;
+        const B = this.ctx.bridge, l = [];
+        for (const m of vus.values()) if (m.phase === 'vie' && !m.invite && m.x > vue.x && m.x < vue.right && m.y > vue.y && m.y < vue.bottom) l.push(m.id);
+        if (l.length && B && B.villageois) B.villageois('vus', null, { ids: l });
+      }
       // (I3c : une action du moteur vue, son emoji ; villageois-travail.js)
       if (this.villageoisTravailPas) this.villageoisTravailPas();
       // (I3b+ : la vie sociale, dans la vue : causeries, croisements, saluts ; villageois-social.js)
@@ -520,8 +532,7 @@
       const activite = m.phase !== 'vie' ? 'dehors' : m.couche ? 'dormir' : m.renonce ? 'flaner' : m.etat;
       const r = B.villageois('parle', id, { activite, n: m.n++, but: m.seg && m.seg.but ? m.seg.but.sorte : null });
       if (!r || !r.prenom) return;
-      const humeur = r.humeurTexte ? `<span class="habitant-bulle-metier">${esc(r.humeurTexte)}</span>` : '';
-      const texte = [r.salut, r.texte].filter(Boolean).join(' ');
+      const humeur = r.humeurTexte ? `<span class="habitant-bulle-metier">${esc(r.humeurTexte)}</span>` : '';      const texte = [r.salut, r.texte].filter(Boolean).join(' ');
       // (I6a : l'amitié, comme chez les habitants : son palier, sa jauge, ce que la conversation a donné, « Offrir »)
       const A = r.amitie;
       const ami = A ? `<span class="habitant-bulle-ami"><span class="ami-coeur" aria-hidden="true">💛</span> ${esc(A.nom)}<span class="ami-jauge" role="img" aria-label="Amitié : ${A.pts} sur ${A.max}"><span style="width:${Math.round((A.pts * 100) / A.max)}%"></span></span>${A.gain > 0 ? `<span class="ami-gain">+${A.gain}</span>` : ''}</span>`

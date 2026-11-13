@@ -96,6 +96,8 @@ function auPoste(s, ids, tache = 'bois') {
 
 test('l\'affinité : gardée, elle monte de ce qu\'ils vivent ensemble, jamais ne baisse ; une paire sans valeur vaut l\'estimation', () => {
   const { s, V: [a, b, c, d] } = ile(1, 4);
+  // (les causes une à une, sans les traits qui s'accordent : fiche I6c, village-traits.test.mjs)
+  for (const v of s.villageois) v.traits = [];
   // (avant la première nuit : rien de gardé, l'estimation d'I3b+ : l'affinité tirée seule, arrivés le même jour)
   assertEqual(affiniteGardee(s, a.id, b.id), null, 'rien de gardé');
   const e0 = connaissance(s, a.id, b.id).score;

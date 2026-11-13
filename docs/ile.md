@@ -82,7 +82,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d (fait) | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
-| 6. Les liens | I6a (fait), I6b (fait), I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
+| 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a, I8b | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
@@ -556,7 +556,7 @@ ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo).
   Les postes et l'attente sont gardés tant que rien ne bouge (`signatureTaches`) : sans cela, la journée coûtait
   10 ms.
 - Reste : ~~la part du villageois et la valeur de ce qu'il produit (I4)~~ (fait, plus bas) ; la brouette, la charrette et un chemin du
-  port plus court pour la navette (I2) ; les postes préférés (I6c) ; montrer ce qu'il porte (un panier, une botte).
+  port plus court pour la navette (I2) ; les postes préférés (I6c, fait) ; montrer ce qu'il porte (un panier, une botte).
 
 ## Les villageois : le tableau (I3d, fait)
 
@@ -680,7 +680,7 @@ quels. Ce qui est propre à l'île est dans `js/engine/villageois-amitie.js` et 
   `invitations`, `propos` restent verts réglage éteint ; `village-social` suit la famille amie par l'amitié. Éteint,
   le CSV de la simulation est le même octet pour octet.
 - Reste : le joueur automatique ne parle pas aux villageois et n'offre rien (il les invite quand il invite) ; les
-  tâches qu'il aime et les humeurs (I6c) ; les pièces de l'artisan ami (I5a) ; le retrait du récit (`RECIT.PALIERS`
+  tâches qu'il aime et les humeurs (I6c, fait) ; les pièces de l'artisan ami (I5a) ; le retrait du récit (`RECIT.PALIERS`
   reste la table des paliers, I7c) ; le bot ne rend pas les demandes des villageois.
 
 ## Les villageois : les liens entre eux (I6b, fait)
@@ -780,7 +780,7 @@ foyer. Le moteur : `js/engine/liens.js` ; les réglages : `VILLAGE.LIENS` (`data
   du soir (« J'ai vu ta lumière, alors je passe. ») ; proches, la fiche propose un foyer, ils s'installent dans la
   maison à deux lits et y dorment côte à côte ; la vue d'ensemble des liens ; quatre bulles à table ne se recouvrent
   plus (avant : empilées l'une sur l'autre). Aucune erreur dans la console.
-- Reste : le même commerce (I5a) et les fêtes (I8a) comme causes de lien ; les traits et leurs affinités (I6c) ; un
+- Reste : le même commerce (I5a) et les fêtes (I8a) comme causes de lien ; les traits et leurs affinités (I6c, fait) ; un
   repas apporté ne nourrit pas (choix B-1 : pas de nourriture tirée de rien) ; l'enfant ne grandit pas ; à table, une
   table de jardin d'une case ne laisse pas de « côte à côte » (ses quatre sièges se touchent tous) ; le joueur
   automatique ne propose ni foyer ni enfant ; les liens en ligne (I9d).
@@ -907,6 +907,91 @@ bourse et l'étal : `js/engine/bourse.js` ; les réglages : `VILLAGE.PRIX`, `VIL
   l'amitié, les traits : I6c) ; ce qui est en vente à l'étal ne périt pas ; l'étal repris, ce qu'il portait reste en
   vente (la fenêtre permet de le reprendre) ; les meubles achetés vont aux affaires du villageois, pas encore dans sa
   maison ; la bourse du meilleur producteur monte encore (474 à la nuit 80) : `IMPORT.MAX` est le réglage.
+
+## Les villageois : les traits de personnalité (I6c, fait)
+
+Chaque villageois a son caractère : deux ou trois traits qui changent ses horaires, ce qu'il dit, les postes où il est
+bien et ceux avec qui il s'entend, sans mimique ni animation nouvelle (D6). Le moteur : `js/engine/traits.js` ; les
+réglages : `TRAITS` (`data/village.json`). Aucun code n'est propre à un trait : chaque effet est un réglage, que
+`traits.js` lit et combine pour les autres modules. Tout reste doux (B-1).
+
+- **Les traits** (`TRAITS.LISTE`, douze) : matinal / couche-tard, bavard / réservé, travailleur / flâneur, casanier /
+  curieux, gourmand, rêveur, soigneux, taquin ; chacun son nom aux deux genres, son icône, ce qui le montre (`dit`).
+  `NOMBRE` [2, 3] (trois une fois sur deux, `TROIS`), tirés à l'arrivée de la graine de la partie et du rang
+  (`tirerTraits`, `traitsTires`) : jamais deux opposés, jamais la liste d'un autre villageois ; gardés (`v.traits`).
+  Un enfant n'en a pas.
+- **Ce qu'un trait change** :
+  - **l'horaire** (`HORAIRE` : des décalages du lever, de la sortie, des repas, de la rentrée, du coucher, ajoutés au
+    retard de chacun ; `FLANER`, `CHEZ_LUI`, `TRAVAIL` : début, fin, pauses ; `BUTS` : le poids des buts des sorties ;
+    `SOIR` : la visite du soir ; `villageois-journee.js`) : le matinal se lève à 6 h, sort vers 6 h 30 (les autres à
+    7 h 30 et plus) et se couche avant les autres ; le couche-tard sort après 8 h, s'attarde au souper jusqu'à
+    20 h 15 passé, se couche le dernier et rend visite le soir deux fois plus ; le gourmand est à table à 11 h 30 et en
+    part après les autres ; le travailleur est à son poste de 7 h 30 à 17 h sans pause (le même nombre d'actions) ; le
+    flâneur flâne et s'assoit ; le casanier reste chez lui un créneau libre sur trois (l'état « rentrer ») ; le curieux
+    va voir le jardin, les bêtes, les ouvrages, le port ; le bavard rend visite et retrouve ses amis plus souvent ;
+  - **la parole** : `PAROLE.PART` (le bavard dit un sujet du moment deux fois plus souvent, le réservé 2,5 fois moins),
+    `PAROLE.BREF` (la bulle du réservé ne dit ni le salut ni son humeur), `PROPOS` (le poids des sujets : le gourmand
+    parle de plats et de ses goûts, le rêveur de la lune et du temps, le curieux du bac et des nouveaux venus ;
+    `propos.js` `direSujet` tire au poids, le même tirage), `PHRASES` (3 ou 4 par trait, dites une fois sur
+    `PAROLE.CHANCE` 0,3 quand on lui parle, plutôt d'un trait qu'on ne connaît pas ; `{plat}` : un plat qu'il aime),
+    `REPLIQUES` (le bavard, le réservé, le curieux, le gourmand, le taquin : une fois sur `PAROLE.REPLIQUE` 0,3 en
+    croisant un autre, une réplique à eux, l'emoji 😄 ou 😜) ; au travail, à la tâche qu'il aime ou boude, une phrase
+    de `PAROLE.POSTE` une fois sur deux ;
+  - **la scène** (`SCENE.CAUSE`, `liensPourLaCarte` `cause`, `villageois-social.js`) : un salut dure 1,6 fois plus avec
+    un bavard (0,6 avec un réservé), une causerie relance plus vite ;
+  - **les postes** (`POSTE` : une tâche aimée, une boudée par trait ; aimée et boudée par deux traits : rien) : la nuit,
+    s'il y a travaillé, sa cible de bonheur monte de `POSTES.AIME` (6) à la tâche qu'il aime, baisse de `POSTES.BOUDE`
+    (3) à celle qu'il boude, sauf un ami proche du joueur (`tacheSansHumeur`, I6a) ; le bonheur ne baisse jamais (B-1),
+    le rendement ne change pas (un test : les mêmes actions) ;
+  - **les affinités** (`ACCORDS`, 17 paires : deux matinaux, un bavard et un taquin, un réservé et un rêveur…) : chaque
+    nuit, `ACCORD.GAIN` (1) d'affinité de plus par paire accordée, `ACCORD.MAX` (2) au plus (`liens.js` `liensNuit`) ;
+    aucune ne fait baisser l'affinité.
+- **La découverte** : la fiche dit « ? » pour chaque trait à découvrir. Un trait se révèle par ce qu'on voit : une
+  fois par seconde, la carte dit qui est dans la vue (le geste « vus », `observerTraits`) ; celui qui fait ce que montre
+  un de ses traits (`SIGNE` : des états, des buts, des heures ; le matinal dehors avant 7 h 30, le couche-tard au souper
+  après 20 h, le gourmand à table avant midi, le travailleur à son poste avant 8 h ou après 16 h 30, le flâneur qui
+  flâne, le casanier chez lui en journée, le curieux qui regarde, le bavard qui cause, le réservé seul au puits) compte un
+  indice par jour, révélé à `DECOUVERTE.VU` (3) jours ; ou par ce qu'il dit : ses phrases et ses répliques, à
+  `DECOUVERTE.DIT` (2) fois (le rêveur, le soigneux et le taquin ne se révèlent qu'ainsi). Révélé, une notification
+  (« 🌅 Tu as remarqué que Hélène est matinale : c'est noté dans sa fiche. »), et la fiche le note (`v.traitsConnus`,
+  `v.indices`).
+- **L'interface** : la fiche du villageois gagne une ligne « ✨ Caractère » (les traits connus, un « ? » par trait à
+  découvrir, et la tâche qu'il aime, celle qu'il boude, une fois connues) ; la liste des tâches et le tableau (I3d)
+  marquent discrètement la tâche « 💚 à son goût » ou « 🙄 pas son goût » (sur un téléphone, l'icône seule).
+- **La sauvegarde** : format 94 ; la migration 93 → 94 (`reparerTraits`) donne aux villageois d'avant leurs traits
+  (tirés de la graine et de leur rang ; aucun connu) et répare ce qui est abîmé (des opposés, une liste en double, un
+  trait connu qu'il n'a pas, un indice illisible). Sans villageois, rien.
+- **Les tests** : `tests/engine/village-traits.test.mjs` (le tirage sur 4 graines × 30 villageois ; l'horaire, la
+  flânerie, le casanier, le travailleur et les mêmes actions ; la parole, le poids des sujets, les phrases, les répliques,
+  la bulle courte ; le bonheur aux postes, l'ami proche ; les accords ; la découverte, la fiche, le tableau ; la
+  migration ; éteint) ; chaque effet est relu après un changement de son réglage. `village-journee` et `village-liens`
+  vérifient l'horaire commun et les gains un à un sans traits. `build-data` vérifie les traits (un opposé réciproque,
+  des tâches qui existent, des accords, des phrases d'une bulle).
+- **Le joueur automatique** : `node scripts/simulate.mjs` (éteint) : le CSV est le même octet pour octet ; `--village` :
+  code 0 ; les villageois vivent autrement (leurs horaires, leur bonheur aux postes, les accords), la partie aussi : le
+  chapitre 6 vient à la nuit 60 au lieu de 69 (appliqué) et 55 au lieu de 62 (minimal), et le joueur appliqué, qui n'a
+  plus rien à acheter après la nuit 60, garde 3 502 pièces à la nuit 80 (1 842 avant ; un constat du rapport, pas un
+  échec). Le lien entre les traits et ce chapitre n'est pas démêlé.
+- **Les mesures** (comme I6b : Chromium, téléphone émulé 412 × 915, DPR 2, processeur ralenti × 4 ; 15 villageois, la
+  place à 15 h ; trois fenêtres de 6 s ; la machine très chargée par d'autres travaux, charge 5 à 14 sur 4 cœurs) : le
+  système « villageois » coûte 1,75 et 3,93 ms par passage avant (4 et 13 villageois à l'écran), 2,46 et 4,34 ms après
+  (11 et 13 à 15 à l'écran) : à nombre égal à l'écran, l'écart (≈ 10 %) reste dans le bruit de cette machine. Ce que la
+  fiche ajoute à la scène : un appel par seconde (`vus`, la position de ceux qui sont dans la vue) et un facteur lu par
+  salut.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, quatre villageois aux traits posés pour l'essai) : Hélène (matinale,
+  bavarde) est au puits à 7 h 10 quand les autres se lèvent ; Capucine (travailleuse) à son poste à 7 h 45 ; Étienne
+  sort vers 7 h 40, Eugène (couche-tard) après 8 h ; trois matins vue dehors, « 🌅 matinale » se note dans sa fiche
+  (« ? » avant) ; touchés au même moment, la bavarde dit son salut, un sujet du moment et son humeur, le réservé une
+  phrase courte ; au travail, Capucine dit deux de ses phrases (« Tu cours toujours partout ! Tu vas finir par
+  t'envoler. », « Les autres disent que je suis taquine. Moi ? Jamais ! ») : « 😜 taquine », et le tableau marque sa
+  tâche (le fauchage) « 💚 à son goût » ; à 20 h 30, Eugène est seul encore à table. Aucune erreur dans la console.
+- **Le réglage choisi** : deux réglages filmés, « marqué » (en place : le matinal sort une heure avant, le couche-tard
+  une demi-heure après ; bavard × 2 et × 1,6 ; phrases de trait 0,3) et « doux » (une demi-heure, un quart d'heure ;
+  × 1,5 et × 1,3 ; 0,2). « Marqué » se voit d'un coup d'œil (la matinale seule dehors une bonne demi-heure) ; « doux »
+  se perd dans le retard de chacun. À faire choisir à l'utilisateur.
+- Reste : le joueur automatique ne regarde pas les goûts des villageois pour leur confier une tâche ; les traits en
+  ligne (I9d) ; un trait ne change pas encore les répliques à table ni au travail ; la fiche ne dit pas les accords entre
+  deux villageois.
 
 ## Les règles qui ne changent pas
 

@@ -71,6 +71,12 @@
       return (H && H.social) || DEFAUT;
     },
     // I6a : le palier d'amitié du joueur avec le villageois `a` (0 à 4), et s'il garde un présent pour lui.
+    // I6c (les traits) : le facteur de ses traits sur la durée d'un salut et la cadence d'une causerie (1 : rien).
+    villageoisCause(a) {
+      const H = this.ctx.lastModel && this.ctx.lastModel.villageoisHeure, L = H && H.liens;
+      const f = L && L.cause && Number(L.cause[a]);
+      return f > 0 ? f : 1;
+    },
     villageoisPalier(a) {
       const H = this.ctx.lastModel && this.ctx.lastModel.villageoisHeure, L = H && H.liens;
       return (L && L.amitie && L.amitie[a]) || 0;
@@ -344,7 +350,9 @@
             cs.parle = { m: b, fin: performance.now() + tour * 0.5 };
           });
         }
-        cs.prochain = now + tour * 2 + 600 + (cs.n % 3) * 500;
+        // (I6c : un bavard relance plus vite, un réservé laisse passer plus de temps : le plus grand facteur du groupe)
+        const fc = Math.max(...l.map((m) => this.villageoisCause(m.id)));
+        cs.prochain = now + (tour * 2 + 600 + (cs.n % 3) * 500) / fc;
         // (I3c : au travail, on cause un peu, puis on s'y remet : TACHES.CAUSE s entre deux échanges)
         if (sorte === 'travail') cs.prochain = now + (Number(R.CAUSE) || 26) * 1000 * (0.7 + (cs.n % 4) * 0.2);
       }
@@ -422,7 +430,8 @@
         for (const [a, b] of [[m, o], [o, m]]) { a.salut = { o: b, fin: now + 650, dit: null }; a.salutApres = now + REPRISE_MS; }
         return;
       }
-      const D = R.DUREE || [1.4, 2.4], duree = (Number(D[Math.min(D.length - 1, deg - 1)]) || 1.6) * 1000;
+      // (I6c : un bavard s'attarde, un réservé passe vite : le plus grand facteur des deux)
+      const D = R.DUREE || [1.4, 2.4], duree = (Number(D[Math.min(D.length - 1, deg - 1)]) || 1.6) * 1000 * Math.max(this.villageoisCause(m.id), this.villageoisCause(o.id));
       const r = B && B.villageois ? B.villageois('echange', m.id, { avec: o.id, n, sorte: 'croise' }) : null;
       const L = (r && r.lignes) || [];
       m.salut = { o, fin: now + duree, dit: null };

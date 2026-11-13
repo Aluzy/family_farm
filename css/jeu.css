@@ -4183,6 +4183,11 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
 .villageois-vendre-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px 10px; margin: 8px 0 12px; }
 .villageois-vendre { display: flex; align-items: center; gap: 6px; }
 .villageois-modal .btn.small { padding: 2px 8px; font-size: 0.85em; min-height: 0; }
+/* I6c : les traits de personnalité, sur une ligne de la fiche ; « ? » pour ceux qui restent à découvrir */
+.villageois-trait { display: inline-block; padding: 0 7px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-card, #fff8ee); font-size: 0.88em; white-space: nowrap; }
+.villageois-trait.inconnu { opacity: 0.6; min-width: 1.6em; text-align: center; }
+.villageois-trait-postes { font-size: 0.85em; }
+.villageois-gout { font-size: 0.82em; opacity: 0.8; white-space: nowrap; }
 /* I3d : le tableau des villageois (js/ui/tableau.js). Le bouton 📊 à côté des pièces ; une ligne par villageois, triable ;
    sur un téléphone, la tâche et l'humeur se replient dans la cellule du prénom. Des repères, pas des reproches (B-1) :
    aucun solde n'a de couleur d'alarme. */
@@ -4214,6 +4219,8 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
 .tableau-village .t-court { display: none; }
 .tableau-village .t-mini { display: none; font-size: 0.9em; }
 .tableau-objets { display: block; font-size: 0.85em; opacity: 0.85; }
+/* I6c : la tâche à son goût (une marque discrète, une fois le trait connu) */
+.tableau-gout { font-size: 0.8em; opacity: 0.8; white-space: nowrap; }
 .tableau-village tbody th { font-weight: normal; }
 .tableau-village tbody th .tableau-nom { font-weight: 700; }
 .tableau-village tr.tableau-ligne:has(+ .tableau-manque) > * { border-bottom: 0; }

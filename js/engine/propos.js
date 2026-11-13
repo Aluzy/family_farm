@@ -179,12 +179,20 @@ function memoire(state) {
 export const CONDITIONS_PROPOS = Object.freeze(Object.fromEntries(SUJETS));
 
 // Un sujet tiré par `rnd` parmi `sujets` ([{ id, mots }], déjà vrais), ses phrases dans `phrases[id]` : { id, texte },
-// ou null ; il entre dans la mémoire de `qui` (state.propos[qui] : MEMOIRE sujets, qu'il ne redit pas).
-export function direSujet(state, qui, sujets, phrases, rnd) {
+// ou null ; il entre dans la mémoire de `qui` (state.propos[qui] : MEMOIRE sujets, qu'il ne redit pas). `poids` (fiche
+// I6c, les traits d'un villageois : traits.js sujetsDesTraits) : (id) → le poids du sujet ; sans lui, tous se valent.
+export function direSujet(state, qui, sujets, phrases, rnd, poids = null) {
   const deja = new Set(memoire(state)[qui] || []);
-  const S = sujets.filter((s) => !deja.has(s.id) && Array.isArray(phrases[s.id]) && phrases[s.id].length);
+  const S = sujets.filter((s) => !deja.has(s.id) && Array.isArray(phrases[s.id]) && phrases[s.id].length && (!poids || poids(s.id) > 0));
   if (!S.length) return null;
-  const s = S[Math.floor(rnd() * S.length)];
+  const u = rnd();
+  let s = S[Math.floor(u * S.length)];
+  if (poids) {
+    // (le même tirage, au poids : le premier sujet dont la part cumulée dépasse le tirage)
+    const w = S.map((x) => poids(x.id)), tot = w.reduce((x, y) => x + y, 0);
+    let r = u * tot;
+    for (let i = 0; i < S.length; i++) { r -= w[i]; if (r < 0) { s = S[i]; break; } }
+  }
   const L = phrases[s.id];
   const texte = remplir(L[Math.floor(rnd() * L.length)], s.mots);
   const M = memoire(state), l = (M[qui] || []).filter((x) => x !== s.id);

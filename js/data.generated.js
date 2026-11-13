@@ -9704,6 +9704,261 @@ export const RAW_DATA = {
       }
     }
   },
+  "TRAITS": {
+    "NOMBRE": [2, 3],
+    "TROIS": 0.5,
+    "DECOUVERTE": { "VU": 3, "DIT": 2 },
+    "PAROLE": {
+      "CHANCE": 0.3,
+      "REPLIQUE": 0.3,
+      "POSTE": {
+        "aime": [
+          "Ce travail-là, c'est tout à fait pour moi !",
+          "Je suis bien, à ce poste. Merci de me l'avoir confié.",
+          "Je ne vois pas le temps passer, ici."
+        ],
+        "boude": [
+          "Ce n'est pas mon travail préféré… mais je m'y mets.",
+          "Bon. Il faut bien que quelqu'un le fasse !",
+          "J'aurais préféré autre chose, mais ça ira."
+        ]
+      }
+    },
+    "POSTES": { "AIME": 6, "BOUDE": 3 },
+    "ACCORD": { "GAIN": 1, "MAX": 2 },
+    "ACCORDS": [
+      ["matinal", "matinal"],
+      ["matinal", "travailleur"],
+      ["couche_tard", "couche_tard"],
+      ["couche_tard", "reveur"],
+      ["bavard", "bavard"],
+      ["bavard", "taquin"],
+      ["bavard", "curieux"],
+      ["reserve", "reveur"],
+      ["reserve", "soigneux"],
+      ["travailleur", "soigneux"],
+      ["flaneur", "reveur"],
+      ["flaneur", "gourmand"],
+      ["casanier", "casanier"],
+      ["casanier", "gourmand"],
+      ["curieux", "curieux"],
+      ["gourmand", "gourmand"],
+      ["taquin", "taquin"]
+    ],
+    "LISTE": {
+      "matinal": {
+        "nom": ["matinale", "matinal"],
+        "icone": "🌅",
+        "oppose": "couche_tard",
+        "dit": "dehors avant tout le monde, au petit matin",
+        "HORAIRE": { "LEVER": -0.5, "SORTIE": -1, "SOUPER": -0.25, "VEILLEE": -0.5, "COUCHER": -0.75 },
+        "POSTE": { "champs": "aime", "cuisine": "boude" },
+        "SIGNE": { "etats": ["dehors", "flaner", "travail"], "heures": [[6, 7.5]] },
+        "PROPOS": { "meteo_brume": 2 },
+        "PHRASES": [
+          "Je suis dehors avant le coq, moi. C'est le meilleur moment de la journée !",
+          "À l'aube, l'île est toute à moi : la rosée, le silence…",
+          "Tôt levé{e}, tôt couché{e} : c'est ma devise.",
+          "Tu as vu le soleil se lever, ce matin ? Non ? Dommage !"
+        ]
+      },
+      "couche_tard": {
+        "nom": ["couche-tard", "couche-tard"],
+        "icone": "🌙",
+        "oppose": "matinal",
+        "dit": "encore à table quand les autres sont rentrés",
+        "HORAIRE": { "LEVER": 0.5, "SORTIE": 0.5, "SOUPER": 0.5, "VEILLEE": 0.75, "COUCHER": 0.5 },
+        "SOIR": 2,
+        "POSTE": { "peche": "aime", "champs": "boude" },
+        "SIGNE": { "etats": ["repas"], "heures": [[20, 22]] },
+        "PROPOS": { "lune_*": 2 },
+        "PHRASES": [
+          "Le matin, ne me parle pas avant mon café…",
+          "Le soir, je suis bien plus réveillé{e} que le matin !",
+          "Je regarde les étoiles bien après que tout le monde dort.",
+          "Encore une petite veillée, et au lit. Enfin… peut-être."
+        ]
+      },
+      "bavard": {
+        "nom": ["bavarde", "bavard"],
+        "icone": "💬",
+        "oppose": "reserve",
+        "dit": "toujours en train de causer avec quelqu'un",
+        "BUTS": { "visite": 1.5, "rdv": 1.6 },
+        "PAROLE": { "PART": 2 },
+        "SCENE": { "CAUSE": 1.6, "EMOJI": "😄" },
+        "POSTE": { "navette": "aime", "peche": "boude" },
+        "SIGNE": { "buts": ["visite", "rdv", "promenade", "banc"] },
+        "PROPOS": { "village_ami": 2, "village_voisin": 2, "voisin": 2, "lien_ami": 2, "visite_recue": 2, "visite_faite": 2 },
+        "PHRASES": [
+          "Tu sais la dernière ? Non ? Alors écoute bien…",
+          "Je parlerais des heures, moi. D'ailleurs, je parle des heures !",
+          "Ici, tout le monde se connaît. Un peu grâce à moi !",
+          "J'ai croisé tout le village ce matin, et j'ai causé avec chacun."
+        ],
+        "REPLIQUES": [
+          ["{prenom} ! Tu ne devineras jamais ce que j'ai vu ce matin…", "Raconte, raconte !"],
+          ["Attends, je ne t'ai pas tout dit !", "Toujours une histoire, toi !"],
+          ["Tu as cinq minutes ? Enfin… dix ?", "Pour toi, toujours."]
+        ]
+      },
+      "reserve": {
+        "nom": ["réservée", "réservé"],
+        "icone": "🤫",
+        "oppose": "bavard",
+        "dit": "souvent seul{e}, un peu à l'écart",
+        "BUTS": { "visite": 0.6, "rdv": 0.5, "voir": 1.5, "eau": 1.3 },
+        "PAROLE": { "PART": 0.4, "BREF": true },
+        "SCENE": { "CAUSE": 0.6 },
+        "POSTE": { "peche": "aime", "navette": "boude" },
+        "SIGNE": { "buts": ["eau", "jardin", "betes", "ouvrage"] },
+        "PHRASES": [
+          "Je parle peu. Mais j'écoute beaucoup.",
+          "Le calme me va bien.",
+          "… Bonjour. Belle journée, oui.",
+          "Pas besoin de mots pour être bien ensemble."
+        ],
+        "REPLIQUES": [
+          ["Bonjour, {prenom}.", "Toujours aussi discret{e} !"],
+          ["…", "Toi, tu es dans tes pensées."],
+          ["Hm. Belle journée.", "Oui, très belle !"]
+        ]
+      },
+      "travailleur": {
+        "nom": ["travailleuse", "travailleur"],
+        "icone": "💪",
+        "oppose": "flaneur",
+        "dit": "à son poste avant et après les autres",
+        "HORAIRE": { "SORTIE": -0.25 },
+        "FLANER": [-0.1, -0.15],
+        "TRAVAIL": { "DEBUT": -0.5, "FIN": 0.5, "PAUSE": -1 },
+        "POSTE": { "bois": "aime", "cueillette": "boude" },
+        "SIGNE": { "etats": ["travail"], "heures": [[7.5, 8], [16.5, 17]] },
+        "PHRASES": [
+          "Une journée sans ouvrage, c'est une journée perdue !",
+          "J'aime quand le travail est bien fait. Et fini avant l'heure !",
+          "Je me mets au travail avant les autres : j'aime prendre de l'avance."
+        ]
+      },
+      "flaneur": {
+        "nom": ["flâneuse", "flâneur"],
+        "icone": "🍃",
+        "oppose": "travailleur",
+        "dit": "à flâner sur un banc ou sur la place",
+        "HORAIRE": { "SORTIE": 0.25 },
+        "FLANER": [0.2, 0.2],
+        "TRAVAIL": { "PAUSE": 1 },
+        "BUTS": { "banc": 1.6, "promenade": 1.5 },
+        "POSTE": { "cueillette": "aime", "pierre": "boude" },
+        "SIGNE": { "etats": ["flaner"] },
+        "PHRASES": [
+          "Rien ne presse : l'île ne va pas s'envoler.",
+          "Un banc, un rayon de soleil… que demander de plus ?",
+          "Je prends le temps de regarder. Le travail attendra un peu."
+        ]
+      },
+      "casanier": {
+        "nom": ["casanière", "casanier"],
+        "icone": "🏠",
+        "oppose": "curieux",
+        "dit": "chez soi en pleine journée",
+        "HORAIRE": { "VEILLEE": -0.25 },
+        "CHEZ_LUI": 0.3,
+        "BUTS": { "voir": 0.4, "port": 0, "promenade": 0.6 },
+        "POSTE": { "cuisine": "aime", "navette": "boude" },
+        "SIGNE": { "etats": ["rentrer"], "heures": [[8, 18]] },
+        "PROPOS": { "foyer": 2, "voisin": 2, "ferme_maison": 1.5 },
+        "PHRASES": [
+          "On n'est jamais si bien que chez soi.",
+          "Ma maison, c'est mon petit monde. J'y suis bien.",
+          "Sortir ? Oui… mais pas trop loin de ma porte."
+        ]
+      },
+      "curieux": {
+        "nom": ["curieuse", "curieux"],
+        "icone": "🔍",
+        "oppose": "casanier",
+        "dit": "à regarder partout : le jardin, les bêtes, ce qu'on bâtit",
+        "BUTS": { "voir": 2.2, "port": 3 },
+        "POSTE": { "navette": "aime", "cuisine": "boude" },
+        "SIGNE": { "buts": ["jardin", "betes", "ouvrage", "port"] },
+        "PROPOS": { "ferme_maison": 2, "port_bac": 3, "village_nouveau": 3 },
+        "PHRASES": [
+          "Qu'est-ce que tu bâtis, là ? Raconte-moi tout !",
+          "Je suis allé{e} voir ce qu'il y a derrière les arbres.",
+          "Le bac amène toujours des nouvelles. J'adore ça !",
+          "Je veux tout voir de l'île : chaque coin, chaque bête."
+        ],
+        "REPLIQUES": [
+          ["{prenom}, tu as vu ce qu'on bâtit près du puits ?", "Pas encore ! Montre-moi."],
+          ["Qu'est-ce que tu fais de beau, {prenom} ?", "Rien de bien neuf, curieux{e} !"]
+        ]
+      },
+      "gourmand": {
+        "nom": ["gourmande", "gourmand"],
+        "icone": "🍰",
+        "dit": "à table avant les autres",
+        "HORAIRE": { "MIDI": -0.5, "REPRISE": 0.25 },
+        "POSTE": { "cuisine": "aime", "fauchage": "boude" },
+        "SIGNE": { "etats": ["repas"], "heures": [[11.5, 12]] },
+        "PROPOS": { "gout_connu": 3, "ferme_cultures": 2, "ferme_poules": 2, "cadeau_merci": 2 },
+        "PHRASES": [
+          "Je rêve d'un bon plat : {plat}, rien que d'y penser…",
+          "Tu sens ? Quelqu'un cuisine quelque part. Miam !",
+          "Le meilleur moment de la journée ? Le repas, bien sûr !",
+          "Si tu fais {plat}, garde-m'en une part !"
+        ],
+        "REPLIQUES": [
+          ["Ça sent bon chez toi, {prenom}. Tu cuisines quoi ?", "Viens goûter, si tu veux !"],
+          ["Tu as déjà mangé ? Moi, j'ai encore faim.", "Toi, alors !"]
+        ]
+      },
+      "reveur": {
+        "nom": ["rêveuse", "rêveur"],
+        "icone": "☁️",
+        "dit": "le nez dans les nuages",
+        "FLANER": [0.1, 0.15],
+        "BUTS": { "voir": 1.4 },
+        "POSTE": { "verger": "aime", "pierre": "boude" },
+        "PROPOS": { "lune_*": 3, "meteo_*": 2, "mois": 2 },
+        "PHRASES": [
+          "Tu crois que les nuages ont des noms ?",
+          "Parfois, je regarde la mer et j'oublie l'heure.",
+          "La nuit, la lune a l'air de veiller sur l'île."
+        ]
+      },
+      "soigneux": {
+        "nom": ["soigneuse", "soigneux"],
+        "icone": "🧹",
+        "dit": "attentif à tout ce qui l'entoure",
+        "POSTE": { "betes": "aime", "bois": "boude" },
+        "PROPOS": { "ferme_cultures": 2, "ferme_maison": 2, "ferme_verger": 2 },
+        "PHRASES": [
+          "Chaque chose à sa place, et l'île est plus belle.",
+          "J'ai rangé mes outils trois fois ce matin. Bien rangés !",
+          "Un travail soigné, ça se voit de loin."
+        ]
+      },
+      "taquin": {
+        "nom": ["taquine", "taquin"],
+        "icone": "😜",
+        "dit": "toujours une blague en réserve",
+        "SCENE": { "CAUSE": 1.2, "EMOJI": "😜" },
+        "POSTE": { "fauchage": "aime", "verger": "boude" },
+        "PROPOS": { "village_ami": 2, "village_collegue": 2 },
+        "PHRASES": [
+          "Attention, une abeille ! … Mais non, je te taquine.",
+          "Les autres disent que je suis taquin{e}. Moi ? Jamais !",
+          "Tu cours toujours partout ! Tu vas finir par t'envoler."
+        ],
+        "REPLIQUES": [
+          ["Tiens, {prenom} ! Tu t'es coiffé{e} avec un râteau ?", "Très drôle…"],
+          ["Je t'ai vu{e} bâiller au travail !", "Même pas vrai !"],
+          ["{prenom}, tu as un brin d'herbe dans les cheveux. Ha, non !", "Toi alors !"]
+        ]
+      }
+    }
+  },
   "PORT": {
     "NOM": "Le port",
     "ICONE": "⚓",

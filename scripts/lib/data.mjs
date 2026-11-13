@@ -1193,6 +1193,21 @@ export function validateData(data) {
     }
   }
 
+  // le chantier de l'île, fiche I6c : les traits (un opposé, des tâches, des accords qui existent ; des phrases d'une bulle)
+  if (data.TRAITS) {
+    const TL = data.TRAITS.LISTE || {}, taches = (data.TACHES && data.TACHES.LISTE) || {};
+    for (const [id, t] of Object.entries(TL)) {
+      const where = `TRAITS.LISTE.${id}`;
+      if (t.oppose !== undefined && !(TL[t.oppose] && TL[t.oppose].oppose === id)) err(where, `oppose « ${t.oppose} » : un trait qui le dit aussi`);
+      for (const [k, g] of Object.entries(t.POSTE || {})) if (!taches[k] || !['aime', 'boude'].includes(g)) err(where, `POSTE.${k} : une tâche, « aime » ou « boude »`);
+      for (const p of t.PHRASES || []) if (String(p).length > 96) err(where, `« ${p} » : une bulle, 96 caractères au plus`);
+      if (!Array.isArray(t.nom) || t.nom.length !== 2) err(where, 'nom : [au féminin, au masculin]');
+    }
+    (data.TRAITS.ACCORDS || []).forEach((p, i) => { if (!Array.isArray(p) || p.length !== 2 || !p.every((x) => TL[x])) err(`TRAITS.ACCORDS[${i}]`, 'deux traits'); });
+    const nb = data.TRAITS.NOMBRE;
+    if (!(Array.isArray(nb) && isInt(nb[0]) && isInt(nb[1]) && nb[0] >= 1 && nb[0] <= nb[1])) err('TRAITS.NOMBRE', '[au moins, au plus]');
+  }
+
   return { errors, warnings };
 }
 

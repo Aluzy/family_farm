@@ -16,6 +16,7 @@ import { ajouterAmitie, amitieDe, goutsTires } from './amitie.js';
 import { validApparence } from './family.js';
 import { bonheurDesLiens, foyerDe } from './liens.js';
 import { mangerSesProvisions, mangerSonPanier, plaisirDuJour, prendrePart } from './bourse.js';
+import { bonheurDesTraits, traitsTires } from './traits.js';
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -40,7 +41,9 @@ import { mangerSesProvisions, mangerSonPanier, plaisirDuJour, prendrePart } from
      ce que la page doit encore dire au joueur), journal ([{ jour, mange, energie, besoin, lit, bonheur, et (I3c) tache,
      actions, produit, et (I3d) repos (true : il s'est reposé ce jour-là), utilise (ce que son travail a pris au coffre) }] : ses derniers jours, VILLAGE.ARRIVEE.JOURNAL
      au plus ; le tableau des villageois les lit, tableau.js) ;
-     et (I3c, taches.js) tache, outil, vendre, semis, travail }].
+     et (I3c, taches.js) tache, outil, vendre, semis, travail ;
+     et (I6c, traits.js) traits (ses deux ou trois traits de personnalité, tirés à son arrivée), traitsConnus (ceux que
+     le joueur a découverts), indices ({ trait: [n, dernier jour] } : ce qu'on l'a vu faire ou entendu dire) }].
 
    Une maison libre : une pièce close du genre maison de la terre du joueur, marquée « à un villageois » par une
    boîte aux lettres posée contre sa porte (blocs.js, maisonsMarquees), où personne n'habite, avec un lit que la
@@ -212,7 +215,7 @@ export function arriveeDue(state) {
 }
 
 // Le nouveau venu, tiré de la graine de la partie et de son rang d'arrivée : { prenom, genre, perso, apparence,
-// gouts }. Ni son prénom, ni son personnage, ni son apparence ne sont ceux d'un autre villageois ou d'un membre
+// gouts, traits }. Ni son prénom, ni son personnage, ni son apparence ne sont ceux d'un autre villageois ou d'un membre
 // de la famille (deux villageois ne sont jamais identiques). Ne change pas la partie.
 export function tirerVillageois(state, rang = villageoisDe(state).length + 1) {
   const g = graineDe(state), rnd = rngDe(`${g}:villageois:${rang}`);
@@ -230,7 +233,9 @@ export function tirerVillageois(state, rang = villageoisDe(state).length + 1) {
   // (ses goûts : tirés de son rang dans la partie, parmi ceux de tous les métiers des hameaux, gardés avec lui ;
   // fiche I6a, amitie.js goutsTires)
   const gouts = goutsTires(`${g}:villageois:${rang}`);
-  return { prenom, genre, perso, apparence, gouts };
+  // (fiche I6c, traits.js : ses traits de personnalité, tirés de son rang ; pas la même liste qu'un autre villageois)
+  const traits = traitsTires(state, rang, V);
+  return { prenom, genre, perso, apparence, gouts, traits };
 }
 
 // Un nouveau venu débarque et s'installe dans la première maison libre (sans vérifier le jour : arriveeRefus le
@@ -247,6 +252,7 @@ export function arriverVillageois(state, o = {}) {
     id: `vg-${rang}`, ...t, maison: libre.boite, lit: libre.lits[0], bourse: Number(ARRIVEE.BOURSE) || 0,
     bonheur: DATA.BONHEUR.DEPART, faim: 0, arrive: jourDe(state), repos: false,
     accueil: o.direct ? null : 'en_route', sansMaison: null, avis: o.direct ? ['arrive'] : [], journal: [],
+    traitsConnus: [], indices: {},
   };
   state.villageois.push(v);
   // (fiche I6a : la famille l'accueille, l'amitié commence à VILLAGE.AMITIE.ACCUEIL points, « poli »)
@@ -327,8 +333,9 @@ function nuitDe(state, v, jour) {
   for (const [o, n] of Object.entries(siens.mange)) tout[o] = (tout[o] || 0) + n;
   const C = DATA.BONHEUR.CIBLE;
   // (fiche I6b, liens.js : un ami au village, un proche, un repas apporté par un ami)
-  // (fiche I4, bourse.js : un achat qui lui a plu aujourd'hui, à l'étal ou par le bac)
-  const cible = Math.max(0, Math.min(DATA.BONHEUR.MAX, C.BASE + platsBonheur(tout) + varieteBonheur(tout) + meublesMaison(state, v) + bonheurDesLiens(state, v) + plaisirDuJour(v, jour)));
+  // (fiche I4, bourse.js : un achat qui lui a plu aujourd'hui, à l'étal ou par le bac ; I6c, traits.js : la tâche qu'il
+  // aime, celle qu'il boude)
+  const cible = Math.max(0, Math.min(DATA.BONHEUR.MAX, C.BASE + platsBonheur(tout) + varieteBonheur(tout) + meublesMaison(state, v) + bonheurDesLiens(state, v) + plaisirDuJour(v, jour) + bonheurDesTraits(state, v)));
   const avant = Number.isFinite(Number(v.bonheur)) ? Number(v.bonheur) : DATA.BONHEUR.DEPART;
   const faim = Math.max(0, besoin - r.energie);
   // (comme la famille : CIBLE.FAIM s'il a eu faim, ATELIER.BONHEUR_SANS_COUCHAGE sans lit ; 0 tous deux dans le jeu, B-1)

@@ -33,6 +33,7 @@ import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { direAvisLien, liensFicheHtml } from './liens.js';
 import { arriveeEnfantRefus, arriverEnfant } from '../engine/liens.js';
+import { goutTache, nomTrait, noterIndice, observerTraits, traitDef, traitsPourFiche } from '../engine/traits.js';
 
 /* ---------- les villageois, côté page (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -60,6 +61,10 @@ import { arriveeEnfantRefus, arriverEnfant } from '../engine/liens.js';
      - I6b (les liens entre villageois, js/engine/liens.js ; la page : js/ui/liens.js) : sa fiche dit ses liens et son
        foyer, la liste des villageois mène à la vue d'ensemble (« 🤝 Les liens ») ; les avis de la nuit (deux amis, un
        foyer, un enfant, un repas apporté) deviennent des notifications.
+     - I6c (les traits, js/engine/traits.js) : la carte dit qui est dans la vue (le geste « vus ») : ce qu'on le voit
+       faire révèle ses traits ; ce qu'il dit aussi (sa bulle, ses répliques) ; un trait révélé, une notification ; sa
+       fiche montre ses traits connus et un « ? » pour chacun des autres (une ligne), la liste des tâches et le tableau
+       marquent celle qui est « à son goût » ou « pas son goût ».
    Le chantier éteint (villageActif), rien ici ne se montre. */
 
 const WATCH_MS = 1000;
@@ -75,7 +80,11 @@ function direAvis() {
     if (quoi === 'arrive') notify(`🏝️ ${v.prenom} est arrivé${accord(v, 'e', '')} par le bac et s'installe dans sa maison.`, { kind: 'info' });
     else if (quoi === 'sans_maison') notify(`🏚️ ${v.prenom} n'a plus de maison (sa boîte aux lettres, son lit ou sa pièce ont disparu) : ${accord(v, 'elle', 'il')} dort à l'abri et attend une maison libre.`, { kind: 'alerte' });
     else if (quoi === 'installe') notify(`🏠 ${v.prenom} a trouvé une maison libre et s'y installe.`, { kind: 'info' });
-    else direAvisLien(v, quoi);
+    else if (quoi.startsWith('trait:')) {
+      // (I6c : un trait révélé ; noté dans sa fiche)
+      const t = quoi.slice(6), d = traitDef(t);
+      if (d) notify(`${d.icone || '✨'} Tu as remarqué que ${v.prenom} est ${nomTrait(t, v)} : c'est noté dans sa fiche.`, { kind: 'info' });
+    } else direAvisLien(v, quoi);
   }
 }
 
@@ -149,9 +158,17 @@ export function villageoisDepuisCarte(geste, id, o = {}) {
   if (geste === 'fiche') { ouvrirFicheVillageois(id); return { ok: true }; }
   // (I3c : un appui long sur un poste de travail, `o.case` : « confier à… »)
   if (geste === 'poste') return ouvrirConfier(o.case);
+  // (I6c : les villageois que la carte montre, `o.ids` : ce qu'on les voit faire révèle leurs traits)
+  if (geste === 'vus') {
+    const r = observerTraits(state, o.ids, clockHours(state));
+    if (r.length) { direAvis(); persistState(); setTimeout(refresh, 0); }
+    return { ok: true, reveles: r };
+  }
   if (geste === 'parle') {
     // (I6a : l'amitié complète sa bulle ; un palier passé, un présent reçu : une notification)
     const r = parlerVillageois(state, id, paroleVillageois(state, id, { ...o, heure: clockHours(state) }), { n: o.n });
+    // (I6c : il a parlé d'un de ses traits, qui se révèle : la notification aussitôt)
+    if (r && r.revele) direAvis();
     if (r && r.amitie) {
       if (r.present) notify(`🎁 ${escapeHtml(r.prenom)} t'a donné : ${itemsText({ [r.present.objet]: r.present.n }, 'gain')}`, { son: 'ramasse' });
       if (r.monte) notify(`💛 ${escapeHtml(r.prenom)} et toi : ${r.amitie.nom} (amitié ${r.amitie.pts}/${r.amitie.max})`, { kind: 'info' });
@@ -162,6 +179,8 @@ export function villageoisDepuisCarte(geste, id, o = {}) {
   }
   if (geste === 'echange') {
     const r = echangeVillageois(state, id, o.avec, { n: o.n, sorte: o.sorte, heure: clockHours(state) });
+    // (I6c : une réplique de l'un de ses traits, sous tes yeux : un indice)
+    if (r && r.trait && o.avec !== 'joueur' && noterIndice(state, trouverVillageois(state, id), r.trait, 'dit')) { direAvis(); persistState(); setTimeout(refresh, 0); }
     // (I6a : il salue le personnage et lui donne le présent qu'il gardait)
     if (r && o.avec === 'joueur' && r.present) {
       const p = donnerPresent(state, id), v = trouverVillageois(state, id);
@@ -240,9 +259,11 @@ export function ouvrirTachesVillageois(id) {
   const v = trouverVillageois(state, id);
   if (!v) return;
   const L = tachesPour(state, id), e = escapeHtml(id), il = ilElle(v);
+  // (I6c : la tâche à son goût, celle qu'il boude, quand on connaît le trait qui le dit)
+  const gout = (t) => ({ aime: ' <span class="villageois-gout">💚 à son goût</span>', boude: ' <span class="villageois-gout">🙄 pas son goût</span>' }[goutTache(v, t.id, { connus: true })] || '');
   const ligne = (t) => `<li><button type="button" class="villageois-ligne villageois-tache${t.choisie ? ' choisie' : ''}" data-action="villageois-attribuer" data-id="${e}" data-tache="${t.id}" aria-pressed="${t.choisie}">
       <span class="villageois-tache-icone" aria-hidden="true">${t.icone}</span>
-      <span><strong>${escapeHtml(t.nom)}</strong>${t.choisie ? ' ✓' : ''} <span class="muted">${t.actions} par jour${t.prise.length ? ` · avec ${escapeHtml(t.prise.join(', '))}` : ''}</span>
+      <span><strong>${escapeHtml(t.nom)}</strong>${t.choisie ? ' ✓' : ''}${gout(t)} <span class="muted">${t.actions} par jour${t.prise.length ? ` · avec ${escapeHtml(t.prise.join(', '))}` : ''}</span>
       ${t.manque ? `<span class="villageois-manque">⏳ ${escapeHtml(t.manque)}</span>` : ''}</span></button></li>`;
   const prets = L.filter((t) => !t.manque), autres = L.filter((t) => t.manque);
   openModal(`
@@ -331,6 +352,22 @@ function amitieHtml(id, f) {
         <button type="button" class="btn small" data-action="evt-open" data-jour="${state.day + 1}" data-qui="${HAMEAU_VILLAGE}|${e}">🍽️ L'inviter à un repas</button></dd>`;
 }
 
+/* ---------- I6c : les traits ---------- */
+
+// Ses traits sur une ligne : ceux qu'on connaît (l'icône, le nom ; au survol, ce qui le montre), un « ? » par trait à
+// découvrir ; la tâche qu'il aime, celle qu'il boude, quand on le sait.
+function traitsHtml(id) {
+  const v = trouverVillageois(state, id);
+  if (!v || v.enfant) return '';
+  const F = traitsPourFiche(v);
+  if (!F.traits.length) return '';
+  const puces = F.traits.map((t) => (t.id ? `<span class="villageois-trait" title="${escapeHtml(t.dit)}">${t.icone} ${escapeHtml(t.nom)}</span>`
+    : `<span class="villageois-trait inconnu" title="À découvrir : regarde-${v.genre === 'm' ? 'le' : 'la'} vivre, écoute ce qu'${ilElle(v)} dit">?</span>`)).join(' ');
+  const nom = (t) => escapeHtml((tacheDef(t) || {}).nom || t).toLowerCase();
+  const postes = [F.aime.length ? `💚 ${F.aime.map(nom).join(', ')}` : '', F.boude.length ? `🙄 ${F.boude.map(nom).join(', ')}` : ''].filter(Boolean).join(' · ');
+  return `<dt>✨ Caractère</dt><dd>${puces}${postes ? ` <span class="muted villageois-trait-postes">· ${postes}</span>` : ''}</dd>`;
+}
+
 // La fiche du villageois `id`.
 export function ouvrirFicheVillageois(id) {
   const f = ficheVillageois(state, id);
@@ -342,6 +379,7 @@ export function ouvrirFicheVillageois(id) {
     <dl class="villageois-fiche">
       <dt>🏠 Maison</dt><dd>${escapeHtml(f.maison)}</dd>
       <dt>${HUMEUR_ICONE[f.humeur] || '🙂'} Humeur</dt><dd>${escapeHtml(f.humeurTexte)} · bonheur ${bonheurHtml(f)}</dd>
+      ${traitsHtml(id)}
       ${amitieHtml(id, f)}
       ${liensFicheHtml(id)}
       ${f.enfant ? `<dt>🪁 Journée</dt><dd>Les enfants ne travaillent pas : ${f.genre === 'm' ? 'il' : 'elle'} joue sur la place.</dd>` : tacheHtml(id)}

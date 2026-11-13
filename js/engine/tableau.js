@@ -2,6 +2,7 @@ import { DATA, prixIle } from './catalog.js';
 import { villageActif } from './village.js';
 import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.js';
 import { tacheAttente, tacheDef } from './taches.js';
+import { goutTache } from './traits.js';
 import { toolDef } from './outils.js';
 import { validApparence } from './family.js';
 
@@ -114,7 +115,8 @@ const RANG_HUMEUR = { heureux: 3, content: 2, triste: 1, faim: 0 };
 // Le bilan d'un villageois sur la période : { id, prenom, genre, perso, apparence, tache (l'actuelle), nom, icone,
 // humeur, bonheur, manque, jours ([bilanJour]), cout, repas, part, matieres, valeur, ventes, solde, produit ([{ objet,
 // n, valeur }] cumulé), mange et utilise ({ objet: n }), joursTravail (jours où il avait une tâche sans se reposer), joursRepos,
-// parTache ({ tache: { jours, valeur } }), rendement (null : calculé par tableauVillage) } ; null inconnu.
+// parTache ({ tache: { jours, valeur } }), rendement (null : calculé par tableauVillage), gout (fiche I6c, traits.js :
+// 'aime' ou 'boude' si un trait connu du joueur dit que sa tâche est à son goût ou non ; null) } ; null inconnu.
 export function bilanVillageois(state, id, periode = 'semaine') {
   const v = typeof id === 'string' ? trouverVillageois(state, id) : id;
   if (!v) return null;
@@ -145,6 +147,7 @@ export function bilanVillageois(state, id, periode = 'semaine') {
     jours, cout, repas, part, matieres, valeur, ventes, solde: valeur - cout,
     produit: [...produit.values()].sort((a, b) => b.valeur - a.valeur || (a.objet < b.objet ? -1 : 1)),
     mange, utilise, joursTravail, joursRepos, parTache, rendement: null,
+    gout: def ? goutTache(v, v.tache, { connus: true }) : null,
   };
 }
 

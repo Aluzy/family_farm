@@ -12,6 +12,7 @@ import { cleDiversite, tirerApparence } from './apparence.js';
 import { evenementsDe, noterEvenement } from './voisins.js';
 import { trouverVillageois, villageoisDe } from './villageois.js';
 import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
+import { gainAccords } from './traits.js';
 
 /* ---------- les liens entre villageois (le chantier « l'île à bâtir », fiche I6b) ----------
 
@@ -20,7 +21,8 @@ import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
    villageois) et ne baisse jamais (B-1 : pas de brouille) : ILE (ils vivent sur la même île), VOISIN (leurs maisons
    proches), POSTE (la même tâche, à des postes voisins ; le même commerce, I5a), TABLE (la même table au même repas),
    SORTIE (une visite, un rendez-vous, une promenade, un banc à deux), FETE (le même repas du joueur), FOYER (le même
-   toit), ENTRAIDE (un repas apporté). Au-delà de LENT, un gain compte pour moitié.
+   toit), ENTRAIDE (un repas apporté) ; et (fiche I6c, traits.js) les paires de traits qui s'accordent (TRAITS.ACCORDS).
+   Au-delà de LENT, un gain compte pour moitié.
 
    Les paliers (NOMS_LIENS) : inconnu, connaissance, camarade, ami, proche (LIENS.PALIERS). La vie sociale d'I3b+
    (villageois-liens.js : connaissance, la journée, la scène, les répliques) lit le « degré » : 0 inconnu, 1
@@ -246,6 +248,8 @@ export function liensNuit(state) {
       if (fa.fete && fb.fete) g += Number(G.FETE) || 0;
       if (foyerDe.has(va.id) && foyerDe.get(va.id) === foyerDe.get(vb.id)) g += Number(G.FOYER) || 0;
       if (aides.has(paire(va.id, vb.id))) g += Number(G.ENTRAIDE) || 0;
+      // (fiche I6c, traits.js : des traits qui s'accordent, TRAITS.ACCORDS ; aucun ne fait baisser l'affinité)
+      g += gainAccords(va, vb);
       if (!(g > 0)) continue;
       const k = rang(i, j), avant = tab[k];
       const apres = borne(avant + (avant >= lent ? Math.ceil(g / 2) : g));

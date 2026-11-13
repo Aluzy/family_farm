@@ -63,12 +63,15 @@ function enteteHtml() {
 
 function ligneHtml(l) {
   const H = humeurDe(l), def = tacheDef(l.tache);
-  const tache = def ? `${def.icone} ${escapeHtml(def.nom)}` : '<span class="muted">sans tâche</span>';
+  // (I6c : une marque discrète quand un trait connu dit que la tâche est à son goût, ou pas)
+  const G = { aime: ['💚', 'à son goût'], boude: ['🙄', 'pas son goût'] }[l.gout];
+  const gout = G ? ` <span class="tableau-gout" title="${G[1]}">${G[0]} ${G[1]}</span>` : '';
+  const tache = def ? `${def.icone} ${escapeHtml(def.nom)}${gout}` : '<span class="muted">sans tâche</span>';
   const prod = l.produit.length ? `<span class="tableau-objets">${objetsCourt(l.produit)}</span>` : '';
   const id = escapeHtml(l.id);
   return `<tr class="tableau-ligne">
       <th scope="row" class="t-qui"><button type="button" class="tableau-qui" data-action="tableau-detail" data-id="${id}" title="Ses sept derniers jours, jour par jour">
-        ${portrait(l)}<span class="tableau-nom">${escapeHtml(l.prenom)}<span class="t-mini" aria-hidden="true">${def ? def.icone : '—'} ${H[0]}</span></span></button></th>
+        ${portrait(l)}<span class="tableau-nom">${escapeHtml(l.prenom)}<span class="t-mini" aria-hidden="true">${def ? def.icone : '—'}${G ? G[0] : ''} ${H[0]}</span></span></button></th>
       <td class="t-tache t-second">${tache}${prod}</td>
       <td class="t-num">${formatNumber(l.cout)}</td>
       <td class="t-num">${formatNumber(l.valeur)}</td>

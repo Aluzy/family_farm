@@ -16,6 +16,7 @@ import { CONDITIONS_PROPOS, direSujet } from './propos.js';
 import { jourDeBac, trouverVillageois, villageoisDe } from './villageois.js';
 import { connaissance } from './villageois-liens.js';
 import { evenementsVillageois, foyerDe, liensVillageois, voisinDe } from './liens.js';
+import { goutTache, noterIndice, partDesTraits, phraseTrait, sujetsDesTraits, traitsDe } from './traits.js';
 
 /* ---------- l'amitié avec les villageois (le chantier « l'île à bâtir », fiche I6a) ----------
 
@@ -59,8 +60,8 @@ export function palierVillageois(state, id) {
   return palierAmitie(state, id);
 }
 
-// Accepte-t-il une tâche qu'il n'aime pas sans perdre d'humeur ? (dès le palier TACHE_SANS_HUMEUR ; I6c, les traits,
-// dira quelles tâches il aime)
+// Accepte-t-il une tâche qu'il n'aime pas sans perdre d'humeur ? (dès le palier TACHE_SANS_HUMEUR ; I6c, les traits :
+// traits.js goutTache dit quelle tâche il boude, bonheurDesTraits la lit)
 export function tacheSansHumeur(state, id) {
   return palierAmitie(state, id) >= (Number(A().TACHE_SANS_HUMEUR) || 3);
 }
@@ -225,7 +226,8 @@ export function proposVillageois(state, v, rnd) {
   const phrases = {};
   for (const id of P.GARDES || []) if (Array.isArray(H[id])) phrases[id] = H[id];
   for (const [id, L] of Object.entries(P)) if (id !== 'GARDES' && Array.isArray(L)) phrases[id] = L;
-  return direSujet(state, v.id, sujetsVillageois(state, v), phrases, rnd);
+  // (I6c : ses traits pèsent sur les sujets : le gourmand parle de plats, le rêveur de la lune)
+  return direSujet(state, v.id, sujetsVillageois(state, v), phrases, rnd, sujetsDesTraits(v));
 }
 
 /* ---------- parler, offrir ---------- */
@@ -234,7 +236,8 @@ export function proposVillageois(state, v, rnd) {
 // { salut, texte, etat… }), que l'amitié complète : r.amitie (amitieAvec, et gain : ce que la conversation a donné),
 // r.monte (un palier passé), r.emotion ('joie' : un ami, des retrouvailles, un souvenir, un présent ; ou null),
 // r.present ({ objet, n } : il te l'a donné), r.demande (l'id de sa demande, qu'il dit), r.gout (un goût confié),
-// r.propos (un sujet du moment), r.retrouvailles. `o.n` : le rang de l'appui (le tirage). Endormi : rien ne change.
+// r.propos (un sujet du moment), r.retrouvailles ; I6c : r.trait (le trait dont il a parlé), r.revele (le trait qui
+// vient de se révéler : la page le dit). `o.n` : le rang de l'appui (le tirage). Endormi : rien ne change.
 // → r.
 export function parlerVillageois(state, id, r, o = {}) {
   if (!r || r.etat === 'dormir') return r;
@@ -266,7 +269,19 @@ export function parlerVillageois(state, id, r, o = {}) {
   }
   // (un sujet du moment : la ferme, l'île, ses amis, le bac, la lune… ; pas au travail, pas s'il attend son outil)
   const attend = (((DATA.VILLAGE.PHRASES || {}).ACTIVITE || {}).attend || []).some((x) => String(r.texte || '').startsWith(String(x).split('{raison}')[0]));
-  if (!special && !['travail', 'repos'].includes(r.etat) && !attend && rnd() < (Number(A().PROPOS_PART) || 0)) {
+  // (I6c, traits.js : une fois sur PAROLE.CHANCE, il parle de lui, d'un trait (plutôt un qu'on ne connaît pas encore) ;
+  // l'entendre DIT fois le révèle ; il n'y a de tirage que s'il a des traits)
+  if (!special && traitsDe(v).length && r.etat !== 'repos' && !attend && rnd() < (Number(((DATA.TRAITS || {}).PAROLE || {}).CHANCE) || 0)) {
+    const t = phraseTrait(v, rnd);
+    if (t) { special = t.texte; r.trait = t.trait; if (noterIndice(state, v, t.trait, 'dit')) r.revele = t.trait; }
+  }
+  // (au travail, à la tâche qu'il aime ou qu'il boude : il le dit, une fois sur deux ; TRAITS.PAROLE.POSTE)
+  if (r.etat === 'travail' && !special) {
+    const g = goutTache(v, v.tache), G = ((DATA.TRAITS || {}).PAROLE || {}).POSTE;
+    if (g && G && Array.isArray(G[g]) && rnd() < 0.5) special = un(rnd, G[g]);
+  }
+  // (I6c : le bavard en dit plus souvent, le réservé moins : partDesTraits)
+  if (!special && !['travail', 'repos'].includes(r.etat) && !attend && rnd() < (Number(A().PROPOS_PART) || 0) * partDesTraits(v)) {
     const pr = proposVillageois(state, v, rnd);
     if (pr) { special = pr.texte; r.propos = pr.id; }
   }

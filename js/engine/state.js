@@ -37,6 +37,7 @@ import { nouveauRecit } from './recit.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
 import { reparerLiens } from './liens.js';
 import { reparerBourse, reparerEtal } from './bourse.js';
+import { reparerTraits } from './traits.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -944,6 +945,11 @@ export const MIGRATIONS = {
     if ('etal' in state) out.etal = reparerEtal(state.etal);
     return out;
   },
+  // v93 → v94 (le chantier « l'île à bâtir », fiche I6c) : les traits de personnalité des villageois (js/engine/traits.js :
+  // v.traits, v.traitsConnus, v.indices). Un villageois arrivé avant la fiche reçoit les siens, tirés de la graine de la
+  // partie et de son rang (deux villageois n'ont pas la même liste) ; aucun n'est encore connu ; ce qui est abîmé est
+  // réparé. Un enfant n'en a pas. Sans villageois (le réglage éteint), rien.
+  93: (state) => reparerTraits({ ...state, version: 94 }),
 };
 
 // Le dehors d'une sauvegarde (la migration v87 → v88) : { troncon, chemins (des segments lisibles) }.

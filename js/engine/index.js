@@ -98,6 +98,7 @@ export * from './villageois-journee.js';
 export * from './villageois-liens.js';
 export * from './villageois-amitie.js';
 export * from './liens.js';
+export * from './traits.js';
 export * from './taches.js';
 export * from './tableau.js';
 export * from './bourse.js';

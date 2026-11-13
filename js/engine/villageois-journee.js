@@ -12,6 +12,7 @@ import { connaissance } from './villageois-liens.js';
 import { manqueDit, postesDe, signatureTaches, tacheDef, travailleAujourdhui } from './taches.js';
 import { entraidesDuJour, foyerDe, liensSignature } from './liens.js';
 import { achatsDuJour, achatsSignature, caseEtal, devantEtal, phraseEtal } from './bourse.js';
+import { brefDesTraits, butsDesTraits, horaireDesTraits, soirDesTraits, traitsDe } from './traits.js';
 
 /* ---------- la journée des villageois sur la ferme (le chantier « l'île à bâtir », fiche I3b) ----------
 
@@ -60,7 +61,13 @@ import { achatsDuJour, achatsSignature, caseEtal, devantEtal, phraseEtal } from 
    repas apporté (entraidesDuJour : au repas de midi, l'ami va à la porte de celui qui se repose, qui sort le
    recevoir ; le but « visite » avec apporte: true, emoji 🍲) ; un enfant (v.enfant) ne travaille pas et joue sur la
    place (le but « jeu ») ; ni lui ni un villageois au repos ne sortent avec les adultes. Les tests :
-   tests/engine/village-liens.test.mjs. */
+   tests/engine/village-liens.test.mjs.
+
+   I6c (les traits, traits.js) : chacun a son horaire (horaireDesTraits : les décalages de ses traits s'ajoutent à son
+   retard ; le matinal se lève et sort avant les autres, le couche-tard s'attarde au souper et se couche tard, le
+   gourmand est à table le premier), sa chance de flâner (FLANER), de rester chez lui (CHEZ_LUI), sa plage de travail
+   et ses pauses (TRAVAIL), le poids des buts de ses sorties (butsDesTraits) et de la visite du soir (soirDesTraits).
+   Sans trait, la journée est celle d'avant. Les tests : tests/engine/village-traits.test.mjs. */
 
 const H = () => (DATA.VILLAGE && DATA.VILLAGE.HORAIRE) || {};
 const P = () => (DATA.VILLAGE && DATA.VILLAGE.PHRASES) || {};
@@ -265,7 +272,7 @@ export function journeeDuVillage(state, jour = jourDe(state)) {
   const avecTache = V.some((v) => v.tache);
   // (I6b : les liens, gardés dans la partie, et les repas apportés)
   const cle = JSON.stringify([graineDe(state), jour, H(), SB(), (DATA.VILLAGE.SOCIAL || {}).CONNAISSANCE, (DATA.VILLAGE || {}).LIENS, liensSignature(state), lp ? [lp.case, lp.chemin] : 0, avecTache ? signatureTaches(state) : 0,
-    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0, v.enfant ? 1 : 0]), achatsSignature(state, jour)]);
+    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0, v.enfant ? 1 : 0, traitsDe(v).join('+')]), achatsSignature(state, jour), DATA.TRAITS ? 1 : 0]);
   const deja = memoJours.get(cle);
   if (deja && deja.L === L) return deja.J;
   const J = calculerJournee(state, jour, V, L);
@@ -304,6 +311,8 @@ function calculerJournee(state, jour, V, L) {
   for (const v of tries) {
     const rnd = rngDe(`${g}:vie:${v.id}:${jour}`);
     const d = rnd() * (Number(h.DECALE) || 0);
+    // (I6c : les décalages de ses traits ; 0 sans trait)
+    const tr = horaireDesTraits(v);
     const maison = v.maison !== null && v.maison !== undefined ? L.maisons.get(v.maison) || null : null;
     const chez = maison && maison.cases.length ? maison.cases : L.abri;
     // (une case de chez lui, tirée ; sans maison ni abri : la place, ou rien)
@@ -312,14 +321,22 @@ function calculerJournee(state, jour, V, L) {
     const enMaison = () => ici(maison && maison.cases.length ? 'maison' : 'abri', caseChez(rnd()));
     const promenade = L.promenade.length ? L.promenade : abords(L, maison ? maison.porte : L.abri ? L.abri[0] : null);
     const x = {
-      v, rnd, maison, enMaison, promenade, ici,
-      lever: h.LEVER + d, sortie: h.SORTIE + d, midi: h.MIDI + d / 2, reprise: h.REPRISE + d / 2,
-      souper: h.SOUPER + d / 2, veillee: h.VEILLEE + d, coucher: Math.min(h.COUCHER + d / 2, DATA.TEMPS.HEURE_NUIT - 0.25),
+      v, rnd, maison, enMaison, promenade, ici, tr,
+      lever: h.LEVER + d + tr.LEVER, sortie: h.SORTIE + d + tr.SORTIE, midi: h.MIDI + d / 2 + tr.MIDI, reprise: h.REPRISE + d / 2 + tr.REPRISE,
+      souper: h.SOUPER + d / 2 + tr.SOUPER, veillee: h.VEILLEE + d + tr.VEILLEE, coucher: Math.min(h.COUCHER + d / 2 + tr.COUCHER, DATA.TEMPS.HEURE_NUIT - 0.25),
       lit: Number.isInteger(v.lit) && maison ? { genre: 'lit', case: v.lit } : null,
     };
-    const FL = h.FLANER || [];
-    x.matin = bornesCreneaux(x.sortie, x.midi, C, Number(FL[0]) || 0);
-    x.apres = bornesCreneaux(x.reprise, x.souper, C, Number(FL[1]) || 0);
+    // (I6c : l'ordre de la journée tient, quels que soient les décalages ; sans trait, rien ne bouge)
+    x.lever = Math.max(0.25, x.lever);
+    x.sortie = Math.max(x.lever + 0.25, x.sortie);
+    x.midi = Math.max(x.sortie + 0.5, x.midi);
+    x.reprise = Math.max(x.midi + 0.25, x.reprise);
+    x.souper = Math.max(x.reprise + 0.5, x.souper);
+    x.veillee = Math.max(x.souper + 0.25, x.veillee);
+    x.coucher = Math.min(Math.max(x.veillee + 0.25, x.coucher), DATA.TEMPS.HEURE_NUIT - 0.1);
+    const FL = h.FLANER || [], fl = (k) => Math.max(0, Math.min(1, (Number(FL[k]) || 0) + tr.FLANER[k]));
+    x.matin = bornesCreneaux(x.sortie, x.midi, C, fl(0));
+    x.apres = bornesCreneaux(x.reprise, x.souper, C, fl(1));
     x.parK = new Map([...x.matin, ...x.apres].map((p) => [p.k, p]));
     x.plan = new Map();
     gens.push(x);
@@ -453,13 +470,15 @@ function planDuTravail(state, jour, gens, L, prendre, C) {
     // (les créneaux de travail de chacun : k → le rang du poste)
     const travail = equipe.map((x) => {
       const ks = new Map();
-      plages.forEach(([a, b], w) => {
+      plages.forEach(([a0, b0], w) => {
+        // (I6c : ses traits déplacent le début de sa première plage, la fin de sa dernière, et ses pauses)
+        const a = a0 + (w === 0 ? x.tr.DEBUT : 0), b = b0 + (w === plages.length - 1 ? x.tr.FIN : 0);
         const l = [...x.parK.values()].filter((p) => (p.x + p.y) / 2 >= a && (p.x + p.y) / 2 < b).map((p) => p.k);
         const rnd = rngDe(`${g}:pause:${x.v.id}:${jour}:${w}`);
         const libres = new Set();
-        for (let n = 0; n < pauses && l.length > 2; n++) libres.add(l[1 + Math.floor(rnd() * (l.length - 1))]);
-        const k0 = Math.floor(a / C);
-        for (const k of l) if (!libres.has(k)) ks.set(k, w * 1000 + Math.floor((k - k0) / N));
+        for (let n = 0; n < Math.max(0, pauses + x.tr.PAUSE) && l.length > 2; n++) libres.add(l[1 + Math.floor(rnd() * (l.length - 1))]);
+        const k0 = Math.floor(a0 / C);
+        for (const k of l) if (!libres.has(k)) ks.set(k, w * 1000 + Math.max(0, Math.floor((k - k0) / N)));
       });
       return ks;
     });
@@ -542,6 +561,8 @@ function planDesCreneaux(state, jour, gens, L, prendre) {
         x.plan.set(k, q !== undefined ? { etat: 'dehors', lieu: { genre: 'place', case: q }, but: { sorte: 'jeu', cle: `jeu:${v.id}:${k}`, avec: [], emoji: emoji('jeu') } } : { etat: 'repos', lieu: x.enMaison() });
         continue;
       }
+      // (I6c : un casanier reste parfois chez lui à un créneau libre ; il n'y a de tirage que s'il a ce trait)
+      if (x.tr.CHEZ_LUI > 0 && rnd() < x.tr.CHEZ_LUI) { x.plan.set(k, { etat: 'rentrer', lieu: x.enMaison() }); continue; }
       // flâner : un banc libre (le sien pris : un autre), sinon la place
       if (rnd() < p.fl) {
         const banc = L.bancs.length ? L.bancs[Math.floor(rnd() * L.bancs.length)] : null;
@@ -645,7 +666,9 @@ function planDesCreneaux(state, jour, gens, L, prendre) {
         },
       };
       // le tirage au poids ; un but qui ne trouve pas de lieu laisse la place au suivant
-      const choix = Object.keys(essais).map((s) => [s, Math.max(0, Number(poids[s]) || 0)]).filter(([, w]) => w > 0);
+      // (I6c : ses traits pèsent sur ses buts : le curieux va voir, le bavard rend visite, le casanier reste près)
+      const pt = butsDesTraits(v);
+      const choix = Object.keys(essais).map((s) => [s, Math.max(0, Number(poids[s]) || 0) * (s in pt ? pt[s] : 1)]).filter(([, w]) => w > 0);
       let fait = false;
       while (choix.length && !fait) {
         const tot = choix.reduce((s, [, w]) => s + w, 0);
@@ -700,7 +723,7 @@ function visitesDuSoir(state, jour, gens, L) {
     if (n >= max) break;
     if (!libre(x) || !Number.isInteger(x.v.maison)) continue;
     const rnd = rngDe(`${graineDe(state)}:soir:${x.v.id}:${jour}`);
-    if (rnd() >= chance) continue;
+    if (rnd() >= chance * soirDesTraits(x.v)) continue;
     const f = foyerDe(state, x.v.id);
     const amis = gens.filter((y) => y !== x && libre(y) && y.maison && y.maison.devant && y.v.maison !== x.v.maison && !(f && f.membres.includes(y.v.id)))
       .map((y) => [y, connaissance(state, x.v.id, y.v.id)]).filter(([, c]) => c && c.degre >= 2);
@@ -775,8 +798,10 @@ export function paroleVillageois(state, id, o = {}) {
   const def = tacheDef(v.tache), manque = etat !== 'dormir' && etat !== 'repas' ? manqueDit(state, v) : '';
   const texte = etat === 'travail' && def ? un(def.PHRASES) : manque ? un((P().ACTIVITE || {}).attend).replace('{raison}', manque) : un(but ? A[but] : (P().ACTIVITE || {})[etat]);
   return {
-    id: v.id, prenom: v.prenom, genre: v.genre, etat, but, salut, texte, tache: def ? v.tache : null,
-    humeur, humeurTexte: etat === 'dormir' ? '' : un((P().HUMEUR || {})[humeur]),
+    // (I6c : un réservé ne dit ni le salut de l'heure ni son humeur ; les tirages sont faits quand même, le reste ne
+    // change pas)
+    id: v.id, prenom: v.prenom, genre: v.genre, etat, but, salut: brefDesTraits(v) ? '' : salut, texte, tache: def ? v.tache : null,
+    humeur, humeurTexte: ((t) => (etat === 'dormir' || brefDesTraits(v) ? '' : t))(un((P().HUMEUR || {})[humeur])),
   };
 }
 

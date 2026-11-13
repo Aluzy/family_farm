@@ -101,6 +101,8 @@ function jourOu(s, pluie) {
 test('la journée : de 0 à 24 h sans trou, les états de la fiche ; dormir, se lever, sortir, manger, rentrer', () => {
   avecVillage(() => {
     const { s } = ile(1, 3);
+    // (l'horaire commun : sans les décalages des traits, fiche I6c, que village-traits.test.mjs vérifie)
+    for (const v of s.villageois) v.traits = [];
     jourOu(s, false);
     const J = journeeDuVillage(s), H = DATA.VILLAGE.HORAIRE;
     assertEqual(J.size, 3, 'une journée par villageois');
