@@ -83,7 +83,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
-| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
+| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c à I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a, I8b | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
@@ -1055,6 +1055,74 @@ Ce qui est posé (I7b ; les réglages : `VILLAGE.DEPART`, data/village.json ; le
 - Reste : le test avec un joueur qui ne connaît pas le jeu (`docs/test-utilisateur.md`) n'est pas fait ; sous une
   fenêtre par-dessus (la liste des villageois), la bulle passe sous son voile ; le panneau « Ville » au bout de
   l'ancien chemin reste ; retirer `bienvenue.js` et l'ancien didacticiel (I7c, I7d).
+
+## La chronique et les noms (I7g, fait)
+
+Le joueur nomme son île, son village, ses commerces et ses maisons ; une chronique note d'elle-même les moments qui
+comptent. Le moteur : `js/engine/noms.js` et `js/engine/chronique.js` ; les réglages : `VILLAGE.NOMS` et
+`VILLAGE.CHRONIQUE` (`data/village.json`) ; la page : `js/ui/chronique.js` (et `js/ui/chronique-html.js`, le HTML, lu
+aussi par les tests). Tout est derrière le réglage : éteint, une partie n'a ni `state.noms` ni `state.chronique`.
+
+- **Les noms** (`state.noms = { ile, village, commerces: {}, maisons: {}, avis }`) : proposés à la graine de la ferme
+  (`proposerNom(state, quoi, id, rang)` : « 🎲 Un autre nom » tire le rang suivant ; jamais au-delà de `DEPART.NOM_MAX`),
+  modifiables à tout moment (`renommer`), bornés comme le nom de famille (`DEPART.NOM_MIN` à `NOM_MAX` signes, les
+  blancs repliés : `nomRefus`, `nettoyerNom`). **L'île** : une partie neuve du chantier en reçoit un à la création
+  (`nouveauxNoms`) ; I7b écrira celui que le joueur choisit au départ dans `state.noms.ile` (le reste du champ se répare
+  seul, `nomsDe`). **Le village** : il prend le nom proposé quand le troisième villageois adulte s'installe
+  (`NOMS.VILLAGE_A`, `nommerVillageSiBesoin`) ; la page ouvre alors « Nommer le village » (garder ce nom, un autre, le
+  sien ; « Plus tard »). **Un commerce** : `nommerCommerce(state, id, { sorte })` (« Forge du Vieux Chêne ») ; dans une
+  phrase, `commerceEnPhrase` (« la forge du Vieux Chêne », ou « la forge « La Belle Enclume » »). **Une maison** : sur
+  la fiche du villageois, ✏️ (une chaîne vide efface son nom). `nomAffiche` : le village, sinon l'île (le panneau, le
+  titre de la fenêtre).
+- **Le panneau du village** (`panneau_village`, l'Atelier : 3 planches et 2 bois ; l'onglet Jardin) : deux cases de
+  large, la carte écrit sur sa planche le nom du village (sinon celui de l'île), comme le nom de la famille sur une
+  enseigne de ferme (`stepEnseignes`, `BLOCS_CARTE.enseigne.village`) ; renommer le change aussitôt. Le dessin
+  (`scripts/batiments/panneau_village.py`, vu de haut à 45°) : deux rondins (l'écorce éclairée à gauche), un toit de
+  bardeaux à deux pans, la planche claire du nom (son dessus, deux planches, les clous), des pierres et des fleurs au
+  pied ; 32 × 40, **505 couleurs**. Il ne s'éclaire pas le soir.
+- **La chronique** (`state.chronique = { seq, lignes, faits }`) : une ligne par moment, datée, ses noms figés le jour où
+  elle s'écrit. Le seul point d'entrée : **`noterChronique(state, type, donnees)`** (rien éteint ; une ligne de même clé,
+  `TYPES[type].cle`, ne s'écrit qu'une fois). Les types (`CHRONIQUE.TYPES` : icône, texte, clé) et ce qui les écrit :
+  `arrivee` (la famille débarque : `assurerArrivee`, dès que la famille est configurée, datée du jour 1), `recolte` (la
+  première récolte : `noteCropHarvested`), `vente` (la première vente au port : `vendreCharge`, une commande du bac
+  honorée), `villageois` et `enfant` (`arriverVillageois`, `arriverEnfant` : `chroniqueArrivee`), `village` (son nom,
+  au troisième), `village_nom` et `ile_nom` (renommés un autre jour), `dixieme` (le dixième villageois), `palier`
+  (`completeChapter`, un palier de l'île), `port` (`agrandirPort`), `commerce` (`commerceOuvert(state, { id, sorte,
+  qui })`, prêt pour I5a), `proche` (`liensNuit`), `foyer` (`formerFoyer`), `fete` (`allerALaFete` ; I8a appellera le
+  même type, `{ id, jour, nom, lieu }`), `projet` (`projetsNuit` ; I8a : `{ id, lieu, nom }`), `avant` (la place du
+  récit d'avant, pour I7f : `{ id, texte }`). Renommer change l'affichage, pas les lignes passées ; le jour même, une
+  ligne de nom (l'arrivée, le baptême du village) prend le nom choisi (`renommerEtNoter`).
+- **La borne** (`MAX` 120 lignes, `bornerChronique`) : au-delà, les lignes du mois de lune le plus ancien (pas celui du
+  jour) se résument en une ligne « mois » (« En Solaria : 2 villageois arrivés, un palier franchi et une fête. ») ;
+  puis les résumés les plus anciens se fondent deux à deux (« De Solaria, an 1 à Pluvia, an 1 : … »). Une ligne
+  épinglée ne se résume jamais, ni l'arrivée, ni le récit d'avant ; la clé d'une ligne résumée est gardée (`faits`).
+- **La fenêtre** (📜 « Chronique » dans le menu, à côté du carnet tant que le récit est là ; « 📜 La chronique » dans la
+  liste des villageois) : les noms (« ✏️ Renommer »), les lignes épinglées, puis la chronique par mois de lune, du plus
+  récent au plus ancien. 📌 épingle une ligne (`EPINGLES` 24 au plus) ; ✏️ y écrit une note du joueur (`NOTE_MAX` 140
+  signes, une ligne, la ligne s'épingle ; échappée à l'affichage, comme les noms).
+- **Les souvenirs** (`VILLAGE.PROPOS`, `souvenir_villageois`, `_proche`, `_foyer`, `_commerce`, `_dixieme`, `_fete`,
+  `_projet` ; `villageois-amitie.js`) : un villageois reprend une ligne où il figure (`qui`, `a`, `b`, `avec` :
+  `souvenirsDe`), vieille de `SOUVENIR.DEPUIS` (3) à `JUSQUA` (120) jours (« Tu te souviens ? Il y a 12 jours, Colette
+  et moi, on est devenus inséparables. »). Il en parle quand le sujet est tiré, comme les autres propos.
+- **La sauvegarde** : format 96 ; la migration 95 → 96 répare les noms (l'île nommée à la graine si elle ne l'est pas)
+  et la chronique (une ligne illisible s'en va, une note est bornée) d'une partie du chantier ; une partie d'avant n'est
+  pas touchée.
+- **La simulation** (`node scripts/simulate.mjs --village`, 80 nuits, graine 1, le joueur appliqué) : 17 lignes,
+  1,8 ko ; l'arrivée, la première récolte et la première vente (nuit 4), quatre villageois (12, 15, 33, 63), le village
+  nommé à la nuit 33, cinq paliers, le port au niveau 2 (32), trois paires de proches. Éteint, le CSV est le même octet
+  pour octet.
+- **Les tests** : `tests/engine/village-chronique.test.mjs` (les noms et leurs bornes ; chaque moment écrit sa ligne une
+  fois, dont le port agrandi et deux villageois devenus proches pendant une nuit ; la borne et le résumé par mois ;
+  les épingles ; renommer : l'affichage, pas les lignes passées ; les notes bornées et échappées ; les souvenirs ; la
+  sauvegarde ; éteint).
+- **Ce que d'autres fiches brancheront** : I7c et I7d retireront le carnet (`js/ui/carnet.js`, son bouton
+  `carnetBouton` de `js/ui/stage-windows.js`, `carnet` de `recit.js`) : la chronique en prend la place dans le menu ;
+  I7f écrira le résumé du récit d'avant (`noterChronique(state, 'avant', { id, texte })`) et donnera noms et chronique aux
+  parties d'avant ; I5a appellera `commerceOuvert` (le nom, la ligne) et écrira le nom sur l'enseigne du commerce
+  (`nomDe(state, 'commerce', id)`) ; I8a appellera `noterChronique` pour ses fêtes et ses projets ; I7b posera le nom
+  de l'île choisi au départ.
+- Reste : les commandes du moteur pour nommer et noter (le jeu en ligne, I9) ; le panneau ne s'éclaire pas le soir ;
+  pas de ligne pour un commerce fermé ni pour un villageois parti (personne ne part, B-1).
 
 ## Les règles qui ne changent pas
 

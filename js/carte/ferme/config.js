@@ -367,7 +367,7 @@ const CULTURE_MONTE = 0;
     // suit la peinture (data/meubles.json PEINTURES enseigne_<matière>, `texte`)
     enseigne: {
       taille: 7, ombre: 'rgba(0,0,0,0.35)', deuxLignes: 0.7,
-      dy: { bois: 17.5, email: 17, fer: 16.5 }, largeur: { bois: 19, email: 19, fer: 15 },
+      dy: { bois: 17.5, email: 17, fer: 16.5, village: 18.5 }, largeur: { bois: 19, email: 19, fer: 15, village: 23 },
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
     // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
@@ -550,6 +550,8 @@ const CULTURE_MONTE = 0;
     'enseigne_bois', 'enseigne_email', 'enseigne_fer', 'boite_lettres_bois', 'boite_lettres_email', 'boite_lettres_fer',
     // (la boîte aux lettres d'un villageois, l'île à bâtir : scripts/batiments/boite_villageois.py)
     'boite_aux_lettres',
+    // (le panneau du village, l'île à bâtir : scripts/batiments/panneau_village.py ; son nom, BLOCS_CARTE.enseigne « village »)
+    'panneau_village',
     // (le pont de planches, hors de la ferme, l'île à bâtir : scripts/carte/portage.py ; son image suit son sens et ses voisins)
     'pont_planches_ns_0', 'pont_planches_ns_1', 'pont_planches_ns_2', 'pont_planches_ns_3',
     'pont_planches_eo_0', 'pont_planches_eo_1', 'pont_planches_eo_2', 'pont_planches_eo_3',

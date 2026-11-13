@@ -30,6 +30,7 @@ import { veilleeFerme, veilleeFermePossible } from '../engine/ile.js';
 import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import { watchVillageois } from './villageois.js';
+import { watchChronique } from './chronique.js';
 import { watchPresents } from './amitie.js';
 import { watchDemandes } from './demandes.js';
 import { watchFetes } from './fetes.js';
@@ -336,6 +337,7 @@ function veiller(ticked) {
   watchPort(); // l'île à bâtir (fiche I1b) : le lieu du port posé dans le moteur
   watchBienvenue(); // fiche 18 : la visite de bienvenue du deuxième jour se met en route
   watchVillageois(); // l'île à bâtir (fiche I3a) : un jour de bac, un villageois arrive ; ses maisons, ses avis
+  watchChronique(); // l'île à bâtir (fiche I7g) : l'arrivée notée, le baptême du village
   watchRobot();
   watchPresents();
   watchDemandes(); // V-2 : les petites demandes des habitants, annoncées au matin

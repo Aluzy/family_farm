@@ -64,6 +64,7 @@ import { offrirPlan, planConnu } from './plans.js';
 import { niveauPort, portOuvert } from './port.js';
 import { chargeDe, portageDe, volumeDe } from './portage.js';
 import { vendrePaniers } from './bourse.js';
+import { chroniqueVente, noterChronique } from './chronique.js';
 
 const P = () => DATA.PORT;
 const B = () => DATA.PORT.BAC;
@@ -314,6 +315,7 @@ export function honorerCommande(state, id, ou = null, o = {}) {
   gainXp(state, pay.xp);
   noterObjectif(state, 'commande_bac', 1);
   noterVenteBac(state, c.objet, c.quantite);
+  chroniqueVente(state, c.objet);   // (fiche I7g : la première vente au port, dans la chronique)
   p.commandes = p.commandes.filter((x) => x !== c);
   p.honorees += 1;
   return { ok: true, commande: c, gain: gain + pay.prime, prime: pay.prime, xp: pay.xp };
@@ -537,6 +539,7 @@ export function agrandirPort(state, ou = null, o = {}) {
   if (!pay(state, nx.pieces, `Port agrandi : niveau ${nx.niveau}`)) return fail(NO_COINS);
   for (const k of Object.keys(nx.materiaux)) delete p.chantier[k];
   p.niveau = nx.niveau;
+  noterChronique(state, 'port', { niveau: p.niveau });   // (fiche I7g : le port agrandi, dans la chronique)
   return { ok: true, niveau: p.niveau };
 }
 

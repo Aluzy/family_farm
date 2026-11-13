@@ -4282,3 +4282,21 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
 .lien-etat { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 0.9em; }
 .lien-palier { white-space: nowrap; }
 .lien-jauge { width: 52px; }
+/* I7g : la chronique de l'île et les noms */
+.chronique-noms { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: baseline; margin: 0 0 10px; }
+.chronique-noms dt { font-weight: 600; white-space: nowrap; }
+.chronique-noms dd { margin: 0; }
+.chronique-corps { max-height: 52vh; overflow-y: auto; }
+.chronique-mois h3 { margin: 10px 0 4px; font-size: 1.05rem; }
+.chronique-lignes { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.chronique-ligne { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 3px 6px; border-radius: 8px; }
+.chronique-ligne.epinglee { background: rgba(255, 214, 120, 0.22); }
+.chronique-ligne.resume { font-style: italic; opacity: 0.85; }
+.chronique-jour { min-width: 4.2em; font-variant-numeric: tabular-nums; opacity: 0.75; font-size: 0.9em; }
+.chronique-texte { flex: 1 1 12em; }
+.chronique-gestes { display: inline-flex; gap: 4px; margin-left: auto; }
+.chronique-epingle { opacity: 0.45; }
+.chronique-epingle.active { opacity: 1; }
+.chronique-note { flex-basis: 100%; margin: 0 0 2px 4.6em; font-style: italic; overflow-wrap: anywhere; }
+.chronique-champ { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; }
+.chronique-modal input.member-input, .chronique-modal textarea.member-input { width: 100%; box-sizing: border-box; padding: 6px 8px; font-family: inherit; font-size: 1.05rem; border: 1px solid var(--border); border-radius: 8px; margin: 4px 0; }

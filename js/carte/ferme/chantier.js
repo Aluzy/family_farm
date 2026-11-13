@@ -623,6 +623,7 @@
           e.nomVu = cle;
           const L = C.largeur[E.matiere] || 16;
           e.nomTxt.setText(E.nom).setColor(E.texte).setScale(1);
+          if (E.matiere === 'village') e.nomTxt.setAlign('center');   // (fiche I7g : le panneau du village, deux lignes centrées)
           // (trop long : sur deux lignes, coupé à l'espace ou au trait d'union le plus près du milieu, s'il y en a)
           if (e.nomTxt.width > L / C.deuxLignes) {
             const coupes = [...E.nom].map((c, i) => (c === ' ' || c === '-' ? i : -1)).filter((i) => i > 0);

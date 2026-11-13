@@ -1581,6 +1581,15 @@ export const RAW_DATA = {
       "village": true
     },
     "etal": { "nom": "Étal", "icone": "🛒", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "panneau_village": {
+      "nom": "Panneau du village",
+      "icone": "🪧",
+      "prix": 4,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
     "brouette": { "nom": "Brouette", "icone": "🛒", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "charrette": { "nom": "Charrette", "icone": "🛞", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "casque_lampe": { "nom": "Casque à lampe", "icone": "⛑‍💡", "prix": 30, "mangeable": false, "categorie": "équipement", "rachetable": false },
@@ -2144,6 +2153,7 @@ export const RAW_DATA = {
       "bac_compost": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "bac_compost": 1 }, "coefPrix": 145 },
       "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler", "coefPrix": 145 },
       "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler", "coefPrix": 145 },
+      "panneau_village": { "entrees": { "planche": 3, "bois": 2 }, "sortie": { "panneau_village": 1 }, "village": true },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
@@ -2258,6 +2268,17 @@ export const RAW_DATA = {
         "dessin": "etal_vide",
         "largeur": 2,
         "etal": true,
+        "village": true
+      },
+      "panneau_village": {
+        "nom": "Panneau du village",
+        "objet": "panneau_village",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "panneau_village",
+        "largeur": 2,
+        "panneau": "village",
+        "texte": "#3a2212",
         "village": true
       },
       "refrigerateur": {
@@ -3180,6 +3201,7 @@ export const RAW_DATA = {
           "ornement_erable_rouge",
           "ornement_magnolia",
           "ornement_saule_pleureur",
+          "panneau_village",
           "enseigne_bois",
           "boite_lettres_bois",
           "enseigne_email",
@@ -9184,7 +9206,27 @@ export const RAW_DATA = {
         "Le bac passe demain. Qui sait qui il amènera ?",
         "Demain, c'est jour de bac. J'irai voir le port !",
         "Le bac arrive demain : l'île va avoir de la visite."
-      ]
+      ],
+      "souvenir_villageois": [
+        "Tu te souviens du jour où j'ai débarqué du bac ? Il y a déjà {jours} jours !",
+        "Il y a {jours} jours, je posais ma valise ici. Je m'en souviens comme d'hier.",
+        "Le jour {jour}, je découvrais {village}. Quel souvenir !"
+      ],
+      "souvenir_proche": [
+        "Tu te souviens ? Il y a {jours} jours, {autre} et moi, on est devenus inséparables.",
+        "{autre}, c'est devenu quelqu'un de cher. Depuis le jour {jour}, on ne se quitte plus."
+      ],
+      "souvenir_foyer": [
+        "Le jour {jour}, {autre} et moi, on a emménagé ensemble. Je n'oublierai pas.",
+        "Ça fait {jours} jours qu'on vit sous le même toit, {autre} et moi."
+      ],
+      "souvenir_commerce": ["Tu te souviens du jour où j'ai ouvert {commerce} ?", "{Commerce} a ouvert il y a {jours} jours. Le temps passe !"],
+      "souvenir_dixieme": [
+        "Quand je suis arrivé{e}, on est devenus dix au village. Tu te souviens ?",
+        "Dixième villageois ! Ça m'a fait drôle, le jour {jour}."
+      ],
+      "souvenir_fete": ["Tu te souviens de {fete} ? Quelle journée !", "{Fete}, il y a {jours} jours… On en parle encore."],
+      "souvenir_projet": ["Tu te souviens quand on a fini {projet} ? Il y a {jours} jours déjà.", "{Projet} : quelle fierté d'y avoir mis la main !"]
     },
     "LIENS": {
       "AFFINITE": 20,
@@ -9198,6 +9240,115 @@ export const RAW_DATA = {
       "FOYER": { "PALIER": 4 },
       "ENFANT": { "PARENTS": 85 },
       "AVIS": [3, 4]
+    },
+    "NOMS": {
+      "VILLAGE_A": 3,
+      "ILE": [
+        "Île aux Mouettes",
+        "Île des Brumes",
+        "Île du Grand Vent",
+        "Île aux Saules",
+        "Île des Lucioles",
+        "Île Clairelune",
+        "Île aux Coquelicots",
+        "Île de la Marée",
+        "Île Belle-Anse",
+        "Île des Trois Pins",
+        "Île aux Hérons",
+        "Île du Phare",
+        "Île Douce-Lune",
+        "Île des Galets",
+        "Île aux Abeilles",
+        "Île Verte-Rive"
+      ],
+      "VILLAGE": {
+        "DEBUTS": ["Pré", "Val", "Mont", "Bois", "Clair", "Beau", "Roche", "Fontaine", "Rive", "Haute", "Belle", "Font"],
+        "FINS": [
+          "-Fleuri",
+          "-Doré",
+          "-Joli",
+          "-sur-Mer",
+          "-la-Lune",
+          "-aux-Pins",
+          "-le-Vent",
+          "-Tranquille",
+          "-des-Prés",
+          "-les-Bains",
+          "-Soleil",
+          "-les-Saules"
+        ]
+      },
+      "COMMERCES": {
+        "forge": ["la", "Forge"],
+        "mercerie": ["la", "Mercerie"],
+        "scierie": ["la", "Scierie"],
+        "boulangerie": ["la", "Boulangerie"],
+        "fromagerie": ["la", "Fromagerie"],
+        "*": ["l'", "Échoppe"]
+      },
+      "COMPLEMENTS": [
+        "du Vieux Chêne",
+        "de la Lune",
+        "du Coq",
+        "de l'Ancre",
+        "des Mouettes",
+        "du Moulin",
+        "du Port",
+        "des Saules",
+        "du Puits",
+        "de l'Étoile",
+        "des Galets",
+        "du Pont"
+      ],
+      "MAISONS": [
+        "des Saules",
+        "du Puits",
+        "des Roses",
+        "du Vent",
+        "des Galets",
+        "de la Lune",
+        "aux Volets Bleus",
+        "du Verger",
+        "des Lilas",
+        "du Phare"
+      ]
+    },
+    "CHRONIQUE": {
+      "MAX": 120,
+      "EPINGLES": 24,
+      "NOTE_MAX": 140,
+      "SOUVENIR": { "DEPUIS": 3, "JUSQUA": 120 },
+      "TYPES": {
+        "avant": { "icone": "📖", "texte": "{texte}", "cle": "avant:{id}" },
+        "arrivee": { "icone": "🏝️", "texte": "La famille {famille} débarque sur {lIle} : tout est à bâtir.", "cle": "arrivee" },
+        "recolte": { "icone": "🌱", "texte": "Première récolte de l'île : {culture}.", "cle": "recolte" },
+        "vente": { "icone": "⚓", "texte": "Première vente au port : {objet}.", "cle": "vente" },
+        "villageois": { "icone": "🧳", "texte": "{prenom} débarque du bac et s'installe sur l'île.", "cle": "villageois:{qui}" },
+        "enfant": { "icone": "👶", "texte": "{prenom} arrive par le bac chez {pa} et {pb}.", "cle": "villageois:{qui}" },
+        "village": { "icone": "🏘️", "texte": "Le village prend un nom : {village}.", "cle": "village" },
+        "village_nom": { "icone": "🏘️", "texte": "Le village s'appelle désormais {village}.", "cle": "village_nom:{jour}" },
+        "ile_nom": { "icone": "🏝️", "texte": "L'île s'appelle désormais {ile}.", "cle": "ile_nom:{jour}" },
+        "dixieme": { "icone": "🎉", "texte": "Avec {prenom}, {village} compte dix villageois.", "cle": "dixieme" },
+        "palier": { "icone": "🏅", "texte": "Palier {n} franchi : {titre}.", "cle": "palier:{n}" },
+        "port": { "icone": "🏗️", "texte": "Le port passe au niveau {niveau}.", "cle": "port:{niveau}" },
+        "commerce": { "icone": "🛠️", "texte": "{prenom} ouvre {commerce}.", "cle": "commerce:{id}" },
+        "proche": { "icone": "💞", "texte": "{pa} et {pb} deviennent proches.", "cle": "proche:{a}|{b}" },
+        "foyer": { "icone": "🏡", "texte": "{pa} et {pb} s'installent ensemble.", "cle": "foyer:{id}" },
+        "fete": { "icone": "🎊", "texte": "{Nom} {lieu}.", "cle": "fete:{id}:{jour}" },
+        "projet": { "icone": "🧱", "texte": "{Lieu} achève son projet : {nom}.", "cle": "projet:{id}" }
+      },
+      "RESUME": {
+        "villageois": ["un villageois arrivé", "{n} villageois arrivés"],
+        "enfant": ["un enfant arrivé", "{n} enfants arrivés"],
+        "palier": ["un palier franchi", "{n} paliers franchis"],
+        "port": ["le port agrandi", "le port agrandi {n} fois"],
+        "commerce": ["un commerce ouvert", "{n} commerces ouverts"],
+        "proche": ["deux villageois devenus proches", "{n} paires devenues proches"],
+        "foyer": ["un foyer formé", "{n} foyers formés"],
+        "fete": ["une fête", "{n} fêtes"],
+        "projet": ["un projet achevé", "{n} projets achevés"],
+        "*": ["un moment noté", "{n} moments notés"]
+      }
     },
     "PALIERS": [
       {

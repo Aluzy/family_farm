@@ -68,6 +68,11 @@ export const GAME_ACTIONS = {
   // (fiche I6b : les liens entre villageois, js/ui/liens.js)
   'liens-foyer-ok': 'Installer deux villageois proches dans un foyer',
   'liens-enfant': 'Proposer à un foyer d\'accueillir un enfant',
+  // (fiche I7g : la chronique et les noms, js/ui/chronique.js)
+  'chronique-epingler': 'Épingler une ligne de la chronique (ou la détacher)',
+  'chronique-note-ok': 'Écrire une note sur une ligne de la chronique',
+  'chronique-note-effacer': 'Effacer sa note sur une ligne de la chronique',
+  'noms-ok': 'Nommer l\'île, le village ou une maison',
   'port-acheter': 'Acheter au port (une semence)',
   'port-decharger': 'Décharger sous la halle du port (tout ce qui est chargé se vend)',
   'port-honorer': 'Honorer une commande du bac',
@@ -213,6 +218,8 @@ export const INTERFACE_ACTIONS = new Set([
   'tableau-ouvrir', 'tableau-periode', 'tableau-tri', 'tableau-detail',
   // (fiche I6b : la vue d'ensemble des liens, proposer un foyer)
   'liens-village', 'liens-foyer',
+  // (fiche I7g : la chronique, ses notes, nommer)
+  'chronique-open', 'chronique-note', 'noms-renommer', 'noms-autre',
   // (les gemmes : js/ui/gemmes.js)
   'gemmes-ouvrir', 'gemmes-onglet', 'gemmes-pack', 'gemmes-payer', 'gemmes-acheter', 'gemmes-connexion',
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',

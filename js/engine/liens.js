@@ -13,6 +13,7 @@ import { evenementsDe, noterEvenement } from './voisins.js';
 import { trouverVillageois, villageoisDe } from './villageois.js';
 import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
 import { gainAccords } from './traits.js';
+import { chroniqueArrivee, noterChronique } from './chronique.js';
 
 /* ---------- les liens entre villageois (le chantier « l'île à bâtir », fiche I6b) ----------
 
@@ -264,6 +265,11 @@ export function liensNuit(state) {
   // (les paliers qu'on annonce au joueur : une notification, la page la dit)
   const annonce = new Set(Array.isArray(LI().AVIS) ? LI().AVIS : [3, 4]);
   for (const p of out.paliers) {
+    // (fiche I7g : deux villageois devenus proches, dans la chronique)
+    if (p.palier === 4 && vus.get(p.a) && vus.get(p.b)) {
+      const [x, y] = [vus.get(p.a), vus.get(p.b)].sort((m, n) => (m.id < n.id ? -1 : 1));
+      noterChronique(state, 'proche', { a: x.id, b: y.id, pa: x.prenom, pb: y.prenom });
+    }
     if (!annonce.has(p.palier)) continue;
     const v = vus.get(p.a);
     if (v) avis(v, `lien_${NOMS_LIENS[p.palier]}:${p.b}`);
@@ -445,6 +451,9 @@ export function formerFoyer(state, a, b, boite = null) {
   const f = { id: `fy-${n}`, membres: [a, b].sort(), maison: m.boite, jour: jourDe(state), enfant: null, attend: false };
   L.foyers.push(f);
   avis(va, `foyer:${b}`);
+  // (fiche I7g : le foyer formé, dans la chronique)
+  const [x, y] = [va, vb].sort((m, n) => (m.id < n.id ? -1 : 1));
+  noterChronique(state, 'foyer', { id: f.id, a: x.id, b: y.id, pa: x.prenom, pb: y.prenom });
   return { ok: true, foyer: f };
 }
 
@@ -523,6 +532,7 @@ export function arriverEnfant(state, o = {}) {
   f.attend = false;
   if (!amitieDe(state).pnj[v.id]) ajouterAmitie(state, v.id, Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0);
   for (const id of f.membres) { const p = trouverVillageois(state, id); if (p) avis(p, `enfant:${v.id}`); }
+  chroniqueArrivee(state, v, f.membres.map((id) => trouverVillageois(state, id)).filter(Boolean));   // (fiche I7g)
   return { ok: true, villageois: v };
 }
 

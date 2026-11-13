@@ -17,6 +17,8 @@ import { reparerPort } from './bac.js';
 import { decoderSegments, encoderSegments } from './dehors.js';
 import { VEHICULES } from './portage.js';
 import { commencerPaliers } from './paliers.js';
+import { nouveauxNoms, reparerNoms } from './noms.js';
+import { nouvelleChronique, reparerChronique } from './chronique.js';
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
@@ -170,7 +172,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
   s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s), caseDepart(farmTerrain(s))), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
   // le chantier « l'île à bâtir » allumé : la partie suit les paliers de l'île (paliers.js, fiche I7a)
-  if (villageActif(s)) { commencerPaliers(s); s.dehors = nouveauDehors(); s.port = nouveauPort(s.day); }
+  if (villageActif(s)) { commencerPaliers(s); s.dehors = nouveauDehors(); s.port = nouveauPort(s.day); s.noms = nouveauxNoms(s); s.chronique = nouvelleChronique(); }
   return s;
 }
 
@@ -957,7 +959,7 @@ export const MIGRATIONS = {
   // va, un didacticiel illisible est fini).
   94: (state) => {
     const out = { ...state, version: 95 };
-    if ('noms' in state) out.noms = reparerNoms(state.noms);
+    if ('noms' in state) reparerNoms(out);
     if ('didacticielIle' in state) out.didacticielIle = reparerDidacticielIle(state.didacticielIle);
     if (state.dehors && typeof state.dehors === 'object' && 'ferme' in state.dehors && state.dehors.ferme !== 'vierge') {
       const { ferme: _f, ...dehors } = state.dehors;
@@ -965,16 +967,19 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v95 → v96 (le chantier « l'île à bâtir », fiche I7g) : les noms (js/engine/noms.js : state.noms, l'île, le village, les
+  // commerces, les maisons) et la chronique (js/engine/chronique.js : state.chronique, ses lignes, ses épingles et les notes
+  // du joueur). Une partie du chantier (allumé, ou une partie d'essai) qui n'a pas de nom d'île en reçoit un, tiré de sa
+  // graine ; ses noms abîmés sont effacés (le village redevient sans nom) ; sa chronique est réparée (une ligne
+  // illisible s'en va, une note est bornée). Une partie d'avant le chantier n'est pas touchée.
+  95: (state) => {
+    const out = { ...state, version: 96 };
+    if (!villageActif(out) && !('noms' in out) && !('chronique' in out)) return out;
+    reparerNoms(out);
+    out.chronique = reparerChronique(out.chronique);
+    return out;
+  },
 };
-
-// Les noms d'une sauvegarde (la migration v92 → v93) : { ile } s'il est lisible (DEPART.NOM_MIN à NOM_MAX signes).
-function reparerNoms(n) {
-  const o = n && typeof n === 'object' && !Array.isArray(n) ? n : {}, out = {};
-  const ile = typeof o.ile === 'string' ? o.ile.trim().replace(/\s+/g, ' ') : '';
-  if (ile.length >= DATA.DEPART.NOM_MIN && ile.length <= DATA.DEPART.NOM_MAX) out.ile = ile;
-  for (const [k, v] of Object.entries(o)) if (k !== 'ile' && typeof v === 'string') out[k] = v;
-  return out;
-}
 
 // Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.
 function reparerDidacticielIle(d) {

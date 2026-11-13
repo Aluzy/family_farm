@@ -34,6 +34,7 @@ import { notify } from './toasts.js';
 import { direAvisLien, liensFicheHtml } from './liens.js';
 import { arriveeEnfantRefus, arriverEnfant } from '../engine/liens.js';
 import { goutTache, nomTrait, noterIndice, observerTraits, traitDef, traitsPourFiche } from '../engine/traits.js';
+import { maisonNomHtml } from './chronique-html.js';
 
 /* ---------- les villageois, côté page (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -377,7 +378,7 @@ export function ouvrirFicheVillageois(id) {
     <h2 id="villageois-title"><span class="villageois-portrait">${portrait(f)}</span> ${escapeHtml(f.prenom)}</h2>
     <p class="muted">${f.enfant ? 'Enfant' : `Villageois${f.genre === 'm' ? '' : 'e'}`} de l'île, ${escapeHtml(depuisTexte(f))}.</p>
     <dl class="villageois-fiche">
-      <dt>🏠 Maison</dt><dd>${escapeHtml(f.maison)}</dd>
+      <dt>🏠 Maison</dt><dd>${escapeHtml(f.maison)}${maisonNomHtml(state, trouverVillageois(state, id))}</dd>
       <dt>${HUMEUR_ICONE[f.humeur] || '🙂'} Humeur</dt><dd>${escapeHtml(f.humeurTexte)} · bonheur ${bonheurHtml(f)}</dd>
       ${traitsHtml(id)}
       ${amitieHtml(id, f)}
@@ -411,6 +412,7 @@ export function ouvrirListeVillageois() {
     <p class="muted">${V.length} villageois sur l'île. Un nouveau venu débarque un jour de bac s'il trouve une maison libre : une pièce close avec un lit libre et une boîte aux lettres contre sa porte.</p>
     <ul class="villageois-liste">${lignes}</ul>
     <div class="row"><button type="button" class="btn" data-action="liens-village">🤝 Les liens du village</button>
+    <button type="button" class="btn" data-action="chronique-open">📜 La chronique</button>
     <button type="button" class="btn primary" data-action="close-modal" id="villageois-liste-close">Fermer</button></div>`, { labelledBy: 'villageois-liste-title', className: 'modal bois villageois-modal', focus: '#villageois-liste-close', preventScroll: true });
 }
 

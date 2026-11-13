@@ -4,6 +4,7 @@ import { countItem, takeItem } from './inventory.js';
 import { habitantsDe } from './habitants.js';
 import { ajouterConfiance } from './recit.js';
 import { ajouterAmitie, cleDe } from './amitie.js';
+import { noterChronique } from './chronique.js';
 
 /* ---------- les projets collectifs des hameaux (data/projets.json, PROJETS ; le lot 5) ----------
 
@@ -113,6 +114,8 @@ export function projetsNuit(state) {
     ajouterConfiance(state, hid, PROJETS.FIN.CONFIANCE);
     for (const m of membres(state, hid)) ajouterAmitie(state, cleDe(m), PROJETS.FIN.AMITIE);
     out.push({ hameau: hid, sorte: pr.sorte });
+    // (l'île à bâtir, fiche I7g : le projet fini, dans la chronique ; rien le chantier éteint)
+    noterChronique(state, 'projet', { id: `${hid}:${pr.sorte}`, lieu: h.nom || '', nom: pr.nom.charAt(0).toLowerCase() + pr.nom.slice(1), icone: pr.icone });
   }
   return out;
 }

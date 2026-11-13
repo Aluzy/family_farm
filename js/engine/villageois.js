@@ -17,6 +17,7 @@ import { validApparence } from './family.js';
 import { bonheurDesLiens, foyerDe } from './liens.js';
 import { mangerSesProvisions, mangerSonPanier, plaisirDuJour, prendrePart } from './bourse.js';
 import { bonheurDesTraits, traitsTires } from './traits.js';
+import { chroniqueArrivee } from './chronique.js';
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -257,6 +258,8 @@ export function arriverVillageois(state, o = {}) {
   state.villageois.push(v);
   // (fiche I6a : la famille l'accueille, l'amitié commence à VILLAGE.AMITIE.ACCUEIL points, « poli »)
   if (!amitieDe(state).pnj[v.id]) ajouterAmitie(state, v.id, Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0);
+  // (fiche I7g : il s'installe, dans la chronique ; au troisième, le village prend un nom ; au dixième, sa ligne)
+  chroniqueArrivee(state, v);
   return { ok: true, villageois: v };
 }
 

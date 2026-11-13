@@ -17,6 +17,8 @@ import { jourDeBac, trouverVillageois, villageoisDe } from './villageois.js';
 import { connaissance } from './villageois-liens.js';
 import { evenementsVillageois, foyerDe, liensVillageois, voisinDe } from './liens.js';
 import { goutTache, noterIndice, partDesTraits, phraseTrait, sujetsDesTraits, traitsDe } from './traits.js';
+import { figurants, souvenirsDe } from './chronique.js';
+import { ileEnPhrase } from './noms.js';
 
 /* ---------- l'amitié avec les villageois (le chantier « l'île à bâtir », fiche I6a) ----------
 
@@ -203,6 +205,25 @@ const SUJETS_ILE = [
     return e ? { enfant: e.prenom, il_enfant: e.genre === 'm' ? 'Il' : 'Elle' } : null;
   }],
 ];
+// I7g (chronique.js) : un souvenir, une ligne de la chronique où il figure (souvenir_<type> : son arrivée, un lien devenu
+// proche, un foyer, un commerce ouvert, le dixième villageois, une fête ou un projet du village où il était), la plus
+// récente de ce type, vieille de CHRONIQUE.SOUVENIR.DEPUIS à JUSQUA jours. Les noms : ceux du jour de la ligne.
+for (const type of ['villageois', 'proche', 'foyer', 'commerce', 'dixieme', 'fete', 'projet']) {
+  SUJETS_ILE.push([`souvenir_${type}`, ({ state, v }) => {
+    const l = souvenirsDe(state, v.id).find((x) => x.type === type);
+    if (!l) return null;
+    const d = l.d || {}, autreId = figurants(l).find((x) => x !== v.id);
+    const autre = autreId ? (autreId === d.a ? d.pa : autreId === d.b ? d.pb : null) || (trouverVillageois(state, autreId) || {}).prenom : null;
+    if ((type === 'proche' || type === 'foyer') && !autre) return null;
+    const mots = { jours: jourDe(state) - l.jour, jour: l.jour, village: d.village || ileEnPhrase(d.ile) || 'l\'île' };
+    if (autre) mots.autre = autre;
+    if (d.commerce) mots.commerce = d.commerce;
+    if (type === 'fete' && d.nom) mots.fete = d.nom;
+    if (type === 'projet' && d.nom) mots.projet = d.nom;
+    for (const k of ['commerce', 'fete', 'projet']) if (mots[k]) mots[k.charAt(0).toUpperCase() + k.slice(1)] = mots[k].charAt(0).toUpperCase() + mots[k].slice(1);
+    return mots;
+  }]);
+}
 const CONDITIONS_ILE = Object.fromEntries(SUJETS_ILE);
 
 // Les sujets vrais pour le villageois `v` : [{ id, mots }] (les mots comptent {e}, l'accord de celui qui parle).

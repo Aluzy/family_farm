@@ -28,6 +28,7 @@ import { farmTerrain } from './terrain.js';
 import { chevalPossede } from './cheval.js';
 import { horsFerme } from './dehors.js';
 import { noterVenteBac } from './bac.js';
+import { chroniqueVente } from './chronique.js';
 
 const P = () => DATA.VILLAGE.PORTAGE;
 const nLots = (lots) => (Array.isArray(lots) ? lots.reduce((t, l) => t + (l.qty || 0), 0) : 0);
@@ -191,6 +192,7 @@ export function vendreCharge(state, item, qty) {
   const gain = encaisserVente(state, item, n, 'Port');
   bumpCounter(state, 'ventesPort', gain);   // (les paliers de l'île, paliers.js : ventesPort)
   noterVenteBac(state, item, n);            // (fiche I1c : la vente attend le bac, en caisses sur le quai)
+  chroniqueVente(state, item);              // (fiche I7g : la première vente au port, dans la chronique)
   return { ok: true, sold: n, gain };
 }
 

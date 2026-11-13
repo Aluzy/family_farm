@@ -50,6 +50,7 @@ import { couchages } from '../engine/blocs.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js';
 import { portTabsHtml, renderPort } from './port.js';
+import { chroniqueBouton } from './chronique.js';
 import { villageActif } from '../engine/village.js';
 import { renderChapterBanner } from './chapitres.js';
 import { paliersSuivis } from '../engine/paliers.js';
@@ -705,6 +706,8 @@ export function renderTabbar() {
       // L'Encyclopédie, un livre qui se remplit au fil de la partie (js/ui/encyclopedie.js)
       encyclopedieBouton() +
       carnetBouton() +
+      // (l'île à bâtir, fiche I7g : la chronique, à côté du carnet tant que le récit est là, I7c)
+      chroniqueBouton() +
       demandesBouton() +
       carteMondeBouton() +
       // Le mode test (activé dans les Options) : son panneau, par-dessus la carte.

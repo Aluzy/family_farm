@@ -10,6 +10,7 @@ import { fetesDuJour } from '../engine/fetes.js';
 import { ouvrirSecret } from '../engine/secrets.js';
 import { entreeEncyclopedie } from '../engine/encyclopedie.js';
 import { familyName, mainCharacter, setupPending } from '../engine/depart.js';
+import { nomAffiche } from '../engine/noms.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
@@ -680,8 +681,10 @@ function meubleDe(sorte, tile, etage = false) {
     // (un bac à fleurs : ce qui y pousse, sa peinture ; js/engine/bacs.js)
     const teinte = b.peinture && Number.isInteger(tile) && !etage ? varianteBloc(state, tile) : null;
     const couleurs = teinte ? couleursVariante(sorte, teinte) : null;
-    // (une enseigne de ferme : le nom de la famille, dans la couleur que sa peinture donne au texte)
-    const enseigne = b.enseigne ? { matiere: b.enseigne, nom: familyName(state), texte: texteEnseigne(b, teinte) } : null;
+    // (une enseigne de ferme : le nom de la famille, dans la couleur que sa peinture donne au texte ; fiche I7g, le
+    // panneau du village : le nom du village, sinon celui de l'île, js/engine/noms.js nomAffiche)
+    const enseigne = b.enseigne ? { matiere: b.enseigne, nom: familyName(state), texte: texteEnseigne(b, teinte) }
+      : b.panneau === 'village' ? { matiere: 'village', nom: nomAffiche(state), texte: texteEnseigne(b, teinte) } : null;
     return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
   }
   const sens = b && b.tourne && Number.isInteger(tile) ? (etage ? sensEtage(state, tile) : sensBloc(state, tile)) : 0;
@@ -697,7 +700,7 @@ function meubleDe(sorte, tile, etage = false) {
 function texteEnseigne(b, teinte) {
   const L = (DATA.PEINTURES || {})[b.peinture] || [];
   const v = L.find((x) => x.id === teinte) || L[0];
-  return (v && v.texte) || '#2a170c';
+  return (v && v.texte) || b.texte || '#2a170c';
 }
 
 // Le pont de planches (fiche I2) : son image selon son sens (0 et 2 : on le traverse du nord au sud ; 1 et 3 : d'ouest

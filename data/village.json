@@ -390,7 +390,10 @@
       "village_voisin (un villageois qu'il connaît : {ami}, {voisin}), village_collegue (la même tâche : {collegue}),",
       "village_nouveau (arrivé depuis 3 jours au plus : {qui}), village_depuis (depuis combien de jours il est là),",
       "port_bac (le bac passe demain). Les autres (le hameau, la calèche, les cousins, les fêtes, les projets) ne sont",
-      "pas dits par un villageois. {e} : l'accord de celui qui parle. Une phrase tient en une bulle."
+      "pas dits par un villageois. {e} : l'accord de celui qui parle. Une phrase tient en une bulle. Les souvenirs",
+      "(fiche I7g, souvenir_<type>) : une ligne de la chronique où il figure (CHRONIQUE.SOUVENIR) : {jours} (il y a",
+      "combien de jours), {jour}, {autre} (l'autre de la ligne), {commerce}, {fete}, {projet}, {village} (les noms",
+      "figés dans la ligne) ; {Commerce}… : la première lettre en capitale."
     ],
     "PROPOS": {
       "GARDES": ["ferme_vide", "ferme_moutons", "ferme_vaches", "ferme_ruches", "ferme_verger", "ferme_moulin", "gout_connu", "lune_pleine", "lune_nouvelle", "lune_croissante", "lune_decroissante", "meteo_pluie", "meteo_brume", "mois"],
@@ -413,7 +416,14 @@
       "entraide_donnee": ["J'ai porté un repas à {aide} : entre amis, c'est normal.", "{aide} se reposait : je lui ai apporté de la soupe."],
       "foyer": ["Avec {conjoint}, on a notre maison à nous. Merci pour tout !", "Vivre avec {conjoint}, c'est le bonheur tout simple.", "Le soir, avec {conjoint}, on regarde la lune depuis la porte."],
       "enfant": ["{enfant} a encore joué toute la journée sur la place !", "Tu as vu {enfant} ? {il_enfant} grandit si vite !"],
-      "port_bac": ["Le bac passe demain. Qui sait qui il amènera ?", "Demain, c'est jour de bac. J'irai voir le port !", "Le bac arrive demain : l'île va avoir de la visite."]
+      "port_bac": ["Le bac passe demain. Qui sait qui il amènera ?", "Demain, c'est jour de bac. J'irai voir le port !", "Le bac arrive demain : l'île va avoir de la visite."],
+      "souvenir_villageois": ["Tu te souviens du jour où j'ai débarqué du bac ? Il y a déjà {jours} jours !", "Il y a {jours} jours, je posais ma valise ici. Je m'en souviens comme d'hier.", "Le jour {jour}, je découvrais {village}. Quel souvenir !"],
+      "souvenir_proche": ["Tu te souviens ? Il y a {jours} jours, {autre} et moi, on est devenus inséparables.", "{autre}, c'est devenu quelqu'un de cher. Depuis le jour {jour}, on ne se quitte plus."],
+      "souvenir_foyer": ["Le jour {jour}, {autre} et moi, on a emménagé ensemble. Je n'oublierai pas.", "Ça fait {jours} jours qu'on vit sous le même toit, {autre} et moi."],
+      "souvenir_commerce": ["Tu te souviens du jour où j'ai ouvert {commerce} ?", "{Commerce} a ouvert il y a {jours} jours. Le temps passe !"],
+      "souvenir_dixieme": ["Quand je suis arrivé{e}, on est devenus dix au village. Tu te souviens ?", "Dixième villageois ! Ça m'a fait drôle, le jour {jour}."],
+      "souvenir_fete": ["Tu te souviens de {fete} ? Quelle journée !", "{Fete}, il y a {jours} jours… On en parle encore."],
+      "souvenir_projet": ["Tu te souviens quand on a fini {projet} ? Il y a {jours} jours déjà.", "{Projet} : quelle fierté d'y avoir mis la main !"]
     },
     "//LIENS": [
       "Les liens entre villageois (fiche I6b ; le moteur : js/engine/liens.js ; la scène : js/carte/ferme/villageois-social.js ;",
@@ -458,6 +468,83 @@
       "FOYER": { "PALIER": 4 },
       "ENFANT": { "PARENTS": 85 },
       "AVIS": [3, 4]
+    },
+    "//NOMS": [
+      "Les noms que le joueur donne (fiche I7g ; le moteur : js/engine/noms.js ; la page : js/ui/chronique.js). state.noms =",
+      "{ ile, village, commerces: { id: nom }, maisons: { boîte aux lettres: nom } }. L'île est nommée au départ (fiche",
+      "I7b ; une partie qui n'en a pas reçoit un nom tiré de sa graine) ; le village, quand le VILLAGE_A-ième villageois",
+      "adulte s'installe (le nom proposé est pris d'office et la page propose de le changer) ; un commerce, à son",
+      "ouverture (fiche I5a : nommerCommerce) ; une maison, si le joueur le veut (sa fiche). Tout se renomme à tout moment,",
+      "borné comme le nom de famille (DEPART.NOM_MIN à DEPART.NOM_MAX signes). Les noms proposés sont tirés de la graine",
+      "de la ferme et d'un rang (« un autre nom » tire le suivant) : ILE (« Île » et un complément), VILLAGE (un début et",
+      "une fin accolés), COMMERCES (le mot du commerce, son article, et un complément de COMPLEMENTS), MAISONS (« Maison »",
+      "et un complément). Un nom qui passerait NOM_MAX signes n'est pas proposé."
+    ],
+    "NOMS": {
+      "VILLAGE_A": 3,
+      "ILE": ["Île aux Mouettes", "Île des Brumes", "Île du Grand Vent", "Île aux Saules", "Île des Lucioles", "Île Clairelune", "Île aux Coquelicots", "Île de la Marée", "Île Belle-Anse", "Île des Trois Pins", "Île aux Hérons", "Île du Phare", "Île Douce-Lune", "Île des Galets", "Île aux Abeilles", "Île Verte-Rive"],
+      "VILLAGE": {
+        "DEBUTS": ["Pré", "Val", "Mont", "Bois", "Clair", "Beau", "Roche", "Fontaine", "Rive", "Haute", "Belle", "Font"],
+        "FINS": ["-Fleuri", "-Doré", "-Joli", "-sur-Mer", "-la-Lune", "-aux-Pins", "-le-Vent", "-Tranquille", "-des-Prés", "-les-Bains", "-Soleil", "-les-Saules"]
+      },
+      "COMMERCES": {
+        "forge": ["la", "Forge"], "mercerie": ["la", "Mercerie"], "scierie": ["la", "Scierie"], "boulangerie": ["la", "Boulangerie"],
+        "fromagerie": ["la", "Fromagerie"], "*": ["l'", "Échoppe"]
+      },
+      "COMPLEMENTS": ["du Vieux Chêne", "de la Lune", "du Coq", "de l'Ancre", "des Mouettes", "du Moulin", "du Port", "des Saules", "du Puits", "de l'Étoile", "des Galets", "du Pont"],
+      "MAISONS": ["des Saules", "du Puits", "des Roses", "du Vent", "des Galets", "de la Lune", "aux Volets Bleus", "du Verger", "des Lilas", "du Phare"]
+    },
+    "//CHRONIQUE": [
+      "La chronique de l'île (fiche I7g ; le moteur : js/engine/chronique.js ; la fenêtre : js/ui/chronique.js) : une",
+      "liste datée, écrite d'elle-même aux moments qui comptent, une ligne par événement (state.chronique.lignes).",
+      "noterChronique(state, type, donnees) est le seul point d'entrée : les autres fiches l'appellent (I5a un commerce",
+      "ouvert, I7f le résumé d'avant, I8a les fêtes et les projets du village). TYPES : pour chaque type, son icône,",
+      "son texte ({clé} : un champ des données ; {Clé} : le même, sa première lettre en capitale ; un champ absent",
+      "s'efface ; {lIle} : le nom de l'île dans une phrase, « l'Île aux Mouettes »), et sa clé (cle : une ligne de même clé ne s'écrit qu'une fois). Les noms (l'île, le village, les",
+      "prénoms) sont figés dans la ligne le jour où elle s'écrit : renommer change l'affichage (le titre, le panneau),",
+      "pas les lignes passées ; une ligne de nom écrite le jour même est corrigée (le baptême du jour). MAX : les",
+      "lignes gardées ; au-delà, les plus anciennes se résument par mois de lune (une ligne « mois » : ce qui s'y est",
+      "passé, compté avec RESUME), puis les résumés les plus anciens se fondent deux à deux ; une ligne épinglée ne se",
+      "résume jamais. EPINGLES : les lignes épinglées au plus ; NOTE_MAX : les signes d'une note du joueur (du texte",
+      "libre, échappé à l'affichage). SOUVENIR : un villageois parle d'une ligne où il figure (VILLAGE.PROPOS,",
+      "souvenir_<type>) après DEPUIS jours, jusqu'à JUSQUA jours."
+    ],
+    "CHRONIQUE": {
+      "MAX": 120,
+      "EPINGLES": 24,
+      "NOTE_MAX": 140,
+      "SOUVENIR": { "DEPUIS": 3, "JUSQUA": 120 },
+      "TYPES": {
+        "avant": { "icone": "📖", "texte": "{texte}", "cle": "avant:{id}" },
+        "arrivee": { "icone": "🏝️", "texte": "La famille {famille} débarque sur {lIle} : tout est à bâtir.", "cle": "arrivee" },
+        "recolte": { "icone": "🌱", "texte": "Première récolte de l'île : {culture}.", "cle": "recolte" },
+        "vente": { "icone": "⚓", "texte": "Première vente au port : {objet}.", "cle": "vente" },
+        "villageois": { "icone": "🧳", "texte": "{prenom} débarque du bac et s'installe sur l'île.", "cle": "villageois:{qui}" },
+        "enfant": { "icone": "👶", "texte": "{prenom} arrive par le bac chez {pa} et {pb}.", "cle": "villageois:{qui}" },
+        "village": { "icone": "🏘️", "texte": "Le village prend un nom : {village}.", "cle": "village" },
+        "village_nom": { "icone": "🏘️", "texte": "Le village s'appelle désormais {village}.", "cle": "village_nom:{jour}" },
+        "ile_nom": { "icone": "🏝️", "texte": "L'île s'appelle désormais {ile}.", "cle": "ile_nom:{jour}" },
+        "dixieme": { "icone": "🎉", "texte": "Avec {prenom}, {village} compte dix villageois.", "cle": "dixieme" },
+        "palier": { "icone": "🏅", "texte": "Palier {n} franchi : {titre}.", "cle": "palier:{n}" },
+        "port": { "icone": "🏗️", "texte": "Le port passe au niveau {niveau}.", "cle": "port:{niveau}" },
+        "commerce": { "icone": "🛠️", "texte": "{prenom} ouvre {commerce}.", "cle": "commerce:{id}" },
+        "proche": { "icone": "💞", "texte": "{pa} et {pb} deviennent proches.", "cle": "proche:{a}|{b}" },
+        "foyer": { "icone": "🏡", "texte": "{pa} et {pb} s'installent ensemble.", "cle": "foyer:{id}" },
+        "fete": { "icone": "🎊", "texte": "{Nom} {lieu}.", "cle": "fete:{id}:{jour}" },
+        "projet": { "icone": "🧱", "texte": "{Lieu} achève son projet : {nom}.", "cle": "projet:{id}" }
+      },
+      "RESUME": {
+        "villageois": ["un villageois arrivé", "{n} villageois arrivés"],
+        "enfant": ["un enfant arrivé", "{n} enfants arrivés"],
+        "palier": ["un palier franchi", "{n} paliers franchis"],
+        "port": ["le port agrandi", "le port agrandi {n} fois"],
+        "commerce": ["un commerce ouvert", "{n} commerces ouverts"],
+        "proche": ["deux villageois devenus proches", "{n} paires devenues proches"],
+        "foyer": ["un foyer formé", "{n} foyers formés"],
+        "fete": ["une fête", "{n} fêtes"],
+        "projet": ["un projet achevé", "{n} projets achevés"],
+        "*": ["un moment noté", "{n} moments notés"]
+      }
     },
     "//PALIERS": [
       "Les paliers de l'île (fiche I7a, js/engine/paliers.js) : avec ACTIF, une partie neuve suit ces sept paliers à la",
