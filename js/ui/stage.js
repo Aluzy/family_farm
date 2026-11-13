@@ -10,6 +10,7 @@ import { fetesDuJour } from '../engine/fetes.js';
 import { ouvrirSecret } from '../engine/secrets.js';
 import { entreeEncyclopedie } from '../engine/encyclopedie.js';
 import { familyName, mainCharacter, setupPending } from '../engine/depart.js';
+import { nomAffiche } from '../engine/noms.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
@@ -54,6 +55,7 @@ import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
 import { villageActif } from '../engine/village.js';
+import { dessinProjet } from '../engine/projets-village.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
 import {
   activeTab, axeMode, buildMode, coucher, ecranFerme, enLigne, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
@@ -77,6 +79,7 @@ import { casesOuvertesMonde, mondeCueillis, mondePris, noterIci } from '../engin
 import { botteFromStage, ramasserFromStage, verserChaineFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
 import { ouvrirDiagnosticChaine } from './chaines-aide.js';
 import { botteleuses } from '../engine/botteleuse.js';
+import { etalGarni } from '../engine/bourse.js';
 import { chaines } from '../engine/chaines.js';
 import { distributeurDe, distributeurs, grainDans } from '../engine/distributeur.js';
 import { chevalMonte, chevalOu, friandiseGalop, vitesseCheval } from '../engine/cheval.js';
@@ -94,6 +97,7 @@ import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.
 import { allerAuPuits, puiserFromStage } from './cruche.js';
 import { surbrillanceDidacticiel } from './didacticiel.js';
 import { surbrillanceObjectifs } from './objectifs.js';
+import { surbrillanceIle } from './didacticiel-ile.js';
 import { etapeDidacticiel, horsDeLaFerme } from '../engine/didacticiel.js';
 import { alerteFaim, alerteSortie, coiffeCarte, vitessePied } from '../engine/equipement.js';
 import { plantationModele } from './plantation.js';
@@ -615,7 +619,7 @@ export function stageModel() {
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)
-    surbrillance: surbrillanceDidacticiel() || surbrillanceObjectifs(),
+    surbrillance: surbrillanceDidacticiel() || surbrillanceIle() || surbrillanceObjectifs(),
     // planter un arbre depuis l'Inventaire (js/ui/plantation.js) : les cases possibles
     plantation: stageInterior ? null : plantationModele(),
     moulinTour: tour && tour.ok ? { ...tour.bornes, enMarche: batiments.moulin.enMarche } : null,
@@ -678,9 +682,11 @@ function meubleDe(sorte, tile, etage = false) {
     // (un bac à fleurs : ce qui y pousse, sa peinture ; js/engine/bacs.js)
     const teinte = b.peinture && Number.isInteger(tile) && !etage ? varianteBloc(state, tile) : null;
     const couleurs = teinte ? couleursVariante(sorte, teinte) : null;
-    // (une enseigne de ferme : le nom de la famille, dans la couleur que sa peinture donne au texte)
-    const enseigne = b.enseigne ? { matiere: b.enseigne, nom: familyName(state), texte: texteEnseigne(b, teinte) } : null;
-    return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
+    // (une enseigne de ferme : le nom de la famille, dans la couleur que sa peinture donne au texte ; fiche I7g, le
+    // panneau du village : le nom du village, sinon celui de l'île, js/engine/noms.js nomAffiche)
+    const enseigne = b.enseigne ? { matiere: b.enseigne, nom: familyName(state), texte: texteEnseigne(b, teinte) }
+      : b.panneau === 'village' ? { matiere: 'village', nom: nomAffiche(state), texte: texteEnseigne(b, teinte) } : null;
+    return { meuble: { dessin: dessinBloc(b, tile, sorte), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
   }
   const sens = b && b.tourne && Number.isInteger(tile) ? (etage ? sensEtage(state, tile) : sensBloc(state, tile)) : 0;
   if (!b || !b.meuble) return sens ? { sens } : {};
@@ -695,7 +701,7 @@ function meubleDe(sorte, tile, etage = false) {
 function texteEnseigne(b, teinte) {
   const L = (DATA.PEINTURES || {})[b.peinture] || [];
   const v = L.find((x) => x.id === teinte) || L[0];
-  return (v && v.texte) || '#2a170c';
+  return (v && v.texte) || b.texte || '#2a170c';
 }
 
 // Le pont de planches (fiche I2) : son image selon son sens (0 et 2 : on le traverse du nord au sud ; 1 et 3 : d'ouest
@@ -709,8 +715,12 @@ function dessinPont(tile) {
 
 // L'image d'un bloc dessiné comme un meuble : le distributeur selon son blé (assets/
 // meuble_distributeur_<0 à 4>.png : vide à plein), la mangeoire pleine tant qu'il en a.
-function dessinBloc(b, tile) {
+function dessinBloc(b, tile, sorte) {
   if (b.pont) return dessinPont(tile);
+  // (I4 : l'étal, garni tant qu'il a quelque chose en vente : assets/meuble_etal_<vide|garni>.png)
+  if (b.etal) return etalGarni(state) ? 'etal_garni' : 'etal_vide';
+  // (fiche I8a : un bâtiment d'un projet du village, en chantier tant qu'il n'est pas fini ; js/engine/projets-village.js)
+  if (b.projetVillage) return dessinProjet(state, sorte);
   if (b.bac) return (Number.isInteger(tile) && dessinBac(state, tile)) || `bac_${b.bac}_vide`;
   if (b.distributeur === 'machine') {
     const f = grainDans(state, tile) / DATA.DISTRIBUTEUR.CAPACITE;

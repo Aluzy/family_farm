@@ -10,11 +10,20 @@
 
 import { DATA } from './catalog.js';
 import { commencerPaliers } from './paliers.js';
+import { nouveauxNoms } from './noms.js';
+import { nouvelleChronique } from './chronique.js';
 
 // Le dehors d'une partie neuve du chantier (fiche I2, js/engine/dehors.js) : le tronçon du port est à convertir en
 // chemins du joueur (le Web Worker du sol le fait, ou dehors.js assurerTroncon dans Node).
 export function nouveauDehors() {
   return { troncon: 'a_poser', chemins: [] };
+}
+
+// La ferme de la partie est-elle une terre vierge (fiche I7b) ? Le chantier allumé, une partie commencée par le nouveau
+// départ (depart-ile.js commencerNouveauDepart pose state.dehors.ferme : 'vierge' ; une partie d'essai d'avant garde le
+// chemin peint de sa ferme).
+export function fermeVierge(state) {
+  return villageActif(state) && !!(state && state.dehors && state.dehors.ferme === 'vierge');
 }
 
 // Le port d'une partie neuve du chantier (fiche I1c, js/engine/bac.js : state.port) : son niveau de départ, le dernier
@@ -37,6 +46,9 @@ export function allumerEssaiVillage(state) {
   state.essais = { ...(state.essais || {}), village: true };
   if (!state.dehors) state.dehors = nouveauDehors();
   if (!state.port) state.port = nouveauPort(state.day);
+  // (fiche I7g : les noms de l'île, js/engine/noms.js, et sa chronique, js/engine/chronique.js)
+  if (!state.noms) state.noms = nouveauxNoms(state);
+  if (!state.chronique) state.chronique = nouvelleChronique();
   return commencerPaliers(state);
 }
 

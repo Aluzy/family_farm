@@ -1,4 +1,5 @@
-import { DATA } from './catalog.js';
+import { DATA, prixIle } from './catalog.js';
+import { villageActif } from './village.js';
 import { EPS } from './base.js';
 import { fail, marcheFerme, marcheOuvert, NO_COINS, pay, percentCeil } from './devices.js';
 import { earn } from './compta.js';
@@ -41,13 +42,15 @@ export function isBuyable(item) {
   return !!def && def.rachetable !== false && !def.retire && (isGraineComptoir(item) || def.comptoir === true);
 }
 
-export function sellPrice(item) {
-  return DATA.OBJETS[item].prix;
+// Le prix de vente d'une unité. Fiche I4 : sur l'île (`state` allumé, villageActif), le prix de l'île (catalog.js
+// prixIle : des filières qui paient) ; le jeu d'avant, le prix écrit.
+export function sellPrice(item, state = null) {
+  return state && villageActif(state) ? prixIle(item) : DATA.OBJETS[item].prix;
 }
 
 // Prix de la prochaine unité achetée.
 export function buyPrice(state, item) {
-  return percentCeil(sellPrice(item), marketCoef(state, item));
+  return percentCeil(sellPrice(item, state), marketCoef(state, item));
 }
 
 // Devis d'un achat de `qty` unités, sans rien modifier : le prix monte d'un
@@ -61,7 +64,7 @@ export function buyQuote(state, item, qty = 1) {
   let quantite = 0;
   let cout = 0;
   for (let i = 0; i < Math.max(0, Math.floor(Number(qty)) || 0); i++) {
-    const price = percentCeil(sellPrice(item), coef);
+    const price = percentCeil(sellPrice(item, state), coef);
     if (pieces + EPS < price) break;
     pieces -= price;
     cout += price;
@@ -123,7 +126,7 @@ export function sellItem(state, item, qty, libelle = 'Vente') {
 // Le paiement de `n` unités vendues (déjà sorties du stock : sellItem, ou la malle de la calèche, caleche.js) :
 // les pièces au prix de vente, l'XP, le cours qui baisse d'un pas par unité, les déblocages. → le gain.
 export function encaisserVente(state, item, n, libelle = 'Vente') {
-  const gain = n * sellPrice(item);
+  const gain = n * sellPrice(item, state);
   earn(state, gain, `${libelle} : ${DATA.OBJETS[item].nom}`, n);
   gainActionXp(state, 'vendre', gain); // version 1.7 : 1 XP par pièce gagnée
   setMarketCoef(state, item, marketCoef(state, item) - DATA.MARCHE.PAS * n);

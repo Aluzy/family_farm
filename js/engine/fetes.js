@@ -20,6 +20,7 @@ import { addItem } from './inventory.js';
 import { habitantsDe } from './habitants.js';
 import { ajouterAmitie, cleDe } from './amitie.js';
 import { deHameau } from './bienvenue.js';
+import { noterChronique } from './chronique.js';
 
 const FE = () => DATA.FETES;
 const MOIS = () => DATA.LUNE.JOURS_MOIS;
@@ -96,6 +97,8 @@ export function allerALaFete(state, hid, heure) {
   const plats = DATA.BIENVENUE.PLATS, item = plats[h && h.metier] || plats['*'];
   const cadeau = item && DATA.OBJETS[item] ? { item, n: 1 } : null;
   if (cadeau) addItem(state, cadeau.item, cadeau.n);
+  // (l'île à bâtir, fiche I7g : la fête où la famille est allée, dans la chronique ; rien le chantier éteint)
+  noterChronique(state, 'fete', { id: hid, jour: f.jour, nom: f.nom, lieu: f.aHameau, icone: f.icone });
   return { ok: true, nom: f.nom, icone: f.icone, nomHameau: f.nomHameau, deHameau: f.deHameau, amis, points: FE().AMITIE, cadeau };
 }
 

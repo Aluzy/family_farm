@@ -1580,8 +1580,67 @@ export const RAW_DATA = {
       "rachetable": false,
       "village": true
     },
+    "etal": { "nom": "Étal", "icone": "🛒", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "panneau_village": {
+      "nom": "Panneau du village",
+      "icone": "🪧",
+      "prix": 4,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "quai_chargement": {
+      "nom": "Quai de chargement",
+      "icone": "🏗️",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
     "brouette": { "nom": "Brouette", "icone": "🛒", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "charrette": { "nom": "Charrette", "icone": "🛞", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "lavoir": {
+      "nom": "Lavoir",
+      "icone": "🧺",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "village": true
+    },
+    "kiosque": {
+      "nom": "Kiosque",
+      "icone": "🎶",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "village": true
+    },
+    "fontaine_village": {
+      "nom": "Fontaine du village",
+      "icone": "⛲",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "village": true
+    },
+    "four_commun": {
+      "nom": "Four commun",
+      "icone": "🔥",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "village": true
+    },
     "casque_lampe": { "nom": "Casque à lampe", "icone": "⛑‍💡", "prix": 30, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "chapeau_paille": { "nom": "Chapeau de paille", "icone": "👒‍🌾", "prix": 6, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "bottes": { "nom": "Bottes de marche", "icone": "👢‍🟫", "prix": 10, "mangeable": false, "categorie": "équipement", "rachetable": false },
@@ -2038,102 +2097,118 @@ export const RAW_DATA = {
     "NIVEAU": 1,
     "CONSTRUCTION": { "bois": 3, "pierre": 3 },
     "RECETTES": {
-      "planche": { "entrees": { "bois": 2 }, "sortie": { "planche": 1 } },
-      "mur_pierre": { "entrees": { "pierre": 4 }, "sortie": { "mur_pierre": 1 } },
-      "mur_fenetre": { "entrees": { "pierre": 3, "planche": 1 }, "sortie": { "mur_fenetre": 1 } },
-      "fenetre_ronde": { "entrees": { "pierre": 2, "planche": 1 }, "sortie": { "fenetre_ronde": 1 } },
-      "fenetre_cintree": { "entrees": { "pierre": 3, "planche": 2 }, "sortie": { "fenetre_cintree": 1 } },
-      "fenetre_volets": { "entrees": { "planche": 3, "pierre": 1, "colorant_vert": 1 }, "sortie": { "fenetre_volets": 1 } },
+      "planche": { "entrees": { "bois": 2 }, "sortie": { "planche": 1 }, "coefPrix": 145 },
+      "mur_pierre": { "entrees": { "pierre": 4 }, "sortie": { "mur_pierre": 1 }, "coefPrix": 135 },
+      "mur_fenetre": { "entrees": { "pierre": 3, "planche": 1 }, "sortie": { "mur_fenetre": 1 }, "coefPrix": 145 },
+      "fenetre_ronde": { "entrees": { "pierre": 2, "planche": 1 }, "sortie": { "fenetre_ronde": 1 }, "coefPrix": 145 },
+      "fenetre_cintree": { "entrees": { "pierre": 3, "planche": 2 }, "sortie": { "fenetre_cintree": 1 }, "coefPrix": 145 },
+      "fenetre_volets": { "entrees": { "planche": 3, "pierre": 1, "colorant_vert": 1 }, "sortie": { "fenetre_volets": 1 }, "coefPrix": 150 },
       "fenetre_vitrail": {
         "entrees": { "pierre": 3, "lingot_cuivre": 1, "colorant_bleu": 1, "colorant_jaune": 1 },
-        "sortie": { "fenetre_vitrail": 1 }
+        "sortie": { "fenetre_vitrail": 1 },
+        "coefPrix": 150
       },
-      "pierre_angle": { "entrees": { "pierre": 5 }, "sortie": { "pierre_angle": 1 } },
-      "mur_brique_rouge": { "entrees": { "pierre": 3, "colorant_rouge": 1 }, "sortie": { "mur_brique_rouge": 1 } },
-      "mur_brique_orange": { "entrees": { "pierre": 3, "colorant_orange": 1 }, "sortie": { "mur_brique_orange": 1 } },
-      "mur_brique_ocre": { "entrees": { "pierre": 3, "colorant_jaune": 1 }, "sortie": { "mur_brique_ocre": 1 } },
-      "mur_brique_bleue": { "entrees": { "pierre": 3, "colorant_bleu": 1 }, "sortie": { "mur_brique_bleue": 1 } },
-      "mur_pierre_taille": { "entrees": { "pierre": 5 }, "sortie": { "mur_pierre_taille": 1 } },
-      "mur_bois": { "entrees": { "bois": 2 }, "sortie": { "mur_bois": 1 } },
-      "cruche": { "entrees": { "bois": 3 }, "sortie": { "cruche": 1 } },
-      "paroi_vitree": { "entrees": { "pierre": 2, "lingot_fer": 1 }, "sortie": { "paroi_vitree": 1 } },
-      "porte": { "entrees": { "planche": 3 }, "sortie": { "porte": 1 } },
-      "plancher": { "entrees": { "bois": 2 }, "sortie": { "plancher": 1 } },
-      "porte_chene": { "entrees": { "planche": 4 }, "sortie": { "porte_chene": 1 } },
-      "porte_vitree": { "entrees": { "planche": 2, "lingot_fer": 1 }, "sortie": { "porte_vitree": 1 } },
-      "porte_grange": { "entrees": { "planche": 3, "bois": 1 }, "sortie": { "porte_grange": 1 } },
-      "porte_bleue": { "entrees": { "planche": 3, "colorant_bleu": 1 }, "sortie": { "porte_bleue": 1 } },
-      "porte_fer": { "entrees": { "lingot_fer": 2, "planche": 1 }, "sortie": { "porte_fer": 1 } },
-      "porte_ecurie": { "entrees": { "planche": 4, "fibre": 1 }, "sortie": { "porte_ecurie": 1 } },
-      "porte_blanche": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "porte_blanche": 1 } },
-      "sol_dalles": { "entrees": { "pierre": 2 }, "sortie": { "sol_dalles": 1 } },
-      "sol_carrelage": { "entrees": { "pierre": 2, "bois": 1 }, "sortie": { "sol_carrelage": 2 } },
-      "sol_tomettes": { "entrees": { "pierre": 1, "bois": 1 }, "sortie": { "sol_tomettes": 1 } },
-      "sol_chevrons": { "entrees": { "bois": 3 }, "sortie": { "sol_chevrons": 1 } },
-      "sol_marbre": { "entrees": { "pierre": 4 }, "sortie": { "sol_marbre": 1 } },
-      "sol_paves": { "entrees": { "pierre": 2 }, "sortie": { "sol_paves": 2 } },
-      "sol_mosaique": { "entrees": { "pierre": 3, "lingot_cuivre": 1 }, "sortie": { "sol_mosaique": 2 } },
-      "barriere": { "entrees": { "planche": 1 }, "sortie": { "barriere": 2 } },
-      "barriere_blanche": { "entrees": { "planche": 1 }, "sortie": { "barriere_blanche": 2 } },
-      "barriere_rouge": { "entrees": { "planche": 1 }, "sortie": { "barriere_rouge": 2 } },
-      "barriere_grise": { "entrees": { "planche": 1 }, "sortie": { "barriere_grise": 2 } },
-      "barriere_chene": { "entrees": { "planche": 1 }, "sortie": { "barriere_chene": 2 } },
-      "barriere_verte": { "entrees": { "planche": 1 }, "sortie": { "barriere_verte": 2 } },
-      "barriere_lavande": { "entrees": { "planche": 1 }, "sortie": { "barriere_lavande": 2 } },
-      "portail": { "entrees": { "planche": 2 }, "sortie": { "portail": 1 } },
-      "chemin": { "entrees": { "pierre": 1 }, "sortie": { "chemin": 2 } },
-      "sol_pas_ardoise": { "entrees": { "pierre": 2 }, "sortie": { "sol_pas_ardoise": 2 } },
-      "sol_pas_pierre": { "entrees": { "pierre": 2 }, "sortie": { "sol_pas_pierre": 2 } },
-      "sol_pas_bois": { "entrees": { "bois": 2 }, "sortie": { "sol_pas_bois": 2 } },
-      "lanterne": { "entrees": { "champignon_lumineux": 1, "bois": 2 }, "sortie": { "lanterne": 1 } },
-      "candelabre": { "entrees": { "lingot_fer": 2, "pierre": 1, "huile": 1, "fibre": 1 }, "sortie": { "candelabre": 1 } },
-      "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 } },
-      "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
-      "boite_aux_lettres": { "entrees": { "planche": 2, "bois": 1 }, "sortie": { "boite_aux_lettres": 1 }, "village": true },
-      "pont_planches": { "entrees": { "planche": 3, "bois": 2 }, "sortie": { "pont_planches": 2 }, "village": true },
-      "brouette": { "entrees": { "planche": 4, "lingot_fer": 1, "bois": 2 }, "sortie": { "brouette": 1 }, "village": true },
+      "pierre_angle": { "entrees": { "pierre": 5 }, "sortie": { "pierre_angle": 1 }, "coefPrix": 135 },
+      "mur_brique_rouge": { "entrees": { "pierre": 3, "colorant_rouge": 1 }, "sortie": { "mur_brique_rouge": 1 }, "coefPrix": 145 },
+      "mur_brique_orange": { "entrees": { "pierre": 3, "colorant_orange": 1 }, "sortie": { "mur_brique_orange": 1 }, "coefPrix": 145 },
+      "mur_brique_ocre": { "entrees": { "pierre": 3, "colorant_jaune": 1 }, "sortie": { "mur_brique_ocre": 1 }, "coefPrix": 145 },
+      "mur_brique_bleue": { "entrees": { "pierre": 3, "colorant_bleu": 1 }, "sortie": { "mur_brique_bleue": 1 }, "coefPrix": 145 },
+      "mur_pierre_taille": { "entrees": { "pierre": 5 }, "sortie": { "mur_pierre_taille": 1 }, "coefPrix": 135 },
+      "mur_bois": { "entrees": { "bois": 2 }, "sortie": { "mur_bois": 1 }, "coefPrix": 145 },
+      "cruche": { "entrees": { "bois": 3 }, "sortie": { "cruche": 1 }, "coefPrix": 135 },
+      "paroi_vitree": { "entrees": { "pierre": 2, "lingot_fer": 1 }, "sortie": { "paroi_vitree": 1 }, "coefPrix": 145 },
+      "porte": { "entrees": { "planche": 3 }, "sortie": { "porte": 1 }, "coefPrix": 135 },
+      "plancher": { "entrees": { "bois": 2 }, "sortie": { "plancher": 1 }, "coefPrix": 145 },
+      "porte_chene": { "entrees": { "planche": 4 }, "sortie": { "porte_chene": 1 }, "coefPrix": 135 },
+      "porte_vitree": { "entrees": { "planche": 2, "lingot_fer": 1 }, "sortie": { "porte_vitree": 1 }, "coefPrix": 145 },
+      "porte_grange": { "entrees": { "planche": 3, "bois": 1 }, "sortie": { "porte_grange": 1 }, "coefPrix": 145 },
+      "porte_bleue": { "entrees": { "planche": 3, "colorant_bleu": 1 }, "sortie": { "porte_bleue": 1 }, "coefPrix": 145 },
+      "porte_fer": { "entrees": { "lingot_fer": 2, "planche": 1 }, "sortie": { "porte_fer": 1 }, "coefPrix": 145 },
+      "porte_ecurie": { "entrees": { "planche": 4, "fibre": 1 }, "sortie": { "porte_ecurie": 1 }, "coefPrix": 145 },
+      "porte_blanche": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "porte_blanche": 1 }, "coefPrix": 145 },
+      "sol_dalles": { "entrees": { "pierre": 2 }, "sortie": { "sol_dalles": 1 }, "coefPrix": 135 },
+      "sol_carrelage": { "entrees": { "pierre": 2, "bois": 1 }, "sortie": { "sol_carrelage": 2 }, "coefPrix": 145 },
+      "sol_tomettes": { "entrees": { "pierre": 1, "bois": 1 }, "sortie": { "sol_tomettes": 1 }, "coefPrix": 145 },
+      "sol_chevrons": { "entrees": { "bois": 3 }, "sortie": { "sol_chevrons": 1 }, "coefPrix": 135 },
+      "sol_marbre": { "entrees": { "pierre": 4 }, "sortie": { "sol_marbre": 1 }, "coefPrix": 135 },
+      "sol_paves": { "entrees": { "pierre": 2 }, "sortie": { "sol_paves": 2 }, "coefPrix": 135 },
+      "sol_mosaique": { "entrees": { "pierre": 3, "lingot_cuivre": 1 }, "sortie": { "sol_mosaique": 2 }, "coefPrix": 145 },
+      "barriere": { "entrees": { "planche": 1 }, "sortie": { "barriere": 2 }, "coefPrix": 135 },
+      "barriere_blanche": { "entrees": { "planche": 1 }, "sortie": { "barriere_blanche": 2 }, "coefPrix": 135 },
+      "barriere_rouge": { "entrees": { "planche": 1 }, "sortie": { "barriere_rouge": 2 }, "coefPrix": 135 },
+      "barriere_grise": { "entrees": { "planche": 1 }, "sortie": { "barriere_grise": 2 }, "coefPrix": 135 },
+      "barriere_chene": { "entrees": { "planche": 1 }, "sortie": { "barriere_chene": 2 }, "coefPrix": 135 },
+      "barriere_verte": { "entrees": { "planche": 1 }, "sortie": { "barriere_verte": 2 }, "coefPrix": 135 },
+      "barriere_lavande": { "entrees": { "planche": 1 }, "sortie": { "barriere_lavande": 2 }, "coefPrix": 135 },
+      "portail": { "entrees": { "planche": 2 }, "sortie": { "portail": 1 }, "coefPrix": 135 },
+      "chemin": { "entrees": { "pierre": 1 }, "sortie": { "chemin": 2 }, "coefPrix": 135 },
+      "sol_pas_ardoise": { "entrees": { "pierre": 2 }, "sortie": { "sol_pas_ardoise": 2 }, "coefPrix": 135 },
+      "sol_pas_pierre": { "entrees": { "pierre": 2 }, "sortie": { "sol_pas_pierre": 2 }, "coefPrix": 135 },
+      "sol_pas_bois": { "entrees": { "bois": 2 }, "sortie": { "sol_pas_bois": 2 }, "coefPrix": 135 },
+      "lanterne": { "entrees": { "champignon_lumineux": 1, "bois": 2 }, "sortie": { "lanterne": 1 }, "coefPrix": 145 },
+      "candelabre": { "entrees": { "lingot_fer": 2, "pierre": 1, "huile": 1, "fibre": 1 }, "sortie": { "candelabre": 1 }, "coefPrix": 150 },
+      "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 }, "coefPrix": 135 },
+      "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 }, "coefPrix": 135 },
+      "boite_aux_lettres": { "entrees": { "planche": 2, "bois": 1 }, "sortie": { "boite_aux_lettres": 1 }, "village": true, "coefPrix": 145 },
+      "pont_planches": { "entrees": { "planche": 3, "bois": 2 }, "sortie": { "pont_planches": 2 }, "village": true, "coefPrix": 145 },
+      "etal": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "etal": 1 }, "village": true, "coefPrix": 145 },
+      "brouette": { "entrees": { "planche": 4, "lingot_fer": 1, "bois": 2 }, "sortie": { "brouette": 1 }, "village": true, "coefPrix": 150 },
       "charrette": {
         "entrees": { "planche": 10, "lingot_fer": 3, "bois": 6, "corde": 2 },
         "sortie": { "charrette": 1 },
         "village": true,
-        "debloque": "ecurie"
+        "debloque": "ecurie",
+        "coefPrix": 150
       },
-      "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
-      "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
-      "mortier": { "entrees": { "pierre": 4, "planche": 1 }, "sortie": { "mortier": 1 } },
-      "puits_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "puits_pierre": 1 } },
-      "nichoir": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "nichoir": 1 } },
-      "mangeoire": { "entrees": { "planche": 6, "pierre": 4, "fibre": 2 }, "sortie": { "mangeoire": 1 } },
-      "ratelier": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "ratelier": 1 }, "debloque": "ecurie" },
-      "corde": { "entrees": { "fibre": 3 }, "sortie": { "corde": 1 }, "debloque": "ecurie" },
-      "poteau_attache": { "entrees": { "bois": 2 }, "sortie": { "poteau_attache": 1 }, "debloque": "ecurie" },
-      "bac_semis": { "entrees": { "planche": 8, "pierre": 4, "fibre": 4 }, "sortie": { "bac_semis": 1 } },
-      "bloc_silo": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "bloc_silo": 1 }, "debloque": "silo" },
-      "meule": { "entrees": { "pierre": 10, "planche": 4 }, "sortie": { "meule": 1 } },
-      "pompe": { "entrees": { "lingot_fer": 2, "planche": 1 }, "sortie": { "pompe": 1 }, "debloque": "energie" },
+      "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 }, "coefPrix": 145 },
+      "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 }, "coefPrix": 145 },
+      "mortier": { "entrees": { "pierre": 4, "planche": 1 }, "sortie": { "mortier": 1 }, "coefPrix": 145 },
+      "puits_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "puits_pierre": 1 }, "coefPrix": 145 },
+      "nichoir": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "nichoir": 1 }, "coefPrix": 145 },
+      "mangeoire": { "entrees": { "planche": 6, "pierre": 4, "fibre": 2 }, "sortie": { "mangeoire": 1 }, "coefPrix": 150 },
+      "ratelier": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "ratelier": 1 }, "debloque": "ecurie", "coefPrix": 145 },
+      "corde": { "entrees": { "fibre": 3 }, "sortie": { "corde": 1 }, "debloque": "ecurie", "coefPrix": 135 },
+      "poteau_attache": { "entrees": { "bois": 2 }, "sortie": { "poteau_attache": 1 }, "debloque": "ecurie", "coefPrix": 145 },
+      "bac_semis": { "entrees": { "planche": 8, "pierre": 4, "fibre": 4 }, "sortie": { "bac_semis": 1 }, "coefPrix": 150 },
+      "bloc_silo": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "bloc_silo": 1 }, "debloque": "silo", "coefPrix": 145 },
+      "meule": { "entrees": { "pierre": 10, "planche": 4 }, "sortie": { "meule": 1 }, "coefPrix": 145 },
+      "pompe": { "entrees": { "lingot_fer": 2, "planche": 1 }, "sortie": { "pompe": 1 }, "debloque": "energie", "coefPrix": 145 },
       "panneau_solaire": {
         "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "planche": 2 },
         "sortie": { "panneau_solaire": 1 },
-        "debloque": "energie"
+        "debloque": "energie",
+        "coefPrix": 150
       },
-      "citerne": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "citerne": 1 }, "debloque": "energie" },
-      "batterie": { "entrees": { "lingot_cuivre": 2, "lingot_fer": 1 }, "sortie": { "batterie": 1 }, "debloque": "energie" },
-      "escalier": { "entrees": { "planche": 6, "bois": 2 }, "sortie": { "escalier": 1 } },
-      "station_robot": { "entrees": { "lingot_fer": 1, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "station_robot": 1 } },
-      "entonnoir": { "entrees": { "planche": 2, "pierre": 1 }, "sortie": { "entonnoir": 1 } },
-      "botteleuse": { "entrees": { "planche": 4, "pierre": 6 }, "sortie": { "botteleuse": 1 } },
-      "convoyeur": { "entrees": { "planche": 2, "fibre": 2 }, "sortie": { "convoyeur": 2 } },
-      "reservoir": { "entrees": { "planche": 3, "lingot_fer": 2 }, "sortie": { "reservoir": 1 }, "debloque": "chaines" },
-      "pressoir": { "entrees": { "planche": 2, "lingot_fer": 2 }, "sortie": { "pressoir": 1 }, "debloque": "chaines" },
-      "centrifugeuse": { "entrees": { "lingot_fer": 3, "lingot_cuivre": 1 }, "sortie": { "centrifugeuse": 1 }, "debloque": "chaines" },
-      "mixeur": { "entrees": { "lingot_fer": 2, "pierre": 2 }, "sortie": { "mixeur": 1 }, "debloque": "chaines" },
-      "chaudron": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1 }, "sortie": { "chaudron": 1 }, "debloque": "chaines" },
-      "tonneau": { "entrees": { "planche": 4, "lingot_fer": 1 }, "sortie": { "tonneau": 1 }, "debloque": "chaines" },
-      "ensacheuse": { "entrees": { "lingot_fer": 2, "planche": 2 }, "sortie": { "ensacheuse": 1 }, "debloque": "chaines" },
-      "tonnelet": { "entrees": { "planche": 3, "lingot_fer": 1 }, "sortie": { "tonnelet": 1 }, "debloque": "chaines" },
-      "bac_compost": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "bac_compost": 1 } },
-      "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler" },
-      "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler" },
+      "citerne": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "citerne": 1 }, "debloque": "energie", "coefPrix": 145 },
+      "batterie": { "entrees": { "lingot_cuivre": 2, "lingot_fer": 1 }, "sortie": { "batterie": 1 }, "debloque": "energie", "coefPrix": 145 },
+      "escalier": { "entrees": { "planche": 6, "bois": 2 }, "sortie": { "escalier": 1 }, "coefPrix": 145 },
+      "station_robot": { "entrees": { "lingot_fer": 1, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "station_robot": 1 }, "coefPrix": 150 },
+      "entonnoir": { "entrees": { "planche": 2, "pierre": 1 }, "sortie": { "entonnoir": 1 }, "coefPrix": 145 },
+      "botteleuse": { "entrees": { "planche": 4, "pierre": 6 }, "sortie": { "botteleuse": 1 }, "coefPrix": 145 },
+      "convoyeur": { "entrees": { "planche": 2, "fibre": 2 }, "sortie": { "convoyeur": 2 }, "coefPrix": 145 },
+      "reservoir": { "entrees": { "planche": 3, "lingot_fer": 2 }, "sortie": { "reservoir": 1 }, "debloque": "chaines", "coefPrix": 145 },
+      "pressoir": { "entrees": { "planche": 2, "lingot_fer": 2 }, "sortie": { "pressoir": 1 }, "debloque": "chaines", "coefPrix": 145 },
+      "centrifugeuse": {
+        "entrees": { "lingot_fer": 3, "lingot_cuivre": 1 },
+        "sortie": { "centrifugeuse": 1 },
+        "debloque": "chaines",
+        "coefPrix": 145
+      },
+      "mixeur": { "entrees": { "lingot_fer": 2, "pierre": 2 }, "sortie": { "mixeur": 1 }, "debloque": "chaines", "coefPrix": 145 },
+      "chaudron": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1 }, "sortie": { "chaudron": 1 }, "debloque": "chaines", "coefPrix": 145 },
+      "tonneau": { "entrees": { "planche": 4, "lingot_fer": 1 }, "sortie": { "tonneau": 1 }, "debloque": "chaines", "coefPrix": 145 },
+      "ensacheuse": { "entrees": { "lingot_fer": 2, "planche": 2 }, "sortie": { "ensacheuse": 1 }, "debloque": "chaines", "coefPrix": 145 },
+      "tonnelet": { "entrees": { "planche": 3, "lingot_fer": 1 }, "sortie": { "tonnelet": 1 }, "debloque": "chaines", "coefPrix": 145 },
+      "bac_compost": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "bac_compost": 1 }, "coefPrix": 145 },
+      "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler", "coefPrix": 145 },
+      "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler", "coefPrix": 145 },
+      "panneau_village": { "entrees": { "planche": 3, "bois": 2 }, "sortie": { "panneau_village": 1 }, "village": true },
+      "quai_chargement": {
+        "entrees": { "planche": 12, "pierre": 8, "lingot_fer": 2 },
+        "sortie": { "quai_chargement": 1 },
+        "village": true,
+        "port": 2
+      },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
@@ -2162,17 +2237,22 @@ export const RAW_DATA = {
         "debloque": "ecurie"
       },
       "sacoche_cheval": { "nom": "La sacoche du cheval", "entrees": { "fibre": 6, "planche": 2 }, "sacoche": true, "debloque": "ecurie" },
-      "sac_petit": { "entrees": { "fibre": 6 }, "sortie": { "sac_petit": 1 } },
-      "tente": { "entrees": { "fibre": 12, "planche": 2, "corde": 2 }, "sortie": { "tente": 1 } },
-      "lanterne_tempete": { "entrees": { "lingot_fer": 1, "planche": 1, "champignon_lumineux": 1 }, "sortie": { "lanterne_tempete": 1 } },
-      "sac_grand": { "entrees": { "laine": 3, "fibre": 6 }, "sortie": { "sac_grand": 1 }, "debloque": "moutons" },
-      "chapeau_paille": { "entrees": { "paille": 4, "fibre": 1 }, "sortie": { "chapeau_paille": 1 } },
-      "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 } },
-      "bottes": { "entrees": { "planche": 1, "fibre": 6 }, "sortie": { "bottes": 1 } },
+      "sac_petit": { "entrees": { "fibre": 6 }, "sortie": { "sac_petit": 1 }, "coefPrix": 135 },
+      "tente": { "entrees": { "fibre": 12, "planche": 2, "corde": 2 }, "sortie": { "tente": 1 }, "coefPrix": 150 },
+      "lanterne_tempete": {
+        "entrees": { "lingot_fer": 1, "planche": 1, "champignon_lumineux": 1 },
+        "sortie": { "lanterne_tempete": 1 },
+        "coefPrix": 150
+      },
+      "sac_grand": { "entrees": { "laine": 3, "fibre": 6 }, "sortie": { "sac_grand": 1 }, "debloque": "moutons", "coefPrix": 145 },
+      "chapeau_paille": { "entrees": { "paille": 4, "fibre": 1 }, "sortie": { "chapeau_paille": 1 }, "coefPrix": 145 },
+      "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 }, "coefPrix": 135 },
+      "bottes": { "entrees": { "planche": 1, "fibre": 6 }, "sortie": { "bottes": 1 }, "coefPrix": 145 },
       "casque_lampe": {
         "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "champignon_lumineux": 2 },
         "sortie": { "casque_lampe": 1 },
-        "debloque": "four"
+        "debloque": "four",
+        "coefPrix": 150
       },
       "ruche": { "entrees": { "planche": 4, "fibre": 8, "pierre": 1 }, "sortie": { "ruche": 1 } },
       "bac_carre": { "entrees": { "planche": 3, "pierre": 2, "fibre": 1 }, "sortie": { "bac_carre": 1 } },
@@ -2224,6 +2304,50 @@ export const RAW_DATA = {
         "dessin": "boite_aux_lettres",
         "villageois": true
       },
+      "lavoir": {
+        "nom": "Lavoir",
+        "objet": "lavoir",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "lavoir",
+        "largeur": 3,
+        "hauteur": 2,
+        "projetVillage": "lavoir",
+        "village": true
+      },
+      "kiosque": {
+        "nom": "Kiosque",
+        "objet": "kiosque",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "kiosque",
+        "largeur": 3,
+        "hauteur": 3,
+        "projetVillage": "kiosque",
+        "village": true
+      },
+      "fontaine_village": {
+        "nom": "Fontaine du village",
+        "objet": "fontaine_village",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "fontaine_village",
+        "largeur": 2,
+        "hauteur": 2,
+        "projetVillage": "fontaine",
+        "village": true
+      },
+      "four_commun": {
+        "nom": "Four commun",
+        "objet": "four_commun",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "four_commun",
+        "largeur": 2,
+        "hauteur": 2,
+        "projetVillage": "four",
+        "village": true
+      },
       "pont_planches": {
         "nom": "Pont de planches",
         "objet": "pont_planches",
@@ -2232,6 +2356,38 @@ export const RAW_DATA = {
         "plat": true,
         "dessin": "pont_planches",
         "tourne": true,
+        "village": true
+      },
+      "etal": {
+        "nom": "Étal",
+        "objet": "etal",
+        "dehors": true,
+        "bloque": true,
+        "unique": true,
+        "dessin": "etal_vide",
+        "largeur": 2,
+        "etal": true,
+        "village": true
+      },
+      "panneau_village": {
+        "nom": "Panneau du village",
+        "objet": "panneau_village",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "panneau_village",
+        "largeur": 2,
+        "panneau": "village",
+        "texte": "#3a2212",
+        "village": true
+      },
+      "quai_chargement": {
+        "nom": "Quai de chargement",
+        "objet": "quai_chargement",
+        "dehors": true,
+        "bloque": true,
+        "unique": true,
+        "dessin": "quai_chargement",
+        "largeur": 2,
         "village": true
       },
       "refrigerateur": {
@@ -3097,7 +3253,18 @@ export const RAW_DATA = {
       "maison": {
         "nom": "Maison",
         "icone": "🏠",
-        "blocs": ["paillasse", "boite_nourriture", "boite_aux_lettres", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"]
+        "blocs": [
+          "paillasse",
+          "boite_nourriture",
+          "boite_aux_lettres",
+          "etal",
+          "refrigerateur",
+          "four",
+          "cuisiniere",
+          "mortier",
+          "lanterne",
+          "candelabre"
+        ]
       },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
       "elevage": {
@@ -3143,6 +3310,7 @@ export const RAW_DATA = {
           "ornement_erable_rouge",
           "ornement_magnolia",
           "ornement_saule_pleureur",
+          "panneau_village",
           "enseigne_bois",
           "boite_lettres_bois",
           "enseigne_email",
@@ -3151,7 +3319,11 @@ export const RAW_DATA = {
           "boite_lettres_fer",
           "bonhomme_neige",
           "citrouille_halloween",
-          "tas_citrouilles"
+          "tas_citrouilles",
+          "lavoir",
+          "kiosque",
+          "fontaine_village",
+          "four_commun"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
@@ -3170,7 +3342,8 @@ export const RAW_DATA = {
           "chaudron",
           "tonneau",
           "ensacheuse",
-          "tonnelet"
+          "tonnelet",
+          "quai_chargement"
         ]
       }
     },
@@ -3331,6 +3504,7 @@ export const RAW_DATA = {
       "temps": 60,
       "ingredients": [{ "item": "lait_alpage", "qte": 3 }],
       "transformation": true,
+      "coefPrix": 135,
       "sortie": "fromage_alpage",
       "cave": "tomme_alpage",
       "qteSortie": 1
@@ -3414,6 +3588,7 @@ export const RAW_DATA = {
       "temps": 5,
       "ingredients": [{ "item": "ble", "qte": 1 }],
       "transformation": true,
+      "coefPrix": 135,
       "sortie": "farine",
       "qteSortie": 1,
       "horsLivre": true
@@ -3425,6 +3600,7 @@ export const RAW_DATA = {
       "temps": 10,
       "ingredients": [{ "item": "graine_tournesol", "qte": 3 }],
       "transformation": true,
+      "coefPrix": 135,
       "sortie": "huile",
       "qteSortie": 1
     },
@@ -3435,6 +3611,7 @@ export const RAW_DATA = {
       "temps": 40,
       "ingredients": [{ "item": "minerai_fer", "qte": 4 }, { "item": "bois", "qte": 3 }],
       "transformation": true,
+      "coefPrix": 145,
       "sortie": "lingot_fer",
       "qteSortie": 1
     },
@@ -3445,6 +3622,7 @@ export const RAW_DATA = {
       "temps": 50,
       "ingredients": [{ "item": "minerai_cuivre", "qte": 4 }, { "item": "bois", "qte": 3 }],
       "transformation": true,
+      "coefPrix": 145,
       "sortie": "lingot_cuivre",
       "qteSortie": 1
     },
@@ -3455,6 +3633,7 @@ export const RAW_DATA = {
       "temps": 60,
       "ingredients": [{ "item": "minerai_or", "qte": 4 }, { "item": "bois", "qte": 4 }],
       "transformation": true,
+      "coefPrix": 145,
       "sortie": "lingot_or",
       "qteSortie": 1
     },
@@ -3465,6 +3644,7 @@ export const RAW_DATA = {
       "temps": 60,
       "ingredients": [{ "item": "pomme", "qte": 1 }, { "item": "lingot_or", "qte": 5 }],
       "transformation": true,
+      "coefPrix": 145,
       "sortie": "pomme_doree",
       "qteSortie": 1
     },
@@ -3475,6 +3655,7 @@ export const RAW_DATA = {
       "temps": 80,
       "ingredients": [{ "item": "minerai_platine", "qte": 4 }, { "item": "bois", "qte": 5 }],
       "transformation": true,
+      "coefPrix": 145,
       "sortie": "lingot_platine",
       "qteSortie": 1
     },
@@ -3485,6 +3666,7 @@ export const RAW_DATA = {
       "temps": 10,
       "ingredients": [{ "item": "fleur_coquelicot", "qte": 3 }],
       "transformation": true,
+      "coefPrix": 135,
       "sortie": "colorant_rouge",
       "qteSortie": 1
     },
@@ -3495,6 +3677,7 @@ export const RAW_DATA = {
       "temps": 10,
       "ingredients": [{ "item": "fleur_pavot", "qte": 3 }],
       "transformation": true,
+      "coefPrix": 135,
       "sortie": "colorant_orange",
       "qteSortie": 1
     },
@@ -3505,6 +3688,7 @@ export const RAW_DATA = {
       "temps": 10,
       "ingredients": [{ "item": "fleur_tournesol", "qte": 3 }],
       "transformation": true,
+      "coefPrix": 135,
       "sortie": "colorant_jaune",
       "qteSortie": 1
     },
@@ -3515,6 +3699,7 @@ export const RAW_DATA = {
       "temps": 10,
       "ingredients": [{ "item": "epinard", "qte": 3 }],
       "transformation": true,
+      "coefPrix": 135,
       "sortie": "colorant_vert",
       "qteSortie": 1
     },
@@ -3525,6 +3710,7 @@ export const RAW_DATA = {
       "temps": 10,
       "ingredients": [{ "item": "fleur_myosotis", "qte": 3 }],
       "transformation": true,
+      "coefPrix": 135,
       "sortie": "colorant_bleu",
       "qteSortie": 1
     },
@@ -3535,6 +3721,7 @@ export const RAW_DATA = {
       "temps": 10,
       "ingredients": [{ "ou": ["fleur_lavande", "fleur_lupin"], "qte": 3 }],
       "transformation": true,
+      "coefPrix": 135,
       "sortie": "colorant_violet",
       "qteSortie": 1
     },
@@ -5153,6 +5340,33 @@ export const RAW_DATA = {
         "MARGE": 0,
         "GARDER": ["champs"],
         "VERS": ["betes", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"]
+      },
+      "ETAL": { "PAR_OBJET": 2 }
+    },
+    "VOCATIONS": {
+      "village": { "nom": "Vocation village", "eveilS": 60 },
+      "production": {
+        "nom": "Vocation production",
+        "eveilS": 60,
+        "vocation": "production",
+        "TACHES": {
+          "champs": 1,
+          "chaine": 1,
+          "cuisine": 1,
+          "navette": 1,
+          "betes": 1,
+          "verger": 1,
+          "peche": 1,
+          "bois": 1,
+          "pierre": 1,
+          "fauchage": 1,
+          "cueillette": 1
+        },
+        "REATTRIBUER": false,
+        "QUAI": true,
+        "FARINE_MAX": 80,
+        "VENDRE": ["pain"],
+        "CONTRATS": ["pain", "laine", "oeuf", "lait"]
       }
     },
     "BATIR": {
@@ -8740,7 +8954,11 @@ export const RAW_DATA = {
           "abricotier",
           "pecher",
           "mangeoire_grain",
-          "distributeur"
+          "distributeur",
+          "lavoir",
+          "kiosque",
+          "fontaine_village",
+          "four_commun"
         ],
         "EMOJI": {
           "eau": "💧",
@@ -8752,7 +8970,9 @@ export const RAW_DATA = {
           "banc": "☺️",
           "soir": "🌙",
           "apporte": "🍲",
-          "jeu": "🪁"
+          "jeu": "🪁",
+          "fete": "🎉",
+          "chantier": "🔨"
         }
       },
       "CROISE": {
@@ -8930,6 +9150,28 @@ export const RAW_DATA = {
           ["Attention où tu mets les pieds !", "Merci, j'ai failli tomber !"],
           ["On forme une bonne équipe.", "La meilleure de l'île !"],
           ["Encore un peu et on a fini.", "Après, une bonne soupe !"]
+        ],
+        "fete": [
+          ["Quelle belle fête !", "On devrait en faire plus souvent !"],
+          ["Tu as goûté à tout ?", "Deux fois, même ! Chut !"],
+          ["À la santé du village !", "Et à tous ceux qui y vivent !"],
+          ["Regarde, tout le monde est là.", "On est une vraie famille, ici."],
+          ["Tu danses, {prenom} ?", "Si tu me promets de ne pas rire !"],
+          ["Les lampions sont magnifiques.", "On se croirait dans un conte."],
+          ["Tu te souviens de la première fête ?", "On n'était que trois, à l'époque !"],
+          ["Encore un peu de tarte ?", "Juste une petite part, alors."],
+          ["Merci d'être venu, {prenom}.", "Je n'aurais manqué ça pour rien au monde !"],
+          ["On chante quelque chose ?", "Toi d'abord, je te suis !"],
+          ["Il fait bon, ce soir.", "Une soirée comme on les aime."],
+          ["Quelle chance, cette île.", "Et ces voisins, surtout !"]
+        ],
+        "chantier": [
+          ["Tu tiens la planche, {prenom} ?", "Vas-y, je la tiens bien droite !"],
+          ["Ça prend forme, regarde !", "Le village va être fier !"],
+          ["Encore une pierre et on fait une pause.", "Je t'attends à l'ombre, alors !"],
+          ["On le bâtit pour tout le monde.", "C'est ça qui donne du cœur à l'ouvrage."],
+          ["Tu crois qu'on aura fini pour la fête ?", "Si on s'y met tous, sûrement !"],
+          ["Passe-moi le marteau, tu veux ?", "Tiens, et attention aux doigts !"]
         ]
       },
       "JOUEUR": {
@@ -8968,6 +9210,7 @@ export const RAW_DATA = {
       },
       "ACTIVITE": {
         "visite": ["Je rends visite à un ami.", "On cause un peu, devant la porte.", "Je passais dire bonjour."],
+        "etal": ["Je fais mes courses à ton étal.", "Je regarde ce que tu vends.", "Ton étal est bien garni !"],
         "rdv": ["On se retrouve entre amis.", "On bavarde un peu, ici.", "On refait le monde, sur la place."],
         "promenade": ["On se promène à deux.", "Un petit tour avec un ami.", "On marche un peu ensemble."],
         "eau": ["Je viens puiser de l'eau.", "L'eau du puits est bien fraîche."],
@@ -8978,7 +9221,9 @@ export const RAW_DATA = {
         "banc": ["On se repose un peu, côte à côte.", "Un banc, un ami : que demander de plus ?"],
         "soir": ["Je passe la soirée chez un ami.", "Une petite visite avant d'aller dormir."],
         "apporte": ["J'apporte un repas à un ami qui se repose.", "Il faut bien s'entraider !"],
-        "jeu": ["Je joue sur la place !", "On s'amuse bien, ici !"]
+        "jeu": ["Je joue sur la place !", "On s'amuse bien, ici !"],
+        "fete": ["C'est la fête du village !", "Quelle belle fête, tu ne trouves pas ?", "Tout le village est sur la place !"],
+        "chantier": ["Je travaille au chantier du village.", "On bâtit quelque chose de beau, tous ensemble.", "Le chantier avance bien !"]
       }
     },
     "AMITIE": {
@@ -9131,7 +9376,27 @@ export const RAW_DATA = {
         "Le bac passe demain. Qui sait qui il amènera ?",
         "Demain, c'est jour de bac. J'irai voir le port !",
         "Le bac arrive demain : l'île va avoir de la visite."
-      ]
+      ],
+      "souvenir_villageois": [
+        "Tu te souviens du jour où j'ai débarqué du bac ? Il y a déjà {jours} jours !",
+        "Il y a {jours} jours, je posais ma valise ici. Je m'en souviens comme d'hier.",
+        "Le jour {jour}, je découvrais {village}. Quel souvenir !"
+      ],
+      "souvenir_proche": [
+        "Tu te souviens ? Il y a {jours} jours, {autre} et moi, on est devenus inséparables.",
+        "{autre}, c'est devenu quelqu'un de cher. Depuis le jour {jour}, on ne se quitte plus."
+      ],
+      "souvenir_foyer": [
+        "Le jour {jour}, {autre} et moi, on a emménagé ensemble. Je n'oublierai pas.",
+        "Ça fait {jours} jours qu'on vit sous le même toit, {autre} et moi."
+      ],
+      "souvenir_commerce": ["Tu te souviens du jour où j'ai ouvert {commerce} ?", "{Commerce} a ouvert il y a {jours} jours. Le temps passe !"],
+      "souvenir_dixieme": [
+        "Quand je suis arrivé{e}, on est devenus dix au village. Tu te souviens ?",
+        "Dixième villageois ! Ça m'a fait drôle, le jour {jour}."
+      ],
+      "souvenir_fete": ["Tu te souviens de {fete} ? Quelle journée !", "{Fete}, il y a {jours} jours… On en parle encore."],
+      "souvenir_projet": ["Tu te souviens quand on a fini {projet} ? Il y a {jours} jours déjà.", "{Projet} : quelle fierté d'y avoir mis la main !"]
     },
     "LIENS": {
       "AFFINITE": 20,
@@ -9145,6 +9410,115 @@ export const RAW_DATA = {
       "FOYER": { "PALIER": 4 },
       "ENFANT": { "PARENTS": 85 },
       "AVIS": [3, 4]
+    },
+    "NOMS": {
+      "VILLAGE_A": 3,
+      "ILE": [
+        "Île aux Mouettes",
+        "Île des Brumes",
+        "Île du Grand Vent",
+        "Île aux Saules",
+        "Île des Lucioles",
+        "Île Clairelune",
+        "Île aux Coquelicots",
+        "Île de la Marée",
+        "Île Belle-Anse",
+        "Île des Trois Pins",
+        "Île aux Hérons",
+        "Île du Phare",
+        "Île Douce-Lune",
+        "Île des Galets",
+        "Île aux Abeilles",
+        "Île Verte-Rive"
+      ],
+      "VILLAGE": {
+        "DEBUTS": ["Pré", "Val", "Mont", "Bois", "Clair", "Beau", "Roche", "Fontaine", "Rive", "Haute", "Belle", "Font"],
+        "FINS": [
+          "-Fleuri",
+          "-Doré",
+          "-Joli",
+          "-sur-Mer",
+          "-la-Lune",
+          "-aux-Pins",
+          "-le-Vent",
+          "-Tranquille",
+          "-des-Prés",
+          "-les-Bains",
+          "-Soleil",
+          "-les-Saules"
+        ]
+      },
+      "COMMERCES": {
+        "forge": ["la", "Forge"],
+        "mercerie": ["la", "Mercerie"],
+        "scierie": ["la", "Scierie"],
+        "boulangerie": ["la", "Boulangerie"],
+        "fromagerie": ["la", "Fromagerie"],
+        "*": ["l'", "Échoppe"]
+      },
+      "COMPLEMENTS": [
+        "du Vieux Chêne",
+        "de la Lune",
+        "du Coq",
+        "de l'Ancre",
+        "des Mouettes",
+        "du Moulin",
+        "du Port",
+        "des Saules",
+        "du Puits",
+        "de l'Étoile",
+        "des Galets",
+        "du Pont"
+      ],
+      "MAISONS": [
+        "des Saules",
+        "du Puits",
+        "des Roses",
+        "du Vent",
+        "des Galets",
+        "de la Lune",
+        "aux Volets Bleus",
+        "du Verger",
+        "des Lilas",
+        "du Phare"
+      ]
+    },
+    "CHRONIQUE": {
+      "MAX": 120,
+      "EPINGLES": 24,
+      "NOTE_MAX": 140,
+      "SOUVENIR": { "DEPUIS": 3, "JUSQUA": 120 },
+      "TYPES": {
+        "avant": { "icone": "📖", "texte": "{texte}", "cle": "avant:{id}" },
+        "arrivee": { "icone": "🏝️", "texte": "La famille {famille} débarque sur {lIle} : tout est à bâtir.", "cle": "arrivee" },
+        "recolte": { "icone": "🌱", "texte": "Première récolte de l'île : {culture}.", "cle": "recolte" },
+        "vente": { "icone": "⚓", "texte": "Première vente au port : {objet}.", "cle": "vente" },
+        "villageois": { "icone": "🧳", "texte": "{prenom} débarque du bac et s'installe sur l'île.", "cle": "villageois:{qui}" },
+        "enfant": { "icone": "👶", "texte": "{prenom} arrive par le bac chez {pa} et {pb}.", "cle": "villageois:{qui}" },
+        "village": { "icone": "🏘️", "texte": "Le village prend un nom : {village}.", "cle": "village" },
+        "village_nom": { "icone": "🏘️", "texte": "Le village s'appelle désormais {village}.", "cle": "village_nom:{jour}" },
+        "ile_nom": { "icone": "🏝️", "texte": "L'île s'appelle désormais {ile}.", "cle": "ile_nom:{jour}" },
+        "dixieme": { "icone": "🎉", "texte": "Avec {prenom}, {village} compte dix villageois.", "cle": "dixieme" },
+        "palier": { "icone": "🏅", "texte": "Palier {n} franchi : {titre}.", "cle": "palier:{n}" },
+        "port": { "icone": "🏗️", "texte": "Le port passe au niveau {niveau}.", "cle": "port:{niveau}" },
+        "commerce": { "icone": "🛠️", "texte": "{prenom} ouvre {commerce}.", "cle": "commerce:{id}" },
+        "proche": { "icone": "💞", "texte": "{pa} et {pb} deviennent proches.", "cle": "proche:{a}|{b}" },
+        "foyer": { "icone": "🏡", "texte": "{pa} et {pb} s'installent ensemble.", "cle": "foyer:{id}" },
+        "fete": { "icone": "🎊", "texte": "{Nom} {lieu}.", "cle": "fete:{id}:{jour}" },
+        "projet": { "icone": "🧱", "texte": "{Lieu} achève son projet : {nom}.", "cle": "projet:{id}" }
+      },
+      "RESUME": {
+        "villageois": ["un villageois arrivé", "{n} villageois arrivés"],
+        "enfant": ["un enfant arrivé", "{n} enfants arrivés"],
+        "palier": ["un palier franchi", "{n} paliers franchis"],
+        "port": ["le port agrandi", "le port agrandi {n} fois"],
+        "commerce": ["un commerce ouvert", "{n} commerces ouverts"],
+        "proche": ["deux villageois devenus proches", "{n} paires devenues proches"],
+        "foyer": ["un foyer formé", "{n} foyers formés"],
+        "fete": ["une fête", "{n} fêtes"],
+        "projet": ["un projet achevé", "{n} projets achevés"],
+        "*": ["un moment noté", "{n} moments notés"]
+      }
     },
     "PALIERS": [
       {
@@ -9463,6 +9837,85 @@ export const RAW_DATA = {
         "bloc_silo": 4,
         "pierre_angle": 3
       }
+    },
+    "PRIX": {
+      "FOURCHETTE": [130, 160],
+      "ARTISANS": {
+        "tissu": { "entrees": { "laine": 2 }, "sortie": { "tissu": 1 }, "coefPrix": 135 },
+        "gants_travail": { "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "coefPrix": 140 },
+        "manteau_chaud": { "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "coefPrix": 145 },
+        "salopette": { "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "coefPrix": 145 },
+        "meuble_chaise": { "entrees": { "planche": 2 }, "sortie": { "meuble_chaise": 1 }, "coefPrix": 140 },
+        "meuble_chevet": { "entrees": { "planche": 2 }, "sortie": { "meuble_chevet": 1 }, "coefPrix": 140 },
+        "meuble_table_basse": { "entrees": { "planche": 3 }, "sortie": { "meuble_table_basse": 1 }, "coefPrix": 140 },
+        "meuble_table": { "entrees": { "planche": 4 }, "sortie": { "meuble_table": 1 }, "coefPrix": 140 },
+        "meuble_commode": { "entrees": { "planche": 5 }, "sortie": { "meuble_commode": 1 }, "coefPrix": 145 },
+        "meuble_bibliotheque": { "entrees": { "planche": 6 }, "sortie": { "meuble_bibliotheque": 1 }, "coefPrix": 145 },
+        "meuble_armoire_chene": { "entrees": { "planche": 8 }, "sortie": { "meuble_armoire_chene": 1 }, "coefPrix": 150 },
+        "meuble_buffet": { "entrees": { "planche": 6, "pierre": 2 }, "sortie": { "meuble_buffet": 1 }, "coefPrix": 150 },
+        "meuble_lit_enfant": { "entrees": { "planche": 4, "tissu": 1 }, "sortie": { "meuble_lit_enfant": 1 }, "coefPrix": 145 },
+        "meuble_lit_adulte": { "entrees": { "planche": 6, "tissu": 2 }, "sortie": { "meuble_lit_adulte": 1 }, "coefPrix": 145 },
+        "meuble_canape": { "entrees": { "planche": 4, "tissu": 3 }, "sortie": { "meuble_canape": 1 }, "coefPrix": 150 },
+        "meuble_tapis_1": { "entrees": { "fibre": 6 }, "sortie": { "meuble_tapis_1": 1 }, "coefPrix": 135 },
+        "meuble_tapis_2": { "entrees": { "tissu": 2, "colorant_rouge": 1 }, "sortie": { "meuble_tapis_2": 1 }, "coefPrix": 145 },
+        "meuble_tapis_3": { "entrees": { "tissu": 2, "colorant_bleu": 1 }, "sortie": { "meuble_tapis_3": 1 }, "coefPrix": 145 }
+      },
+      "EXCEPTIONS": {
+        "paille": "La botteleuse (une machine, pas une recette) rend une paille par fibre : à une pièce l'unité, un prix ne descend pas sous une pièce."
+      }
+    },
+    "PART": 30,
+    "BOURSE": {
+      "ETAL": { "PLACES": 6, "QUANTITE": 20, "EMOJI": "🛒" },
+      "ACHATS": 1,
+      "ACHATS_GARDES": 6,
+      "BONHEUR": { "adore": 6, "aime": 3, "besoin": 4 },
+      "BESOINS": {
+        "vetement": ["manteau_chaud", "gants_travail", "salopette", "chapeau_paille", "tablier", "bottes"],
+        "meuble": [
+          "meuble_chaise",
+          "meuble_chevet",
+          "meuble_table_basse",
+          "meuble_tapis_1",
+          "meuble_tapis_2",
+          "meuble_tapis_3",
+          "meuble_commode",
+          "meuble_bibliotheque",
+          "lanterne"
+        ]
+      },
+      "IMPORT": { "SEUIL": 120, "MARGE": 150, "MIN": 30, "MAX": 4, "GARDE": 40, "BONHEUR": 5 },
+      "PHRASES": [
+        "Pour moi : {objet}, s'il te plaît.",
+        "{objet} ! Juste ce qu'il me fallait.",
+        "Je me fais plaisir : {objet}.",
+        "Ça, je le prends : {objet}. Voilà les pièces."
+      ]
+    },
+    "DEPART": {
+      "PHRASE": "Une île, un abri, un port. Tout est à bâtir.",
+      "PIECES": 450,
+      "LARGEUR": 2,
+      "SORTIE": 6,
+      "HORS_COULOIR": 4,
+      "PORT": 12,
+      "ETAPES": [
+        { "id": "ramasser", "icone": "🪨", "ligne": "Ramasse 3 pierres et 3 morceaux de bois." },
+        { "id": "atelier", "icone": "🔨", "ligne": "Bâtis l'Atelier." },
+        { "id": "houe", "icone": "🛠️", "ligne": "Fabrique la houe à l'Atelier." },
+        { "id": "labour", "icone": "🟫", "ligne": "Laboure 3 cases d'herbe." },
+        { "id": "semis", "icone": "🌱", "ligne": "Sème une graine." },
+        { "id": "cruche", "icone": "💧", "ligne": "Fabrique le puits et la cruche, pose le puits." },
+        { "id": "arroser", "icone": "💦", "ligne": "Remplis la cruche au puits, arrose." },
+        { "id": "recolte", "icone": "🥕", "ligne": "Récolte ta première plante mûre." },
+        { "id": "charger", "icone": "🧺", "ligne": "Charge ta récolte : la fenêtre du port, onglet Porter." },
+        { "id": "port", "icone": "🧭", "ligne": "Suis le chemin jusqu'au port." },
+        { "id": "vendre", "icone": "⚓", "ligne": "Vends une récolte au comptoir, sous la halle." },
+        { "id": "graines", "icone": "🌾", "ligne": "Achète des graines au comptoir." },
+        { "id": "maison", "icone": "🏠", "ligne": "Bâtis une maison libre : un lit, une boîte aux lettres." },
+        { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, au passage du bac." },
+        { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." }
+      ]
     }
   },
   "TACHES": {
@@ -9582,6 +10035,21 @@ export const RAW_DATA = {
         "SANS": "Il faut une cuisinière ou un four dans le foyer.",
         "PHRASES": ["Je prépare à manger pour tout le monde.", "Ça mijote !", "Une pincée de sel, et voilà."]
       },
+      "chaine": {
+        "nom": "Conduire les machines",
+        "icone": "🏭",
+        "ACTIONS": 16,
+        "outil": null,
+        "lieu": "machine",
+        "geste": "ramasse",
+        "emoji": "⚙️",
+        "donne": "un tour des machines : il vide les chaînes, les alimente, les relance ; il verse le blé au Moulin, relance la fournée",
+        "MOULIN": 10,
+        "GARDE": 10,
+        "FOURNEE": "pain",
+        "SANS": "Il n'y a ni chaîne de production prête, ni Moulin, ni four sur la ferme.",
+        "PHRASES": ["Je surveille les machines.", "Tout tourne rond !", "Encore une fournée et je vide la chaîne."]
+      },
       "navette": {
         "nom": "La tournée du port",
         "icone": "⚓",
@@ -9594,6 +10062,261 @@ export const RAW_DATA = {
         "donne": "un aller-retour au port : PORTEE objets marqués « à vendre », vendus au comptoir",
         "SANS": "Il n'y a pas de port sur l'île.",
         "PHRASES": ["Je descends au port.", "Le panier est lourd aujourd'hui !", "Je vends tout ça au comptoir."]
+      }
+    }
+  },
+  "TRAITS": {
+    "NOMBRE": [2, 3],
+    "TROIS": 0.5,
+    "DECOUVERTE": { "VU": 3, "DIT": 2 },
+    "PAROLE": {
+      "CHANCE": 0.3,
+      "REPLIQUE": 0.3,
+      "POSTE": {
+        "aime": [
+          "Ce travail-là, c'est tout à fait pour moi !",
+          "Je suis bien, à ce poste. Merci de me l'avoir confié.",
+          "Je ne vois pas le temps passer, ici."
+        ],
+        "boude": [
+          "Ce n'est pas mon travail préféré… mais je m'y mets.",
+          "Bon. Il faut bien que quelqu'un le fasse !",
+          "J'aurais préféré autre chose, mais ça ira."
+        ]
+      }
+    },
+    "POSTES": { "AIME": 6, "BOUDE": 3 },
+    "ACCORD": { "GAIN": 1, "MAX": 2 },
+    "ACCORDS": [
+      ["matinal", "matinal"],
+      ["matinal", "travailleur"],
+      ["couche_tard", "couche_tard"],
+      ["couche_tard", "reveur"],
+      ["bavard", "bavard"],
+      ["bavard", "taquin"],
+      ["bavard", "curieux"],
+      ["reserve", "reveur"],
+      ["reserve", "soigneux"],
+      ["travailleur", "soigneux"],
+      ["flaneur", "reveur"],
+      ["flaneur", "gourmand"],
+      ["casanier", "casanier"],
+      ["casanier", "gourmand"],
+      ["curieux", "curieux"],
+      ["gourmand", "gourmand"],
+      ["taquin", "taquin"]
+    ],
+    "LISTE": {
+      "matinal": {
+        "nom": ["matinale", "matinal"],
+        "icone": "🌅",
+        "oppose": "couche_tard",
+        "dit": "dehors avant tout le monde, au petit matin",
+        "HORAIRE": { "LEVER": -0.5, "SORTIE": -1, "SOUPER": -0.25, "VEILLEE": -0.5, "COUCHER": -0.75 },
+        "POSTE": { "champs": "aime", "cuisine": "boude" },
+        "SIGNE": { "etats": ["dehors", "flaner", "travail"], "heures": [[6, 7.5]] },
+        "PROPOS": { "meteo_brume": 2 },
+        "PHRASES": [
+          "Je suis dehors avant le coq, moi. C'est le meilleur moment de la journée !",
+          "À l'aube, l'île est toute à moi : la rosée, le silence…",
+          "Tôt levé{e}, tôt couché{e} : c'est ma devise.",
+          "Tu as vu le soleil se lever, ce matin ? Non ? Dommage !"
+        ]
+      },
+      "couche_tard": {
+        "nom": ["couche-tard", "couche-tard"],
+        "icone": "🌙",
+        "oppose": "matinal",
+        "dit": "encore à table quand les autres sont rentrés",
+        "HORAIRE": { "LEVER": 0.5, "SORTIE": 0.5, "SOUPER": 0.5, "VEILLEE": 0.75, "COUCHER": 0.5 },
+        "SOIR": 2,
+        "POSTE": { "peche": "aime", "champs": "boude" },
+        "SIGNE": { "etats": ["repas"], "heures": [[20, 22]] },
+        "PROPOS": { "lune_*": 2 },
+        "PHRASES": [
+          "Le matin, ne me parle pas avant mon café…",
+          "Le soir, je suis bien plus réveillé{e} que le matin !",
+          "Je regarde les étoiles bien après que tout le monde dort.",
+          "Encore une petite veillée, et au lit. Enfin… peut-être."
+        ]
+      },
+      "bavard": {
+        "nom": ["bavarde", "bavard"],
+        "icone": "💬",
+        "oppose": "reserve",
+        "dit": "toujours en train de causer avec quelqu'un",
+        "BUTS": { "visite": 1.5, "rdv": 1.6 },
+        "PAROLE": { "PART": 2 },
+        "SCENE": { "CAUSE": 1.6, "EMOJI": "😄" },
+        "POSTE": { "navette": "aime", "peche": "boude" },
+        "SIGNE": { "buts": ["visite", "rdv", "promenade", "banc"] },
+        "PROPOS": { "village_ami": 2, "village_voisin": 2, "voisin": 2, "lien_ami": 2, "visite_recue": 2, "visite_faite": 2 },
+        "PHRASES": [
+          "Tu sais la dernière ? Non ? Alors écoute bien…",
+          "Je parlerais des heures, moi. D'ailleurs, je parle des heures !",
+          "Ici, tout le monde se connaît. Un peu grâce à moi !",
+          "J'ai croisé tout le village ce matin, et j'ai causé avec chacun."
+        ],
+        "REPLIQUES": [
+          ["{prenom} ! Tu ne devineras jamais ce que j'ai vu ce matin…", "Raconte, raconte !"],
+          ["Attends, je ne t'ai pas tout dit !", "Toujours une histoire, toi !"],
+          ["Tu as cinq minutes ? Enfin… dix ?", "Pour toi, toujours."]
+        ]
+      },
+      "reserve": {
+        "nom": ["réservée", "réservé"],
+        "icone": "🤫",
+        "oppose": "bavard",
+        "dit": "souvent seul{e}, un peu à l'écart",
+        "BUTS": { "visite": 0.6, "rdv": 0.5, "voir": 1.5, "eau": 1.3 },
+        "PAROLE": { "PART": 0.4, "BREF": true },
+        "SCENE": { "CAUSE": 0.6 },
+        "POSTE": { "peche": "aime", "navette": "boude" },
+        "SIGNE": { "buts": ["eau", "jardin", "betes", "ouvrage"] },
+        "PHRASES": [
+          "Je parle peu. Mais j'écoute beaucoup.",
+          "Le calme me va bien.",
+          "… Bonjour. Belle journée, oui.",
+          "Pas besoin de mots pour être bien ensemble."
+        ],
+        "REPLIQUES": [
+          ["Bonjour, {prenom}.", "Toujours aussi discret{e} !"],
+          ["…", "Toi, tu es dans tes pensées."],
+          ["Hm. Belle journée.", "Oui, très belle !"]
+        ]
+      },
+      "travailleur": {
+        "nom": ["travailleuse", "travailleur"],
+        "icone": "💪",
+        "oppose": "flaneur",
+        "dit": "à son poste avant et après les autres",
+        "HORAIRE": { "SORTIE": -0.25 },
+        "FLANER": [-0.1, -0.15],
+        "TRAVAIL": { "DEBUT": -0.5, "FIN": 0.5, "PAUSE": -1 },
+        "POSTE": { "bois": "aime", "cueillette": "boude" },
+        "SIGNE": { "etats": ["travail"], "heures": [[7.5, 8], [16.5, 17]] },
+        "PHRASES": [
+          "Une journée sans ouvrage, c'est une journée perdue !",
+          "J'aime quand le travail est bien fait. Et fini avant l'heure !",
+          "Je me mets au travail avant les autres : j'aime prendre de l'avance."
+        ]
+      },
+      "flaneur": {
+        "nom": ["flâneuse", "flâneur"],
+        "icone": "🍃",
+        "oppose": "travailleur",
+        "dit": "à flâner sur un banc ou sur la place",
+        "HORAIRE": { "SORTIE": 0.25 },
+        "FLANER": [0.2, 0.2],
+        "TRAVAIL": { "PAUSE": 1 },
+        "BUTS": { "banc": 1.6, "promenade": 1.5 },
+        "POSTE": { "cueillette": "aime", "pierre": "boude" },
+        "SIGNE": { "etats": ["flaner"] },
+        "PHRASES": [
+          "Rien ne presse : l'île ne va pas s'envoler.",
+          "Un banc, un rayon de soleil… que demander de plus ?",
+          "Je prends le temps de regarder. Le travail attendra un peu."
+        ]
+      },
+      "casanier": {
+        "nom": ["casanière", "casanier"],
+        "icone": "🏠",
+        "oppose": "curieux",
+        "dit": "chez soi en pleine journée",
+        "HORAIRE": { "VEILLEE": -0.25 },
+        "CHEZ_LUI": 0.3,
+        "BUTS": { "voir": 0.4, "port": 0, "promenade": 0.6 },
+        "POSTE": { "cuisine": "aime", "navette": "boude" },
+        "SIGNE": { "etats": ["rentrer"], "heures": [[8, 18]] },
+        "PROPOS": { "foyer": 2, "voisin": 2, "ferme_maison": 1.5 },
+        "PHRASES": [
+          "On n'est jamais si bien que chez soi.",
+          "Ma maison, c'est mon petit monde. J'y suis bien.",
+          "Sortir ? Oui… mais pas trop loin de ma porte."
+        ]
+      },
+      "curieux": {
+        "nom": ["curieuse", "curieux"],
+        "icone": "🔍",
+        "oppose": "casanier",
+        "dit": "à regarder partout : le jardin, les bêtes, ce qu'on bâtit",
+        "BUTS": { "voir": 2.2, "port": 3 },
+        "POSTE": { "navette": "aime", "cuisine": "boude" },
+        "SIGNE": { "buts": ["jardin", "betes", "ouvrage", "port"] },
+        "PROPOS": { "ferme_maison": 2, "port_bac": 3, "village_nouveau": 3 },
+        "PHRASES": [
+          "Qu'est-ce que tu bâtis, là ? Raconte-moi tout !",
+          "Je suis allé{e} voir ce qu'il y a derrière les arbres.",
+          "Le bac amène toujours des nouvelles. J'adore ça !",
+          "Je veux tout voir de l'île : chaque coin, chaque bête."
+        ],
+        "REPLIQUES": [
+          ["{prenom}, tu as vu ce qu'on bâtit près du puits ?", "Pas encore ! Montre-moi."],
+          ["Qu'est-ce que tu fais de beau, {prenom} ?", "Rien de bien neuf, curieux{e} !"]
+        ]
+      },
+      "gourmand": {
+        "nom": ["gourmande", "gourmand"],
+        "icone": "🍰",
+        "dit": "à table avant les autres",
+        "HORAIRE": { "MIDI": -0.5, "REPRISE": 0.25 },
+        "POSTE": { "cuisine": "aime", "fauchage": "boude" },
+        "SIGNE": { "etats": ["repas"], "heures": [[11.5, 12]] },
+        "PROPOS": { "gout_connu": 3, "ferme_cultures": 2, "ferme_poules": 2, "cadeau_merci": 2 },
+        "PHRASES": [
+          "Je rêve d'un bon plat : {plat}, rien que d'y penser…",
+          "Tu sens ? Quelqu'un cuisine quelque part. Miam !",
+          "Le meilleur moment de la journée ? Le repas, bien sûr !",
+          "Si tu fais {plat}, garde-m'en une part !"
+        ],
+        "REPLIQUES": [
+          ["Ça sent bon chez toi, {prenom}. Tu cuisines quoi ?", "Viens goûter, si tu veux !"],
+          ["Tu as déjà mangé ? Moi, j'ai encore faim.", "Toi, alors !"]
+        ]
+      },
+      "reveur": {
+        "nom": ["rêveuse", "rêveur"],
+        "icone": "☁️",
+        "dit": "le nez dans les nuages",
+        "FLANER": [0.1, 0.15],
+        "BUTS": { "voir": 1.4 },
+        "POSTE": { "verger": "aime", "pierre": "boude" },
+        "PROPOS": { "lune_*": 3, "meteo_*": 2, "mois": 2 },
+        "PHRASES": [
+          "Tu crois que les nuages ont des noms ?",
+          "Parfois, je regarde la mer et j'oublie l'heure.",
+          "La nuit, la lune a l'air de veiller sur l'île."
+        ]
+      },
+      "soigneux": {
+        "nom": ["soigneuse", "soigneux"],
+        "icone": "🧹",
+        "dit": "attentif à tout ce qui l'entoure",
+        "POSTE": { "betes": "aime", "bois": "boude" },
+        "PROPOS": { "ferme_cultures": 2, "ferme_maison": 2, "ferme_verger": 2 },
+        "PHRASES": [
+          "Chaque chose à sa place, et l'île est plus belle.",
+          "J'ai rangé mes outils trois fois ce matin. Bien rangés !",
+          "Un travail soigné, ça se voit de loin."
+        ]
+      },
+      "taquin": {
+        "nom": ["taquine", "taquin"],
+        "icone": "😜",
+        "dit": "toujours une blague en réserve",
+        "SCENE": { "CAUSE": 1.2, "EMOJI": "😜" },
+        "POSTE": { "fauchage": "aime", "verger": "boude" },
+        "PROPOS": { "village_ami": 2, "village_collegue": 2 },
+        "PHRASES": [
+          "Attention, une abeille ! … Mais non, je te taquine.",
+          "Les autres disent que je suis taquin{e}. Moi ? Jamais !",
+          "Tu cours toujours partout ! Tu vas finir par t'envoler."
+        ],
+        "REPLIQUES": [
+          ["Tiens, {prenom} ! Tu t'es coiffé{e} avec un râteau ?", "Très drôle…"],
+          ["Je t'ai vu{e} bâiller au travail !", "Même pas vrai !"],
+          ["{prenom}, tu as un brin d'herbe dans les cheveux. Ha, non !", "Toi alors !"]
+        ]
       }
     }
   },
@@ -9690,6 +10413,208 @@ export const RAW_DATA = {
       "sol": { "rayon": 46, "aplati": 0.7, "teinte": 16761968, "alpha": 0.9, "dx": 0, "dy": -4 },
       "vitre": { "rayon": 11, "teinte": 16769704, "alpha": 0.95, "dx": 0, "dy": -27 }
     }
+  },
+  "VOCATIONS": {
+    "village": {
+      "nom": "Un village convivial",
+      "icone": "🎉",
+      "texte": "Des fêtes, des projets faits ensemble, des repas partagés et une jolie place rendent le village convivial.",
+      "PALIERS": [
+        {
+          "score": 20,
+          "nom": "Des voisins qui se saluent",
+          "icone": "👋",
+          "debloque": ["plan:banc_pierre", "plan:lanterne_papier", "projet:kiosque"]
+        },
+        {
+          "score": 50,
+          "nom": "Un village en fête",
+          "icone": "🎉",
+          "debloque": ["fete:seconde", "plan:table_rondins", "plan:banc_rondins", "projet:fontaine"]
+        },
+        {
+          "score": 90,
+          "nom": "Un village accueillant",
+          "icone": "🤝",
+          "debloque": ["arrivee:lien", "plan:pergola", "plan:jardiniere_pierre", "projet:four"]
+        },
+        {
+          "score": 140,
+          "nom": "Un village où il fait bon vivre",
+          "icone": "🌟",
+          "debloque": ["enseigne:couleurs", "plan:chaise_peinte", "plan:bassin", "plan:jarre_coquillages"]
+        }
+      ],
+      "CAUSES": {
+        "bonheur": { "nom": "Le bonheur des villageois", "icone": "😊", "BASE": 40, "PAR": 2, "MAX": 25 },
+        "ami": { "nom": "Des amis entre eux", "icone": "🤝", "POINTS": 2, "MAX": 30 },
+        "proche": { "nom": "Des proches", "icone": "💞", "POINTS": 4, "MAX": 30 },
+        "fete": { "nom": "Les fêtes tenues", "icone": "🎉", "POINTS": 6, "MAX": 60 },
+        "projet": { "nom": "Les projets finis", "icone": "🏗️", "POINTS": 10, "MAX": 60 },
+        "repas": { "nom": "Les repas partagés", "icone": "🍽️", "POINTS": 2, "MAX": 20 },
+        "decor": { "nom": "Le décor de la place", "icone": "🌷", "POINTS": 1, "MAX": 25 }
+      },
+      "DECOR": {
+        "RAYON": 7,
+        "CENTRES": ["panneau_village", "puits"],
+        "SORTES": {
+          "banc_": 1,
+          "chaise_": 1,
+          "table_jardin": 1,
+          "table_rondins": 1,
+          "lanterne": 2,
+          "lanterne_papier": 2,
+          "candelabre": 2,
+          "bac_": 1,
+          "massif_": 1,
+          "rosier_": 1,
+          "guirlande_": 1,
+          "pergola": 2,
+          "jardiniere_pierre": 1,
+          "jarre_coquillages": 1,
+          "bassin": 2,
+          "fontaine_": 3,
+          "ornement_": 2,
+          "lavoir": 4,
+          "kiosque": 4,
+          "four_commun": 4
+        }
+      },
+      "ARRIVEE_LIEN": { "PARENT": 0.3, "AMI": 50, "PROCHE": 80 },
+      "ENSEIGNES": [{ "id": "or", "nom": "lettres dorées", "texte": "#e2b04a" }, { "id": "lune", "nom": "lettres de lune", "texte": "#cfd8ff" }],
+      "FETES": {
+        "PAR_MOIS": 1,
+        "JOURS_MAX": 40,
+        "DEBUT": 17,
+        "FIN": 21,
+        "VEILLEE": [19.75, 21],
+        "VEILLEE_MIN": 2,
+        "PLATS": { "PAR": 2, "MIN": 2 },
+        "BONHEUR": 6,
+        "VARIETE": 3,
+        "ANNONCE": 3,
+        "NOMS": {
+          "mois": ["🎉", "La fête du village"],
+          "pleine_lune": ["🌕", "La veillée de pleine lune"],
+          "ouverture": ["🎊", "La fête de l'ouverture"]
+        },
+        "LUMIERES": { "teinte": 16757350, "alpha": 1, "rayon": 60 }
+      },
+      "PROJETS": {
+        "ORDRE": ["place", "jardin", "lavoir", "kiosque", "fontaine", "four"],
+        "SORTES": {
+          "place": {
+            "nom": "Aménager la place",
+            "icone": "🪑",
+            "journees": 2,
+            "texte": "Des bancs, des bacs de fleurs, une table et une lanterne, pour se retrouver le soir sur la place.",
+            "besoin": { "bois": 20, "pierre": 15, "fibre": 10 },
+            "donne": { "banc_jardin": 2, "bac_rond": 2, "table_jardin": 1, "chaise_jardin": 4, "lanterne": 1 }
+          },
+          "jardin": {
+            "nom": "Un jardin partagé",
+            "icone": "🌷",
+            "journees": 2,
+            "texte": "Une pergola, des jardinières et un banc de rondins, que tout le village soigne ensemble.",
+            "besoin": { "bois": 15, "pierre": 10, "fibre": 15 },
+            "donne": { "pergola": 1, "bac_long": 2, "jardiniere_pierre": 1, "banc_rondins": 1 }
+          },
+          "lavoir": {
+            "nom": "Le lavoir",
+            "icone": "🧺",
+            "journees": 4,
+            "bloc": "lavoir",
+            "texte": "Un bassin de pierre sous un toit de bois, où l'on se retrouve pour laver et bavarder.",
+            "besoin": { "pierre": 30, "planche": 12, "bois": 10 }
+          },
+          "kiosque": {
+            "nom": "Le kiosque",
+            "icone": "🎶",
+            "journees": 3,
+            "bloc": "kiosque",
+            "palier": "projet:kiosque",
+            "texte": "Un kiosque de bois sur une estrade de pierre, au cœur de la place : on y danse les soirs de fête.",
+            "besoin": { "planche": 24, "pierre": 12, "lingot_fer": 2 }
+          },
+          "fontaine": {
+            "nom": "La fontaine du village",
+            "icone": "⛲",
+            "journees": 4,
+            "bloc": "fontaine_village",
+            "palier": "projet:fontaine",
+            "texte": "Une grande fontaine à quatre goulots, où l'on vient puiser et causer.",
+            "besoin": { "pierre": 40, "lingot_cuivre": 2, "planche": 4 }
+          },
+          "four": {
+            "nom": "Le four commun",
+            "icone": "🔥",
+            "journees": 5,
+            "bloc": "four_commun",
+            "palier": "projet:four",
+            "texte": "Un four à pain de pierre sous son auvent, que le village allume pour les fêtes.",
+            "besoin": { "pierre": 36, "bois": 20, "planche": 8 }
+          }
+        },
+        "TRAVAIL": { "geste": "hache", "emoji": "🔨" }
+      }
+    },
+    "production": {
+      "nom": "La ferme productive",
+      "icone": "🏭",
+      "PALIERS": [
+        { "score": 120, "debloque": ["contrats_gros"] },
+        { "score": 300, "debloque": ["machines_grandes"] },
+        { "score": 600, "debloque": ["import_plein_champ"] },
+        { "score": 1000, "debloque": ["robot_second"] }
+      ],
+      "CAUSES": {
+        "export": { "nom": "La valeur exportée ce mois de lune", "PIECES": 25 },
+        "machines": { "nom": "Les machines en état de marche", "POINTS": 15 },
+        "energie": { "nom": "L'énergie produite ce mois de lune", "WH": 4000 },
+        "contrats": { "nom": "Les contrats d'export honorés", "POINTS": 40 }
+      },
+      "TEXTES": {
+        "contrats_gros": "des contrats d'export plus gros",
+        "machines_grandes": "des machines plus grandes : le réservoir des chaînes double",
+        "import_plein_champ": "les cultures de plein champ en vrac, au catalogue d'import",
+        "robot_second": "un second robot : la tournée du robot va deux fois plus vite"
+      }
+    }
+  },
+  "PRODUCTION": {
+    "CONTRATS": {
+      "NIVEAU": 2,
+      "PASSAGES": 3,
+      "PROPOSES": [0, 1, 2, 2, 3],
+      "MAX": 2,
+      "VALEUR": [0, 400, 800, 1400, 2200],
+      "ECART": 20,
+      "ARRONDI": 10,
+      "QUANTITE": [20, 300],
+      "PRIME": [30, 50],
+      "GROS": 150,
+      "XP": 60,
+      "OBJETS": [
+        "pain",
+        "fromage_frais",
+        "bocal_legumes",
+        "confiture_fraises",
+        "jus_fruits",
+        "compote",
+        "biere_artisanale",
+        "huile",
+        "farine",
+        "lait",
+        "oeuf",
+        "laine"
+      ]
+    },
+    "COURANT": { "WH_PAR_PIECE": 250 },
+    "NAVETTE": { "BROUETTE": 25, "CHARRETTE": 60, "QUAI": 200 },
+    "QUAI": { "NIVEAU": 2 },
+    "MACHINES": { "RESERVOIR": 200 },
+    "ROBOT": { "VITESSE": 200 },
+    "IMPORT": { "RANG": 2, "LOT": 50, "MARGE": 150 }
   },
   "CONSERVATION": {
     "carotte": 6,

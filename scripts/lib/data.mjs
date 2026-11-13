@@ -150,6 +150,11 @@ export function sourcesOf(data, id) {
   const R = data.RECIT || {};
   for (const e of [...(R.SCENES || []), ...(R.REPLIQUES || [])]) if (e && e.effet && e.effet.donner && id in e.effet.donner) out.push(`récit ${e.id}`);
   if (it.rachetable !== false) out.push('Marché');
+  // (le chantier « l'île à bâtir », fiche I8a : un projet du village donne son bâtiment, ou son décor)
+  for (const v of Object.values(data.VOCATIONS || {})) for (const [sid, p] of Object.entries((v.PROJETS && v.PROJETS.SORTES) || {})) {
+    const b = p.bloc && A && A.BLOCS && A.BLOCS[p.bloc];
+    if ((b && b.objet === id) || id in (p.donne || {})) out.push(`projet du village ${sid}`);
+  }
   if (it.retire) out.push('ancienne sauvegarde (retire)');
   return out;
 }
@@ -1166,6 +1171,47 @@ export function validateData(data) {
   });
   if (!Array.isArray(N.CHAPITRES_XP) || N.CHAPITRES_XP.length !== data.CHAPITRES.liste.length) err('NIVEAUX.CHAPITRES_XP', 'un nombre par chapitre');
   if (!Array.isArray(N.CHAPITRE_NIVEAU) || N.CHAPITRE_NIVEAU.length !== data.CHAPITRES.liste.length + 1) err('NIVEAUX.CHAPITRE_NIVEAU', 'un niveau par chapitre, plus un pour la campagne finie');
+
+  // Le chantier « l'île à bâtir », fiche I4 : les prix des filières. Toute transformation (une recette de l'Atelier qui
+  // rend un objet, une transformation des stations, une recette d'artisan de VILLAGE.PRIX.ARTISANS) porte un coefPrix
+  // dans VILLAGE.PRIX.FOURCHETTE, sauf exception notée (VILLAGE.PRIX.EXCEPTIONS : l'id de la recette, et pourquoi).
+  const PX = data.VILLAGE && data.VILLAGE.PRIX;
+  if (PX) {
+    const F = PX.FOURCHETTE, EX = PX.EXCEPTIONS || {};
+    if (!(Array.isArray(F) && F.length === 2 && F.every(isInt) && F[0] > 100 && F[0] <= F[1])) err('VILLAGE.PRIX.FOURCHETTE', 'deux pourcentages entiers [min, max], au-dessus de 100');
+    else {
+      const borne = (where, id, coef) => {
+        if (coef == null) return;
+        if (!isInt(coef)) err(where, 'coefPrix est un pourcentage entier (140 = ×1,4)');
+        else if ((coef < F[0] || coef > F[1]) && typeof EX[id] !== 'string') err(where, `coefPrix ${coef} hors de la fourchette ${F[0]}–${F[1]} % (sinon, une exception notée : VILLAGE.PRIX.EXCEPTIONS)`);
+      };
+      for (const [id, r] of Object.entries((data.ATELIER && data.ATELIER.RECETTES) || {})) borne(`ATELIER.RECETTES.${id}`, id, r.coefPrix);
+      for (const [id, r] of Object.entries(data.RECETTES || {})) if (r.transformation) borne(`RECETTES.${id}`, id, r.coefPrix);
+      for (const [id, r] of Object.entries(PX.ARTISANS || {})) {
+        const where = `VILLAGE.PRIX.ARTISANS.${id}`;
+        if (!r || typeof r !== 'object' || !r.sortie || Object.keys(r.sortie).length !== 1) { err(where, 'une recette : entrees, sortie (un objet), coefPrix'); continue; }
+        for (const [o, n] of Object.entries(r.entrees || {})) { needItem(`${where}.entrees`, o); if (!(isInt(n) && n > 0)) err(`${where}.entrees.${o}`, 'une quantité entière positive'); }
+        for (const [o, n] of Object.entries(r.sortie)) { needItem(`${where}.sortie`, o); if (!(isInt(n) && n > 0)) err(`${where}.sortie.${o}`, 'une quantité entière positive'); }
+        if (r.coefPrix == null) err(where, 'il lui faut son coefPrix');
+        borne(where, id, r.coefPrix);
+      }
+    }
+  }
+
+  // le chantier de l'île, fiche I6c : les traits (un opposé, des tâches, des accords qui existent ; des phrases d'une bulle)
+  if (data.TRAITS) {
+    const TL = data.TRAITS.LISTE || {}, taches = (data.TACHES && data.TACHES.LISTE) || {};
+    for (const [id, t] of Object.entries(TL)) {
+      const where = `TRAITS.LISTE.${id}`;
+      if (t.oppose !== undefined && !(TL[t.oppose] && TL[t.oppose].oppose === id)) err(where, `oppose « ${t.oppose} » : un trait qui le dit aussi`);
+      for (const [k, g] of Object.entries(t.POSTE || {})) if (!taches[k] || !['aime', 'boude'].includes(g)) err(where, `POSTE.${k} : une tâche, « aime » ou « boude »`);
+      for (const p of t.PHRASES || []) if (String(p).length > 96) err(where, `« ${p} » : une bulle, 96 caractères au plus`);
+      if (!Array.isArray(t.nom) || t.nom.length !== 2) err(where, 'nom : [au féminin, au masculin]');
+    }
+    (data.TRAITS.ACCORDS || []).forEach((p, i) => { if (!Array.isArray(p) || p.length !== 2 || !p.every((x) => TL[x])) err(`TRAITS.ACCORDS[${i}]`, 'deux traits'); });
+    const nb = data.TRAITS.NOMBRE;
+    if (!(Array.isArray(nb) && isInt(nb[0]) && isInt(nb[1]) && nb[0] >= 1 && nb[0] <= nb[1])) err('TRAITS.NOMBRE', '[au moins, au plus]');
+  }
 
   return { errors, warnings };
 }

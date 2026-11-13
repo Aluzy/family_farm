@@ -13,11 +13,12 @@
 import {
   addItem, arriverVillageois, attribuer, bilanJour, bilanVillageois, botReattribuer, DATA, donnerOutil, entreesPeriode,
   farmSeed, manqueCourt, portDuMonde, runNight, soldeLePlusBas, tableauVillage, tachesNuit, testBatir,
-  testMaisonVillageois, trierTableau, valeurPort, villageoisDe,
+  testMaisonVillageois, trierTableau, valeurPort, villageoisDe, prixIle,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
 
-const P = (o) => DATA.OBJETS[o].prix;
+// (I4 : le prix de l'île, celui du port et du tableau)
+const P = (o) => prixIle(o);
 
 // La partie de test : le port, `n` maisons de villageois et leurs villageois, la boîte pleine.
 function ile(n = 1, seed = 1) {
@@ -69,7 +70,7 @@ test('une semaine écrite à la main : coût, produit, solde, des entiers ; le j
   const repas = 10 * P('pain') + 3 * P('carotte') + 2 * P('oeuf');
   const matieres = P('carotte') + P('oignon') + P('patate');
   const valeur = 28 * P('bois') + P('soupe_legumes');
-  assertEqual([b.repas, b.matieres, b.part, b.cout], [repas, matieres, 0, repas + matieres], 'le coût : les repas, ce que la cuisine a pris, pas de part (avant I4)');
+  assertEqual([b.repas, b.matieres, b.part, b.cout], [repas, matieres, 0, repas + matieres], 'le coût : les repas, ce que la cuisine a pris (une journée sans part écrite : pas de part)');
   assertEqual(b.valeur, valeur, 'le produit, au prix du port');
   assertEqual(b.solde, valeur - repas - matieres, 'le solde');
   assertEqual(b.produit.map((x) => [x.objet, x.n, x.valeur]), [['bois', 28, 28 * P('bois')], ['soupe_legumes', 1, P('soupe_legumes')]], 'chaque objet, sa quantité, sa valeur (une quantité nulle ne compte pas)');

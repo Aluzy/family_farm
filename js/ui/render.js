@@ -13,6 +13,7 @@ import { animateIn } from './animations.js';
 import { renderTutorial } from './aide.js';
 import { renderDidacticiel } from './didacticiel.js';
 import { renderObjectifs } from './objectifs.js';
+import { renderDidacticielIle } from './didacticiel-ile.js';
 import { renderItemModal } from './inventaire.js';
 import { renderShopModal } from './caleche.js';
 import { renderPortModal } from './port.js';
@@ -74,6 +75,7 @@ function rendre() {
   applyAnchor();
   renderTutorial();
   renderDidacticiel();
+  renderDidacticielIle();   // (le chantier « l'île à bâtir », fiche I7b)
   renderObjectifs();
   renderRecipeBook();
   renderEncyclopedie();

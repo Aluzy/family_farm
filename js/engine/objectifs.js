@@ -18,6 +18,7 @@ import { marcheOuvert } from './devices.js';
 import { hasTool } from './outils.js';
 import { cowCount } from './animals.js';
 import { villageActif } from './village.js';
+import { commencerNouveauDepart } from './depart-ile.js';
 
 /* ---------- les objectifs du jour (la refonte du didacticiel, lot 2) ----------
    Une nouvelle partie (commencerObjectifs) commence dans son abri (abri-depart.js) avec la première semaine
@@ -166,6 +167,8 @@ export function commencerObjectifs(state) {
   batirAbriDepart(state);
   state.objectifs = { jour: -1, debut: state.day, faits: {}, atteints: [], base: {}, recu: null, fini: false };
   entrer(state, 0);
+  // (le chantier allumé, fiche I7b : le nouveau départ, la terre vierge, le plat dans l'abri, le didacticiel de l'île)
+  if (villageActif(state) && !state.didacticielIle) commencerNouveauDepart(state);
   return { ok: true };
 }
 

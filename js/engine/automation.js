@@ -11,6 +11,7 @@ import { techAuto, techFlag } from './techtree.js';
 import { absoluteHours, dayHour, hourOfDay, nightActive } from './clock.js';
 import { farmPoint, farmTerrain } from './terrain.js';
 import { blocsPoses } from './blocs.js';
+import { debloque } from './vocations.js';
 
 /* ---------- Lot 7 : automatisations de la nuit ---------- */
 
@@ -196,7 +197,9 @@ export function robotTrip(state, r, i) {
   const R = DATA.ROBOT;
   const a = i > 0 && i !== r.base ? robotSpot(state, r.taches[i - 1].id) : robotBase(state);
   const b = robotSpot(state, r.taches[i].id);
-  return { route: Math.hypot(b[0] - a[0], b[1] - a[1]) / R.VITESSE / 60, travail: R.MINUTES / 60 };
+  // (fiche I8b : un second robot, quand la ferme productive l'a débloqué : la tournée à deux va VITESSE % plus vite)
+  const k = debloque(state, 'robot_second') ? 100 / Math.max(100, (DATA.PRODUCTION && DATA.PRODUCTION.ROBOT.VITESSE) || 100) : 1;
+  return { route: (k * Math.hypot(b[0] - a[0], b[1] - a[1])) / R.VITESSE / 60, travail: (k * R.MINUTES) / 60 };
 }
 
 /* ---------- la batterie du robot et sa station de charge ---------- */

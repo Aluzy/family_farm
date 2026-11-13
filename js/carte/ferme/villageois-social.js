@@ -46,6 +46,7 @@
   const VITESSE = K.VITESSES.famille.adulte;   // px/s
   const TOC_MS = 1800;                         // « Toc, toc ! »
   const EMOJI_MS = 2200;                       // l'emoji d'un but, d'un salut
+  const ACHAT_MS = 3200;                       // I4 : ce qu'il dit en arrivant à l'étal
   const PUISE_MS = 1800;                       // le geste au puits
   const BABIL = { px: 96, ms: 1500 };          // le babil : près du personnage, un à la fois
   const COTE = 12;                             // px : l'ami qui marche à côté
@@ -70,6 +71,12 @@
       return (H && H.social) || DEFAUT;
     },
     // I6a : le palier d'amitié du joueur avec le villageois `a` (0 à 4), et s'il garde un présent pour lui.
+    // I6c (les traits) : le facteur de ses traits sur la durée d'un salut et la cadence d'une causerie (1 : rien).
+    villageoisCause(a) {
+      const H = this.ctx.lastModel && this.ctx.lastModel.villageoisHeure, L = H && H.liens;
+      const f = L && L.cause && Number(L.cause[a]);
+      return f > 0 ? f : 1;
+    },
     villageoisPalier(a) {
       const H = this.ctx.lastModel && this.ctx.lastModel.villageoisHeure, L = H && H.liens;
       return (L && L.amitie && L.amitie[a]) || 0;
@@ -156,6 +163,8 @@
         return;
       }
       if (but.emoji && !(but.avec && but.avec.length)) this.villageoisEmoji(m, but.emoji, EMOJI_MS);
+      // (I4 : à l'étal du joueur, ce qu'il vient y prendre ; le moteur fait l'achat, bourse.js)
+      if (but.sorte === 'etal' && but.dit) this.villageoisDit(m, but.dit, ACHAT_MS);
       if (but.sorte === 'eau' && !reducedMotion()) m.geste = { fin: now + PUISE_MS, t0: now };
     },
 
@@ -281,7 +290,8 @@
         // (à table, assis à la même table au même repas : on cause aussi)
         if (m.assis && m.seg && m.seg.etat === 'repas' && m.seg.lieu && Number.isInteger(m.seg.lieu.table) && !m.parle && m.s && m.s.visible) cle = `table:${m.seg.lieu.table}:${Math.floor(m.seg.de)}`;
         // (I6b : assis côte à côte sur deux bancs voisins, deux amis causent aussi)
-        else if (m.assis && but && but.sorte === 'banc' && but.avec && but.avec.length && !m.parle && m.s && m.s.visible) cle = but.cle;
+        // (I8a : à la fête du village, assis sur un banc, ils causent aussi)
+        else if (m.assis && but && (but.sorte === 'banc' || but.sorte === 'fete') && but.avec && but.avec.length && !m.parle && m.s && m.s.visible) cle = but.cle;
         else if (but && but.avec && but.avec.length && m.auBut && dispo(m) && !m.salut && !m.chemin.length && !m.demande && !m.suit) cle = but.cle;
         if (!cle) continue;
         let l = ici.get(cle);
@@ -314,7 +324,8 @@
         const a = l[cs.tour % l.length], b = l[(cs.tour + 1) % l.length];
         // (I6b : la visite du soir, le repas apporté, le banc à deux ont leurs répliques)
         const ba = a.seg.but;
-        const sorte = !ba ? 'repas' : ba.sorte === 'rdv' ? 'groupe' : ba.apporte ? 'apporte' : ba.soir ? 'soiree' : ba.sorte;
+        // (I8a : au chantier du village, les répliques du chantier ; à la fête, celles de la fête)
+        const sorte = !ba ? 'repas' : ba.sorte === 'rdv' ? 'groupe' : ba.apporte ? 'apporte' : ba.soir ? 'soiree' : ba.chantier ? 'chantier' : ba.sorte;
         const r = B.villageois('echange', a.id, { avec: b.id, n: cs.n++, sorte });
         cs.tour++;
         const tour = Math.max(1.2, Number(R.TOUR) || 3.2) * 1000;
@@ -341,7 +352,9 @@
             cs.parle = { m: b, fin: performance.now() + tour * 0.5 };
           });
         }
-        cs.prochain = now + tour * 2 + 600 + (cs.n % 3) * 500;
+        // (I6c : un bavard relance plus vite, un réservé laisse passer plus de temps : le plus grand facteur du groupe)
+        const fc = Math.max(...l.map((m) => this.villageoisCause(m.id)));
+        cs.prochain = now + (tour * 2 + 600 + (cs.n % 3) * 500) / fc;
         // (I3c : au travail, on cause un peu, puis on s'y remet : TACHES.CAUSE s entre deux échanges)
         if (sorte === 'travail') cs.prochain = now + (Number(R.CAUSE) || 26) * 1000 * (0.7 + (cs.n % 4) * 0.2);
       }
@@ -419,7 +432,8 @@
         for (const [a, b] of [[m, o], [o, m]]) { a.salut = { o: b, fin: now + 650, dit: null }; a.salutApres = now + REPRISE_MS; }
         return;
       }
-      const D = R.DUREE || [1.4, 2.4], duree = (Number(D[Math.min(D.length - 1, deg - 1)]) || 1.6) * 1000;
+      // (I6c : un bavard s'attarde, un réservé passe vite : le plus grand facteur des deux)
+      const D = R.DUREE || [1.4, 2.4], duree = (Number(D[Math.min(D.length - 1, deg - 1)]) || 1.6) * 1000 * Math.max(this.villageoisCause(m.id), this.villageoisCause(o.id));
       const r = B && B.villageois ? B.villageois('echange', m.id, { avec: o.id, n, sorte: 'croise' }) : null;
       const L = (r && r.lignes) || [];
       m.salut = { o, fin: now + duree, dit: null };

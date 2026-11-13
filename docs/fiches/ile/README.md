@@ -37,22 +37,22 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I3b — la vie des villageois sur la ferme](I3b-vie-sur-la-ferme.md) | 3 | I3a | fait (réglage « animé » choisi) ; I3b+ (vie sociale : qui se connaît, sorties à but, saluts, causeries) : fait |
 | [I3c — les tâches attribuées](I3c-taches.md) | 3 | I3b | fait |
 | [I3d — le tableau des villageois](I3d-tableau.md) | 3 | I3c | fait (le coût compte aussi ce que le travail prend au coffre ; le joueur automatique réattribue après deux semaines pleines) |
-| [I4 — les prix des filières, la part et la bourse](I4-prix-part-bourse.md) | 4 | I3d, I1b | à faire |
+| [I4 — les prix des filières, la part et la bourse](I4-prix-part-bourse.md) | 4 | I3d, I1b | fait (les prix nouveaux seulement le réglage allumé : le jeu éteint ne bouge pas ; la part de 30 % prise sur le produit ; l'étal, l'achat d'un villageois, l'import à lui ; voir docs/ile.md) |
 | [I5a — l'atelier d'artisan, sa boutique, la forge](I5a-artisan-forge.md) | 5 | I4, I6a | à faire |
 | [I5b — la mercerie](I5b-mercerie.md) | 5 | I5a | à faire |
 | [I5c — la scierie, la boulangerie, la fromagerie](I5c-autres-commerces.md) | 5 | I5a | à faire |
 | [I6a — l'amitié avec les villageois](I6a-amitie.md) | 6 | I3b | fait (goûts tirés, pas « par tâche préférée » ; le présent d'un ami donné en main propre) |
 | [I6b — les liens entre villageois](I6b-liens.md) | 6 | I6a | fait (l'affinité gardée, les paliers, le bonheur, le travail à deux, l'entraide, le banc à deux, la visite du soir, les foyers et l'enfant ; un repas apporté ne nourrit pas ; voir docs/ile.md) |
-| [I6c — les traits de personnalité](I6c-traits.md) | 6 | I6b, I3c | à faire |
+| [I6c — les traits de personnalité](I6c-traits.md) | 6 | I6b, I3c | fait (douze traits, deux ou trois chacun ; découverts en les voyant vivre ou en les écoutant ; le réglage « marqué » en place, « doux » filmé aussi : à faire choisir ; voir docs/ile.md) |
 | [I7a — les objectifs sans récit](I7a-objectifs.md) | 7 | I0a | fait, sauf le point 6 (le joueur automatique suit les paliers : après I0b) |
-| [I7b — le nouveau départ](I7b-nouveau-depart.md) | 7 | I7a, I1b, I3a | à faire |
+| [I7b — le nouveau départ](I7b-nouveau-depart.md) | 7 | I7a, I1b, I3a | fait (« seul » en trois appuis, la terre vierge, le didacticiel d'une ligne par étape, 15 étapes ; une étape « charger » ajoutée : le portage d'I2 ; pas de test avec un joueur réel) |
 | [I7c — le récit retiré du moteur](I7c-recit-moteur.md) | 7 | I7a, I6a | à faire |
 | [I7d — le récit retiré de l'interface, de l'aide et de l'encyclopédie](I7d-recit-interface.md) | 7 | I7c | à faire |
 | [I7e — les hameaux, la calèche et les boucles de chemins retirés](I7e-hameaux-caleche.md) | 7 | I7d, I1c, I2 | à faire |
 | [I7f — la migration des parties en cours](I7f-migration.md) | 7 | I7e, I7g, I3a | à faire |
-| [I7g — la chronique et les noms](I7g-chronique-et-noms.md) | 7 | I7c | à faire |
-| [I8a — la vocation « village »](I8a-vocation-village.md) | 8 | I6b | à faire |
-| [I8b — la vocation « ferme productive »](I8b-vocation-productive.md) | 8 | I1c, I4 | à faire |
+| [I7g — la chronique et les noms](I7g-chronique-et-noms.md) | 7 | I7c | fait (avant I7c : la chronique s'ajoute au carnet, réglage allumé ; le commerce et les fêtes du village prêts à brancher, I5a, I8a ; voir docs/ile.md) |
+| [I8a — la vocation « village »](I8a-vocation-village.md) | 8 | I6b | fait (le socle des vocations ; la convivialité, quatre paliers ; les fêtes, la veillée ; six projets dont quatre bâtiments ; voir docs/ile.md) |
+| [I8b — la vocation « ferme productive »](I8b-vocation-productive.md) | 8 | I1c, I4 | fait (branché sur le socle des vocations d'I8a et les prix de l'île d'I4 ; les chiffres des contrats à refaire après I4 ; voir docs/ile.md) |
 | [I9a — l'île partagée : la frontière et le poids](I9a-ile-partagee.md) | 9 | I7f | à faire |
 | [I9a2 — l'horloge commune](I9a2-horloge-commune.md) | 9 | I9a | à faire |
 | [I9b — les changements du monde, synchronisés par région](I9b-synchro-monde.md) | 9 | I9a2 | à faire |

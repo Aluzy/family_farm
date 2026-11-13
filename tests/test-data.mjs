@@ -57,6 +57,40 @@ test('compileData() : conservation et recettes libres rejoignent les tables du m
   eq(DATA.OBJETS.tomate.conservation, 5, 'les données lues ne sont pas modifiées');
 });
 
+/* ---------- le chantier « l'île à bâtir », fiche I4 : les prix des filières ---------- */
+
+// Toute transformation rend entre FOURCHETTE[0] et FOURCHETTE[1] % de ses entrées (au prix de l'île, déduit au
+// chargement : js/engine/catalog.js prixDeLIle), sauf exception notée (VILLAGE.PRIX.EXCEPTIONS).
+test('les prix de l\'île : chaque recette de prix rend dans la fourchette, une fois les prix arrondis', async () => {
+  const { buildCatalog, recettesDePrix, prixIle } = await import('../js/engine/catalog.js');
+  const D = buildCatalog(compileData(DATA)), [min, max] = D.VILLAGE.PRIX.FOURCHETTE, EX = D.VILLAGE.PRIX.EXCEPTIONS || {};
+  const hors = [];
+  const l = recettesDePrix(D);
+  if (l.length < 100) throw new Error(`attendu plus de 100 recettes de prix, obtenu ${l.length}`);
+  for (const r of l) {
+    const cout = r.entrees.reduce((t, e) => t + Math.max(...e.options.map((o) => prixIle(o, D))) * e.qte, 0);
+    const valeur = prixIle(r.sortie, D) * r.qte;
+    if (!(valeur * 100 >= min * cout && valeur * 100 <= max * cout) && !EX[r.id]) hors.push(`${r.id} : ${cout} → ${valeur}`);
+    if (!Number.isInteger(prixIle(r.sortie, D))) hors.push(`${r.id} : un prix entier`);
+  }
+  eq(hors, []);
+  // aucune filière ne perd de valeur : bois → planche → porte ; laine → tissu → manteau ; blé → farine → pain ;
+  // minerai → lingot ; fibre → corde
+  const p = (o) => prixIle(o, D);
+  for (const [a, na, b, nb] of [['bois', 2, 'planche', 1], ['planche', 3, 'porte', 1], ['laine', 2, 'tissu', 1], ['tissu', 3, 'manteau_chaud', 1],
+    ['ble', 1, 'farine', 1], ['farine', 2, 'pain', 1], ['fibre', 3, 'corde', 1], ['planche', 6, 'meuble_lit_adulte', 1]]) {
+    if (!(p(b) * nb > p(a) * na)) throw new Error(`${na} ${a} (${p(a) * na}) → ${nb} ${b} (${p(b) * nb}) : la filière perd de la valeur`);
+  }
+  // le jeu d'avant garde ses prix écrits
+  eq([D.OBJETS.planche.prix, D.OBJETS.tissu.prix, D.OBJETS.pain.prix], [4, 18, 8], 'les prix écrits ne changent pas');
+});
+refuse('les prix de l\'île : une recette de l\'Atelier hors de la fourchette', (d) => { d.ATELIER.RECETTES.porte.coefPrix = 120; }, 'hors de la fourchette');
+refuse('les prix de l\'île : une transformation hors de la fourchette', (d) => { d.RECETTES.farine.coefPrix = 200; }, 'hors de la fourchette');
+refuse('les prix de l\'île : une recette d\'artisan sans coefficient', (d) => { delete d.VILLAGE.PRIX.ARTISANS.tissu.coefPrix; }, 'son coefPrix');
+test('les prix de l\'île : une exception notée passe', () => {
+  eq(errorsAfter((d) => { d.ATELIER.RECETTES.porte.coefPrix = 200; d.VILLAGE.PRIX.EXCEPTIONS.porte = 'Un essai.'; }), []);
+});
+
 /* ---------- ajouter une recette ---------- */
 
 const recette = (extra = {}) => ({ nom: 'Tarte aux poires', icone: '🥧', station: 'four', temps: 40, ingredients: [{ item: 'farine', qte: 2 }, { item: 'poire', qte: 3 }], libre: true, ...extra });

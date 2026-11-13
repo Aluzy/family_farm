@@ -30,11 +30,13 @@ import { veilleeFerme, veilleeFermePossible } from '../engine/ile.js';
 import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import { watchVillageois } from './villageois.js';
+import { watchChronique } from './chronique.js';
 import { watchPresents } from './amitie.js';
 import { watchDemandes } from './demandes.js';
 import { watchFetes } from './fetes.js';
 import { pleut } from '../engine/meteo.js';
 import { watchInvitations } from './invitations.js';
+import { watchVocations } from './vocations.js';
 import { watchPlans } from './plans.js';
 import {
   ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, watchAlerts,
@@ -336,12 +338,14 @@ function veiller(ticked) {
   watchPort(); // l'île à bâtir (fiche I1b) : le lieu du port posé dans le moteur
   watchBienvenue(); // fiche 18 : la visite de bienvenue du deuxième jour se met en route
   watchVillageois(); // l'île à bâtir (fiche I3a) : un jour de bac, un villageois arrive ; ses maisons, ses avis
+  watchChronique(); // l'île à bâtir (fiche I7g) : l'arrivée notée, le baptême du village
   watchRobot();
   watchPresents();
   watchDemandes(); // V-2 : les petites demandes des habitants, annoncées au matin
   watchMeteo(); // G-1 : l'averse qui commence
   watchFetes(); // V-4 : la fête du hameau (annoncée au matin ; y être pendant la fête)
   watchInvitations(); // les invitations à un repas : les réponses au matin, les invités en route
+  watchVocations(); // l'île à bâtir (fiche I8a) : au matin, la fête d'hier, le chantier du village, les paliers
   watchPlans(); // les plans de meubles offerts par un ami (le lot 4)
   watchPreparations();
   watchUnlocks();

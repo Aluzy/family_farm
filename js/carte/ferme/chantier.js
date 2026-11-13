@@ -623,6 +623,7 @@
           e.nomVu = cle;
           const L = C.largeur[E.matiere] || 16;
           e.nomTxt.setText(E.nom).setColor(E.texte).setScale(1);
+          if (E.matiere === 'village') e.nomTxt.setAlign('center');   // (fiche I7g : le panneau du village, deux lignes centrées)
           // (trop long : sur deux lignes, coupé à l'espace ou au trait d'union le plus près du milieu, s'il y en a)
           if (e.nomTxt.width > L / C.deuxLignes) {
             const coupes = [...E.nom].map((c, i) => (c === ' ' || c === '-' ? i : -1)).filter((i) => i > 0);
@@ -668,7 +669,7 @@
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
       const guirlandes = this.guirlandes && this.guirlandes.size ? [...this.guirlandes.values()] : [];
-      if (!list.length && !lampes.length && !guirlandes.length && !cheminees.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !this.calecheSprite && !luit) return;
+      if (!list.length && !lampes.length && !guirlandes.length && !cheminees.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !(this.feteLumieres && this.feteLumieres()) && !this.calecheSprite && !luit) return;
       if (!this.lanternLights) {
         this.lanternLights = [];
         lueur(this.textures);
@@ -776,6 +777,7 @@
       this.stepFenetres(out, nuit, dt);
       if (this.stepFenetresHameaux) this.stepFenetresHameaux(out, nuit);   // (les fenêtres des hameaux : hameaux.js)
       if (this.stepLumineux) this.stepLumineux(out, nuit, time);         // (les champignons et les cristaux du monde : lumineux.js)
+      if (this.stepFete) this.stepFete(out, nuit, time);                 // (I8a : les lampions de la fête du village : fete.js)
       this.stepEauLumiere(out, nuit, time);
       if (this.lumiereCaleche) this.lumiereCaleche(out, nuit, time);   // (la lanterne de la calèche : caleche.js)
       // (le récit, lot 10 : la pierre de lune posée, les nuits de pleine lune, la ferme luit faiblement : une
@@ -1297,8 +1299,9 @@
     // réfrigérateur, plus haut qu'un bloc : toute sa hauteur).
     stationAt(wx, wy) {
       for (const e of (this.blocks || new Map()).values()) {
-        const win = BLOCS_CARTE.fenetres[e.sorte], h = e.sorte === 'refrigerateur' ? 34 : 24;
-        if (win && Math.abs(wx - e.x) <= T / 2 + 2 && wy <= e.y + 2 && wy >= e.y - h) return win;
+        // (I4 : l'étal du joueur, deux cases de large et son auvent)
+        const win = BLOCS_CARTE.fenetres[e.sorte], h = e.sorte === 'refrigerateur' ? 34 : e.sorte === 'etal' ? 30 : 24, demi = e.sorte === 'etal' ? T + 2 : T / 2 + 2;
+        if (win && Math.abs(wx - e.x) <= demi && wy <= e.y + 2 && wy >= e.y - h) return win;
       }
       return null;
     },

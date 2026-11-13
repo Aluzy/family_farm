@@ -12,6 +12,9 @@ import { cleDiversite, tirerApparence } from './apparence.js';
 import { evenementsDe, noterEvenement } from './voisins.js';
 import { trouverVillageois, villageoisDe } from './villageois.js';
 import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
+import { gainAccords } from './traits.js';
+import { chroniqueArrivee, noterChronique } from './chronique.js';
+import { presentsALaFete } from './fetes-village.js';
 
 /* ---------- les liens entre villageois (le chantier « l'île à bâtir », fiche I6b) ----------
 
@@ -19,8 +22,10 @@ import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
    de ce qu'ils ont vécu ensemble dans la journée (liensNuit, appelé par runNight après les tâches et avant la nuit des
    villageois) et ne baisse jamais (B-1 : pas de brouille) : ILE (ils vivent sur la même île), VOISIN (leurs maisons
    proches), POSTE (la même tâche, à des postes voisins ; le même commerce, I5a), TABLE (la même table au même repas),
-   SORTIE (une visite, un rendez-vous, une promenade, un banc à deux), FETE (le même repas du joueur), FOYER (le même
-   toit), ENTRAIDE (un repas apporté). Au-delà de LENT, un gain compte pour moitié.
+   SORTIE (une visite, un rendez-vous, une promenade, un banc à deux), FETE (le même repas du joueur ; I8a : la même
+   fête du village, fetes-village.js), FOYER (le même
+   toit), ENTRAIDE (un repas apporté) ; et (fiche I6c, traits.js) les paires de traits qui s'accordent (TRAITS.ACCORDS).
+   Au-delà de LENT, un gain compte pour moitié.
 
    Les paliers (NOMS_LIENS) : inconnu, connaissance, camarade, ami, proche (LIENS.PALIERS). La vie sociale d'I3b+
    (villageois-liens.js : connaissance, la journée, la scène, les répliques) lit le « degré » : 0 inconnu, 1
@@ -209,6 +214,8 @@ export function liensNuit(state) {
   // ce que chacun a vécu aujourd'hui : ses tables (au repas de midi, du soir), ses sorties à plusieurs, sa tâche
   const faits = new Map();
   const A = amitieDe(state).pnj || {};
+  // (I8a : ceux qui étaient à la fête du village aujourd'hui)
+  const aLaFete = new Set(presentsALaFete(state, jour));
   for (const v of V) {
     const segs = J.get(v.id) || [];
     const tables = new Set(), sorties = new Set();
@@ -220,7 +227,7 @@ export function liensNuit(state) {
     }
     const T = v.travail;
     const p = A[v.id], souv = p && Array.isArray(p.souvenirs) ? p.souvenirs[p.souvenirs.length - 1] : null;
-    faits.set(v.id, { tables, sorties, tache: T && T.jour === jour && T.actions > 0 ? T.tache : null, fete: !!(souv && souv.jour === jour) });
+    faits.set(v.id, { tables, sorties, tache: T && T.jour === jour && T.actions > 0 ? T.tache : null, fete: !!(souv && souv.jour === jour) || aLaFete.has(v.id) });
   }
   const aides = new Set(L.entraide.filter((e) => e.jour === jour).map((e) => paire(e.de, e.a)));
   const foyerDe = new Map();
@@ -246,6 +253,8 @@ export function liensNuit(state) {
       if (fa.fete && fb.fete) g += Number(G.FETE) || 0;
       if (foyerDe.has(va.id) && foyerDe.get(va.id) === foyerDe.get(vb.id)) g += Number(G.FOYER) || 0;
       if (aides.has(paire(va.id, vb.id))) g += Number(G.ENTRAIDE) || 0;
+      // (fiche I6c, traits.js : des traits qui s'accordent, TRAITS.ACCORDS ; aucun ne fait baisser l'affinité)
+      g += gainAccords(va, vb);
       if (!(g > 0)) continue;
       const k = rang(i, j), avant = tab[k];
       const apres = borne(avant + (avant >= lent ? Math.ceil(g / 2) : g));
@@ -260,6 +269,11 @@ export function liensNuit(state) {
   // (les paliers qu'on annonce au joueur : une notification, la page la dit)
   const annonce = new Set(Array.isArray(LI().AVIS) ? LI().AVIS : [3, 4]);
   for (const p of out.paliers) {
+    // (fiche I7g : deux villageois devenus proches, dans la chronique)
+    if (p.palier === 4 && vus.get(p.a) && vus.get(p.b)) {
+      const [x, y] = [vus.get(p.a), vus.get(p.b)].sort((m, n) => (m.id < n.id ? -1 : 1));
+      noterChronique(state, 'proche', { a: x.id, b: y.id, pa: x.prenom, pb: y.prenom });
+    }
     if (!annonce.has(p.palier)) continue;
     const v = vus.get(p.a);
     if (v) avis(v, `lien_${NOMS_LIENS[p.palier]}:${p.b}`);
@@ -441,6 +455,9 @@ export function formerFoyer(state, a, b, boite = null) {
   const f = { id: `fy-${n}`, membres: [a, b].sort(), maison: m.boite, jour: jourDe(state), enfant: null, attend: false };
   L.foyers.push(f);
   avis(va, `foyer:${b}`);
+  // (fiche I7g : le foyer formé, dans la chronique)
+  const [x, y] = [va, vb].sort((m, n) => (m.id < n.id ? -1 : 1));
+  noterChronique(state, 'foyer', { id: f.id, a: x.id, b: y.id, pa: x.prenom, pb: y.prenom });
   return { ok: true, foyer: f };
 }
 
@@ -519,6 +536,7 @@ export function arriverEnfant(state, o = {}) {
   f.attend = false;
   if (!amitieDe(state).pnj[v.id]) ajouterAmitie(state, v.id, Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0);
   for (const id of f.membres) { const p = trouverVillageois(state, id); if (p) avis(p, `enfant:${v.id}`); }
+  chroniqueArrivee(state, v, f.membres.map((id) => trouverVillageois(state, id)).filter(Boolean));   // (fiche I7g)
   return { ok: true, villageois: v };
 }
 

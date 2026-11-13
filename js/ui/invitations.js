@@ -17,6 +17,8 @@ import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { tel } from './consent.js';
 import { villageActif } from '../engine/village.js';
+import { feteRefus, heuresFete, platsPourLaFete } from '../engine/fetes-village.js';
+import { fixerFeteDuJour } from './vocations.js';
 
 /* ---------- les invitations à un repas, côté page (js/engine/invitations.js) ----------
 
@@ -102,6 +104,9 @@ function openEvenement(jour, coche = null) {
         <button type="button" class="btn primary" data-action="evt-inviter"${R.length ? '' : ' disabled'}>✉️ ${villageActif(state) ? 'Inviter' : 'Confier à Achille'}</button>
         <button type="button" class="btn" data-action="close-modal">Fermer</button>
       </div>
+      ${villageActif(state) ? `<fieldset class="evt-groupe evt-fete"><legend>🎉 Ou la fête du village, ce jour-là</legend>
+        <p class="muted">Tout le village se retrouve sur la place, de ${heuresFete('mois')[0]} h à ${heuresFete('mois')[1]} h : il faut ${platsPourLaFete(state)} plats cuisinés.${feteRefus(state, j) ? ` ${escapeHtml(feteRefus(state, j))}` : ''}</p>
+        <button type="button" class="btn" data-action="evt-fete">🎉 Fixer la fête du village</button></fieldset>` : ''}
     </form>`, { labelledBy: 'evt-titre', className: 'modal bois evt-modal' });
 }
 
@@ -203,6 +208,12 @@ registerActions({
     const qui2 = liste(r.invitation.invites.map((q) => escapeHtml(q.prenom)));
     notify(seulsVillageois(r.invitation.invites) ? `✉️ Ton invitation pour ${M.nom} ${leJour(jour)} passe de porte en porte, chez ${qui2} : les réponses demain matin.`
       : `✉️ Achille portera ton invitation pour ${M.nom} ${leJour(jour)} à ${qui2} : les réponses demain matin.`, { kind: 'info' });
+  },
+  // (fiche I8a : la fête du village, le jour choisi : js/ui/vocations.js)
+  'evt-fete': (target) => {
+    const f = formDe(target);
+    if (!f) return;
+    if (fixerFeteDuJour(Number(f.querySelector('[name="evt-jour"]').value))) closeModal();
   },
   'evt-annuler': (target) => {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }

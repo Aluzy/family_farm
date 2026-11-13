@@ -50,11 +50,14 @@ import { couchages } from '../engine/blocs.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js';
 import { portTabsHtml, renderPort } from './port.js';
+import { chroniqueBouton } from './chronique.js';
 import { villageActif } from '../engine/village.js';
-import { renderChapterBanner } from './chapitres.js';
+import { renderChapterBanner, ongletsIle, corpsIle } from './chapitres.js';
 import { paliersSuivis } from '../engine/paliers.js';
 import { renderBoite } from './boite.js';
 import { renderTonnelets } from './tonnelet.js';
+import { renderEtal } from './etal.js';
+import { caseEtal } from '../engine/bourse.js';
 import { tonneletsPoses } from '../engine/tonnelets.js';
 import { renderComposts } from './compost.js';
 import { compostsPoses } from '../engine/compost.js';
@@ -302,6 +305,11 @@ export const STAGE_WINDOWS = {
     nom: 'Tonnelets', icone: DATA.TONNELET.ICONE, ok: () => tonneletsPoses(state).length > 0, bois: true,
     corps: () => renderTonnelets(),
   },
+  // L'étal du joueur (l'île à bâtir, fiche I4 ; un appui sur lui) : ce qui y est en vente aux villageois, y mettre.
+  etal: {
+    nom: 'Étal', icone: '🛒', ok: () => villageActif(state) && caseEtal(state) !== null, bois: true,
+    corps: () => renderEtal(),
+  },
   // Les bacs à compost posés dehors (un appui sur l'un d'eux) : ce qu'ils contiennent, y jeter des aliments.
   compost: {
     nom: 'Bacs à compost', icone: DATA.COMPOST.ICONE, ok: () => compostsPoses(state).length > 0, bois: true,
@@ -383,7 +391,10 @@ export const STAGE_WINDOWS = {
   chapitres: {
     get nom() { return paliersSuivis(state) ? 'L\'île' : 'Chapitres'; },
     get icone() { return paliersSuivis(state) ? '🏝️' : '📜'; },
-    ok: () => true, corps: () => renderChapterBanner(),
+    // (fiche I8a : le chantier allumé, deux onglets, les paliers de l'île et les vocations : chapitres.js)
+    get onglets() { return villageActif(state) && paliersSuivis(state) ? ongletsIle : undefined; },
+    get haute() { return villageActif(state) && paliersSuivis(state); },
+    ok: () => true, corps: () => corpsIle(),
   },
   // Le Silo : sur la carte dès qu'il est débloqué (comme le Poulailler) ; on le construit,
   // l'agrandit et on voit son blé dans sa fenêtre.
@@ -698,6 +709,8 @@ export function renderTabbar() {
       // L'Encyclopédie, un livre qui se remplit au fil de la partie (js/ui/encyclopedie.js)
       encyclopedieBouton() +
       carnetBouton() +
+      // (l'île à bâtir, fiche I7g : la chronique, à côté du carnet tant que le récit est là, I7c)
+      chroniqueBouton() +
       demandesBouton() +
       carteMondeBouton() +
       // Le mode test (activé dans les Options) : son panneau, par-dessus la carte.

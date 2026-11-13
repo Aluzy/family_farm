@@ -8,6 +8,7 @@ import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.
 import { lieuxDuVillage } from './villageois-journee.js';
 import { AMITIE, palierAmitie } from './amitie.js';
 import { degreDuPalier, liensSignature, NOMS_LIENS, palierLien, scorePaire } from './liens.js';
+import { causeDesTraits, repliqueTrait } from './traits.js';
 
 /* ---------- qui se connaît, au village (le chantier « l'île à bâtir », I3b+ : la vie sociale) ----------
 
@@ -129,6 +130,10 @@ export function liensPourLaCarte(state) {
     const [a, b] = k.split('|');
     out.paires[a][b] = p.degre; out.paires[b][a] = p.degre;
   }
+  // (fiche I6c, traits.js : cause, { [id]: facteur } : le bavard cause plus longtemps, le réservé moins ; seulement
+  // ceux dont les traits changent quelque chose)
+  out.cause = {};
+  for (const v of V) { const f = causeDesTraits(v); if (f !== 1) out.cause[v.id] = Math.round(f * 100) / 100; }
   return out;
 }
 
@@ -191,5 +196,17 @@ export function echangeVillageois(state, a, b, o = {}) {
   const pris = (l, k) => (l.length ? l[(Math.floor(base * l.length) + k) % l.length] : null);
   const p = (propres ? (n % 2 === 0 || !pool.length ? pris(propres, n >> 1) : pris(pool, n >> 1)) : pris(pool, n)) || ['Bonjour !', 'Bonjour !'];
   const emo = (rnd2) => (triste && rnd2() < 0.4 ? un(rnd2, E.triste) : un(rnd2, E[DEGRES[d]])) || '';
-  return { degre: d, emoji: [emo(rnd), emo(rnd)], lignes: [remplir(p[0], vb), remplir(p[1], va)] };
+  const out = { degre: d, emoji: [emo(rnd), emo(rnd)], lignes: [remplir(p[0], vb), remplir(p[1], va)] };
+  // (fiche I6c, traits.js : une fois sur TRAITS.PAROLE.REPLIQUE, en croisant un autre, il dit une réplique de l'un de
+  // ses traits (le bavard raconte, le taquin taquine, le réservé dit à peine bonjour) ; son tirage est à part, le reste
+  // ne change pas ; pas au travail ni à table)
+  if (!['travail', 'repas'].includes(o.sorte || 'croise')) {
+    const t = repliqueTrait(state, va, `${paire(a, b)}:${jourDe(state)}:${o.sorte || 'croise'}:${n}`);
+    if (t) {
+      out.lignes = [remplir(t.paire[0], vb), t.paire[1] ? remplir(t.paire[1], va) : ''].filter(Boolean);
+      if (t.emoji) out.emoji[0] = t.emoji;
+      out.trait = t.trait;
+    }
+  }
+  return out;
 }

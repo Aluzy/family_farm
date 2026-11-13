@@ -367,7 +367,7 @@ const CULTURE_MONTE = 0;
     // suit la peinture (data/meubles.json PEINTURES enseigne_<matière>, `texte`)
     enseigne: {
       taille: 7, ombre: 'rgba(0,0,0,0.35)', deuxLignes: 0.7,
-      dy: { bois: 17.5, email: 17, fer: 16.5 }, largeur: { bois: 19, email: 19, fer: 15 },
+      dy: { bois: 17.5, email: 17, fer: 16.5, village: 18.5 }, largeur: { bois: 19, email: 19, fer: 15, village: 23 },
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
     // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
@@ -400,7 +400,7 @@ const CULTURE_MONTE = 0;
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
     // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable ; sur le bac à semis, la Serre ;
     // sur la meule, le Moulin ; sur la boîte à nourriture, ce qu'elle contient (le silo : silo.js, siloAt)
-    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost' },
+    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost', etal: 'etal' },
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne (le silo :
     // le pied de sa première colonne)
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'bloc_silo' },
@@ -550,6 +550,14 @@ const CULTURE_MONTE = 0;
     'enseigne_bois', 'enseigne_email', 'enseigne_fer', 'boite_lettres_bois', 'boite_lettres_email', 'boite_lettres_fer',
     // (la boîte aux lettres d'un villageois, l'île à bâtir : scripts/batiments/boite_villageois.py)
     'boite_aux_lettres',
+    // (le panneau du village, l'île à bâtir : scripts/batiments/panneau_village.py ; son nom, BLOCS_CARTE.enseigne « village »)
+    'panneau_village',
+    // (les bâtiments des projets du village, l'île à bâtir, fiche I8a : scripts/batiments/projets_village.py ; en
+    // chantier, puis achevés : js/engine/projets-village.js dessinProjet)
+    'lavoir', 'lavoir_chantier', 'kiosque', 'kiosque_chantier', 'fontaine_village', 'fontaine_village_chantier',
+    'four_commun', 'four_commun_chantier',
+    // (le quai de chargement de la ferme productive, l'île à bâtir, fiche I8b : scripts/batiments/quai_chargement.py)
+    'quai_chargement',
     // (le pont de planches, hors de la ferme, l'île à bâtir : scripts/carte/portage.py ; son image suit son sens et ses voisins)
     'pont_planches_ns_0', 'pont_planches_ns_1', 'pont_planches_ns_2', 'pont_planches_ns_3',
     'pont_planches_eo_0', 'pont_planches_eo_1', 'pont_planches_eo_2', 'pont_planches_eo_3',
@@ -571,6 +579,8 @@ const CULTURE_MONTE = 0;
     // suit le blé qu'ils contiennent)
     'distributeur_0', 'distributeur_1', 'distributeur_2', 'distributeur_3', 'distributeur_4',
     'mangeoire_grain_vide', 'mangeoire_grain_pleine',
+    // l'étal du joueur (l'île à bâtir, fiche I4 : scripts/batiments/etal.py) : vide, ou garni de ce qu'il vend
+    'etal_vide', 'etal_garni',
     // le râtelier de l'Écurie (scripts/personnage/cheval.py)
     'ratelier',
     // le four, redessiné par le joueur (scripts/batiments/four.py) : éteint, puis les images de son feu (FOUR)

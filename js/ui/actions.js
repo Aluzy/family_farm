@@ -27,11 +27,14 @@ export const SOMMEIL_PERMISES = new Set([
   'cheval-fiche', 'cheval-aide', // (le galop : voir la fiche du cheval)
   'villageois-attribuer', 'villageois-donner', 'villageois-reprendre', 'villageois-vendre-ok', // (I3c : confier une tâche, un outil, ce qu'il porte au port : il s'y mettra au matin)
   'liens-foyer-ok', 'liens-enfant', // (I6b : un foyer, un enfant attendu : ils s'installent, l'enfant viendra par le bac)
+  'chronique-epingler', 'chronique-note-ok', 'chronique-note-effacer', 'noms-ok', // (I7g : la chronique et les noms : rien ne bouge sur la ferme)
+  'vocation-projet-envoyer', 'vocation-projet-abandonner', // (I8a : envoyer au chantier du village, ou l'en rappeler ; abandonner un projet)
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'portail',
   'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
-  'sell-item', 'buy-item', 'caleche-heler', 'port-vendre', 'port-acheter', 'port-decharger', 'port-honorer', 'port-importer', 'port-apporter', 'port-agrandir', 'portage-charger', 'portage-recoltes', 'portage-reprendre', 'portage-vehicule', 'deposer-item', 'malle-reprendre', 'commander-item', 'malle-annuler', 'malle-prendre', 'promesse-confier', 'ile-commander', 'ile-meuble', 'cheval-toggle', 'galop-pomme', 'cheval-remplir', 'cheval-reprendre', 'plant-all', 'plant-many', 'hoe-many', 'ami-offrir', 'evt-inviter', 'evt-annuler', 'repas-servir',
+  'sell-item', 'buy-item', 'caleche-heler', 'port-vendre', 'port-acheter', 'port-decharger', 'port-honorer', 'port-contrat', 'port-livrer', 'port-importer', 'port-apporter', 'port-agrandir', 'portage-charger', 'portage-recoltes', 'portage-reprendre', 'portage-vehicule', 'deposer-item', 'malle-reprendre', 'commander-item', 'malle-annuler', 'malle-prendre', 'promesse-confier', 'ile-commander', 'ile-meuble', 'cheval-toggle', 'galop-pomme', 'cheval-remplir', 'cheval-reprendre', 'plant-all', 'plant-many', 'hoe-many', 'ami-offrir', 'evt-inviter', 'evt-annuler', 'repas-servir',
+  'vocation-fete-fixer', 'evt-fete', 'vocation-fete-annuler', 'vocation-projet-lancer', 'vocation-projet-apporter', // (I8a : les fêtes et les projets du village)
   'toit-reparer', 'projet-apporter', 'enveloppe-ouvrir', // (le récit, lot 9 : réparer un toit de hameau, ouvrir l'enveloppe de Maurice)
   'pierre-poser', // (le récit, lot 10 : poser la pierre de lune sur la ferme)
   'harvest-tree',
@@ -46,6 +49,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'bac-semer', // (les bacs à fleurs : semer une graine de fleur)
   'tonnelet-remplir', // (le tonnelet : y mettre une tomme d'alpage, un moût de houblon)
   'compost-jeter', 'engrais-many', // (le bac à compost : y jeter des aliments ; glisser l'engrais sur les cultures)
+  'etal-mettre', 'etal-reprendre', // (I4 : l'étal des villageois, comme la boîte)
 ]);
 
 // Plusieurs actions, une même fonction (elle reçoit le nom de l'action en 3e argument).

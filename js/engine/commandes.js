@@ -118,6 +118,8 @@
    Le bac, les commandes, l'import et les niveaux (fiche I1c ; js/engine/bac.js, sans inverse) :
      port.honorer     { commande, case }        honorer une commande du bac avec ce qu'on a porté
      port.importer    { article, quantite, case } commander au catalogue (« objet:jeune_pommier »…), payé d'avance
+     port.contrat     { contrat, case }         accepter un contrat d'export proposé (fiche I8b)
+     port.livrer      { contrat, case }         livrer à un contrat accepté ce qu'on a porté de son objet (fiche I8b)
      port.apporter    { case }                  apporter au chantier du port les matériaux portés du niveau suivant
      port.agrandir    { case }                  payer le niveau suivant (ses matériaux apportés)
    Les tâches des villageois (l'île à bâtir, fiche I3c ; js/engine/taches.js, sans inverse) :
@@ -127,6 +129,9 @@
    Les liens entre villageois (l'île à bâtir, fiche I6b ; js/engine/liens.js, sans inverse) :
      villageois.foyer     { a, b, maison? }     proposer à deux proches de vivre ensemble (la maison : sa boîte aux lettres)
      villageois.enfant    { foyer }             proposer à un foyer d'accueillir un enfant (il viendra par le prochain bac)
+   L'étal du joueur (l'île à bâtir, fiche I4 ; js/engine/bourse.js, l'inverse l'un de l'autre) :
+     etal.mettre      { objet, quantite }       mettre en vente à l'étal (de l'inventaire, puis du réfrigérateur)
+     etal.reprendre   { objet, quantite }       reprendre de l'étal (à l'inventaire)
 */
 
 import { objectifsARevoir } from './campaign.js';
@@ -146,6 +151,7 @@ import { pickUp } from './ramassage.js';
 import { recolterBac, semerBac } from './bacs.js';
 import { cueillirMassif } from './massifs.js';
 import { remplirTonnelet } from './tonnelets.js';
+import { mettreALEtal, reprendreDeLEtal } from './bourse.js';
 import { engraisser, jeterAuCompost } from './compost.js';
 import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, stopCurrent } from './kitchen.js';
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
@@ -162,6 +168,7 @@ import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
 import { acheterAuPort, dechargerAuPort, vendreAuPort } from './port.js';
 import { agrandirPort, apporterAuChantier, commanderImport, honorerCommande } from './bac.js';
+import { accepterContrat, livrerContrat } from './contrats.js';
 import { chargerPortage, choisirVehicule, dechargerPortage } from './portage.js';
 import { attribuer, donnerOutil, marquerAVendre, reprendreOutil } from './taches.js';
 import { accueillirEnfant, formerFoyer } from './liens.js';
@@ -577,6 +584,15 @@ export const COMMANDES = {
     args: { article: 'texte', quantite: 'quantite', case: 'case' },
     executer: (state, { article, quantite, case: c }) => commanderImport(state, article, Math.max(1, Math.floor(quantite)), c),
   },
+  // (fiche I8b : les contrats d'export)
+  'port.contrat': {
+    args: { contrat: 'texte', case: 'case' },
+    executer: (state, { contrat, case: c }) => accepterContrat(state, contrat, c),
+  },
+  'port.livrer': {
+    args: { contrat: 'texte', case: 'case' },
+    executer: (state, { contrat, case: c }) => livrerContrat(state, contrat, c),
+  },
   'port.apporter': {
     args: { case: 'case' },
     executer: (state, { case: c }) => apporterAuChantier(state, c),
@@ -621,6 +637,14 @@ export const COMMANDES = {
   'villageois.enfant': {
     args: { foyer: 'texte' },
     executer: (state, { foyer }) => accueillirEnfant(state, foyer),
+  },
+  'etal.mettre': {
+    args: { objet: 'objet', quantite: 'quantite' },
+    executer: (state, { objet, quantite }) => mettreALEtal(state, objet, quantite),
+  },
+  'etal.reprendre': {
+    args: { objet: 'objet', quantite: 'quantite' },
+    executer: (state, { objet, quantite }) => reprendreDeLEtal(state, objet, quantite),
   },
 };
 

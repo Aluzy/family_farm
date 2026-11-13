@@ -22,6 +22,13 @@ import { trouverVillageois, villageoisDe } from './villageois.js';
 import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
 import { connaissance } from './villageois-liens.js';
 import { liensSignature } from './liens.js';
+import { auChantier } from './projets-village.js';
+import { chaines, tasDe, verserChaine } from './chaines.js';
+import { ramasserMorceau } from './outils.js';
+import { millPending, startMilling } from './kitchen.js';
+import { contratsAcceptes, livrerDepuisLaFerme } from './contrats.js';
+import { quaiDeChargement } from './production.js';
+import { chevalPossede } from './cheval.js';
 
 /* ---------- les tâches attribuées (le chantier « l'île à bâtir », fiche I3c) ----------
 
@@ -210,7 +217,7 @@ export function signatureTaches(state) {
   return [jourDe(state), n(O.arbres), n(O.rochers), n(O.herbes), state.cueillette && state.cueillette.jour === state.day ? state.cueillette.pris.length : 0,
     ((state.verger && state.verger.arbres) || []).length, n(state.blocs), !!(S.cuisine && S.cuisine.construit), !!(S.four && S.four.construit),
     P ? P.poules : 0, E ? (E.moutons || []).length + (E.vaches || []).length : 0, foretArbres(state).length, lieuPort(state) ? 1 : 0,
-    ((state.potager && state.potager.parcelles) || []).length].join(':');
+    ((state.potager && state.potager.parcelles) || []).length, !!(S.moulin && S.moulin.construit)].join(':');
 }
 
 // (gardés tant que le jour, les lieux, sa maison et ce qui change les cibles (les arbres abattus, les rochers cassés,
@@ -229,6 +236,42 @@ export function postesDe(state, id, v = null) {
   if (postesMemo.size > 64) postesMemo.clear();
   postesMemo.set(sig, { L, postes });
   return postes;
+}
+
+/* ---------- fiche I8b : les machines, la tournée en volume ---------- */
+
+// Les machines que sert « Conduire les machines » : [{ sorte ('chaine', 'moulin', 'four'), case (son bloc), chaine?
+// (etatChaine), dedans?, libre? (une case libre de sa pièce) }] : les chaînes de production prêtes, la meule du Moulin
+// bâti, les fours posés (la station four bâtie).
+export function machinesDeLaFerme(state) {
+  const out = [], B = state.blocs || {}, S = state.stations || {};
+  for (const c of chaines(state)) if (c.ok) out.push({ sorte: 'chaine', case: c.case, chaine: c });
+  const pieces = (S.moulin && S.moulin.construit) || (S.four && S.four.construit) ? piecesCloses(state) : [];
+  const couvertes = pieces.length ? casesCouvertes(state) : null;
+  const dansPiece = (t) => {
+    const p = pieces.find((x) => x.cases.includes(t));
+    if (!p) return null;
+    const dedans = new Set(p.cases);
+    return (q) => dedans.has(q) && B[q] === undefined && !couvertes.has(q) && !p.paillasses.includes(q);
+  };
+  for (const [k, sorte] of Object.entries(B)) {
+    const t = Number(k);
+    if (sorte === 'meule' && S.moulin && S.moulin.construit) { const f = dansPiece(t); out.push({ sorte: 'moulin', case: t, ...(f ? { dedans: true, libre: f } : {}) }); }
+    if (sorte === 'four' && S.four && S.four.construit) { const f = dansPiece(t); out.push({ sorte: 'four', case: t, ...(f ? { dedans: true, libre: f } : {}) }); }
+  }
+  return out;
+}
+
+// Ce que porte la tournée du port à chaque aller (des objets) : PORTEE ; (fiche I8b) PRODUCTION.NAVETTE.BROUETTE avec
+// une brouette à la ferme, CHARRETTE avec une charrette et un cheval ; un quai de chargement posé : QUAI % de plus.
+export function porteeNavette(state) {
+  const def = tacheDef('navette') || {}, N = (DATA.PRODUCTION && DATA.PRODUCTION.NAVETTE) || {};
+  let n = Math.max(1, Number(def.PORTEE) || 10);
+  const a = (o) => (stock(state)[o] || 0) > 0;
+  if (a('charrette') && chevalPossede(state) && N.CHARRETTE) n = Math.max(n, N.CHARRETTE);
+  else if (a('brouette') && N.BROUETTE) n = Math.max(n, N.BROUETTE);
+  if (quaiDeChargement(state) !== null && N.QUAI) n = Math.round((n * N.QUAI) / 100);
+  return n;
 }
 
 function calculerPostes(state, id, v, def, L) {
@@ -281,11 +324,24 @@ function calculerPostes(state, id, v, def, L) {
       }
       return proche(l);
     }
+    case 'machine': {
+      // (fiche I8b : devant chaque machine qu'il sert : l'entonnoir d'une chaîne prête, la meule du Moulin, le four)
+      const l = [], pris = new Set();
+      for (const m of machinesDeLaFerme(state)) {
+        const q = [m.case + W, m.case - W, m.case - 1, m.case + 1].find((t) => !pris.has(t) && (m.dedans ? m.libre(t) : L.libre(t)));
+        if (q !== undefined) { pris.add(q); l.push({ case: q, vers: m.case, ...(m.dedans ? { dedans: true } : {}) }); }
+      }
+      return proche(l);
+    }
     case 'port': {
       const c = comptoirDuPort(state);
       if (!c || !lieuPort(state)) return [];
       // (le coffre : devant la maison de la famille, d'où il part avec ce qu'il porte ; puis le comptoir du port)
       const abri = L.abri && L.abri.length ? L.abri[0] : null;
+      // (fiche I8b : un quai de chargement posé regroupe les envois : la tournée y part et y revient)
+      const quai = quaiDeChargement(state);
+      const devantQuai = quai !== null ? [quai + W, quai + 1 + W, quai - 1, quai + 2].find((t) => L.libre(t)) : undefined;
+      if (devantQuai !== undefined) return [{ case: devantQuai, vers: quai, coffre: true, quai: true }, { case: c.devant, vers: c.cases[0], port: true }];
       const coffre = abri !== null ? [abri + W, abri].find((t) => t !== null) : origineDe(state, null, L);
       return [{ case: coffre, vers: null, coffre: true, dedans: !!L.abri }, { case: c.devant, vers: c.cases[0], port: true }];
     }
@@ -315,6 +371,8 @@ export function tachesDuPoste(state, t) {
   const couvertes = casesCouvertes(state), b = B[couvertes.has(t) ? couvertes.get(t) : t];
   if (((state.verger && state.verger.arbres) || []).some((a) => a.case === t) || b === DATA.RUCHE.OBJET) out.add('verger');
   if (b === 'cuisiniere' || b === 'four') out.add('cuisine');
+  // (fiche I8b : un bloc d'une chaîne de production, la meule, le four : les machines)
+  if (b === 'meule' || b === 'four' || chaines(state).some((c) => c.case === t || c.reservoir === t || c.outils.includes(t) || c.convoyeurs.includes(t))) out.add('chaine');
   if (b === 'nichoir' || b === 'mangeoire' || b === 'barriere') out.add('betes');
   else for (const p of piecesCloses(state)) if (p.cases.includes(t) && p.cases.some((c) => B[c] === 'nichoir' || B[c] === 'mangeoire')) out.add('betes');
   if ((T.BUISSONS || []).some(([x, y, w, h]) => (t % W) >= x && (t % W) < x + w && Math.floor(t / W) <= y && Math.floor(t / W) > y - h)) out.add('cueillette');
@@ -334,7 +392,7 @@ export function tacheManque(state, v, id) {
       : `Il lui faut ${unOutil(def.outil)} : fabrique-${une} à l'Atelier, puis donne-${une}-lui.`;
   }
   if (!postesDe(state, id, v).length) return def.SANS || 'Pas de poste pour cette tâche.';
-  if (id === 'navette' && !(Array.isArray(v && v.vendre) && v.vendre.length)) return 'Rien n\'est marqué « à vendre » : coche sur sa fiche ce qu\'il doit porter au port.';
+  if (id === 'navette' && !(Array.isArray(v && v.vendre) && v.vendre.length) && !contratsAcceptes(state).length) return 'Rien n\'est marqué « à vendre » : coche sur sa fiche ce qu\'il doit porter au port.';
   return null;
 }
 
@@ -353,7 +411,9 @@ export function manqueDit(state, v) {
 const attenteMemo = new Map();
 export function tacheAttente(state, v) {
   if (!v || !tacheDef(v.tache)) return null;
-  const cle = `${v.tache}:${v.outil || ''}:${v.maison ?? ''}:${(v.vendre || []).length}:${hasTool(state, tacheDef(v.tache).outil || 'houe') ? 1 : 0}:${signatureTaches(state)}`;
+  // (fiche I8b : la tournée part aussi pour un contrat d'export accepté)
+  const P = state.production && state.production.contrats, contrats = P && Array.isArray(P.acceptes) ? P.acceptes.length : 0;
+  const cle = `${v.tache}:${v.outil || ''}:${v.maison ?? ''}:${(v.vendre || []).length}:${hasTool(state, tacheDef(v.tache).outil || 'houe') ? 1 : 0}:${contrats}:${signatureTaches(state)}`;
   const m = attenteMemo.get(v.id);
   if (m && m.cle === cle && m.s === state) return m.r;
   const r = tacheManque(state, v, v.tache);
@@ -363,8 +423,9 @@ export function tacheAttente(state, v) {
 }
 
 // Travaille-t-il aujourd'hui ? (une tâche, rien ne lui manque, pas au repos, il est chez lui sur l'île)
+// (fiche I8a : envoyé au chantier du village, il y travaille à la place de sa tâche, projets-village.js auChantier)
 export function travailleAujourdhui(state, v) {
-  return !!v && !!tacheDef(v.tache) && !v.repos && !v.accueil && !tacheAttente(state, v);
+  return !!v && !!tacheDef(v.tache) && !v.repos && !v.accueil && !tacheAttente(state, v) && !auChantier(state, v);
 }
 
 // Les tâches pour la fiche du villageois `id` : [{ id, nom, icone, outil, donne, manque (null ou la raison), prise
@@ -485,6 +546,64 @@ function laPlusProche(W, l, pres) {
   return m;
 }
 
+// Fiche I8b : un tour des machines (la tâche « Conduire les machines »). Pour chaque chaîne prête : il ramasse au
+// coffre le tas au bout de son convoyeur (une chaîne au tas plein repart), puis jette dans son entonnoir les
+// ingrédients du coffre (verserChaine, comme le joueur) ; au Moulin bâti, il verse jusqu'à MOULIN blés quand il n'en a
+// plus guère à moudre (GARDE blés restent pour les semis, et trois nuits de blé pour les poules) ; au four libre, il
+// relance la FOURNEE. Ce qu'il verse au Moulin et au four compte à son lancement (la farine, le pain sortent à leur
+// heure, comme la cuisine) ; le courant des chaînes et du Moulin (leurs Wh) entre dans son coût. → { ok, produit,
+// utilise, courant } ou un refus (rien à faire : tout tourne).
+function tourDesMachines(state, def) {
+  const produit = {}, utilise = {};
+  let courant = 0, fait = 0;
+  const ajoute = (r) => {
+    if (!r || !r.ok) return;
+    fait += 1;
+    for (const [k, n] of Object.entries(r.produit || {})) if (n > 0) produit[k] = (produit[k] || 0) + n;
+    for (const [k, n] of Object.entries(r.utilise || {})) if (n > 0) utilise[k] = (utilise[k] || 0) + n;
+  };
+  const O = DATA.CHAINES.OUTILS;
+  for (const m of machinesDeLaFerme(state)) {
+    if (m.sorte === 'chaine') {
+      const c = m.chaine;
+      // (vider : le tas au coffre)
+      const tas = tasDe(state, c);
+      if (tas.length) ajoute(commeLeJoueur(state, null, () => { let n = 0; for (const x of tas) if (ramasserMorceau(state, x.n).ok) n++; return n ? { ok: true } : fail('Rien à ramasser.'); }));
+      // (alimenter : de quoi faire la recette, ou remplir le réservoir)
+      const avant = c.enStock;
+      const r = commeLeJoueur(state, null, () => verserChaine(state, c.case));
+      if (r && r.ok) {
+        // (le courant de ce qu'il a versé : les cycles qu'il permet, chacun la somme des Wh de ses outils)
+        const lot = DATA.RECETTES[c.recette].ingredients.reduce((t, g) => t + g.qte, 0);
+        const verse = Object.values(r.versees || {}).reduce((t, n) => t + n, 0);
+        const cycles = Math.floor((avant + verse) / lot) - Math.floor(avant / lot);
+        courant += cycles * c.sortes.reduce((t, o) => t + O[o].secondes * O[o].whParS, 0);
+        ajoute({ ok: true, utilise: r.utilise });
+      }
+    } else if (m.sorte === 'moulin') {
+      const d = state.stations.moulin.appareil;
+      if (d && !d.allume) continue;
+      if (millPending(state) > 1) continue;
+      const poules = state.poulailler ? Math.ceil((state.poulailler.poules || 0) / Math.max(1, DATA.ANIMAUX.poule.poulesParBle)) * 3 : 0;
+      const n = Math.min(Math.max(1, Number(def.MOULIN) || 10), Math.floor(wheatTotal(state)) - (Number(def.GARDE) || 0) - poules);
+      if (n < 1) continue;
+      const r = commeLeJoueur(state, null, () => startMilling(state, n));
+      if (r && r.ok) {
+        courant += n * DATA.RECETTES.farine.temps * DATA.STATIONS.moulin.whParS;
+        ajoute({ ok: true, utilise: r.utilise, produit: { [recipeOutput('farine')]: n * recipeOutputQty('farine') } });
+      }
+    } else if (m.sorte === 'four') {
+      const rec = def.FOURNEE;
+      if (!rec || !DATA.RECETTES[rec] || (state.stations.four && state.stations.four.tache)) continue;
+      if (!recipeStatus(state, rec).ok) continue;
+      const r = commeLeJoueur(state, null, () => startRecipe(state, rec));
+      if (r && r.ok) ajoute({ ok: true, utilise: r.utilise, produit: { [recipeOutput(rec)]: recipeOutputQty(rec) } });
+    }
+  }
+  if (!fait) return fail('Les machines tournent : rien à faire pour l\'instant.');
+  return { ok: true, produit, utilise, courant };
+}
+
 // Une action de la tâche de `v`, près de la case `pres` (ce qu'il a devant lui à son poste). → { ok, produit } ou un
 // refus (rien à faire : rien de mûr, plus de poisson…).
 function uneAction(state, v, pres) {
@@ -564,11 +683,20 @@ function uneAction(state, v, pres) {
       if (r.ok) r.produit = { [recipeOutput(r0)]: recipeOutputQty(r0) };
       return r;
     }
+    case 'chaine': return tourDesMachines(state, def);
     case 'navette': {
       const c = comptoirDuPort(state);
       if (!c) return fail('Pas de port.');
-      let reste = Math.max(1, Number(def.PORTEE) || 10), gain = 0;
+      let reste = porteeNavette(state), gain = 0;
       const vendu = {};
+      // (fiche I8b : les contrats d'export acceptés d'abord, livrés au comptoir de ce que la ferme a)
+      if (contratsAcceptes(state).length) {
+        const r = commeLeJoueur(state, null, () => {
+          const l = livrerDepuisLaFerme(state, reste, c.devant);
+          return l.n > 0 ? { ok: true, ...l } : fail('Rien pour les contrats.');
+        });
+        if (r && r.ok) { reste -= r.n; gain += r.gain; for (const [k, n] of Object.entries(r.livre)) vendu[k] = (vendu[k] || 0) + n; }
+      }
       for (const it of v.vendre || []) {
         if (reste <= 0) break;
         const n = Math.min(reste, stock(state)[it] || 0);
@@ -665,6 +793,8 @@ function noterAction(v, T, r) {
   // (I3d : ce qu'elle a pris au coffre, que le tableau compte dans son coût : tableau.js)
   if (!objet(T.utilise)) T.utilise = {};
   for (const [k, n] of Object.entries(r.utilise || {})) if (n > 0) T.utilise[k] = (T.utilise[k] || 0) + n;
+  // (fiche I8b : le courant que consomment les machines qu'il a servies, en Wh ; le tableau le compte dans son coût)
+  if (r.courant > 0) T.courant = (Number(T.courant) || 0) + Math.round(r.courant);
 }
 
 // Il fait ses actions dues jusqu'à `dues` ; une action sans rien à faire se retente ESSAI h plus tard (sauf la
@@ -726,14 +856,16 @@ export function tachesNuit(state) {
 /* ---------- qui fait quoi ---------- */
 
 // La vue d'ensemble : [{ id, prenom, tache (id ou null), nom, icone, outil, etat ('travail', 'attend', 'repos',
-// 'libre'), raison (ce qui manque), actions (faites aujourd'hui), sur (ACTIONS), produit }].
+// 'libre', et (I8a) 'chantier' : il travaille au chantier du village), chantier (la sorte du projet où il est
+// envoyé, ou null), raison (ce qui manque), actions (faites aujourd'hui), sur (ACTIONS), produit }].
 export function quiFaitQuoi(state) {
   return villageoisDe(state).map((v) => {
     const def = tacheDef(v.tache), T = objet(v.travail) && v.travail.jour === jourDe(state) ? v.travail : null;
     const raison = def ? tacheAttente(state, v) : null;
-    const etat = !def ? 'libre' : v.repos ? 'repos' : raison ? 'attend' : 'travail';
+    const chantier = auChantier(state, v);
+    const etat = chantier ? 'chantier' : !def ? 'libre' : v.repos ? 'repos' : raison ? 'attend' : 'travail';
     return {
-      id: v.id, prenom: v.prenom, genre: v.genre, tache: def ? v.tache : null, nom: def ? def.nom : '', icone: def ? def.icone : '',
+      id: v.id, prenom: v.prenom, genre: v.genre, tache: def ? v.tache : null, nom: def ? def.nom : '', icone: def ? def.icone : '', chantier: v.chantier || null,
       outil: v.outil || null, etat, raison, actions: T ? T.actions : 0, sur: def ? actionsDuJour(state, v) : 0, produit: T ? { ...T.produit } : {},
     };
   });

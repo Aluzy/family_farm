@@ -63,12 +63,16 @@ function enteteHtml() {
 
 function ligneHtml(l) {
   const H = humeurDe(l), def = tacheDef(l.tache);
-  const tache = def ? `${def.icone} ${escapeHtml(def.nom)}` : '<span class="muted">sans tâche</span>';
+  // (I6c : une marque discrète quand un trait connu dit que la tâche est à son goût, ou pas)
+  const G = { aime: ['💚', 'à son goût'], boude: ['🙄', 'pas son goût'] }[l.gout];
+  const gout = G ? ` <span class="tableau-gout" title="${G[1]}">${G[0]} ${G[1]}</span>` : '';
+  // (I8a : au chantier du village, à la place de sa tâche)
+  const tache = l.chantier ? `🏗️ ${l.chantier.icone} ${escapeHtml(l.chantier.nom)}` : def ? `${def.icone} ${escapeHtml(def.nom)}${gout}` : '<span class="muted">sans tâche</span>';
   const prod = l.produit.length ? `<span class="tableau-objets">${objetsCourt(l.produit)}</span>` : '';
   const id = escapeHtml(l.id);
   return `<tr class="tableau-ligne">
       <th scope="row" class="t-qui"><button type="button" class="tableau-qui" data-action="tableau-detail" data-id="${id}" title="Ses sept derniers jours, jour par jour">
-        ${portrait(l)}<span class="tableau-nom">${escapeHtml(l.prenom)}<span class="t-mini" aria-hidden="true">${def ? def.icone : '—'} ${H[0]}</span></span></button></th>
+        ${portrait(l)}<span class="tableau-nom">${escapeHtml(l.prenom)}<span class="t-mini" aria-hidden="true">${l.chantier ? '🏗️' : def ? def.icone : '—'}${G ? G[0] : ''} ${H[0]}</span></span></button></th>
       <td class="t-tache t-second">${tache}${prod}</td>
       <td class="t-num">${formatNumber(l.cout)}</td>
       <td class="t-num">${formatNumber(l.valeur)}</td>
@@ -99,8 +103,9 @@ function tableauHtml(T) {
         </tr></tfoot>
       </table>
     </div>
-    <p class="muted tableau-aide">Le coût : ce qu'il a mangé à la boîte et ce que son travail a pris au coffre (les légumes d'un plat, la graine
-      ressemée) ; le produit : ce que son travail a rapporté. Le solde est un repère pour choisir qui fait quoi${t.ventes ? ` ; la tournée du port a vendu pour ${pieces(t.ventes)} ce que la ferme avait déjà` : ''}. Un appui sur un prénom : ses sept jours.</p>
+    <p class="muted tableau-aide">Le coût : ce qu'il a mangé à la boîte, sa part (${DATA.VILLAGE.PART} % de ce qu'il produit, gardée sur sa récolte et
+      vendue pour lui au bac) et ce que son travail a pris au coffre (les légumes d'un plat, la graine ressemée) ; le produit : ce que
+      son travail a rapporté. Le solde est un repère pour choisir qui fait quoi${t.ventes ? ` ; la tournée du port a vendu pour ${pieces(t.ventes)} ce que la ferme avait déjà` : ''}. Un appui sur un prénom : ses sept jours.</p>
     <button type="button" class="btn primary" data-action="close-modal" id="tableau-close">Fermer</button>`;
 }
 
@@ -117,15 +122,18 @@ export function ouvrirTableau(focus = '#tableau-close') {
 function jourHtml(j) {
   const def = tacheDef(j.tache);
   const quoi = j.repos ? '😴 au repos : son repas, aucun produit'
+    : j.chantier ? `🏗️ Au chantier du village : ${j.chantier.icone} ${escapeHtml(j.chantier.nom)} (une journée de bâtisse, à la place de sa tâche)`
     : def ? `${def.icone} ${escapeHtml(def.nom)} · ${j.actions} / ${j.sur} action${j.sur > 1 ? 's' : ''}` : '<span class="muted">sans tâche</span>';
   const mange = Object.keys(j.mange).length ? `${objetsLong(j.mange)} · ${pieces(j.repas)}` : 'rien';
   const pris = Object.keys(j.utilise).length ? `<li>🧺 Pris au coffre : ${objetsLong(j.utilise)} · ${pieces(j.matieres)}</li>` : '';
   const part = j.part ? `<li>👛 Sa part : ${pieces(j.part)}</li>` : '';
+  // (fiche I8b : le courant des machines qu'il conduit)
+  const courant = j.courant ? `<li>⚡ Le courant des machines : ${formatNumber(j.courant)} Wh · ${pieces(j.electricite)}</li>` : '';
   const prod = j.produit.length ? `${j.produit.map((x) => `${formatNumber(x.n)} ${icone(x.objet)} ${escapeHtml(nom(x.objet))}`).join(', ')} · ${pieces(j.valeur)}` : 'rien';
   return `<li class="tableau-jour">
       <div class="tableau-jour-tete"><strong>Jour ${j.jour}</strong> <span class="muted">${formatDay(j.jour)}</span> <span class="tableau-jour-solde">solde ${formatSigned(j.solde)}</span></div>
       <div>${quoi}</div>
-      <ul><li>🍽️ Mangé : ${mange}</li>${pris}${part}<li>📦 Produit : ${prod}</li></ul>
+      <ul><li>🍽️ Mangé : ${mange}</li>${pris}${courant}${part}<li>📦 Produit : ${prod}</li></ul>
     </li>`;
 }
 
@@ -144,7 +152,7 @@ export function ouvrirDetail(id) {
     <h2 id="tableau-detail-title">${portrait(l)} ${escapeHtml(l.prenom)} : ses sept jours</h2>
     <p class="muted">${def ? `${def.icone} ${escapeHtml(def.nom)}` : 'Sans tâche'} · ${humeurDe(l)[0]} ${escapeHtml(humeurTexte(l))}${l.manque ? ` · ${escapeHtml(l.manque)}` : ''}</p>
     <dl class="tableau-resume">
-      <dt>Coût</dt><dd>${pieces(l.cout)} <span class="muted">(repas ${formatNumber(l.repas)}${l.matieres ? `, pris au coffre ${formatNumber(l.matieres)}` : ''}${l.part ? `, sa part ${formatNumber(l.part)}` : ''})</span></dd>
+      <dt>Coût</dt><dd>${pieces(l.cout)} <span class="muted">(repas ${formatNumber(l.repas)}${l.matieres ? `, pris au coffre ${formatNumber(l.matieres)}` : ''}${l.electricite ? `, le courant ${formatNumber(l.electricite)}` : ''}${l.part ? `, sa part ${formatNumber(l.part)}` : ''})</span></dd>
       <dt>Produit</dt><dd>${pieces(l.valeur)}${l.produit.length ? ` <span class="muted">(${objetsCourt(l.produit, 8)})</span>` : ''}</dd>
       <dt>Solde</dt><dd>${formatSigned(l.solde)} 🪙</dd>
       <dt>Rendement</dt><dd>${rend}</dd>

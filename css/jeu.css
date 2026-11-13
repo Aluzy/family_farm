@@ -1578,6 +1578,37 @@ body:has(#tool-bar:not(.open)) .didac-bulle:not(.haut):not(.reduite) { bottom: c
   0%, 100% { box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.55); filter: brightness(1.05); }
   50% { box-shadow: 0 0 16px 7px rgba(255, 255, 255, 0.95), inset 0 0 14px rgba(255, 255, 255, 0.85); filter: brightness(1.18); }
 }
+/* le didacticiel de l'île (le chantier « l'île à bâtir », fiche I7b ; js/ui/didacticiel-ile.js) : la bulle du didacticiel
+   réduite à une ligne (l'icône, ce qu'il faut faire, le rang, « Passer », ✕) et une flèche dorée qui montre ce qu'il faut
+   toucher (au-dessus de lui ; en dessous s'il est en haut de l'écran) */
+.ile-bulle { max-width: 520px; padding: 6px 8px 4px 10px; }
+.ile-ligne { margin: 0 0 2px !important; font-size: 15px; }
+.ile-icone { font-size: 18px; }
+.ile-pied { display: flex; align-items: center; gap: 8px; }
+.ile-rang { flex: none; font-size: 12px; white-space: nowrap; }
+.ile-compte { flex: none; padding: 0 6px; border: 2px solid var(--color-earth); border-radius: 10px; font-size: 13px; white-space: nowrap; }
+.ile-compte.ok { border-color: #2f8a3a; background: #d9f2c9; color: #1f5a28; }
+.ile-passer { flex: none; margin-left: auto; min-height: 30px; padding: 0 8px; border: 2px solid var(--color-earth); border-radius: 6px; background: transparent; color: var(--wood-ink); font: inherit; font-size: 13px; white-space: nowrap; cursor: pointer; }
+.ile-arreter { flex: none; min-width: 30px; min-height: 30px; padding: 0; border: 0; background: none; color: var(--text-muted); font: inherit; font-size: 14px; cursor: pointer; }
+.ile-fleche {
+  position: fixed;
+  z-index: var(--z-test);
+  width: 0;
+  height: 0;
+  margin-left: -11px;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 16px solid #f2c14e;
+  transform: translateY(-100%);
+  filter: drop-shadow(0 0 1px #5a3a12) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+  animation: ile-fleche 1.1s ease-in-out infinite;
+}
+.ile-fleche.vers-haut { border-top: 0; border-bottom: 16px solid #f2c14e; transform: none; animation-name: ile-fleche-haut; }
+@keyframes ile-fleche { 0%, 100% { translate: 0 -2px; } 50% { translate: 0 -9px; } }
+@keyframes ile-fleche-haut { 0%, 100% { translate: 0 2px; } 50% { translate: 0 9px; } }
+@media (prefers-reduced-motion: reduce) { .ile-fleche { animation: none; } }
+.accueil-depart .btn { min-width: 130px; min-height: 48px; font-size: 18px; }
 .didac-lueur { /* ce que le didacticiel montre sans le faire toucher (les graines offertes) : la même lueur */
   border-radius: 10px;
   animation: didac-ring 2s ease-in-out infinite;
@@ -4183,6 +4214,11 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
 .villageois-vendre-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px 10px; margin: 8px 0 12px; }
 .villageois-vendre { display: flex; align-items: center; gap: 6px; }
 .villageois-modal .btn.small { padding: 2px 8px; font-size: 0.85em; min-height: 0; }
+/* I6c : les traits de personnalité, sur une ligne de la fiche ; « ? » pour ceux qui restent à découvrir */
+.villageois-trait { display: inline-block; padding: 0 7px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-card, #fff8ee); font-size: 0.88em; white-space: nowrap; }
+.villageois-trait.inconnu { opacity: 0.6; min-width: 1.6em; text-align: center; }
+.villageois-trait-postes { font-size: 0.85em; }
+.villageois-gout { font-size: 0.82em; opacity: 0.8; white-space: nowrap; }
 /* I3d : le tableau des villageois (js/ui/tableau.js). Le bouton 📊 à côté des pièces ; une ligne par villageois, triable ;
    sur un téléphone, la tâche et l'humeur se replient dans la cellule du prénom. Des repères, pas des reproches (B-1) :
    aucun solde n'a de couleur d'alarme. */
@@ -4214,6 +4250,8 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
 .tableau-village .t-court { display: none; }
 .tableau-village .t-mini { display: none; font-size: 0.9em; }
 .tableau-objets { display: block; font-size: 0.85em; opacity: 0.85; }
+/* I6c : la tâche à son goût (une marque discrète, une fois le trait connu) */
+.tableau-gout { font-size: 0.8em; opacity: 0.8; white-space: nowrap; }
 .tableau-village tbody th { font-weight: normal; }
 .tableau-village tbody th .tableau-nom { font-weight: 700; }
 .tableau-village tr.tableau-ligne:has(+ .tableau-manque) > * { border-bottom: 0; }
@@ -4244,3 +4282,21 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
 .lien-etat { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 0.9em; }
 .lien-palier { white-space: nowrap; }
 .lien-jauge { width: 52px; }
+/* I7g : la chronique de l'île et les noms */
+.chronique-noms { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: baseline; margin: 0 0 10px; }
+.chronique-noms dt { font-weight: 600; white-space: nowrap; }
+.chronique-noms dd { margin: 0; }
+.chronique-corps { max-height: 52vh; overflow-y: auto; }
+.chronique-mois h3 { margin: 10px 0 4px; font-size: 1.05rem; }
+.chronique-lignes { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.chronique-ligne { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 3px 6px; border-radius: 8px; }
+.chronique-ligne.epinglee { background: rgba(255, 214, 120, 0.22); }
+.chronique-ligne.resume { font-style: italic; opacity: 0.85; }
+.chronique-jour { min-width: 4.2em; font-variant-numeric: tabular-nums; opacity: 0.75; font-size: 0.9em; }
+.chronique-texte { flex: 1 1 12em; }
+.chronique-gestes { display: inline-flex; gap: 4px; margin-left: auto; }
+.chronique-epingle { opacity: 0.45; }
+.chronique-epingle.active { opacity: 1; }
+.chronique-note { flex-basis: 100%; margin: 0 0 2px 4.6em; font-style: italic; overflow-wrap: anywhere; }
+.chronique-champ { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; }
+.chronique-modal input.member-input, .chronique-modal textarea.member-input { width: 100%; box-sizing: border-box; padding: 6px 8px; font-family: inherit; font-size: 1.05rem; border: 1px solid var(--border); border-radius: 8px; margin: 4px 0; }

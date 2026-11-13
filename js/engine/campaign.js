@@ -18,6 +18,7 @@ import { cleDe, palierAmitie } from './amitie.js';
 import { styleMaison } from './styles.js';
 import { villageActif } from './village.js';
 import { compterObjectifIle, listeDesChapitres, paliersSuivis } from './paliers.js';
+import { chroniqueRecolte, noterChronique } from './chronique.js';
 
 /* ---------- Lot 9 : chapitres ---------- */
 
@@ -133,6 +134,7 @@ export function noteCropHarvested(state, culture) {
   c.compteurs.recoltes = (c.compteurs.recoltes || 0) + 1;
   if (!Array.isArray(c.compteurs.cultures)) c.compteurs.cultures = [];
   if (!c.compteurs.cultures.includes(culture)) c.compteurs.cultures.push(culture);
+  chroniqueRecolte(state, culture);   // (l'île à bâtir, fiche I7g : la première récolte, dans la chronique)
 }
 
 // FLU-42 : record de parcelles arrosées en même temps (un arrosage vaut pour la journée).
@@ -330,6 +332,8 @@ export function completeChapter(state) {
   grantTechPoints(state, DATA.ARBRE.POINTS.CHAPITRES[n - 1] || 0, palier ? `Palier ${n} franchi` : `Chapitre ${n} terminé`);
   // Version 1.7 : et de l'expérience (le succès « chapitre n terminé »).
   gainXp(state, DATA.NIVEAUX.CHAPITRES_XP[n - 1] || 0);
+  // (fiche I7g : un palier de l'île franchi, dans la chronique)
+  if (palier) { const P = listeDesChapitres(state)[n - 1] || {}; noterChronique(state, 'palier', { n, titre: P.titre || '', icone: P.icone || undefined }); }
   if (n >= chapterCount(state)) c.fini = true;
   else poserChapitre(state, n + 1);
   return { ok: true, chapitre: numeroEnCours(state), fini: c.fini };

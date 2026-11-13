@@ -68,9 +68,24 @@ export const GAME_ACTIONS = {
   // (fiche I6b : les liens entre villageois, js/ui/liens.js)
   'liens-foyer-ok': 'Installer deux villageois proches dans un foyer',
   'liens-enfant': 'Proposer à un foyer d\'accueillir un enfant',
+  // (fiche I7g : la chronique et les noms, js/ui/chronique.js)
+  'chronique-epingler': 'Épingler une ligne de la chronique (ou la détacher)',
+  'chronique-note-ok': 'Écrire une note sur une ligne de la chronique',
+  'chronique-note-effacer': 'Effacer sa note sur une ligne de la chronique',
+  'noms-ok': 'Nommer l\'île, le village ou une maison',
+  // (fiche I8a : les vocations de l'île, les fêtes et les projets du village, js/ui/vocations.js)
+  'vocation-fete-fixer': 'Fixer la fête du village',
+  'evt-fete': 'Fixer la fête du village (depuis le calendrier)',
+  'vocation-fete-annuler': 'Annuler la fête du village',
+  'vocation-projet-lancer': 'Lancer un projet du village',
+  'vocation-projet-apporter': 'Apporter des matériaux au projet du village',
+  'vocation-projet-envoyer': 'Envoyer un villageois au chantier du village (ou l\'en rappeler)',
+  'vocation-projet-abandonner': 'Abandonner le projet du village',
   'port-acheter': 'Acheter au port (une semence)',
   'port-decharger': 'Décharger sous la halle du port (tout ce qui est chargé se vend)',
   'port-honorer': 'Honorer une commande du bac',
+  'port-contrat': 'Accepter un contrat d\'export',
+  'port-livrer': 'Livrer à un contrat d\'export',
   'port-importer': 'Commander au catalogue d\'import du bac',
   'port-apporter': 'Apporter des matériaux au chantier du port',
   'port-agrandir': 'Agrandir le port (le niveau suivant)',
@@ -177,6 +192,8 @@ export const GAME_ACTIONS = {
   'fridge-in': 'Utiliser le réfrigérateur',
   'boite-deposer': 'Remplir la boîte à nourriture',
   'boite-reprendre': 'Remplir la boîte à nourriture',
+  'etal-mettre': 'Tenir l\'étal des villageois',
+  'etal-reprendre': 'Tenir l\'étal des villageois',
   'fridge-in-all': 'Utiliser le réfrigérateur',
   'fridge-in-urgent': 'Utiliser le réfrigérateur',
   'frigo-ranger': 'Utiliser le réfrigérateur',
@@ -211,6 +228,10 @@ export const INTERFACE_ACTIONS = new Set([
   'tableau-ouvrir', 'tableau-periode', 'tableau-tri', 'tableau-detail',
   // (fiche I6b : la vue d'ensemble des liens, proposer un foyer)
   'liens-village', 'liens-foyer',
+  // (fiche I7g : la chronique, ses notes, nommer)
+  'chronique-open', 'chronique-note', 'noms-renommer', 'noms-autre',
+  // (fiche I8a : les onglets de la fenêtre « L'île »)
+  'ile-onglet',
   // (les gemmes : js/ui/gemmes.js)
   'gemmes-ouvrir', 'gemmes-onglet', 'gemmes-pack', 'gemmes-payer', 'gemmes-acheter', 'gemmes-connexion',
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',
@@ -220,7 +241,7 @@ export const INTERFACE_ACTIONS = new Set([
   'scene-suite', 'scene-fermer', 'carnet-open', // le récit : la réplique suivante d'une scène, la fermer ; ouvrir le carnet
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'compte-lien', 'compte-autre', 'compte-deconnexion', 'compte-supprimer', 'compte-supprimer-non', 'compte-supprimer-oui', 'monde-creer', 'monde-quitter', 'monde-membres', 'monde-inviter', 'monde-copier', 'monde-partager', 'monde-retirer', 'monde-retirer-non', 'monde-retirer-oui', 'monde-role', 'monde-journal', 'monde-journal-suite', 'monde-sauvegardes', 'monde-sauvegarder', 'monde-restaurer', 'monde-restaurer-non', 'monde-restaurer-oui', 'demandes-open', // E-0, E-2, E-3, E-11, E-12 ; V-2 : le compte du jeu en ligne, les mondes
-  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-apparence', 'accueil-apparence-hasard', 'accueil-apparence-retour', 'accueil-espece', 'accueil-retour', 'accueil-modifier', 'accueil-retirer', 'accueil-ajouter', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier', 'objectifs-carnet', 'objectifs-montrer', 'objectifs-arreter', 'objectifs-changer',
+  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-apparence', 'accueil-apparence-hasard', 'accueil-apparence-retour', 'accueil-espece', 'accueil-retour', 'accueil-modifier', 'accueil-retirer', 'accueil-ajouter', 'accueil-seul', 'accueil-famille', 'accueil-vers-ile', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier', 'ile-passer', 'ile-arreter', 'objectifs-carnet', 'objectifs-montrer', 'objectifs-arreter', 'objectifs-changer',
   'do-export', 'do-import', 'download-export', 'import-file', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', 'atelier-tab', 'atelier-groupe', 'atelier-choisir', 'silo-agrandir', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,

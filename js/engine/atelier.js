@@ -1,5 +1,6 @@
 import { DATA } from './catalog.js';
 import { villageActif } from './village.js';
+import { debloque, quiDebloque } from './vocations.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
@@ -238,21 +239,34 @@ export function recetteDebloquee(state, id) {
   const r = DATA.ATELIER.RECETTES[id];
   // (une recette du chantier « l'île à bâtir », la boîte aux lettres des villageois : le chantier allumé)
   if (r && r.village && !villageActif(state)) return false;
+  // (fiche I8b : une recette qui attend un niveau du port, le quai de chargement)
+  if (r && r.port && portAuMoins(state) < r.port) return false;
   return !!r && (!r.debloque || isUnlocked(state, r.debloque)) && (!r.plan || planTrouve(state, id));
+}
+// Le niveau du port de la partie (fiche I1c : state.port.niveau ; lu ici sans importer bac.js), 0 sans port.
+function portAuMoins(state) {
+  const p = state && state.port;
+  return p && Number.isInteger(p.niveau) ? p.niveau : 0;
 }
 // Un meuble de collection (le lot 4) : son plan est-il trouvé ? (state.plans.connus, js/engine/plans.js ; lu
 // ici sans l'importer, pour ne pas faire de boucle entre les modules)
+// (fiche I8a : un palier de vocation peut l'offrir, « plan:<id> », vocations.js debloque)
 export function planTrouve(state, id) {
   const P = state && state.plans;
-  return !!(P && P.connus && P.connus[id]);
+  return !!(P && P.connus && P.connus[id]) || debloque(state, `plan:${id}`);
 }
 
 export function craftStatus(state, id) {
   const r = DATA.ATELIER.RECETTES[id];
   if (!r) return { ok: false, raison: 'Recette inconnue.', manque: {} };
-  if (r.plan && !planTrouve(state, id)) return { ok: false, raison: 'Il te faut d\'abord son plan : explore le pays de sa collection, ou attends qu\'un ami de là-bas te l\'offre.', manque: {} };
+  if (r.plan && !planTrouve(state, id)) {
+    // (le chantier de l'île : un palier de vocation l'offre)
+    const q = villageActif(state) ? quiDebloque(`plan:${id}`) : null;
+    return { ok: false, raison: q ? `Il te faut d'abord son plan : ${q.vocation.toLowerCase()} l'offre au palier ${q.rang} (${q.score} points).` : 'Il te faut d\'abord son plan : explore le pays de sa collection, ou attends qu\'un ami de là-bas te l\'offre.', manque: {} };
+  }
   if (!atelierConstruit(state)) return { ok: false, raison: 'Il faut d\'abord construire l\'Atelier.', manque: {} };
   if (r.outil && r.niveau) { const refusN = refusNiveau(state, r); if (refusN) return { ok: false, raison: refusN, manque: {} }; } else if (r.outil && aDejaOutil(state, r.outil)) return { ok: false, raison: 'Tu as déjà cet outil.', manque: {} };
+  if (r.port && villageActif(state) && portAuMoins(state) < r.port) return { ok: false, raison: `Il faut d'abord le port de niveau ${r.port}.`, manque: {} };
   if (!recetteDebloquee(state, id)) return { ok: false, raison: `Se débloque au niveau ${unlockLevel(r.debloque)}.`, manque: {} };
   // (ce qui doit trouver sa place : l'animal, le cheval, le meuble)
   const refus = r.animal ? animalRefus(state, r.animal) : r.cheval ? chevalRefus(state) : r.sacoche ? sacocheRefus(state) : r.meuble ? meubleRefus(state, r.meuble) : null;

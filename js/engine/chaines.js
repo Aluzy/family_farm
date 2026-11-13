@@ -7,6 +7,7 @@ import { farmTerrain } from './terrain.js';
 import { poserMorceaux } from './outils.js';
 import { availableEnergy } from './fridge.js';
 import { drawEnergy, loadShedding } from './energy.js';
+import { debloque } from './vocations.js';
 
 /* ---------- les chaînes de production ----------
    Des blocs de l'Atelier posés côte à côte sur une rangée de la carte, de gauche à droite :
@@ -53,6 +54,13 @@ function role(sorte) {
 function etats(state) {
   if (!state.chaines || typeof state.chaines !== 'object') state.chaines = {};
   return state.chaines;
+}
+
+// Ce que tient un réservoir : CHAINES.RESERVOIR ingrédients ; (fiche I8b) PRODUCTION.MACHINES.RESERVOIR % de plus quand
+// la ferme productive a débloqué des machines plus grandes (vocations.js : rien le chantier éteint).
+function reservoirDe(state) {
+  const R = C().RESERVOIR;
+  return debloque(state, 'machines_grandes') ? Math.round((R * ((DATA.PRODUCTION && DATA.PRODUCTION.MACHINES.RESERVOIR) || 100)) / 100) : R;
 }
 
 // La recette qu'une suite d'outils fait (id de DATA.RECETTES), ou null.
@@ -115,7 +123,7 @@ export function etatChaine(state, e) {
   const out = {
     case: e, reservoir, outils, sortes, convoyeurs, bout: t, recette,
     produit: recette ? produitDe(recette) : null,
-    capacite: recette ? (reservoir !== null ? Math.max(C().RESERVOIR, lot(recette)) : lot(recette)) : 0,
+    capacite: recette ? (reservoir !== null ? Math.max(reservoirDe(state), lot(recette)) : lot(recette)) : 0,
     stock: st ? { ...st.stock } : {}, cycle: st && st.cycle ? { ...st.cycle } : null,
     whParS: sortes.reduce((n, s) => n + O[s].whParS, 0),
     secondes: sortes.reduce((n, s) => n + O[s].secondes, 0),
@@ -230,8 +238,9 @@ function pied(state, c) {
   const W = farmTerrain(state).LARGEUR;
   return { x: (c.bout % W) * T + T / 2, y: Math.floor(c.bout / W) * T + POSE };
 }
-// Les morceaux du tas de la chaîne `c` (au sol, sur ses places).
-function tasDe(state, c) {
+// Les morceaux du tas de la chaîne `c` (au sol, sur ses places ; fiche I8b : le villageois qui conduit les machines
+// les ramasse, taches.js).
+export function tasDe(state, c) {
   const p = pied(state, c), places = new Set(TAS_PLACES.map(([dx, dy]) => `${p.x + dx},${p.y + dy}`));
   return (state.morceaux || []).filter((m) => m.carte === 'ferme' && places.has(`${m.x},${m.y}`));
 }

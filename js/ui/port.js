@@ -1,4 +1,4 @@
-import { DATA } from '../engine/catalog.js';
+import { DATA, prixIle } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
 import { countItem } from '../engine/inventory.js';
 import { fridgeCount } from '../engine/fridge.js';
@@ -12,6 +12,9 @@ import {
   prendreAvisBac, prochainNiveau,
 } from '../engine/bac.js';
 import { setupPending } from '../engine/depart.js';
+import { avancerContrats, contratsDuPort, prendreAvisContrats } from '../engine/contrats.js';
+import { palierVocation, scoreVocation } from '../engine/vocations.js';
+import '../engine/vocation-production.js';
 import { son } from './son.js';
 import { horsFerme } from '../engine/dehors.js';
 import { villageActif } from '../engine/village.js';
@@ -62,6 +65,7 @@ export const PORT_TABS = [
   { id: 'acheter', label: 'Acheter', icon: '🛒' },
   { id: 'porter', label: 'Porter', icon: '🧺' },
   { id: 'commandes', label: 'Commandes du bac', icon: '📦' },
+  { id: 'contrats', label: 'Contrats d\'export', icon: '📜' },
   { id: 'import', label: 'Import', icon: '🚢' },
   { id: 'niveau', label: 'Le port', icon: '🏗️' },
 ];
@@ -109,15 +113,15 @@ function bandeauHtml(p) {
 }
 
 function venteSlot(item, ici) {
-  const it = DATA.OBJETS[item], n = charge(item);
-  return shopSlot(it.icone, it.nom, `data-item="${item}"`, it.prix, pxText(String(n), 'light'), n < 1 || !ici,
-    `${it.nom} : ${formatCoins(it.prix)} pièces l'unité, ${formatQty(n)} chargé${n > 1 ? 's' : ''}`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="vendre"');
+  const it = DATA.OBJETS[item], n = charge(item), prix = prixIle(item);
+  return shopSlot(it.icone, it.nom, `data-item="${item}"`, prix, pxText(String(n), 'light'), n < 1 || !ici,
+    `${it.nom} : ${formatCoins(prix)} pièces l'unité, ${formatQty(n)} chargé${n > 1 ? 's' : ''}`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="vendre"');
 }
 
 // Une case à charger (l'onglet Porter) : son volume au lieu du prix.
 function chargeSlot(item, ferme) {
   const it = DATA.OBJETS[item], n = vendable(item);
-  return shopSlot(it.icone, it.nom, `data-item="${item}"`, it.prix, pxText(String(n), 'light'), n < 1 || !ferme,
+  return shopSlot(it.icone, it.nom, `data-item="${item}"`, prixIle(item), pxText(String(n), 'light'), n < 1 || !ferme,
     `${it.nom} : ${formatQty(n)} à la ferme, ${volumeDe(item)} volume${volumeDe(item) > 1 ? 's' : ''} l'unité`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="charger"');
 }
 
@@ -140,7 +144,7 @@ function porterHtml() {
 
 // L'onglet Vendre : ce qui est chargé ; sous la halle, tout décharger.
 function vendreHtml(p) {
-  const v = vendablesPort(state), gain = v.reduce((t, k) => t + charge(k) * DATA.OBJETS[k].prix, 0);
+  const v = vendablesPort(state), gain = v.reduce((t, k) => t + charge(k) * prixIle(k), 0);
   const bouton = p.ici && v.length ? `<div class="row"><button type="button" class="btn primary" data-action="port-decharger">⬇️ Tout décharger sous la halle (+${formatCoins(gain)} 💰)</button></div>` : '';
   // (fiche I1c : des matériaux du chantier du port portés : les y apporter avant de tout vendre)
   const nx = prochainNiveau(state), chantier = nx && Object.keys(nx.manque).some((k) => charge(k) > 0)
@@ -181,6 +185,43 @@ function commandesHtml(p) {
   const vide = '<p class="muted">Pas de commande en cours : le bac en apporte à chaque passage, de ce que tu sais produire (tes récoltes, tes plats, les produits de tes bêtes).</p>';
   const jusqua = L.length ? `<p class="muted">Valables jusqu'au prochain passage (${formatDay(L[0].jusqua)}) ; une commande manquée s'efface sans rien coûter.</p>` : '';
   return `<p class="bac-ligne">${ligneBac()}</p><h3 class="section-title">📦 Les commandes du bac</h3>${L.length ? `<ul class="bac-liste">${lignes}</ul>${jusqua}` : vide}`;
+}
+
+// Fiche I8b : la ferme productive en une ligne (son score, son palier, ce que le suivant ouvre).
+function ligneProduction() {
+  const V = DATA.VOCATIONS && DATA.VOCATIONS.production;
+  if (!V) return '';
+  const sc = scoreVocation(state, 'production'), pa = palierVocation(state, 'production');
+  const suite = pa.suivant ? ` ; le palier ${pa.palier + 1} à ${formatQty(pa.suivant.score)} : ${pa.suivant.debloque.map((k) => (V.TEXTES || {})[k] || k).join(', ')}` : ' ; tous ses paliers sont atteints';
+  return `<p class="muted">${V.icone} ${V.nom} : <strong>${formatQty(sc.score)}</strong> (palier ${pa.palier} sur ${V.PALIERS.length}${suite}).</p>`;
+}
+
+// Fiche I8b : les contrats d'export (proposés au bac, acceptés : ce qui est livré, ce qui reste, les passages).
+function contratsHtml(p) {
+  const d = contratsDuPort(state);
+  if (!d) return '';
+  const C = DATA.PRODUCTION.CONTRATS;
+  const tete = `<p class="bac-ligne">${ligneBac()}</p>${ligneProduction()}`;
+  if (!d.ouvert) return `${tete}<p class="muted">Le port de niveau ${C.NIVEAU} ouvre les contrats d'export : de grosses commandes sur ${C.PASSAGES} passages du bac, avec une prime (l'onglet Le port 🏗️).</p>`;
+  const acc = d.acceptes.map((c) => {
+    const it = DATA.OBJETS[c.objet], porte = Math.min(c.charge, c.reste), ok = p.ici && porte > 0;
+    const titre = ok ? 'Livrer ce que tu as porté' : !p.ici ? 'Au comptoir du port' : `Porte des ${it.nom.toLowerCase()} (l'onglet Porter, ou la tournée d'un villageois)`;
+    return `<li class="bac-commande${c.reste <= porte ? ' prete' : ''}"><span class="bac-ico" aria-hidden="true">${it.icone}</span>
+      <span class="bac-texte"><strong>${it.nom} × ${formatQty(c.quantite)}</strong><span class="muted">livré : ${formatQty(c.livre)} / ${formatQty(c.quantite)} · porté : ${formatQty(c.charge)} · ${c.passagesRestants} passage${c.passagesRestants > 1 ? 's' : ''} du bac encore · prime +${c.prime} % (${formatCoins(c.paiement.prime)} 💰)</span></span>
+      <button type="button" class="btn small${ok ? ' primary' : ''}" data-action="port-livrer" data-contrat="${c.id}"${ok ? '' : ' disabled'} title="${titre}">Livrer ${formatQty(porte)}</button></li>`;
+  }).join('');
+  const pleins = d.acceptes.length >= d.max;
+  const prop = d.proposes.map((c) => {
+    const it = DATA.OBJETS[c.objet], ok = p.ici && !pleins;
+    return `<li class="bac-commande"><span class="bac-ico" aria-hidden="true">${it.icone}</span>
+      <span class="bac-texte"><strong>${it.nom} × ${formatQty(c.quantite)}</strong><span class="muted">sur ${c.passages} passages du bac · ${formatCoins(c.paiement.base)} 💰 au prix de vente, plus ${formatCoins(c.paiement.prime)} 💰 de prime (+${c.prime} %)</span></span>
+      <button type="button" class="btn small${ok ? ' primary' : ''}" data-action="port-contrat" data-contrat="${c.id}"${ok ? '' : ' disabled'} title="${ok ? 'Accepter le contrat' : pleins ? `Déjà ${d.max} contrats en cours` : 'Au comptoir du port'}">Accepter</button></li>`;
+  }).join('');
+  const encours = d.acceptes.length ? `<h3 class="section-title">📜 En cours</h3><ul class="bac-liste">${acc}</ul>` : '';
+  const vide = '<p class="muted">Pas de contrat proposé : le bac en apporte à chaque passage, de ce que tu sais produire en volume (le pain, les fromages, les conserves, l\'huile, la farine, les produits de tes bêtes).</p>';
+  const proposes = `<h3 class="section-title">⛴️ Proposés par le bac</h3>${d.proposes.length ? `<ul class="bac-liste">${prop}</ul><p class="muted">À accepter avant le prochain passage ; ${d.max} en cours au plus.</p>` : vide}`;
+  const bilan = d.honores ? `<p class="muted">Contrats honorés : ${formatQty(d.honores)} (${formatCoins(d.primes)} 💰 de primes).</p>` : '';
+  return `${tete}${encours}${proposes}${bilan}`;
 }
 
 function importHtml(p) {
@@ -228,6 +269,7 @@ export function renderPort(fenetre = false) {
   const body = tab.id === 'vendre' ? vendreHtml(p)
     : tab.id === 'porter' ? porterHtml()
       : tab.id === 'commandes' ? commandesHtml(p)
+        : tab.id === 'contrats' ? contratsHtml(p)
         : tab.id === 'import' ? importHtml(p)
           : tab.id === 'niveau' ? niveauHtml(p)
             : `<h3 class="section-title">🌱 Semences et engrais</h3>${slotsHtml(etalPort(state).map((o) => achatSlot(o, p.ici)), 'Aucune semence en vente.')}`;
@@ -243,12 +285,12 @@ function ficheHtml(o) {
   const it = DATA.OBJETS[o.id], p = presence();
   const absent = p.ici ? '' : `<li>${p.texte}</li>`;
   if (o.mode === 'vendre') {
-    const n = charge(o.id), attrs = `data-action="port-vendre" data-item="${o.id}"`;
-    const lots = [lotBtn(attrs, 1, '×1', `+${formatCoins(it.prix)} 💰`, n >= 1 && p.ici)];
-    if (n >= 5) lots.push(lotBtn(attrs, 5, '×5', `+${formatCoins(5 * it.prix)} 💰`, p.ici));
-    if (n > 1 && n !== 5) lots.push(lotBtn(attrs, n, `Tout (${n})`, `+${formatCoins(n * it.prix)} 💰`, p.ici));
+    const n = charge(o.id), attrs = `data-action="port-vendre" data-item="${o.id}"`, prix = prixIle(o.id);
+    const lots = [lotBtn(attrs, 1, '×1', `+${formatCoins(prix)} 💰`, n >= 1 && p.ici)];
+    if (n >= 5) lots.push(lotBtn(attrs, 5, '×5', `+${formatCoins(5 * prix)} 💰`, p.ici));
+    if (n > 1 && n !== 5) lots.push(lotBtn(attrs, n, `Tout (${n})`, `+${formatCoins(n * prix)} 💰`, p.ici));
     return `
-      <div class="item-head"><span class="item-icon" aria-hidden="true">${it.icone}</span><span class="item-title"><strong id="item-title">${it.nom}</strong><span class="num">${formatCoins(it.prix)} 💰 l'unité</span></span></div>
+      <div class="item-head"><span class="item-icon" aria-hidden="true">${it.icone}</span><span class="item-title"><strong id="item-title">${it.nom}</strong><span class="num">${formatCoins(prix)} 💰 l'unité</span></span></div>
       <ul class="item-lines"><li>Chargé : ${formatQty(n)}</li>${absent}</ul>
       <div class="row item-actions lot-btns">${lots.join('')}</div>`;
   }
@@ -292,6 +334,7 @@ function aideTexte(tab) {
   const base = `${ouEstLePort()} Approche-toi du comptoir, sous la halle (touche-le : ton personnage y va).`;
   if (tab === 'vendre') return `${base} Le port t'achète tout ce que tu y portes (l'onglet Porter : charge-le sur la ferme), à prix fixe : le bac emporte tout, sans limite. Sous la halle, « Tout décharger » vend ton chargement d'un coup. Chaque unité vendue baisse de ${DATA.MARCHE.PAS} points le cours d'achat de l'objet, sans passer sous son plancher.`;
   if (tab === 'commandes') return `${base} À chaque passage (tous les ${DATA.PORT.BAC.PERIODE} jours, ${heuresBac()}), le bac apporte des commandes, tirées de ce que tu sais produire. Porte ce qu'elles demandent (l'onglet Porter, sur la ferme) et honore-les au comptoir : le prix de vente, plus la prime, plus de l'expérience. Elles valent jusqu'au passage suivant ; une commande manquée ne coûte rien. Le bac emporte aussi tout ce que tu vends : tes caisses attendent sur le quai et partent avec lui.`;
+  if (tab === 'contrats') return `${base} À partir du port de niveau ${DATA.PRODUCTION.CONTRATS.NIVEAU}, le bac propose à chaque passage des contrats d'export : de grosses commandes (cent pains, trente fromages…) à livrer sur ${DATA.PRODUCTION.CONTRATS.PASSAGES} passages, avec une prime. Accepte-les au comptoir ; livre-les en autant de fois que tu veux, avec ce que tu as porté ou par la tournée du port d'un villageois (elle les livre d'abord). Chaque livraison est payée au prix de vente ; le contrat complet, sa prime. Manqué, il s'efface sans rien coûter. Plus le port est grand, plus les contrats sont gros. Le quai de chargement (l'Atelier) regroupe les envois de la tournée.`;
   if (tab === 'import') return `${base} Le bac importe ce que l'île n'a pas : des jeunes arbres, des plants de vigne, les espèces de la serre, des bêtes, des plans. Une commande se paie d'avance et arrive à la ferme au passage suivant. Chaque niveau du port ouvre un rang du catalogue ; ce que ton niveau débloquait le reste.`;
   if (tab === 'niveau') return `${base} Agrandir le port allonge son quai, ouvre un rang du catalogue d'import, fait venir plus de commandes à chaque passage et accueillir plus de villageois. Chaque niveau demande des matériaux, que tu portes au chantier (en une ou plusieurs fois), et des pièces.`;
   if (tab === 'porter') return `Ce que tu vends au port, tu l'y portes. Chaque objet a un volume (un, plus pour le bois, la pierre, les minerais et les lingots). À la main : ${capaciteDe('mains')} volumes ; la brouette (l'Atelier) : ${capaciteDe('brouette')} ; la charrette attelée au cheval (l'Atelier, avec un cheval) : ${capaciteDe('charrette')}. Charge sur la ferme : ce qui ne tient pas reste ici, rien ne se perd. Sur un chemin, tu vas plus vite, à pied comme à cheval.`;
@@ -316,6 +359,16 @@ function watchBac() {
   if (!state || setupPending(state)) return;
   const r = avancerBac(state);
   if (!r) return;
+  // (fiche I8b : les contrats d'export suivent le bac ; un contrat honoré, manqué, de nouveaux proposés)
+  avancerContrats(state);
+  const avisC = prendreAvisContrats(state);
+  for (const a of avisC) {
+    const it = a.objet && DATA.OBJETS[a.objet];
+    if (a.quoi === 'honore') notify(`📜 Contrat d'export honoré : ${it.icone} ${it.nom} × ${formatQty(a.quantite)} (+${formatCoins(a.prime)} 💰 de prime).`, { kind: 'info', cible: { fenetre: 'comptoir' } });
+    else if (a.quoi === 'manque') notify(`📜 Le contrat de ${it.nom.toLowerCase()} s'efface : ${formatQty(a.livre)} livrés sur ${formatQty(a.quantite)} (ce qui est livré est payé).`, { kind: 'info' });
+    else if (a.quoi === 'proposes' && a.n) notify(`📜 Le bac propose ${a.n} contrat${a.n > 1 ? 's' : ''} d'export au comptoir.`, { kind: 'info', cible: { fenetre: 'comptoir' } });
+  }
+  if (avisC.length) { persistState(); refresh(); }
   const avis = prendreAvisBac(state);
   for (const a of avis.slice(-1)) {
     const livres = a.livres.map((x) => { const ar = articleDe(x.cle, state); const n = ar ? x.quantite * (ar.lot || 1) : 0; return ar ? `${nomArticle(ar)[1]} ${nomArticle(ar)[0]}${n > 1 ? ` × ${n}` : ''}` : ''; }).filter(Boolean);
@@ -380,7 +433,7 @@ registerActions({
   },
   'portage-recoltes': () => {
     // (les récoltes : les légumes, les fruits et les produits de la ferme, les plus chers d'abord)
-    const items = chargeablesPort(state).filter((k) => ['légume', 'fruit', 'produit'].includes(DATA.OBJETS[k].categorie)).sort((a, b) => DATA.OBJETS[b].prix / volumeDe(b) - DATA.OBJETS[a].prix / volumeDe(a));
+    const items = chargeablesPort(state).filter((k) => ['légume', 'fruit', 'produit'].includes(DATA.OBJETS[k].categorie)).sort((a, b) => prixIle(b) / volumeDe(b) - prixIle(a) / volumeDe(a));
     let n = 0, plein = false;
     for (const k of items) {
       const r = executer('portage.charger', { objet: k, quantite: vendable(k), case: Math.max(0, ouPerso()) });
@@ -396,6 +449,14 @@ registerActions({
   'port-honorer': (target) => {
     const r = applyResult(executer('port.honorer', { commande: target.dataset.commande, case: Math.max(0, ouPerso()) }));
     if (r.ok) notify(`📦 Commande honorée : ${DATA.OBJETS[r.commande.objet].icone} × ${r.commande.quantite} (+${formatCoins(r.gain)} 💰, dont ${formatCoins(r.prime)} de prime ; +${r.xp} XP).`, { kind: 'info' });
+  },
+  'port-contrat': (target) => {
+    const r = applyResult(executer('port.contrat', { contrat: target.dataset.contrat, case: Math.max(0, ouPerso()) }));
+    if (r.ok) notify(`📜 Contrat accepté : ${DATA.OBJETS[r.contrat.objet].icone} ${DATA.OBJETS[r.contrat.objet].nom} × ${formatQty(r.contrat.quantite)}, sur ${DATA.PRODUCTION.CONTRATS.PASSAGES} passages du bac.`, { kind: 'info' });
+  },
+  'port-livrer': (target) => {
+    const r = applyResult(executer('port.livrer', { contrat: target.dataset.contrat, case: Math.max(0, ouPerso()) }));
+    if (r.ok) notify(`📜 Livré au contrat : ${DATA.OBJETS[r.contrat.objet].icone} × ${formatQty(r.n)} (+${formatCoins(r.gain + r.prime)} 💰${r.complet ? `, dont ${formatCoins(r.prime)} de prime : il est honoré` : ` ; il en reste ${formatQty(r.contrat.quantite - r.contrat.livre)}`}).`, { kind: 'info' });
   },
   'port-importer': (target) => {
     const r = applyResult(executer('port.importer', { article: target.dataset.article, quantite: 1, case: Math.max(0, ouPerso()) }));

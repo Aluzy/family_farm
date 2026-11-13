@@ -17,10 +17,10 @@ import {
   techPct, testAddEggs, testAddFlour, testAddHens, testAddOil, testAddSeeds, testAddWheat,
   testBatir, testBuildStations, testSetLevel, testSetWear, testWearMill, testWoolReady, tick,
   toggleDevice, unlockLevel, upgradeCost, upgradeDevice, valeurAliment, wakeEnergy, waterAll,
-  waterCostFor, wheatForHens, wheatTotal,
+  waterCostFor, wheatForHens, wheatTotal, prixIle, roundPct, encaisserVente,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, construireFrigo, atelier, AVANT_DEMENAGEMENT, boite, coldRoom, farm, fillSheep,
+  affamer, assert, assertEqual, avecVillage, construireFrigo, atelier, AVANT_DEMENAGEMENT, boite, coldRoom, farm, fillSheep,
   garden, kwh, matin, migreAvant, ml, pature, plantRipe, ranch, reach, runFor, setInv, sleepOnce,
   test,
 } from './aide.mjs';
@@ -1399,3 +1399,30 @@ function unlockRecipes(s) {
   for (const [id, n] of Object.entries(DATA.ARBRE.noeuds)) if (n.effet.recettes) grantTech(s, id, false);
   return s;
 }
+
+/* ---------- le chantier « l'île à bâtir », fiche I4 : les prix de l'île ---------- */
+
+test('I4 : sur l\'île, les plats gardent leurs coefficients, sur les prix de l\'île de leurs ingrédients', () => {
+  // la farine (une transformation, coefPrix 135) : 2 → 3 ; le pain (coefPrix 160 : 2 farines et un litre d'eau)
+  assertEqual(prixIle('farine'), roundPct(DATA.OBJETS.ble.prix, DATA.RECETTES.farine.coefPrix), 'la farine de l\'île');
+  assertEqual(prixIle('pain'), roundPct(2 * prixIle('farine') + DATA.RECETTES.pain.eau * DATA.CUISINE.PRIX_EAU, DATA.RECETTES.pain.coefPrix), 'le pain de l\'île');
+  // une omelette (œufs et huile) : l'huile garde son prix (3 graines à 1, × 1,35 → 4) ; le plat, COEF_PLAT
+  assertEqual(prixIle('omelette'), roundPct(3 * prixIle('oeuf') + prixIle('huile'), DATA.CUISINE.COEF_PLAT), 'l\'omelette');
+  // le jeu d'avant : ses prix écrits
+  assertEqual([DATA.OBJETS.farine.prix, DATA.OBJETS.pain.prix], [2, 8], 'les prix écrits');
+});
+
+test('I4 : la vente au prix de l\'île le réglage allumé, au prix écrit éteint', () => {
+  avecVillage(() => {
+    const s = createInitialState();
+    assertEqual(sellPrice('pain', s), prixIle('pain'), 'allumé : le prix de l\'île');
+    const avant = s.pieces;
+    encaisserVente(s, 'pain', 2);
+    assertEqual(s.pieces - avant, 2 * prixIle('pain'), 'la vente encaisse le prix de l\'île');
+  });
+  avecVillage(() => {
+    const s = createInitialState();
+    assertEqual(sellPrice('pain', s), DATA.OBJETS.pain.prix, 'éteint : le prix écrit');
+    assertEqual(sellPrice('pain'), DATA.OBJETS.pain.prix, 'sans partie : le prix écrit');
+  }, false);
+});

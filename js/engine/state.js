@@ -17,6 +17,8 @@ import { reparerPort } from './bac.js';
 import { decoderSegments, encoderSegments } from './dehors.js';
 import { VEHICULES } from './portage.js';
 import { commencerPaliers } from './paliers.js';
+import { nouveauxNoms, reparerNoms } from './noms.js';
+import { nouvelleChronique, reparerChronique } from './chronique.js';
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
@@ -36,6 +38,12 @@ import { nouveauCompagnon } from './compagnon.js';
 import { nouveauRecit } from './recit.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
 import { reparerLiens } from './liens.js';
+import { reparerBourse, reparerEtal } from './bourse.js';
+import { reparerTraits } from './traits.js';
+import { reparerPaliersVocations } from './vocations.js';
+import { reparerFetes } from './fetes-village.js';
+import { reparerProjetsVillage } from './projets-village.js';
+import { reparerProduction } from './production.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -168,7 +176,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
   s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s), caseDepart(farmTerrain(s))), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
   // le chantier « l'île à bâtir » allumé : la partie suit les paliers de l'île (paliers.js, fiche I7a)
-  if (villageActif(s)) { commencerPaliers(s); s.dehors = nouveauDehors(); s.port = nouveauPort(s.day); }
+  if (villageActif(s)) { commencerPaliers(s); s.dehors = nouveauDehors(); s.port = nouveauPort(s.day); s.noms = nouveauxNoms(s); s.chronique = nouvelleChronique(); }
   return s;
 }
 
@@ -932,7 +940,88 @@ export const MIGRATIONS = {
   // n'en a pas : ses paires partent, à leur première nuit, de l'estimation d'I3b+ (ce que la partie montrait) ; ce qui
   // est abîmé est réparé (un foyer dont un membre n'est plus là s'en va). Sans villageois (le réglage éteint), rien.
   91: (state) => reparerLiens({ ...state, version: 92 }),
+  // v92 → v93 (le chantier « l'île à bâtir », fiche I4) : la part et la bourse des villageois (js/engine/bourse.js :
+  // v.panier, ce qui attend le bac ; v.reste ; v.achat, son achat du jour ; v.achats, les derniers ; v.affaires, ses
+  // vêtements et ses meubles ; v.commande, ce qu'il attend du bac ; v.plaisir ; v.vente), et l'étal du joueur
+  // (state.etal : ce qui y est en vente). Une partie d'avant n'en a pas : chacun part d'un panier vide, sa bourse
+  // gardée ; ce qui est abîmé est remis à vide. Sans villageois ni étal (le réglage éteint), rien ne change.
+  92: (state) => {
+    const out = { ...state, version: 93 };
+    if (Array.isArray(state.villageois)) out.villageois = state.villageois.map(reparerBourse);
+    if ('etal' in state) out.etal = reparerEtal(state.etal);
+    return out;
+  },
+  // v93 → v94 (le chantier « l'île à bâtir », fiche I6c) : les traits de personnalité des villageois (js/engine/traits.js :
+  // v.traits, v.traitsConnus, v.indices). Un villageois arrivé avant la fiche reçoit les siens, tirés de la graine de la
+  // partie et de son rang (deux villageois n'ont pas la même liste) ; aucun n'est encore connu ; ce qui est abîmé est
+  // réparé. Un enfant n'en a pas. Sans villageois (le réglage éteint), rien.
+  93: (state) => reparerTraits({ ...state, version: 94 }),
+  // v94 → v95 (le chantier « l'île à bâtir », fiche I7b) : le nouveau départ. Une partie neuve du chantier a le nom de
+  // son île (state.noms.ile, borné comme le nom de famille), une terre vierge (state.dehors.ferme : 'vierge') et le
+  // didacticiel de l'île (state.didacticielIle : { etape, fini, passees }). Une partie d'avant n'en a pas et reste
+  // telle quelle (son chemin peint, ses objectifs du jour) ; ce qui est là et abîmé est réparé (un nom illisible s'en
+  // va, un didacticiel illisible est fini).
+  94: (state) => {
+    const out = { ...state, version: 95 };
+    if ('noms' in state) reparerNoms(out);
+    if ('didacticielIle' in state) out.didacticielIle = reparerDidacticielIle(state.didacticielIle);
+    if (state.dehors && typeof state.dehors === 'object' && 'ferme' in state.dehors && state.dehors.ferme !== 'vierge') {
+      const { ferme: _f, ...dehors } = state.dehors;
+      out.dehors = dehors;
+    }
+    return out;
+  },
+  // v95 → v96 (le chantier « l'île à bâtir », fiche I7g) : les noms (js/engine/noms.js : state.noms, l'île, le village, les
+  // commerces, les maisons) et la chronique (js/engine/chronique.js : state.chronique, ses lignes, ses épingles et les notes
+  // du joueur). Une partie du chantier (allumé, ou une partie d'essai) qui n'a pas de nom d'île en reçoit un, tiré de sa
+  // graine ; ses noms abîmés sont effacés (le village redevient sans nom) ; sa chronique est réparée (une ligne
+  // illisible s'en va, une note est bornée). Une partie d'avant le chantier n'est pas touchée.
+  95: (state) => {
+    const out = { ...state, version: 96 };
+    if (!villageActif(out) && !('noms' in out) && !('chronique' in out)) return out;
+    reparerNoms(out);
+    out.chronique = reparerChronique(out.chronique);
+    return out;
+  },
+  // v96 → v97 (le chantier « l'île à bâtir », fiche I8a) : les vocations de l'île (js/engine/vocations.js :
+  // state.vocations, les paliers atteints ; state.vocations.village, les fêtes et les projets du village) et le chantier
+  // où un villageois est envoyé (v.chantier). Une partie d'avant n'en a pas : rien n'est ajouté ; ce qui est abîmé est
+  // réparé (un palier d'une vocation inconnue, une fête illisible, un projet inconnu ; un villageois envoyé à un projet
+  // qui n'est plus en cours reprend sa tâche). Sans vocations ni villageois (le réglage éteint), rien.
+  96: (state) => reparerVocations({ ...state, version: 97 }),
+  // v97 → v98 (le chantier « l'île à bâtir », fiche I8b) : la ferme productive (js/engine/production.js :
+  // state.production, la valeur exportée et l'énergie produite des derniers jours, les contrats d'export proposés et
+  // acceptés, combien en sont honorés ; les paliers des vocations : la migration v96 → v97, I8a). Elle ne naît qu'avec
+  // le chantier : une partie d'avant n'en a pas et reste telle quelle ; ce qui est abîmé est réparé.
+  97: (state) => {
+    const out = { ...state, version: 98 };
+    if ('production' in state) out.production = reparerProduction(state.production, state.port && Number.isInteger(state.port.passe) ? state.port.passe : 0);
+    return out;
+  },
 };
+
+// Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.
+function reparerDidacticielIle(d) {
+  const n = DATA.VILLAGE.DEPART.ETAPES.length, ids = new Set(DATA.VILLAGE.DEPART.ETAPES.map((e) => e.id));
+  if (!d || typeof d !== 'object' || Array.isArray(d) || !Number.isInteger(d.etape) || d.etape < 0) return { etape: n, fini: true, passees: [] };
+  return { etape: Math.min(d.etape, n), fini: d.fini === true || d.etape >= n, passees: Array.isArray(d.passees) ? d.passees.filter((x) => ids.has(x)) : [] };
+}
+
+// Les vocations d'une sauvegarde (la migration v96 → v97).
+function reparerVocations(state) {
+  if ('vocations' in state) {
+    const o = state.vocations && typeof state.vocations === 'object' && !Array.isArray(state.vocations) ? state.vocations : {};
+    const v = o.village && typeof o.village === 'object' && !Array.isArray(o.village) ? o.village : null;
+    const village = v ? { ...reparerFetes(v), projets: reparerProjetsVillage(v.projets), ...(Number.isInteger(v.repas) && v.repas >= 0 ? { repas: v.repas } : {}) } : null;
+    state.vocations = { ...reparerPaliersVocations(o), ...(village ? { village } : {}) };
+  }
+  if (Array.isArray(state.villageois)) {
+    const p = state.vocations && state.vocations.village && state.vocations.village.projets;
+    const enCours = p && p.encours ? p.encours.sorte : null;
+    state.villageois = state.villageois.map((x) => (x && typeof x === 'object' && 'chantier' in x && x.chantier !== enCours ? { ...x, chantier: null } : x));
+  }
+  return state;
+}
 
 // Le dehors d'une sauvegarde (la migration v87 → v88) : { troncon, chemins (des segments lisibles) }.
 function reparerDehors(d) {

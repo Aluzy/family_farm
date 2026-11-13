@@ -25,6 +25,7 @@ import { regrowGrass, respawnBushes, respawnRocks, respawnTrees } from './outils
 import { repousseMonde } from './monde-recolte.js';
 import { habitantsNuit } from './habitants.js';
 import { bienvenueNuit } from './bienvenue.js';
+import { majDidacticielIle } from './didacticiel-ile.js';
 import { recitNuit } from './recit.js';
 import { remplirRuches } from './ruches.js';
 import { affinerTonnelets } from './tonnelets.js';
@@ -40,8 +41,16 @@ import { enExpedition, tentePortee } from './equipement.js';
 import { villageoisDe, villageoisNuit } from './villageois.js';
 import { amitieVillageoisNuit } from './villageois-amitie.js';
 import { tachesNuit } from './taches.js';
+import { avancerContrats } from './contrats.js';
+import { productionNuit } from './production.js';
+import './vocation-production.js';   // (fiche I8b : le calcul de la ferme productive s'enregistre au socle des vocations)
 import { liensFinDeNuit, liensNuit } from './liens.js';
 import { avancerBac } from './bac.js';
+import { achatsNuit } from './bourse.js';
+import { vocationsNuit } from './vocations.js';
+import './vocation-village.js';   // (la convivialité s'enregistre au socle des vocations)
+import { fetesVillageNuit } from './fetes-village.js';
+import { projetsVillageNuit } from './projets-village.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
@@ -311,14 +320,29 @@ export function runNight(state) {
   // (I3c, taches.js : avant, chacun finit ses actions du jour ; sa nuit les met dans son journal)
   const taches = tachesNuit(state);
   if (taches) state.nuit.taches = taches;
+  // (fiche I4, bourse.js : l'achat à l'étal qu'on n'a pas vu se fait)
+  const achats = achatsNuit(state);
+  if (achats) state.nuit.achatsEtal = achats;
+  // (I8a, projets-village.js : ceux qui ont travaillé au chantier du village comptent leur journée ; un projet peut finir)
+  const chantier = projetsVillageNuit(state);
+  if (chantier) state.nuit.chantierVillage = chantier;
   // (I6b, liens.js : les liens montent de ce que les villageois ont vécu ensemble aujourd'hui, avant leur nuit)
   const liens = liensNuit(state);
   if (liens) state.nuit.liens = liens;
   // (fiche I1c, bac.js : le bac du jour est passé et reparti ; un passage manqué est rattrapé)
   const bac = avancerBac(state, { nuit: true });
   if (bac && bac.arrivees.length) state.nuit.bac = bac;
+  // (fiche I8b : les contrats d'export suivent le bac ; l'énergie du jour notée ; les paliers des vocations, plus bas)
+  avancerContrats(state);
+  const production = productionNuit(state);
+  if (production) state.nuit.production = production;
   const villageois = villageoisNuit(state);
   if (villageois) state.nuit.villageois = villageois;
+  // (I8a, fetes-village.js : la fête du jour est tenue ; vocations.js : les paliers que les vocations atteignent)
+  const fete = fetesVillageNuit(state);
+  if (fete) state.nuit.feteVillage = fete;
+  const vocations = vocationsNuit(state);
+  if (vocations && vocations.length) state.nuit.vocations = vocations;
   // (I6b : un ami apportera demain un repas à qui se repose ; l'enfant d'un foyer, s'il n'est pas venu par le bac)
   const liensFin = liensFinDeNuit(state);
   if (liensFin) state.nuit.liensFin = liensFin;
@@ -366,6 +390,7 @@ export function runNight(state) {
   const demandeIle = villageoisDe(state).length ? demandesVillageoisNuit(state, villageoisDe(state)) : null;
   if (demandeIle) state.nuit.demandeVillageois = demandeIle;
   refreshUnlocks(state);
+  majDidacticielIle(state); // (fiche I7b : le didacticiel de l'île suit aussi ce qui s'est fait sans la page)
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil
   noteTutorialSleep(state); // Lot 11 : la bulle « Dormir » se ferme à la première nuit
   state.report = buildMorningReport(state);

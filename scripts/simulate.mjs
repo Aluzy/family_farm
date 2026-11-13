@@ -66,6 +66,38 @@ for (const id of ids) {
   }
 }
 
+/* ---------- I8b : les deux vocations (--vocations) ---------- */
+
+// Les stratégies « village » et « production » (SIMULATION.VOCATIONS), le chantier allumé : les pièces, le bonheur,
+// les liens, le score de la ferme productive, les contrats honorés ; rien d'autre n'est écrit (le CSV d'avant ne
+// change pas).
+if (args.includes('--vocations')) {
+  E.DATA.VILLAGE.ACTIF = true;
+  const V = S.VOCATIONS || {};
+  const somme = (o) => Object.values(o).reduce((t, v) => t + v, 0);
+  const res = {};
+  for (const id of Object.keys(V)) {
+    const r = E.simulateVocation(id, nuits, graine);
+    const gagne = r.rows.reduce((t, x) => t + somme(x.gains), 0), depense = r.rows.reduce((t, x) => t + somme(x.depenses), 0);
+    const postes = {};
+    for (const x of r.rows) for (const [p, v] of Object.entries(x.gains)) postes[p] = (postes[p] || 0) + v;
+    const bonheur = r.rows.reduce((t, x) => t + x.bonheur, 0) / r.rows.length;
+    res[id] = { ...r.bilan, gagne: Math.round(gagne), depense: Math.round(depense), bonheurMoyen: Math.round(bonheur), postes, chapitre: r.rows[r.rows.length - 1].chapitre };
+  }
+  console.log(`Les vocations : ${nuits} nuits, graine ${graine}, le chantier « l'île à bâtir » allumé`);
+  const L = [['pièces en caisse', 'pieces'], ['gagné sur la partie', 'gagne'], ['dépensé sur la partie', 'depense'], ['bonheur de la famille (fin)', 'bonheurFamille'],
+    ['bonheur de la famille (moyenne)', 'bonheurMoyen'], ['bonheur des villageois (fin, moyenne)', 'bonheurVillageois'], ['villageois', 'villageois'],
+    ['liens « camarade » ou plus', 'liens'], ['liens « ami » ou « proche »', 'amis'], ['score de la ferme productive', 'production'], ['contrats d\'export honorés', 'contrats'], ['palier de l\'île', 'chapitre']];
+  const ids = Object.keys(res);
+  console.log(`${''.padEnd(40)}${ids.map((id) => V[id].nom.padStart(22)).join('')}`);
+  for (const [nom, k] of L) console.log(`${nom.padEnd(40)}${ids.map((id) => String(res[id][k]).padStart(22)).join('')}`);
+  for (const id of ids) {
+    const p = Object.entries(res[id].postes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([q, v]) => `${q} ${Math.round(v)}`).join(', ');
+    console.log(`${V[id].nom} : premiers postes de gain : ${p}`);
+  }
+  process.exit(0);
+}
+
 /* ---------- parties ---------- */
 
 const parties = {};
