@@ -366,6 +366,8 @@ function nuitDe(state, v, jour) {
   if (auChantier) J.chantier = T.chantier;
   // (I3d : ce que son travail a pris au coffre, s'il a pris quelque chose)
   if (T && T.jour === jour && objet(T.utilise) && Object.keys(T.utilise).length) J.utilise = { ...T.utilise };
+  // (fiche I8b : le courant des machines qu'il a servies, en Wh, s'il en a consommé)
+  if (T && T.jour === jour && Number(T.courant) > 0) J.courant = Math.round(Number(T.courant));
   if (!Array.isArray(v.journal)) v.journal = [];
   v.journal.push(J);
   const max = Math.max(1, Number(ARRIVEE.JOURNAL) || 7);

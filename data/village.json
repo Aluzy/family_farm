@@ -907,7 +907,14 @@
     "branches, cailloux) ; le fauchage : un coup de faux (la fibre ; une botteleuse posée en fait de la paille) ; la",
     "cuisine : une préparation lancée à la cuisinière ou au four (RECETTES, la première dont les ingrédients sont là) ; la",
     "navette : un aller-retour au port (PORTEE objets au plus de ce que le joueur a marqué « à vendre » sur sa fiche,",
-    "vendus au comptoir, l'argent au joueur ; la brouette et la charrette viendront avec la fiche I2)."
+    "vendus au comptoir, l'argent au joueur ; la brouette et la charrette viendront avec la fiche I2).",
+    "Les machines (fiche I8b, « conduire une chaîne ») : une action est un tour des machines de la ferme : il ramasse",
+    "au coffre le tas au bout de chaque chaîne de production (une chaîne au tas plein repart), il jette dans son",
+    "entonnoir les ingrédients du coffre, il verse au Moulin jusqu'à MOULIN blés (ceux qui ne sont pas gardés pour les",
+    "semis), il relance au four la FOURNEE dès qu'il est libre. Une chaîne servie tourne tout le jour : un villageois",
+    "en tire bien plus que le joueur, qui n'a pas le temps d'y revenir. Le courant que ses machines consomment entre dans",
+    "son coût (PRODUCTION.COURANT, le tableau). La navette (fiche I8b) : elle livre d'abord les contrats d'export acceptés,",
+    "et porte plus avec une brouette, une charrette, un quai de chargement (PRODUCTION.NAVETTE)."
   ],
   "TACHES": {
     "TRAVAIL": [[8, 11.5], [13.5, 16.5]],
@@ -971,6 +978,13 @@
         "RECETTES": ["soupe_legumes", "ratatouille", "omelette", "poisson_grille", "salade_tomates", "pain", "gratin_patates", "tarte_pommes"],
         "SANS": "Il faut une cuisinière ou un four dans le foyer.",
         "PHRASES": ["Je prépare à manger pour tout le monde.", "Ça mijote !", "Une pincée de sel, et voilà."]
+      },
+      "chaine": {
+        "nom": "Conduire les machines", "icone": "🏭", "ACTIONS": 16, "outil": null, "lieu": "machine", "geste": "ramasse", "emoji": "⚙️",
+        "donne": "un tour des machines : il vide les chaînes, les alimente, les relance ; il verse le blé au Moulin, relance la fournée",
+        "MOULIN": 10, "GARDE": 10, "FOURNEE": "pain",
+        "SANS": "Il n'y a ni chaîne de production prête, ni Moulin, ni four sur la ferme.",
+        "PHRASES": ["Je surveille les machines.", "Tout tourne rond !", "Encore une fournée et je vide la chaîne."]
       },
       "navette": {
         "nom": "La tournée du port", "icone": "⚓", "ACTIONS": 2, "PORTEE": 10, "outil": null, "lieu": "port", "geste": "ramasse", "emoji": "💰",
@@ -1465,6 +1479,68 @@
         },
         "TRAVAIL": { "geste": "hache", "emoji": "🔨" }
       }
+    },
+    "production": {
+      "nom": "La ferme productive", "icone": "🏭",
+      "PALIERS": [
+        { "score": 120, "debloque": ["contrats_gros"] },
+        { "score": 300, "debloque": ["machines_grandes"] },
+        { "score": 600, "debloque": ["import_plein_champ"] },
+        { "score": 1000, "debloque": ["robot_second"] }
+      ],
+      "CAUSES": {
+        "export": { "nom": "La valeur exportée ce mois de lune", "PIECES": 25 },
+        "machines": { "nom": "Les machines en état de marche", "POINTS": 15 },
+        "energie": { "nom": "L'énergie produite ce mois de lune", "WH": 4000 },
+        "contrats": { "nom": "Les contrats d'export honorés", "POINTS": 40 }
+      },
+      "TEXTES": {
+        "contrats_gros": "des contrats d'export plus gros",
+        "machines_grandes": "des machines plus grandes : le réservoir des chaînes double",
+        "import_plein_champ": "les cultures de plein champ en vrac, au catalogue d'import",
+        "robot_second": "un second robot : la tournée du robot va deux fois plus vite"
+      }
     }
+  },
+  "//PRODUCTION": [
+    "La ferme productive (fiche I8b ; js/engine/contrats.js, js/engine/production.js, js/engine/vocation-production.js ;",
+    "la fenêtre : l'onglet Contrats du port, js/ui/port.js). Les chiffres qui dépendent des prix sont à refaire après la",
+    "fiche I4.",
+    "CONTRATS : les contrats d'export. À partir du port de niveau NIVEAU, chaque passage du bac en propose",
+    "PROPOSES[niveau − 1], tirés de la graine et du jour (le même bac pour tous), parmi OBJETS que le joueur sait déjà",
+    "produire (ce qu'il a récolté, préparé, transformé, ses bêtes) : un objet, une quantité (de quoi valoir",
+    "VALEUR[niveau − 1] pièces au prix de vente, à ± ECART %, arrondie à ARRONDI, entre QUANTITE[0] et QUANTITE[1] ;",
+    "GROS % de plus quand la vocation productive l'a débloqué), une prime (PRIME[0] à PRIME[1] %, par pas de 5). Un",
+    "contrat proposé s'accepte au comptoir jusqu'au passage suivant ; MAX acceptés à la fois. Accepté, il court sur",
+    "PASSAGES passages du bac (celui qui l'a apporté compris) : on y livre au comptoir, en autant de fois qu'on veut, ce",
+    "qu'on a porté (le portage) ou ce que la tournée des villageois emporte ; chaque livraison est payée au prix de vente",
+    "(le bac l'emporte avec ses caisses) ; complet, la prime est versée, avec XP points d'expérience. Le bac de son",
+    "dernier passage reparti sans qu'il soit complet, il s'efface sans pénalité (ce qui est livré est payé).",
+    "COURANT : le tableau des villageois compte l'énergie que consomment les machines qu'un villageois conduit (ce qu'il",
+    "y verse) dans son coût, une pièce par WH_PAR_PIECE Wh.",
+    "NAVETTE : la tournée du port en volume. Elle porte TACHES.LISTE.navette.PORTEE objets ; BROUETTE avec une brouette",
+    "à la ferme, CHARRETTE avec une charrette et un cheval ; un quai de chargement posé sur la ferme regroupe les envois :",
+    "QUAI % de plus (la tournée y part et y revient). Elle livre d'abord les contrats acceptés, puis ce qui est marqué",
+    "« à vendre ».",
+    "QUAI : le quai de chargement (un bloc de l'Atelier, deux cases, dehors sur la ferme ; l'image :",
+    "scripts/batiments/quai_chargement.py) se fabrique à partir du port de niveau NIVEAU.",
+    "MACHINES, ROBOT, IMPORT : ce que débloquent les paliers de la vocation (VOCATIONS.production) : le réservoir d'une",
+    "chaîne tient RESERVOIR % de CHAINES.RESERVOIR ; la tournée du robot prend 100 / VITESSE de son temps ; les",
+    "semences des cultures de plein champ (blé, tournesol, riz, houblon) s'importent par LOT, au prix de vente fois",
+    "MARGE %, au rang RANG du catalogue."
+  ],
+  "PRODUCTION": {
+    "CONTRATS": {
+      "NIVEAU": 2, "PASSAGES": 3, "PROPOSES": [0, 1, 2, 2, 3], "MAX": 2,
+      "VALEUR": [0, 400, 800, 1400, 2200], "ECART": 20, "ARRONDI": 10, "QUANTITE": [20, 300], "PRIME": [30, 50], "GROS": 150, "XP": 60,
+      "OBJETS": ["pain", "fromage_frais", "bocal_legumes", "confiture_fraises", "jus_fruits", "compote", "biere_artisanale", "huile",
+        "farine", "lait", "oeuf", "laine"]
+    },
+    "COURANT": { "WH_PAR_PIECE": 250 },
+    "NAVETTE": { "BROUETTE": 25, "CHARRETTE": 60, "QUAI": 200 },
+    "QUAI": { "NIVEAU": 2 },
+    "MACHINES": { "RESERVOIR": 200 },
+    "ROBOT": { "VITESSE": 200 },
+    "IMPORT": { "RANG": 2, "LOT": 50, "MARGE": 150 }
   }
 }

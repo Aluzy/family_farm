@@ -43,6 +43,7 @@ import { reparerTraits } from './traits.js';
 import { reparerPaliersVocations } from './vocations.js';
 import { reparerFetes } from './fetes-village.js';
 import { reparerProjetsVillage } from './projets-village.js';
+import { reparerProduction } from './production.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -988,6 +989,15 @@ export const MIGRATIONS = {
   // réparé (un palier d'une vocation inconnue, une fête illisible, un projet inconnu ; un villageois envoyé à un projet
   // qui n'est plus en cours reprend sa tâche). Sans vocations ni villageois (le réglage éteint), rien.
   96: (state) => reparerVocations({ ...state, version: 97 }),
+  // v97 → v98 (le chantier « l'île à bâtir », fiche I8b) : la ferme productive (js/engine/production.js :
+  // state.production, la valeur exportée et l'énergie produite des derniers jours, les contrats d'export proposés et
+  // acceptés, combien en sont honorés ; les paliers des vocations : la migration v96 → v97, I8a). Elle ne naît qu'avec
+  // le chantier : une partie d'avant n'en a pas et reste telle quelle ; ce qui est abîmé est réparé.
+  97: (state) => {
+    const out = { ...state, version: 98 };
+    if ('production' in state) out.production = reparerProduction(state.production, state.port && Number.isInteger(state.port.passe) ? state.port.passe : 0);
+    return out;
+  },
 };
 
 // Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.

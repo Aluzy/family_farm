@@ -114,3 +114,6 @@ export * from './vocations.js';
 export * from './vocation-village.js';
 export * from './fetes-village.js';
 export * from './projets-village.js';
+export * from './production.js';
+export * from './contrats.js';
+export * from './vocation-production.js';

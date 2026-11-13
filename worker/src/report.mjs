@@ -84,6 +84,8 @@ export const GAME_ACTIONS = {
   'port-acheter': 'Acheter au port (une semence)',
   'port-decharger': 'Décharger sous la halle du port (tout ce qui est chargé se vend)',
   'port-honorer': 'Honorer une commande du bac',
+  'port-contrat': 'Accepter un contrat d\'export',
+  'port-livrer': 'Livrer à un contrat d\'export',
   'port-importer': 'Commander au catalogue d\'import du bac',
   'port-apporter': 'Apporter des matériaux au chantier du port',
   'port-agrandir': 'Agrandir le port (le niveau suivant)',

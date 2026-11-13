@@ -118,6 +118,8 @@
    Le bac, les commandes, l'import et les niveaux (fiche I1c ; js/engine/bac.js, sans inverse) :
      port.honorer     { commande, case }        honorer une commande du bac avec ce qu'on a porté
      port.importer    { article, quantite, case } commander au catalogue (« objet:jeune_pommier »…), payé d'avance
+     port.contrat     { contrat, case }         accepter un contrat d'export proposé (fiche I8b)
+     port.livrer      { contrat, case }         livrer à un contrat accepté ce qu'on a porté de son objet (fiche I8b)
      port.apporter    { case }                  apporter au chantier du port les matériaux portés du niveau suivant
      port.agrandir    { case }                  payer le niveau suivant (ses matériaux apportés)
    Les tâches des villageois (l'île à bâtir, fiche I3c ; js/engine/taches.js, sans inverse) :
@@ -166,6 +168,7 @@ import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
 import { acheterAuPort, dechargerAuPort, vendreAuPort } from './port.js';
 import { agrandirPort, apporterAuChantier, commanderImport, honorerCommande } from './bac.js';
+import { accepterContrat, livrerContrat } from './contrats.js';
 import { chargerPortage, choisirVehicule, dechargerPortage } from './portage.js';
 import { attribuer, donnerOutil, marquerAVendre, reprendreOutil } from './taches.js';
 import { accueillirEnfant, formerFoyer } from './liens.js';
@@ -580,6 +583,15 @@ export const COMMANDES = {
   'port.importer': {
     args: { article: 'texte', quantite: 'quantite', case: 'case' },
     executer: (state, { article, quantite, case: c }) => commanderImport(state, article, Math.max(1, Math.floor(quantite)), c),
+  },
+  // (fiche I8b : les contrats d'export)
+  'port.contrat': {
+    args: { contrat: 'texte', case: 'case' },
+    executer: (state, { contrat, case: c }) => accepterContrat(state, contrat, c),
+  },
+  'port.livrer': {
+    args: { contrat: 'texte', case: 'case' },
+    executer: (state, { contrat, case: c }) => livrerContrat(state, contrat, c),
   },
   'port.apporter': {
     args: { case: 'case' },

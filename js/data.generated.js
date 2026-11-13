@@ -1590,6 +1590,15 @@ export const RAW_DATA = {
       "rachetable": false,
       "village": true
     },
+    "quai_chargement": {
+      "nom": "Quai de chargement",
+      "icone": "🏗️",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
     "brouette": { "nom": "Brouette", "icone": "🛒", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "charrette": { "nom": "Charrette", "icone": "🛞", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "lavoir": {
@@ -2194,6 +2203,12 @@ export const RAW_DATA = {
       "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler", "coefPrix": 145 },
       "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler", "coefPrix": 145 },
       "panneau_village": { "entrees": { "planche": 3, "bois": 2 }, "sortie": { "panneau_village": 1 }, "village": true },
+      "quai_chargement": {
+        "entrees": { "planche": 12, "pierre": 8, "lingot_fer": 2 },
+        "sortie": { "quai_chargement": 1 },
+        "village": true,
+        "port": 2
+      },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
@@ -2363,6 +2378,16 @@ export const RAW_DATA = {
         "largeur": 2,
         "panneau": "village",
         "texte": "#3a2212",
+        "village": true
+      },
+      "quai_chargement": {
+        "nom": "Quai de chargement",
+        "objet": "quai_chargement",
+        "dehors": true,
+        "bloque": true,
+        "unique": true,
+        "dessin": "quai_chargement",
+        "largeur": 2,
         "village": true
       },
       "refrigerateur": {
@@ -3317,7 +3342,8 @@ export const RAW_DATA = {
           "chaudron",
           "tonneau",
           "ensacheuse",
-          "tonnelet"
+          "tonnelet",
+          "quai_chargement"
         ]
       }
     },
@@ -5316,6 +5342,32 @@ export const RAW_DATA = {
         "VERS": ["betes", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"]
       },
       "ETAL": { "PAR_OBJET": 2 }
+    },
+    "VOCATIONS": {
+      "village": { "nom": "Vocation village", "eveilS": 60 },
+      "production": {
+        "nom": "Vocation production",
+        "eveilS": 60,
+        "vocation": "production",
+        "TACHES": {
+          "champs": 1,
+          "chaine": 1,
+          "cuisine": 1,
+          "navette": 1,
+          "betes": 1,
+          "verger": 1,
+          "peche": 1,
+          "bois": 1,
+          "pierre": 1,
+          "fauchage": 1,
+          "cueillette": 1
+        },
+        "REATTRIBUER": false,
+        "QUAI": true,
+        "FARINE_MAX": 80,
+        "VENDRE": ["pain"],
+        "CONTRATS": ["pain", "laine", "oeuf", "lait"]
+      }
     },
     "BATIR": {
       "foyer": { "paillasse": 4 },
@@ -9983,6 +10035,21 @@ export const RAW_DATA = {
         "SANS": "Il faut une cuisinière ou un four dans le foyer.",
         "PHRASES": ["Je prépare à manger pour tout le monde.", "Ça mijote !", "Une pincée de sel, et voilà."]
       },
+      "chaine": {
+        "nom": "Conduire les machines",
+        "icone": "🏭",
+        "ACTIONS": 16,
+        "outil": null,
+        "lieu": "machine",
+        "geste": "ramasse",
+        "emoji": "⚙️",
+        "donne": "un tour des machines : il vide les chaînes, les alimente, les relance ; il verse le blé au Moulin, relance la fournée",
+        "MOULIN": 10,
+        "GARDE": 10,
+        "FOURNEE": "pain",
+        "SANS": "Il n'y a ni chaîne de production prête, ni Moulin, ni four sur la ferme.",
+        "PHRASES": ["Je surveille les machines.", "Tout tourne rond !", "Encore une fournée et je vide la chaîne."]
+      },
       "navette": {
         "nom": "La tournée du port",
         "icone": "⚓",
@@ -10490,7 +10557,64 @@ export const RAW_DATA = {
         },
         "TRAVAIL": { "geste": "hache", "emoji": "🔨" }
       }
+    },
+    "production": {
+      "nom": "La ferme productive",
+      "icone": "🏭",
+      "PALIERS": [
+        { "score": 120, "debloque": ["contrats_gros"] },
+        { "score": 300, "debloque": ["machines_grandes"] },
+        { "score": 600, "debloque": ["import_plein_champ"] },
+        { "score": 1000, "debloque": ["robot_second"] }
+      ],
+      "CAUSES": {
+        "export": { "nom": "La valeur exportée ce mois de lune", "PIECES": 25 },
+        "machines": { "nom": "Les machines en état de marche", "POINTS": 15 },
+        "energie": { "nom": "L'énergie produite ce mois de lune", "WH": 4000 },
+        "contrats": { "nom": "Les contrats d'export honorés", "POINTS": 40 }
+      },
+      "TEXTES": {
+        "contrats_gros": "des contrats d'export plus gros",
+        "machines_grandes": "des machines plus grandes : le réservoir des chaînes double",
+        "import_plein_champ": "les cultures de plein champ en vrac, au catalogue d'import",
+        "robot_second": "un second robot : la tournée du robot va deux fois plus vite"
+      }
     }
+  },
+  "PRODUCTION": {
+    "CONTRATS": {
+      "NIVEAU": 2,
+      "PASSAGES": 3,
+      "PROPOSES": [0, 1, 2, 2, 3],
+      "MAX": 2,
+      "VALEUR": [0, 400, 800, 1400, 2200],
+      "ECART": 20,
+      "ARRONDI": 10,
+      "QUANTITE": [20, 300],
+      "PRIME": [30, 50],
+      "GROS": 150,
+      "XP": 60,
+      "OBJETS": [
+        "pain",
+        "fromage_frais",
+        "bocal_legumes",
+        "confiture_fraises",
+        "jus_fruits",
+        "compote",
+        "biere_artisanale",
+        "huile",
+        "farine",
+        "lait",
+        "oeuf",
+        "laine"
+      ]
+    },
+    "COURANT": { "WH_PAR_PIECE": 250 },
+    "NAVETTE": { "BROUETTE": 25, "CHARRETTE": 60, "QUAI": 200 },
+    "QUAI": { "NIVEAU": 2 },
+    "MACHINES": { "RESERVOIR": 200 },
+    "ROBOT": { "VITESSE": 200 },
+    "IMPORT": { "RANG": 2, "LOT": 50, "MARGE": 150 }
   },
   "CONSERVATION": {
     "carotte": 6,

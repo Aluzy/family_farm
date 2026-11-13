@@ -260,6 +260,7 @@
     "pont_planches": { "nom": "Pont de planches", "icone": "🌉", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "etal": { "nom": "Étal", "icone": "🛒", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "panneau_village": { "nom": "Panneau du village", "icone": "🪧", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "quai_chargement": { "nom": "Quai de chargement", "icone": "🏗️", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "brouette": { "nom": "Brouette", "icone": "🛒", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "charrette": { "nom": "Charrette", "icone": "🛞", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "lavoir": { "nom": "Lavoir", "icone": "🧺", "prix": 0, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true, "village": true },

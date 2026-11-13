@@ -127,11 +127,13 @@ function jourHtml(j) {
   const mange = Object.keys(j.mange).length ? `${objetsLong(j.mange)} · ${pieces(j.repas)}` : 'rien';
   const pris = Object.keys(j.utilise).length ? `<li>🧺 Pris au coffre : ${objetsLong(j.utilise)} · ${pieces(j.matieres)}</li>` : '';
   const part = j.part ? `<li>👛 Sa part : ${pieces(j.part)}</li>` : '';
+  // (fiche I8b : le courant des machines qu'il conduit)
+  const courant = j.courant ? `<li>⚡ Le courant des machines : ${formatNumber(j.courant)} Wh · ${pieces(j.electricite)}</li>` : '';
   const prod = j.produit.length ? `${j.produit.map((x) => `${formatNumber(x.n)} ${icone(x.objet)} ${escapeHtml(nom(x.objet))}`).join(', ')} · ${pieces(j.valeur)}` : 'rien';
   return `<li class="tableau-jour">
       <div class="tableau-jour-tete"><strong>Jour ${j.jour}</strong> <span class="muted">${formatDay(j.jour)}</span> <span class="tableau-jour-solde">solde ${formatSigned(j.solde)}</span></div>
       <div>${quoi}</div>
-      <ul><li>🍽️ Mangé : ${mange}</li>${pris}${part}<li>📦 Produit : ${prod}</li></ul>
+      <ul><li>🍽️ Mangé : ${mange}</li>${pris}${courant}${part}<li>📦 Produit : ${prod}</li></ul>
     </li>`;
 }
 
@@ -150,7 +152,7 @@ export function ouvrirDetail(id) {
     <h2 id="tableau-detail-title">${portrait(l)} ${escapeHtml(l.prenom)} : ses sept jours</h2>
     <p class="muted">${def ? `${def.icone} ${escapeHtml(def.nom)}` : 'Sans tâche'} · ${humeurDe(l)[0]} ${escapeHtml(humeurTexte(l))}${l.manque ? ` · ${escapeHtml(l.manque)}` : ''}</p>
     <dl class="tableau-resume">
-      <dt>Coût</dt><dd>${pieces(l.cout)} <span class="muted">(repas ${formatNumber(l.repas)}${l.matieres ? `, pris au coffre ${formatNumber(l.matieres)}` : ''}${l.part ? `, sa part ${formatNumber(l.part)}` : ''})</span></dd>
+      <dt>Coût</dt><dd>${pieces(l.cout)} <span class="muted">(repas ${formatNumber(l.repas)}${l.matieres ? `, pris au coffre ${formatNumber(l.matieres)}` : ''}${l.electricite ? `, le courant ${formatNumber(l.electricite)}` : ''}${l.part ? `, sa part ${formatNumber(l.part)}` : ''})</span></dd>
       <dt>Produit</dt><dd>${pieces(l.valeur)}${l.produit.length ? ` <span class="muted">(${objetsCourt(l.produit, 8)})</span>` : ''}</dd>
       <dt>Solde</dt><dd>${formatSigned(l.solde)} 🪙</dd>
       <dt>Rendement</dt><dd>${rend}</dd>

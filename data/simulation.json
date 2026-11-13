@@ -63,6 +63,24 @@
       "//ETAL": "I4 : dès qu'un villageois est là, il pose un étal (bourse.js) et y met chaque jour, de ce qu'un villageois aime ou dont il a besoin, PAR_OBJET unités au plus de chaque objet, sans passer sous VIVRES_GARDES dans l'inventaire.",
       "ETAL": { "PAR_OBJET": 2 }
     },
+    "//VOCATIONS": [
+      "I8b : les deux stratégies qui comparent les vocations de l'île (node scripts/simulate.mjs --vocations, le chantier",
+      "allumé ; bot.js simulateVocation, bilanVocation). Elles ne sont jouées qu'avec --vocations (le CSV d'avant ne",
+      "change pas). village : le joueur appliqué tel qu'il est (la fiche I8a lui donnera ses fêtes et ses projets).",
+      "production : le joueur appliqué, plus la ferme productive : ses villageois prennent TACHES dans l'ordre ({ tâche: combien de",
+      "villageois au plus }), sans réattribution (REATTRIBUER : false) ; PART_PLEIN_CHAMP % des",
+      "parcelles en plein champ (du blé pour le pain) ; au port, il accepte les contrats d'export de CONTRATS et les",
+      "livre (il charge leur objet avant le reste) ; QUAI : il pose le quai de chargement dès que le port l'ouvre."
+    ],
+    "VOCATIONS": {
+      "village": { "nom": "Vocation village", "eveilS": 60 },
+      "production": {
+        "nom": "Vocation production", "eveilS": 60, "vocation": "production",
+        "TACHES": { "champs": 1, "chaine": 1, "cuisine": 1, "navette": 1, "betes": 1, "verger": 1, "peche": 1, "bois": 1, "pierre": 1, "fauchage": 1, "cueillette": 1 },
+        "REATTRIBUER": false, "QUAI": true, "FARINE_MAX": 80, "VENDRE": ["pain"],
+        "CONTRATS": ["pain", "laine", "oeuf", "lait"]
+      }
+    },
     "//BATIR": [
       "I0b : les pièces maîtresses de chaque bâtiment, fabriquées à l'Atelier avec leurs matériaux avant d'être posées",
       "(js/engine/bot.js botBatir ; les murs, portes et barrières autour sont posés d'un coup). Aucun n'a de prix en pièces."

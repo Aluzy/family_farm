@@ -65,6 +65,8 @@ import { niveauPort, portOuvert } from './port.js';
 import { chargeDe, portageDe, volumeDe } from './portage.js';
 import { vendrePaniers } from './bourse.js';
 import { chroniqueVente, noterChronique } from './chronique.js';
+import { noterExport } from './production.js';
+import { debloque } from './vocations.js';
 
 const P = () => DATA.PORT;
 const B = () => DATA.PORT.BAC;
@@ -223,6 +225,8 @@ export function noterVenteBac(state, item, n) {
   if (!p || !(n > 0) || !DATA.OBJETS[item]) return;
   avancerBac(state);
   p.vendu[item] = (p.vendu[item] || 0) + Math.floor(n);
+  // (fiche I8b : la valeur exportée, une cause du score de la ferme productive : production.js)
+  noterExport(state, item, n);
 }
 
 // Les caisses sur le quai : une par BAC.CAISSE volumes vendus depuis le dernier départ, CAISSES_MAX au plus.
@@ -334,12 +338,24 @@ export function articleDe(cle, state = null) {
       if (s === sorte && (a.objet || a.bete || a.plan) === id) return { cle, sorte, id, prix: a.prix, lot: a.lot || 1, rang: k + 1 };
     }
   }
+  // (fiche I8b : les semences des cultures de plein champ, en vrac, quand la ferme productive l'a débloqué)
+  if (sorte === 'vrac' && semencesVrac().includes(id)) {
+    const V = DATA.PRODUCTION.IMPORT;
+    return { cle, sorte, id, prix: Math.max(1, Math.round((prixIle(id) * V.MARGE) / 100)) * V.LOT, lot: V.LOT, rang: V.RANG };
+  }
   if (sorte === 'sauvage' && DATA.OBJETS[id]) {
     const S = DATA.PORT.IMPORT.SAUVAGES;
     if (state && !(objet(state.port) && Array.isArray(state.port.sauvages) && state.port.sauvages.includes(id))) return null;
     return { cle, sorte, id, prix: Math.max(1, Math.round((prixIle(id) * S.MARGE) / 100)) * S.LOT, lot: S.LOT, rang: S.RANG };
   }
   return null;
+}
+
+// Fiche I8b : les semences des cultures de plein champ (DATA.CULTURES[…].pleinChamp : le blé, le tournesol, le riz, le
+// houblon), qui s'importent en vrac (PRODUCTION.IMPORT) quand la vocation productive l'a débloqué (import_plein_champ).
+export function semencesVrac() {
+  if (!DATA.PRODUCTION || !DATA.PRODUCTION.IMPORT) return [];
+  return [...new Set(Object.values(DATA.CULTURES).filter((c) => c && c.pleinChamp && c.graines && DATA.OBJETS[c.graines.item]).map((c) => c.graines.item))];
 }
 
 // Les objets du catalogue (ils ne s'achètent pas tout de suite au comptoir : port.js enVenteAuPort).
@@ -365,7 +381,8 @@ export function nomArticle(a) {
 export function articleRefus(state, a) {
   const n = niveauPort(state);
   if (a.rang > n) return `Le port de niveau ${a.rang} l'importe.`;
-  if (a.sorte === 'objet' || a.sorte === 'sauvage') {
+  if (a.sorte === 'vrac' && !debloque(state, 'import_plein_champ')) return 'La ferme productive l\'ouvre (un palier de la vocation).';
+  if (a.sorte === 'objet' || a.sorte === 'sauvage' || a.sorte === 'vrac') {
     const def = DATA.OBJETS[a.id];
     if (def.arbre && !isUnlocked(state, 'verger')) return 'Le Verger n\'est pas encore débloqué.';
     const cultures = Object.keys(DATA.CULTURES).filter((c) => ((DATA.CULTURES[c].graines || {}).item) === a.id);
@@ -395,6 +412,14 @@ export function catalogueImport(state) {
       const x = articleDe(`${sorte}:${a.objet || a.bete || a.plan}`);
       const [nom, icone] = nomArticle(x);
       out.push({ ...x, nom, icone, refus: articleRefus(state, x) });
+    }
+  }
+  // (fiche I8b : le vrac de plein champ, une fois la vocation productive assez haute)
+  if (debloque(state, 'import_plein_champ')) {
+    for (const id of semencesVrac()) {
+      const x = articleDe(`vrac:${id}`);
+      const [nom, icone] = nomArticle(x);
+      out.push({ ...x, nom: `${nom} (en vrac)`, icone, refus: articleRefus(state, x) });
     }
   }
   for (const id of (objet(state.port) && Array.isArray(state.port.sauvages)) ? state.port.sauvages : []) {
@@ -437,7 +462,7 @@ export function commanderImport(state, cle, quantite = 1, ou = null, o = {}) {
   const cout = a.prix * q;
   if (!canPay(state, cout)) return fail(NO_COINS);
   const [nom] = nomArticle(a);
-  pay(state, cout, `Import : ${a.sorte === 'objet' || a.sorte === 'sauvage' ? DATA.OBJETS[a.id].nom : nom}`);
+  pay(state, cout, `Import : ${a.sorte === 'objet' || a.sorte === 'sauvage' || a.sorte === 'vrac' ? DATA.OBJETS[a.id].nom : nom}`);
   const arrive = passageSuivant(state);
   const deja = p.imports.find((x) => x.cle === a.cle && x.arrive === arrive);
   if (deja) { deja.quantite += q; deja.prix += cout; } else p.imports.push({ cle: a.cle, quantite: q, prix: cout, jour: jourDe(state), arrive });
@@ -461,7 +486,7 @@ export function importsAttendus(state) {
 function livrerImport(state, x) {
   const a = articleDe(x.cle, state) || articleDe(x.cle);
   if (!a) { if (x.prix > 0) earn(state, x.prix, 'Import rendu'); return fail('Article retiré du catalogue.'); }
-  if (a.sorte === 'objet' || a.sorte === 'sauvage') {
+  if (a.sorte === 'objet' || a.sorte === 'sauvage' || a.sorte === 'vrac') {
     addLot(state, a.id, x.quantite * a.lot, DATA.ORIGINE.ACHETE);
     return { ok: true };
   }

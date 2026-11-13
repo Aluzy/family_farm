@@ -556,6 +556,8 @@ const CULTURE_MONTE = 0;
     // chantier, puis achevés : js/engine/projets-village.js dessinProjet)
     'lavoir', 'lavoir_chantier', 'kiosque', 'kiosque_chantier', 'fontaine_village', 'fontaine_village_chantier',
     'four_commun', 'four_commun_chantier',
+    // (le quai de chargement de la ferme productive, l'île à bâtir, fiche I8b : scripts/batiments/quai_chargement.py)
+    'quai_chargement',
     // (le pont de planches, hors de la ferme, l'île à bâtir : scripts/carte/portage.py ; son image suit son sens et ses voisins)
     'pont_planches_ns_0', 'pont_planches_ns_1', 'pont_planches_ns_2', 'pont_planches_ns_3',
     'pont_planches_eo_0', 'pont_planches_eo_1', 'pont_planches_eo_2', 'pont_planches_eo_3',

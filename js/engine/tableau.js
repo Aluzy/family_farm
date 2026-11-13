@@ -18,7 +18,8 @@ import { validApparence } from './family.js';
    - Le coût d'un jour : ce qu'il a mangé à la boîte commune, au prix de vente de chaque aliment (market.js,
      sellPrice : depuis I4, le prix de l'île, catalog.js prixIle) ; sa part versée (J.part : bourse.js, fiche I4) ;
      et ce que son travail a pris au coffre (J.utilise, taches.js : les ingrédients d'une préparation, la graine
-     ressemée, le blé des poules, ce que la tournée du port a vendu), au même prix. Sans cela, la cuisine compterait
+     ressemée, le blé des poules, ce que la tournée du port a vendu), au même prix ; et (fiche I8b) le courant que
+     consomment les machines qu'il conduit (J.courant, en Wh : une pièce par PRODUCTION.COURANT.WH_PAR_PIECE). Sans cela, la cuisine compterait
      son plat sans ses légumes, et la tournée les pièces d'objets que d'autres ont produits.
    - Le produit d'un jour : chaque objet de sa journée de travail (J.produit), sa quantité, sa valeur au port (le même
      prix ; 0 pour ce qui ne se vend pas : DATA.OBJETS[…].invendable ; les pièces de la tournée du port valent ce
@@ -96,11 +97,15 @@ export function bilanJour(J) {
   produit.sort((a, b) => b.valeur - a.valeur || (a.objet < b.objet ? -1 : 1));
   const part = Math.max(0, entier(J.part));
   const tache = tacheDef(J.tache) ? J.tache : null;
-  const cout = repas + part + matieres;
+  // (fiche I8b : le courant que les machines qu'il conduit ont consommé : J.courant Wh, une pièce par
+  // PRODUCTION.COURANT.WH_PAR_PIECE)
+  const courant = Math.max(0, entier(J.courant));
+  const electricite = courant ? Math.round(courant / Math.max(1, Number(((DATA.PRODUCTION || {}).COURANT || {}).WH_PAR_PIECE) || 1)) : 0;
+  const cout = repas + part + matieres + electricite;
   return {
     jour: J.jour, tache, chantier: J.tache === 'chantier' ? chantierDit(J.chantier) || { sorte: null, nom: 'Un projet du village', icone: '🏗️' } : null,
     actions: Math.max(0, entier(J.actions)), sur: tache ? tacheDef(tache).ACTIONS : 0, repos: !!J.repos,
-    mange, repas, part, utilise, matieres, cout, produit, valeur, ventes, solde: valeur - cout,
+    mange, repas, part, utilise, matieres, courant, electricite, cout, produit, valeur, ventes, solde: valeur - cout,
   };
 }
 
@@ -136,9 +141,10 @@ export function bilanVillageois(state, id, periode = 'semaine') {
   if (!v) return null;
   const jours = entreesPeriode(state, v, periode).map(bilanJour);
   const produit = new Map(), mange = {}, utilise = {}, parTache = {};
-  let cout = 0, repas = 0, part = 0, matieres = 0, valeur = 0, ventes = 0, joursTravail = 0, joursRepos = 0, joursChantier = 0;
+  let cout = 0, repas = 0, part = 0, matieres = 0, valeur = 0, ventes = 0, joursTravail = 0, joursRepos = 0, joursChantier = 0, courant = 0, electricite = 0;
   for (const j of jours) {
     cout += j.cout; repas += j.repas; part += j.part; matieres += j.matieres; valeur += j.valeur; ventes += j.ventes;
+    courant += j.courant; electricite += j.electricite;
     for (const [o, n] of Object.entries(j.mange)) mange[o] = (mange[o] || 0) + n;
     for (const [o, n] of Object.entries(j.utilise)) utilise[o] = (utilise[o] || 0) + n;
     for (const p of j.produit) {
@@ -151,7 +157,7 @@ export function bilanVillageois(state, id, periode = 'semaine') {
     else if (j.tache) {
       joursTravail++;
       const t = parTache[j.tache] || (parTache[j.tache] = { jours: 0, valeur: 0 });
-      t.jours++; t.valeur += j.valeur - j.matieres;
+      t.jours++; t.valeur += j.valeur - j.matieres - j.electricite;
     }
   }
   const def = tacheDef(v.tache);
@@ -160,7 +166,7 @@ export function bilanVillageois(state, id, periode = 'semaine') {
     tache: def ? v.tache : null, nom: def ? def.nom : '', icone: def ? def.icone : '',
     chantier: v.chantier ? chantierDit(v.chantier) : null,
     humeur: humeurVillageois(v), bonheur: entier(v.bonheur), manque: manqueCourt(state, v),
-    jours, cout, repas, part, matieres, valeur, ventes, solde: valeur - cout,
+    jours, cout, repas, part, matieres, courant, electricite, valeur, ventes, solde: valeur - cout,
     produit: [...produit.values()].sort((a, b) => b.valeur - a.valeur || (a.objet < b.objet ? -1 : 1)),
     mange, utilise, joursTravail, joursRepos, joursChantier, parTache, rendement: null,
     gout: def ? goutTache(v, v.tache, { connus: true }) : null,

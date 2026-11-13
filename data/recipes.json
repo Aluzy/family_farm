@@ -176,6 +176,7 @@
       "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler", "coefPrix": 145 },
       "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler", "coefPrix": 145 },
       "panneau_village": { "entrees": { "planche": 3, "bois": 2 }, "sortie": { "panneau_village": 1 }, "village": true },
+      "quai_chargement": { "entrees": { "planche": 12, "pierre": 8, "lingot_fer": 2 }, "sortie": { "quai_chargement": 1 }, "village": true, "port": 2 },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
@@ -247,6 +248,7 @@
       "pont_planches": { "nom": "Pont de planches", "objet": "pont_planches", "dehors": true, "pont": true, "plat": true, "dessin": "pont_planches", "tourne": true, "village": true },
       "etal": { "nom": "Étal", "objet": "etal", "dehors": true, "bloque": true, "unique": true, "dessin": "etal_vide", "largeur": 2, "etal": true, "village": true },
       "panneau_village": { "nom": "Panneau du village", "objet": "panneau_village", "dehors": true, "bloque": true, "dessin": "panneau_village", "largeur": 2, "panneau": "village", "texte": "#3a2212", "village": true },
+      "quai_chargement": { "nom": "Quai de chargement", "objet": "quai_chargement", "dehors": true, "bloque": true, "unique": true, "dessin": "quai_chargement", "largeur": 2, "village": true },
       "refrigerateur": { "nom": "Réfrigérateur", "objet": "refrigerateur", "meuble": "refrigerateur", "dedans": true, "bloque": true, "unique": true, "frigo": true, "debloque": "frigo", "tourne": true },
       "plancher": { "nom": "Plancher", "objet": "plancher", "sol": true },
       "sol_dalles": { "nom": "Dalles de pierre", "objet": "sol_dalles", "sol": true },
@@ -447,7 +449,7 @@
       "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "compost", "bloc_silo", "meule"] },
       "jardin": { "nom": "Jardin", "icone": "🌷", "blocs": ["table_jardin", "chaise_jardin", "banc_jardin", "bac_carre", "bac_rond", "bac_long", "banc_rondins", "table_rondins", "chaise_peinte", "jarre_coquillages", "lanterne_papier", "bassin", "banc_pierre", "jardiniere_pierre", "pergola", "bac_fleurs", "bac_lavande", "bassin_nenuphars", "rosier_multicolore", "rosier_rouge", "rosier_blanc", "rosier_jaune", "guirlande_blanche", "guirlande_multicolore", "guirlande_etoiles", "guirlande_coeurs", "fontaine_pierre", "fontaine_marbre", "fontaine_grenouille", "fontaine_angelot", "ornement_cerisier_japon", "ornement_erable_rouge", "ornement_magnolia", "ornement_saule_pleureur", "panneau_village", "enseigne_bois", "boite_lettres_bois", "enseigne_email", "boite_lettres_email", "enseigne_fer", "boite_lettres_fer", "bonhomme_neige", "citrouille_halloween", "tas_citrouilles", "lavoir", "kiosque", "fontaine_village", "four_commun"] },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
-      "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur", "reservoir", "pressoir", "centrifugeuse", "mixeur", "chaudron", "tonneau", "ensacheuse", "tonnelet"] }
+      "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur", "reservoir", "pressoir", "centrifugeuse", "mixeur", "chaudron", "tonneau", "ensacheuse", "tonnelet", "quai_chargement"] }
     },
     "//SILO": [
       "Le Silo de la ferme générée (js/engine/blocs.js, etatSilo) : des blocs de silo (fabriqués à l'Atelier",

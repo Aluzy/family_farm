@@ -49,7 +49,7 @@ son île et son village ; une chronique note ce qui s'y passe.
 | En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs. |
 | L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | I1c : non, sur 80 nuits de simulation (le port en prend 6 800 pièces, 814 en caisse à la nuit 80). I4 : le joueur minimal finit à 242 pièces (le port au niveau 3), l'appliqué à 2 727 pour une borne de 1 412 : il a payé le niveau 2 tôt et n'atteint pas le niveau 3 avant la nuit 80 (ses matériaux, pas ses pièces : à 3 500 pièces, il ne le prend pas davantage). À revoir quand le joueur simulé ira plus loin que le palier 6. |
 | La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | I4 : fixe, `VILLAGE.PART` = 30 % (à 20 %, le villageois des champs rapporte 2,5 fois son coût, au bord de la fourchette ; à 40 %, la partie simulée s'appauvrit). |
-| La raison d'explorer sans hameaux à découvrir. | I1c, I8b | Des espèces sauvages à rapporter et à cultiver ; des sites à exploiter. |
+| La raison d'explorer sans hameaux à découvrir. | I1c, I8b | Des espèces sauvages à rapporter et à cultiver ; des sites à exploiter. I8b n'y a rien ajouté : la ferme productive se joue sur la ferme et au port. |
 
 ## Les constats d'où l'on part
 
@@ -84,7 +84,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c à I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
-| 8. Les vocations | I8a (fait), I8b | Le village convivial, la ferme productive |
+| 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
 ## L'ordre et les dépendances
@@ -1204,6 +1204,84 @@ aussi à la vocation productive (I8b) et à une troisième.
   attendent les commerces (I5a) ; le panneau du village (I7g) : son id est supposé `panneau_village` ; les bâtiments ne
   servent qu'au décor et à la convivialité (le four ne cuit pas, le lavoir ne lave pas) ; l'eau des fontaines et du
   lavoir ne s'anime pas.
+
+## La vocation « ferme productive » (I8b, fait)
+
+Une grosse économie, une ferme presque industrielle et automatisée, sans pollution ni malus de bonheur : un autre goût
+de jeu. Les réglages : `VOCATIONS.production` et `PRODUCTION` (`data/village.json`) ; le moteur :
+`js/engine/vocation-production.js` (le score), `contrats.js` (les contrats d'export), `production.js` (ce que la ferme
+garde de ses jours), `taches.js` (« Conduire les machines », la tournée en volume) ; la page : l'onglet Contrats 📜 du
+port (`js/ui/port.js`). Les chiffres qui dépendent des prix sont à refaire après I4.
+
+- **Le socle des vocations** (`js/engine/vocations.js`) : posé ici en **version minimale**, à l'interface convenue avec
+  I8a (`enregistrerVocation`, `scoreVocation`, `palierVocation`, `listeVocations`, `vocationsNuit`, `debloque`) ; I8a en
+  écrit la vraie version, qui la remplace à l'intégration. Un palier atteint est noté la nuit (`state.vocations.paliers`)
+  et le reste ; **ce qu'il débloque s'ouvre à cette nuit-là** (`debloque` ne relit que les paliers notés : les machines
+  le lisent à chaque pas, et le score lit les machines). L'onglet « Vocations » de la fenêtre « L'île » est d'I8a ; le
+  score de la ferme productive s'y liste (`listeVocations`) et se lit déjà en tête de l'onglet Contrats.
+- **Le score** (`calculProduction`, des entiers) : la valeur exportée au port sur le mois de lune (`LUNE.JOURS_MOIS`
+  jours glissants ; toute vente au port la note : `bac.js noterVenteBac` → `production.js noterExport`), un point par
+  `CAUSES.export.PIECES` (25) pièces ; les machines en état de marche (les chaînes prêtes, le Moulin bâti, le robot, le
+  quai de chargement), `CAUSES.machines.POINTS` (15) chacune ; l'énergie produite sur le mois (notée chaque nuit,
+  `productionNuit`), un point par `CAUSES.energie.WH` (4 000) Wh ; les contrats honorés, `CAUSES.contrats.POINTS` (40)
+  chacun, depuis le début. Les paliers : 120, 300, 600, 1 000.
+- **Les contrats d'export** (`PRODUCTION.CONTRATS`) : à partir du port de niveau 2, chaque passage du bac en propose
+  `PROPOSES` (0, 1, 2, 2, 3 selon le niveau), tirés de la graine et du jour parmi `OBJETS` (le pain, les fromages, les
+  conserves, les jus, la compote, la bière, l'huile, la farine, le lait, les œufs, la laine) que le joueur sait produire
+  (ses récoltes, ses plats, le pain cuit, la farine de son Moulin, ce que font ses chaînes). Leur taille suit le niveau
+  du port (`VALEUR` : 400, 800, 1 400, 2 200 pièces au prix de vente, ± 20 %, arrondie à 10, de 20 à 300 unités : 50
+  pains au niveau 2, 100 au niveau 3, 275 au niveau 5), une prime de 30 à 50 %. On en accepte au comptoir jusqu'au
+  passage suivant (`MAX` 2 à la fois) ; accepté, il court sur `PASSAGES` (3) passages du bac : on y livre, en autant de
+  fois qu'on veut, ce qu'on a porté (« Livrer ») ou ce que la tournée des villageois emporte ; chaque livraison est
+  payée au prix de vente (« Contrat : … », elle part avec les caisses du bac) ; complet, la prime (« Prime du contrat :
+  … ») et `XP` 60. Le bac de son dernier passage reparti, un contrat incomplet s'efface sans pénalité. Les commandes
+  `port.contrat` et `port.livrer`.
+- **Conduire les machines** (`TACHES.LISTE.chaine`, 16 actions par jour, sans outil) : une action est un tour des
+  machines (`machinesDeLaFerme`) : chaque chaîne prête est vidée (son tas au coffre : une chaîne au tas plein repart)
+  puis alimentée (`verserChaine`, du coffre) ; au Moulin, il verse `MOULIN` (10) blés quand il n'en a plus guère à
+  moudre (`GARDE` 10 blés et trois nuits du blé des poules restent) ; au four libre, il relance la `FOURNEE` (le pain).
+  Ses postes : devant l'entonnoir, la meule, le four ; un appui long sur une machine propose la tâche. La farine et le
+  pain comptent à leur lancement (comme la cuisine). Le courant de ce qu'il verse (les cycles des chaînes, la farine du
+  Moulin, en Wh) va dans sa journée (`v.travail.courant`, puis `J.courant`) ; **le tableau le compte dans son coût**, une
+  pièce par `PRODUCTION.COURANT.WH_PAR_PIECE` (250) Wh (« ⚡ Le courant des machines »). Une chaîne servie tourne tout le
+  jour : le joueur seul n'a pas le temps d'y revenir.
+- **La tournée en volume** (`porteeNavette`) : 10 objets par aller (`PORTEE`), 25 avec une brouette à la ferme, 60 avec
+  une charrette et un cheval ; un **quai de chargement** posé regroupe les envois : 200 % (la tournée y part et y
+  revient). Elle livre d'abord les contrats acceptés (sans rien de marqué « à vendre »), puis ce qui est marqué.
+  Plusieurs villageois peuvent la faire.
+- **Le quai de chargement** (`quai_chargement`, l'Atelier : 12 planches, 8 pierres, 2 lingots de fer ; à partir du port
+  de niveau 2, `recette.port`, `atelier.js`) : un bloc de deux cases, dehors sur la ferme, unique. Son dessin
+  (`scripts/batiments/quai_chargement.py`, vu de haut à 45°) : la plate-forme de planches (10 rangées de dessus, 7 de
+  face sur trois poteaux boulonnés), deux caisses empilées, une caisse au bord, un tonneau cerclé, la potence de
+  chargement et la caisse qui pend à sa corde ; 32 × 44, **480 couleurs**.
+- **Les paliers débloquent** : `contrats_gros` (les contrats `GROS` 150 %), `machines_grandes` (le réservoir d'une
+  chaîne : `MACHINES.RESERVOIR` 200 %, 60 ingrédients), `import_plein_champ` (les semences du blé, du tournesol, du riz,
+  du houblon en vrac au catalogue d'import : par `IMPORT.LOT` 50, au prix de vente × 150 %, rang 2 ; `bac.js`, la sorte
+  `vrac`), `robot_second` (la tournée du robot à deux : chaque tâche en `100 / ROBOT.VITESSE` de son temps). Rien qui
+  touche à la convivialité.
+- **La sauvegarde** : format 98 (`state.production` : `ventes` et `energie` des derniers jours, `contrats` ;
+  les paliers des vocations : I8a) ; la migration 97 → 98 répare ce qui est abîmé et n'ajoute rien à une partie d'avant.
+- **Le joueur automatique** : `node scripts/simulate.mjs --vocations` joue deux stratégies (`SIMULATION.VOCATIONS`) :
+  « village », le joueur appliqué tel qu'il est (I8a n'a pas encore de fêtes ni de projets pour lui), et
+  « production » : ses villageois aux champs, aux machines, à la cuisine, à la tournée du port (qui porte aussi le
+  pain), sans réattribution ; la farine gardée pour le pain ; au port, il accepte les contrats de pain, de laine, d'œufs
+  et de lait et les livre ; il pose le quai dès que le port l'ouvre. Mesure (80 nuits, graines 1, 2, 3 ; village →
+  production) : gagné sur la partie 11 592 → 13 339, 10 797 → 12 022, 11 149 → 11 431 (+ 15 %, + 11 %, + 3 % ; le
+  pain vendu par la tournée : 2 120, 1 464, 560 pièces) ; pièces en caisse à la nuit 80 : 1 842 → 2 089, 523 → 3 572,
+  685 → 117 ; score de la ferme productive 208 → 284, 120 → 203, 153 → 131 ; contrats honorés 0 → 1, 0, 0 (le joueur
+  simulé accepte des contrats de lait et d'œufs que sa petite ferme ne tient pas). Le bonheur reste à 60 partout, et
+  les liens « ami » ou « proche » sont 3 contre 6 : **sans les fêtes et les projets d'I8a, la stratégie « village » ne
+  gagne ni bonheur ni liens** ; la conclusion sur l'équilibre attend I8a (et les prix d'I4).
+- **Les tests** : `tests/engine/village-production.test.mjs` (le score et chacune de ses causes ; les paliers notés la
+  nuit, ce qu'ils débloquent ; un contrat sur trois passages, sa prime ; un contrat manqué, sans pénalité ; « Conduire
+  les machines » : une chaîne vidée et alimentée, le Moulin, la fournée, le courant dans le coût ; la tournée : les
+  contrats d'abord, la brouette, le quai ; un contrat de 100 pains honoré en trois passages par un boulanger, une
+  chaîne et deux tournées ; les paliers ; la sauvegarde ; éteint, rien). Éteint, le CSV de la simulation est le même
+  octet pour octet ; `chaines.test.mjs` et `automatisation.test.mjs` restent verts.
+- Reste : refaire les chiffres après I4 (la valeur des contrats, les seuils, le prix du courant) ; brancher le socle
+  d'I8a ; dessiner le second robot sur la carte (aujourd'hui, sa tournée va deux fois plus vite) ; la bulle d'un
+  villageois qui conduit les machines reste celle du ramassage (le geste « ramasse ») ; la tournée ne montre pas encore
+  la charrette qu'elle mène ; la stratégie « village » attend les fêtes et les projets d'I8a.
 
 ## Les règles qui ne changent pas
 
