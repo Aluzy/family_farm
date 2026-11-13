@@ -40,7 +40,8 @@ import { unlockLevel } from '../engine/levels.js';
 import { marcheOuvert } from '../engine/devices.js';
 import { boussoleMontree, lieuxDeLaCarte, montrerLieu } from '../engine/monde-vu.js';
 import { solDuMonde } from './monde-sol.js';
-import { deHameau, nomCocher } from '../engine/recit.js';
+import { deHameau } from '../engine/fetes.js';
+import { recitPour } from '../engine/recit-aiguillage.js';   // (fiche I7d : le nom du cocher, par l'aiguillage)
 import { buildMode, hoeMode, scytheMode, state } from './store.js';
 import { menuOpen, stageWindow } from './stage-windows.js';
 import { toolbarOpen } from './outils.js';
@@ -243,7 +244,7 @@ export const ETAPES_UI = {
     carte: () => { const e = calecheMaintenant(state); return e && e.etat === 'arret' && e.arret.sorte === 'ferme' ? { caleche: true } : { caleche: true, cases: casesSortie() }; },
   },
   hameau_choisir: {
-    texte: () => (!carteOuverte() ? `${nomCocher(state)} t'a parlé ${deHameau(DATA.PLAN_MONDE.HAMEAUX.GUE)}, le <b>hameau</b> voisin : le voici sur ta carte du monde. ${menuOpen ? 'Touche 🧭 <b>Carte du monde</b>.' : 'Ouvre-la (le menu, puis 🧭 Carte du monde).'}`
+    texte: () => (!carteOuverte() ? `${recitPour(state).nomCocher(state)} t'a parlé ${deHameau(DATA.PLAN_MONDE.HAMEAUX.GUE)}, le <b>hameau</b> voisin : le voici sur ta carte du monde. ${menuOpen ? 'Touche 🧭 <b>Carte du monde</b>.' : 'Ouvre-la (le menu, puis 🧭 Carte du monde).'}`
       : document.querySelector('[data-action="carte-monde-but"]') ? 'Touche « <b>Y mener la boussole</b> » : elle te montrera le chemin.'
       : 'Touche le hameau 🏘️ sur la carte (fais-la glisser s\'il le faut) : son nom, sa distance, et la boussole.'),
     cible: () => (!carteOuverte() ? menuCarte() : visibleSel('[data-action="carte-monde-but"]') || visibleSel('[data-action="carte-monde-lieu"][data-sorte="hameau"]')),

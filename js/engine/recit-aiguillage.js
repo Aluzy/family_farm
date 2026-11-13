@@ -18,7 +18,9 @@
      facteurPousse                         la pierre de lune (crops.js) ;
      et ce que la page demande au récit, ré-exporté plus bas sous le même nom que dans le récit : scenesPossibles,
      jouerScene, paroleHameau, toucherLieu, noterVisite, visiteObservatoire, geodeLuit, fermeLuit, ouvrirSecret,
-     ateliersDuHameau (la page passe par ici pour tout ce qui ferait paraître du récit ; la fiche I7d retire le reste).
+     ateliersDuHameau (la page passe par ici pour tout ce qui ferait paraître du récit) ;
+     page()                                le reste de ce que la page d'avant lit du récit (fiche I7d : recitPage) ;
+                                           le muet rend null.
    Les migrations des formats d'avant le chantier lisent le récit d'avant (recitDAvant) : elles ne tournent que sur
    une sauvegarde d'avant le chantier.
    ========================================================================== */
@@ -56,3 +58,9 @@ export const geodeLuit = (state) => recitPour(state).geodeLuit(state);
 export const fermeLuit = (state) => recitPour(state).fermeLuit(state);
 export const ouvrirSecret = (state, l) => recitPour(state).ouvrirSecret(state, l);
 export const ateliersDuHameau = (state, hameauId) => recitPour(state).ateliersDuHameau(state, hameauId);
+
+// Le reste de ce que la page d'avant lit du récit (fiche I7d), en un objet (recit-ancien.js) ; null pour l'île : la
+// page n'en montre rien (le carnet, les toits des hameaux, la visite de bienvenue, la calèche et ses commandes,
+// l'enveloppe et la pierre, la veillée à la ferme). C'est la seule porte de la page vers le récit, avec les noms
+// ci-dessus (tests/engine/village-sans-recit.test.mjs : aucun fichier de la page n'importe un module du récit).
+export const recitPage = (state) => recitPour(state).page();

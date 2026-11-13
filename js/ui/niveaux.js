@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { acknowledgeLevel, levelCount, levelProgress, levelUnlocks } from '../engine/levels.js';
 import { formatNumber } from '../engine/format.js';
 import { state } from './store.js';
-import { villageActif } from '../engine/village.js';
+import { elementDuNiveau, noteDuNiveau, villageActif } from '../engine/village.js';
 import { tel } from './consent.js';
 import { refresh } from './render.js';
 import { registerActions } from './actions.js';
@@ -16,14 +16,15 @@ export function unlocksHtml(niveau) {
   const u = levelUnlocks(niveau);
   const items = [
     ...u.elements.map((id) => {
-      // (le chantier « l'île à bâtir » allumé, fiche I1b : le commerce, c'est le port, PORT.ELEMENT)
-      const e = id === 'marche' && villageActif(state) ? DATA.PORT.ELEMENT : DATA.NIVEAUX.ELEMENTS[id];
-      return `<li><strong>${e.icone} ${e.nom}</strong><br><span class="muted">${e.note}</span></li>`;
-    }),
+      // (le chantier « l'île à bâtir » allumé : le commerce, c'est le port, PORT.ELEMENT, fiche I1b ; la veillée des
+      // voisins des hameaux n'est pas montrée, fiche I7d : village.js elementDuNiveau)
+      const e = elementDuNiveau(state, id);
+      return e ? `<li><strong>${e.icone} ${e.nom}</strong><br><span class="muted">${e.note}</span></li>` : '';
+    }).filter(Boolean),
     ...(u.cultures.length
       ? [`<li><strong>🌱 Cultures</strong><br><span class="muted">${u.cultures.map((c) => `${DATA.CULTURES[c].icone} ${DATA.CULTURES[c].nom}`).join(', ')}</span></li>`]
       : []),
-    ...(u.note ? [`<li class="muted">${u.note}</li>`] : []),
+    ...(noteDuNiveau(state, niveau, u.note) ? [`<li class="muted">${noteDuNiveau(state, niveau, u.note)}</li>`] : []),
   ];
   return items.length ? `<ul class="unlock-list">${items.join('')}</ul>` : '';
 }
@@ -81,7 +82,7 @@ function openLevelsModal(tous = false) {
   openModal(`
     <h2 id="levels-title" tabindex="-1">⭐ Niveaux</h2>
     <div class="stack">${levelBarHtml()}</div>
-    <p class="muted">L'expérience vient de tes actions : labourer ${xp.labourer} XP, planter ${xp.planter}, arroser ${xp.arroser}, récolter ${xp.recolter}, cuisiner ${xp.cuisiner}, cuire au four ${xp.cuireFour}, moudre ${xp.moudre}, tondre ${xp.tondre} ; chaque œuf ${xp.oeuf}, chaque lait ${xp.lait} ; ${xp.vendre} XP par pièce gagnée en vendant à la calèche ; et de chaque chapitre terminé. Une automatisation rapporte ${DATA.NIVEAUX.AUTO} % de l'XP de l'action.</p>
+    <p class="muted">L'expérience vient de tes actions : labourer ${xp.labourer} XP, planter ${xp.planter}, arroser ${xp.arroser}, récolter ${xp.recolter}, cuisiner ${xp.cuisiner}, cuire au four ${xp.cuireFour}, moudre ${xp.moudre}, tondre ${xp.tondre} ; chaque œuf ${xp.oeuf}, chaque lait ${xp.lait} ; ${xp.vendre} XP par pièce gagnée en vendant ${villageActif(state) ? 'au port ; et de chaque palier de l\'île franchi' : 'à la calèche ; et de chaque chapitre terminé'}. Une automatisation rapporte ${DATA.NIVEAUX.AUTO} % de l'XP de l'action.</p>
     <ul class="objectives">${rows.join('')}</ul>
     ${tous || (debut === 1 && fin === levelCount()) ? '' : `<p class="row"><button type="button" class="btn" data-action="levels-all">Voir tous les niveaux (${levelCount()})</button></p>`}
     <button type="button" class="btn primary" data-action="close-modal" id="levels-close">Fermer</button>`, { labelledBy: 'levels-title', focus: '#levels-title' });

@@ -25,8 +25,8 @@ import { sceneCaleche, watchCaleche } from './caleche.js';
 import { watchPort } from './port.js';
 import { proposerScene } from './scene.js';
 import { lieuDuPerso } from './stage.js';
-import { aFait, acteEnCours, deHameau } from '../engine/recit.js';
-import { veilleeFerme, veilleeFermePossible } from '../engine/ile.js';
+import { recitPage } from '../engine/recit-aiguillage.js';   // (fiche I7d : la veillée et les annonces du récit, partie d'avant)
+import { deHameau } from '../engine/fetes.js';
 import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import { watchVillageois } from './villageois.js';
@@ -137,10 +137,13 @@ function watchRobot() {
 function watchRecit() {
   if (setupPending(state) || consentBannerShown() || consentBannerPending() || !uiCalm()) return;
   const ici = lieuDuPerso();
-  if (!proposerScene(ici || {})) sceneCaleche();
-  inviterVeillee();
+  // (l'île à bâtir, fiche I7d : ni scène, ni calèche qui parle, ni veillée du récit — celle du village se tient seule,
+  // js/engine/fetes-village.js ; recitPage rend null)
+  const R = recitPage(state);
+  if (R && !proposerScene(ici || {})) sceneCaleche();
+  if (R) inviterVeillee(R);
   // le récit, lot 7 : la veillée à la ferme, une fois par pleine lune (la première est une scène)
-  if (ici && ici.lieu === 'ferme' && veilleeFermePossible(state) && veilleeFerme(state).ok) {
+  if (R && ici && ici.lieu === 'ferme' && R.veilleeFermePossible(state) && R.veilleeFerme(state).ok) {
     persistState();
     notify('🌕 Les voisins des hameaux sont venus veiller à la ferme, sous la pleine lune. Ils s\'en souviendront.', { kind: 'info' });
   }
@@ -174,11 +177,11 @@ function watchRecit() {
 // lune, tant que la première veillée n'a pas eu lieu et que l'acte II est ouvert. Le récit, lot 9 : de même
 // pour la seconde (l'acte III) et pour la fête des premiers arrivants à Brumeval (annoncée par Achille).
 let veilleeAnnoncee = null;
-function inviterVeillee() {
+function inviterVeillee(R) {
   if (moonPhase(state.day).id !== 'pleine' || veilleeAnnoncee === state.day) return;
   const h = absoluteHours(state) % 24;
   if (h < 17 || h >= 22) return;
-  const acte = acteEnCours(state);
+  const acte = R.acteEnCours(state), aFait = R.aFait;
   let texte = null;
   if (aFait(state, 'fete.annonce') && !aFait(state, 'fete') && acte >= 4) {
     const brumeval = (DATA.PLAN_MONDE.HAMEAUX.GARANTIS || []).find((g) => g.id === 'brumeval');

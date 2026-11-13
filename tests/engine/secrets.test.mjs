@@ -7,7 +7,8 @@
    Lancer seul : node --test tests/engine/secrets.test.mjs (ou node tests/run-tests.mjs secrets).
    ========================================================================== */
 
-import { bilanSecrets, countItem, createInitialState, DATA, GENERATEUR_VERSION, migrate, elementsSol, genererMonde, majEncyclopedie, ouvrirSecret, partVue, secretOuvert, solDirect } from '../../js/engine/index.js';
+import { countItem, createInitialState, DATA, GENERATEUR_VERSION, migrate, elementsSol, genererMonde, majEncyclopedie, partVue, solDirect } from '../../js/engine/index.js';
+import { bilanSecrets, ouvrirSecret, secretOuvert } from '../../js/engine/secrets.js';   // (fiche I7d : l'index ne ré-exporte plus le récit)
 import { BIOME } from '../../js/engine/monde-gen.js';
 import { lieuxDeRegion, SORTE_LIEU } from '../../js/engine/monde-lieux.js';
 import { assert, assertEqual, garden, test } from './aide.mjs';

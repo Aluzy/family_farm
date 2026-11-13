@@ -1,5 +1,7 @@
 import { ENCYCLOPEDIE } from '../encyclopedie.generated.js';
+import { ENCYCLOPEDIE_ILE } from '../encyclopedie-ile.generated.js';
 import { conditionRemplie } from './decouverte.js';
+import { villageActif } from './village.js';
 
 /* ---------- l'encyclopédie de la partie ----------
    Le jeu a son encyclopédie, un livre (js/ui/encyclopedie.js) qui se remplit au fil de la
@@ -8,19 +10,29 @@ import { conditionRemplie } from './decouverte.js';
    (js/engine/decouverte.js : un objet obtenu, un outil, une bête vue…).
    state.encyclopedie = { vues: { id: jour de la découverte }, lues: { id: true },
    evenements: { 'faune:renard': true } }. Sans `vues` (une ancienne partie, ou avant le premier
-   passage) : majEncyclopedie les crée, et ce qui est déjà connu n'est pas « nouveau ». */
+   passage) : majEncyclopedie les crée, et ce qui est déjà connu n'est pas « nouveau ».
+   Deux livres pendant le chantier « l'île à bâtir » (fiche I7d) : celui du jeu publié (CATEGORIES) et celui d'une
+   partie de l'île (encyclopedie_ile.json lu par-dessus l'autre : sans le récit, les hameaux ni la calèche ; le port,
+   le village) ; livreDe(state) choisit (villageActif). Sans partie, le livre du jeu publié. */
 
 export const CATEGORIES = ENCYCLOPEDIE.categories;
 
-const PAR_ID = new Map();
-for (const c of CATEGORIES) for (const e of c.entrees) PAR_ID.set(e.id, { ...e, categorie: c.id });
+const indexer = (cats) => { const m = new Map(); for (const c of cats) for (const e of c.entrees) m.set(e.id, { ...e, categorie: c.id }); return m; };
+const ANCIEN = { categories: CATEGORIES, parId: indexer(CATEGORIES) };
+const ILE = { categories: ENCYCLOPEDIE_ILE.categories, parId: indexer(ENCYCLOPEDIE_ILE.categories) };
+const livreDe = (state) => (state && villageActif(state) ? ILE : ANCIEN);
 
-export function entreeEncyclopedie(id) {
-  return PAR_ID.get(id) || null;
+// Les catégories du livre de la partie (celui de l'île, le chantier allumé).
+export function categoriesDe(state = null) {
+  return livreDe(state).categories;
 }
 
-export function nombreEntrees() {
-  return PAR_ID.size;
+export function entreeEncyclopedie(id, state = null) {
+  return livreDe(state).parId.get(id) || null;
+}
+
+export function nombreEntrees(state = null) {
+  return livreDe(state).parId.size;
 }
 
 function etat(state) {
@@ -42,13 +54,15 @@ export function pageNouvelle(state, id) {
 export function nouveautesEncyclopedie(state) {
   const e = etat(state);
   if (!e) return [];
-  return Object.keys(e.vues || {}).filter((id) => PAR_ID.has(id) && !(e.lues && e.lues[id]));
+  const P = livreDe(state).parId;
+  return Object.keys(e.vues || {}).filter((id) => P.has(id) && !(e.lues && e.lues[id]));
 }
 
 export function pagesConnues(state, categorie = null) {
   const e = etat(state);
   if (!e) return [];
-  const ids = categorie ? (CATEGORIES.find((c) => c.id === categorie) || { entrees: [] }).entrees.map((x) => x.id) : [...PAR_ID.keys()];
+  const L = livreDe(state);
+  const ids = categorie ? (L.categories.find((c) => c.id === categorie) || { entrees: [] }).entrees.map((x) => x.id) : [...L.parId.keys()];
   return ids.filter((id) => e.vues && e.vues[id] !== undefined);
 }
 
@@ -69,7 +83,7 @@ export function majEncyclopedie(state) {
   e.vues = e.vues || {};
   e.lues = e.lues || {};
   const nouvelles = [], memo = {};
-  for (const [id, entree] of PAR_ID) {
+  for (const [id, entree] of livreDe(state).parId) {
     if (e.vues[id] !== undefined) continue;
     if (!entree.decouverte.some((c) => conditionRemplie(state, c, e.evenements || {}, memo))) continue;
     e.vues[id] = state.day;

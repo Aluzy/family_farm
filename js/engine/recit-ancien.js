@@ -16,15 +16,41 @@
 
 import { DATA } from './catalog.js';
 import {
-  aFait, ageFait, ajouterConfiance, ajouterRelation, confiance, jouerScene, nomCocher, noterFait, noterVisite,
-  nouveauRecit, paroleHameau, recitNuit, relation, scenesPossibles, toucherLieu,
+  acteEnCours, aFait, ageFait, ajouterConfiance, ajouterRelation, carnet, confiance, jouerScene, livrerPromesse, nomCocher,
+  noterFait, noterVisite, nouveauRecit, ouvrirEnveloppe, parler, paroleHameau, promesses, recitNuit, relation,
+  scenesPossibles, toucherLieu,
 } from './recit.js';
-import { fermeLuit, geodeLuit, visiteObservatoire } from './fil-lune.js';
+import { FIL, fermeLuit, geodeLuit, poserPierre, visiteObservatoire } from './fil-lune.js';
 import { ouvrirSecret } from './secrets.js';
-import { ateliersDuHameau, remboursementCommerce } from './ile.js';
-import { bienvenueNuit, nouvelleBienvenue } from './bienvenue.js';
+import {
+  acheterMeubleHameau, ateliersConnus, ateliersDuHameau, commander, commandesDe, delaiCommande, lotsPossibles, meublesDuHameau,
+  prixCommande, prixMeubleHameau, remboursementCommerce, retirerToutes, veilleeFerme, veilleeFermePossible,
+} from './ile.js';
+import {
+  bienvenueDe, bienvenueDonne, bienvenueDue, bienvenueEnRoute, bienvenueModele, bienvenueNuit, bienvenuePose,
+  bienvenuePrepare, nouvelleBienvenue,
+} from './bienvenue.js';
+import { reparerToit, toitsUses, tousLesToitsUses, USURE } from './usure.js';
 
 const P = () => (DATA.RECIT && DATA.RECIT.PERSONNAGES) || {};
+
+// Ce que la page d'avant lit encore du récit (fiche I7d) : le carnet, les scènes et leurs personnages, les toits des
+// hameaux, la visite de bienvenue, la calèche (les promesses, les ateliers et les meubles des hameaux), l'enveloppe et
+// la pierre de l'inventaire, la veillée à la ferme et les annonces de la boucle. Fait au premier appel (les imports
+// en boucle sont alors tous évalués). La page le demande par recitPage(state) (l'aiguillage) : le récit muet rend
+// null, et la page n'en montre rien.
+let PAGE = null;
+const page = () => PAGE || (PAGE = Object.freeze({
+  RECIT: DATA.RECIT, ILE: DATA.ILE, BIENVENUE: DATA.BIENVENUE, FIL, USURE,
+  carnet, acteEnCours, aFait,
+  tousLesToitsUses, toitsUses, reparerToit,
+  bienvenueDe, bienvenueDonne, bienvenueDue, bienvenueEnRoute, bienvenueModele, bienvenuePose, bienvenuePrepare,
+  parler, promesses, livrerPromesse, nomCocher,
+  acheterMeubleHameau, ateliersConnus, commander, commandesDe, delaiCommande, lotsPossibles, meublesDuHameau, prixCommande,
+  prixMeubleHameau, retirerToutes,
+  ouvrirEnveloppe, poserPierre,
+  veilleeFerme, veilleeFermePossible,
+}));
 const faitsBruts = (state) => (state && state.recit && typeof state.recit === 'object' && state.recit.faits) || null;
 
 export const RECIT_ANCIEN = Object.freeze({
@@ -78,6 +104,8 @@ export const RECIT_ANCIEN = Object.freeze({
   fermeLuit: (state) => fermeLuit(state),
   ouvrirSecret: (state, l) => ouvrirSecret(state, l),
   ateliersDuHameau: (state, hameauId) => ateliersDuHameau(state, hameauId),
+  // (le reste de ce que la page d'avant lit du récit, en un objet : fiche I7d)
+  page: () => page(),
 
   /* -- les migrations des formats d'avant le chantier (state.js) -- */
   jourBienvenue: () => DATA.BIENVENUE.JOUR,

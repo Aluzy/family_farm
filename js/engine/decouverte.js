@@ -36,10 +36,11 @@ import { recitPour } from './recit-aiguillage.js';
      jour:<n>            la partie a atteint le jour n ; niveau:<n> : le niveau n
      piece_close         une pièce close sur la carte ; veillee : la veillée à la ferme (niveau 10) ;
      courrier            une lettre reçue
+     villageois          l'île à bâtir (fiche I7d, encyclopedie_ile.json) : un villageois s'est installé
      fait:<fait>         un fait du récit est noté (state.recit.faits, js/engine/recit.js : « odile.rencontre »,
                          « visite.bois_joli », « lieu.cale »… ; le récit, lot 11 : les pages de l'île de Céron) */
 
-const SEULES = ['depart', 'piece_close', 'veillee', 'courrier', 'technologies', 'hameau'];
+const SEULES = ['depart', 'piece_close', 'veillee', 'courrier', 'technologies', 'hameau', 'villageois'];
 const OUTILS = ['houe', 'hache', 'faux', 'pioche', 'canne'];
 const ANIMAUX = ['poule', 'mouton', 'vache'];
 const BATIMENTS = ['silo', 'poulailler', 'paturage', 'serre', 'verger', 'frigo'];
@@ -115,6 +116,7 @@ export function conditionRemplie(state, cond, evenements = {}, memo = null) {
     case 'piece_close': return piecesCloses(state).length > 0;
     case 'veillee': return isUnlocked(state, 'veillee');
     case 'courrier': return Array.isArray(state.courrier) && state.courrier.length > 0;
+    case 'villageois': return Array.isArray(state.villageois) && state.villageois.length > 0;
     case 'fait': return recitPour(state).faitNote(state, v);   // (fiche I7c : par l'aiguillage ; l'île, aucun)
     default: return false;
   }

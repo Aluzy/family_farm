@@ -3,10 +3,10 @@
    js/engine/recit-aiguillage.js, ses deux implémentations : recit-ancien.js et recit-muet.js). Comme tous les
    fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
    - la lecture des imports : aucun module du moteur n'importe le récit (recit.js, fil-lune.js, usure.js,
-     secrets.js, ile.js, bienvenue.js), sauf ces modules entre eux, recit-ancien.js (que seul l'aiguillage importe)
-     et l'index (qui les ré-exporte pour la page et les tests d'avant) ; depuis village.js, et depuis tout autre
-     module, on n'atteint pas le récit sans passer par l'aiguillage ; la page demande à l'aiguillage ce qui ferait
-     paraître du récit ;
+     secrets.js, ile.js, bienvenue.js), sauf ces modules entre eux et recit-ancien.js (que seul l'aiguillage importe) ;
+     l'index ne les ré-exporte plus (fiche I7d) ; depuis village.js, et depuis tout autre module, on n'atteint pas le
+     récit sans passer par l'aiguillage ; aucun fichier de la page (js/ui, js/carte, js/*.js) n'importe un module du
+     récit : elle passe par l'aiguillage (recitPage pour ce que la page d'avant lit encore, null sur l'île) ;
    - le moteur allumé, le récit vidé (DATA.RECIT, et les secrets, les ateliers, le courrier) : 30 nuits du joueur
      automatique, les hameaux du récit peuplés, sans erreur ; ni personnage écrit, ni fait, ni relation, ni
      confiance, ni courrier, ni carnet ; aucune scène, aucun lieu ni secret qui parle, aucun atelier ;
@@ -26,8 +26,8 @@ import { amitieNuit, palierAmitieNom, pointsAmitie } from '../../js/engine/amiti
 import { relationsInvitables } from '../../js/engine/invitations.js';
 import { heuresPousse } from '../../js/engine/crops.js';
 import {
-  ateliersDuHameau, fermeLuit, geodeLuit, jouerScene, noterVisite, ouvrirSecret, paroleHameau, recitPour, scenesPossibles,
-  toucherLieu, visiteObservatoire,
+  ateliersDuHameau, fermeLuit, geodeLuit, jouerScene, noterVisite, ouvrirSecret, paroleHameau, recitPage, recitPour,
+  scenesPossibles, toucherLieu, visiteObservatoire,
 } from '../../js/engine/recit-aiguillage.js';
 import { RECIT_ANCIEN } from '../../js/engine/recit-ancien.js';
 import { RECIT_MUET } from '../../js/engine/recit-muet.js';
@@ -56,10 +56,12 @@ function importsDe(dossier, f) {
 const fichiersMoteur = () => readdirSync(MOTEUR).filter((f) => f.endsWith('.js'));
 const graphe = () => new Map(fichiersMoteur().map((f) => [f, importsDe(MOTEUR, f)]));
 
-test('lecture des imports : seuls le récit lui-même, recit-ancien.js et l\'index importent le récit', () => {
+test('lecture des imports : seuls le récit lui-même et recit-ancien.js importent le récit ; l\'index ne le ré-exporte pas', () => {
   const G = graphe(), fautifs = [];
+  // (fiche I7d : l'index ne ré-exporte plus le récit)
+  assertEqual(G.get(INDEX).filter((i) => RETIRES.includes(i)), [], 'l\'index ré-exporte le récit');
   for (const [f, imp] of G) {
-    if (RETIRES.includes(f) || f === ANCIEN || f === INDEX) continue;
+    if (RETIRES.includes(f) || f === ANCIEN) continue;
     for (const i of imp) if (RETIRES.includes(i)) fautifs.push(`${f} → ${i}`);
   }
   assertEqual(fautifs, [], 'un module du moteur importe le récit sans passer par l\'aiguillage');
@@ -92,31 +94,42 @@ test('lecture des imports : depuis village.js (et tout autre module), le récit 
   assertEqual(RETIRES.filter((r) => depuisVillage.has(r)), [], 'le récit est atteint depuis village.js');
   assert(!depuisVillage.has(ANCIEN), 'le récit d\'avant n\'est atteint que par l\'aiguillage');
   for (const f of G.keys()) {
-    if (RETIRES.includes(f) || f === ANCIEN || f === INDEX) continue;
+    if (RETIRES.includes(f) || f === ANCIEN) continue;
     const r = RETIRES.filter((x) => atteints(f).has(x));
     assertEqual(r, [], `depuis ${f}`);
   }
 });
 
-test('lecture des imports : la page demande à l\'aiguillage ce qui ferait paraître du récit', () => {
-  // (les fonctions qui font parler le récit : une scène, une réplique, un lieu, l'observatoire, la lueur de la pierre,
-  // un secret, un atelier de personnage ; le reste de la page, la fiche I7d le retire)
-  const PARLANTES = ['scenesPossibles', 'jouerScene', 'paroleHameau', 'toucherLieu', 'noterVisite', 'visiteObservatoire', 'geodeLuit', 'fermeLuit', 'ouvrirSecret', 'ateliersDuHameau'];
-  const fautifs = [];
-  for (const dossier of ['ui', 'carte', '.']) {
-    let fichiers;
-    try { fichiers = readdirSync(join(JS, dossier)).filter((f) => f.endsWith('.js')); } catch { continue; }
-    for (const f of fichiers) {
-      const src = readFileSync(join(JS, dossier, f), 'utf8');
-      for (const m of src.matchAll(/\bimport\s*\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g)) {
-        const mod = m[2].split('/').pop();
-        if (!RETIRES.includes(mod)) continue;
-        const noms = m[1].split(',').map((x) => x.trim().split(/\s+as\s+/)[0]).filter(Boolean);
-        for (const n of noms) if (PARLANTES.includes(n)) fautifs.push(`${dossier}/${f} : ${n} de ${mod}`);
-      }
+test('lecture des imports : aucun fichier de la page n\'importe le récit (fiche I7d : par l\'aiguillage)', () => {
+  // (la page : js/ui, js/carte et ses sous-dossiers, les fichiers de js/ ; tout import, nommé, global ou dynamique, d'un
+  // module du récit ; les modules du moteur et les fichiers générés n'en sont pas)
+  const fautifs = [], vus = [];
+  const parcourir = (dossier) => {
+    for (const e of readdirSync(join(JS, dossier), { withFileTypes: true })) {
+      const rel = dossier === '.' ? e.name : `${dossier}/${e.name}`;
+      if (e.isDirectory()) { if (dossier !== '.' || ['ui', 'carte'].includes(e.name)) parcourir(rel); continue; }
+      if (!e.name.endsWith('.js') || e.name.endsWith('.generated.js')) continue;
+      vus.push(rel);
+      for (const i of importsDe(JS, rel)) if (RETIRES.includes(i.split('/').pop()) && /(^|\/)engine\//.test(i)) fautifs.push(`${rel} → ${i}`);
     }
-  }
-  assertEqual(fautifs, [], 'la page lit le récit sans l\'aiguillage');
+  };
+  parcourir('.');
+  assert(vus.length > 150 && vus.includes('ui/loop.js') && vus.includes('ui/caleche.js') && vus.includes('carte/ferme/habitants.js'), `les fichiers de la page (${vus.length})`);
+  assertEqual(fautifs, [], 'la page importe le récit sans l\'aiguillage');
+});
+
+test('allumé, la page n\'a rien du récit à lire (recitPage) ; éteint, ce que la page d\'avant lisait', () => {
+  const s = createNewGame(4);
+  assertEqual(recitPage(s), null, 'l\'île : rien');
+  const t = avecVillage(() => createNewGame(4), false);
+  avecVillage(() => {
+    const R = recitPage(t);
+    assert(R && R.RECIT === DATA.RECIT && R.ILE === DATA.ILE, 'le récit d\'avant');
+    for (const k of ['carnet', 'acteEnCours', 'aFait', 'tousLesToitsUses', 'toitsUses', 'reparerToit', 'bienvenueDe', 'bienvenueDonne', 'bienvenueDue', 'bienvenueEnRoute', 'bienvenueModele', 'bienvenuePose', 'bienvenuePrepare', 'parler', 'promesses', 'livrerPromesse', 'ateliersConnus', 'commander', 'commandesDe', 'retirerToutes', 'ouvrirEnveloppe', 'poserPierre', 'veilleeFerme', 'veilleeFermePossible']) {
+      assert(typeof R[k] === 'function', `la page d'avant lit ${k}`);
+    }
+    assertEqual(R.carnet(t), [], 'un carnet vide au départ');
+  }, false);
 });
 
 /* ---------- le moteur allumé, sans récit ---------- */

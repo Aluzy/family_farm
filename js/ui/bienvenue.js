@@ -1,6 +1,8 @@
 import { DATA } from '../engine/catalog.js';
 import { farmTerrain } from '../engine/terrain.js';
-import { bienvenueDe, bienvenueDonne, bienvenueDue, bienvenueEnRoute, bienvenuePose, bienvenuePrepare, deHameau } from '../engine/bienvenue.js';
+import { deHameau } from '../engine/fetes.js';
+import { recitPage } from '../engine/recit-aiguillage.js';
+import { fail } from '../engine/devices.js';
 import { setupPending } from '../engine/depart.js';
 import { solDuMonde } from './monde-sol.js';
 import { state } from './store.js';
@@ -15,12 +17,17 @@ import { notify } from './toasts.js';
      - watchBienvenue (à chaque image, js/ui/loop.js) : le visiteur est tiré dès que les plans des
        hameaux sont là (le hameau le plus proche de la ferme), et se met en route à l'heure dite ;
      - le pont de la carte (visiteDepuisCarte) : le plat donné de sa main, posé devant la porte (le
-       personnage n'est pas venu), ou trouvé devant la porte au retour ; une notification chaque fois. */
+       personnage n'est pas venu), ou trouvé devant la porte au retour ; une notification chaque fois.
+   L'île à bâtir n'a pas de visite (fiche I7d) : recitPage rend null, rien ne se lance (la carte n'a pas de visiteur,
+   stage.js). */
 
 // À chaque image : rien tant que la famille n'est pas installée ; puis le visiteur tiré (une fois) et,
 // le jour venu, en route.
 export function watchBienvenue() {
   if (!state || setupPending(state)) return;
+  const R = recitPage(state);
+  if (!R) return;
+  const { bienvenueDe, bienvenueDue, bienvenueEnRoute, bienvenuePrepare } = R;
   const b = bienvenueDe(state);
   if (!b || b.etat === 'faite') return;
   if (!b.qui) {
@@ -40,7 +47,7 @@ export function watchBienvenue() {
 // « Benoît, de Brume-Haute » (ou « Benoît, votre voisin »).
 function quiTexte(q) {
   if (!q) return 'Un voisin';
-  return `${q.prenom}, ${q.hameau ? deHameau(q.hameau) : DATA.BIENVENUE.VOISIN[q.genre === 'm' ? 'm' : 'f']}`;
+  return `${q.prenom}, ${q.hameau ? deHameau(q.hameau) : DATA.BIENVENUE.VOISIN[q.genre === 'm' ? 'm' : 'f']}`;   // (partie d'avant seulement)
 }
 
 const platTexte = (id) => { const d = DATA.OBJETS[id] || { nom: id, icone: '' }; return `${d.icone} ${d.nom}`; };
@@ -49,12 +56,14 @@ const platTexte = (id) => { const d = DATA.OBJETS[id] || { nom: id, icone: '' };
 // venu : le plat attend devant la porte), « retour » (le personnage trouve le plat devant la porte).
 // → le résultat du moteur.
 export function visiteDepuisCarte(geste) {
+  const R = recitPage(state);
+  if (!R) return fail('Pas de visite sur l\'île.');
   let r;
   if (geste === 'pose') {
-    r = bienvenuePose(state);
+    r = R.bienvenuePose(state);
     if (r.ok) notify(`🚪 ${quiTexte(r.qui)}, est venu${r.qui && r.qui.genre === 'f' ? 'e' : ''} te souhaiter la bienvenue, mais personne n'a ouvert : un plat t'attend devant la porte.`, { kind: 'info' });
   } else {
-    r = bienvenueDonne(state);
+    r = R.bienvenueDonne(state);
     if (r.ok && r.remis === 'main') notify(`🎁 Bienvenue ! ${quiTexte(r.qui)}, t'a apporté ${platTexte(r.plat)} : +1 dans l'inventaire.`, { kind: 'info', cible: { fenetre: 'inventaire' } });
     else if (r.ok) notify(`🎁 Devant la porte, un plat t'attendait, laissé par ${quiTexte(r.qui)} : ${platTexte(r.plat)}, +1 dans l'inventaire.`, { kind: 'info', cible: { fenetre: 'inventaire' } });
   }

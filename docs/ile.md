@@ -83,7 +83,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a (fait), I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
-| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d à I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
+| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e, I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
@@ -1236,10 +1236,107 @@ confiance, ni courrier, ni ateliers tenus par un personnage, ni visite de bienve
   bouton « Dormir »), deux pleines lunes (la veillée du village le jour 34), sans erreur de console ; aucun nom de
   personnage écrit, ni lettre, ni scène, ni page de carnet ; `state.recit` vide. Une partie normale : la scène d'arrivée
   sur la carte, la visite de bienvenue le deuxième jour.
-- Reste (I7d) : la page lit encore le récit pour le reste (le carnet et son bouton, l'inventaire, la calèche, la boucle
-  du jeu, l'ancien didacticiel, les noms des paliers d'amitié), l'élément « veillee » du niveau 10 et son texte ;
-  (I7e) les hameaux, leurs fêtes et leurs projets ; (I7f) le `state.recit` et la visite des parties d'avant, la ligne
+- ~~Reste (I7d) : la page lit encore le récit pour le reste (le carnet et son bouton, l'inventaire, la calèche, la boucle
+  du jeu, l'ancien didacticiel, les noms des paliers d'amitié), l'élément « veillee » du niveau 10 et son texte~~ (fait :
+  plus bas) ; (I7e) les hameaux, leurs fêtes et leurs projets ; (I7f) le `state.recit` et la visite des parties d'avant, la ligne
   `avant` de la chronique ; (I9h) les fichiers du récit, l'aiguillage et `recit-ancien.js`.
+
+## Le récit retiré de l'interface, de l'aide et de l'encyclopédie (I7d, fait)
+
+Le joueur d'une partie de l'île ne rencontre plus le récit dans ce qu'il voit : ni carnet, ni scène, ni visite, ni
+calèche qui parle, ni enveloppe, ni pierre, ni veillée des hameaux, ni personnage dans l'aide ou l'encyclopédie, ni
+prénom du récit parmi les villageois. Éteint, le jeu est le même (le CSV de la simulation octet pour octet, les tests
+du récit, la page publique de l'encyclopédie, `index.html` et le README).
+
+- **La page ne lit plus le récit qu'à travers l'aiguillage** (`js/engine/recit-aiguillage.js`) : aucun fichier de
+  `js/ui`, `js/carte` ni `js/*.js` n'importe un module du récit (`recit.js`, `fil-lune.js`, `usure.js`, `secrets.js`,
+  `ile.js`, `bienvenue.js`). L'interface gagne `page()` : le récit d'avant y rend, en un objet, ce que la page d'avant
+  lit encore (`RECIT`, `ILE`, `BIENVENUE`, `FIL`, `USURE`, le carnet, l'acte, les faits, les toits des hameaux, la
+  visite de bienvenue, les promesses et les ateliers de la calèche, l'enveloppe, la pierre, la veillée à la ferme) ; le
+  récit muet rend `null`. La page le demande par `recitPage(state)` et n'en montre rien sur l'île :
+  - le **carnet** (`js/ui/carnet.js`, `pagesDuCarnet`) : pas de bouton, il ne s'ouvre pas ; la **chronique** (📜) est
+    à sa place dans le menu (`carnetBouton`, `chroniqueBouton` : chacun ne paraît que dans sa partie) ;
+  - **l'inventaire** : l'enveloppe, la pierre de lune et la cloche (leurs lignes, « L'ouvrir », « La poser ») ;
+  - **la calèche** (`js/ui/caleche.js`) : ses lectures du récit passent par de petites fonctions (`parLeRecit`) qui ne
+    rendent rien sur l'île (ni promesse, ni atelier, ni réplique du cocher ; elle n'y commerce déjà plus, I1b) ;
+  - **la boucle** (`js/ui/loop.js`) : ni scène, ni scène de la calèche, ni annonce des veillées et de la fête du récit,
+    ni veillée à la ferme ; **la visite de bienvenue** (`js/ui/bienvenue.js`) ne se lance pas, la carte n'a pas de
+    visiteur ; **la scène** (`js/ui/scene.js`) ; **les toits des hameaux** (`js/ui/habitants.js`, `stage.js`) ;
+  - **l'ancien didacticiel** (`js/ui/didacticiel.js`) : le nom du cocher par l'aiguillage, `deHameau` de `fetes.js`
+    (une partie de l'île suit le didacticiel d'I7b) ;
+  - **les noms des paliers d'amitié** : `AMITIE.ECHELLE.NOMS` (villageois.js, amitie.js, aide.js, plans.js), les mêmes.
+- **L'index** (`js/engine/index.js`) ne ré-exporte plus les six modules du récit : la page éteinte n'en dépendait pas
+  (chaque module de la page importe directement ; seule la console, `FF.engine`, perd ces noms) ; trois tests d'avant
+  (`amitie`, `niveaux`, `secrets`) les importent de leur module.
+- **Les textes de l'île** (`VILLAGE.SANS_RECIT`, data/village.json) : `NOMS` (les 18 de la fiche) et `MOTS` (calèche,
+  cocher, hameau) ; `texteDuRecit(texte)` (village.js) les cherche (un nom sans son article, en mot entier, avec sa
+  majuscule : « au Gué » oui, « le gué de la rivière » non ; un mot au pluriel aussi). Ce qu'il change :
+  - **les prénoms** : `prenomsDuJeu(state, genre)` rend `HABITANTS.PRENOMS` sans Odile, Garance, Lise, Achille, Basile,
+    Fernand et Théo (les sept prénoms du récit qui y sont) sur l'île : les villageois, leurs enfants, le joueur « seul »,
+    les habitants des hameaux tant qu'ils sont là ; éteint, la liste telle quelle (le même tableau) ;
+  - **les noms proposés** (noms.js) : ni « Bois-Joli » (Bois + -Joli), ni « Île aux Mouettes », ni « … des Mouettes » ;
+  - **le niveau 10** : sur l'île, l'élément « veillee » (« les voisins des hameaux viennent veiller chez toi ») n'est
+    plus montré ; la note du niveau dit que la veillée du village se tient d'elle-même, sans niveau (deux villageois et
+    une place, I8a) ; la carte postale du niveau 9 n'est plus annoncée (`elementDuNiveau`, `noteDuNiveau` ; l'écran du
+    niveau, js/ui/niveaux.js, et sa phrase sur l'XP : « au port », « chaque palier de l'île ») ;
+  - **les invitations** : le message passe « de porte en porte » sur l'île (plus « Achille porte le message »), et la
+    réplique de table sur la calèche n'y est plus dite ;
+  - **les emojis** : ✉️ et 🔔 ne s'appellent plus « Enveloppe de Maurice », « Cloche de Maurice » pour les lecteurs
+    d'écran (main.js : un objet du récit ne prête plus son nom à son emoji ; aussi éteint : une correction, rien de
+    visible) ;
+  - **le carnet de plans** : « Explore-le pour y trouver ses plans », sans l'ami d'un hameau.
+- **L'aide** (`js/ui/aide-ile.js`, lu par `js/ui/aide.js` et par les tests) : la fiche **« L'île à bâtir »**, en tête
+  des fiches d'À propos : l'île et ses paliers, le port, le chemin et le portage, le bac, ses commandes, l'import, les
+  niveaux du port, les villageois, les tâches, le tableau, la part, l'étal, l'amitié, les liens, les traits, les
+  commerces (une entrée générique : la forge d'I5a s'y ajoutera), les vocations, les fêtes, les projets, la chronique et
+  les noms ; des règles, pas d'histoire, les nombres pris aux données. **Le grand monde** de l'île : sans les hameaux,
+  leurs habitants, l'amitié des hameaux, la visite, les invitations, la calèche ni les projets des hameaux ; les
+  chemins, la carte du monde, l'Atelier, les styles et les plans réécrits. **À propos** : la règle de la calèche devient
+  celle du port et du bac, celle des chapitres celle des paliers ; l'Arbre des technologies parle des paliers ;
+  l'équipement cousu aux Genêts « viendra d'un commerce de l'île ». Une partie d'avant garde toute son aide.
+- **L'encyclopédie : deux sources pendant le chantier** (c'est dit dans `scripts/build-encyclopedie.mjs`) :
+  `encyclopedie_ferme_familiale.json` (le jeu publié, la page publique, inchangée) et `encyclopedie_ile.json`, lu
+  par-dessus (`livreDeLIle`) : les catégories retirées (l'île de Céron et ses personnages, les hameaux, les secrets du
+  monde, le commerce de la calèche), le courrier ; la tente et la lanterne-tempête gardées (à la Famille) ; les liens
+  renommés (le comptoir → le port…) ; 29 entrées réécrites (le verger, la vigne, les fruitiers, les pièces, les graines,
+  la laine, le miel, le bois et la pierre, le grand monde, les chemins, le brouillard, la carte, les paliers à la place
+  des chapitres, la famille, l'équipement…) ; deux catégories neuves en tête : **⚓ Le port** (le port, le bac, les
+  commandes, l'import, les niveaux, le chemin, le portage) et **🏝️ L'île et son village** (le village, la maison d'un
+  villageois, les villageois, les tâches, le tableau, la part, l'étal et la bourse, l'amitié, les liens, les traits,
+  les commerces, les vocations, les fêtes, les projets, la chronique, les noms, les styles, les plans). 248 termes en
+  16 catégories (280 en 18 pour le jeu publié). Le livre de l'île : `js/encyclopedie-ile.generated.js` ;
+  `js/engine/encyclopedie.js` choisit le livre de la partie (`categoriesDe(state)`, `entreeEncyclopedie(id, state)`…) ;
+  une condition de découverte neuve, `villageois` (decouverte.js). À la bascule (I9h) : appliquer le second au
+  premier, le retirer, régénérer la page publique.
+- **La page d'accueil et le README** : leurs textes de l'île sont prêts à part, `docs/ile/accueil.md` (chaque section
+  d'`index.html` ; les personnages deviennent des traits de villageois, le courrier la chronique) et
+  `docs/ile/readme.md` (l'ouverture, le grand monde, le port, les villageois, la famille, les paliers ; les lignes à
+  revoir) : la fiche I9h les met en place. `js/ui/accueil-vivant.js` n'a pas de texte du récit.
+- **Le son** : rien ne se déclenchait sur une scène hors de la scène elle-même (le babil de ses répliques : aucune ne
+  se joue sur l'île) ; l'essai de la voix (⚙️ Options › Son) prend sur l'île une voix de villageoise et non celle
+  d'Odile ; musiques et ambiances gardées (la musique d'un hameau sort avec eux, I7e).
+- **La sauvegarde** : pas de nouveau format (98).
+- **Les tests** : `tests/engine/village-textes.test.mjs`, le contrôle des textes (les données que lit l'île : les
+  sections du chantier, ses objectifs, les écrans des niveaux, les saluts et les propos de ses villageois ; l'aide de
+  l'île et son grand monde ; le livre de l'île, ses liens, les pages du naturaliste ; 200 rangs de noms proposés ; les
+  prénoms de 60 graines, 8 villageois chacune, et le joueur seul ; 30 nuits du joueur automatique : villageois, noms,
+  chronique, pages découvertes ; éteint, les prénoms, le livre et les niveaux d'avant). `village-sans-recit` : aucun
+  fichier de la page n'importe le récit, l'index ne le ré-exporte pas, `recitPage` (null sur l'île ; éteint, ce que lit
+  la page d'avant).
+- **Vérifié dans Chromium** (`?village=1`, « Seul ») : le menu sans carnet, la chronique à sa place ; 20 jours du
+  joueur automatique (palier 3, deux villageois : Clémence et Gaspard), la page rechargée, puis le texte de la page cherché (le texte
+  visible, les `title` et les `aria-label`) à chaque fenêtre : le menu, la chronique, À propos et chacune des fiches
+  d'aide, les 142 pages du livre une à une, l'Île, l'inventaire, le port, le calendrier, la famille, l'arbre, l'Atelier,
+  la liste et les fiches des villageois, le tableau, les notifications : 176 relevés, aucun nom du récit, ni calèche, ni cocher, ni hameau ; aucune erreur de console. Une partie normale : la
+  scène d'arrivée sur la carte (Fernand), le carnet (son bouton, sa page de Maurice), la calèche au menu, l'aide et le
+  livre d'avant ; aucune erreur de console.
+- Reste : (I7e) les hameaux sont encore sur la carte de l'île, avec les noms du plan du monde (le Gué, les Genêts,
+  Bois-Joli, les Mouettes, Brumeval : `PLAN_MONDE.HAMEAUX.GARANTIS`, monde-gen.js), leur fiche, leurs fêtes au
+  calendrier (« Les fêtes des hameaux »), leurs projets, leur musique, la calèche qui roule et sa fenêtre : I7e les
+  retire avec les hameaux (le joueur de l'île ne les croise qu'en explorant) ; (I7f) une partie d'avant passée sur
+  l'île garde son carnet dans l'état (`state.recit`) mais ne le voit plus : la chronique doit en reprendre la trace (la
+  ligne `avant`) ; (I9h) appliquer `encyclopedie_ile.json`, mettre en place `docs/ile/accueil.md` et
+  `docs/ile/readme.md`, retirer `page()` et les branches d'avant de la page avec le récit.
 
 ## La chronique et les noms (I7g, fait)
 

@@ -8,8 +8,10 @@
    - aucun fait noté, aucune relation, aucune confiance des hameaux (ce qu'elle débloquait passe aux paliers de
      l'île, paliers.js, et aux niveaux du port, bac.js : docs/ile.md) ;
    - la nuit ne fait rien du récit (ni empreinte, ni dérive, ni toits usés, ni plat de bienvenue posé) ;
-   - la partie neuve a un récit vide, que rien n'écrit (la page d'avant le lit encore jusqu'à la fiche I7d : le
-     format de sauvegarde ne change pas), et sa visite de bienvenue déjà faite (il n'y en a pas sur l'île).
+   - la partie neuve a un récit vide, que rien n'écrit (le format de sauvegarde ne change pas), et sa visite de
+     bienvenue déjà faite (il n'y en a pas sur l'île) ;
+   - la page ne lit rien d'autre du récit (page() rend null, fiche I7d : ni carnet, ni toits, ni visite, ni calèche,
+     ni enveloppe, ni pierre, ni veillée à la ferme).
    Ce qui parle encore, c'est ce qui n'est pas du récit : un habitant de hameau dit sa phrase (habitants.js,
    jusqu'à la fiche I7e, qui retire les hameaux).
    ========================================================================== */
@@ -62,4 +64,7 @@ export const RECIT_MUET = Object.freeze({
   fermeLuit: () => false,
   ouvrirSecret: () => null,
   ateliersDuHameau: () => [],
+  // (fiche I7d : la page n'a rien d'autre à lire du récit — ni carnet, ni toits, ni visite, ni promesses, ni
+  // enveloppe, ni veillée à la ferme)
+  page: () => null,
 });

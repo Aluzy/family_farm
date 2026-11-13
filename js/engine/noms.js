@@ -19,7 +19,7 @@ import { DATA } from './catalog.js';
 import { mulberry32 } from './base.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
-import { villageActif } from './village.js';
+import { texteDuRecit, villageActif } from './village.js';
 
 const N = () => (DATA.VILLAGE && DATA.VILLAGE.NOMS) || {};
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -105,7 +105,8 @@ function possibles(quoi, sorte = null) {
     const mot = motCommerce(sorte)[1];
     L = (M.COMPLEMENTS || []).map((c) => `${mot} ${c}`);
   } else if (quoi === 'maison') L = (M.MAISONS || []).map((c) => `Maison ${c}`);
-  return L.filter((t) => longueur(t) <= max && longueur(t) >= DATA.DEPART.NOM_MIN);
+  // (fiche I7d : aucun nom du récit — « Bois-Joli », « Île aux Mouettes » ne sont pas proposés ; village.js texteDuRecit)
+  return L.filter((t) => longueur(t) <= max && longueur(t) >= DATA.DEPART.NOM_MIN && !texteDuRecit(t));
 }
 
 // L'article et le mot d'un commerce (NOMS.COMMERCES : la forge, la mercerie… ; un commerce inconnu : l'échoppe).

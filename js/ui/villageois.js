@@ -19,7 +19,6 @@ import {
 import { hasTool, toolDef } from '../engine/outils.js';
 import { HAMEAU_VILLAGE } from '../engine/amitie.js';
 import { amitieVillageois, donnerPresent, parlerVillageois } from '../engine/villageois-amitie.js';
-import { RECIT } from '../engine/recit.js';
 import { demandeHtml } from './demandes.js';
 import { itemsText } from './common.js';
 import { inventoryCounts } from '../engine/inventory.js';
@@ -358,7 +357,7 @@ const nomObjet = (o) => (DATA.OBJETS[o] ? `${DATA.OBJETS[o].icone} ${escapeHtml(
 
 // Sa jauge d'amitié : le palier, la barre, ce qu'il reste jusqu'au suivant.
 function jaugeAmitie(A) {
-  const suite = A.prochain !== null ? `encore ${A.prochain - A.pts} pour « ${RECIT.PALIER_NOMS[A.palier + 1]} »` : 'le plus haut palier';
+  const suite = A.prochain !== null ? `encore ${A.prochain - A.pts} pour « ${DATA.AMITIE.ECHELLE.NOMS[A.palier + 1]} »` : 'le plus haut palier';
   return `<span class="ami-palier">💛 ${escapeHtml(A.nom)}</span> <span class="ami-jauge grande" role="img" aria-label="Amitié : ${A.pts} sur ${A.max}"><span style="width:${Math.round((A.pts * 100) / A.max)}%"></span></span> <span class="muted num">${A.pts}/${A.max} · ${suite}</span>`;
 }
 

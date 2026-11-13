@@ -1,6 +1,5 @@
 import { escapeHtml } from '../engine/format.js';
-import { RECIT } from '../engine/recit.js';
-import { jouerScene, scenesPossibles } from '../engine/recit-aiguillage.js';   // (fiche I7c : l'île à bâtir n'a pas de scène)
+import { jouerScene, recitPage, scenesPossibles } from '../engine/recit-aiguillage.js';   // (fiches I7c, I7d : l'île à bâtir n'a pas de scène)
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
@@ -30,6 +29,11 @@ import { stageActive, stageUsable } from './stage.js';
    scène, et la bulle du didacticiel attend. Après la scène, la page fait ce que le moteur ne peut pas
    faire : montrer le Gué sur la carte du monde (effet « montrer », la boussole y est menée si elle n'a pas
    de but) et annoncer la page du carnet gagnée (effet « fragment », js/ui/carnet.js). */
+
+// Les personnages, les scènes et les pages du carnet du récit (data/recit.json) ; vides sur l'île (fiche I7d :
+// recitPage rend null, aucune scène ne s'y joue).
+const SANS_RECIT = Object.freeze({ PERSONNAGES: {}, SCENES: [], FRAGMENTS: {} });
+const recit = () => { const R = recitPage(state); return (R && R.RECIT) || SANS_RECIT; };
 
 let scene = null; // { id, lignes: [{ qui, nom, texte }], i }
 let aMontrer = null; // les hameaux garantis à montrer sur la carte du monde dès que ses lieux sont tirés ([« gue »…])
@@ -63,7 +67,7 @@ function montrerEnAttente() {
 
 function ligneHtml() {
   const l = scene.lignes[scene.i];
-  const P = RECIT.PERSONNAGES[l.qui] || {};
+  const P = recit().PERSONNAGES[l.qui] || {};
   const derniere = scene.i >= scene.lignes.length - 1;
   const portrait = P.perso ? `<span class="scene-portrait">${persoHtml(P.perso, !!(P.habite && P.habite.enfant))}</span>` : '';
   return `
@@ -87,21 +91,21 @@ export function ouvrirScene(id, ctx = {}) {
   if (scene || enCarte || modalOpen()) return false;
   // une scène sur la carte (« carte » : l'arrivée de Fernand) attend que la carte de la ferme soit là ; sans
   // carte du tout (Phaser absent ou planté), elle se joue dans la fenêtre, comme les autres
-  const def = RECIT.SCENES.find((x) => x.id === id) || {};
+  const def = recit().SCENES.find((x) => x.id === id) || {};
   if (def.carte && stageUsable() && !stageActive()) return false;
   if (def.carte && stageUsable()) return ouvrirSurCarte(id, ctx);
   const r = jouerScene(state, id, ctx);
   if (!r.ok) return false;
   persistState();
   scene = { id, lignes: r.lignes, i: 0 };
-  const effet = (RECIT.SCENES.find((x) => x.id === id) || {}).effet || {};
+  const effet = (recit().SCENES.find((x) => x.id === id) || {}).effet || {};
   if (effet.montrer) aMontrer = Array.isArray(effet.montrer) ? effet.montrer.slice() : [effet.montrer];
   montrerEnAttente();
   openModal(ligneHtml(), {
     labelledBy: 'scene-nom', id: 'scene-modal', className: 'modal bois scene-modal story-modal', focus: '#scene-bouton',
     onClose: () => {
       scene = null;
-      const page = effet.fragment && RECIT.FRAGMENTS[effet.fragment];
+      const page = effet.fragment && recit().FRAGMENTS[effet.fragment];
       if (page) notify(`📓 Une page de plus dans ton carnet : « ${page.titre} ».`, { kind: 'info' });
       refresh();
     },
@@ -140,7 +144,7 @@ function ouvrirSurCarte(id, ctx) {
   const r = jouerScene(state, id, ctx);
   if (!r.ok) return false;
   persistState();
-  const qui = r.lignes[0] && r.lignes[0].qui, P = RECIT.PERSONNAGES[qui] || {};
+  const qui = r.lignes[0] && r.lignes[0].qui, P = recit().PERSONNAGES[qui] || {};
   const T = farmTerrain(state);
   enCarte = { id, lignes: r.lignes, i: 0, phase: 'vient', qui, nom: P.nom || '', perso: P.perso || 1, depart: Number.isInteger(T.SORTIE) ? T.SORTIE : null };
   document.body.classList.add('scene-carte');

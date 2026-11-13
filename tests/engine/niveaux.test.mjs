@@ -4,15 +4,16 @@
    ========================================================================== */
 
 import {
-  acknowledgeChapter, acknowledgeLevel, actionXp, addItem, aFait, awakeMsAtHour,
+  acknowledgeChapter, acknowledgeLevel, actionXp, addItem, awakeMsAtHour,
   countItem, createInitialState, cropUnlocked,
   DATA, deliverMail, feedAllHens, findPlot, gainXp, harvest, ingredientOptions, isUnlocked,
   levelForXp, levelProgress, levelReached, levelUnlocks, lotsOf, mailReceived, makeDevice,
-  maxStage, migrate, newCampaignCounters, openFridge, openSerre, ouvrirEnveloppe, plant, plantableCropsFor,
+  maxStage, migrate, newCampaignCounters, openFridge, openSerre, plant, plantableCropsFor,
   readMail, sellItem, shear, startMilling, startRecipe, STATE_VERSION,
   tankCapacity, testBatir, testCompleteChapter, testGoToChapter, testSetLevel, testWoolReady, tick,
   unlockLevel, updateChapters, water,
 } from '../../js/engine/index.js';
+import { aFait, ouvrirEnveloppe } from '../../js/engine/recit.js';   // (fiche I7d : l'index ne ré-exporte plus le récit)
 import {
   affamer, assert, assertEqual, atChapter, atelier, auto5, AVANT_DEMENAGEMENT, boite, farm, sansCompteurs68,
   fillCows, fillSheep, garden, holdNights, kwh, matin, migreAvant, ml, pature, plantRipe, ranch,

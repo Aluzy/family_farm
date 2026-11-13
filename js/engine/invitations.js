@@ -9,7 +9,7 @@ import { habitantsDe, metierHabitant } from './habitants.js';
 import { rassasierFamille, repasJour } from './repas.js';
 import { recitPour } from './recit-aiguillage.js';
 import { ajouterAmitie, amitieDe, cleDe, fiche, goutPour, HAMEAU_VILLAGE, palierAmitie, styleHabitant, trouverPnj } from './amitie.js';
-import { villageActif } from './village.js';
+import { texteDuRecit, villageActif } from './village.js';
 import { porteVillageois, trouverVillageois } from './villageois.js';
 import { noterRepasPartage } from './vocation-village.js';
 import { tacheDef } from './taches.js';
@@ -198,8 +198,10 @@ export function invitesModele(state) {
     invites.push({ id: q.id, hameau: q.hameau, hameauNom: h.nom, prenom: t.m.prenom, perso: t.m.perso, apparence: validApparence(t.m.apparence, !!t.m.enfant), enfant: !!t.m.enfant, metier: metierHabitant(h, t.m), depart: Number.isInteger(h.case) ? h.case : null, admire });
   }
   if (!invites.length) return null;
-  // (des villageois à table : on ne parle ni de la calèche ni de « chez nous », mais de l'île)
-  const table = invites.some((g) => g.villageois) ? [...P.TABLE.filter((x) => !/calèche|chez nous/i.test(x)), ...(((DATA.VILLAGE || {}).AMITIE || {}).PHRASES || {}).table || []] : P.TABLE;
+  // (des villageois à table : on ne parle ni de la calèche ni de « chez nous », mais de l'île ; sur l'île, pas de
+  // calèche non plus avec un habitant d'un hameau, fiche I7d)
+  const surIle = villageActif(state) ? P.TABLE.filter((x) => !texteDuRecit(x)) : P.TABLE;
+  const table = invites.some((g) => g.villageois) ? [...P.TABLE.filter((x) => !/calèche|chez nous/i.test(x)), ...(((DATA.VILLAGE || {}).AMITIE || {}).PHRASES || {}).table || []] : surIle;
   return { id: inv.id, moment: inv.moment, nom: INVITATION.MOMENTS[inv.moment].nom, etat: inv.etat, invites, paroles: { arrive: P.ARRIVE, table, merci: P.MERCI, seul: P.SEUL } };
 }
 

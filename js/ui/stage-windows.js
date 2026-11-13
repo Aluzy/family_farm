@@ -2,7 +2,7 @@ import { gemmesHtml } from './gemmes-solde.js';
 import { DATA } from '../engine/catalog.js';
 import { brume as brumeMeteo, pleut } from '../engine/meteo.js';
 import { demandesBouton } from './demandes.js';
-import { carnet } from '../engine/recit.js';
+import { pagesDuCarnet } from './carnet.js';
 import { energyLevel, energyMax, enduranceBonus } from '../engine/stamina.js';
 import { allDevices, isOwned, marcheFerme, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
@@ -673,9 +673,10 @@ function carteMondeBouton() {
   return '<button type="button" class="nav-btn" data-action="carte-monde-open" title="Carte du monde (touche M)" aria-label="Carte du monde" aria-keyshortcuts="M"><span class="nav-icon" aria-hidden="true">🧭</span><span class="nav-label">Carte du monde</span></button>';
 }
 
-// Le récit : le carnet du joueur (js/ui/carnet.js), dès sa première page.
+// Le récit : le carnet du joueur (js/ui/carnet.js), dès sa première page (l'île à bâtir n'en a pas, fiche I7d : la
+// chronique est à sa place).
 function carnetBouton() {
-  const n = carnet(state).length;
+  const n = pagesDuCarnet().length;
   if (!n) return '';
   return `<button type="button" class="nav-btn" data-action="carnet-open" title="Carnet" aria-label="Carnet (${n > 1 ? `${n} pages` : '1 page'})"><span class="nav-icon" aria-hidden="true">📓</span><span class="nav-label">Carnet</span></button>`;
 }
@@ -716,8 +717,8 @@ export function renderTabbar() {
       .join('') +
       // L'Encyclopédie, un livre qui se remplit au fil de la partie (js/ui/encyclopedie.js)
       encyclopedieBouton() +
+      // (l'île à bâtir, fiches I7g et I7d : la chronique à la place du carnet ; chacun ne paraît que dans sa partie)
       carnetBouton() +
-      // (l'île à bâtir, fiche I7g : la chronique, à côté du carnet tant que le récit est là, I7c)
       chroniqueBouton() +
       demandesBouton() +
       carteMondeBouton() +

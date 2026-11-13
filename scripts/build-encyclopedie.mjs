@@ -22,7 +22,17 @@
 // (scripts/carte/faune.py, assets/faune.json : les cases par leur nom) ; la page de la pêche, les icônes
 // de ses poissons (« icones », celles du jeu). Une planche ou une case introuvable est une erreur.
 //
-// Usage : node scripts/build-encyclopedie.mjs          (réécrit encyclopedie.html et js/encyclopedie.generated.js)
+// Deux sources pendant le chantier « l'île à bâtir » (fiche I7d, docs/ile.md « Le récit retiré de l'interface ») :
+// encyclopedie_ferme_familiale.json, le livre du jeu publié et la page publique (le réglage VILLAGE.ACTIF éteint) ;
+// encyclopedie_ile.json, ce qui change pour une partie de l'île (le réglage allumé) : les catégories et les entrées
+// du récit qui sortent (l'île de Céron et ses personnages, les hameaux, les secrets, la calèche, le courrier), les
+// liens renommés, les entrées réécrites, les catégories neuves (le port, l'île et son village). Il se lit par-dessus
+// le premier (livreDeLIle) et donne js/encyclopedie-ile.generated.js, le livre d'une partie de l'île
+// (js/engine/encyclopedie.js le choisit). La page publique ne change pas pendant le chantier. À la bascule (I9h),
+// une seule source : encyclopedie_ile.json appliqué à l'autre, puis retiré, et encyclopedie.html régénéré.
+//
+// Usage : node scripts/build-encyclopedie.mjs          (réécrit encyclopedie.html, js/encyclopedie.generated.js
+//                                                       et js/encyclopedie-ile.generated.js)
 //         node scripts/build-encyclopedie.mjs --check  (vérifie qu'ils sont à jour, sans écrire)
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -37,8 +47,11 @@ const jsonPath = join(here, 'encyclopedie_ferme_familiale.json');
 const assets = join(here, 'assets');
 const htmlPath = join(here, 'encyclopedie.html');
 const jeuPath = join(here, 'js', 'encyclopedie.generated.js');
+const ilePath = join(here, 'encyclopedie_ile.json');
+const ileJeuPath = join(here, 'js', 'encyclopedie-ile.generated.js');
 
 const data = JSON.parse(readFileSync(jsonPath, 'utf8'));
+const surIle = JSON.parse(readFileSync(ilePath, 'utf8'));
 const page = readFileSync(htmlPath, 'utf8');
 
 const esc = (s) => String(s)
@@ -122,29 +135,76 @@ const poissons = () => {
 };
 const ICONES = { peche: poissons };
 
-// Tous les termes, pour le libellé des liens ; un lien vers un terme inconnu est une erreur.
-const termes = new Map();
-for (const c of data.categories) {
-  for (const e of c.entrees) {
-    if (termes.has(e.id)) throw new Error(`Identifiant en double : ${e.id}`);
-    termes.set(e.id, e.terme);
-  }
-}
-
-// Quand l'entrée se découvre dans le jeu : au moins une condition, toutes connues.
-for (const c of data.categories) {
-  for (const e of c.entrees) {
-    if (!Array.isArray(e.decouverte) || !e.decouverte.length) throw new Error(`« ${e.id} » ne dit pas quand elle se découvre (decouverte)`);
-    for (const cond of e.decouverte) {
-      const err = erreurCondition(cond);
-      if (err) throw new Error(`« ${e.id} » : ${err}`);
+// Le livre de l'île (fiche I7d) : encyclopedie_ile.json lu par-dessus `base`. Une catégorie ou une entrée inconnue,
+// une entrée remplacée qui sort, une catégorie neuve mal placée sont des erreurs ; les liens des entrées gardées
+// suivent « liens » (renommé, ou null : retiré), puis sont vérifiés comme les autres (un lien vers une entrée qui
+// sort est une erreur : le renommer).
+function livreDeLIle(base, o) {
+  const ids = new Set(base.categories.flatMap((c) => c.entrees.map((e) => e.id)));
+  const cats = new Set(base.categories.map((c) => c.id));
+  const retCat = new Set(o.categories_retirees || []);
+  for (const c of retCat) if (!cats.has(c)) throw new Error(`encyclopedie_ile.json : catégorie inconnue à retirer : ${c}`);
+  const sortent = new Set(o.retirees || []);
+  for (const id of sortent) if (!ids.has(id)) throw new Error(`encyclopedie_ile.json : entrée inconnue à retirer : ${id}`);
+  // (une entrée d'une catégorie qui sort peut être gardée ailleurs : « deplacees », { id: catégorie gardée })
+  const D = o.deplacees || {}, deplacees = [];
+  for (const c of base.categories) {
+    if (!retCat.has(c.id)) continue;
+    for (const e of c.entrees) {
+      if (!D[e.id]) { sortent.add(e.id); continue; }
+      if (!cats.has(D[e.id]) || retCat.has(D[e.id])) throw new Error(`encyclopedie_ile.json : « ${e.id} » déplacée vers une catégorie qui n'est pas gardée : ${D[e.id]}`);
+      deplacees.push([D[e.id], e]);
     }
   }
+  for (const id of Object.keys(D)) if (!deplacees.some(([, e]) => e.id === id)) throw new Error(`encyclopedie_ile.json : « ${id} » à déplacer n'est pas dans une catégorie qui sort`);
+  const R = o.remplacees || {};
+  for (const id of Object.keys(R)) if (!ids.has(id) || sortent.has(id)) throw new Error(`encyclopedie_ile.json : « ${id} » à remplacer n'est pas une entrée gardée`);
+  const renomme = o.liens || {};
+  const lien = (l) => (Object.prototype.hasOwnProperty.call(renomme, l) ? renomme[l] : l);
+  const garde = base.categories.filter((c) => !retCat.has(c.id)).map((c) => ({
+    ...c,
+    entrees: [...c.entrees, ...deplacees.filter(([k]) => k === c.id).map(([, e]) => e)].filter((e) => !sortent.has(e.id)).map((e) => {
+      const n = { ...e, ...(R[e.id] || {}) };
+      n.liens = [...new Set((n.liens || []).map(lien).filter(Boolean))].filter((l) => l !== e.id);
+      return n;
+    }),
+  }));
+  for (const c of o.categories || []) {
+    const ou = c.avant ? garde.findIndex((x) => x.id === c.avant) : 0;
+    if (ou < 0) throw new Error(`encyclopedie_ile.json : « ${c.id} » avant une catégorie inconnue : ${c.avant}`);
+    const { avant, ...cat } = c;
+    garde.splice(ou, 0, cat);
+  }
+  return { categories: garde };
+}
+
+// Tous les termes d'un livre, pour le libellé des liens ; un identifiant en double est une erreur. Puis : chaque
+// entrée dit quand elle se découvre (au moins une condition, toutes connues) ; un lien vers un terme inconnu est une
+// erreur.
+function verifier(livre, nom) {
+  const termes = new Map();
+  for (const c of livre.categories) {
+    for (const e of c.entrees) {
+      if (termes.has(e.id)) throw new Error(`${nom} : identifiant en double : ${e.id}`);
+      termes.set(e.id, e.terme);
+    }
+  }
+  for (const c of livre.categories) {
+    for (const e of c.entrees) {
+      if (!Array.isArray(e.decouverte) || !e.decouverte.length) throw new Error(`${nom} : « ${e.id} » ne dit pas quand elle se découvre (decouverte)`);
+      for (const cond of e.decouverte) {
+        const err = erreurCondition(cond);
+        if (err) throw new Error(`${nom} : « ${e.id} » : ${err}`);
+      }
+      for (const l of e.liens || []) if (!termes.has(l)) throw new Error(`${nom} : « ${e.id} » renvoie vers un terme inconnu : ${l}`);
+    }
+  }
+  return termes;
 }
 
 // Les entrées pour le jeu : descriptions remplies, liens vérifiés.
-const jeu = {
-  categories: data.categories.map((c) => ({
+const pourLeJeu = (livre) => ({
+  categories: livre.categories.map((c) => ({
     id: c.id,
     icone: c.icone,
     nom: c.nom,
@@ -154,11 +214,24 @@ const jeu = {
       ...(ICONES[e.id] ? { icones: ICONES[e.id]() } : {}),
     })),
   })),
-};
+});
+
+const termes = verifier(data, 'encyclopedie_ferme_familiale.json');
+const jeu = pourLeJeu(data);
 const jeuSource = `// FICHIER GÉNÉRÉ par scripts/build-encyclopedie.mjs à partir de encyclopedie_ferme_familiale.json.
 // Ne pas le modifier : changer le fichier JSON, puis lancer
 //   node scripts/build-encyclopedie.mjs
 export const ENCYCLOPEDIE = ${JSON.stringify(jeu, null, 1)};
+`;
+// (le livre d'une partie de l'île : fiche I7d ; les entrées « secret » n'y sont plus, la catégorie sort)
+const ile = livreDeLIle(data, surIle);
+verifier(ile, 'encyclopedie_ile.json');
+const ileJeu = pourLeJeu(ile);
+const ileSource = `// FICHIER GÉNÉRÉ par scripts/build-encyclopedie.mjs à partir de encyclopedie_ferme_familiale.json et de
+// encyclopedie_ile.json (le livre d'une partie de l'île à bâtir, fiche I7d). Ne pas le modifier : changer les
+// fichiers JSON, puis lancer
+//   node scripts/build-encyclopedie.mjs
+export const ENCYCLOPEDIE_ILE = ${JSON.stringify(ileJeu, null, 1)};
 `;
 
 // Le récit, lot 11 : une entrée « secret » (la pierre du fil de la lune, que rien ne doit signaler) n'est que
@@ -214,20 +287,19 @@ out = remplacer(out, '<nav class="cat-nav">', '</nav>', `\n        ${menu}\n    
 out = remplacer(out, '<main class="wrap">', '    <p class="no-results"', `\n    \n${data.categories.map(section).join('\n')}\n`);
 
 const total = data.categories.reduce((t, c) => t + c.entrees.length, 0);
-let jeuActuel = null;
-try {
-  jeuActuel = readFileSync(jeuPath, 'utf8');
-} catch (err) {
-  // pas encore généré
-}
+const lire = (f) => { try { return readFileSync(f, 'utf8'); } catch (err) { return null; } };   // (pas encore généré)
+const jeuActuel = lire(jeuPath), ileActuel = lire(ileJeuPath);
+const totalIle = ile.categories.reduce((t, c) => t + c.entrees.length, 0);
 if (process.argv.includes('--check')) {
-  if (out !== page || jeuActuel !== jeuSource) {
-    console.error(`${out !== page ? 'encyclopedie.html' : 'js/encyclopedie.generated.js'} n'est pas à jour : lancer « node scripts/build-encyclopedie.mjs ».`);
+  const vieux = [out !== page && 'encyclopedie.html', jeuActuel !== jeuSource && 'js/encyclopedie.generated.js', ileActuel !== ileSource && 'js/encyclopedie-ile.generated.js'].filter(Boolean);
+  if (vieux.length) {
+    console.error(`${vieux.join(', ')} : pas à jour ; lancer « node scripts/build-encyclopedie.mjs ».`);
     process.exit(1);
   }
-  console.log(`encyclopedie.html et js/encyclopedie.generated.js sont à jour (${total} termes, ${data.categories.length} catégories).`);
+  console.log(`encyclopedie.html et js/encyclopedie.generated.js sont à jour (${total} termes, ${data.categories.length} catégories) ; js/encyclopedie-ile.generated.js aussi (${totalIle} termes, ${ile.categories.length} catégories).`);
 } else {
   writeFileSync(htmlPath, out);
   if (jeuActuel !== jeuSource) writeFileSync(jeuPath, jeuSource);
-  console.log(`encyclopedie.html ${out === page ? 'inchangé' : 'réécrit'}, js/encyclopedie.generated.js ${jeuActuel === jeuSource ? 'inchangé' : 'réécrit'} : ${total} termes, ${data.categories.length} catégories.`);
+  if (ileActuel !== ileSource) writeFileSync(ileJeuPath, ileSource);
+  console.log(`encyclopedie.html ${out === page ? 'inchangé' : 'réécrit'}, js/encyclopedie.generated.js ${jeuActuel === jeuSource ? 'inchangé' : 'réécrit'} : ${total} termes, ${data.categories.length} catégories ; js/encyclopedie-ile.generated.js ${ileActuel === ileSource ? 'inchangé' : 'réécrit'} : ${totalIle} termes, ${ile.categories.length} catégories.`);
 }

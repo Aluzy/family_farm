@@ -10019,6 +10019,36 @@ export const RAW_DATA = {
         { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, au passage du bac." },
         { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." }
       ]
+    },
+    "SANS_RECIT": {
+      "NOMS": [
+        "Maurice",
+        "Philomène",
+        "Adèle",
+        "Odile",
+        "Achille",
+        "Frida",
+        "Basile",
+        "Théo",
+        "Garance",
+        "Lise",
+        "Fernand",
+        "Céron",
+        "Cadolon",
+        "Le Gué",
+        "Bois-Joli",
+        "Les Genêts",
+        "Les Mouettes",
+        "Brumeval"
+      ],
+      "MOTS": ["calèche", "cocher", "hameau"],
+      "NIVEAUX": {
+        "ELEMENTS": { "veillee": null },
+        "NOTES": {
+          "9": "",
+          "10": "Le plus haut niveau. Sur l'île, la veillée de pleine lune se tient d'elle-même, sans niveau : deux villageois et une place (le panneau du village, un puits ou une table de jardin) suffisent"
+        }
+      }
     }
   },
   "TACHES": {

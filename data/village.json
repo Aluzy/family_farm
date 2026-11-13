@@ -878,6 +878,28 @@
         { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, au passage du bac." },
         { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." }
       ]
+    },
+    "//SANS_RECIT": [
+      "Le récit retiré de ce que voit le joueur de l'île (fiche I7d, docs/ile.md « Le récit retiré de l'interface »).",
+      "NOMS : les noms du récit (ses personnages, ses lieux) ; MOTS : ce que l'île ne dit plus (la calèche, son cocher,",
+      "les hameaux). Aucun texte qu'atteint une partie de l'île ne les contient (tests/engine/village-textes.test.mjs) ;",
+      "les prénoms de HABITANTS.PRENOMS qui en sont ne sont pas tirés pour l'île (village.js prenomsDuJeu : les",
+      "villageois, leurs enfants, le joueur « seul », les habitants des hameaux tant qu'ils sont là). NIVEAUX : ce que",
+      "l'écran d'un niveau dit sur l'île à la place du texte du récit : ELEMENTS (un élément remplacé ; null le retire de",
+      "l'écran) et NOTES (la note d'un niveau, par son numéro ; une chaîne vide la retire). La veillée de la ferme (niveau",
+      "10) était celle des voisins des hameaux ; sur l'île, la veillée du village (VOCATIONS.village.FETES) se tient",
+      "d'elle-même, sans niveau : le niveau 10 le dit dans sa note, l'élément n'est plus montré."
+    ],
+    "SANS_RECIT": {
+      "NOMS": ["Maurice", "Philomène", "Adèle", "Odile", "Achille", "Frida", "Basile", "Théo", "Garance", "Lise", "Fernand", "Céron", "Cadolon", "Le Gué", "Bois-Joli", "Les Genêts", "Les Mouettes", "Brumeval"],
+      "MOTS": ["calèche", "cocher", "hameau"],
+      "NIVEAUX": {
+        "ELEMENTS": { "veillee": null },
+        "NOTES": {
+          "9": "",
+          "10": "Le plus haut niveau. Sur l'île, la veillée de pleine lune se tient d'elle-même, sans niveau : deux villageois et une place (le panneau du village, un puits ou une table de jardin) suffisent"
+        }
+      }
     }
   },
   "//TACHES": [

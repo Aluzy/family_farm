@@ -23,7 +23,7 @@ import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { genererMonde } from './monde.js';
 import { niveauPort } from './port.js';
-import { fermeVierge, nouveauDehors, villageActif } from './village.js';
+import { fermeVierge, nouveauDehors, prenomsDuJeu, villageActif } from './village.js';
 import { chemin } from './chemin.js';
 import { addItem } from './inventory.js';
 import { nomDe, proposerNom } from './noms.js';
@@ -65,7 +65,7 @@ export function familleSeule(state) {
   const un = (l, d) => (Array.isArray(l) && l.length ? l[Math.floor(r() * l.length)] : d);
   const max = DATA.FAMILLE.PROFIL.PERSOS;
   const persos = ((H.PERSOS && H.PERSOS.adulte && H.PERSOS.adulte[genre]) || []).filter((n) => Number.isInteger(n) && n >= 1 && n <= max);
-  const prenoms = ((H.PRENOMS && H.PRENOMS[genre]) || []).filter((p) => typeof p === 'string' && p.length >= 1 && p.length <= DATA.FAMILLE.PROFIL.PRENOM_MAX);
+  const prenoms = prenomsDuJeu(state, genre).filter((p) => typeof p === 'string' && p.length >= 1 && p.length <= DATA.FAMILLE.PROFIL.PRENOM_MAX);
   return { perso: un(persos, 1), prenom: un(prenoms, genre === 'f' ? 'Jeanne' : 'Jules'), nom: DATA.DEPART.NOM, compagnon: null, enfants: [], animaux: [] };
 }
 

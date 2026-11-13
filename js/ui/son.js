@@ -5,6 +5,8 @@
    l'appareil, la musique continue, par moments ou coupée, la voix des habitants : G-2). Sans FermeSon, rien ne se passe. */
 
 import { ecouterJournal } from '../engine/journal.js';
+import { villageActif } from '../engine/village.js';
+import { state } from './store.js';
 
 // Joue un bruit du jeu (voir les clés de js/son.js), s'il y a du son.
 export function son(cle, options) {
@@ -61,7 +63,7 @@ document.addEventListener('change', (e) => {
   const S = window.FermeSon, t = e.target;
   if (!S || !t) return;
   if (t.id === 'son-muet') S.regle({ muet: t.checked });
-  else if (t.id === 'son-voix') { S.regle({ voix: t.checked }); if (t.checked && S.babil) S.babil('Bonjour, tout le monde !', S.voixDe({ recit: 'odile' })); }
+  else if (t.id === 'son-voix') { S.regle({ voix: t.checked }); if (t.checked && S.babil) S.babil('Bonjour, tout le monde !', S.voixDe(state && villageActif(state) ? { id: 'villageoise', genre: 'f' } : { recit: 'odile' })); }   // (l'île à bâtir, fiche I7d : une voix de villageoise, pas celle d'un personnage du récit)
   else if (t.name === 'son-mode') S.regle({ mode: t.value });
   else if (t.name === 'son-volume') son(t.dataset.son === 'musique' ? 'reussite' : t.dataset.son === 'ambiance' ? 'oiseau' : t.dataset.son === 'effets' ? 'hache' : 'info');
 });

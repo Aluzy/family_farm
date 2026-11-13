@@ -1,10 +1,11 @@
 import { DATA } from '../engine/catalog.js';
 import { proposerScene, sceneCarteDepuisCarte, sceneCarteModele } from './scene.js';
 import { positionGardee, positionNoter } from './position.js';
-import { aFait, RECIT } from '../engine/recit.js';
 // (fiche I7c : ce qui ferait paraître du récit passe par l'aiguillage ; l'île à bâtir n'en lit rien. La fiche I7d
 // retire le reste de la page)
-import { fermeLuit, geodeLuit, noterVisite, ouvrirSecret, toucherLieu, visiteObservatoire } from '../engine/recit-aiguillage.js';
+import {
+  fermeLuit, geodeLuit, noterVisite, ouvrirSecret, recitPage, recitPour, toucherLieu, visiteObservatoire,
+} from '../engine/recit-aiguillage.js';   // (fiches I7c, I7d : la page ne lit le récit que par l'aiguillage)
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { arroseesParLaPluie, brume as brumeDuMoment, pleut } from '../engine/meteo.js';
@@ -51,8 +52,6 @@ import { notify } from './toasts.js';
 import { encyclopedieBiome, encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
 import { HAMEAUX, voirHameau } from '../engine/monde-hameaux.js';
 import { garantiDuHameau, HABITANTS, habitantsPourLaCarte } from '../engine/habitants.js';
-import { tousLesToitsUses } from '../engine/usure.js';
-import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
 import { villageActif } from '../engine/village.js';
@@ -526,7 +525,7 @@ export function stageModel() {
     // dort (la nuit défile en accéléré), même quand on regarde la carte de la ferme
     coucher: (coucher || asleep(state)) && nightActive(state),
     // le récit, lot 9 : les toits abîmés des hameaux ({ hameau: [maisons] } : js/carte/ferme/hameaux.js les troue)
-    toitsUses: tousLesToitsUses(state),
+    toitsUses: recitPage(state) ? recitPage(state).tousLesToitsUses(state) : {},   // (l'île : aucun toit usé, fiche I7d)
     // le récit, lot 10 : la ferme luit, la pierre de lune posée, les nuits de pleine lune (son centre, son rayon, px)
     // (l'amas d'améthyste de la pierre de lune, les nuits de pleine lune : il luit plus fort, js/carte/ferme/lumineux.js)
     geodeLuit: geodeLuit(state),
@@ -575,7 +574,7 @@ export function stageModel() {
     presents: presentsPourLaCarte(),
     // la visite de bienvenue (js/engine/bienvenue.js, fiche 18) : le visiteur en route, ou son plat qui
     // attend devant la porte (js/carte/ferme/visite.js) ; null le reste du temps
-    visite: bienvenueModele(state),
+    visite: recitPage(state) ? recitPage(state).bienvenueModele(state) : null,   // (l'île : pas de visite de bienvenue)
     // l'île à bâtir (fiche I3a, js/engine/villageois.js) : les villageois (celui qui arrive du port, ceux qui dorment
     // dans leur lit : js/carte/ferme/villageois.js) ; null le chantier éteint ou sans villageois
     villageois: villageoisModele(),
@@ -1136,14 +1135,14 @@ function stageSecret(l) {
     if (r.tresor && r.tresor.pieces) L.push(`+${r.tresor.pieces} pièces.`);
     else if (r.tresor) L.push(`+${r.tresor.n} ${DATA.OBJETS[r.tresor.item].icone} ${DATA.OBJETS[r.tresor.item].nom}.`);
     notify(L.join(' '), { kind: 'info', son: r.deja ? undefined : 'ramasse' });
-    if (r.page) { const e = entreeEncyclopedie(r.page); notify(`📓 Une page du carnet du voyageur : « ${e ? e.terme : r.page} » (dans l'Encyclopédie, « Les secrets du monde »).`, { kind: 'info' }); }
+    if (r.page) { const e = entreeEncyclopedie(r.page, state); notify(`📓 Une page du carnet du voyageur : « ${e ? e.terme : r.page} » (dans l'Encyclopédie, « Les secrets du monde »).`, { kind: 'info' }); }
     if (r.vue) notify(`🔭 Le pays se découvre tout autour : la carte s'agrandit.`, { kind: 'info' });
   }, 0);
 }
 
 // Une page de plus au carnet (le fil de la lune : rien d'autre n'est dit).
 function annoncerPage(id) {
-  const page = id && RECIT.FRAGMENTS[id];
+  const R = recitPage(state), page = id && R && R.RECIT.FRAGMENTS[id];
   if (page) notify(`📓 Une page de plus dans ton carnet : « ${page.titre} ».`, { kind: 'info' });
 }
 
@@ -1164,7 +1163,7 @@ function stageMaison(m) {
   if (m && m.batisse === 'port') return;
   // (une bâtisse du récit, l'observatoire de Maurice (la « cabane »), l'atelier de Frida : y entrer, c'est la découvrir)
   if (m && m.batisse === 'cabane') { stageCabane(); return; }
-  if (m && m.batisse === 'atelier' && aFait(state, 'lieu.atelier')) {
+  if (m && m.batisse === 'atelier' && recitPour(state).aFait(state, 'lieu.atelier')) {
     setTimeout(() => { if (!proposerScene({ lieu: 'atelier' })) stageLieuRecit({ sorte: 'atelier' }); }, 0);
     return;
   }

@@ -56,3 +56,56 @@ export function allumerEssaiVillage(state) {
 export function essaiVillage(state) {
   return !(DATA.VILLAGE && DATA.VILLAGE.ACTIF === true) && villageActif(state);
 }
+
+/* ---------- le récit retiré de ce que voit le joueur (fiche I7d, VILLAGE.SANS_RECIT) ---------- */
+
+const SR = () => (DATA.VILLAGE && DATA.VILLAGE.SANS_RECIT) || {};
+
+// Le premier nom du récit (SANS_RECIT.NOMS) ou mot qu'il ne dit plus (SANS_RECIT.MOTS) que contient `texte`, ou null.
+// Un nom se lit sans son article (« Le Gué » : « Gué », aussi dans « du Gué » ; « Les Mouettes » : « Mouettes »), en
+// mot entier et avec sa majuscule (le gué d'une rivière, les mouettes du ciel ne sont pas le récit) ; un mot, sans
+// majuscule et au pluriel aussi (« hameaux »). Le contrôle des textes de l'île (tests/engine/village-textes.test.mjs)
+// et les noms proposés (noms.js) le lisent.
+let MOTIFS = null;
+export function texteDuRecit(texte) {
+  if (!MOTIFS) {
+    const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const noms = (SR().NOMS || []).map((n) => [n, new RegExp(`(?<!\\p{L})${esc(String(n).replace(/^(Le |La |Les |L')/, ''))}(?!\\p{L})`, 'u')]);
+    const mots = (SR().MOTS || []).map((m) => [m, new RegExp(`(?<!\\p{L})${esc(String(m))}`, 'iu')]);
+    MOTIFS = [...noms, ...mots];
+  }
+  const t = String(texte == null ? '' : texte);
+  for (const [n, re] of MOTIFS) if (re.test(t)) return n;
+  return null;
+}
+
+// Les prénoms qu'une personne tirée de la partie peut porter (HABITANTS.PRENOMS[genre]) : sur l'île, sans les noms du
+// récit (SANS_RECIT.NOMS : Odile, Achille, Théo… ne sont ni villageois, ni enfants, ni le joueur « seul », ni habitants
+// d'un hameau). Éteint, la liste telle quelle (le jeu d'avant ne bouge pas).
+export function prenomsDuJeu(state, genre) {
+  const P = (DATA.HABITANTS && DATA.HABITANTS.PRENOMS) || {};
+  const L = Array.isArray(P[genre]) ? P[genre] : Array.isArray(P.m) ? P.m : [];
+  if (!villageActif(state)) return L;
+  const noms = new Set((SR().NOMS || []).map((n) => String(n).toLowerCase()));
+  const reste = L.filter((p) => !noms.has(String(p).toLowerCase()));
+  return reste.length ? reste : L;
+}
+
+// L'élément `id` d'un niveau, tel que l'écran du niveau le montre (NIVEAUX.ELEMENTS) ; sur l'île, celui de
+// SANS_RECIT.NIVEAUX.ELEMENTS s'il y est (null : l'élément n'est pas montré) et le port à la place de la calèche
+// (PORT.ELEMENT, fiche I1b).
+export function elementDuNiveau(state, id) {
+  const E = (DATA.NIVEAUX && DATA.NIVEAUX.ELEMENTS) || {};
+  if (!villageActif(state)) return E[id] || null;
+  if (id === 'marche' && DATA.PORT && DATA.PORT.ELEMENT) return DATA.PORT.ELEMENT;
+  const I = (SR().NIVEAUX && SR().NIVEAUX.ELEMENTS) || {};
+  return Object.prototype.hasOwnProperty.call(I, id) ? I[id] : E[id] || null;
+}
+
+// La note de l'écran du niveau `niveau` (la sienne, `note`) ; sur l'île, celle de SANS_RECIT.NIVEAUX.NOTES s'il y en
+// a une (une chaîne vide : pas de note).
+export function noteDuNiveau(state, niveau, note) {
+  if (!villageActif(state)) return note || null;
+  const N = (SR().NIVEAUX && SR().NIVEAUX.NOTES) || {};
+  return Object.prototype.hasOwnProperty.call(N, String(niveau)) ? N[String(niveau)] || null : note || null;
+}

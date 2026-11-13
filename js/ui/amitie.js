@@ -7,7 +7,6 @@ import {
   trouverPnj, visiterHameau,
 } from '../engine/amitie.js';
 import { offrirVillageois } from '../engine/villageois-amitie.js';
-import { RECIT } from '../engine/recit.js';
 import { souvenirParole } from '../engine/invitations.js';
 import { merciProjet } from '../engine/projets.js';
 import { demandeHtml } from './demandes.js';
@@ -96,7 +95,7 @@ export function watchPresents() {
 /* -- la fenêtre « Offrir » -- */
 
 function jaugeHtml(A) {
-  const suite = A.prochain !== null ? `encore ${A.prochain - A.pts} pour « ${RECIT.PALIER_NOMS[A.palier + 1]} »` : 'le plus haut palier';
+  const suite = A.prochain !== null ? `encore ${A.prochain - A.pts} pour « ${DATA.AMITIE.ECHELLE.NOMS[A.palier + 1]} »` : 'le plus haut palier';
   return `<p class="ami-ligne"><span class="ami-palier">💛 ${escapeHtml(A.nom)}</span> <span class="ami-jauge grande" role="img" aria-label="Amitié : ${A.pts} sur ${A.max}"><span style="width:${Math.round((A.pts * 100) / A.max)}%"></span></span> <span class="muted num">${A.pts}/${A.max} · ${suite}</span></p>`;
 }
 

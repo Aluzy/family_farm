@@ -10,6 +10,7 @@ import { validApparence } from './family.js';
 import { proposDuMoment } from './propos.js';
 import { demandeDe, texteDemande } from './demandes.js';
 import { recitPour } from './recit-aiguillage.js';
+import { prenomsDuJeu } from './village.js';
 
 /* ---------- les habitants des hameaux du grand monde (docs/grand-monde.md : fiche 7b) ----------
 
@@ -108,7 +109,8 @@ export function peuplerHameau(state, plan, o = {}) {
   const g = graineDe(state), rnd = rngDe(`${g}:habitants:${plan.id}`);
   // (les prénoms et les personnages du hameau, mélangés une fois : chacun le sien)
   const melange = (liste) => liste.map((v) => [rnd(), v]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
-  const prenoms = { f: melange(HABITANTS.PRENOMS.f), m: melange(HABITANTS.PRENOMS.m) };
+  // (fiche I7d : sur l'île, sans les noms du récit ; éteint, la liste de toujours)
+  const prenoms = { f: melange(prenomsDuJeu(state, 'f')), m: melange(prenomsDuJeu(state, 'm')) };
   const P = HABITANTS.PERSOS;
   const persos = { adulte: { f: melange(P.adulte.f), m: melange(P.adulte.m) }, enfant: { f: melange(P.enfant.f), m: melange(P.enfant.m) } };
   const autre = (g2) => (g2 === 'f' ? 'm' : 'f');
