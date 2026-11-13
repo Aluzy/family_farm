@@ -861,9 +861,12 @@ registerActions({
       refresh();
       return;
     }
-    // (la pompe se pose sur le puits : un appui sur un puits libre la pose, ne reprend pas le puits)
+    // (la pompe se pose sur le puits : un appui sur un puits libre la pose, ne reprend pas le puits ; ce qui
+    // s'accroche à un mur (sur: 'mur' : un rosier grimpant, une guirlande, un tableau), sur n'importe quel mur
+    // sans rien dessus : il s'y pose (le moteur dit si c'est la bonne face), le mur n'est pas repris)
     const sur = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sur;
-    const surLibre = sur && blocAt(state, c) === sur && !blocDessus(state, c);
+    const sousC = DATA.ATELIER.BLOCS[blocAt(state, c)];
+    const surLibre = !!sur && !blocDessus(state, c) && (sur === 'mur' ? !!(sousC && sousC.mur) : blocAt(state, c) === sur);
     // (le plancher en main : un appui sur un plancher sans rien dessus le reprend ; un sol d'un
     // autre modèle prend sa place ; un autre bloc se pose dessus)
     const sol = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sol;
