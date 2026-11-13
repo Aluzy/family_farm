@@ -159,7 +159,7 @@ function papiersHtml() {
       <button type="button" class="btn${ok ? ' primary' : ''}" data-action="gemmes-acheter" data-article="${id}"${!ok || occupe ? ' disabled' : ''}>${a_deja ? '✓ Débloqué' : `💎 ${a.prix}`}</button>
     </div>`;
   }).join('')}</div>
-  <p class="gemmes-aide">Un papier peint acheté est débloqué pour toujours : avec 🔨 Construire, l'outil 🧻, touche une pièce close et tous ses murs du fond le prennent, en bas comme à l'étage. Le changer ou le retirer est gratuit.</p>`;
+  <p class="gemmes-aide">Un papier peint acheté est débloqué pour toujours : avec 🔨 Construire, l'outil 🧻, touche une pièce close et tous ses murs du fond le prennent, en bas, à l'étage et au niveau 2. Le changer ou le retirer est gratuit.</p>`;
 }
 
 // Les décorations (les guirlandes lumineuses, les cheminées, les fontaines, les arbres d'ornement, les enseignes) : leur dessin allumé sur un fond de nuit, leur

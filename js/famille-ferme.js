@@ -359,7 +359,8 @@
         const spot = lieuDe(lieu);
         if (!spot) { m.echecs.set(lieu, now); continue; }   // (pas de place libre : laissée, comme sans chemin)
         const anim = GESTES[spot.geste] || GESTES.betes;
-        const fin = () => { m.face = spot.face || 'cote'; m.flip = !!spot.flip; m.anim = anim; m.geste = reduced() ? 0.01 : anim.dur; };
+        // (spot.monte : la tâche est à l'étage ; il y monte par l'escalier, on ne le voit plus le temps du geste)
+        const fin = () => { m.face = spot.face || 'cote'; m.flip = !!spot.flip; m.anim = anim; m.monte = !!spot.monte; m.geste = reduced() ? 0.01 : anim.dur; };
         if (!aller(m, spot.x, spot.y, fin, 'dehors')) { m.echecs.set(lieu, now); m.bloque = 0; continue; }
         m.tache = lieu;
         return true;
@@ -759,11 +760,12 @@
           // (le second adulte se baisse au Poulailler ou à l'Étable)
           if (m.geste > 0) {
             m.geste -= dt;
-            if (m.geste <= 0) { m.geste = 0; finirTache(m); }
+            if (m.geste <= 0) { m.geste = 0; m.monte = false; finirTache(m); }
             else {
               const A = m.anim || GESTES.betes, k = Math.min(A.seq.length - 1, Math.floor((1 - m.geste / A.dur) * A.seq.length));
               const nom = A.nom(m.face, A.seq[k]);
               dessiner(m, F[nom] !== undefined ? nom : `ramasse_${Math.min(2, k)}`);
+              if (m.monte) m.s.setAlpha(0);   // (monté à l'étage : on ne le voit plus)
               continue;
             }
           }

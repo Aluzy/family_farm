@@ -368,6 +368,8 @@
       "bonhomme_neige": { "nom": "Bonhomme de neige", "objet": "bonhomme_neige", "dehors": true, "bloque": true, "dessin": "bonhomme_neige", "boutique": true },
       "citrouille_halloween": { "nom": "Citrouille sculptée", "objet": "citrouille_halloween", "dehors": true, "bloque": true, "dessin": "citrouille_halloween", "boutique": true },
       "tas_citrouilles": { "nom": "Tas de citrouilles", "objet": "tas_citrouilles", "dehors": true, "bloque": true, "dessin": "tas_citrouilles", "largeur": 2, "boutique": true },
+      "panier_oeufs": { "nom": "Panier d'œufs peints", "objet": "panier_oeufs", "dehors": true, "bloque": true, "dessin": "panier_oeufs", "boutique": true },
+      "oeuf_geant": { "nom": "Œuf de Pâques géant", "objet": "oeuf_geant", "dehors": true, "bloque": true, "dessin": "oeuf_geant", "boutique": true },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -447,7 +449,7 @@
       "maison": { "nom": "Maison", "icone": "🏠", "blocs": ["paillasse", "boite_nourriture", "boite_aux_lettres", "etal", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"] },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
       "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "compost", "bloc_silo", "meule"] },
-      "jardin": { "nom": "Jardin", "icone": "🌷", "blocs": ["table_jardin", "chaise_jardin", "banc_jardin", "bac_carre", "bac_rond", "bac_long", "banc_rondins", "table_rondins", "chaise_peinte", "jarre_coquillages", "lanterne_papier", "bassin", "banc_pierre", "jardiniere_pierre", "pergola", "bac_fleurs", "bac_lavande", "bassin_nenuphars", "rosier_multicolore", "rosier_rouge", "rosier_blanc", "rosier_jaune", "guirlande_blanche", "guirlande_multicolore", "guirlande_etoiles", "guirlande_coeurs", "fontaine_pierre", "fontaine_marbre", "fontaine_grenouille", "fontaine_angelot", "ornement_cerisier_japon", "ornement_erable_rouge", "ornement_magnolia", "ornement_saule_pleureur", "panneau_village", "enseigne_bois", "boite_lettres_bois", "enseigne_email", "boite_lettres_email", "enseigne_fer", "boite_lettres_fer", "bonhomme_neige", "citrouille_halloween", "tas_citrouilles", "lavoir", "kiosque", "fontaine_village", "four_commun"] },
+      "jardin": { "nom": "Jardin", "icone": "🌷", "blocs": ["table_jardin", "chaise_jardin", "banc_jardin", "bac_carre", "bac_rond", "bac_long", "banc_rondins", "table_rondins", "chaise_peinte", "jarre_coquillages", "lanterne_papier", "bassin", "banc_pierre", "jardiniere_pierre", "pergola", "bac_fleurs", "bac_lavande", "bassin_nenuphars", "rosier_multicolore", "rosier_rouge", "rosier_blanc", "rosier_jaune", "guirlande_blanche", "guirlande_multicolore", "guirlande_etoiles", "guirlande_coeurs", "fontaine_pierre", "fontaine_marbre", "fontaine_grenouille", "fontaine_angelot", "ornement_cerisier_japon", "ornement_erable_rouge", "ornement_magnolia", "ornement_saule_pleureur", "panneau_village", "enseigne_bois", "boite_lettres_bois", "enseigne_email", "boite_lettres_email", "enseigne_fer", "boite_lettres_fer", "bonhomme_neige", "citrouille_halloween", "tas_citrouilles", "lavoir", "kiosque", "fontaine_village", "four_commun", "panier_oeufs", "oeuf_geant"] },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
       "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur", "reservoir", "pressoir", "centrifugeuse", "mixeur", "chaudron", "tonneau", "ensacheuse", "tonnelet", "quai_chargement"] }
     },
@@ -538,7 +540,7 @@
     "Le bac à compost (docs/compost.md, js/engine/compost.js) : un bloc qu'on pose dehors. On y jette des aliments (sa",
     "fenêtre) ; la nuit, ce qui périme y irait aussi tout seul (la péremption est coupée, PENALITES). PAR_ENGRAIS",
     "aliment fait un engrais, au plus MAX_ENGRAIS par bac : ils attendent qu'on les prenne (une bulle, comme le miel).",
-    "L'engrais s'achète aussi à la calèche (OBJETS.engrais.comptoir). Il se glisse sur les cultures arrosées (des cases",
+    "L'engrais s'achète aussi à la calèche (OBJETS.engrais.comptoir). Pris en main (sa fiche de l'inventaire), il se glisse sur les cultures arrosées (des cases",
     "violettes) : chacune gagne un cycle tout de suite (un stade), une fois par arrosage."
   ],
   "COMPOST": { "NOM": "Bac à compost", "ICONE": "🪵‍🍂", "OBJET": "compost", "ENGRAIS": "engrais", "PAR_ENGRAIS": 1, "MAX_ENGRAIS": 20 },

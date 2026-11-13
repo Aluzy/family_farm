@@ -48,7 +48,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'demande-rendre', // (V-2 : rendre une demande d'un habitant)
   'bac-semer', // (les bacs à fleurs : semer une graine de fleur)
   'tonnelet-remplir', // (le tonnelet : y mettre une tomme d'alpage, un moût de houblon)
-  'compost-jeter', 'engrais-many', // (le bac à compost : y jeter des aliments ; glisser l'engrais sur les cultures)
+  'compost-jeter', 'engrais-many', 'engrais-toggle', // (le bac à compost : y jeter des aliments ; prendre l'engrais en main, le glisser sur les cultures)
   'etal-mettre', 'etal-reprendre', // (I4 : l'étal des villageois, comme la boîte)
 ]);
 

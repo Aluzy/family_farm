@@ -91,6 +91,8 @@ export const BOUTIQUE = {
     bonhomme_neige: { prix: 60, nom: 'Bonhomme de neige', fete: 'noel' },
     citrouille_halloween: { prix: 30, nom: 'Citrouille sculptée (sa bougie s\'allume le soir)', fete: 'halloween' },
     tas_citrouilles: { prix: 70, nom: 'Tas de citrouilles', fete: 'halloween' },
+    panier_oeufs: { prix: 40, nom: 'Panier d\'œufs peints', fete: 'paques' },
+    oeuf_geant: { prix: 60, nom: 'Œuf de Pâques géant', fete: 'paques' },
     // les papiers peints : un motif acheté est débloqué pour toujours (js/engine/papiers.js)
     papier_peint_fleurettes: { prix: 40, nom: 'Papier peint fleurettes' },
     papier_peint_rayures: { prix: 40, nom: 'Papier peint rayures' },
@@ -108,6 +110,8 @@ export const BOUTIQUE = {
   FETES: {
     noel: { du: [12, 1], au: [12, 31], nom: 'en décembre' },
     halloween: { du: [10, 15], au: [11, 2], nom: 'du 15 octobre au 2 novembre' },
+    // (Pâques change chaque année : `paques` donne la période en jours autour du dimanche de Pâques)
+    paques: { paques: [-14, 1], nom: 'pendant les deux semaines avant Pâques et le lundi de Pâques' },
   },
   TOLERANCE_S: 300,          // l'âge maximal d'une notification de Stripe (5 minutes, comme ses bibliothèques)
   PAIEMENTS_PAR_HEURE: 10,   // paiements ouverts au plus par compte en une heure
@@ -132,8 +136,22 @@ export function enVente(a, t = Date.now()) {
   const F = BOUTIQUE.FETES[a.fete];
   if (!F) return false;
   const d = new Date(t), md = (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+  if (F.paques) {
+    const P = dimanchePaques(d.getUTCFullYear()), JOUR = 86400000;
+    const jour = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    return jour >= P + F.paques[0] * JOUR && jour <= P + F.paques[1] * JOUR;
+  }
   const du = F.du[0] * 100 + F.du[1], au = F.au[0] * 100 + F.au[1];
   return du <= au ? md >= du && md <= au : md >= du || md <= au;
+}
+
+// Le dimanche de Pâques de l'année `an` (minuit UTC, ms) : le calcul grégorien (dit « de Meeus »).
+export function dimanchePaques(an) {
+  const a = an % 19, b = Math.floor(an / 100), c = an % 100, d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mois = Math.floor((h + l - 7 * m + 114) / 31), jour = ((h + l - 7 * m + 114) % 31) + 1;
+  return Date.UTC(an, mois - 1, jour);
 }
 
 // Les articles en vente à la date `t` (ms).

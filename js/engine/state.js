@@ -1136,8 +1136,17 @@ export function decalerPartie(old, sens) {
   const decale = (id, px = 1) => idDuMonde(id, px, [ox, oy]);
   const cles = (o) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [/^\d+$/.test(k) ? String(c(Number(k))) : k, v])) : o);
   const ids = (o, px) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [decale(k, px), v])) : o);
-  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'rehausses', 'fenetres', 'etage', 'fenetresEtage', 'solsEtage', 'ruches', 'distributeurs', 'botteleuses', 'chaines']) {
+  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'rehausses', 'fenetres', 'etage', 'fenetresEtage', 'fenetresHautes', 'sensEtage', 'teintesEtage', 'dessusEtage', 'solsEtage', 'ruches', 'distributeurs', 'botteleuses', 'chaines']) {
     if (state[k]) state[k] = cles(state[k]);
+  }
+  // (les niveaux du dessus : leurs sols, leurs blocs, rangés par niveau, js/engine/etage.js)
+  for (const k of ['solsHauts', 'niveauxHauts']) {
+    if (!state[k] || typeof state[k] !== 'object') continue;
+    for (const n of Object.keys(state[k])) {
+      const N = state[k][n];
+      if (k === 'solsHauts') state[k][n] = cles(N);
+      else if (N && typeof N === 'object') for (const nom of Object.keys(N)) N[nom] = cles(N[nom]);
+    }
   }
   const cases = (l) => (Array.isArray(l) ? l.map((p) => (p && typeof p === 'object' ? { ...p, case: c(p.case) } : p)) : l);
   if (state.potager) state.potager.parcelles = cases(state.potager.parcelles);

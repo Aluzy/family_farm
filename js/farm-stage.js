@@ -1048,7 +1048,8 @@
           const lit = this.litAt(wx, wy);
           if (lit !== null) return { lit };
         }
-        if (this.niveau) return null;
+        // (à l'étage : une station posée là, sa fenêtre, js/carte/ferme/etage.js)
+        if (this.niveau) { const st = !hoeing && this.stationEtageAt ? this.stationEtageAt(wx, wy) : null; return st ? { window: st } : null; }
         // pendant un repas avec des invités : la table, pour servir ; une chaise, un banc : s'y asseoir
         // (js/carte/ferme/sieges.js ; pas en mode Construire)
         if (!hoeing && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {

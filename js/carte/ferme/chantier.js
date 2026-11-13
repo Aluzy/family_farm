@@ -140,6 +140,9 @@
           }
           return repli;
         };
+        // (les fenêtres des niveaux percées dans le haut du mur, modèle.blocs : b.fenetresHautes, une par
+        // niveau, 1 puis 2 : l'image du bloc de ce niveau, la fenêtre dans la matière du haut de ce mur)
+        const fenHaute = (b) => (b.fenetresHautes ? b.fenetresHautes.map((f) => (f ? this.blocImage({ case: b.case, sorte: f, mur: b.dessus || b.sorte }, at, cols) : null)) : null);
         const linteau = (b) => {
           // (au-dessus d'une fenêtre ou d'une porte, des blocs posés : leur mur, raccordé aux voisins)
           if (b.dessus) return { h: b.hauteur || 1, frame: this.blocImage({ case: b.case, sorte: b.dessus }, at, cols) };
@@ -173,7 +176,7 @@
             if (e.img.flipX !== miroir) { e.img.setFlipX(miroir); changed = true; }
             e.sens = b.sens || 0;
             const li = linteau(b);
-            if (this.syncHauts(e, li ? li.h : haut1(b), li && li.frame)) changed = true;
+            if (this.syncHauts(e, li ? li.h : haut1(b), li && li.frame, fenHaute(b))) changed = true;
             this.syncDalle(e);
             continue;
           }
@@ -191,7 +194,7 @@
           B.set(b.case, ne);
           (this.sonPoses || (this.sonPoses = [])).push(ne);
           const li = linteau(b);
-          this.syncHauts(ne, li ? li.h : haut1(b), li && li.frame);
+          this.syncHauts(ne, li ? li.h : haut1(b), li && li.frame, fenHaute(b));
           this.syncDalle(ne);
           changed = true;
         }
@@ -335,7 +338,9 @@
       for (const e of (this.blocks || new Map()).values()) {
         if (e.cases) continue;
         const rangs = [e.img, ...(e.hauts || [])];
-        const z0 = e.img.depth;              // (remis : les blocs du dessus juste devant lui)
+        // (remis : les blocs du dessus juste devant lui ; sa profondeur en bas, même s'il est devant le voile de
+        // l'étage : js/carte/ferme/etage.js profondeurBase)
+        const z0 = this.profondeurBase ? this.profondeurBase(e.img.depth) : e.img.depth;
         rangs.forEach((i, k) => {
           i.rangZ = z0 + 0.01 * k;
           i.setDepth(i.rangZ);
@@ -370,17 +375,20 @@
     // Les blocs du dessus d'un mur rehaussé (`h` blocs de haut ; 0 : tous ôtés) : son image,
     // BLOCS_CARTE.etage.dy px plus haut par bloc, devant celle du dessous (`image` : [clé, image]
     // à la place de la sienne : le mur posé au-dessus d'une fenêtre ou d'une porte). Renvoie vrai s'ils ont changé.
-    syncHauts(e, h, image) {
+    syncHauts(e, h, image, parRang) {
       const L = e.hauts || [], dy = BLOCS_CARTE.etage.dy, want = Math.max(0, h - 1);
       const [key, f] = image || [e.img.texture.key, e.img.frame.name];
+      // (`parRang` : l'image du bloc de chaque niveau (0 : le niveau 1), quand elle diffère des autres : une
+      // fenêtre de ce niveau)
+      const de = (k) => (parRang && parRang[k] ? parRang[k] : [key, f]);
       let changed = false;
       while (L.length > want) { L.pop().destroy(); changed = true; }
       while (L.length < want) {
-        const k = L.length + 1;
-        L.push(this.add.image(e.x, e.y - dy * k, key, f).setOrigin(0.5, 1).setDepth(e.img.depth + 0.01 * k));
+        const k = L.length + 1, [kk, ff] = de(k - 1);
+        L.push(this.add.image(e.x, e.y - dy * k, kk, ff).setOrigin(0.5, 1).setDepth((this.profondeurBase ? this.profondeurBase(e.img.depth) : e.img.depth) + 0.01 * k));
         changed = true;
       }
-      for (const i of L) if (i.frame.name !== f || i.texture.key !== key) i.setTexture(key, f);
+      L.forEach((i, k) => { const [kk, ff] = de(k); if (i.frame.name !== ff || i.texture.key !== kk) i.setTexture(kk, ff); });
       e.hauts = L;
       e.hauteur = h;
       e.img.hauts = L;
@@ -472,12 +480,18 @@
     // mur, aussi hauts que lui (une image par bloc de sa hauteur, BLOCS_CARTE.etage.dy px plus haut à chaque
     // bloc, comme le mur rehaussé), juste devant lui ; chaque image s'efface avec le bloc du mur qu'elle
     // couvre (stepMurs : img.tableau).
-    // Les papiers peints (modèle : papiers, papiersEtage : [{ case du mur, frame }], js/engine/papiers.js) :
+    // Les papiers peints (modèle : papiers, papiersEtage, papiersNiveau2 : [{ case du mur, frame }], js/engine/papiers.js) :
     // chacun sur la face du mur du fond d'une pièce, les 30 px du bas de l'image du mur, juste devant lui
     // (BLOCS_CARTE.papiers.dz) ; à l'étage, sur la face du mur rehaussé (son image du niveau 1, e.hauts[0])
     // ou du mur posé à l'étage (etageMurs, js/carte/ferme/etage.js). Ils s'effacent avec le mur (stepMurs :
     // img.papier). Refaits quand l'image du mur change.
-    syncPapiers(bas, haut) {
+    // La profondeur d'un papier peint : juste devant son mur (BLOCS_CARTE.papiers.dz) ; un mur passé devant
+    // le voile de l'étage a ses profondeurs à l'échelle d'etageZ (1e-5 par unité) : l'écart aussi.
+    papierZ(mur) {
+      const dz = BLOCS_CARTE.papiers.dz;
+      return mur.depth + (this.etageVoileZ && mur.depth > this.etageVoileZ() ? dz * 1e-5 : dz);
+    },
+    syncPapiers(bas, haut, haut2) {
       const P = BLOCS_CARTE.papiers;
       if (!this.papiers) this.papiers = new Map();
       const M = this.papiers, seen = new Set(), dy = BLOCS_CARTE.etage.dy;
@@ -488,20 +502,25 @@
         let e = M.get(cle);
         if (e && (e.mur !== mur || e.frame !== frame || e.y !== y)) { e.img.destroy(); e = null; }
         if (!e) {
-          e = { mur, frame, y, img: this.add.image(x, y, P.key, frame).setOrigin(0.5, 1).setDepth(mur.depth + P.dz).setAlpha(mur.alpha) };
+          e = { mur, frame, y, img: this.add.image(x, y, P.key, frame).setOrigin(0.5, 1).setDepth(this.papierZ(mur)).setAlpha(mur.alpha) };
           M.set(cle, e);
         }
         mur.papier = e.img;
+        e.img.setDepth(this.papierZ(mur)).setVisible(mur.visible);
       };
       for (const p of bas || []) {
         const e = this.blocks && this.blocks.get(p.case);
         if (e && e.img.texture.key === BLOCS_CARTE.hauts.key) pose('0:' + p.case, e.img, e.x, e.y, p.frame);
       }
-      for (const p of haut || []) {
-        const e = this.blocks && this.blocks.get(p.case), em = this.etageMurs && this.etageMurs.get(p.case);
-        if (em) pose('1:' + p.case, em.img, em.x, em.img.y, p.frame);
-        else if (e && e.hauts && e.hauts[0]) pose('1:' + p.case, e.hauts[0], e.x, e.y - dy, p.frame);
-      }
+      // (à l'étage et au niveau 2 : le mur posé à ce niveau, sinon le bloc de ce rang du mur rehaussé)
+      [haut, haut2].forEach((liste, i) => {
+        const n = i + 1, murs = n === 1 ? this.etageMurs : this.etageMurs2;
+        for (const p of liste || []) {
+          const e = this.blocks && this.blocks.get(p.case), em = murs && murs.get(p.case);
+          if (em) pose(n + ':' + p.case, em.img, em.x, em.img.y, p.frame);
+          else if (e && e.hauts && e.hauts[n - 1]) pose(n + ':' + p.case, e.hauts[n - 1], e.x, e.y - n * dy, p.frame);
+        }
+      });
       for (const [c, e] of M) if (!seen.has(c)) { e.img.destroy(); M.delete(c); }
     },
 
@@ -568,7 +587,9 @@
       const cuisine = this.cuisineOn ? (F.reducedMotion() ? Cu.frames[0] : image(Cu, true)) : BLOCS_CARTE.frames[Cu.sorte];
       // (le four redessiné, dessiné comme un meuble : son image éteinte, ou celle de son feu)
       const four = this.fireOn ? Fe.images[Math.floor(time * Fe.fps / 1000) % Fe.images.length] : Fe.eteint;
-      for (const e of this.blocks.values()) {
+      // (et ceux des niveaux du dessus, js/carte/ferme/etage.js : etageStations)
+      for (const e of [...this.blocks.values(), ...(this.etageStations || [])]) {
+        if (!e.img || !e.img.active) continue;
         if (e.sorte === Fe.sorte && e.dessin) {
           if (e.img.texture.key !== four && this.textures.exists(four)) e.img.setTexture(four);
           continue;
@@ -649,15 +670,22 @@
       }
       const list = this.lumieresPosees.filter((e) => e.img && e.img.active);
       // (et celles de l'étage, js/carte/ferme/etage.js)
-      for (const e of this.etageLumieres || []) if (e.img && e.img.active) list.push(e);
+      // (le niveau 2 : seulement quand on le voit, js/carte/ferme/etage.js stepEtage)
+      const vu = (e) => e.img && e.img.active && (e.niveau !== 2 || e.img.visible);
+      for (const e of this.etageLumieres || []) if (vu(e)) list.push(e);
+      // (cachées : leurs halos et leur feu aussi)
+      for (const e of [...(this.etageLumieres || []), ...(this.etageLampes || []), ...(this.etageCheminees || [])]) {
+        if (e.niveau !== 2 || vu(e)) continue;
+        for (const k of ['halo', 'haloLampe', 'haloFeu', 'feu']) if (e[k] && e[k].active) e[k].setVisible(false);
+      }
       // (les lampes de chevet, en bas et à l'étage : BLOCS_CARTE.lampeChevet)
       const LC = BLOCS_CARTE.lampeChevet, lampes = [];
       for (const e of (this.blocks || new Map()).values()) if (LC.dessins.includes(e.dessin) && e.img) lampes.push({ img: e.img, x: e.x, y: e.y - 1, e });
-      for (const e of this.etageLampes || []) if (e.img && e.img.active) lampes.push({ img: e.img, x: e.x, y: e.y, e });
+      for (const e of this.etageLampes || []) if (vu(e)) lampes.push({ img: e.img, x: e.x, y: e.y, e });
       // (les cheminées, en bas et à l'étage : BLOCS_CARTE.cheminee)
       const cheminees = [];
       for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('cheminee_')) cheminees.push({ img: e.img, x: e.x, y: e.y - 1, e });
-      for (const e of this.etageCheminees || []) if (e.img && e.img.active) cheminees.push({ img: e.img, x: e.x, y: e.y, e });
+      for (const e of this.etageCheminees || []) if (vu(e)) cheminees.push({ img: e.img, x: e.x, y: e.y, e });
       // (les fontaines de jardin et les arbres d'ornement : leur eau coule, leurs pétales tombent, jour et nuit ;
       // BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement)
       for (const C of [BLOCS_CARTE.fontaine, BLOCS_CARTE.ornement, BLOCS_CARTE.sapin, BLOCS_CARTE.citrouilles]) {
@@ -1334,13 +1362,14 @@
       const cols = this.grid.cols;
       const vu = (k) => !(this.toits || []).some((t) => t.dedans.has(k) && t.img.alpha > 0.5);
       if (this.niveau) {
-        if (!this.etageLits || !this.etagePoint) return null;
+        const lits = this.niveau >= 2 ? this.etageLits2 : this.etageLits, pre = this.niveau >= 2 ? 'etage2:' : 'etage:';
+        if (!lits || !this.etagePoint) return null;
         const q = this.etagePoint(wx, wy), k = this.tileAtPoint(q.x, q.y);
         if (k < 0) return null;
         // (un lit fait deux cases de haut : sa case, celle du pied ; la tête, la case au-dessus)
-        const e = this.etageLits.get(k), sous = this.etageLits.get(k + cols);
-        if (e) return 'etage:' + k;
-        if (sous && !sous.paillasse) return 'etage:' + (k + cols);
+        const e = lits.get(k), sous = lits.get(k + cols);
+        if (e) return pre + k;
+        if (sous && !sous.paillasse) return pre + (k + cols);
         return null;
       }
       const k = this.tileAtPoint(wx, wy);
@@ -1394,7 +1423,12 @@
 
     bedSpotOf(c) {
       // un couchage de l'étage (« etage:<tuile> ») : js/carte/ferme/etage.js
-      if (typeof c === 'string') return c.startsWith('etage:') && this.etageBedSpot ? this.etageBedSpot(Number(c.slice(6))) : null;
+      if (typeof c === 'string') {
+        if (!this.etageBedSpot) return null;
+        if (c.startsWith('etage:')) return this.etageBedSpot(Number(c.slice(6)));
+        if (c.startsWith('etage2:')) return this.etageBedSpot(Number(c.slice(7)), 2);
+        return null;
+      }
       {
         const e = this.blocks && this.blocks.get(c);
         if (e && e.sorte === 'paillasse') return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, depth: e.img.depth, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y } };

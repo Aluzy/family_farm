@@ -181,6 +181,8 @@ function itemBodyHtml(o) {
       <button type="button" class="btn" data-action="fridge-out" data-item="${o.item}" data-qty="all">Tout sortir</button>`;
   } else {
     if (aPlanter) actions += `<button type="button" class="btn primary" data-action="arbre-planter" data-item="${o.item}">🌱 ${massif ? 'Semer dans l\'herbe' : 'Planter'}</button>`;
+    // (l'engrais : le prendre en main, puis le glisser sur les cultures arrosées de la carte, js/ui/compost.js)
+    if (DATA.COMPOST && o.item === DATA.COMPOST.ENGRAIS && stageUsable()) actions += `<button type="button" class="btn primary" data-action="engrais-toggle">${it.icone} Prendre en main</button>`;
     if (o.item === RECIT.ENVELOPPE.OBJET) actions += '<button type="button" class="btn" data-action="enveloppe-ouvrir">✉️ L\'ouvrir</button>';
     if (o.item === FIL.PIERRE.OBJET && (lieuDuPerso() || {}).lieu === 'ferme') actions += '<button type="button" class="btn" data-action="pierre-poser">🪨 La poser sur la ferme</button>';
     if (it.mangeable) actions += eatButton(o.item, 'Manger');

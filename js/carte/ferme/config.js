@@ -210,7 +210,7 @@ const CULTURE_MONTE = 0;
     // en mode Construire : à `transparent` (quand on est dans le bâtiment, en bas : à `dedans`,
     // on n'en voit que son niveau) ; à l'étage, un voile sombre sur toute la
     // ferme (`voile`, `alpha` ; au-dessus de ce qui vole), et ce qui est de l'étage devant lui
-    etage: { haut: 70, dy: 30, transparent: 0.3, dedans: 0, voile: 0x0d1018, alpha: 0.62 },
+    etage: { haut: 70, depasse: 8, dy: 30, transparent: 0.3, dedans: 0, voile: 0x0d1018, alpha: 0.62 },
     // en mode Construire, aux niveaux où l'on rehausse les murs (chantier.js syncRang) : un
     // voile sombre (`voile`) sur la ferme ; devant lui, le rang de mur du niveau, celui du
     // dessous à `dessous`, les autres à `autres` (presque invisibles) ; les cases où poser le
@@ -570,6 +570,8 @@ const CULTURE_MONTE = 0;
     'sapin_noel', 'couronne_noel', 'bonhomme_neige',
     // (les décors d'Halloween : scripts/batiments/halloween.py ; leur bougie, BLOCS_CARTE.citrouilles)
     'citrouille_halloween', 'tas_citrouilles',
+    // (les décors de Pâques : scripts/batiments/paques.py)
+    'panier_oeufs', 'oeuf_geant',
     // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
     'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',

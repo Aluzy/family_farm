@@ -14,7 +14,7 @@
 import { DATA } from './catalog.js';
 import { surCase } from './commandes.js';
 import { blocAt, blocDessus, casesCouvertes } from './blocs.js';
-import { dessusEtage, etageBlocs } from './etage.js';
+import { dessusEtage, etageBlocs, fenetresHautes } from './etage.js';
 
 export const ROLES_MONDE = ['visiteur', 'jardinier', 'batisseur', 'proprietaire'];
 const RANG = Object.fromEntries(ROLES_MONDE.map((r, i) => [r, i]));
@@ -51,7 +51,7 @@ function retire(state, c) {
     return surCase(state, a.case);
   }
   if (c.type === 'bloc.remettre' || c.type === 'etage.remettre') return a.apres;
-  if (c.type === 'etage.reprendre') return dessusEtage(state)[a.case] || etageBlocs(state)[a.case];
+  if (c.type === 'etage.reprendre') { const n = a.niveau || 1; return dessusEtage(state, n)[a.case] || etageBlocs(state, n)[a.case] || fenetresHautes(state, n)[a.case]; }
   return null;
 }
 

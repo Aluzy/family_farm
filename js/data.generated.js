@@ -1503,6 +1503,26 @@ export const RAW_DATA = {
       "invendable": true,
       "boutique": true
     },
+    "panier_oeufs": {
+      "nom": "Panier d'œufs peints",
+      "icone": "🧺",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
+    "oeuf_geant": {
+      "nom": "Œuf de Pâques géant",
+      "icone": "🥚",
+      "prix": 60,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "boutique": true
+    },
     "pergola": {
       "nom": "Pergola fleurie",
       "icone": "🌸",
@@ -2914,6 +2934,15 @@ export const RAW_DATA = {
         "largeur": 2,
         "boutique": true
       },
+      "panier_oeufs": {
+        "nom": "Panier d'œufs peints",
+        "objet": "panier_oeufs",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "panier_oeufs",
+        "boutique": true
+      },
+      "oeuf_geant": { "nom": "Œuf de Pâques géant", "objet": "oeuf_geant", "dehors": true, "bloque": true, "dessin": "oeuf_geant", "boutique": true },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
       "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -3323,7 +3352,9 @@ export const RAW_DATA = {
           "lavoir",
           "kiosque",
           "fontaine_village",
-          "four_commun"
+          "four_commun",
+          "panier_oeufs",
+          "oeuf_geant"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
