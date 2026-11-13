@@ -580,9 +580,10 @@ export function stageModel() {
     grimpants: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].grimpant).map(([c, sorte]) => ({ case: Number(c), coloris: DATA.ATELIER.BLOCS[sorte].grimpant })),
     // (les guirlandes lumineuses de la boutique : en haut de la face extérieure d'un mur)
     guirlandes: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].guirlande).map(([c, sorte]) => ({ case: Number(c), coloris: DATA.ATELIER.BLOCS[sorte].guirlande })),
-    // les papiers peints posés dans les pièces (js/engine/papiers.js) : [{ case du mur, motif, frame }], en bas et à l'étage
+    // les papiers peints posés dans les pièces (js/engine/papiers.js) : [{ case du mur, motif, frame }], en bas, à l'étage, au niveau 2
     papiers: papiersVisibles(state, 0),
     papiersEtage: papiersVisibles(state, 1),
+    papiersNiveau2: papiersVisibles(state, 2),
     // les sols posés (le plancher, les dalles… : [{ case, sorte }] ; le chemin change les tuiles du sol, ci-dessous)
     sols: Object.entries(solsPoses(state)).filter(([, k]) => k !== 'chemin').map(([c, sorte]) => ({ case: Number(c), sorte })),
     // (les sols posés au niveau 1 : sur l'étage, ou dans une pièce dont les murs y montent)

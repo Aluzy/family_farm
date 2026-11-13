@@ -729,7 +729,7 @@ export function couchages(state) {
 function idCouchage(id) {
   if (Number.isInteger(id)) return id;
   if (typeof id === 'string' && /^\d+$/.test(id)) return Number(id);
-  if (typeof id === 'string' && /^etage:\d+$/.test(id)) return id;
+  if (typeof id === 'string' && /^etage2?:\d+$/.test(id)) return id;
   return null;
 }
 

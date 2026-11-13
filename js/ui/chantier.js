@@ -259,10 +259,10 @@ export function buildChipHtml() {
     + (sensEnMain ? `<button type="button" class="build-piece build-sens" data-action="build-sens" aria-label="Le prochain se posera ${SENS_NOMS[sensPose]} : le tourner" title="Le prochain se posera ${SENS_NOMS[sensPose]} (touche pour le tourner)"><span aria-hidden="true">${FLECHES[sensPose]}</span></button>` : '') : '';
   // l'outil 🎨 (A-3) : allumé, un appui sur un meuble posé qui a plusieurs couleurs le repeint de la suivante
   const outilPeindre = auSol ? `<button type="button" class="build-piece build-peindre${modePeindre ? ' on' : ''}" data-action="build-peindre" aria-pressed="${modePeindre}" aria-label="Repeindre : touche un meuble posé pour changer sa couleur" title="Repeindre : touche un meuble posé pour changer sa couleur"><span aria-hidden="true">🎨</span></button>` : '';
-  // l'outil 🧻 (les papiers peints) : en bas et à l'étage (niveau 1) ; allumé, le bouton du motif à poser
-  const tapisPossible = niveau() <= 1;
-  const outilTapis = tapisPossible ? `<button type="button" class="build-piece build-tapisser${modeTapis ? ' on' : ''}" data-action="build-tapisser" aria-pressed="${modeTapis}" aria-label="Papier peint : touche une pièce close pour tapisser ses murs" title="Papier peint : touche une pièce close pour tapisser ses murs"><span aria-hidden="true">🧻</span></button>`
-    + (modeTapis ? `<button type="button" class="build-piece build-motif" data-action="build-motif" aria-label="Motif : ${nomMotif(motifCourant())}. En changer" title="Motif : ${nomMotif(motifCourant())} (touche pour en changer)"><span class="build-motif-img${motifCourant() === AUCUN ? ' aucun' : ''}" style="--f:${Math.max(0, Object.keys(DATA.PAPIERS_PEINTS || {}).indexOf(motifCourant()))}" aria-hidden="true">${motifCourant() === AUCUN ? '✖' : ''}</span></button>` : '') : '';
+  // l'outil 🧻 (les papiers peints) : à chaque niveau (en bas, à l'étage, au niveau 2) ; allumé, le bouton du
+  // motif à poser
+  const outilTapis = `<button type="button" class="build-piece build-tapisser${modeTapis ? ' on' : ''}" data-action="build-tapisser" aria-pressed="${modeTapis}" aria-label="Papier peint : touche une pièce close pour tapisser ses murs" title="Papier peint : touche une pièce close pour tapisser ses murs"><span aria-hidden="true">🧻</span></button>`
+    + (modeTapis ? `<button type="button" class="build-piece build-motif" data-action="build-motif" aria-label="Motif : ${nomMotif(motifCourant())}. En changer" title="Motif : ${nomMotif(motifCourant())} (touche pour en changer)"><span class="build-motif-img${motifCourant() === AUCUN ? ' aucun' : ''}" style="--f:${Math.max(0, Object.keys(DATA.PAPIERS_PEINTS || {}).indexOf(motifCourant()))}" aria-hidden="true">${motifCourant() === AUCUN ? '✖' : ''}</span></button>` : '');
   const outilPiece = murEnMain ? `<button type="button" class="build-piece${modePiece ? ' on' : ''}" data-action="build-piece" aria-pressed="${modePiece}" aria-label="Outil pièce : glisser d'un coin à l'autre pour poser tous les murs d'une pièce" title="Outil pièce : glisse d'un coin à l'autre pour poser les murs du pourtour"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="7" y="11.5" width="2.6" height="2.6" fill="#fbd98c"/></svg></button>` : '';
   const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}><span class="build-level-titre" aria-hidden="true">Niveau</span>${niveaux}</div></div>`;
   // la pose d'un meuble : ✔️ le pose là où est son aperçu, ❌ sort de ce mode
@@ -320,7 +320,6 @@ if (typeof document !== 'undefined') {
 // au niveau où l'on construit (en bas, ou l'étage).
 function tapisser(c) {
   const n = niveau();
-  if (n > 1) { notify('Le papier peint se pose en bas ou à l\'étage.'); return; }
   const motif = motifCourant();
   const r = executer('piece.tapisser', { case: c, motif, niveau: n });
   if (!r.ok) { notify(r.error); return; }

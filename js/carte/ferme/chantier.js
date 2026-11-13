@@ -478,12 +478,18 @@
     // mur, aussi hauts que lui (une image par bloc de sa hauteur, BLOCS_CARTE.etage.dy px plus haut à chaque
     // bloc, comme le mur rehaussé), juste devant lui ; chaque image s'efface avec le bloc du mur qu'elle
     // couvre (stepMurs : img.tableau).
-    // Les papiers peints (modèle : papiers, papiersEtage : [{ case du mur, frame }], js/engine/papiers.js) :
+    // Les papiers peints (modèle : papiers, papiersEtage, papiersNiveau2 : [{ case du mur, frame }], js/engine/papiers.js) :
     // chacun sur la face du mur du fond d'une pièce, les 30 px du bas de l'image du mur, juste devant lui
     // (BLOCS_CARTE.papiers.dz) ; à l'étage, sur la face du mur rehaussé (son image du niveau 1, e.hauts[0])
     // ou du mur posé à l'étage (etageMurs, js/carte/ferme/etage.js). Ils s'effacent avec le mur (stepMurs :
     // img.papier). Refaits quand l'image du mur change.
-    syncPapiers(bas, haut) {
+    // La profondeur d'un papier peint : juste devant son mur (BLOCS_CARTE.papiers.dz) ; un mur passé devant
+    // le voile de l'étage a ses profondeurs à l'échelle d'etageZ (1e-5 par unité) : l'écart aussi.
+    papierZ(mur) {
+      const dz = BLOCS_CARTE.papiers.dz;
+      return mur.depth + (this.etageVoileZ && mur.depth > this.etageVoileZ() ? dz * 1e-5 : dz);
+    },
+    syncPapiers(bas, haut, haut2) {
       const P = BLOCS_CARTE.papiers;
       if (!this.papiers) this.papiers = new Map();
       const M = this.papiers, seen = new Set(), dy = BLOCS_CARTE.etage.dy;
@@ -494,20 +500,25 @@
         let e = M.get(cle);
         if (e && (e.mur !== mur || e.frame !== frame || e.y !== y)) { e.img.destroy(); e = null; }
         if (!e) {
-          e = { mur, frame, y, img: this.add.image(x, y, P.key, frame).setOrigin(0.5, 1).setDepth(mur.depth + P.dz).setAlpha(mur.alpha) };
+          e = { mur, frame, y, img: this.add.image(x, y, P.key, frame).setOrigin(0.5, 1).setDepth(this.papierZ(mur)).setAlpha(mur.alpha) };
           M.set(cle, e);
         }
         mur.papier = e.img;
+        e.img.setDepth(this.papierZ(mur)).setVisible(mur.visible);
       };
       for (const p of bas || []) {
         const e = this.blocks && this.blocks.get(p.case);
         if (e && e.img.texture.key === BLOCS_CARTE.hauts.key) pose('0:' + p.case, e.img, e.x, e.y, p.frame);
       }
-      for (const p of haut || []) {
-        const e = this.blocks && this.blocks.get(p.case), em = this.etageMurs && this.etageMurs.get(p.case);
-        if (em) pose('1:' + p.case, em.img, em.x, em.img.y, p.frame);
-        else if (e && e.hauts && e.hauts[0]) pose('1:' + p.case, e.hauts[0], e.x, e.y - dy, p.frame);
-      }
+      // (à l'étage et au niveau 2 : le mur posé à ce niveau, sinon le bloc de ce rang du mur rehaussé)
+      [haut, haut2].forEach((liste, i) => {
+        const n = i + 1, murs = n === 1 ? this.etageMurs : this.etageMurs2;
+        for (const p of liste || []) {
+          const e = this.blocks && this.blocks.get(p.case), em = murs && murs.get(p.case);
+          if (em) pose(n + ':' + p.case, em.img, em.x, em.img.y, p.frame);
+          else if (e && e.hauts && e.hauts[n - 1]) pose(n + ':' + p.case, e.hauts[n - 1], e.x, e.y - n * dy, p.frame);
+        }
+      });
       for (const [c, e] of M) if (!seen.has(c)) { e.img.destroy(); M.delete(c); }
     },
 
@@ -1337,13 +1348,14 @@
       const cols = this.grid.cols;
       const vu = (k) => !(this.toits || []).some((t) => t.dedans.has(k) && t.img.alpha > 0.5);
       if (this.niveau) {
-        if (!this.etageLits || !this.etagePoint) return null;
+        const lits = this.niveau >= 2 ? this.etageLits2 : this.etageLits, pre = this.niveau >= 2 ? 'etage2:' : 'etage:';
+        if (!lits || !this.etagePoint) return null;
         const q = this.etagePoint(wx, wy), k = this.tileAtPoint(q.x, q.y);
         if (k < 0) return null;
         // (un lit fait deux cases de haut : sa case, celle du pied ; la tête, la case au-dessus)
-        const e = this.etageLits.get(k), sous = this.etageLits.get(k + cols);
-        if (e) return 'etage:' + k;
-        if (sous && !sous.paillasse) return 'etage:' + (k + cols);
+        const e = lits.get(k), sous = lits.get(k + cols);
+        if (e) return pre + k;
+        if (sous && !sous.paillasse) return pre + (k + cols);
         return null;
       }
       const k = this.tileAtPoint(wx, wy);
@@ -1397,7 +1409,12 @@
 
     bedSpotOf(c) {
       // un couchage de l'étage (« etage:<tuile> ») : js/carte/ferme/etage.js
-      if (typeof c === 'string') return c.startsWith('etage:') && this.etageBedSpot ? this.etageBedSpot(Number(c.slice(6))) : null;
+      if (typeof c === 'string') {
+        if (!this.etageBedSpot) return null;
+        if (c.startsWith('etage:')) return this.etageBedSpot(Number(c.slice(6)));
+        if (c.startsWith('etage2:')) return this.etageBedSpot(Number(c.slice(7)), 2);
+        return null;
+      }
       {
         const e = this.blocks && this.blocks.get(c);
         if (e && e.sorte === 'paillasse') return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, depth: e.img.depth, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y } };
