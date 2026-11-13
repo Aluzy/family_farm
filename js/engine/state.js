@@ -12,7 +12,9 @@ import { newTechPoints } from './techtree.js';
 import { remboursementCommerce } from './ile.js';
 import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
-import { villageActif } from './village.js';
+import { nouveauDehors, villageActif } from './village.js';
+import { decoderSegments, encoderSegments } from './dehors.js';
+import { VEHICULES } from './portage.js';
 import { commencerPaliers } from './paliers.js';
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
@@ -163,7 +165,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
   s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s), caseDepart(farmTerrain(s))), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
   // le chantier « l'île à bâtir » allumé : la partie suit les paliers de l'île (paliers.js, fiche I7a)
-  if (villageActif(s)) commencerPaliers(s);
+  if (villageActif(s)) { commencerPaliers(s); s.dehors = nouveauDehors(); }
   return s;
 }
 
@@ -888,7 +890,36 @@ export const MIGRATIONS = {
     if ('villageois' in state) out.villageois = reparerVillageois(state.villageois);
     return out;
   },
+  // v87 → v88 (le chantier « l'île à bâtir », fiche I2) : les chemins possédés hors de la ferme (state.dehors : le
+  // tronçon du port converti, des segments ; js/engine/dehors.js) et le portage (state.portage : le véhicule, ce
+  // qui est chargé ; js/engine/portage.js). Les deux ne naissent qu'avec le chantier : une partie d'avant n'en a
+  // pas et garde son tronçon généré tel quel (la fiche I7f le convertira) ; ce qui est abîmé est réparé.
+  87: (state) => {
+    const out = { ...state, version: 88 };
+    if ('dehors' in state) out.dehors = reparerDehors(state.dehors);
+    if ('portage' in state) out.portage = reparerPortage(state.portage);
+    return out;
+  },
 };
+
+// Le dehors d'une sauvegarde (la migration v87 → v88) : { troncon, chemins (des segments lisibles) }.
+function reparerDehors(d) {
+  const o = d && typeof d === 'object' && !Array.isArray(d) ? d : {};
+  const troncon = ['a_poser', 'pose', 'genere'].includes(o.troncon) ? o.troncon : 'genere';
+  return { troncon, chemins: encoderSegments(decoderSegments(o.chemins)) };
+}
+
+// Le portage d'une sauvegarde : { vehicule, charge ({ objet: lots lisibles }) }.
+function reparerPortage(p) {
+  const o = p && typeof p === 'object' && !Array.isArray(p) ? p : {};
+  const charge = {};
+  for (const [k, lots] of Object.entries(o.charge && typeof o.charge === 'object' && !Array.isArray(o.charge) ? o.charge : {})) {
+    if (!DATA.OBJETS[k] || !Array.isArray(lots)) continue;
+    const l = lots.filter((x) => x && Number.isInteger(x.qty) && x.qty > 0).map((x) => ({ qty: x.qty, nightsLeft: Number.isInteger(x.nightsLeft) ? x.nightsLeft : null, origin: typeof x.origin === 'string' ? x.origin : 'produit' }));
+    if (l.length) charge[k] = l;
+  }
+  return { vehicule: VEHICULES.includes(o.vehicule) ? o.vehicule : 'mains', charge };
+}
 
 // Les villageois d'une sauvegarde (la migration v86 → v87) : une liste de villageois lisibles (un id et un prénom) ;
 // chacun complété de ce qui lui manque.

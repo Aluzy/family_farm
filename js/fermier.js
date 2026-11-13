@@ -247,8 +247,11 @@
     // le cheval (js/carte/cheval.js) : dehors, quand il marche ou attend, il y est assis et va
     // plus vite (ctx.cheval : le modèle dit qu'il est en selle) ; pendant un geste, dans un
     // intérieur, il en descend
-    const selles = { cheval: K.cheval ? K.cheval(scene) : null };
-    const monture = () => (ctx.cheval ? 'cheval' : null);
+    // (l'île à bâtir, fiche I2 : chargé pour le port avec la charrette, il la mène attelée au cheval, assis sur son
+    // banc ; avec la brouette, à pied, il la pousse devant lui : js/carte/portage.js, modèle.portage)
+    const selles = { cheval: K.cheval ? K.cheval(scene) : null, charrette: K.charrette ? K.charrette(scene) : null };
+    const brouette = K.brouette ? K.brouette(scene) : null;
+    const monture = () => (ctx.cheval ? (ctx.portage && ctx.portage.vehicule === 'charrette' && selles.charrette ? 'charrette' : 'cheval') : null);
     const cacheSelles = () => { for (const k in selles) if (selles[k]) selles[k].cache(); };
     const ROULE = /^(marche|panier|idle)_(bas|haut|cote)_\d$/;
     let roule = 0, rx = 0, ry = 0;
@@ -303,6 +306,12 @@
         cacheSelles();
         frame(name);
         s.setPosition(Math.round(x), Math.round(y - lift())).setFlipX(flip).setDepth(dz(y)).setAlpha(alpha);
+        if (brouette) {
+          if (ctx.portage && ctx.portage.vehicule === 'brouette' && ROULE.test(name) && !lift()) {
+            roule += Math.hypot(x - rx, y - ry);
+            brouette.place(x, y, face, flip, roule, alpha, dz(y));
+          } else brouette.cache();
+        }
         // le coup fort qui se charge : il tremble (d'autant plus que la charge monte)
         if (tremble > 0 && !reduced()) s.x += Math.round((Math.random() * 2 - 1) * (0.6 + tremble));
       }
@@ -584,6 +593,7 @@
       ctx.chevalVitesse = raw.chevalVitesse || 1;
       ctx.galop = !!raw.galop;
       ctx.pied = raw.pied || 1;
+      ctx.portage = raw.portage || null;
       ctx.coucher = !!raw.coucher;
       ctx.dort = !!raw.dort;
       pilesNow = new Map((raw.ramasser || []).map((p) => [p.id, p]));

@@ -41,7 +41,9 @@ import { BIOMES } from '../engine/monde-gen.js';
 import { boussoleMontree, butBoussole, choisirBut, etatBoussole, lieuxDeLaCarte, listeDuBut, voirAutour, vuDe } from '../engine/monde-vu.js';
 import { LIEUX_ICONES, carteMondeVu } from './carte-monde.js';
 import { tuilesChemins } from '../engine/ferme-generee.js';
-import { solDuMonde } from './monde-sol.js';
+import { poserCheminsMonde, solDuMonde } from './monde-sol.js';
+import { casesPonts, cheminsPourLeSol, poserSolDehors, poserTroncon, vitesseSurCase } from '../engine/dehors.js';
+import { chargeDe, vehiculePortage, volumeCharge } from '../engine/portage.js';
 import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
 import { encyclopedieBiome, encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
@@ -51,6 +53,7 @@ import { tousLesToitsUses } from '../engine/usure.js';
 import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
+import { villageActif } from '../engine/village.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
 import {
   activeTab, axeMode, buildMode, coucher, ecranFerme, enLigne, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
@@ -82,7 +85,7 @@ import { countWithSilo } from '../engine/animals.js';
 import { countItem } from '../engine/inventory.js';
 import { caseDepart, ramassables } from '../engine/atelier.js';
 import { papiersVisibles } from '../engine/papiers.js';
-import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, enLot, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses, couleursVariante, varianteBloc } from '../engine/blocs.js';
+import { blocAt, blocsPoses, blocsDessusPoses, conseilsPieces, couchages, enLot, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses, couleursVariante, varianteBloc } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable, vueMeuble } from './chantier.js';
 import { dessusEtage, escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
 import { closeModal } from './modal.js';
@@ -344,7 +347,40 @@ function allerA(c) {
 }
 
 // Modèle de vue : tout ce que la carte a le droit de savoir. Aucune référence à `state`.
+// Le chantier « l'île à bâtir », fiche I2 : les chemins possédés hors de la ferme, que le sol du monde peint
+// (js/ui/monde-sol.js) : leur clé (leurs segments), leur état, et le tronçon du port converti par le Web Worker,
+// posé dans la partie (js/engine/dehors.js, poserTroncon).
+poserCheminsMonde({
+  cle: () => (state && state.dehors && villageActif(state) ? state.dehors.chemins : null),
+  etat: () => cheminsPourLeSol(state),
+  troncon: (cases) => { if (poserTroncon(state, cases)) persistState(); },
+});
+
+// Les ponts de planches posés (fiche I2) : leurs cases s'ouvrent à la marche (avec ce qui est pris dans le monde) ;
+// revus à chaque rendu de la carte (stageModel).
+let pontsVus = new Set(), pontsCle = '', ouvertesVues = { base: undefined, cle: '', set: null };
+function majPonts() {
+  const l = casesPonts(state), cle = l.join(',');
+  if (cle !== pontsCle) { pontsCle = cle; pontsVus = new Set(l); }
+}
+function ouvertesAvecPonts() {
+  const base = casesOuvertesMonde(state);
+  if (!pontsVus.size) return base;
+  if (ouvertesVues.base !== base || ouvertesVues.cle !== pontsCle) {
+    const s = new Set(base || []);
+    for (const t of pontsVus) s.add(t);
+    ouvertesVues = { base, cle: pontsCle, set: s };
+  }
+  return ouvertesVues.set;
+}
+
 export function stageModel() {
+  // (fiche I2 : les chemins possédés, au sol du monde s'ils ont changé ; les ponts)
+  if (villageActif(state)) {
+    majPonts();
+    const solM = solDuMonde(farmTerrain(state));
+    if (solM && solM.majChemins) solM.majChemins();
+  }
   const vue = (p) => {
     if (!p.culture) return { id: p.id, culture: null, icone: '', phase: -1, mature: false, arrosee: !!p.arrose };
     const max = maxStage(p);
@@ -621,7 +657,10 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), galop: !!friandiseGalop(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? semables() : null, engraissables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? casesEngraissables(state) : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    // (fiche I2, le portage : la brouette devant le personnage à pied, la charrette attelée au cheval en selle, quand
+    // quelque chose est chargé ; js/carte/portage.js)
+    portage: villageActif(state) && volumeCharge(state) > 0 ? { vehicule: vehiculePortage(state), charge: Object.keys(chargeDe(state)).length } : null,
+    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state) * cheminIci, galop: !!friandiseGalop(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? semables() : null, engraissables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? casesEngraissables(state) : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -640,7 +679,7 @@ function meubleDe(sorte, tile, etage = false) {
     const couleurs = teinte ? couleursVariante(sorte, teinte) : null;
     // (une enseigne de ferme : le nom de la famille, dans la couleur que sa peinture donne au texte)
     const enseigne = b.enseigne ? { matiere: b.enseigne, nom: familyName(state), texte: texteEnseigne(b, teinte) } : null;
-    return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: false, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
+    return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
   }
   const sens = b && b.tourne && Number.isInteger(tile) ? (etage ? sensEtage(state, tile) : sensBloc(state, tile)) : 0;
   if (!b || !b.meuble) return sens ? { sens } : {};
@@ -658,9 +697,19 @@ function texteEnseigne(b, teinte) {
   return (v && v.texte) || '#2a170c';
 }
 
+// Le pont de planches (fiche I2) : son image selon son sens (0 et 2 : on le traverse du nord au sud ; 1 et 3 : d'ouest
+// en est) et ses voisins du même sens (assets/meuble_pont_planches_<ns|eo>_<m>.png, scripts/carte/portage.py).
+function dessinPont(tile) {
+  const W = farmTerrain(state).LARGEUR, eo = sensBloc(state, tile) % 2 === 1;
+  const est = (t) => blocAt(state, t) === 'pont_planches' && (sensBloc(state, t) % 2 === 1) === eo;
+  const [a, b] = eo ? [tile - 1, tile + 1] : [tile - W, tile + W];
+  return `pont_planches_${eo ? 'eo' : 'ns'}_${(est(a) ? 1 : 0) | (est(b) ? 2 : 0)}`;
+}
+
 // L'image d'un bloc dessiné comme un meuble : le distributeur selon son blé (assets/
 // meuble_distributeur_<0 à 4>.png : vide à plein), la mangeoire pleine tant qu'il en a.
 function dessinBloc(b, tile) {
+  if (b.pont) return dessinPont(tile);
   if (b.bac) return (Number.isInteger(tile) && dessinBac(state, tile)) || `bac_${b.bac}_vide`;
   if (b.distributeur === 'machine') {
     const f = grainDans(state, tile) / DATA.DISTRIBUTEUR.CAPACITE;
@@ -888,6 +937,8 @@ function stageIci(tile) {
 // fois par sortie) quand l'énergie baisse et que le sac est vide. Ses bottes : sa vitesse à pied dans
 // le biome de sa case (modèle.pied, js/fermier.js).
 let piedIci = 1, dehorsAvant = null, faimDite = false;
+// (fiche I2 : sur un chemin, il va VILLAGE.CHEMIN.VITESSE % plus vite, à pied comme à cheval : js/engine/dehors.js)
+let cheminIci = 1;
 function expedition(tile) {
   const dehors = horsDeLaFerme(state);
   if (dehors && dehorsAvant === false) {
@@ -900,8 +951,8 @@ function expedition(tile) {
     notify('🎒 Ton énergie baisse et ton sac à provisions est vide : rentre à la ferme pour manger.', { kind: 'alerte', cible: { fenetre: 'famille' } });
   }
   dehorsAvant = dehors;
-  const v = vitessePied(state, biomeDeCase(tile));
-  if (v !== piedIci) { piedIci = v; setLastRenderAt(0); refresh(); }
+  const ch = vitesseSurCase(state, tile), v = vitessePied(state, biomeDeCase(tile)) * ch;
+  if (v !== piedIci || ch !== cheminIci) { piedIci = v; cheminIci = ch; setLastRenderAt(0); refresh(); }
 }
 
 // Le biome de la case (son nom), d'après l'aperçu des biomes du Web Worker (un par bloc de 8 × 8 cases :
@@ -1142,7 +1193,9 @@ function stageParcelle(id) {
 // à la marche (casesOuvertesMonde, d'après la partie en cours).
 function mondeDeLaCarte() {
   const sol = solDuMonde(farmTerrain(state));
-  if (sol) sol.ouvertes = () => casesOuvertesMonde(state);
+  // (fiche I2 : les ponts de planches posés s'ouvrent aussi ; le moteur lit ce sol pour bâtir dehors, dehors.js)
+  if (sol) sol.ouvertes = () => (villageActif(state) ? ouvertesAvecPonts() : casesOuvertesMonde(state));
+  poserSolDehors(sol);
   return sol;
 }
 

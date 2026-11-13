@@ -136,6 +136,8 @@
         if (K.MALLE) A.feuille(this, K.MALLE.key, K.MALLE.file, { frameWidth: K.MALLE.w, frameHeight: K.MALLE.h }, v);
         // le cheval : sellé, seul (à l'Écurie), son poteau (js/carte/cheval.js)
         if (K.chargeCheval) K.chargeCheval(this, v);
+        // la brouette et la charrette attelée (l'île à bâtir, fiche I2 : js/carte/portage.js)
+        if (K.chargePortage) K.chargePortage(this, v);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
         L.json('perso_cases', v('personnages/cases.json'));

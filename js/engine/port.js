@@ -24,7 +24,7 @@
    - portOuvert(state, ou) : le personnage, sur la case `ou`, est à PORT.PORTEE cases au plus d'une case du
      comptoir, de PORT.HEURES[0] à PORT.HEURES[1] h, et le commerce est ouvert à son niveau (devices.js,
      marcheOuvert : le niveau de l'élément « marche », comme la calèche avant).
-   - vendreAuPort, acheterAuPort : tout ce qui se vendait à la calèche (sellItem) ; à l'achat, les semences
+   - vendreAuPort, acheterAuPort : tout ce qui se vendait à la calèche (fiche I2 : ce qu'on y a porté, portage.js) ; à l'achat, les semences
      (isBuyable) que le niveau du joueur a débloquées (enVenteAuPort). Les produits des hameaux ne s'y vendent
      pas (ils viendront des villageois). Chaque vente compte pour les paliers (ventesPort) ; l'objectif du jour
      « vendre » se note par l'XP de la vente (levels.js, gainActionXp).
@@ -37,12 +37,13 @@ import { EPS } from './base.js';
 import { villageActif } from './village.js';
 import { fail, marcheFerme, marcheOuvert } from './devices.js';
 import { clockHours } from './clock.js';
-import { buyItem, buyPrice, buyQuote, isBuyable, sellableCount, sellItem } from './market.js';
-import { bumpCounter, isUnlocked } from './campaign.js';
+import { buyItem, buyPrice, buyQuote, isBuyable, sellableCount } from './market.js';
+import { isUnlocked } from './campaign.js';
 import { seedItem } from './crops.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { planDuMonde } from './monde.js';
 import { dispositionPort } from './monde-gen.js';
+import { chargeDe, vendreCharge, vendreToutLaCharge } from './portage.js';
 
 export const PORT = DATA.PORT;
 export const NIVEAUX_PORT = PORT.NIVEAUX.length;
@@ -158,8 +159,15 @@ export function etalPort(state) {
   return Object.keys(DATA.OBJETS).filter((item) => enVenteAuPort(state, item)).map((item) => ({ item, prix: buyPrice(state, item) }));
 }
 
-// Ce que le joueur peut y vendre : [item] (ce qui se vend et qu'il a, une unité entière au moins).
+// Ce que le joueur peut y vendre : [item] (ce qu'il y a porté : son chargement, fiche I2, portage.js).
 export function vendablesPort(state) {
+  const c = chargeDe(state);
+  return Object.keys(DATA.OBJETS).filter((k) => !DATA.OBJETS[k].invendable && (c[k] || 0) >= 1);
+}
+
+// Ce que le joueur pourrait charger pour le port (sur la ferme) : [item] (ce qui se vend et qu'il a, une unité
+// entière au moins).
+export function chargeablesPort(state) {
   return Object.keys(DATA.OBJETS).filter((k) => !DATA.OBJETS[k].invendable && Math.floor(sellableCount(state, k) + EPS) >= 1);
 }
 
@@ -168,14 +176,21 @@ export function devisPort(state, item, qty = 1) {
   return enVenteAuPort(state, item) ? buyQuote(state, item, qty) : { quantite: 0, cout: 0 };
 }
 
-// Le joueur (sur la case `ou`) vend `qty` unités de `item` au port : au prix de vente (market.js, sellItem ; le
-// cours qui baisse). → { ok, sold, gain } ou le refus.
+// Le joueur (sur la case `ou`) vend `qty` unités de `item` au port : au prix de vente (market.js, encaisserVente ;
+// le cours qui baisse), ce qu'il y a porté (fiche I2 : son chargement, portage.js ; avant, tout ce qu'il avait,
+// sellItem). → { ok, sold, gain } ou le refus.
 export function vendreAuPort(state, item, qty, ou = null, o = {}) {
   const ici = portOuvert(state, ou, o);
   if (!ici.ok) return fail(ici.raison);
-  const r = sellItem(state, item, qty, 'Port');
-  if (r.ok) bumpCounter(state, 'ventesPort', r.gain);   // (les paliers de l'île, paliers.js : ventesPort)
-  return r;
+  return vendreCharge(state, item, qty);   // (les paliers de l'île : ventesPort, compté par vendreCharge)
+}
+
+// Le joueur (sur la case `ou`) décharge sous la halle : tout ce qu'il a porté se vend d'un coup (fiche I2).
+// → { ok, gain, vendus: { objet: n } } ou le refus.
+export function dechargerAuPort(state, ou = null, o = {}) {
+  const ici = portOuvert(state, ou, o);
+  if (!ici.ok) return fail(ici.raison);
+  return vendreToutLaCharge(state);
 }
 
 // Le joueur (sur la case `ou`) achète `qty` unités de `item` au port : une semence débloquée, à son cours qui

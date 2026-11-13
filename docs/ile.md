@@ -78,7 +78,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 |---|---|---|
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
 | 1. Le port | I1a (fait), I1b (fait), I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
-| 2. Le chemin | I2 | Le chemin de la ferme au port, modifiable ; porter la marchandise |
+| 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
 | 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c, I3d | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
@@ -192,7 +192,76 @@ Ce qui est posé (I1b) :
   l'aller et au retour. `node scripts/simulate.mjs --village` allume le réglage (le chapitre 7 et le dépannage n'y
   sont que des constats : les paliers demandent des villageois).
 - **Les tests** : `tests/engine/village-commerce.test.mjs` (dont 25 nuits du joueur automatique, le réglage allumé).
-- Reste : le chemin du port est long (I2 : le portage) ; le bac, les commandes et l'import (I1c) ; les prix (I4).
+- Reste : le bac, les commandes et l'import (I1c) ; les prix (I4). (Le chemin du port et le portage : I2, plus bas.)
+
+## Le chemin du port, modifiable, et le portage (I2, fait)
+
+Ce qui est posé (I2 ; les réglages : `VILLAGE.DEHORS`, `VILLAGE.CHEMIN`, `VILLAGE.PORTAGE`, data/village.json) :
+
+- **Le chemin possédé** (`js/engine/dehors.js`) : dans une partie neuve du chantier, `state.dehors = { troncon, chemins }`.
+  Le tronçon généré de la sortie de la ferme au port (`lieux.port.chemin`) devient des blocs de chemin du joueur :
+  chaque case du tracé et un pinceau de `CHEMIN.PINCEAU` × `PINCEAU` cases (2 : la case, sa droite, le dessous ; à
+  `PRES_FERME` cases de la ferme, trois de large, le raccord avec sa sortie ne bouge pas) ; une case de rivière reste un
+  gué. La conversion se fait dans le Web Worker du sol (`monde-sol.js`, `tronconDuPort`), qui renvoie les cases avec
+  « pret » ; la page les pose (`poserTroncon`) ; dans Node, `assurerTroncon` fait le même calcul. La forme gardée est
+  compacte : des segments `[écart, longueur]` à plat (`encoderSegments`, une rangée de chemin = un segment). Mesures :
+  le tronçon de la graine 1 fait 599 cases, 100 segments, 618 octets ; celui de la partie d'essai (graine 200364) 865
+  cases, 210 segments, 1 234 octets. 600 cases de plus : en allée de deux de large, quelques octets ; posées une à une,
+  chacune isolée (le pire : 687 segments), `state.dehors` fait 2 966 octets et la partie 7 809 (contre 5 461). Le seul
+  tronçon de la graine 1 gardé une case par entrée, comme `state.sols`, ferait 10 783 octets. `troncon` : `a_poser` (partie neuve), `pose` (converti : le sol ne peint plus le tracé),
+  `genere` (une partie d'avant : son tronçon généré reste peint tel quel jusqu'à I7f ; ce qu'on pose dehors s'y ajoute).
+- **Le sol** : le contexte du sol reçoit les chemins possédés (`poserCheminsSol` à l'« init » du Worker,
+  `majCheminsSol` puis le message « chemins » à chaque changement : les régions déjà faites qui les touchent sont
+  refaites et repeintes, la carte du monde est redemandée). Ce qui se peint et se marche (`ctx.chemins`,
+  `ctx.cheminCoins`) suit les chemins possédés ; la nature (arbres, rochers, bêtes, hameaux) lit toujours les chemins
+  du plan (`ctx.cheminsNature`) : retirer un chemin ne fait rien pousser. Éteint ou sans chemin possédé, rien ne change.
+- **Bâtir hors de la ferme** (`poseDehorsStatus`, demandé par `blocs.js poseStatus` hors de la ferme, le chantier
+  allumé) : les blocs de `VILLAGE.DEHORS` (chemin, pas japonais, lanterne, réverbère, pont de planches, barrières,
+  bancs) ; refusés : la mer et les lacs (« l'eau profonde »), la falaise et les sommets, la rivière (sauf le pont), le
+  pied d'un arbre, d'un buisson ou d'un rocher (pris, sa case se libère), l'emprise du port (son cadre et
+  `HAMEAUX.RESERVE` cases autour) et des hameaux, une région pas encore dessinée. Un chemin possédé se lit comme un sol
+  « chemin » (`solAt`) : le mode Construire le pose, le reprend, le déplace comme sur la ferme ; les autres blocs vont
+  dans `state.blocs` et `state.sols` (cases du monde). Le **pont de planches** (`pont_planches`, l'Atelier : 3 planches
+  et 2 bois pour deux) se pose sur une rivière, tourné en travers (son sens) ; ses cases s'ouvrent à la marche (la
+  page les ajoute aux cases ouvertes, `casesPonts`).
+- **L'effet du chemin** : sur un chemin (un chemin possédé, un chemin posé sur la ferme, le chemin de la ferme :
+  `surChemin`), on va `CHEMIN.VITESSE` % plus vite (50), à pied comme à cheval (`js/ui/stage.js` : la vitesse de la case
+  du personnage, `modèle.pied`, `modèle.chevalVitesse`). La carte du monde dessine les chemins possédés.
+- **Le portage** (`js/engine/portage.js`) : `state.portage = { vehicule, charge }`. Chaque objet a un volume (un ;
+  `PORTAGE.VOLUMES` : bois et planches 2, pierre, minerais et lingots 3, bloc de silo 4). À la main `MAINS` (12) volumes,
+  la brouette `BROUETTE` (40), la charrette attelée au cheval `CHARRETTE` (160 ; il faut un cheval). On charge sur la
+  ferme (de l'inventaire puis du réfrigérateur, avec la fraîcheur des lots ; ce qui ne tient pas reste à la ferme),
+  on reprend sur la ferme, on décharge sous la halle : tout ce qui est chargé se vend d'un coup (`dechargerAuPort`) ;
+  `vendreAuPort` ne vend plus que ce qui est chargé ; les semences achetées vont droit à la ferme. Les commandes
+  `port.decharger`, `portage.charger`, `portage.reprendre`, `portage.vehicule`. La fenêtre du port gagne l'onglet
+  « Porter » (le véhicule, la place, « Charger les récoltes », ce qu'on charge) ; « Vendre » montre le chargement et,
+  sous la halle, « Tout décharger ». La brouette et la charrette se fabriquent à l'Atelier (recettes `village`).
+- **Les dessins** (`scripts/carte/portage.py`, vus de haut à 45°) : le pont (8 images : du nord au sud et d'ouest en
+  est, selon ses voisins ; 597 couleurs pour les 8, 174 à 177 chacune), la brouette (`assets/brouette.png`, 3 vues × 4
+  temps de la roue, 425 couleurs, 207 pour une case), la charrette attelée (`assets/charrette.png`, d'après la calèche :
+  3 vues × 5 temps × 2 couches, 1 205 couleurs, 579 pour une case). La scène (`js/carte/portage.js`) : la brouette
+  devant le personnage à pied, la charrette à la place du cheval sellé (il s'assied sur son banc), quand quelque chose
+  est chargé (`modèle.portage`).
+- **Le joueur automatique** : avant sa sortie, il fabrique une brouette s'il le peut, note ce qu'il vendrait et en charge
+  le plus cher au volume d'abord ; sa marche va 50 % plus vite (le chemin), `CHEVAL.VITESSE` fois avec un cheval ; au
+  port, il décharge. Avec `--village`, ses gains de fin de partie tombent d'environ 430 à 185 pièces par jour (la
+  brouette porte 40 volumes) : l'argent ne s'empile plus (la vérification passe).
+- **La sauvegarde** : format 88 ; la migration v87 → v88 répare `dehors` et `portage` s'ils sont là et n'ajoute rien à
+  une partie d'avant.
+- **Les durées d'un aller** (la ferme, de son milieu, au port ; 58 px/s à pied, 30 s par heure de jeu ; graines 1 à 8,
+  aller de 350 à 517 cases) : à pied hors chemin 3,2 à 4,8 h (moyenne 4,1) ; à cheval 2,3 à 3,4 h (2,95) ; à pied
+  sur le chemin 2,2 à 3,2 h (2,75) ; à cheval sur le chemin 1,5 à 2,3 h (1,97) ; au galop (la pomme dorée) sur le
+  chemin 0,9 à 1,3 h. **La vitesse seule ne suffit pas** à faire l'aller en une heure de jeu à cheval : le port est
+  placé « le plus loin de la ferme » (`PORT.PLAN`, 200 à 265 cases à vol d'oiseau ; le tracé fait 1,4 à 1,6 fois
+  cette distance, et la demi-ferme ajoute 72 cases, 0,3 h à cheval sur le chemin). Proposition (non faite ici) : choisir
+  la côte la plus proche qui convient à partir de `PORT.PLAN.FERME` (70) plutôt que la plus loin, à 80 à 100 cases à vol
+  d'oiseau : l'aller à cheval sur le chemin tomberait vers 0,9 à 1 h (à pied sur le chemin, 1,3 à 1,4 h) ; ou un
+  raccourci (un bac côtier, un second quai près de la ferme) dans une fiche à part. Dans Chromium (sans écran, où la
+  scène tourne au ralenti : 32 px/s à pied au lieu de 58), le rapport mesuré chemin/herbe est de 1,3 à pied et 1,5 à
+  cheval ; l'aller à cheval avec la charrette, sur 426 cases, y a pris 143 s.
+- **Les tests** : `tests/engine/village-chemin.test.mjs` ; `village-commerce` charge avant de vendre.
+- Reste : retirer les boucles vers les hameaux (I7e) ; convertir le tronçon des parties d'avant (I7f) ; le chargement
+  ne vieillit pas la nuit (il garde sa fraîcheur) ; un chemin repris du tronçon rend un bloc (1 pièce au port).
 
 ## Les villageois : l'arrivée (I3a, fait)
 

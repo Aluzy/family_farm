@@ -62,7 +62,7 @@ const ASSETS_HORS_SITE = [
 const SOURCEMAP = process.argv.includes('--sourcemap');
 // scripts classiques, hors du regroupement : le kit commun des cartes (js/carte/), la ferme
 // (js/carte/ferme/ et js/farm-stage.js)
-const CARTE_KIT = ['kit', 'atlas.generated', 'atlas', 'visages', 'planches', 'chemins', 'nature', 'gestes', 'lumiere', 'eau', 'ressort', 'comportement', 'ordonnanceur', 'cheval', 'toit', 'jeu'].map((n) => `js/carte/${n}.js`);
+const CARTE_KIT = ['kit', 'atlas.generated', 'atlas', 'visages', 'planches', 'chemins', 'nature', 'gestes', 'lumiere', 'eau', 'ressort', 'comportement', 'ordonnanceur', 'cheval', 'portage', 'toit', 'jeu'].map((n) => `js/carte/${n}.js`);
 const CARTE_FERME = ['config', 'sol', 'decor', 'soleil', 'camera', 'etiquettes', 'hache', 'pioche', 'coupfort', 'file', 'moulin', 'cueillette', 'semis', 'eclats', 'amis', 'chantier', 'herbes', 'etage', 'toits', 'fenetres', 'eau', 'eau-monde', 'vegetation', 'falaises', 'traces', 'marcheurs', 'brins', 'gravier', 'miel', 'tonnelets', 'engrais', 'lumineux', 'portes', 'flaques', 'recolte-monde', 'peche', 'didacticiel', 'plantation', 'passages', 'lieux-monde', 'hameaux', 'habitants', 'caleche', 'malle', 'visite', 'villageois', 'villageois-social', 'rencontre', 'sieges', 'bacs', 'massifs', 'bassins', 'invites', 'faune-monde', 'brouillard', 'boussole', 'machines', 'abeilles', 'rougegorges', 'vapeur', 'presence', 'meteo', 'botteleuse', 'chaines', 'puits', 'compagnon', 'silo', 'foret', 'modele'].map((n) => `js/carte/ferme/${n}.js`);
 const SCRIPTS = ['js/telemetry.js', ...CARTE_KIT, 'js/son.js', 'js/ambient-life.js', 'js/fermier.js', 'js/famille-ferme.js', ...CARTE_FERME, 'js/farm-stage.js'];
 const ENTRY = 'js/main.js';

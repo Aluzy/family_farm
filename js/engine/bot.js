@@ -9,7 +9,7 @@ import { marcheOuvert } from './devices.js';
 import { tick } from './energy.js';
 import { addItem, countItem, expiringSoon, inventoryCounts, lotRank, lotsOf } from './inventory.js';
 import { fridgeLevel, fridgeRate, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, stockCount, upgradeFridge } from './fridge.js';
-import { buyItem, buyPrice, isBuyable } from './market.js';
+import { buyItem, buyPrice, isBuyable, sellPrice } from './market.js';
 import { eatSnack } from './family.js';
 import { boitePosee, depenserMembre, deposerBoite, jaugeMembre, mangeurs, repasStep, valeurAliment } from './repas.js';
 import { actionCost, energyLevel, energyMax } from './stamina.js';
@@ -59,7 +59,10 @@ import { ESPECES_FAUNE } from './monde-faune.js';
 import { buildFridge, FRIGO_OBJET } from './fridge.js';
 import { takeItem } from './inventory.js';
 import { villageActif } from './village.js';
-import { acheterAuPort, PORT, portDuMonde, vendreAuPort } from './port.js';
+import { acheterAuPort, dechargerAuPort, PORT, portDuMonde, vendreAuPort } from './port.js';
+import { chargerPortage, choisirVehicule, refusVehicule, volumeDe } from './portage.js';
+import { bonusChemin } from './dehors.js';
+import { chevalPossede } from './cheval.js';
 import { takeWheat } from './animals.js';
 import { posteCompta, suivreComptes } from './compta.js';
 
@@ -763,9 +766,14 @@ export function botPassageCaleche(state, fn) {
   aLaCaleche.add(state);
   try { return fn(); } finally { if (!deja) aLaCaleche.delete(state); }
 }
-// (le chantier « l'île à bâtir » allumé, fiche I1b : au port, où le mène sa sortie, botSortiePort)
-const sellItem = (state, item, qty) => (!botCalecheLa(state) ? { ok: false }
-  : villageActif(state) ? vendreAuPort(state, item, qty, null, { sansPresence: true }) : vendreCaleche(state, item, qty, null, { sansPresence: true }));
+// (le chantier « l'île à bâtir » allumé, fiche I1b : au port, où le mène sa sortie, botSortiePort ; fiche I2 : avant
+// de partir, sur la ferme, ce qu'il vendrait est noté pour être chargé, botChargement)
+const aCharger = new WeakMap();   // la partie → ce que le joueur simulé vendrait : [{ item, qty }] (le chargement)
+const sellItem = (state, item, qty) => {
+  if (aCharger.has(state)) { if (qty >= 1) aCharger.get(state).push({ item, qty: Math.floor(qty) }); return { ok: true, sold: 0, gain: 0 }; }
+  if (!botCalecheLa(state)) return { ok: false };
+  return villageActif(state) ? vendreAuPort(state, item, qty, null, { sansPresence: true }) : vendreCaleche(state, item, qty, null, { sansPresence: true });
+};
 function botAcheter(state, item, qty) {
   if (!botCalecheLa(state)) return { ok: false };
   return villageActif(state) ? acheterAuPort(state, item, qty, null, { sansPresence: true }) : acheterCaleche(state, item, qty, null, { sansPresence: true });
@@ -804,6 +812,27 @@ function botMarche(state, secondes) {
   for (let t = 0; t + EPS < secondes; t += pas) tick(state, Math.min(pas, secondes - t));
 }
 
+/* -- I2 : le portage. Ce qu'il vend au port, il l'y porte : avant de partir, il note ce que botSell vendrait
+   (botStore et botSell en mode chargement) et en charge le plus cher au volume d'abord, autant qu'il en tient (le
+   reste demeure à la ferme) ; la brouette dès qu'il peut la fabriquer (l'Atelier), la charrette s'il en a une et
+   un cheval. La marche va VILLAGE.CHEMIN.VITESSE % plus vite (le chemin du port), et CHEVAL.VITESSE fois plus vite
+   avec un cheval. Au port, il décharge sous la halle (tout se vend), puis joue le reste de sa sortie. */
+function botVehicule(state) {
+  if (countItem(state, 'brouette') < 1) botFabriquer(state, 'brouette');
+  const v = ['charrette', 'brouette'].find((x) => !refusVehicule(state, x)) || 'mains';
+  choisirVehicule(state, v, null, { sansPresence: true });
+  return v;
+}
+function botChargement(state) {
+  const voulu = [];
+  aCharger.set(state, voulu);
+  try { botStore(state); botSell(state); } finally { aCharger.delete(state); }
+  voulu.sort((a, b) => sellPrice(b.item) / volumeDe(b.item) - sellPrice(a.item) / volumeDe(a.item) || (a.item < b.item ? -1 : 1));
+  let n = 0;
+  for (const { item, qty } of voulu) { const r = chargerPortage(state, item, qty, null, { sansPresence: true }); if (r.ok) n += r.n; }
+  return n;
+}
+
 // La sortie au port, si elle s'impose : il y va, joue `fn` (le commerce possible), rentre. → vrai s'il y est allé.
 export function botSortiePort(state, fn) {
   const SP = DATA.SIMULATION.PORT;
@@ -811,13 +840,16 @@ export function botSortiePort(state, fn) {
   if (botValeurAVendre(state) < SP.SEUIL && !botManqueGraines(state)) return false;
   const g = farmSeed(state), lieu = g === null ? null : portDuMonde(g), T = farmTerrain(state);
   if (!lieu) return false;
-  const aller = (lieu.chemin + (T.FERME ? T.FERME.LARGEUR / 2 : 0)) / SP.VITESSE;
+  const vehicule = botVehicule(state);
+  const vitesse = SP.VITESSE * bonusChemin(state) * (vehicule === 'charrette' || chevalPossede(state) ? DATA.CHEVAL.VITESSE : 1);
+  const aller = (lieu.chemin + (T.FERME ? T.FERME.LARGEUR / 2 : 0)) / vitesse;
   // (il faut arriver au comptoir ouvert)
   const arrivee = awakeHours(state) + aller / DATA.TEMPS.SECONDES_PAR_HEURE;
   if (arrivee < PORT.HEURES[0] || arrivee >= PORT.HEURES[1]) return false;
   sortiesPort.set(state, state.day);
+  const charge = botChargement(state);
   botMarche(state, aller);
-  botPassageCaleche(state, fn);
+  botPassageCaleche(state, () => { if (charge) dechargerAuPort(state, null, { sansPresence: true }); fn(); });
   botMarche(state, aller);
   return true;
 }

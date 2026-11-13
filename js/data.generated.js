@@ -1571,6 +1571,17 @@ export const RAW_DATA = {
       "rachetable": false,
       "village": true
     },
+    "pont_planches": {
+      "nom": "Pont de planches",
+      "icone": "🌉",
+      "prix": 4,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "brouette": { "nom": "Brouette", "icone": "🛒", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "charrette": { "nom": "Charrette", "icone": "🛞", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "casque_lampe": { "nom": "Casque à lampe", "icone": "⛑‍💡", "prix": 30, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "chapeau_paille": { "nom": "Chapeau de paille", "icone": "👒‍🌾", "prix": 6, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "bottes": { "nom": "Bottes de marche", "icone": "👢‍🟫", "prix": 10, "mangeable": false, "categorie": "équipement", "rachetable": false },
@@ -2079,6 +2090,14 @@ export const RAW_DATA = {
       "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 } },
       "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
       "boite_aux_lettres": { "entrees": { "planche": 2, "bois": 1 }, "sortie": { "boite_aux_lettres": 1 }, "village": true },
+      "pont_planches": { "entrees": { "planche": 3, "bois": 2 }, "sortie": { "pont_planches": 2 }, "village": true },
+      "brouette": { "entrees": { "planche": 4, "lingot_fer": 1, "bois": 2 }, "sortie": { "brouette": 1 }, "village": true },
+      "charrette": {
+        "entrees": { "planche": 10, "lingot_fer": 3, "bois": 6, "corde": 2 },
+        "sortie": { "charrette": 1 },
+        "village": true,
+        "debloque": "ecurie"
+      },
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
       "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
       "mortier": { "entrees": { "pierre": 4, "planche": 1 }, "sortie": { "mortier": 1 } },
@@ -2204,6 +2223,16 @@ export const RAW_DATA = {
         "bloque": true,
         "dessin": "boite_aux_lettres",
         "villageois": true
+      },
+      "pont_planches": {
+        "nom": "Pont de planches",
+        "objet": "pont_planches",
+        "dehors": true,
+        "pont": true,
+        "plat": true,
+        "dessin": "pont_planches",
+        "tourne": true,
+        "village": true
       },
       "refrigerateur": {
         "nom": "Réfrigérateur",
@@ -3050,6 +3079,7 @@ export const RAW_DATA = {
           "sol_flotte",
           "sol_pastel",
           "chemin",
+          "pont_planches",
           "sol_pas_ardoise",
           "sol_pas_pierre",
           "sol_pas_bois",
@@ -9124,6 +9154,46 @@ export const RAW_DATA = {
             "guide": "port"
           }
         ]
+      }
+    },
+    "DEHORS": [
+      "chemin",
+      "sol_pas_ardoise",
+      "sol_pas_pierre",
+      "sol_pas_bois",
+      "lanterne",
+      "candelabre",
+      "pont_planches",
+      "barriere",
+      "barriere_blanche",
+      "barriere_rouge",
+      "barriere_grise",
+      "barriere_chene",
+      "barriere_verte",
+      "barriere_lavande",
+      "banc_jardin",
+      "banc_rondins",
+      "banc_pierre"
+    ],
+    "CHEMIN": { "VITESSE": 50, "PINCEAU": 2, "PRES_FERME": 8 },
+    "PORTAGE": {
+      "MAINS": 12,
+      "BROUETTE": 40,
+      "CHARRETTE": 160,
+      "VOLUMES": {
+        "bois": 2,
+        "planche": 2,
+        "pierre": 3,
+        "minerai_fer": 3,
+        "minerai_cuivre": 3,
+        "minerai_or": 3,
+        "minerai_platine": 3,
+        "lingot_fer": 3,
+        "lingot_cuivre": 3,
+        "lingot_or": 3,
+        "lingot_platine": 3,
+        "bloc_silo": 4,
+        "pierre_angle": 3
       }
     }
   },

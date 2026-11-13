@@ -3597,6 +3597,10 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   line-height: 1.3;
 }
 .caleche-bandeau.ici { background: rgba(190, 226, 140, 0.55); }
+/* le portage (l'île à bâtir, fiche I2 : js/ui/port.js, l'onglet Porter) : la place prise */
+.portage-vehicules { flex-wrap: wrap; gap: 0.3rem; }
+.portage-place { height: 0.6rem; border-radius: 0.3rem; background: rgba(60, 40, 20, 0.18); overflow: hidden; margin: 0.5rem 0 0.2rem; }
+.portage-place span { display: block; height: 100%; background: #b98a4a; }
 .caleche-bandeau .caleche-ico { font-size: 1.5rem; flex: none; }
 .caleche-bandeau .caleche-texte { flex: 1 1 180px; }
 /* La malle de la calèche (js/ui/caleche.js, malleHtml) : son image (assets/malle.png, la case fermée) dans le

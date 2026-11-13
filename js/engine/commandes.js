@@ -148,7 +148,8 @@ import { harvestTree } from './orchard.js';
 import { buyTech } from './techtree.js';
 import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
-import { acheterAuPort, vendreAuPort } from './port.js';
+import { acheterAuPort, dechargerAuPort, vendreAuPort } from './port.js';
+import { chargerPortage, choisirVehicule, dechargerPortage } from './portage.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -548,6 +549,23 @@ export const COMMANDES = {
   'port.acheter': {
     args: { objet: 'objet', quantite: 'quantite', case: 'case' },
     executer: (state, { objet, quantite, case: c }) => acheterAuPort(state, objet, Math.max(1, Math.floor(quantite)), c),
+  },
+  // (fiche I2, le portage : on charge et l'on reprend sur la ferme, on décharge sous la halle : tout se vend)
+  'port.decharger': {
+    args: { case: 'case' },
+    executer: (state, { case: c }) => dechargerAuPort(state, c),
+  },
+  'portage.charger': {
+    args: { objet: 'objet', quantite: 'quantite', case: 'case' },
+    executer: (state, { objet, quantite, case: c }) => chargerPortage(state, objet, Math.max(1, Math.floor(quantite)), c),
+  },
+  'portage.reprendre': {
+    args: { objet: 'objet?', case: 'case' },
+    executer: (state, { objet = null, case: c }) => dechargerPortage(state, objet, Infinity, c),
+  },
+  'portage.vehicule': {
+    args: { vehicule: 'texte', case: 'case' },
+    executer: (state, { vehicule, case: c }) => choisirVehicule(state, vehicule, c),
   },
 };
 

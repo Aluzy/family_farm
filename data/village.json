@@ -418,6 +418,44 @@
           { "id": "commande", "icone": "📦", "libelle": "Honorer {n} commande{s} du bac", "quoi": "commande_bac", "n": [1, 0.25, 3], "si": "bac", "guide": "port" }
         ]
       }
+    },
+    "//DEHORS": [
+      "Bâtir hors de la ferme (fiche I2, js/engine/dehors.js ; le mode Construire : js/ui/chantier.js). Sur l'île, hors",
+      "de la terre de la ferme, le mode Construire accepte les blocs de cette liste, et eux seuls (pas de mur ni de",
+      "maison : ils restent sur la terre du joueur). On ne bâtit ni dans l'eau (la mer, un lac : seul le pont de planches",
+      "se pose sur une rivière), ni sur une falaise ou un sommet, ni sur le pied d'un arbre ou d'un rocher (abattu ou",
+      "cassé, sa case se libère), ni dans l'emprise du port (le port, ses abords et une marge : la halle, le quai, la",
+      "cale) ou d'un hameau (son cadre), ni sur une région de l'île que la page n'a pas encore dessinée."
+    ],
+    "DEHORS": ["chemin", "sol_pas_ardoise", "sol_pas_pierre", "sol_pas_bois", "lanterne", "candelabre", "pont_planches",
+      "barriere", "barriere_blanche", "barriere_rouge", "barriere_grise", "barriere_chene", "barriere_verte", "barriere_lavande",
+      "banc_jardin", "banc_rondins", "banc_pierre"],
+    "//CHEMIN": [
+      "Le chemin du port, possédé (fiche I2, js/engine/dehors.js). Dans une partie neuve du chantier, les cases du tronçon",
+      "généré de la sortie de la ferme au port deviennent des blocs de chemin du joueur (state.dehors.chemins : des",
+      "segments, une rangée à la fois) : il les retire (le bloc revient dans l'inventaire), les déplace, en pose ailleurs ;",
+      "le sol du monde ne peint plus ce tronçon de lui-même (js/engine/monde-sol.js : il peint les chemins possédés). Le",
+      "tronçon tracé (une case de large, de case en case) devient PINCEAU × PINCEAU cases (la case du tracé, celle de",
+      "droite, celles du dessous) ; à PRES_FERME cases de la ferme au plus, les trois cases de large de sa sortie (le",
+      "raccord ne bouge pas). Une case de rivière sous le tronçon reste un gué (on y passe) ; ailleurs, une rivière se",
+      "passe sur un pont de planches. VITESSE : sur un chemin (un chemin posé, sur la ferme ou dehors, le chemin de la",
+      "ferme), le personnage va VITESSE % plus vite, à pied comme à cheval (js/ui/stage.js : la vitesse de sa case)."
+    ],
+    "CHEMIN": { "VITESSE": 50, "PINCEAU": 2, "PRES_FERME": 8 },
+    "//PORTAGE": [
+      "Le portage (fiche I2, js/engine/portage.js ; la fenêtre du port, js/ui/port.js) : ce qu'on vend au port, on l'y",
+      "porte. Sur la ferme, on charge (de l'inventaire et du réfrigérateur, avec leur fraîcheur) ; sous la halle, on",
+      "décharge : tout ce qui est chargé se vend d'un coup, au prix du port. Chaque objet a un volume (un par défaut,",
+      "VOLUMES pour les lourds). On porte MAINS volumes à la main ; une brouette (BROUETTE volumes) ou la charrette",
+      "attelée au cheval (CHARRETTE volumes, en selle seulement) en portent davantage : on choisit sur la ferme comment",
+      "on part. Ce qui ne tient pas reste à la ferme (rien ne se perd) ; on peut tout décharger à la ferme. Les semences",
+      "achetées au port vont droit à la ferme (elles ne pèsent rien). La brouette et la charrette se fabriquent à",
+      "l'Atelier (la charrette : avec un cheval)."
+    ],
+    "PORTAGE": {
+      "MAINS": 12, "BROUETTE": 40, "CHARRETTE": 160,
+      "VOLUMES": { "bois": 2, "planche": 2, "pierre": 3, "minerai_fer": 3, "minerai_cuivre": 3, "minerai_or": 3, "minerai_platine": 3,
+        "lingot_fer": 3, "lingot_cuivre": 3, "lingot_or": 3, "lingot_platine": 3, "bloc_silo": 4, "pierre_angle": 3 }
     }
   },
   "//PORT": [

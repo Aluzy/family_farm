@@ -11,19 +11,24 @@
  *   - { type: 'region', rx, ry } : il répond { type: 'region', region } (ses tableaux transférés,
  *     pas copiés), ou { type: 'erreur', cle, message } ;
  *   - { type: 'carte' } : l'image de la carte du monde (js/engine/monde-carte.js, fiche 8 : un pixel par
- *     case), une fois les éléments tirés ; il répond { type: 'carte', carte: { l, h, px } } (px transféré).
+ *     case), une fois les éléments tirés ; il répond { type: 'carte', carte: { l, h, px } } (px transféré) ;
+ *   - le chantier « l'île à bâtir », fiche I2 : l'« init » porte les chemins possédés de la partie (`chemins` :
+ *     { troncon, cases }, ou null ; js/engine/dehors.js cheminsPourLeSol) ; un tronçon à convertir l'est ici, et
+ *     « pret » en donne les cases (`troncon`), que la page pose dans la partie ; puis { type: 'chemins', cases } :
+ *     les chemins possédés ont changé, les régions déjà faites qui les touchent sont refaites et renvoyées.
  * Une seule partie à la fois : un nouvel « init » remplace la précédente (et sa file).
  *
  * Sur le site, scripts/build-site.mjs en fait un seul fichier (js/monde-worker.js, regroupé avec
  * les modules du moteur qu'il demande, un Worker classique) ; depuis le dépôt, la page le charge
  * comme un module (type: 'module').
  */
-import { apercuDesBiomes, contexteSol, elementsSol, solDeRegion } from './engine/monde-sol.js';
+import { apercuDesBiomes, contexteSol, elementsSol, majCheminsSol, poserCheminsSol, solDeRegion } from './engine/monde-sol.js';
 import { tourneeDuPlan } from './engine/caleche-tournee.js';
 import { imageDuMonde } from './engine/monde-carte.js';
 
 let ctx = null;
 const file = [];
+let faites = new Set();    // les régions déjà envoyées (refaites quand les chemins possédés changent)
 let enCours = false;
 let carteVoulue = false;   // la page a demandé l'image de la carte du monde (avant que les éléments soient tirés)
 
@@ -48,6 +53,7 @@ function suite() {
     if (!q || q.ctx !== ctx) { suite(); return; }
     try {
       const r = solDeRegion(ctx, q.rx, q.ry);
+      faites.add(r.cle);
       self.postMessage({ type: 'region', graine: ctx.graine, region: r }, [r.couches.buffer, r.biome.buffer, r.marche.buffer, r.vegetation.images.buffer, r.vegetation.basses.buffer, r.roches.images.buffer, r.roches.basses.buffer, r.lieux.images.buffer, r.hameau.images.buffer, r.hameau.basses.buffer, r.faune.buffer]);
     } catch (e) {
       self.postMessage({ type: 'erreur', graine: ctx.graine, cle: q.rx + ',' + q.ry, message: String((e && e.message) || e) });
@@ -62,6 +68,8 @@ self.onmessage = (ev) => {
     file.length = 0;
     carteVoulue = false;
     ctx = contexteSol(m.graine, m.cadre, m.ferme, m.taille);
+    faites = new Set();
+    poserCheminsSol(ctx, m.chemins || null);
     const a = apercuDesBiomes(ctx);
     self.postMessage({ type: 'apercu', graine: ctx.graine, apercu: a }, [a.biomes.buffer]);
     const c = ctx;
@@ -71,7 +79,7 @@ self.onmessage = (ev) => {
         elementsSol(c);
         // (la tournée de la calèche : les chemins du plan, ses arrêts, son horaire : fiche 7c)
         const cd = c.cadre, tournee = tourneeDuPlan({ W: cd.LARGEUR, chemins: c.elements.chemins, hameaux: c.elements.lieux.hameaux, sortie: cd.SORTIE, ferme: cd.FERME });
-        self.postMessage({ type: 'pret', graine: c.graine, ms: c.mesures.elements, lieux: c.elements.lieux, hameaux: c.hameaux.plans, tournee });
+        self.postMessage({ type: 'pret', graine: c.graine, ms: c.mesures.elements, lieux: c.elements.lieux, hameaux: c.hameaux.plans, tournee, troncon: c.tronconPose || null });
         if (carteVoulue) envoieCarte(c);
       } catch (e) {
         self.postMessage({ type: 'erreur', graine: c.graine, cle: null, message: String((e && e.message) || e) });
@@ -80,6 +88,14 @@ self.onmessage = (ev) => {
     }, 0);
   } else if (m.type === 'carte' && ctx) {
     if (ctx.elements) envoieCarte(ctx); else carteVoulue = true;
+  } else if (m.type === 'chemins' && ctx) {
+    // (les régions déjà faites qui touchent un chemin changé : refaites en tête de file)
+    const cles = majCheminsSol(ctx, m.cases || []);
+    for (const cle of cles.filter((k) => faites.has(k)).reverse()) {
+      const [rx, ry] = cle.split(',').map(Number);
+      file.unshift({ ctx, rx, ry });
+    }
+    if (ctx.elements) suite();
   } else if (m.type === 'region' && ctx) {
     file.push({ ctx, rx: m.rx, ry: m.ry });
     if (ctx.elements) suite();

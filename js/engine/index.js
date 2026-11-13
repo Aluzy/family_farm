@@ -97,3 +97,5 @@ export * from './villageois.js';
 export * from './villageois-journee.js';
 export * from './villageois-liens.js';
 export * from './port.js';
+export * from './dehors.js';
+export * from './portage.js';
