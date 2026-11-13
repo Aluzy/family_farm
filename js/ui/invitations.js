@@ -16,6 +16,7 @@ import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { tel } from './consent.js';
+import { villageActif } from '../engine/village.js';
 
 /* ---------- les invitations à un repas, côté page (js/engine/invitations.js) ----------
 
@@ -25,7 +26,12 @@ import { tel } from './consent.js';
      l'on a déjà parlé) ; Achille, le cocher, porte le message ;
    - au matin, les réponses (watchInvitations) ; le jour dit, l'annonce des invités en route ;
    - la carte (js/carte/ferme/invites.js) : le modèle (invitesPourLaCarte), le pont (invitesDepuisCarte) : le
-     personnage vient à table, la fenêtre « Servir le repas » s'ouvre. */
+     personnage vient à table, la fenêtre « Servir le repas » s'ouvre.
+   Fiche I6a : les villageois s'invitent aussi (le réglage allumé) ; le message passe de porte en porte (plus
+   d'Achille quand on n'invite que des villageois) ; la fiche d'un villageois ouvre la fenêtre, lui déjà coché. */
+
+// (le messager : Achille pour les hameaux ; de porte en porte pour les villageois seuls)
+const seulsVillageois = (invites) => villageActif(state) && invites.length > 0 && invites.every((q) => q.hameau === 'village');
 
 const MOMENTS = INVITATION.MOMENTS;
 const liste = (noms) => (noms.length < 2 ? noms.join('') : `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`);
@@ -46,7 +52,7 @@ export function jourInvitable(jour) {
 }
 
 function etatTexte(inv) {
-  if (inv.etat === 'envoyee') return '✉️ Achille porte le message : réponses demain matin';
+  if (inv.etat === 'envoyee') return seulsVillageois(inv.invites) ? '✉️ Le message passe de porte en porte : réponses demain matin' : '✉️ Achille porte le message : réponses demain matin';
   if (inv.etat === 'servie') return '😊 Repas partagé';
   const oui = inv.invites.filter((q) => q.reponse === 'oui').map((q) => escapeHtml(q.prenom));
   const non = inv.invites.filter((q) => q.reponse === 'non').map((q) => escapeHtml(q.prenom));
@@ -73,13 +79,13 @@ export function renderEvenements() {
 
 /* -- la fenêtre « Créer un évènement » -- */
 
-function openEvenement(jour) {
+function openEvenement(jour, coche = null) {
   const j = jourInvitable(jour) ? jour : state.day + 1;
   const R = relationsInvitables(state);
   const jours = Array.from({ length: INVITATION.DELAI[1] - INVITATION.DELAI[0] + 1 }, (_, k) => state.day + INVITATION.DELAI[0] + k)
     .map((d) => `<option value="${d}"${d === j ? ' selected' : ''}>${escapeHtml(formatDay(d))}${d === state.day + 1 ? ' (demain)' : ''}</option>`).join('');
   const moments = Object.entries(MOMENTS).map(([id, M], k) => `<label class="evt-choix"><input type="radio" name="evt-moment" value="${id}"${k === 0 ? ' checked' : ''}> ${M.icone} ${M.nom[0].toUpperCase() + M.nom.slice(1)} (${M.heure} h)</label>`).join('');
-  const gens = R.map((r) => `<label class="evt-choix evt-invite"><input type="checkbox" name="evt-qui" value="${escapeHtml(r.hameau)}|${escapeHtml(r.id)}"> <strong>${escapeHtml(r.prenom)}</strong> <span class="muted">${escapeHtml(r.metier)} · ${escapeHtml(r.hameauNom)} · 💛 ${escapeHtml(r.nomPalier)}</span></label>`).join('');
+  const gens = R.map((r) => `<label class="evt-choix evt-invite"><input type="checkbox" name="evt-qui" value="${escapeHtml(r.hameau)}|${escapeHtml(r.id)}"${coche === `${r.hameau}|${r.id}` ? ' checked' : ''}> <strong>${escapeHtml(r.prenom)}</strong> <span class="muted">${escapeHtml(r.metier)} · ${escapeHtml(r.hameauNom)} · 💛 ${escapeHtml(r.nomPalier)}</span></label>`).join('');
   openModal(`
     <h2 id="evt-titre">📅 Créer un évènement</h2>
     <form class="evt-form" data-evt-form>
@@ -89,11 +95,11 @@ function openEvenement(jour) {
       <label class="evt-groupe">Le jour <select name="evt-jour">${jours}</select></label>
       <fieldset class="evt-groupe"><legend>Le moment</legend>${moments}</fieldset>
       <fieldset class="evt-groupe"><legend>Qui inviter ? (${INVITATION.INVITES_MAX} au plus)</legend>
-        ${gens || '<p class="muted">Tu ne connais encore personne : va parler aux habitants des hameaux.</p>'}
+        ${gens || `<p class="muted">Tu ne connais encore personne : ${villageActif(state) ? 'un villageois viendra par le bac' : 'va parler aux habitants des hameaux'}.</p>`}
       </fieldset>
-      <p class="muted">Achille, le cocher, portera ton message pendant sa tournée : les réponses arriveront demain matin. Le jour dit, tes invités viendront s'asseoir à ta table (une table de jardin et ses chaises, ou celle de la maison) : touche la table pour servir le repas, et une chaise pour t'asseoir avec eux.</p>
+      <p class="muted">${villageActif(state) ? 'Ton message passera de porte en porte (Achille, le cocher, le porte aux hameaux)' : 'Achille, le cocher, portera ton message pendant sa tournée'} : les réponses arriveront demain matin. Le jour dit, tes invités viendront s'asseoir à ta table (une table de jardin et ses chaises, ou celle de la maison) : touche la table pour servir le repas, et une chaise pour t'asseoir avec eux.</p>
       <div class="evt-boutons">
-        <button type="button" class="btn primary" data-action="evt-inviter"${R.length ? '' : ' disabled'}>✉️ Confier à Achille</button>
+        <button type="button" class="btn primary" data-action="evt-inviter"${R.length ? '' : ' disabled'}>✉️ ${villageActif(state) ? 'Inviter' : 'Confier à Achille'}</button>
         <button type="button" class="btn" data-action="close-modal">Fermer</button>
       </div>
     </form>`, { labelledBy: 'evt-titre', className: 'modal bois evt-modal' });
@@ -111,9 +117,10 @@ export function watchInvitations() {
     const M = MOMENTS[r.moment];
     const oui = r.oui.map(escapeHtml), non = r.non.map(escapeHtml);
     const quand = `${M.nom} ${leJour(r.jour)}`;
+    const inv0 = invitation(state, r.id), porte = inv0 && seulsVillageois(inv0.invites) ? '✉️ Ton invitation a fait le tour des portes' : '✉️ Achille a porté ton invitation';
     const texte = oui.length
-      ? `✉️ Achille a porté ton invitation pour ${quand} : ${liste(oui)} ${oui.length > 1 ? 'viendront' : 'viendra'} avec plaisir${non.length ? ` ; ${liste(non)} ne ${non.length > 1 ? 'pourront' : 'pourra'} pas` : ''}.`
-      : `✉️ Achille a porté ton invitation pour ${quand} : ${liste(non)} ne ${non.length > 1 ? 'pourront' : 'pourra'} pas venir, cette fois.`;
+      ? `${porte} pour ${quand} : ${liste(oui)} ${oui.length > 1 ? 'viendront' : 'viendra'} avec plaisir${non.length ? ` ; ${liste(non)} ne ${non.length > 1 ? 'pourront' : 'pourra'} pas` : ''}.`
+      : `${porte} pour ${quand} : ${liste(non)} ne ${non.length > 1 ? 'pourront' : 'pourra'} pas venir, cette fois.`;
     notify(texte, { kind: 'info', cible: { fenetre: 'calendrier' } });
   }
   const inv = invitationDuMoment(state);
@@ -177,7 +184,7 @@ const formDe = (target) => (target.closest('[data-evt-form]') || document.queryS
 
 registerActions({
   'evt-open': (target) => {
-    openEvenement(Number(target.dataset.jour));
+    openEvenement(Number(target.dataset.jour), target.dataset.qui || null);
   },
   'evt-inviter': (target) => {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
@@ -193,7 +200,9 @@ registerActions({
     persistState();
     refresh();
     const M = MOMENTS[moment];
-    notify(`✉️ Achille portera ton invitation pour ${M.nom} ${leJour(jour)} à ${liste(r.invitation.invites.map((q) => escapeHtml(q.prenom)))} : les réponses demain matin.`, { kind: 'info' });
+    const qui2 = liste(r.invitation.invites.map((q) => escapeHtml(q.prenom)));
+    notify(seulsVillageois(r.invitation.invites) ? `✉️ Ton invitation pour ${M.nom} ${leJour(jour)} passe de porte en porte, chez ${qui2} : les réponses demain matin.`
+      : `✉️ Achille portera ton invitation pour ${M.nom} ${leJour(jour)} à ${qui2} : les réponses demain matin.`, { kind: 'info' });
   },
   'evt-annuler': (target) => {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }

@@ -5141,7 +5141,7 @@ export const RAW_DATA = {
     "MATERIAUX_GARDES": 40,
     "VIVRES_GARDES": 10,
     "SEMENCES_GARDEES": 6,
-    "PORT": { "SEUIL": 60, "VITESSE": 3.6 },
+    "PORT": { "SEUIL": 60, "VITESSE": 3.6, "NIVEAU_MAX": 5, "CHANTIER": 0.5 },
     "VILLAGEOIS": {
       "MAISON_PALIER": 3,
       "MAISON": { "paillasse": 1, "boite_aux_lettres": 1 },
@@ -5190,9 +5190,14 @@ export const RAW_DATA = {
       "1": [{ "type": "maison" }, { "type": "houe" }],
       "2": [{ "type": "houe" }, { "type": "silo", "niveau": 2 }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
-      "4": [{ "type": "station", "id": "four" }, { "type": "station", "id": "moulin" }, { "type": "station", "id": "cuisine" }],
+      "4": [
+        { "type": "station", "id": "four" },
+        { "type": "station", "id": "moulin" },
+        { "type": "station", "id": "cuisine" },
+        { "type": "port", "niveau": 2 }
+      ],
       "5": [{ "type": "station", "id": "moulin" }, { "type": "paturage" }, { "type": "moutons", "n": 3 }],
-      "6": [{ "type": "serre" }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }],
+      "6": [{ "type": "serre" }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }, { "type": "port", "niveau": 3 }],
       "7": []
     },
     "PLAN": [
@@ -5238,7 +5243,10 @@ export const RAW_DATA = {
       { "type": "arbres", "n": 8 },
       { "type": "vaches", "n": 8 },
       { "type": "moutons", "n": 10 },
-      { "type": "arbres", "n": 12 }
+      { "type": "arbres", "n": 12 },
+      { "type": "port", "niveau": 3 },
+      { "type": "port", "niveau": 4 },
+      { "type": "port", "niveau": 5 }
     ],
     "VERIFS": { "CHAPITRE_7_AVANT": 60, "CAISSE_FOIS_DEPENSE": 2, "NUITS_DEPENSE": 20 },
     "DEPANNAGE": { "item": "carotte", "nuit": 30 }
@@ -8648,9 +8656,6 @@ export const RAW_DATA = {
   "VILLAGE": {
     "ACTIF": false,
     "ARRIVEE": {
-      "PERIODE": 3,
-      "HEURE": 9,
-      "FIN": 17,
       "RESERVE_JOURS": 2,
       "PLAFOND": { "1": 2, "2": 4, "3": 6, "4": 9, "5": 12 },
       "BOURSE": 20,
@@ -8707,7 +8712,6 @@ export const RAW_DATA = {
         "TABLE": 1,
         "AFFINITE": 30,
         "PALIERS": { "connaissance": 10, "ami": 40 },
-        "FAMILLE_AMI": 4,
         "COLLEGUE": 2
       },
       "BUTS": {
@@ -8749,10 +8753,19 @@ export const RAW_DATA = {
         "BOUT": 12,
         "REGARD": 48,
         "JOUEUR": 28,
+        "JOUEUR_AMI": 56,
         "JOUEUR_ATTENTE": 60,
         "TOUR": 3.2
       },
-      "EMOJI": { "connaissance": ["👋", "😊"], "ami": ["😄", "❤️", "😊", "👋"], "triste": ["🙂"] },
+      "EMOJI": {
+        "connaissance": ["👋", "😊"],
+        "ami": ["😄", "❤️", "😊", "👋"],
+        "proche": ["😄", "❤️", "🥰"],
+        "intime": ["❤️", "🥰", "😄"],
+        "retrouvailles": ["😄", "🥰"],
+        "present": ["🎁"],
+        "triste": ["🙂"]
+      },
       "REPLIQUES": {
         "connaissance": [
           ["Bonjour, {prenom} !", "Bonjour ! Ça va bien ?"],
@@ -8885,6 +8898,30 @@ export const RAW_DATA = {
           "Merci pour tout, {joueur} !",
           "Te voilà, {joueur} !",
           "Toujours au travail, {joueur} ?"
+        ],
+        "proche": [
+          "{joueur} ! Je pensais justement à toi !",
+          "Ah, {joueur} ! Ma journée est plus belle.",
+          "Viens, {joueur}, que je te dise bonjour !",
+          "{joueur} ! Tu as une minute pour moi ?",
+          "Quel plaisir de te croiser, {joueur} !"
+        ],
+        "intime": [
+          "{joueur} ! Toi, tu me fais toujours sourire.",
+          "Mon ami {joueur} ! Viens là !",
+          "{joueur} ! L'île ne serait pas pareille sans toi.",
+          "Ah, te voilà enfin, {joueur} ! Je t'attendais.",
+          "{joueur} ! Tu sais que tu comptes, ici ?"
+        ],
+        "retrouvailles": [
+          "{joueur} ! Te revoilà ! Ça faisait longtemps !",
+          "Oh, {joueur} ! Tu m'as manqué, tu sais.",
+          "{joueur} ! Quelle joie de te revoir !"
+        ],
+        "present": [
+          "{joueur} ! Attends, j'ai un petit quelque chose pour toi !",
+          "Tiens, {joueur}, je t'ai gardé ça !",
+          "{joueur} ! C'est pour toi, de bon cœur."
         ]
       },
       "ACTIVITE": {
@@ -8897,6 +8934,132 @@ export const RAW_DATA = {
         "ouvrage": ["J'admire ce que tu as bâti.", "C'est du beau travail, ça."],
         "port": ["Je descends voir le port.", "J'aime regarder les bateaux."]
       }
+    },
+    "AMITIE": {
+      "ACCUEIL": 10,
+      "FAMILLE_AMI": 2,
+      "CONFIE": { "PALIER": 2, "CHANCE": 0.35 },
+      "TACHE_SANS_HUMEUR": 3,
+      "PROPOS_PART": 0.4,
+      "METIERS": {
+        "bois": "bucheron",
+        "pierre": "mineur",
+        "peche": "pecheur",
+        "betes": "berger",
+        "cueillette": "cueilleur",
+        "verger": "cueilleur",
+        "champs": "jardinier",
+        "fauchage": "jardinier",
+        "cuisine": "jardinier",
+        "navette": "jardinier",
+        "*": "jardinier"
+      },
+      "DEMANDES": { "CHANCE": 0.35, "MAX": 2, "DEPUIS": 2 },
+      "PHRASES": {
+        "cadeau": {
+          "adore": ["Oh ! J'adore ça ! Merci !", "Mon préféré ! Tu as deviné ?", "Ça, c'est un vrai cadeau ! Merci !"],
+          "aime": ["Oh, merci ! J'aime bien ça.", "C'est gentil, ça me fait plaisir !", "Merci ! Ça tombe bien."],
+          "neutre": ["Merci, c'est gentil.", "Oh, merci beaucoup !"],
+          "deteste": ["Oh… merci quand même.", "Hum… c'est l'intention qui compte !"]
+        },
+        "gout": {
+          "adore": ["Tu sais ce que j'adore ? {objet} !", "Un secret : {objet}, j'en raffole.", "{Objet}… rien ne me fait plus plaisir !"],
+          "aime": ["J'aime bien {objet}, tu sais.", "{Objet}, ça me fait toujours plaisir.", "Si tu as {objet} en trop, pense à moi !"],
+          "deteste": ["Entre nous, {objet}… très peu pour moi !", "Je te le dis : {objet}, je n'aime pas du tout."]
+        },
+        "present": [
+          "Tiens, c'est pour toi : {quoi}. De bon cœur !",
+          "Je t'ai gardé ça : {quoi}. Pour toi !",
+          "Un petit présent : {quoi}. Merci pour tout !"
+        ],
+        "retrouvailles": ["Te revoilà ! Ça faisait longtemps.", "Quelle joie de te revoir !", "Ah, te voilà enfin ! Tu m'as manqué."],
+        "annonce": "📜 {prenom} a une demande pour toi : {n} × {objet}.",
+        "table": [
+          "Ça fait du bien de manger ensemble.",
+          "Quel bon repas, entre voisins !",
+          "On est bien, sur cette île.",
+          "Le village, c'est aussi ça : une table à partager."
+        ]
+      }
+    },
+    "PROPOS": {
+      "GARDES": [
+        "ferme_vide",
+        "ferme_moutons",
+        "ferme_vaches",
+        "ferme_ruches",
+        "ferme_verger",
+        "ferme_moulin",
+        "gout_connu",
+        "lune_pleine",
+        "lune_nouvelle",
+        "lune_croissante",
+        "lune_decroissante",
+        "meteo_pluie",
+        "meteo_brume",
+        "mois"
+      ],
+      "ferme_cultures": [
+        "Ton coin de {culture} a fière allure, ce matin !",
+        "Ta {culture} pousse bien. Tu me diras ton secret ?",
+        "Je passe devant ta {culture} chaque jour : quel plaisir !",
+        "{n} parcelles cultivées ? Tu as la main verte.",
+        "La {culture}, ça aime la patience. Toi aussi, on dirait !",
+        "Avec toute cette {culture}, l'île ne manquera pas de soupe."
+      ],
+      "ferme_poules": [
+        "Tes {n} poules, elles pondent bien ?",
+        "Je les entends, tes poules, le matin. Ça réveille !",
+        "Des poules sur l'île, c'est des œufs au petit-déjeuner !",
+        "Un peu de blé chaque jour, et tes poules te le rendront en œufs."
+      ],
+      "ferme_maison": [
+        "Ta ferme a bien changé depuis que je suis là.",
+        "Tu as encore construit quelque chose ? Tu ne t'arrêtes jamais !",
+        "Le village prend forme, grâce à toi.",
+        "Une maison qui grandit, c'est une famille heureuse."
+      ],
+      "cadeau_merci": [
+        "Merci encore pour ton cadeau. J'y pense encore !",
+        "Ton cadeau de l'autre jour m'a fait tellement plaisir.",
+        "Ton cadeau a trouvé sa place chez moi. Merci !"
+      ],
+      "ami_proche": [
+        "Quand je te vois arriver, ma journée s'éclaire.",
+        "Je ne regrette pas d'avoir pris le bac jusqu'ici, tu sais.",
+        "Si tu as besoin de quoi que ce soit, tu sais où me trouver.",
+        "Il y a toujours une place pour toi à ma table.",
+        "Sur cette île, je me sens chez moi. Grâce à toi."
+      ],
+      "jours": ["Déjà {jours} jours sur l'île ! Le temps file.", "{jours} jours sur l'île… et tant de choses déjà bâties."],
+      "village_depuis": ["Ça fait {jours} jours que j'ai débarqué. Je me sens chez moi.", "Déjà {jours} jours ici ! Je ne regrette pas le voyage."],
+      "village_ami": [
+        "{ami} et moi, on s'entend vraiment bien.",
+        "Si tu cherches {ami}, on est souvent ensemble.",
+        "Avec {ami}, on se raconte tout. Enfin, presque !",
+        "{ami} m'a bien aidé{e} ce matin. Un vrai ami."
+      ],
+      "village_voisin": [
+        "Tu connais bien {voisin} ? Dis-lui bonjour de ma part.",
+        "{voisin} m'a parlé de toi hier. Que du bien !",
+        "J'apprends à connaître {voisin}. Quelqu'un de bien.",
+        "{voisin} a ri toute la soirée hier. Ça fait du bien !"
+      ],
+      "village_collegue": [
+        "Avec {collegue}, on fait une bonne équipe, au travail.",
+        "{collegue} travaille avec moi : le temps passe plus vite.",
+        "Le travail à deux, avec {collegue}, c'est plus gai."
+      ],
+      "village_nouveau": [
+        "Tu as vu ? {qui} vient d'arriver par le bac !",
+        "{qui} s'installe à peine. On l'aidera un peu.",
+        "Bienvenue à {qui} ! Le village grandit."
+      ],
+      "port_bac": [
+        "Le bac passe demain. Qui sait qui il amènera ?",
+        "Demain, c'est jour de bac. J'irai voir le port !",
+        "Le bac arrive demain : l'île va avoir de la visite."
+      ]
     },
     "PALIERS": [
       {
@@ -9195,7 +9358,7 @@ export const RAW_DATA = {
       "banc_rondins",
       "banc_pierre"
     ],
-    "CHEMIN": { "VITESSE": 50, "PINCEAU": 2, "PRES_FERME": 8 },
+    "CHEMIN": { "VITESSE": 100, "PINCEAU": 2, "PRES_FERME": 8 },
     "PORTAGE": {
       "MAINS": 12,
       "BROUETTE": 40,
@@ -9370,12 +9533,58 @@ export const RAW_DATA = {
       "ESSAIS": 8
     },
     "NIVEAUX": [
-      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },
-      { "quai": 8, "ajoute": ["caisses"] },
-      { "quai": 10, "ajoute": ["tonneaux", "mat"] },
-      { "quai": 10, "ajoute": ["caisses_terre"] },
-      { "quai": 12, "ajoute": ["tonneaux_terre"] }
+      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"], "commandes": 2 },
+      { "quai": 9, "ajoute": ["caisses"], "commandes": 3, "prix": { "pieces": 1800, "planche": 24, "pierre": 16 } },
+      { "quai": 10, "ajoute": ["tonneaux", "mat"], "commandes": 3, "prix": { "pieces": 5000, "planche": 40, "pierre": 30, "lingot_fer": 6 } },
+      { "quai": 11, "ajoute": ["caisses_terre"], "commandes": 4, "prix": { "pieces": 11000, "planche": 60, "pierre": 40, "lingot_fer": 12 } },
+      {
+        "quai": 12,
+        "ajoute": ["tonneaux_terre"],
+        "commandes": 5,
+        "prix": { "pieces": 24000, "planche": 80, "pierre": 60, "lingot_fer": 20, "lingot_cuivre": 10 }
+      }
     ],
+    "BAC": { "PERIODE": 3, "HEURES": [9, 17], "RATTRAPAGE": 3, "CAISSE": 12, "CAISSES_MAX": 4, "ARRIVEE_S": 7 },
+    "COMMANDES": { "VALEUR": [50, 90, 150, 230, 340], "ECART": 30, "QUANTITE": [2, 40], "PRIME": [25, 60], "XP": 15 },
+    "IMPORT": {
+      "RANGS": [
+        [
+          { "objet": "jeune_pommier", "prix": 50 },
+          { "objet": "jeune_poirier", "prix": 50 },
+          { "objet": "jeune_cerisier", "prix": 60 },
+          { "objet": "jeune_abricotier", "prix": 55 },
+          { "objet": "jeune_pecher", "prix": 55 },
+          { "objet": "plant_vigne", "prix": 30, "lot": 4 }
+        ],
+        [
+          { "objet": "cacao", "prix": 40, "lot": 2 },
+          { "objet": "vanille", "prix": 70, "lot": 2 },
+          { "objet": "cafe", "prix": 30, "lot": 2 },
+          { "objet": "sucre", "prix": 24, "lot": 10 },
+          { "objet": "epices", "prix": 34, "lot": 10 }
+        ],
+        [{ "bete": "poule", "prix": 60 }, { "bete": "mouton", "prix": 160 }, { "bete": "vache", "prix": 260 }],
+        [
+          { "plan": "banc_rondins", "prix": 300 },
+          { "plan": "table_rondins", "prix": 300 },
+          { "plan": "chaise_peinte", "prix": 320 },
+          { "plan": "jarre_coquillages", "prix": 360 },
+          { "plan": "lanterne_papier", "prix": 380 },
+          { "plan": "bassin", "prix": 520 },
+          { "plan": "banc_pierre", "prix": 420 },
+          { "plan": "jardiniere_pierre", "prix": 420 },
+          { "plan": "pergola", "prix": 600 }
+        ],
+        [
+          { "objet": "graine_lavande", "prix": 40, "lot": 5 },
+          { "objet": "graine_coquelicot", "prix": 30, "lot": 5 },
+          { "objet": "graine_pavot", "prix": 30, "lot": 5 },
+          { "objet": "graine_myosotis", "prix": 30, "lot": 5 },
+          { "objet": "graine_lupin", "prix": 35, "lot": 5 }
+        ]
+      ],
+      "SAUVAGES": { "RANG": 5, "MARGE": 300, "LOT": 3 }
+    },
     "SORTES": [
       { "nom": "quai", "genre": "ponton", "variantes": 8 },
       { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
@@ -9386,7 +9595,10 @@ export const RAW_DATA = {
       { "nom": "tonneaux", "genre": "objet", "variantes": 2 },
       { "nom": "mat_fanion", "genre": "objet", "variantes": 1 },
       { "nom": "panneau_port", "genre": "objet", "variantes": 1 },
-      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 }
+      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 },
+      { "nom": "bac_port", "genre": "objet", "variantes": 2 },
+      { "nom": "passerelle_port", "genre": "ponton", "variantes": 2 },
+      { "nom": "caisses_bac", "genre": "objet", "variantes": 3 }
     ],
     "BLOQUE": ["poteau_halle", "comptoir", "balance", "caisses", "tonneaux", "mat_fanion", "panneau_port", "lanterne_port"],
     "LANTERNE": {

@@ -23,6 +23,9 @@
  *   - le moment passé sans repas : ils le disent gentiment et repartent (rien n'est perdu) ;
  *   - leur émotion (une réaction : la joie d'un bon repas, le dégoût d'un plat détesté) : comme les habitants
  *     (amis.js teinteHabitant).
+ *   - I6a : un villageois invité (invites[].villageois) est le villageois lui-même : à son départ, il quitte sa journée
+ *     (js/carte/ferme/villageois.js : m.invite, on ne voit que l'invité), part de là où il est (sinon de sa porte,
+ *     invites[].depart), et, le repas fini, reprend sa journée de là où il s'est levé, sans s'effacer.
  * Avec « animations réduites », ils vont d'un point à l'autre sans marcher.
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
@@ -112,6 +115,8 @@
         if (g.phase === 'debut') {
           if (now < g.part) continue;
           g.phase = 'vient';
+          // (I6a : le villageois quitte sa journée et vient lui-même, de là où il est)
+          if (g.villageois) this.inviteDuVillage(g);
           const but = g.place ? g.place.pied : g.debout;
           const p = this.fermier ? this.fermier.path(g.x, g.y, but.x, but.y, {}) : null;
           g.chemin = !calme && p && p.length && !p.droit && !(loin(g) && loin(but)) ? p.slice() : [];
@@ -204,11 +209,15 @@
         const d = { perso: q.perso, enfant: !!q.enfant, apparence: q.apparence || null };
         const key = this.clePerso ? this.clePerso(d) : (d.enfant ? 'enfant_' : 'perso_') + d.perso;
         if (this.chargePerso) this.chargePerso(key, d);
-        const dep = this.visiteDepart ? this.visiteDepart({ depart: q.depart }, porte || { x: autour.x, y: autour.y }) : { x: autour.x, y: autour.y };
+        const W = this.grid.cols;
+        // (I6a : un villageois part de sa porte, s'il n'est pas en vue ; inviteDuVillage)
+        const dep = q.villageois && Number.isInteger(q.depart) ? { x: (q.depart % W) * T + T / 2, y: (Math.floor(q.depart / W) + 1) * T - 2 }
+          : this.visiteDepart ? this.visiteDepart({ depart: q.depart }, porte || { x: autour.x, y: autour.y }) : { x: autour.x, y: autour.y };
         const place = places.shift() || null;
         // (sans place : debout, près de la table ou devant la porte)
         const debout = place ? null : (this.fermier.librePres && this.fermier.librePres(autour.x + (k % 2 ? 1 : -1) * T * (1 + (k >> 1)), autour.y + T)) || { x: autour.x, y: autour.y + T };
         G.gens.set(q.id, {
+          villageois: !!q.villageois,
           id: q.id, key, def: d, s: null, bulle: null, x: dep.x, y: dep.y, face: 'bas', flip: false, marche: 0, alpha: 0, fade: 1,
           phase: 'debut', part: now + k * ECART_S * 1000, chemin: [], place, debout, depart: { x: dep.x, y: dep.y }, until: 0, prenom: q.prenom, admire: q.admire || null,
         });
@@ -217,9 +226,35 @@
       return G;
     },
 
+    // I6a : le villageois invité `g` prend la place du villageois de la scène (sa position, son image) : celui-ci
+    // s'efface de sa journée le temps du repas (m.invite).
+    inviteDuVillage(g) {
+      const m = this.villageoisVus && this.villageoisVus.get(g.id);
+      if (!m || m.phase !== 'vie' || !m.s) return;
+      if (m.couche && this.villageoisLeve) this.villageoisLeve(m);
+      if (m.assis && this.villageoisRelever) this.villageoisRelever(m);
+      // (on le voit : l'invité part de lui, sans fondu ; sinon de sa porte, en fondu)
+      if (m.s.visible && m.alpha > 0.5) { g.x = m.x; g.y = m.y; g.alpha = 1; g.fade = 0; g.face = m.face; g.flip = m.flip; }
+      if (m.bulle && this.villageoisBulleOff) this.villageoisBulleOff(m);
+      m.invite = true;
+    },
+    // Le repas fini, le villageois reprend sa journée là où l'invité s'est levé.
+    inviteRendu(g) {
+      const m = this.villageoisVus && this.villageoisVus.get(g.id);
+      if (m && m.invite) {
+        m.invite = false;
+        m.x = g.x; m.y = g.y; m.face = g.face; m.flip = g.flip; m.alpha = 1; m.fade = 0;
+        m.seg = null; m.chemin = []; m.but = null; m.parle = null; m.demande = null;
+      }
+      g.phase = 'efface';
+      g.alpha = 0;
+    },
+
     // Il repart d'où il est venu (assis : il se lève d'abord, sur la case libre à côté de sa chaise).
     inviteRepart(g) {
       if (g.place && (g.phase === 'table' || g.phase === 'merci')) { g.x = g.place.pied.x; g.y = g.place.pied.y; }
+      // (I6a : un villageois reprend sa journée d'ici)
+      if (g.villageois) { this.inviteRendu(g); return; }
       g.phase = 'repart';
       const p = this.fermier && !reducedMotion() ? this.fermier.path(g.x, g.y, g.depart.x, g.depart.y, {}) : null;
       g.chemin = p && p.length && !p.droit ? p.slice() : [];
@@ -254,6 +289,7 @@
       const G = this.invitesVus;
       if (!G) return;
       for (const g of G.gens.values()) {
+        if (g.villageois && g.phase !== 'efface') this.inviteRendu(g);
         if (g.s) g.s.destroy();
         if (g.bulle) g.bulle.el.remove();
         if (this.emojiOff) this.emojiOff(g);

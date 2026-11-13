@@ -774,6 +774,17 @@ export function planPort(m, port, niveau) {
   if (C.ajoute.has('caisses')) pose('caisses', ...surQuai(2), 0);
   if (C.ajoute.has('tonneaux')) pose('tonneaux', ...surQuai(3), 0);
   if (C.ajoute.has('mat')) pose('mat_fanion', ...surQuai(Q - 2));
+  // le bac (fiche I1c : la scène le pose quand il est à quai, js/carte/ferme/bac.js) : le long des quatre dernières
+  // cases du quai, du côté opposé à la cale (vers le sud : à droite ; vers l'est : en dessous), son pied (px : le milieu
+  // du bas de son image) ; sa passerelle, de l'avant-dernière case du quai à son bord ; ses caisses, sur l'autre
+  // rangée du quai (l'avant-dernière case et deux avant ; vers le sud, plutôt vers le milieu du quai : elles sont plus
+  // larges qu'une case) ; le large, d'où il arrive et où il repart
+  const Yb = sud ? Y + Q : Y + 3;
+  const bac = sud
+    ? { sens: 0, x: (X + 3) * T, y: (Y + Q + 1) * T, passerelle: { x: (X + 2) * T, y: (Y + Q) * T }, large: { dx: 0, dy: 7 * T },
+      caisses: [Q - 1, Q - 3].map((k) => ({ x: X * T + T - 3, y: (Y + k + 1) * T - 2 })) }
+    : { sens: 1, x: (X + Q - 1) * T, y: (Yb + 1) * T, passerelle: { x: (X + Q - 1) * T + T / 2, y: (Y + 2) * T + 4 }, large: { dx: 8 * T, dy: 0 },
+      caisses: [Q - 1, Q - 3].map((k) => ({ x: (X + k) * T + T / 2, y: (Y + 1) * T - 2 })) };
   if (C.ajoute.has('caisses_terre')) pose('caisses', ...O.caisses_terre, 1);
   if (C.ajoute.has('tonneaux_terre')) pose('tonneaux', ...O.tonneaux_terre, 1);
   // la terre battue : ses abords, hors de la halle ; l'emprise : tout, RESERVE cases autour, le quai et une
@@ -803,7 +814,7 @@ export function planPort(m, port, niveau) {
       id: 'port', nom: DATA.PORT.NOM, case: port.case, style: 'cote', metier: null, batisse: 'port', niveau, comptoir,
       cadre: { x0, y0, x1, y1 },
       place: { centre: port.case, cases: [], puits: null, banc: null, panneau },
-      maisons: [halle], jardins: [], travail: [], ruelles: [], lanternes, quai,
+      maisons: [halle], jardins: [], travail: [], ruelles: [], lanternes, quai, bac,
     },
     pieces, basses, bloque: [...bloque], terre, emprise: [...emprise].sort((a, b) => a - b), ouvre: [...ouvre],
   };

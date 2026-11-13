@@ -3,9 +3,10 @@ import { escapeHtml, formatQty } from '../engine/format.js';
 import { asleep } from '../engine/night.js';
 import { countItem } from '../engine/inventory.js';
 import {
-  AMITIE, amitieAvec, amitieDe, cadeauxPossibles, offrir, palierAmitie, parlerAmitie, presentsPorte, ramasserPresents,
+  AMITIE, amitieAvec, amitieDe, cadeauxPossibles, HAMEAU_VILLAGE, offrir, palierAmitie, parlerAmitie, presentsPorte, ramasserPresents,
   trouverPnj, visiterHameau,
 } from '../engine/amitie.js';
+import { offrirVillageois } from '../engine/villageois-amitie.js';
 import { RECIT } from '../engine/recit.js';
 import { souvenirParole } from '../engine/invitations.js';
 import { merciProjet } from '../engine/projets.js';
@@ -27,7 +28,9 @@ import { notify } from './toasts.js';
      jour) ; la carte montre sa réaction (FarmStage.emotion : la joie, le dégoût) ;
    - le passage dans un hameau (visiteDuHameau, appelé par js/ui/stage.js) ;
    - les présents des amis devant la porte : annoncés au matin (watchPresents), pris par le personnage qui
-     passe devant la porte (presentsDepuisCarte). */
+     passe devant la porte (presentsDepuisCarte).
+   Fiche I6a : la même fenêtre « Offrir » sert aux villageois (data-hameau = HAMEAU_VILLAGE : offrirVillageois) ;
+   la carte montre sa réaction et ce qu'il dit (FarmStage.villageoisDit), puis le goût qu'il te confie. */
 
 // « ce que Basile », « ce qu'Odile »
 const queDe = (prenom) => (/^[aeiouyhàâéèêëîïôûAEIOUYHÀÂÉÈÊËÎÏÔÛ]/.test(prenom) ? `ce qu'${escapeHtml(prenom)}` : `ce que ${escapeHtml(prenom)}`);
@@ -132,7 +135,8 @@ registerActions({
   'ami-offrir': (target) => {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const { hameau, id, item } = target.dataset;
-    const r = offrir(state, hameau, id, item);
+    const village = hameau === HAMEAU_VILLAGE;
+    const r = village ? offrirVillageois(state, id, item) : offrir(state, hameau, id, item);
     closeModal();
     if (!r.ok) { notify(r.error, { son: 'erreur' }); return; }
     persistState();
@@ -145,5 +149,14 @@ registerActions({
           : `🙂 ${n} te remercie pour : ${quoi}. (+${r.points})`;
     notify(texte + (r.monte ? ` · 💛 ${r.nom}` : ''), { kind: 'info' });
     if (r.emotion && window.FarmStage && window.FarmStage.emotion) window.FarmStage.emotion(id, r.emotion);
+    // (un villageois : sa réaction dans sa bulle ; un palier passé, il te confie un goût)
+    if (village && window.FarmStage && window.FarmStage.villageoisDit) {
+      if (r.phrase) window.FarmStage.villageoisDit(id, r.phrase, 2600);
+      if (r.confie) setTimeout(() => window.FarmStage.villageoisDit(id, r.confie.texte, 3800), 2800);
+    }
+    if (village && r.confie) {
+      const c = DATA.OBJETS[r.confie.objet];
+      notify(`💬 ${n} te confie un goût : ${r.confie.gout === 'adore' ? '❤️ adore' : r.confie.gout === 'aime' ? '👍 aime' : '👎 déteste'} ${c.icone} ${escapeHtml(c.nom)}.`, { kind: 'info' });
+    }
   },
 });

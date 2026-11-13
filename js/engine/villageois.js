@@ -1,5 +1,6 @@
 import { DATA } from './catalog.js';
 import { niveauPort } from './port.js';
+import { jourDeBac, prochainBac } from './bac.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { hache } from './ferme-generee.js';
@@ -11,7 +12,7 @@ import { maisonsMarquees, litsDeLaFamille, piecesCloses } from './blocs.js';
 import { mangerAuRangement, reserveRangement } from './repas.js';
 import { platsBonheur, varieteBonheur, versCible } from './bonheur.js';
 import { cleDiversite, tirerApparence } from './apparence.js';
-import { goutsDe } from './amitie.js';
+import { ajouterAmitie, amitieDe, goutsTires } from './amitie.js';
 import { validApparence } from './family.js';
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
@@ -40,7 +41,7 @@ import { validApparence } from './family.js';
    Une maison libre : une pièce close du genre maison de la terre du joueur, marquée « à un villageois » par une
    boîte aux lettres posée contre sa porte (blocs.js, maisonsMarquees), où personne n'habite, avec un lit que la
    famille ne prend pas (la famille dort d'abord dans les autres lits : blocs.js, couchages). L'arrivée
-   (VILLAGE.ARRIVEE) : un jour de bac, de HEURE à FIN h (la page appelle arriveeDue puis arriverVillageois ; la nuit
+   (VILLAGE.ARRIVEE) : un jour de bac, pendant que le bac est à quai (PORT.BAC.HEURES, js/engine/bac.js ; la page appelle arriveeDue puis arriverVillageois ; la nuit
    installe d'un coup celui qui n'est pas venu), voir arriveeRefus. La nuit (villageoisNuit, appelé par runNight) :
    chacun mange à la boîte commune, dort dans son lit ; son bonheur suit la règle de la famille ; mal nourri ou
    sans lit, il se repose le lendemain. Sa maison retirée (sa boîte, son lit ou sa pièce disparus), il dort à
@@ -162,21 +163,9 @@ export function plafondVillageois(state) {
   return niveaux.length ? P[niveaux[niveaux.length - 1]] : 0;
 }
 
-// Le jour `jour` est-il un jour de bac ? (avant le bac de la fiche I1c : tous les PERIODE jours ; un bac
-// réglé par le port, state.port.bac = { jours: [...] }, le remplacera)
-export function jourDeBac(state, jour = jourDe(state)) {
-  const B = state && state.port && state.port.bac;
-  if (B && Array.isArray(B.jours)) return B.jours.includes(jour);
-  const P = Math.max(1, Math.floor(Number(ARRIVEE.PERIODE) || 1));
-  return jour % P === 0;
-}
-
-// Le prochain jour de bac, aujourd'hui compris.
-export function prochainBac(state) {
-  let j = jourDe(state);
-  for (let k = 0; k < 400 && !jourDeBac(state, j); k++) j++;
-  return j;
-}
+// Les jours du bac : ceux du bac de la fiche I1c (js/engine/bac.js : jourDeBac, prochainBac ; PORT.BAC.PERIODE),
+// le seul bac du jeu : c'est lui qui amène les villageois.
+export { jourDeBac, prochainBac };
 
 // Le rangement des repas (frigo ou boîte) couvre-t-il RESERVE_JOURS jours du besoin de `bouches` villageois ?
 export function reserveSuffit(state, bouches) {
@@ -206,8 +195,8 @@ export function arriveeRefus(state, o = {}) {
 export function arriveeDue(state) {
   if (!villageActif(state) || nightActive(state)) return false;
   if (!state.famille || state.famille.configuree === false) return false;
-  const h = hourOfDay(state);
-  if (h < ARRIVEE.HEURE || h >= ARRIVEE.FIN) return false;
+  const h = hourOfDay(state), [debut, fin] = DATA.PORT.BAC.HEURES;
+  if (h < debut || h >= fin) return false;
   return arriveeRefus(state) === null;
 }
 
@@ -227,8 +216,9 @@ export function tirerVillageois(state, rang = villageoisDe(state).length + 1) {
   const perso = persos.length ? un(persos) : un(HABITANTS.PERSOS.adulte[genre]);
   const deja = new Set(V.filter((v) => objet(v.apparence)).map((v) => cleDiversite(v.apparence)));
   const apparence = tirerApparence(rngDe(`${g}:villageois:apparence:${rang}`), { enfant: false, genre }, deja);
-  // (ses goûts : ceux d'amitie.js, tirés de son id dans la partie, gardés avec lui)
-  const gouts = goutsDe({ id: `${g}:villageois:${rang}`, enfant: false, metier: null });
+  // (ses goûts : tirés de son rang dans la partie, parmi ceux de tous les métiers des hameaux, gardés avec lui ;
+  // fiche I6a, amitie.js goutsTires)
+  const gouts = goutsTires(`${g}:villageois:${rang}`);
   return { prenom, genre, perso, apparence, gouts };
 }
 
@@ -248,6 +238,8 @@ export function arriverVillageois(state, o = {}) {
     accueil: o.direct ? null : 'en_route', sansMaison: null, avis: o.direct ? ['arrive'] : [], journal: [],
   };
   state.villageois.push(v);
+  // (fiche I6a : la famille l'accueille, l'amitié commence à VILLAGE.AMITIE.ACCUEIL points, « poli »)
+  if (!amitieDe(state).pnj[v.id]) ajouterAmitie(state, v.id, Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0);
   return { ok: true, villageois: v };
 }
 
@@ -365,6 +357,12 @@ function porteDe(state, m) {
   const W = farmTerrain(state).LARGEUR, b = m.boite;
   const pres = (d) => Math.abs((d % W) - (b % W)) <= 1 && Math.abs(Math.floor(d / W) - Math.floor(b / W)) <= 1;
   return m.piece.portes.find(pres) ?? m.piece.portes[0];
+}
+
+// La case de la porte de la maison du villageois `id` (fiche I6a : un invité à un repas en part), ou null.
+export function porteVillageois(state, id) {
+  const v = trouverVillageois(state, id), m = v && maisonDe(state, v);
+  return m ? porteDe(state, m) : null;
 }
 
 // Son humeur, d'après son bonheur et son dernier repas : 'faim', 'heureux', 'content' ou 'triste' (les seuils des

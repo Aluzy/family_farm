@@ -167,6 +167,7 @@ function client(T, M) {
     faune: { especes: ESPECES_FAUNE.map((cle) => ({ cle, ...FAUNE.ESPECES[cle] })), PRES: FAUNE.PRES, LOIN: FAUNE.LOIN, RAYON: FAUNE.RAYON },
     hameaux: () => hameaux, tournee: () => tournee, hameauSortes: SORTES_HAMEAUX, hameauxStyles: HAMEAUX.STYLES, hameauEnclos: HAMEAUX.ENCLOS,
     portLanterne: (DATA.PORT && DATA.PORT.LANTERNE) || null,
+    portBac: (DATA.PORT && DATA.PORT.BAC) || null,   // (le bac, fiche I1c : js/carte/ferme/bac.js)
     region(rx, ry) {
       const cle = rx + ',' + ry, r = regions.get(cle);
       if (r) return r;

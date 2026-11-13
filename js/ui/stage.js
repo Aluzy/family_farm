@@ -99,7 +99,7 @@ import { alerteFaim, alerteSortie, coiffeCarte, vitessePied } from '../engine/eq
 import { plantationModele } from './plantation.js';
 import { runAction } from './events.js';
 import { calecheDepuisCarte, calecheToucheeDepuisCarte, helerCaleche, malleDepuisCarte, malleToucheeDepuisCarte } from './caleche.js';
-import { portComptoirDepuisCarte } from './port.js';
+import { bacModele, portComptoirDepuisCarte } from './port.js';
 import { heuresPort } from '../engine/port.js';
 import { mesurer } from './chrono.js';
 
@@ -573,6 +573,7 @@ export function stageModel() {
     // l'île à bâtir (fiche I3a, js/engine/villageois.js) : les villageois (celui qui arrive du port, ceux qui dorment
     // dans leur lit : js/carte/ferme/villageois.js) ; null le chantier éteint ou sans villageois
     villageois: villageoisModele(),
+    bac: bacModele(), // (le bac du port, fiche I1c : js/carte/ferme/bac.js)
     // (fiche I3b : l'heure, pour que la scène les fasse vivre entre deux modèles)
     villageoisHeure: villageoisHorloge(),
     // une scène du récit qui se joue sur la carte (js/ui/scene.js : l'arrivée de Fernand ;

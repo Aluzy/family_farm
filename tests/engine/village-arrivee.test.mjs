@@ -97,7 +97,7 @@ test('éteint, la boîte aux lettres ne marque rien et sa recette n\'est pas à 
 
 test('les conditions d\'arrivée : le jour de bac, la maison libre ; le premier vient sans autre condition', () => {
   const s = partie(5);
-  assert(!jourDeBac(s) || s.day % DATA.VILLAGE.ARRIVEE.PERIODE === 0);
+  assert(!jourDeBac(s) || s.day % DATA.PORT.BAC.PERIODE === 0);
   versLeBac(s);
   assert(/maison libre/.test(arriveeRefus(s)), 'sans maison : refus');
   assert(testMaisonVillageois(s).ok);
@@ -141,7 +141,7 @@ test('l\'arrivée de jour : en route du port, puis chez lui ; l\'heure et la fam
   versLeBac(s);
   s.awakeMs = 0;   // (6 h)
   assertEqual(arriveeDue(s), false, 'trop tôt');
-  s.awakeMs = (DATA.VILLAGE.ARRIVEE.HEURE - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
+  s.awakeMs = (DATA.PORT.BAC.HEURES[0] - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
   assertEqual(arriveeDue(s), true, 'à l\'heure');
   const r = arriverVillageois(s);
   assert(r.ok && r.villageois.accueil === 'en_route', 'en route');

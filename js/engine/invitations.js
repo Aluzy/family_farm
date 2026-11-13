@@ -8,7 +8,10 @@ import { countItem, takeItem } from './inventory.js';
 import { habitantsDe, metierHabitant } from './habitants.js';
 import { rassasierFamille, repasJour } from './repas.js';
 import { RECIT } from './recit.js';
-import { ajouterAmitie, amitieDe, cleDe, fiche, goutPour, palierAmitie, styleHabitant, trouverPnj } from './amitie.js';
+import { ajouterAmitie, amitieDe, cleDe, fiche, goutPour, HAMEAU_VILLAGE, palierAmitie, styleHabitant, trouverPnj } from './amitie.js';
+import { villageActif } from './village.js';
+import { porteVillageois } from './villageois.js';
+import { tacheDef } from './taches.js';
 import { admireLeCoin, phraseAdmire, STYLES, tableDuRepas } from './styles.js';
 
 /* ---------- les invitations à un repas (data/amitie.json, AMITIE.INVITATION) ----------
@@ -29,7 +32,12 @@ import { admireLeCoin, phraseAdmire, STYLES, tableDuRepas } from './styles.js';
      etat: 'envoyee' | 'repondue' | 'servie' | 'manquee', invites: [{ hameau, id, cle, prenom, reponse:
      'oui' | 'non' | null }], annonce (les réponses dites au matin), servi: { plats, terrasse } }] }
    Une invitation passée (servie ou manquée) quitte la liste la nuit ; son souvenir reste dans l'amitié
-   (state.amitie.pnj[clé].souvenirs = [{ jour, plat, terrasse }]). */
+   (state.amitie.pnj[clé].souvenirs = [{ jour, plat, terrasse }]).
+
+   Fiche I6a (le chantier « l'île à bâtir », le réglage allumé) : les villageois s'invitent aussi (le « hameau »
+   HAMEAU_VILLAGE d'amitie.js) ; on les connaît tous (ils vivent ici, la famille les a accueillis). Le jour dit, la
+   scène fait venir le villageois lui-même à table (invites.js : il quitte sa journée le temps du repas, puis la
+   reprend), de là où il est, sinon de sa porte. */
 
 export const INVITATION = DATA.AMITIE.INVITATION;
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -55,6 +63,14 @@ export function relationsInvitables(state) {
       if (!connu) continue;
       const palier = palierAmitie(state, cle);
       out.push({ hameau: hid, hameauNom: h.nom, id: m.id, cle, prenom: m.prenom, enfant: !!m.enfant, metier: metierHabitant(h, m), palier, nomPalier: RECIT.PALIER_NOMS[palier] });
+    }
+  }
+  // (fiche I6a : les villageois, tous connus ; son « métier » : sa tâche)
+  if (villageActif(state) && Array.isArray(state.villageois)) {
+    for (const v of state.villageois) {
+      if (!v || typeof v.id !== 'string') continue;
+      const palier = palierAmitie(state, v.id), def = tacheDef(v.tache);
+      out.push({ hameau: HAMEAU_VILLAGE, hameauNom: 'le village', id: v.id, cle: v.id, prenom: v.prenom, enfant: false, villageois: true, metier: def ? def.nom : (v.genre === 'm' ? 'villageois' : 'villageoise'), palier, nomPalier: RECIT.PALIER_NOMS[palier] });
     }
   }
   return out.sort((x, y) => y.palier - x.palier || (x.prenom < y.prenom ? -1 : x.prenom > y.prenom ? 1 : 0));
@@ -167,6 +183,13 @@ export function invitesModele(state) {
     if (q.reponse !== 'oui') continue;
     const t = trouverPnj(state, q.hameau, q.id);
     if (!t) continue;
+    // (fiche I6a : un villageois vient lui-même, de là où il est, sinon de sa porte)
+    if (t.villageois) {
+      const style = styleHabitant(state, t);
+      const admire = admireLeCoin(state, style) ? phraseAdmire(style, invites.length) : null;
+      invites.push({ id: q.id, hameau: q.hameau, hameauNom: t.h.nom, prenom: t.m.prenom, perso: t.m.perso, apparence: validApparence(t.m.apparence, false), enfant: false, metier: '', depart: porteVillageois(state, q.id), villageois: true, admire });
+      continue;
+    }
     const h = H[q.hameau];
     // (le coin de la table est de son style : il l'admire en arrivant, js/engine/styles.js)
     const style = styleHabitant(state, t);
@@ -174,7 +197,9 @@ export function invitesModele(state) {
     invites.push({ id: q.id, hameau: q.hameau, hameauNom: h.nom, prenom: t.m.prenom, perso: t.m.perso, apparence: validApparence(t.m.apparence, !!t.m.enfant), enfant: !!t.m.enfant, metier: metierHabitant(h, t.m), depart: Number.isInteger(h.case) ? h.case : null, admire });
   }
   if (!invites.length) return null;
-  return { id: inv.id, moment: inv.moment, nom: INVITATION.MOMENTS[inv.moment].nom, etat: inv.etat, invites, paroles: { arrive: P.ARRIVE, table: P.TABLE, merci: P.MERCI, seul: P.SEUL } };
+  // (des villageois à table : on ne parle ni de la calèche ni de « chez nous », mais de l'île)
+  const table = invites.some((g) => g.villageois) ? [...P.TABLE.filter((x) => !/calèche|chez nous/i.test(x)), ...(((DATA.VILLAGE || {}).AMITIE || {}).PHRASES || {}).table || []] : P.TABLE;
+  return { id: inv.id, moment: inv.moment, nom: INVITATION.MOMENTS[inv.moment].nom, etat: inv.etat, invites, paroles: { arrive: P.ARRIVE, table, merci: P.MERCI, seul: P.SEUL } };
 }
 
 // Ce qui se sert : les plats de l'inventaire (et les fruits, les produits qui se mangent tels quels).

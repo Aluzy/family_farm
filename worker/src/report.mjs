@@ -67,6 +67,10 @@ export const GAME_ACTIONS = {
   'villageois-vendre-ok': 'Marquer ce qui est à vendre (la tournée du port)',
   'port-acheter': 'Acheter au port (une semence)',
   'port-decharger': 'Décharger sous la halle du port (tout ce qui est chargé se vend)',
+  'port-honorer': 'Honorer une commande du bac',
+  'port-importer': 'Commander au catalogue d\'import du bac',
+  'port-apporter': 'Apporter des matériaux au chantier du port',
+  'port-agrandir': 'Agrandir le port (le niveau suivant)',
   'portage-charger': 'Charger pour le port (sur la ferme)',
   'portage-recoltes': 'Charger les récoltes pour le port',
   'portage-reprendre': 'Reprendre à la ferme ce qui était chargé',
@@ -194,7 +198,7 @@ export const GAME_ACTIONS = {
 // part, jamais dans le classement des actions.
 export const INTERFACE_ACTIONS = new Set([
   // (les amis : js/ui/amis.js)
-  'amis-ouvrir', 'amis-fermer', 'amis-fiche', 'amis-fiche-fermer', 'amis-ajouter', 'amis-envoyer', 'amis-repondre', 'amis-inviter', 'amis-rejoindre',
+  'amis-ouvrir', 'amis-fermer', 'amis-villageois', 'amis-fiche', 'amis-fiche-fermer', 'amis-ajouter', 'amis-envoyer', 'amis-repondre', 'amis-inviter', 'amis-rejoindre',
   'amis-visite', 'amis-signe', 'amis-retirer', 'amis-retirer-non', 'amis-retirer-oui', 'amis-message', 'amis-copier', 'amis-partager', 'amis-connexion',
   // (l'île à bâtir, fiche I3a : la liste des villageois, la fiche d'un villageois : js/ui/villageois.js)
   'villageois-liste', 'villageois-fiche',

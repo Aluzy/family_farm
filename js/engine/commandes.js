@@ -115,6 +115,11 @@
    défont pas) — `case` : celle du personnage, à PORT.PORTEE cases du comptoir :
      port.vendre      { objet, quantite, case } vendre au comptoir (au prix de vente : market.js)
      port.acheter     { objet, quantite, case } acheter une semence (à son cours, qui monte)
+   Le bac, les commandes, l'import et les niveaux (fiche I1c ; js/engine/bac.js, sans inverse) :
+     port.honorer     { commande, case }        honorer une commande du bac avec ce qu'on a porté
+     port.importer    { article, quantite, case } commander au catalogue (« objet:jeune_pommier »…), payé d'avance
+     port.apporter    { case }                  apporter au chantier du port les matériaux portés du niveau suivant
+     port.agrandir    { case }                  payer le niveau suivant (ses matériaux apportés)
    Les tâches des villageois (l'île à bâtir, fiche I3c ; js/engine/taches.js, sans inverse) :
      villageois.attribuer { id, tache }        confier une tâche (TACHES.LISTE) au villageois `id` ; « aucune » : plus de tâche
      villageois.outil     { id, outil }        lui donner son outil (hache, pioche, faux, canne) ; « reprendre » : le reprendre
@@ -153,6 +158,7 @@ import { buyTech } from './techtree.js';
 import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
 import { acheterAuPort, dechargerAuPort, vendreAuPort } from './port.js';
+import { agrandirPort, apporterAuChantier, commanderImport, honorerCommande } from './bac.js';
 import { chargerPortage, choisirVehicule, dechargerPortage } from './portage.js';
 import { attribuer, donnerOutil, marquerAVendre, reprendreOutil } from './taches.js';
 
@@ -558,6 +564,22 @@ export const COMMANDES = {
   'port.acheter': {
     args: { objet: 'objet', quantite: 'quantite', case: 'case' },
     executer: (state, { objet, quantite, case: c }) => acheterAuPort(state, objet, Math.max(1, Math.floor(quantite)), c),
+  },
+  'port.honorer': {
+    args: { commande: 'texte', case: 'case' },
+    executer: (state, { commande, case: c }) => honorerCommande(state, commande, c),
+  },
+  'port.importer': {
+    args: { article: 'texte', quantite: 'quantite', case: 'case' },
+    executer: (state, { article, quantite, case: c }) => commanderImport(state, article, Math.max(1, Math.floor(quantite)), c),
+  },
+  'port.apporter': {
+    args: { case: 'case' },
+    executer: (state, { case: c }) => apporterAuChantier(state, c),
+  },
+  'port.agrandir': {
+    args: { case: 'case' },
+    executer: (state, { case: c }) => agrandirPort(state, c),
   },
   // (fiche I2, le portage : on charge et l'on reprend sur la ferme, on décharge sous la halle : tout se vend)
   'port.decharger': {

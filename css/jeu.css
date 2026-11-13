@@ -2471,6 +2471,17 @@ main .ancre { scroll-margin-top: 150px; }
 button.cal-day { border: 0; font: inherit; color: inherit; cursor: pointer; }
 button.cal-day:hover, button.cal-day:focus-visible { background: #dbc5e7; box-shadow: inset 0 0 0 2px var(--color-earth); }
 .cal-evt { position: absolute; top: 1px; right: 2px; font-size: 0.7rem; line-height: 1; }
+.cal-bac { position: absolute; bottom: 1px; right: 2px; font-size: 0.7rem; line-height: 1; }
+/* le bac (l'île à bâtir, fiche I1c : js/ui/port.js) : ses commandes, le catalogue, le chantier du port */
+.bac-ligne { margin: 4px 0 8px; }
+.bac-liste { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.bac-commande { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.35); }
+.bac-commande.prete { box-shadow: inset 0 0 0 2px #6f9a4a; }
+.bac-commande.ferme { opacity: 0.6; }
+.bac-ico { font-size: 1.4rem; line-height: 1; }
+.bac-texte { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.bac-commande .btn { flex: none; }
+.chantier-port li.fait { text-decoration: line-through; opacity: 0.7; }
 /* Les évènements du calendrier (js/ui/invitations.js) */
 .evenements { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; padding: 6px 0; border-top: 2px solid var(--wood-light); border-bottom: 2px solid var(--wood-light); }
 .evenements > .btn { align-self: flex-start; }
@@ -4064,6 +4075,10 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
 .amis-v { display: flex; align-items: center; gap: 6px; padding: 4px 10px; }
 .amis-qui { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 2px; background: none; border: 0; border-radius: 10px; text-align: left; color: inherit; font: inherit; cursor: pointer; }
 .amis-qui:hover, .amis-qui:focus-visible { background: var(--wood-paper); }
+/* (I6a : les villageois de l'île, en tête du volet) */
+.amis-ile-liste { flex: 0 0 auto; max-height: 40%; border-bottom: 1px solid var(--wood-paper); }
+.amis-ile { width: 100%; background: none; border: 0; border-radius: 10px; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.amis-ile:hover, .amis-ile:focus-visible { background: var(--wood-paper); }
 .amis-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .amis-id > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .amis-niv { display: inline-block; padding: 0 6px; border-radius: 999px; background: var(--prune); color: var(--wood-cream); font-size: 0.72rem; font-weight: 700; vertical-align: 1px; }
@@ -4149,6 +4164,9 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
 .villageois-fiche { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 10px 0 12px; }
 .villageois-fiche dt { font-weight: 700; }
 .villageois-fiche dd { margin: 0; }
+.villageois-fiche .ami-gouts { margin: 0; padding-left: 0; list-style: none; }
+.villageois-fiche .demande-offrir p { margin: 0 0 4px; }
+.villageois-amitie-gestes { display: flex; flex-wrap: wrap; gap: 6px; }
 .villageois-fiche .bar { display: inline-block; width: 90px; vertical-align: middle; }
 .villageois-liste { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 6px; }
 .villageois-ligne {

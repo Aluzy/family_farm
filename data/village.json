@@ -8,8 +8,8 @@
     "les tests tests/engine/village-*.test.mjs le forcent (tests/engine/aide.mjs, avecVillage). La fiche",
     "I9h le passe à true, puis retire le réglage. Les sections PORT, TACHES, ARTISANS et TRAITS viendront",
     "avec leurs fiches.",
-    "ARRIVEE (fiche I3a, js/engine/villageois.js) : l'arrivée d'un villageois. Il débarque un jour de bac : avant",
-    "le bac de la fiche I1c, tous les PERIODE jours (les jours multiples de PERIODE), de HEURE à FIN h (la page le",
+    "ARRIVEE (fiche I3a, js/engine/villageois.js) : l'arrivée d'un villageois. Il débarque du bac (fiche I1c,",
+    "js/engine/bac.js : un jour de bac, PORT.BAC.PERIODE, pendant que le bac est à quai, PORT.BAC.HEURES ; la page le",
     "met en route ; une journée finie avant, la nuit l'installe d'un coup). Il lui faut une maison libre (une pièce",
     "close du genre maison, marquée par une boîte aux lettres posée dehors contre sa porte, avec un lit que la",
     "famille ne prend pas) ; à partir du deuxième, de quoi nourrir une bouche de plus (le rangement des repas, le",
@@ -23,9 +23,6 @@
   "VILLAGE": {
     "ACTIF": false,
     "ARRIVEE": {
-      "PERIODE": 3,
-      "HEURE": 9,
-      "FIN": 17,
       "RESERVE_JOURS": 2,
       "PLAFOND": { "1": 2, "2": 4, "3": 6, "4": 9, "5": 12 },
       "BOURSE": 20,
@@ -113,7 +110,7 @@
       "si leurs maisons (leurs boîtes aux lettres) sont à VOISINE cases au plus, plus TABLE s'ils mangent à la même",
       "table ; s'y ajoute une affinité tirée de la graine et des deux ids (de 0 à AFFINITE). Connaissance dès",
       "PALIERS.connaissance, ami dès PALIERS.ami. La famille du joueur : connue dès l'arrivée (on l'a accueilli), amie",
-      "après FAMILLE_AMI jours. Deux villageois qui ont la même tâche (I3c) gagnent COLLEGUE de plus par jour (on se lie",
+      "dès le palier AMITIE.FAMILLE_AMI de l'amitié du joueur avec lui (I6a). Deux villageois qui ont la même tâche (I3c) gagnent COLLEGUE de plus par jour (on se lie",
       "en travaillant ensemble). La fiche I6b remplacera ce calcul par l'affinité sauvegardée (liens.js), sans toucher",
       "à ceux qui le lisent.",
       "BUTS : ce qu'il fait d'un créneau dehors, tiré au poids (un poids par but ; un but sans lieu, ou sans ami libre,",
@@ -136,10 +133,12 @@
       "l'échange, parmi ceux du degré (connaissance, ami), du moment (matin, jour, soir), de la météo (pluie, clair),",
       "de l'humeur (triste : l'un des deux est triste ou a faim) et de ce qu'ils font (visite, groupe, promenade, repas à",
       "la même table ; travail : au même poste, fiche I3c ; en se croisant : ceux du moment, un échange sur deux) ;",
-      "JOUEUR : ce qu'un villageois dit au personnage du joueur (par degré)."
+      "JOUEUR : ce qu'un villageois dit au personnage du joueur (par degré ; I6a : par palier d'amitié, proche et intime",
+      "plus chaleureux ; retrouvailles, revu après AMITIE.RETROUVAILLES.JOURS jours ; present, quand il en a un pour lui).",
+      "CROISE.JOUEUR_AMI (I6a) : la distance d'où un ami proche, ou celui qui a un présent, salue le personnage."
     ],
     "SOCIAL": {
-      "CONNAISSANCE": { "PAR_JOUR": 2, "VOISIN": 2, "VOISINE": 14, "TABLE": 1, "AFFINITE": 30, "PALIERS": { "connaissance": 10, "ami": 40 }, "FAMILLE_AMI": 4, "COLLEGUE": 2 },
+      "CONNAISSANCE": { "PAR_JOUR": 2, "VOISIN": 2, "VOISINE": 14, "TABLE": 1, "AFFINITE": 30, "PALIERS": { "connaissance": 10, "ami": 40 }, "COLLEGUE": 2 },
       "BUTS": {
         "POIDS": { "visite": 2, "rdv": 1.5, "promenade": 2, "eau": 1.5, "voir": 2.5, "port": 1 },
         "RECOIT": 0.1,
@@ -148,8 +147,8 @@
         "OUVRAGES": ["ruche", "bassin", "fontaine_", "ornement_", "massif_", "bloc_silo", "citerne", "compost", "station_robot", "tonnelet", "tas_citrouilles", "citrouille_halloween", "bonhomme_neige", "bac_", "pommier", "poirier", "cerisier", "abricotier", "pecher", "mangeoire_grain", "distributeur"],
         "EMOJI": { "eau": "💧", "jardin": "🌱", "betes": "🐑", "ouvrage": "👀", "port": "⚓", "promenade": "🌿" }
       },
-      "CROISE": { "RAYON": 24, "ATTENTE": 40, "DUREE": [1.6, 2.5], "SIGNE": 0.5, "ENSEMBLE": 0.35, "BOUT": 12, "REGARD": 48, "JOUEUR": 28, "JOUEUR_ATTENTE": 60, "TOUR": 3.2 },
-      "EMOJI": { "connaissance": ["👋", "😊"], "ami": ["😄", "❤️", "😊", "👋"], "triste": ["🙂"] },
+      "CROISE": { "RAYON": 24, "ATTENTE": 40, "DUREE": [1.6, 2.5], "SIGNE": 0.5, "ENSEMBLE": 0.35, "BOUT": 12, "REGARD": 48, "JOUEUR": 28, "JOUEUR_AMI": 56, "JOUEUR_ATTENTE": 60, "TOUR": 3.2 },
+      "EMOJI": { "connaissance": ["👋", "😊"], "ami": ["😄", "❤️", "😊", "👋"], "proche": ["😄", "❤️", "🥰"], "intime": ["❤️", "🥰", "😄"], "retrouvailles": ["😄", "🥰"], "present": ["🎁"], "triste": ["🙂"] },
       "REPLIQUES": {
         "connaissance": [
           ["Bonjour, {prenom} !", "Bonjour ! Ça va bien ?"],
@@ -276,7 +275,11 @@
       },
       "JOUEUR": {
         "connaissance": ["Bonjour, {joueur} !", "Salut, {joueur} !", "Belle journée, {joueur} !", "Oh, bonjour !", "Ça va, {joueur} ?"],
-        "ami": ["{joueur} ! Ça fait plaisir !", "Coucou, {joueur} !", "Merci pour tout, {joueur} !", "Te voilà, {joueur} !", "Toujours au travail, {joueur} ?"]
+        "ami": ["{joueur} ! Ça fait plaisir !", "Coucou, {joueur} !", "Merci pour tout, {joueur} !", "Te voilà, {joueur} !", "Toujours au travail, {joueur} ?"],
+        "proche": ["{joueur} ! Je pensais justement à toi !", "Ah, {joueur} ! Ma journée est plus belle.", "Viens, {joueur}, que je te dise bonjour !", "{joueur} ! Tu as une minute pour moi ?", "Quel plaisir de te croiser, {joueur} !"],
+        "intime": ["{joueur} ! Toi, tu me fais toujours sourire.", "Mon ami {joueur} ! Viens là !", "{joueur} ! L'île ne serait pas pareille sans toi.", "Ah, te voilà enfin, {joueur} ! Je t'attendais.", "{joueur} ! Tu sais que tu comptes, ici ?"],
+        "retrouvailles": ["{joueur} ! Te revoilà ! Ça faisait longtemps !", "Oh, {joueur} ! Tu m'as manqué, tu sais.", "{joueur} ! Quelle joie de te revoir !"],
+        "present": ["{joueur} ! Attends, j'ai un petit quelque chose pour toi !", "Tiens, {joueur}, je t'ai gardé ça !", "{joueur} ! C'est pour toi, de bon cœur."]
       },
       "ACTIVITE": {
         "visite": ["Je rends visite à un ami.", "On cause un peu, devant la porte.", "Je passais dire bonjour."],
@@ -288,6 +291,84 @@
         "ouvrage": ["J'admire ce que tu as bâti.", "C'est du beau travail, ça."],
         "port": ["Je descends voir le port.", "J'aime regarder les bateaux."]
       }
+    },
+    "//AMITIE": [
+      "L'amitié du joueur avec les villageois (fiche I6a ; le moteur : js/engine/villageois-amitie.js, posé sur",
+      "js/engine/amitie.js et data/amitie.json : les mêmes paliers et les mêmes gains qu'avec les habitants des hameaux,",
+      "AMITIE.PAROLE à la première conversation du jour, AMITIE.CADEAU selon son goût, AMITIE.RETROUVAILLES, une demande",
+      "honorée DEMANDES.AMITIE, un repas partagé AMITIE.INVITATION.REPAS). Elle est gardée dans",
+      "state.amitie.pnj[l'id du villageois]. Pas de bonus de production lié à l'amitié.",
+      "ACCUEIL : les points d'amitié de son arrivée (la famille l'a accueilli : « poli »). FAMILLE_AMI : le palier d'où",
+      "la famille du joueur est son amie dans la vie sociale (villageois-liens.js, connaissance(state, id, 'famille') ;",
+      "avant ce palier : une connaissance).",
+      "Ses goûts sont tirés à son arrivée (amitie.js goutsTires : parmi les listes de tous les métiers des hameaux et la",
+      "liste commune, AMITIE.GOUTS objets de chaque sorte) et gardés avec lui (v.gouts) : ils ne changent pas avec sa",
+      "tâche. CONFIE : dès le palier PALIER, il dit un de ses goûts que tu ne connais pas encore, une fois sur CHANCE à",
+      "la première conversation du jour, et chaque fois qu'un cadeau lui fait passer un palier ; ils rejoignent ceux",
+      "qu'on découvre en offrant.",
+      "METIERS : le métier des hameaux dont il prend les présents (AMITIE.RETOUR.PRESENTS) et les besoins",
+      "(DEMANDES.BESOINS), selon sa tâche (I3c ; sans tâche : « * »). Le présent : chaque nuit, un ami au palier",
+      "AMITIE.RETOUR.PALIER ou plus en prépare un avec AMITIE.RETOUR.CHANCE[palier] % de chance, s'il n'en a pas déjà un ;",
+      "il te le donne en main propre, quand il te salue ou que tu lui parles (s'il attend, rien ne se perd).",
+      "DEMANDES : chaque nuit, avec CHANCE, un villageois là depuis DEPUIS jours, sans demande ouverte, en fait une (MAX",
+      "ouvertes au plus pour le village) ; elle dure DEMANDES.DUREE jours, puis s'oublie sans rien coûter (B-1).",
+      "TACHE_SANS_HUMEUR : le palier d'où il accepte une tâche qu'il n'aime pas sans perdre d'humeur (les tâches qu'il",
+      "aime viendront avec les traits, I6c). PROPOS_PART : la part des conversations où il dit un sujet du moment",
+      "(VILLAGE.PROPOS).",
+      "PHRASES : cadeau (sa réaction, par goût), gout (ce qu'il confie ; {Objet} en tête de phrase, {objet} dedans),",
+      "present ({quoi} : ce qu'il donne), retrouvailles, annonce (sa demande, au matin), table (ce qu'il dit à un repas",
+      "partagé, avec AMITIE.INVITATION.PAROLES.TABLE, sans la calèche). Chacune tient en une bulle."
+    ],
+    "AMITIE": {
+      "ACCUEIL": 10,
+      "FAMILLE_AMI": 2,
+      "CONFIE": { "PALIER": 2, "CHANCE": 0.35 },
+      "TACHE_SANS_HUMEUR": 3,
+      "PROPOS_PART": 0.4,
+      "METIERS": { "bois": "bucheron", "pierre": "mineur", "peche": "pecheur", "betes": "berger", "cueillette": "cueilleur", "verger": "cueilleur", "champs": "jardinier", "fauchage": "jardinier", "cuisine": "jardinier", "navette": "jardinier", "*": "jardinier" },
+      "DEMANDES": { "CHANCE": 0.35, "MAX": 2, "DEPUIS": 2 },
+      "PHRASES": {
+        "cadeau": {
+          "adore": ["Oh ! J'adore ça ! Merci !", "Mon préféré ! Tu as deviné ?", "Ça, c'est un vrai cadeau ! Merci !"],
+          "aime": ["Oh, merci ! J'aime bien ça.", "C'est gentil, ça me fait plaisir !", "Merci ! Ça tombe bien."],
+          "neutre": ["Merci, c'est gentil.", "Oh, merci beaucoup !"],
+          "deteste": ["Oh… merci quand même.", "Hum… c'est l'intention qui compte !"]
+        },
+        "gout": {
+          "adore": ["Tu sais ce que j'adore ? {objet} !", "Un secret : {objet}, j'en raffole.", "{Objet}… rien ne me fait plus plaisir !"],
+          "aime": ["J'aime bien {objet}, tu sais.", "{Objet}, ça me fait toujours plaisir.", "Si tu as {objet} en trop, pense à moi !"],
+          "deteste": ["Entre nous, {objet}… très peu pour moi !", "Je te le dis : {objet}, je n'aime pas du tout."]
+        },
+        "present": ["Tiens, c'est pour toi : {quoi}. De bon cœur !", "Je t'ai gardé ça : {quoi}. Pour toi !", "Un petit présent : {quoi}. Merci pour tout !"],
+        "retrouvailles": ["Te revoilà ! Ça faisait longtemps.", "Quelle joie de te revoir !", "Ah, te voilà enfin ! Tu m'as manqué."],
+        "annonce": "📜 {prenom} a une demande pour toi : {n} × {objet}.",
+        "table": ["Ça fait du bien de manger ensemble.", "Quel bon repas, entre voisins !", "On est bien, sur cette île.", "Le village, c'est aussi ça : une table à partager."]
+      }
+    },
+    "//PROPOS": [
+      "Ce que disent les villageois de ce qu'ils voient (fiche I6a ; js/engine/propos.js proposVillageois, comme les",
+      "habitants : HABITANTS.PROPOS dans data/monde.json). GARDES : les sujets des habitants qu'ils disent tels quels (la",
+      "ferme, la lune, la météo, le mois, leurs goûts). Les sujets réécrits pour le village ont ici leurs phrases",
+      "(ferme_cultures, ferme_poules, ferme_maison, cadeau_merci, ami_proche, jours) ; les nouveaux aussi : village_ami et",
+      "village_voisin (un villageois qu'il connaît : {ami}, {voisin}), village_collegue (la même tâche : {collegue}),",
+      "village_nouveau (arrivé depuis 3 jours au plus : {qui}), village_depuis (depuis combien de jours il est là),",
+      "port_bac (le bac passe demain). Les autres (le hameau, la calèche, les cousins, les fêtes, les projets) ne sont",
+      "pas dits par un villageois. {e} : l'accord de celui qui parle. Une phrase tient en une bulle."
+    ],
+    "PROPOS": {
+      "GARDES": ["ferme_vide", "ferme_moutons", "ferme_vaches", "ferme_ruches", "ferme_verger", "ferme_moulin", "gout_connu", "lune_pleine", "lune_nouvelle", "lune_croissante", "lune_decroissante", "meteo_pluie", "meteo_brume", "mois"],
+      "ferme_cultures": ["Ton coin de {culture} a fière allure, ce matin !", "Ta {culture} pousse bien. Tu me diras ton secret ?", "Je passe devant ta {culture} chaque jour : quel plaisir !", "{n} parcelles cultivées ? Tu as la main verte.", "La {culture}, ça aime la patience. Toi aussi, on dirait !", "Avec toute cette {culture}, l'île ne manquera pas de soupe."],
+      "ferme_poules": ["Tes {n} poules, elles pondent bien ?", "Je les entends, tes poules, le matin. Ça réveille !", "Des poules sur l'île, c'est des œufs au petit-déjeuner !", "Un peu de blé chaque jour, et tes poules te le rendront en œufs."],
+      "ferme_maison": ["Ta ferme a bien changé depuis que je suis là.", "Tu as encore construit quelque chose ? Tu ne t'arrêtes jamais !", "Le village prend forme, grâce à toi.", "Une maison qui grandit, c'est une famille heureuse."],
+      "cadeau_merci": ["Merci encore pour ton cadeau. J'y pense encore !", "Ton cadeau de l'autre jour m'a fait tellement plaisir.", "Ton cadeau a trouvé sa place chez moi. Merci !"],
+      "ami_proche": ["Quand je te vois arriver, ma journée s'éclaire.", "Je ne regrette pas d'avoir pris le bac jusqu'ici, tu sais.", "Si tu as besoin de quoi que ce soit, tu sais où me trouver.", "Il y a toujours une place pour toi à ma table.", "Sur cette île, je me sens chez moi. Grâce à toi."],
+      "jours": ["Déjà {jours} jours sur l'île ! Le temps file.", "{jours} jours sur l'île… et tant de choses déjà bâties."],
+      "village_depuis": ["Ça fait {jours} jours que j'ai débarqué. Je me sens chez moi.", "Déjà {jours} jours ici ! Je ne regrette pas le voyage."],
+      "village_ami": ["{ami} et moi, on s'entend vraiment bien.", "Si tu cherches {ami}, on est souvent ensemble.", "Avec {ami}, on se raconte tout. Enfin, presque !", "{ami} m'a bien aidé{e} ce matin. Un vrai ami."],
+      "village_voisin": ["Tu connais bien {voisin} ? Dis-lui bonjour de ma part.", "{voisin} m'a parlé de toi hier. Que du bien !", "J'apprends à connaître {voisin}. Quelqu'un de bien.", "{voisin} a ri toute la soirée hier. Ça fait du bien !"],
+      "village_collegue": ["Avec {collegue}, on fait une bonne équipe, au travail.", "{collegue} travaille avec moi : le temps passe plus vite.", "Le travail à deux, avec {collegue}, c'est plus gai."],
+      "village_nouveau": ["Tu as vu ? {qui} vient d'arriver par le bac !", "{qui} s'installe à peine. On l'aidera un peu.", "Bienvenue à {qui} ! Le village grandit."],
+      "port_bac": ["Le bac passe demain. Qui sait qui il amènera ?", "Demain, c'est jour de bac. J'irai voir le port !", "Le bac arrive demain : l'île va avoir de la visite."]
     },
     "//PALIERS": [
       "Les paliers de l'île (fiche I7a, js/engine/paliers.js) : avec ACTIF, une partie neuve suit ces sept paliers à la",
@@ -457,7 +538,7 @@
       "passe sur un pont de planches. VITESSE : sur un chemin (un chemin posé, sur la ferme ou dehors, le chemin de la",
       "ferme), le personnage va VITESSE % plus vite, à pied comme à cheval (js/ui/stage.js : la vitesse de sa case)."
     ],
-    "CHEMIN": { "VITESSE": 50, "PINCEAU": 2, "PRES_FERME": 8 },
+    "CHEMIN": { "VITESSE": 100, "PINCEAU": 2, "PRES_FERME": 8 },
     "//PORTAGE": [
       "Le portage (fiche I2, js/engine/portage.js ; la fenêtre du port, js/ui/port.js) : ce qu'on vend au port, on l'y",
       "porte. Sur la ferme, on charge (de l'inventaire et du réfrigérateur, avec leur fraîcheur) ; sous la halle, on",
@@ -586,7 +667,7 @@
     "niveau du port), et le plan le place (js/engine/monde-gen.js, elementsDuMonde, après tous les autres lieux :",
     "ils ne bougent pas) ; le bâti se fait avec les hameaux (js/engine/monde-hameaux.js, planPort).",
     "NOM : son nom (le panneau, la carte du monde, la boussole). NIVEAU_DEPART : le niveau d'une partie neuve",
-    "(I1c les fera payer, state.port.niveau).",
+    "(state.port.niveau ; les suivants se paient : NIVEAUX, fiche I1c).",
     "PLAN : l'emplacement. Une case de terre (plage, prairie, lande) au bord de la mer, d'où un quai de QUAI",
     "cases (celui du niveau 5) avance droit vers le sud ou vers l'est, sur LARGEUR cases de large, l'eau libre",
     "sur EAU cases de chaque côté au-delà des deux premières cases et deux cases plus loin que son bout ; la terre",
@@ -598,7 +679,11 @@
     "ne convient (trop découpée, trop de lieux), l'eau libre de côté puis la distance aux lieux se relâchent.",
     "NIVEAUX : du niveau 1 au niveau 5, la longueur du quai et ce que le niveau ajoute (le niveau 1 : le quai",
     "court, la halle, sa cale, son panneau et ses deux lanternes ; ensuite des caisses, des tonneaux, le mât à",
-    "fanion, un quai plus long).",
+    "fanion, un quai plus long) ; fiche I1c : commandes (combien le bac en apporte à chaque passage) et prix (ce que",
+    "coûte d'y passer : des pièces, payées au comptoir, et des matériaux apportés sur place, au chantier du port :",
+    "on les y porte, en une ou plusieurs fois, puis on paie ; le niveau 1 est celui du départ, sans prix). Chaque",
+    "niveau ouvre aussi un rang du catalogue d'import (IMPORT.RANGS) et accueille plus de villageois",
+    "(VILLAGE.ARRIVEE.PLAFOND).",
     "SORTES : les dessins du port (scripts/carte/port.py), rangés à la suite de ceux des hameaux dans leur",
     "planche (assets/hameaux.png : HAMEAUX.SORTES puis celles-ci ; à n'allonger qu'à la fin), même forme que",
     "HAMEAUX.SORTES ; le quai et la cale sont du genre « ponton » (sur l'eau, sous ce qui marche dessus).",
@@ -610,7 +695,30 @@
     "(js/engine/market.js) ; la calèche ne commerce plus. PORTEE : à combien de cases au plus d'une case du comptoir",
     "le personnage commerce (toute la halle). HEURES : l'heure d'ouverture et celle de fermeture du comptoir (de 6 h,",
     "le réveil, à 21 h). ICONE : celle du port (la fenêtre, le menu, les messages). ELEMENT : ce que l'écran d'un",
-    "niveau dit du commerce qu'il ouvre (à la place de NIVEAUX.ELEMENTS.marche, la calèche)."
+    "niveau dit du commerce qu'il ouvre (à la place de NIVEAUX.ELEMENTS.marche, la calèche).",
+    "Le bac (fiche I1c, js/engine/bac.js ; la scène : js/carte/ferme/bac.js) : il accoste tous les BAC.PERIODE jours",
+    "(les jours multiples de PERIODE), de BAC.HEURES[0] à BAC.HEURES[1] h, le long du bout du quai ; sa venue se",
+    "déduit du jour (rien n'est simulé pas à pas) : la page, la nuit ou un appel du moteur rattrapent les passages",
+    "manqués, RATTRAPAGE au plus (les plus récents ; les imports attendus arrivent au premier). Il emporte tout ce",
+    "qui a été vendu au port depuis son dernier départ : la scène le montre en caisses sur le quai (une caisse par",
+    "CAISSE volumes vendus, CAISSES_MAX au plus), qui partent avec lui ; il n'y a ni quota ni entrepôt. ARRIVEE_S :",
+    "les secondes de son arrivée et de son départ, dans la scène (il glisse depuis le large). C'est lui qui apporte",
+    "les imports, les commandes et les nouveaux villageois (VILLAGE.ARRIVEE).",
+    "COMMANDES : à chaque passage, NIVEAUX[niveau].commandes demandes tirées de la graine et du jour parmi ce que le",
+    "joueur sait produire (les cultures qu'il a récoltées, les plats qu'il a préparés, les œufs, la laine et le lait",
+    "de ses bêtes) : un objet, une quantité (de quoi valoir VALEUR[niveau − 1] pièces, à ± ECART %, entre QUANTITE[0]",
+    "et QUANTITE[1]), une prime (de PRIME[0] à PRIME[1] %, par pas de 5). Valables jusqu'au passage suivant ; on",
+    "les honore au comptoir avec ce qu'on a porté (le portage, fiche I2) : le prix de vente, plus la prime, plus XP",
+    "points d'expérience. Manquée, elle s'efface sans rien coûter.",
+    "IMPORT : le catalogue de ce que le bac apporte. RANGS[k] : ce qu'ouvre le niveau k + 1 du port ; chaque article",
+    "a son prix (pour un lot de `lot` unités) : un objet (objet : des jeunes arbres, des plants de vigne, les",
+    "espèces de la serre, le sucre et les épices, les graines de fleurs rares), une bête (bete : elle va au",
+    "Poulailler ou à l'Étable ; sans place à sa livraison, son prix est rendu) ou un plan d'objet (plan : appris à sa",
+    "livraison). Ce que le niveau du joueur débloquait le reste (un jeune arbre : le Verger ; une culture : son",
+    "déblocage ; une bête : son bâtiment) : le catalogue ajoute la condition du port. Ces articles ne s'achètent plus",
+    "tout de suite au comptoir. Une commande d'import se paie d'avance et arrive au passage suivant du bac (elle va",
+    "droit à la ferme). Les plants sauvages rapportés de l'île (fiche I7e : inscrireSauvage) s'y inscrivent une fois",
+    "cultivés, au rang SAUVAGES.RANG, au prix de vente fois SAUVAGES.MARGE %, par lot de SAUVAGES.LOT."
   ],
   "PORT": {
     "NOM": "Le port",
@@ -621,12 +729,44 @@
     "ELEMENT": { "nom": "Le port", "icone": "⚓", "note": "au comptoir de la halle, au bout du chemin : vends tes récoltes, achète des graines" },
     "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 80, "LOIN": 100, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
     "NIVEAUX": [
-      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },
-      { "quai": 8, "ajoute": ["caisses"] },
-      { "quai": 10, "ajoute": ["tonneaux", "mat"] },
-      { "quai": 10, "ajoute": ["caisses_terre"] },
-      { "quai": 12, "ajoute": ["tonneaux_terre"] }
+      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"], "commandes": 2 },
+      { "quai": 9, "ajoute": ["caisses"], "commandes": 3,
+        "prix": { "pieces": 1800, "planche": 24, "pierre": 16 } },
+      { "quai": 10, "ajoute": ["tonneaux", "mat"], "commandes": 3,
+        "prix": { "pieces": 5000, "planche": 40, "pierre": 30, "lingot_fer": 6 } },
+      { "quai": 11, "ajoute": ["caisses_terre"], "commandes": 4,
+        "prix": { "pieces": 11000, "planche": 60, "pierre": 40, "lingot_fer": 12 } },
+      { "quai": 12, "ajoute": ["tonneaux_terre"], "commandes": 5,
+        "prix": { "pieces": 24000, "planche": 80, "pierre": 60, "lingot_fer": 20, "lingot_cuivre": 10 } }
     ],
+    "BAC": { "PERIODE": 3, "HEURES": [9, 17], "RATTRAPAGE": 3, "CAISSE": 12, "CAISSES_MAX": 4, "ARRIVEE_S": 7 },
+    "COMMANDES": { "VALEUR": [50, 90, 150, 230, 340], "ECART": 30, "QUANTITE": [2, 40], "PRIME": [25, 60], "XP": 15 },
+    "IMPORT": {
+      "RANGS": [
+        [
+          { "objet": "jeune_pommier", "prix": 50 }, { "objet": "jeune_poirier", "prix": 50 }, { "objet": "jeune_cerisier", "prix": 60 },
+          { "objet": "jeune_abricotier", "prix": 55 }, { "objet": "jeune_pecher", "prix": 55 }, { "objet": "plant_vigne", "prix": 30, "lot": 4 }
+        ],
+        [
+          { "objet": "cacao", "prix": 40, "lot": 2 }, { "objet": "vanille", "prix": 70, "lot": 2 }, { "objet": "cafe", "prix": 30, "lot": 2 },
+          { "objet": "sucre", "prix": 24, "lot": 10 }, { "objet": "epices", "prix": 34, "lot": 10 }
+        ],
+        [
+          { "bete": "poule", "prix": 60 }, { "bete": "mouton", "prix": 160 }, { "bete": "vache", "prix": 260 }
+        ],
+        [
+          { "plan": "banc_rondins", "prix": 300 }, { "plan": "table_rondins", "prix": 300 }, { "plan": "chaise_peinte", "prix": 320 },
+          { "plan": "jarre_coquillages", "prix": 360 }, { "plan": "lanterne_papier", "prix": 380 }, { "plan": "bassin", "prix": 520 },
+          { "plan": "banc_pierre", "prix": 420 }, { "plan": "jardiniere_pierre", "prix": 420 }, { "plan": "pergola", "prix": 600 }
+        ],
+        [
+          { "objet": "graine_lavande", "prix": 40, "lot": 5 }, { "objet": "graine_coquelicot", "prix": 30, "lot": 5 },
+          { "objet": "graine_pavot", "prix": 30, "lot": 5 }, { "objet": "graine_myosotis", "prix": 30, "lot": 5 },
+          { "objet": "graine_lupin", "prix": 35, "lot": 5 }
+        ]
+      ],
+      "SAUVAGES": { "RANG": 5, "MARGE": 300, "LOT": 3 }
+    },
     "SORTES": [
       { "nom": "quai", "genre": "ponton", "variantes": 8 },
       { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
@@ -637,7 +777,10 @@
       { "nom": "tonneaux", "genre": "objet", "variantes": 2 },
       { "nom": "mat_fanion", "genre": "objet", "variantes": 1 },
       { "nom": "panneau_port", "genre": "objet", "variantes": 1 },
-      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 }
+      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 },
+      { "nom": "bac_port", "genre": "objet", "variantes": 2 },
+      { "nom": "passerelle_port", "genre": "ponton", "variantes": 2 },
+      { "nom": "caisses_bac", "genre": "objet", "variantes": 3 }
     ],
     "BLOQUE": ["poteau_halle", "comptoir", "balance", "caisses", "tonneaux", "mat_fanion", "panneau_port", "lanterne_port"],
     "LANTERNE": {

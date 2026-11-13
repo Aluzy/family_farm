@@ -112,11 +112,13 @@ test('connaissance : les jours ensemble, les maisons voisines, la table, l\'affi
     for (let j = 0; j < 30; j += 5) { s.day += 5; scores.push(connaissance(s, a, c).score); }
     for (let k = 1; k < scores.length; k++) assert(scores[k] >= scores[k - 1], `il ne baisse pas (${scores})`);
     assertEqual(connaissance(s, a, c).nom, 'ami', 'amis après un mois');
-    // la famille : connue dès l'arrivée, amie après FAMILLE_AMI jours
+    // la famille : connue dès l'arrivée, amie dès le palier VILLAGE.AMITIE.FAMILLE_AMI de l'amitié (I6a)
     const { s: t } = ile(2, 2, { il_y_a: 0 });
     assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'connaissance', 'connue dès l\'arrivée');
-    t.day += DATA.VILLAGE.SOCIAL.CONNAISSANCE.FAMILLE_AMI;
-    assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'ami', 'amie ensuite');
+    t.day += 30;
+    assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'connaissance', 'les jours seuls n\'en font pas une amie');
+    t.amitie.pnj[t.villageois[0].id].pts = DATA.RECIT.PALIERS[DATA.VILLAGE.AMITIE.FAMILLE_AMI];
+    assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'ami', 'amie avec l\'amitié');
     // la carte : les deux sens
     const C = liensPourLaCarte(s);
     assertEqual(C.paires[a][b], C.paires[b][a]);

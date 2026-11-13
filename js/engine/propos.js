@@ -174,6 +174,25 @@ function memoire(state) {
   return state.propos;
 }
 
+// Fiche I6a (js/engine/villageois-amitie.js, proposVillageois) : les conditions des sujets des habitants, par id,
+// pour ceux que les villageois reprennent (VILLAGE.PROPOS.GARDES, et ceux qu'il réécrit). Le contexte : { state, cle }.
+export const CONDITIONS_PROPOS = Object.freeze(Object.fromEntries(SUJETS));
+
+// Un sujet tiré par `rnd` parmi `sujets` ([{ id, mots }], déjà vrais), ses phrases dans `phrases[id]` : { id, texte },
+// ou null ; il entre dans la mémoire de `qui` (state.propos[qui] : MEMOIRE sujets, qu'il ne redit pas).
+export function direSujet(state, qui, sujets, phrases, rnd) {
+  const deja = new Set(memoire(state)[qui] || []);
+  const S = sujets.filter((s) => !deja.has(s.id) && Array.isArray(phrases[s.id]) && phrases[s.id].length);
+  if (!S.length) return null;
+  const s = S[Math.floor(rnd() * S.length)];
+  const L = phrases[s.id];
+  const texte = remplir(L[Math.floor(rnd() * L.length)], s.mots);
+  const M = memoire(state), l = (M[qui] || []).filter((x) => x !== s.id);
+  l.push(s.id);
+  M[qui] = l.slice(-PROPOS().MEMOIRE);
+  return { id: s.id, texte };
+}
+
 // Un sujet du moment pour l'habitant, tiré par `rnd` (la graine de sa conversation) : { id, texte }, ou null
 // (rien à dire de neuf, ou ce n'est pas le moment : PART). Le sujet dit entre dans sa mémoire.
 export function proposDuMoment(state, hid, h, f, m, rnd) {

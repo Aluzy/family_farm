@@ -17,6 +17,14 @@ export function nouveauDehors() {
   return { troncon: 'a_poser', chemins: [] };
 }
 
+// Le port d'une partie neuve du chantier (fiche I1c, js/engine/bac.js : state.port) : son niveau de départ, le dernier
+// bac d'avant le jour `jour` compté pour passé (une partie ne rattrape pas les bacs d'avant elle).
+export function nouveauPort(jour = 1) {
+  const per = Math.max(1, Math.floor(Number(DATA.PORT && DATA.PORT.BAC && DATA.PORT.BAC.PERIODE) || 1));
+  const passe = Math.floor((Math.max(1, jour) - 1) / per) * per;
+  return { niveau: DATA.PORT.NIVEAU_DEPART, passe, parti: passe, commandes: [], honorees: 0, imports: [], vendu: {}, chantier: {}, sauvages: [], avis: [] };
+}
+
 // Le chantier est-il allumé pour cette partie ?
 export function villageActif(state) {
   if (DATA.VILLAGE && DATA.VILLAGE.ACTIF === true) return true;
@@ -28,6 +36,7 @@ export function villageActif(state) {
 export function allumerEssaiVillage(state) {
   state.essais = { ...(state.essais || {}), village: true };
   if (!state.dehors) state.dehors = nouveauDehors();
+  if (!state.port) state.port = nouveauPort(state.day);
   return commencerPaliers(state);
 }
 

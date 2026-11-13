@@ -49,7 +49,7 @@ Posé après I3b, à la demande de l'utilisateur (des liens visibles entre villa
   connaissance, 2 ami), nom, score (0 à 100), jours }`, déduit chaque jour des jours passés ensemble sur l'île
   (depuis l'arrivée du second), des maisons voisines, de la table commune et d'une affinité tirée de la graine et
   des deux ids (`VILLAGE.SOCIAL.CONNAISSANCE`) ; la famille du joueur (`b = 'famille'`) : connue dès l'arrivée, amie
-  après `FAMILLE_AMI` jours. `liensDuVillage` (toutes les paires, gardées par jour), `liensPourLaCarte` (le modèle de
+  dès le palier « cordial » de l'amitié du joueur (I6a, `VILLAGE.AMITIE.FAMILLE_AMI`). `liensDuVillage` (toutes les paires, gardées par jour), `liensPourLaCarte` (le modèle de
   la carte). **I6b remplace le calcul** : seul le corps de `scoreDe` (le score de la paire) change, pour lire
   l'affinité sauvegardée ; les paliers « connaissance » et « ami » deviennent ceux de la fiche (connaissance,
   camarade, ami, proche : `degre` pourra monter à 3) ; ceux qui lisent (la journée, la scène, les répliques) ne

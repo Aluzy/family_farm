@@ -10,7 +10,8 @@
      leurs (scripts/carte/port.py) ; la scène l'anime (js/carte/ferme/hameaux.js : les lanternes le soir).
    - Il est connu dès le départ : la carte du monde le montre, son chemin aussi, et la boussole y mène
      (js/engine/monde-vu.js, lieuxDeLaCarte).
-   Les niveaux payés viendront avec I1c (state.port.niveau).
+   Les niveaux se paient (fiche I1c, js/engine/bac.js : agrandirPort ; state.port.niveau), comme le bac, ses commandes
+   et le catalogue d'import.
 
    Le commerce (fiche I1b) : sous la halle, au comptoir, on vend ce que la ferme produit et ce qu'on trouve
    sur l'île, on achète les semences. Avec le chantier allumé, c'est la seule interface économique : la calèche
@@ -43,7 +44,8 @@ import { seedItem } from './crops.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { planDuMonde } from './monde.js';
 import { dispositionPort } from './monde-gen.js';
-import { chargeDe, vendreCharge, vendreToutLaCharge } from './portage.js';
+import { chargeDe, materiauDuChantier, vendreCharge, vendreToutLaCharge } from './portage.js';
+import { objetImporte } from './bac.js';
 
 export const PORT = DATA.PORT;
 export const NIVEAUX_PORT = PORT.NIVEAUX.length;
@@ -146,10 +148,11 @@ export function portOuvert(state, ou = null, o = {}) {
 }
 
 // Une semence en vente au port : une semence (market.js, isBuyable) dont la culture est débloquée par le niveau
-// du joueur ; un jeune arbre, le Verger débloqué.
+// du joueur ; un jeune arbre, le Verger débloqué. (fiche I1c : ce que le bac importe, PORT.IMPORT — les jeunes
+// arbres, les plants de vigne, les espèces de la serre — ne s'achète plus tout de suite : bac.js commanderImport)
 export function enVenteAuPort(state, item) {
   const def = DATA.OBJETS[item];
-  if (!def || !isBuyable(item)) return false;
+  if (!def || !isBuyable(item) || objetImporte(item)) return false;
   if (def.arbre) return isUnlocked(state, 'verger');
   return !Object.keys(DATA.CULTURES).some((c) => seedItem(c) === item && !isUnlocked(state, c));
 }
@@ -166,9 +169,9 @@ export function vendablesPort(state) {
 }
 
 // Ce que le joueur pourrait charger pour le port (sur la ferme) : [item] (ce qui se vend et qu'il a, une unité
-// entière au moins).
+// entière au moins ; fiche I1c : et les matériaux du chantier du port, les lingots compris).
 export function chargeablesPort(state) {
-  return Object.keys(DATA.OBJETS).filter((k) => !DATA.OBJETS[k].invendable && Math.floor(sellableCount(state, k) + EPS) >= 1);
+  return Object.keys(DATA.OBJETS).filter((k) => (!DATA.OBJETS[k].invendable || materiauDuChantier(k)) && Math.floor(sellableCount(state, k) + EPS) >= 1);
 }
 
 // Devis d'un achat au port : { quantite, cout } (market.js, buyQuote).
@@ -185,8 +188,9 @@ export function vendreAuPort(state, item, qty, ou = null, o = {}) {
   return vendreCharge(state, item, qty);   // (les paliers de l'île : ventesPort, compté par vendreCharge)
 }
 
-// Le joueur (sur la case `ou`) décharge sous la halle : tout ce qu'il a porté se vend d'un coup (fiche I2).
-// → { ok, gain, vendus: { objet: n } } ou le refus.
+// Le joueur (sur la case `ou`) décharge sous la halle : tout ce qu'il a porté se vend d'un coup (fiche I2 ; fiche I1c :
+// les matériaux du chantier du port s'y apportent avant, onglet Le port : bac.js apporterAuChantier ; ce qui ne se vend
+// pas, les lingots, reste chargé). → { ok, gain, vendus: { objet: n } } ou le refus.
 export function dechargerAuPort(state, ou = null, o = {}) {
   const ici = portOuvert(state, ou, o);
   if (!ici.ok) return fail(ici.raison);
@@ -200,6 +204,7 @@ export function acheterAuPort(state, item, qty = 1, ou = null, o = {}) {
   if (!def) return fail('Objet inconnu.');
   const ici = portOuvert(state, ou, o);
   if (!ici.ok) return fail(ici.raison);
+  if (objetImporte(item)) return fail(`${def.nom} vient par le bac : commande-le au port (l'onglet Import), il arrive au passage suivant.`);
   if (!enVenteAuPort(state, item)) return fail(isBuyable(item) ? `${def.nom} : pas encore en vente (ton niveau ne l'a pas débloqué).` : `${def.nom} ne s'achète pas au port : seulement des semences.`);
   return buyItem(state, item, qty, 'Port');
 }

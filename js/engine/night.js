@@ -34,11 +34,13 @@ import { pousserMassifs } from './massifs.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 import { distribuerGrain } from './distributeur.js';
 import { chainesDeLaJournee } from './chaines.js';
-import { demandesNuit } from './demandes.js';
+import { demandesNuit, demandesVillageoisNuit } from './demandes.js';
 import { voisinsNuit } from './voisins.js';
 import { enExpedition, tentePortee } from './equipement.js';
-import { villageoisNuit } from './villageois.js';
+import { villageoisDe, villageoisNuit } from './villageois.js';
+import { amitieVillageoisNuit } from './villageois-amitie.js';
 import { tachesNuit } from './taches.js';
+import { avancerBac } from './bac.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
@@ -308,8 +310,14 @@ export function runNight(state) {
   // (I3c, taches.js : avant, chacun finit ses actions du jour ; sa nuit les met dans son journal)
   const taches = tachesNuit(state);
   if (taches) state.nuit.taches = taches;
+  // (fiche I1c, bac.js : le bac du jour est passé et reparti ; un passage manqué est rattrapé)
+  const bac = avancerBac(state, { nuit: true });
+  if (bac && bac.arrivees.length) state.nuit.bac = bac;
   const villageois = villageoisNuit(state);
   if (villageois) state.nuit.villageois = villageois;
+  // (I6a, villageois-amitie.js : un ami proche prépare parfois un présent, qu'il te donnera en main propre)
+  const amisIle = amitieVillageoisNuit(state);
+  if (amisIle) state.nuit.amitieVillageois = amisIle;
   // E-8 : un monde partagé (state.mondePartage, posé à la mise en ligne : docs/monde-partage.md, M.3) n'est
   // que la ferme : sa nuit ne fait pas vivre le grand monde (les hameaux, l'amitié, les invitations, les
   // plans, les projets, la visite de bienvenue, le récit), qui reste à la partie solo du propriétaire
@@ -347,6 +355,9 @@ export function runNight(state) {
   pousserBacs(state); // les fleurs des bacs poussent (bacs.js)
   pousserMassifs(state); // les fleurs semées dans l'herbe aussi (massifs.js)
   if (!state.mondePartage) state.nuit.demande = demandesNuit(state); // V-2 : les petites demandes des habitants (demandes.js)
+  // (I6a : celles des villageois, le réglage allumé ; éteint, rien)
+  const demandeIle = villageoisDe(state).length ? demandesVillageoisNuit(state, villageoisDe(state)) : null;
+  if (demandeIle) state.nuit.demandeVillageois = demandeIle;
   refreshUnlocks(state);
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil
   noteTutorialSleep(state); // Lot 11 : la bulle « Dormir » se ferme à la première nuit

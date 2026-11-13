@@ -31,7 +31,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I0b — le joueur automatique remis d'aplomb](I0b-joueur-automatique.md) | 0 | I0a | fait |
 | [I1a — le port sur l'île](I1a-port-sur-l-ile.md) | 1 | I0a | fait |
 | [I1b — le commerce au port](I1b-commerce-au-port.md) | 1 | I1a | fait |
-| [I1c — le bac, les commandes et le catalogue d'import](I1c-bac-commandes-import.md) | 1 | I1b | à faire |
+| [I1c — le bac, les commandes et le catalogue d'import](I1c-bac-commandes-import.md) | 1 | I1b | fait (le port au niveau 2 à la nuit 31 de la simulation, le palier 6 à la nuit 45 ; voir docs/ile.md) |
 | [I2 — le chemin du port, modifiable, et le portage](I2-chemin-et-portage.md) | 2 | I1b | fait (le port reste loin : 1,5 à 2,3 h de jeu à cheval sur le chemin, voir docs/ile.md) |
 | [I3a — l'arrivée d'un villageois](I3a-arrivee-villageois.md) | 3 | I0a | fait |
 | [I3b — la vie des villageois sur la ferme](I3b-vie-sur-la-ferme.md) | 3 | I3a | fait (réglage « animé » choisi) ; I3b+ (vie sociale : qui se connaît, sorties à but, saluts, causeries) : fait |
@@ -41,7 +41,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I5a — l'atelier d'artisan, sa boutique, la forge](I5a-artisan-forge.md) | 5 | I4, I6a | à faire |
 | [I5b — la mercerie](I5b-mercerie.md) | 5 | I5a | à faire |
 | [I5c — la scierie, la boulangerie, la fromagerie](I5c-autres-commerces.md) | 5 | I5a | à faire |
-| [I6a — l'amitié avec les villageois](I6a-amitie.md) | 6 | I3b | à faire |
+| [I6a — l'amitié avec les villageois](I6a-amitie.md) | 6 | I3b | fait (goûts tirés, pas « par tâche préférée » ; le présent d'un ami donné en main propre) |
 | [I6b — les liens entre villageois](I6b-liens.md) | 6 | I6a | à faire (I3b+ en a posé la scène et un remplaçant de l'affinité) |
 | [I6c — les traits de personnalité](I6c-traits.md) | 6 | I6b, I3c | à faire |
 | [I7a — les objectifs sans récit](I7a-objectifs.md) | 7 | I0a | fait, sauf le point 6 (le joueur automatique suit les paliers : après I0b) |

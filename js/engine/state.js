@@ -12,7 +12,8 @@ import { newTechPoints } from './techtree.js';
 import { remboursementCommerce } from './ile.js';
 import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
-import { nouveauDehors, villageActif } from './village.js';
+import { nouveauDehors, nouveauPort, villageActif } from './village.js';
+import { reparerPort } from './bac.js';
 import { decoderSegments, encoderSegments } from './dehors.js';
 import { VEHICULES } from './portage.js';
 import { commencerPaliers } from './paliers.js';
@@ -33,6 +34,7 @@ import { nouvelEquipement } from './equipement.js';
 import { BIENVENUE, nouvelleBienvenue } from './bienvenue.js';
 import { nouveauCompagnon } from './compagnon.js';
 import { nouveauRecit } from './recit.js';
+import { reparerAmitieVillageois } from './villageois-amitie.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -165,7 +167,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
   s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s), caseDepart(farmTerrain(s))), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
   // le chantier « l'île à bâtir » allumé : la partie suit les paliers de l'île (paliers.js, fiche I7a)
-  if (villageActif(s)) { commencerPaliers(s); s.dehors = nouveauDehors(); }
+  if (villageActif(s)) { commencerPaliers(s); s.dehors = nouveauDehors(); s.port = nouveauPort(s.day); }
   return s;
 }
 
@@ -909,6 +911,21 @@ export const MIGRATIONS = {
     if (Array.isArray(state.villageois)) out.villageois = state.villageois.map(reparerTaches);
     return out;
   },
+  // v89 → v90 (le chantier « l'île à bâtir », fiche I1c) : le port de la partie (state.port, js/engine/bac.js : son
+  // niveau, le dernier passage du bac traité, ses commandes, les imports attendus, ce qui attend le bac, le chantier du
+  // niveau suivant). Il ne naît qu'avec le chantier : une partie d'avant n'en a pas et reste telle quelle (une partie
+  // d'essai le reçoit au premier besoin, sans rattraper les bacs d'avant) ; un port abîmé est réparé.
+  89: (state) => {
+    const out = { ...state, version: 90 };
+    if ('port' in state) out.port = reparerPort(state.port, Number.isInteger(state.day) ? state.day : 1);
+    return out;
+  },
+  // v90 → v91 (le chantier « l'île à bâtir », fiche I6a) : l'amitié avec les villageois (js/engine/villageois-amitie.js),
+  // gardée dans state.amitie.pnj[l'id du villageois] comme celle des habitants. Chaque villageois a ses goûts (tirés
+  // s'ils manquent ou sont abîmés) et sa fiche d'amitié (ACCUEIL points s'il n'en avait pas : la famille l'avait
+  // accueilli) ; un présent illisible s'en va ; la demande d'un villageois qui n'est plus là s'oublie. Les amitiés des
+  // habitants des hameaux ne sont pas touchées (I7f). Sans villageois (le réglage éteint), rien ne change.
+  90: (state) => reparerAmitieVillageois({ ...state, version: 91 }),
 };
 
 // Le dehors d'une sauvegarde (la migration v87 → v88) : { troncon, chemins (des segments lisibles) }.

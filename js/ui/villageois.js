@@ -5,7 +5,7 @@ import { setupPending } from '../engine/depart.js';
 import { clockHours, hourOfDay, nightActive } from '../engine/clock.js';
 import { villageActif } from '../engine/village.js';
 import {
-  accueillirVillageois, ARRIVEE, arriveeDue, arriverVillageois, ficheVillageois, nombreVillageois, prendreAvis, trouverVillageois,
+  accueillirVillageois, arriveeDue, arriverVillageois, ficheVillageois, nombreVillageois, prendreAvis, trouverVillageois,
   verifierMaisons, villageoisDe, villageoisPourLaCarte,
 } from '../engine/villageois.js';
 import { journeesPourLaCarte, lieuxDuVillage, paroleVillageois } from '../engine/villageois-journee.js';
@@ -15,6 +15,11 @@ import {
   travailPourLaCarte,
 } from '../engine/taches.js';
 import { hasTool, toolDef } from '../engine/outils.js';
+import { HAMEAU_VILLAGE } from '../engine/amitie.js';
+import { amitieVillageois, donnerPresent, parlerVillageois } from '../engine/villageois-amitie.js';
+import { RECIT } from '../engine/recit.js';
+import { demandeHtml } from './demandes.js';
+import { itemsText } from './common.js';
 import { inventoryCounts } from '../engine/inventory.js';
 import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
@@ -44,7 +49,11 @@ import { notify } from './toasts.js';
        le bouton « Tâche » (la liste : celles qu'il peut faire, ce qui manque), son outil (« Donner », « Reprendre »),
        et pour la navette ce qu'il porte au port (« à vendre ») ; la liste des villageois dit qui fait quoi ; un appui
        long sur un poste de la carte (un arbre, un rocher, l'étang, le poulailler) : « confier à… » (ouvrirConfier) ; le modèle
-       de la carte porte sa journée de travail (travail : la scène, js/carte/ferme/villageois-travail.js).
+       de la carte porte sa journée de travail (travail : la scène, js/carte/ferme/villageois-travail.js) ;
+     - I6a (l'amitié, js/engine/villageois-amitie.js) : parler fait monter l'amitié (sa bulle montre son palier, sa
+       jauge, « 🎁 Offrir ») ; le présent qu'un ami te donne en te saluant ou en te parlant ; sa fiche dit son palier, ses
+       goûts connus, sa demande en cours, le présent qu'il garde pour toi, et propose de lui offrir un cadeau ou de
+       l'inviter à un repas ; la liste des villageois dit le palier de chacun.
    Le chantier éteint (villageActif), rien ici ne se montre. */
 
 const WATCH_MS = 1000;
@@ -77,7 +86,7 @@ export function watchVillageois() {
   if (arriveeDue(state) && arriverVillageois(state).ok) change = true;
   // (en route depuis le matin, sans que la carte l'ait vu arriver — elle était fermée, le personnage ailleurs — : à
   // la fin de l'heure d'arrivée, il est chez lui)
-  if (hourOfDay(state) >= ARRIVEE.FIN) for (const v of villageoisDe(state)) if (v.accueil === 'en_route' && accueillirVillageois(state, v.id)) change = true;
+  if (hourOfDay(state) >= DATA.PORT.BAC.HEURES[1]) for (const v of villageoisDe(state)) if (v.accueil === 'en_route' && accueillirVillageois(state, v.id)) change = true;
   const avis = villageoisDe(state).some((v) => Array.isArray(v.avis) && v.avis.length);
   if (avis) direAvis();
   if (change || avis) {
@@ -129,8 +138,31 @@ export function villageoisDepuisCarte(geste, id, o = {}) {
   if (geste === 'fiche') { ouvrirFicheVillageois(id); return { ok: true }; }
   // (I3c : un appui long sur un poste de travail, `o.case` : « confier à… »)
   if (geste === 'poste') return ouvrirConfier(o.case);
-  if (geste === 'parle') return paroleVillageois(state, id, { ...o, heure: clockHours(state) });
-  if (geste === 'echange') return echangeVillageois(state, id, o.avec, { n: o.n, sorte: o.sorte, heure: clockHours(state) });
+  if (geste === 'parle') {
+    // (I6a : l'amitié complète sa bulle ; un palier passé, un présent reçu : une notification)
+    const r = parlerVillageois(state, id, paroleVillageois(state, id, { ...o, heure: clockHours(state) }), { n: o.n });
+    if (r && r.amitie) {
+      if (r.present) notify(`🎁 ${escapeHtml(r.prenom)} t'a donné : ${itemsText({ [r.present.objet]: r.present.n }, 'gain')}`, { son: 'ramasse' });
+      if (r.monte) notify(`💛 ${escapeHtml(r.prenom)} et toi : ${r.amitie.nom} (amitié ${r.amitie.pts}/${r.amitie.max})`, { kind: 'info' });
+      persistState();
+      if (r.present || r.monte) setTimeout(refresh, 0);
+    }
+    return r;
+  }
+  if (geste === 'echange') {
+    const r = echangeVillageois(state, id, o.avec, { n: o.n, sorte: o.sorte, heure: clockHours(state) });
+    // (I6a : il salue le personnage et lui donne le présent qu'il gardait)
+    if (r && o.avec === 'joueur' && r.present) {
+      const p = donnerPresent(state, id), v = trouverVillageois(state, id);
+      if (p && v) {
+        r.cadeau = { objet: p.objet, n: p.n };
+        notify(`🎁 ${escapeHtml(v.prenom)} t'a donné : ${itemsText({ [p.objet]: p.n }, 'gain')}`, { son: 'ramasse' });
+        persistState();
+        setTimeout(refresh, 0);
+      }
+    }
+    return r;
+  }
   if (geste !== 'accueilli') return { ok: false };
   const v = accueillirVillageois(state, id);
   if (!v) return { ok: false };
@@ -260,6 +292,34 @@ function apres(r, id, texte) {
   return true;
 }
 
+/* ---------- I6a : l'amitié ---------- */
+
+const GOUTS = { adore: ['❤️', 'Adore'], aime: ['👍', 'Aime'], deteste: ['👎', 'Déteste'] };
+const nomObjet = (o) => (DATA.OBJETS[o] ? `${DATA.OBJETS[o].icone} ${escapeHtml(DATA.OBJETS[o].nom)}` : escapeHtml(o));
+
+// Sa jauge d'amitié : le palier, la barre, ce qu'il reste jusqu'au suivant.
+function jaugeAmitie(A) {
+  const suite = A.prochain !== null ? `encore ${A.prochain - A.pts} pour « ${RECIT.PALIER_NOMS[A.palier + 1]} »` : 'le plus haut palier';
+  return `<span class="ami-palier">💛 ${escapeHtml(A.nom)}</span> <span class="ami-jauge grande" role="img" aria-label="Amitié : ${A.pts} sur ${A.max}"><span style="width:${Math.round((A.pts * 100) / A.max)}%"></span></span> <span class="muted num">${A.pts}/${A.max} · ${suite}</span>`;
+}
+
+// Ce que la fiche dit de l'amitié : le palier, les goûts connus, le présent qu'il garde, sa demande, les gestes.
+function amitieHtml(id, f) {
+  const A = amitieVillageois(state, id);
+  if (!A) return '';
+  const e = escapeHtml(id), il = f.genre === 'm' ? 'il' : 'elle';
+  const par = { adore: [], aime: [], deteste: [] };
+  for (const [it, g] of Object.entries(A.gouts)) if (par[g] && DATA.OBJETS[it]) par[g].push(nomObjet(it));
+  const gouts = Object.entries(par).filter(([, l]) => l.length).map(([g, l]) => `<li>${GOUTS[g][0]} ${GOUTS[g][1]} : ${l.join(', ')}</li>`).join('');
+  const sansHumeur = A.sansHumeur ? `<dd class="muted">🤝 ${il === 'il' ? 'Il' : 'Elle'} accepte une tâche qu'${il} n'aime pas sans perdre d'humeur.</dd>` : '';
+  return `<dt>💛 Amitié</dt><dd class="ami-ligne">${jaugeAmitie(A)}</dd>${sansHumeur}
+      <dt>🍽️ Goûts</dt><dd>${gouts ? `<ul class="ami-gouts">${gouts}</ul>` : `<span class="muted">Tu ne connais pas encore ses goûts : offre-lui un cadeau, ou deviens son ami${f.genre === 'm' ? '' : 'e'}, ${il} te les dira.</span>`}</dd>
+      ${A.present ? `<dt>🎁 Un présent</dt><dd>${il === 'il' ? 'Il' : 'Elle'} garde ${nomObjet(A.present.objet)} × ${A.present.n} pour toi : va lui dire bonjour !</dd>` : ''}
+      ${A.demande ? `<dt>📜 Demande</dt><dd>${demandeHtml(id)}</dd>` : ''}
+      <dt></dt><dd class="villageois-amitie-gestes"><button type="button" class="btn small" data-action="ami-offrir-open" data-hameau="${HAMEAU_VILLAGE}" data-id="${e}" id="villageois-offrir">🎁 Offrir</button>
+        <button type="button" class="btn small" data-action="evt-open" data-jour="${state.day + 1}" data-qui="${HAMEAU_VILLAGE}|${e}">🍽️ L'inviter à un repas</button></dd>`;
+}
+
 // La fiche du villageois `id`.
 export function ouvrirFicheVillageois(id) {
   const f = ficheVillageois(state, id);
@@ -271,10 +331,17 @@ export function ouvrirFicheVillageois(id) {
     <dl class="villageois-fiche">
       <dt>🏠 Maison</dt><dd>${escapeHtml(f.maison)}</dd>
       <dt>${HUMEUR_ICONE[f.humeur] || '🙂'} Humeur</dt><dd>${escapeHtml(f.humeurTexte)} · bonheur ${bonheurHtml(f)}</dd>
+      ${amitieHtml(id, f)}
       ${tacheHtml(id)}
     </dl>
     ${repos}
     <button type="button" class="btn primary" data-action="close-modal" id="villageois-close">Fermer</button>`, { labelledBy: 'villageois-title', className: 'modal bois villageois-modal', focus: '#villageois-close', preventScroll: true });
+}
+
+// (I6a : son palier d'amitié, sur sa ligne de la liste ; 🎁 s'il garde un présent, 📜 s'il a une demande)
+function amiMini(id) {
+  const A = amitieVillageois(state, id);
+  return A ? ` <span class="ami-mini" title="Amitié : ${A.pts}/${A.max}">💛 ${escapeHtml(A.nom)}${A.present ? ' 🎁' : ''}${A.demande ? ' 📜' : ''}</span>` : '';
 }
 
 // La liste des villageois (un appui sur le compte de la carte du joueur).
@@ -286,7 +353,7 @@ export function ouvrirListeVillageois() {
     : `<span class="villageois-qui">${q.icone} ${escapeHtml(q.nom)} · ${q.etat === 'travail' ? `${q.actions} / ${q.sur}${produitTexte(q.produit) ? ` : ${produitTexte(q.produit)}` : ''}` : escapeHtml(ETATS_TACHE[q.etat])}</span>`);
   const lignes = V.map((f) => `<li><button type="button" class="villageois-ligne" data-action="villageois-fiche" data-id="${escapeHtml(f.id)}">
       <span class="villageois-portrait">${portrait(f)}</span>
-      <span><strong>${escapeHtml(f.prenom)}</strong> <span class="muted">${escapeHtml(f.chezLui ? (f.genre === 'm' ? 'chez lui' : 'chez elle') : 'à l\'abri, attend une maison')} · ${HUMEUR_ICONE[f.humeur] || ''} ${escapeHtml(f.humeurTexte)}</span>
+      <span><strong>${escapeHtml(f.prenom)}</strong> <span class="muted">${escapeHtml(f.chezLui ? (f.genre === 'm' ? 'chez lui' : 'chez elle') : 'à l\'abri, attend une maison')} · ${HUMEUR_ICONE[f.humeur] || ''} ${escapeHtml(f.humeurTexte)}</span>${amiMini(f.id)}
       ${fait(Q.get(f.id))}</span></button></li>`).join('');
   openModal(`
     <h2 id="villageois-liste-title">🏝️ Les villageois : qui fait quoi</h2>
