@@ -32,9 +32,12 @@
       "commerce plus : le joueur simulé va au port (js/engine/bot.js, botSortiePort) quand ce qu'il a à vendre vaut",
       "SEUIL pièces ou plus, ou qu'il lui manque des graines ; une sortie par jour au plus. Sa marche se compte en",
       "temps d'éveil : le chemin du port (et la moitié de la ferme) à VITESSE cases par seconde, à l'aller et au",
-      "retour (le personnage marche à 58 px par seconde, 3,6 cases)."
+      "retour (le personnage marche à 58 px par seconde, 3,6 cases).",
+      "I1c : il y va aussi pour honorer une commande du bac (il a ce qu'elle demande) ou porter les matériaux du",
+      "chantier du port ; il agrandit le port jusqu'au niveau NIVEAU_MAX (l'étape « port » de PRIORITE et de PLAN), et",
+      "en charge les matériaux dès que ses pièces font CHANTIER fois le prix du niveau suivant."
     ],
-    "PORT": { "SEUIL": 60, "VITESSE": 3.6 },
+    "PORT": { "SEUIL": 60, "VITESSE": 3.6, "NIVEAU_MAX": 5, "CHANTIER": 0.5 },
     "//VILLAGEOIS": [
       "I3c : le chantier allumé, le joueur simulé loge des villageois et leur confie des tâches (js/engine/bot.js,",
       "botVillageois). Dès le palier MAISON_PALIER des paliers de l'île, tant que le port en laisse venir (le plafond de",
@@ -130,10 +133,11 @@
       "4": [
         { "type": "station", "id": "four" },
         { "type": "station", "id": "moulin" },
-        { "type": "station", "id": "cuisine" }
+        { "type": "station", "id": "cuisine" },
+        { "type": "port", "niveau": 2 }
       ],
       "5": [{ "type": "station", "id": "moulin" }, { "type": "paturage" }, { "type": "moutons", "n": 3 }],
-      "6": [{ "type": "serre" }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }],
+      "6": [{ "type": "serre" }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }, { "type": "port", "niveau": 3 }],
       "7": [],
       "//5": "le Moulin d'abord (la farine), puis l'Étable : ses bêtes mangent la paille fauchée (botScythe)"
     },
@@ -184,7 +188,10 @@
       { "type": "arbres", "n": 8 },
       { "type": "vaches", "n": 8 },
       { "type": "moutons", "n": 10 },
-      { "type": "arbres", "n": 12 }
+      { "type": "arbres", "n": 12 },
+      { "//": "I1c : le port agrandi (le chantier allumé ; éteint, l'étape est faite d'office)", "type": "port", "niveau": 3 },
+      { "type": "port", "niveau": 4 },
+      { "type": "port", "niveau": 5 }
     ],
     "//VERIFS": [
       "I0b : les seuils des vérifications ajoutées à scripts/simulate.mjs (joueur appliqué) :",

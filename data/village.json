@@ -8,8 +8,8 @@
     "les tests tests/engine/village-*.test.mjs le forcent (tests/engine/aide.mjs, avecVillage). La fiche",
     "I9h le passe à true, puis retire le réglage. Les sections PORT, TACHES, ARTISANS et TRAITS viendront",
     "avec leurs fiches.",
-    "ARRIVEE (fiche I3a, js/engine/villageois.js) : l'arrivée d'un villageois. Il débarque un jour de bac : avant",
-    "le bac de la fiche I1c, tous les PERIODE jours (les jours multiples de PERIODE), de HEURE à FIN h (la page le",
+    "ARRIVEE (fiche I3a, js/engine/villageois.js) : l'arrivée d'un villageois. Il débarque du bac (fiche I1c,",
+    "js/engine/bac.js : un jour de bac, PORT.BAC.PERIODE, pendant que le bac est à quai, PORT.BAC.HEURES ; la page le",
     "met en route ; une journée finie avant, la nuit l'installe d'un coup). Il lui faut une maison libre (une pièce",
     "close du genre maison, marquée par une boîte aux lettres posée dehors contre sa porte, avec un lit que la",
     "famille ne prend pas) ; à partir du deuxième, de quoi nourrir une bouche de plus (le rangement des repas, le",
@@ -23,9 +23,6 @@
   "VILLAGE": {
     "ACTIF": false,
     "ARRIVEE": {
-      "PERIODE": 3,
-      "HEURE": 9,
-      "FIN": 17,
       "RESERVE_JOURS": 2,
       "PLAFOND": { "1": 2, "2": 4, "3": 6, "4": 9, "5": 12 },
       "BOURSE": 20,
@@ -586,7 +583,7 @@
     "niveau du port), et le plan le place (js/engine/monde-gen.js, elementsDuMonde, après tous les autres lieux :",
     "ils ne bougent pas) ; le bâti se fait avec les hameaux (js/engine/monde-hameaux.js, planPort).",
     "NOM : son nom (le panneau, la carte du monde, la boussole). NIVEAU_DEPART : le niveau d'une partie neuve",
-    "(I1c les fera payer, state.port.niveau).",
+    "(state.port.niveau ; les suivants se paient : NIVEAUX, fiche I1c).",
     "PLAN : l'emplacement. Une case de terre (plage, prairie, lande) au bord de la mer, d'où un quai de QUAI",
     "cases (celui du niveau 5) avance droit vers le sud ou vers l'est, sur LARGEUR cases de large, l'eau libre",
     "sur EAU cases de chaque côté au-delà des deux premières cases et deux cases plus loin que son bout ; la terre",
@@ -598,7 +595,11 @@
     "ne convient (trop découpée, trop de lieux), l'eau libre de côté puis la distance aux lieux se relâchent.",
     "NIVEAUX : du niveau 1 au niveau 5, la longueur du quai et ce que le niveau ajoute (le niveau 1 : le quai",
     "court, la halle, sa cale, son panneau et ses deux lanternes ; ensuite des caisses, des tonneaux, le mât à",
-    "fanion, un quai plus long).",
+    "fanion, un quai plus long) ; fiche I1c : commandes (combien le bac en apporte à chaque passage) et prix (ce que",
+    "coûte d'y passer : des pièces, payées au comptoir, et des matériaux apportés sur place, au chantier du port :",
+    "on les y porte, en une ou plusieurs fois, puis on paie ; le niveau 1 est celui du départ, sans prix). Chaque",
+    "niveau ouvre aussi un rang du catalogue d'import (IMPORT.RANGS) et accueille plus de villageois",
+    "(VILLAGE.ARRIVEE.PLAFOND).",
     "SORTES : les dessins du port (scripts/carte/port.py), rangés à la suite de ceux des hameaux dans leur",
     "planche (assets/hameaux.png : HAMEAUX.SORTES puis celles-ci ; à n'allonger qu'à la fin), même forme que",
     "HAMEAUX.SORTES ; le quai et la cale sont du genre « ponton » (sur l'eau, sous ce qui marche dessus).",
@@ -610,7 +611,30 @@
     "(js/engine/market.js) ; la calèche ne commerce plus. PORTEE : à combien de cases au plus d'une case du comptoir",
     "le personnage commerce (toute la halle). HEURES : l'heure d'ouverture et celle de fermeture du comptoir (de 6 h,",
     "le réveil, à 21 h). ICONE : celle du port (la fenêtre, le menu, les messages). ELEMENT : ce que l'écran d'un",
-    "niveau dit du commerce qu'il ouvre (à la place de NIVEAUX.ELEMENTS.marche, la calèche)."
+    "niveau dit du commerce qu'il ouvre (à la place de NIVEAUX.ELEMENTS.marche, la calèche).",
+    "Le bac (fiche I1c, js/engine/bac.js ; la scène : js/carte/ferme/bac.js) : il accoste tous les BAC.PERIODE jours",
+    "(les jours multiples de PERIODE), de BAC.HEURES[0] à BAC.HEURES[1] h, le long du bout du quai ; sa venue se",
+    "déduit du jour (rien n'est simulé pas à pas) : la page, la nuit ou un appel du moteur rattrapent les passages",
+    "manqués, RATTRAPAGE au plus (les plus récents ; les imports attendus arrivent au premier). Il emporte tout ce",
+    "qui a été vendu au port depuis son dernier départ : la scène le montre en caisses sur le quai (une caisse par",
+    "CAISSE volumes vendus, CAISSES_MAX au plus), qui partent avec lui ; il n'y a ni quota ni entrepôt. ARRIVEE_S :",
+    "les secondes de son arrivée et de son départ, dans la scène (il glisse depuis le large). C'est lui qui apporte",
+    "les imports, les commandes et les nouveaux villageois (VILLAGE.ARRIVEE).",
+    "COMMANDES : à chaque passage, NIVEAUX[niveau].commandes demandes tirées de la graine et du jour parmi ce que le",
+    "joueur sait produire (les cultures qu'il a récoltées, les plats qu'il a préparés, les œufs, la laine et le lait",
+    "de ses bêtes) : un objet, une quantité (de quoi valoir VALEUR[niveau − 1] pièces, à ± ECART %, entre QUANTITE[0]",
+    "et QUANTITE[1]), une prime (de PRIME[0] à PRIME[1] %, par pas de 5). Valables jusqu'au passage suivant ; on",
+    "les honore au comptoir avec ce qu'on a porté (le portage, fiche I2) : le prix de vente, plus la prime, plus XP",
+    "points d'expérience. Manquée, elle s'efface sans rien coûter.",
+    "IMPORT : le catalogue de ce que le bac apporte. RANGS[k] : ce qu'ouvre le niveau k + 1 du port ; chaque article",
+    "a son prix (pour un lot de `lot` unités) : un objet (objet : des jeunes arbres, des plants de vigne, les",
+    "espèces de la serre, le sucre et les épices, les graines de fleurs rares), une bête (bete : elle va au",
+    "Poulailler ou à l'Étable ; sans place à sa livraison, son prix est rendu) ou un plan d'objet (plan : appris à sa",
+    "livraison). Ce que le niveau du joueur débloquait le reste (un jeune arbre : le Verger ; une culture : son",
+    "déblocage ; une bête : son bâtiment) : le catalogue ajoute la condition du port. Ces articles ne s'achètent plus",
+    "tout de suite au comptoir. Une commande d'import se paie d'avance et arrive au passage suivant du bac (elle va",
+    "droit à la ferme). Les plants sauvages rapportés de l'île (fiche I7e : inscrireSauvage) s'y inscrivent une fois",
+    "cultivés, au rang SAUVAGES.RANG, au prix de vente fois SAUVAGES.MARGE %, par lot de SAUVAGES.LOT."
   ],
   "PORT": {
     "NOM": "Le port",
@@ -621,12 +645,44 @@
     "ELEMENT": { "nom": "Le port", "icone": "⚓", "note": "au comptoir de la halle, au bout du chemin : vends tes récoltes, achète des graines" },
     "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 80, "LOIN": 100, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
     "NIVEAUX": [
-      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },
-      { "quai": 8, "ajoute": ["caisses"] },
-      { "quai": 10, "ajoute": ["tonneaux", "mat"] },
-      { "quai": 10, "ajoute": ["caisses_terre"] },
-      { "quai": 12, "ajoute": ["tonneaux_terre"] }
+      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"], "commandes": 2 },
+      { "quai": 9, "ajoute": ["caisses"], "commandes": 3,
+        "prix": { "pieces": 1800, "planche": 24, "pierre": 16 } },
+      { "quai": 10, "ajoute": ["tonneaux", "mat"], "commandes": 3,
+        "prix": { "pieces": 5000, "planche": 40, "pierre": 30, "lingot_fer": 6 } },
+      { "quai": 11, "ajoute": ["caisses_terre"], "commandes": 4,
+        "prix": { "pieces": 11000, "planche": 60, "pierre": 40, "lingot_fer": 12 } },
+      { "quai": 12, "ajoute": ["tonneaux_terre"], "commandes": 5,
+        "prix": { "pieces": 24000, "planche": 80, "pierre": 60, "lingot_fer": 20, "lingot_cuivre": 10 } }
     ],
+    "BAC": { "PERIODE": 3, "HEURES": [9, 17], "RATTRAPAGE": 3, "CAISSE": 12, "CAISSES_MAX": 4, "ARRIVEE_S": 7 },
+    "COMMANDES": { "VALEUR": [50, 90, 150, 230, 340], "ECART": 30, "QUANTITE": [2, 40], "PRIME": [25, 60], "XP": 15 },
+    "IMPORT": {
+      "RANGS": [
+        [
+          { "objet": "jeune_pommier", "prix": 50 }, { "objet": "jeune_poirier", "prix": 50 }, { "objet": "jeune_cerisier", "prix": 60 },
+          { "objet": "jeune_abricotier", "prix": 55 }, { "objet": "jeune_pecher", "prix": 55 }, { "objet": "plant_vigne", "prix": 30, "lot": 4 }
+        ],
+        [
+          { "objet": "cacao", "prix": 40, "lot": 2 }, { "objet": "vanille", "prix": 70, "lot": 2 }, { "objet": "cafe", "prix": 30, "lot": 2 },
+          { "objet": "sucre", "prix": 24, "lot": 10 }, { "objet": "epices", "prix": 34, "lot": 10 }
+        ],
+        [
+          { "bete": "poule", "prix": 60 }, { "bete": "mouton", "prix": 160 }, { "bete": "vache", "prix": 260 }
+        ],
+        [
+          { "plan": "banc_rondins", "prix": 300 }, { "plan": "table_rondins", "prix": 300 }, { "plan": "chaise_peinte", "prix": 320 },
+          { "plan": "jarre_coquillages", "prix": 360 }, { "plan": "lanterne_papier", "prix": 380 }, { "plan": "bassin", "prix": 520 },
+          { "plan": "banc_pierre", "prix": 420 }, { "plan": "jardiniere_pierre", "prix": 420 }, { "plan": "pergola", "prix": 600 }
+        ],
+        [
+          { "objet": "graine_lavande", "prix": 40, "lot": 5 }, { "objet": "graine_coquelicot", "prix": 30, "lot": 5 },
+          { "objet": "graine_pavot", "prix": 30, "lot": 5 }, { "objet": "graine_myosotis", "prix": 30, "lot": 5 },
+          { "objet": "graine_lupin", "prix": 35, "lot": 5 }
+        ]
+      ],
+      "SAUVAGES": { "RANG": 5, "MARGE": 300, "LOT": 3 }
+    },
     "SORTES": [
       { "nom": "quai", "genre": "ponton", "variantes": 8 },
       { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
@@ -637,7 +693,10 @@
       { "nom": "tonneaux", "genre": "objet", "variantes": 2 },
       { "nom": "mat_fanion", "genre": "objet", "variantes": 1 },
       { "nom": "panneau_port", "genre": "objet", "variantes": 1 },
-      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 }
+      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 },
+      { "nom": "bac_port", "genre": "objet", "variantes": 2 },
+      { "nom": "passerelle_port", "genre": "ponton", "variantes": 2 },
+      { "nom": "caisses_bac", "genre": "objet", "variantes": 3 }
     ],
     "BLOQUE": ["poteau_halle", "comptoir", "balance", "caisses", "tonneaux", "mat_fanion", "panneau_port", "lanterne_port"],
     "LANTERNE": {

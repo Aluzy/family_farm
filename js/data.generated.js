@@ -5141,7 +5141,7 @@ export const RAW_DATA = {
     "MATERIAUX_GARDES": 40,
     "VIVRES_GARDES": 10,
     "SEMENCES_GARDEES": 6,
-    "PORT": { "SEUIL": 60, "VITESSE": 3.6 },
+    "PORT": { "SEUIL": 60, "VITESSE": 3.6, "NIVEAU_MAX": 5, "CHANTIER": 0.5 },
     "VILLAGEOIS": {
       "MAISON_PALIER": 3,
       "MAISON": { "paillasse": 1, "boite_aux_lettres": 1 },
@@ -5190,9 +5190,14 @@ export const RAW_DATA = {
       "1": [{ "type": "maison" }, { "type": "houe" }],
       "2": [{ "type": "houe" }, { "type": "silo", "niveau": 2 }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
-      "4": [{ "type": "station", "id": "four" }, { "type": "station", "id": "moulin" }, { "type": "station", "id": "cuisine" }],
+      "4": [
+        { "type": "station", "id": "four" },
+        { "type": "station", "id": "moulin" },
+        { "type": "station", "id": "cuisine" },
+        { "type": "port", "niveau": 2 }
+      ],
       "5": [{ "type": "station", "id": "moulin" }, { "type": "paturage" }, { "type": "moutons", "n": 3 }],
-      "6": [{ "type": "serre" }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }],
+      "6": [{ "type": "serre" }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }, { "type": "port", "niveau": 3 }],
       "7": []
     },
     "PLAN": [
@@ -5238,7 +5243,10 @@ export const RAW_DATA = {
       { "type": "arbres", "n": 8 },
       { "type": "vaches", "n": 8 },
       { "type": "moutons", "n": 10 },
-      { "type": "arbres", "n": 12 }
+      { "type": "arbres", "n": 12 },
+      { "type": "port", "niveau": 3 },
+      { "type": "port", "niveau": 4 },
+      { "type": "port", "niveau": 5 }
     ],
     "VERIFS": { "CHAPITRE_7_AVANT": 60, "CAISSE_FOIS_DEPENSE": 2, "NUITS_DEPENSE": 20 },
     "DEPANNAGE": { "item": "carotte", "nuit": 30 }
@@ -8648,9 +8656,6 @@ export const RAW_DATA = {
   "VILLAGE": {
     "ACTIF": false,
     "ARRIVEE": {
-      "PERIODE": 3,
-      "HEURE": 9,
-      "FIN": 17,
       "RESERVE_JOURS": 2,
       "PLAFOND": { "1": 2, "2": 4, "3": 6, "4": 9, "5": 12 },
       "BOURSE": 20,
@@ -9370,12 +9375,58 @@ export const RAW_DATA = {
       "ESSAIS": 8
     },
     "NIVEAUX": [
-      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },
-      { "quai": 8, "ajoute": ["caisses"] },
-      { "quai": 10, "ajoute": ["tonneaux", "mat"] },
-      { "quai": 10, "ajoute": ["caisses_terre"] },
-      { "quai": 12, "ajoute": ["tonneaux_terre"] }
+      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"], "commandes": 2 },
+      { "quai": 9, "ajoute": ["caisses"], "commandes": 3, "prix": { "pieces": 1800, "planche": 24, "pierre": 16 } },
+      { "quai": 10, "ajoute": ["tonneaux", "mat"], "commandes": 3, "prix": { "pieces": 5000, "planche": 40, "pierre": 30, "lingot_fer": 6 } },
+      { "quai": 11, "ajoute": ["caisses_terre"], "commandes": 4, "prix": { "pieces": 11000, "planche": 60, "pierre": 40, "lingot_fer": 12 } },
+      {
+        "quai": 12,
+        "ajoute": ["tonneaux_terre"],
+        "commandes": 5,
+        "prix": { "pieces": 24000, "planche": 80, "pierre": 60, "lingot_fer": 20, "lingot_cuivre": 10 }
+      }
     ],
+    "BAC": { "PERIODE": 3, "HEURES": [9, 17], "RATTRAPAGE": 3, "CAISSE": 12, "CAISSES_MAX": 4, "ARRIVEE_S": 7 },
+    "COMMANDES": { "VALEUR": [50, 90, 150, 230, 340], "ECART": 30, "QUANTITE": [2, 40], "PRIME": [25, 60], "XP": 15 },
+    "IMPORT": {
+      "RANGS": [
+        [
+          { "objet": "jeune_pommier", "prix": 50 },
+          { "objet": "jeune_poirier", "prix": 50 },
+          { "objet": "jeune_cerisier", "prix": 60 },
+          { "objet": "jeune_abricotier", "prix": 55 },
+          { "objet": "jeune_pecher", "prix": 55 },
+          { "objet": "plant_vigne", "prix": 30, "lot": 4 }
+        ],
+        [
+          { "objet": "cacao", "prix": 40, "lot": 2 },
+          { "objet": "vanille", "prix": 70, "lot": 2 },
+          { "objet": "cafe", "prix": 30, "lot": 2 },
+          { "objet": "sucre", "prix": 24, "lot": 10 },
+          { "objet": "epices", "prix": 34, "lot": 10 }
+        ],
+        [{ "bete": "poule", "prix": 60 }, { "bete": "mouton", "prix": 160 }, { "bete": "vache", "prix": 260 }],
+        [
+          { "plan": "banc_rondins", "prix": 300 },
+          { "plan": "table_rondins", "prix": 300 },
+          { "plan": "chaise_peinte", "prix": 320 },
+          { "plan": "jarre_coquillages", "prix": 360 },
+          { "plan": "lanterne_papier", "prix": 380 },
+          { "plan": "bassin", "prix": 520 },
+          { "plan": "banc_pierre", "prix": 420 },
+          { "plan": "jardiniere_pierre", "prix": 420 },
+          { "plan": "pergola", "prix": 600 }
+        ],
+        [
+          { "objet": "graine_lavande", "prix": 40, "lot": 5 },
+          { "objet": "graine_coquelicot", "prix": 30, "lot": 5 },
+          { "objet": "graine_pavot", "prix": 30, "lot": 5 },
+          { "objet": "graine_myosotis", "prix": 30, "lot": 5 },
+          { "objet": "graine_lupin", "prix": 35, "lot": 5 }
+        ]
+      ],
+      "SAUVAGES": { "RANG": 5, "MARGE": 300, "LOT": 3 }
+    },
     "SORTES": [
       { "nom": "quai", "genre": "ponton", "variantes": 8 },
       { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
@@ -9386,7 +9437,10 @@ export const RAW_DATA = {
       { "nom": "tonneaux", "genre": "objet", "variantes": 2 },
       { "nom": "mat_fanion", "genre": "objet", "variantes": 1 },
       { "nom": "panneau_port", "genre": "objet", "variantes": 1 },
-      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 }
+      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 },
+      { "nom": "bac_port", "genre": "objet", "variantes": 2 },
+      { "nom": "passerelle_port", "genre": "ponton", "variantes": 2 },
+      { "nom": "caisses_bac", "genre": "objet", "variantes": 3 }
     ],
     "BLOQUE": ["poteau_halle", "comptoir", "balance", "caisses", "tonneaux", "mat_fanion", "panneau_port", "lanterne_port"],
     "LANTERNE": {

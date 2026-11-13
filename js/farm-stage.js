@@ -679,6 +679,7 @@
           { nom: 'hameaux', cadence: img, actif: () => !fige(), pas: (I) => this.stepHameaux(I.s) },     // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
           { nom: 'caleche', cadence: img, actif: () => !fige() && !!this.stepCaleche, pas: (I) => this.stepCaleche(I.s) },   // (la calèche : caleche.js)
           { nom: 'malle', cadence: img, actif: () => !fige() && !!this.stepMalle, pas: () => this.stepMalle() },               // (sa malle : malle.js)
+          { nom: 'bac', cadence: img, actif: () => !fige() && !!this.stepBac && !!(this.ctx.lastModel && this.ctx.lastModel.bac), pas: () => this.stepBac() },   // (le bac du port, fiche I1c : bac.js)
           { nom: 'visite', cadence: img, actif: () => !fige() && !!this.stepVisite, pas: (I) => this.stepVisite(I.s) },       // (la visite de bienvenue : visite.js, fiche 18)
           { nom: 'villageois', cadence: img, actif: () => !fige() && !!this.stepVillageois && !!(this.ctx.lastModel && (this.ctx.lastModel.villageois || this.villageoisVus && this.villageoisVus.size)), pas: (I) => this.stepVillageois(I.s) },   // (l'île à bâtir, fiche I3a : villageois.js)
           { nom: 'rencontre', cadence: img, actif: () => !fige() && !!this.stepRencontre, pas: (I) => this.stepRencontre(I.s) },   // (une scène du récit sur la carte : rencontre.js)

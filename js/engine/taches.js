@@ -16,6 +16,7 @@ import { recipeStatus, startRecipe } from './kitchen.js';
 import { casesCouvertes, piecesCloses } from './blocs.js';
 import { comptoirDuPort, lieuPort, portOuvert } from './port.js';
 import { sellItem } from './market.js';
+import { noterVenteBac } from './bac.js';
 import { bumpCounter } from './campaign.js';
 import { trouverVillageois, villageoisDe } from './villageois.js';
 import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
@@ -565,7 +566,7 @@ function uneAction(state, v, pres) {
           const ici = portOuvert(state, c.devant);
           if (!ici.ok) return fail(ici.raison);
           const v = sellItem(state, it, n, 'Port');
-          if (v.ok) bumpCounter(state, 'ventesPort', v.gain);   // (les paliers de l'île, paliers.js : ventesPort)
+          if (v.ok) { bumpCounter(state, 'ventesPort', v.gain); noterVenteBac(state, it, v.sold); }   // (les paliers de l'île, paliers.js : ventesPort ; I1c : les caisses du bac)
           return v;
         });
         if (r && r.ok) { reste -= n; gain += r.gain || 0; vendu[it] = n; }

@@ -5,7 +5,7 @@ import { setupPending } from '../engine/depart.js';
 import { clockHours, hourOfDay, nightActive } from '../engine/clock.js';
 import { villageActif } from '../engine/village.js';
 import {
-  accueillirVillageois, ARRIVEE, arriveeDue, arriverVillageois, ficheVillageois, nombreVillageois, prendreAvis, trouverVillageois,
+  accueillirVillageois, arriveeDue, arriverVillageois, ficheVillageois, nombreVillageois, prendreAvis, trouverVillageois,
   verifierMaisons, villageoisDe, villageoisPourLaCarte,
 } from '../engine/villageois.js';
 import { journeesPourLaCarte, lieuxDuVillage, paroleVillageois } from '../engine/villageois-journee.js';
@@ -77,7 +77,7 @@ export function watchVillageois() {
   if (arriveeDue(state) && arriverVillageois(state).ok) change = true;
   // (en route depuis le matin, sans que la carte l'ait vu arriver — elle était fermée, le personnage ailleurs — : à
   // la fin de l'heure d'arrivée, il est chez lui)
-  if (hourOfDay(state) >= ARRIVEE.FIN) for (const v of villageoisDe(state)) if (v.accueil === 'en_route' && accueillirVillageois(state, v.id)) change = true;
+  if (hourOfDay(state) >= DATA.PORT.BAC.HEURES[1]) for (const v of villageoisDe(state)) if (v.accueil === 'en_route' && accueillirVillageois(state, v.id)) change = true;
   const avis = villageoisDe(state).some((v) => Array.isArray(v.avis) && v.avis.length);
   if (avis) direAvis();
   if (change || avis) {

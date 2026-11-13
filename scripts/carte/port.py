@@ -28,7 +28,8 @@
 #   - les caisses (deux, puis trois, empilées), les tonneaux (un grand et un petit, puis deux), le mât à fanion
 #     (son drapeau qui flotte, sa drisse), le panneau du port (une ancre peinte) ;
 #   - les lanternes sont les réverbères de la ferme (assets/murs_hauts.png : éteint, puis ses deux images
-#     allumées), repris tels quels.
+#     allumées), repris tels quels ;
+#   - le bac, sa passerelle et les caisses qu'il emporte (fiche I1c) : scripts/carte/port_bac.py.
 # Les objets ont une ombre douce au sol (CLAUDE.md, règle 7 : ceux des hameaux) ; le quai et la cale, posés sur
 # l'eau, n'en ont pas (l'ombre du quai sur l'eau est peinte sous lui).
 #
@@ -638,6 +639,7 @@ def panneau_port():
 def images(hauts=None, ch=None):
     """Les images du port, par sorte (dans l'ordre de PORT.SORTES) : {sorte: [(image, pied)…]}. `hauts` : la
     planche des murs hauts (assets/murs_hauts.png) d'où viennent les lanternes, `ch` ses colonnes."""
+    import port_bac as B
     if hauts is None:
         hauts = Image.open(os.path.join(ASSETS, 'murs_hauts.png')).convert('RGBA')
         ch = hauts.width // 16
@@ -654,6 +656,10 @@ def images(hauts=None, ch=None):
         'mat_fanion': [mat_fanion()],
         'panneau_port': [panneau_port()],
         'lanterne_port': [(haut(reverbere + k), None) for k in range(3)],
+        # le bac, sa passerelle, ses caisses (fiche I1c : scripts/carte/port_bac.py)
+        'bac_port': [B.bac(0), B.bac(1)],
+        'passerelle_port': [B.passerelle(0), B.passerelle(1)],
+        'caisses_bac': [B.caisses_bac(v) for v in range(3)],
     }
 
 

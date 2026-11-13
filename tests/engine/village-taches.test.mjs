@@ -312,12 +312,12 @@ test('la fiche : les tâches, celles qu\'il peut faire, ce qui manque, qui l\'a 
 /* ---------- la sauvegarde, le joueur automatique, éteint ---------- */
 
 test('la sauvegarde : v88 → v89 ; la tâche et l\'outil gardés, une valeur abîmée remise à vide', () => {
-  assertEqual(STATE_VERSION, 89);
+  assert(STATE_VERSION >= 89, 'le format 89 ou plus');
   const { s, V: [v] } = ile();
   donnerOutil(s, v.id, 'hache'); attribuer(s, v.id, 'bois');
   journee(s);
   const m = migrate(copie(s));
-  assertEqual(m.version, 89);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.villageois[0].tache, m.villageois[0].outil], ['bois', 'hache'], 'gardés');
   assertEqual(m.villageois[0].travail.actions, v.travail.actions, 'sa journée de travail');
   const vieille = { ...copie(s), version: 88, villageois: [{ ...copie(v), tache: 'danser', outil: 'marteau', vendre: 'tout', semis: [], travail: 'oui' }] };

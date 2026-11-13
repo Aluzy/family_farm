@@ -100,3 +100,4 @@ export * from './taches.js';
 export * from './port.js';
 export * from './dehors.js';
 export * from './portage.js';
+export * from './bac.js';

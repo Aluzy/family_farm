@@ -4,14 +4,20 @@ import { countItem } from '../engine/inventory.js';
 import { fridgeCount } from '../engine/fridge.js';
 import { sellableCount } from '../engine/market.js';
 import {
-  chargeablesPort, devisPort, etalPort, heuresPort, lieuPort, ouEstLePort, PORT, portOuvert, poserPort, vendablesPort,
+  chargeablesPort, devisPort, etalPort, heuresPort, lieuPort, niveauPort, ouEstLePort, PORT, portOuvert, poserPort, vendablesPort,
 } from '../engine/port.js';
 import { capaciteDe, capacitePortage, chargeDe, vehiculePortage, vehiculesPortage, volumeCharge, volumeDe } from '../engine/portage.js';
+import {
+  articleDe, avancerBac, caissesAQuai, catalogueImport, commandesDuBac, etatBac, heuresBac, importsAttendus, nomArticle,
+  prendreAvisBac, prochainNiveau,
+} from '../engine/bac.js';
+import { setupPending } from '../engine/depart.js';
+import { son } from './son.js';
 import { horsFerme } from '../engine/dehors.js';
 import { villageActif } from '../engine/village.js';
 import { choisirBut } from '../engine/monde-vu.js';
 import { farmSeed, farmTerrain } from '../engine/terrain.js';
-import { formatCoins, formatQty } from '../engine/format.js';
+import { formatCoins, formatDay, formatQty } from '../engine/format.js';
 import { solDuMonde } from './monde-sol.js';
 import { openStageWindow } from './stage-windows.js';
 import { persistState } from './storage.js';
@@ -44,12 +50,20 @@ import { lotBtn, shopSlot, slotsHtml } from './caleche.js';
    - Le portage (fiche I2, js/engine/portage.js) : ce qu'on vend au port, on l'y porte. L'onglet Porter (sur la
      ferme) : comment on part (à la main, la brouette, la charrette attelée), la place, ce qu'on charge (une case :
      sa fiche, ×1, ×5, tout ce qui tient ; « Charger les récoltes »), ce qu'on reprend. L'onglet Vendre : ce qui est
-     chargé, et, sous la halle, « Tout décharger » (tout se vend d'un coup). */
+     chargé, et, sous la halle, « Tout décharger » (tout se vend d'un coup).
+   - Le bac (fiche I1c, js/engine/bac.js) : l'onglet Commandes (le bac, son prochain passage, ses commandes à honorer
+     avec ce qu'on a porté), l'onglet Import (le catalogue, par rang du port ; ce qui est attendu), l'onglet Le port
+     (son niveau, le chantier du suivant : les matériaux à apporter, les pièces à payer ; ce qu'il ouvre). watchBac, à
+     chaque veille : les passages du bac (son arrivée sonne la cloche et se dit), les livraisons. Le port agrandi, la
+     page se recharge (le monde de la partie est celui du niveau du port : son quai plus long). */
 
 export const PORT_TABS = [
   { id: 'vendre', label: 'Vendre', icon: '💰' },
   { id: 'acheter', label: 'Acheter', icon: '🛒' },
   { id: 'porter', label: 'Porter', icon: '🧺' },
+  { id: 'commandes', label: 'Commandes du bac', icon: '📦' },
+  { id: 'import', label: 'Import', icon: '🚢' },
+  { id: 'niveau', label: 'Le port', icon: '🏗️' },
 ];
 
 function currentTab() {
@@ -128,7 +142,10 @@ function porterHtml() {
 function vendreHtml(p) {
   const v = vendablesPort(state), gain = v.reduce((t, k) => t + charge(k) * DATA.OBJETS[k].prix, 0);
   const bouton = p.ici && v.length ? `<div class="row"><button type="button" class="btn primary" data-action="port-decharger">⬇️ Tout décharger sous la halle (+${formatCoins(gain)} 💰)</button></div>` : '';
-  return `${bouton}${slotsHtml(v.map((k) => venteSlot(k, p.ici)), 'Rien de chargé : ce que tu vends au port, tu l\'y portes (l\'onglet Porter, sur la ferme).')}`;
+  // (fiche I1c : des matériaux du chantier du port portés : les y apporter avant de tout vendre)
+  const nx = prochainNiveau(state), chantier = nx && Object.keys(nx.manque).some((k) => charge(k) > 0)
+    ? `<p class="muted">🧱 Tu portes des matériaux du chantier du port : apporte-les d'abord (l'onglet Le port), sinon ils se vendent avec le reste.</p>` : '';
+  return `${chantier}${bouton}${slotsHtml(v.map((k) => venteSlot(k, p.ici)), 'Rien de chargé : ce que tu vends au port, tu l\'y portes (l\'onglet Porter, sur la ferme).')}`;
 }
 
 function achatSlot(o, ici) {
@@ -138,12 +155,82 @@ function achatSlot(o, ici) {
     `${it.nom} : ${formatCoins(o.prix)} pièces, ${formatQty(n)} en stock`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="acheter"');
 }
 
+/* -- le bac (fiche I1c) -- */
+
+const MATERIAUX = (o) => Object.entries(o).map(([k, n]) => `${formatQty(n)} ${DATA.OBJETS[k].icone} ${DATA.OBJETS[k].nom.toLowerCase()}`).join(', ');
+
+// Le bac en une ligne : à quai (ses caisses), ou son prochain passage.
+function ligneBac() {
+  const e = etatBac(state);
+  if (!e) return '';
+  const caisses = e.caisses ? ` ${e.caisses} caisse${e.caisses > 1 ? 's' : ''} attend${e.caisses > 1 ? 'ent' : ''} sur le quai.` : '';
+  if (e.aQuai) return `⛴️ <strong>Le bac est à quai</strong> jusqu'à ${e.heures[1]} h : il emporte tout ce que tu as vendu.${caisses}`;
+  const quand = e.prochain === state.day ? 'aujourd\'hui' : e.prochain === state.day + 1 ? 'demain' : formatDay(e.prochain);
+  return `⛴️ Prochain passage du bac : <strong>${quand}</strong>, ${heuresBac()}.${caisses}`;
+}
+
+function commandesHtml(p) {
+  const L = commandesDuBac(state);
+  const lignes = L.map((c) => {
+    const it = DATA.OBJETS[c.objet], ok = p.ici && c.prete;
+    const titre = ok ? 'Honorer la commande' : !p.ici ? 'Au comptoir du port' : `Porte ${c.quantite} ${it.nom.toLowerCase()} (l'onglet Porter)`;
+    return `<li class="bac-commande${c.prete ? ' prete' : ''}"><span class="bac-ico" aria-hidden="true">${it.icone}</span>
+      <span class="bac-texte"><strong>${it.nom} × ${c.quantite}</strong><span class="muted">porté : ${formatQty(Math.min(c.charge, c.quantite))} / ${c.quantite} · prime +${c.prime} %</span></span>
+      <button type="button" class="btn small${ok ? ' primary' : ''}" data-action="port-honorer" data-commande="${c.id}"${ok ? '' : ' disabled'} title="${titre}">+${formatCoins(c.paiement.total)} 💰</button></li>`;
+  }).join('');
+  const vide = '<p class="muted">Pas de commande en cours : le bac en apporte à chaque passage, de ce que tu sais produire (tes récoltes, tes plats, les produits de tes bêtes).</p>';
+  const jusqua = L.length ? `<p class="muted">Valables jusqu'au prochain passage (${formatDay(L[0].jusqua)}) ; une commande manquée s'efface sans rien coûter.</p>` : '';
+  return `<p class="bac-ligne">${ligneBac()}</p><h3 class="section-title">📦 Les commandes du bac</h3>${L.length ? `<ul class="bac-liste">${lignes}</ul>${jusqua}` : vide}`;
+}
+
+function importHtml(p) {
+  const attendus = importsAttendus(state);
+  const att = attendus.length ? `<h3 class="section-title">⛴️ Attendu au prochain bac</h3><ul class="item-lines">${attendus.map((x) => `<li>${x.icone} ${x.nom} × ${formatQty(x.quantite)} <span class="muted">(${formatDay(x.arrive)})</span></li>`).join('')}</ul>` : '';
+  const n = niveauPort(state), rangs = new Map();
+  for (const a of catalogueImport(state)) { if (!rangs.has(a.rang)) rangs.set(a.rang, []); rangs.get(a.rang).push(a); }
+  const blocs = [...rangs.entries()].map(([r, L]) => {
+    const titre = `${r <= n ? '🔓' : '🔒'} Rang ${r} <span class="muted">(${r <= n ? 'ouvert' : `le port de niveau ${r}`})</span>`;
+    const lignes = L.map((a) => {
+      const ok = p.ici && !a.refus && state.pieces + EPS >= a.prix;
+      const lot = a.lot > 1 ? ` × ${a.lot}` : '';
+      const pourquoi = a.refus ? `<span class="muted">${a.refus}</span>` : '';
+      return `<li class="bac-commande${a.refus ? ' ferme' : ''}"><span class="bac-ico" aria-hidden="true">${a.icone}</span><span class="bac-texte"><strong>${a.nom}${lot}</strong>${pourquoi}</span>
+        <button type="button" class="btn small${ok ? ' primary' : ''}" data-action="port-importer" data-article="${a.cle}"${ok ? '' : ' disabled'} title="${ok ? 'Commander : il arrive au prochain bac' : a.refus || (p.ici ? 'Pas assez de pièces' : 'Au comptoir du port')}">−${formatCoins(a.prix)} 💰</button></li>`;
+    }).join('');
+    return `<h3 class="section-title">${titre}</h3><ul class="bac-liste">${lignes}</ul>`;
+  }).join('');
+  return `<p class="bac-ligne">${ligneBac()}</p><p class="muted">Ce que le bac apporte : payé d'avance, livré à la ferme au passage suivant. Chaque niveau du port ouvre un rang.</p>${att}${blocs}`;
+}
+
+function niveauHtml(p) {
+  const n = niveauPort(state), nx = prochainNiveau(state);
+  const tete = `<p><strong>${PORT.ICONE} Le port, niveau ${n}</strong> sur ${PORT.NIVEAUX.length}.</p>`;
+  if (!nx) return `${tete}<p class="muted">Le port est à son plus haut niveau : le grand quai, tout le catalogue.</p>`;
+  const c = chargeDe(state);
+  const lignes = Object.entries(nx.materiaux).map(([k, v]) => {
+    const a = nx.apporte[k] || 0, it = DATA.OBJETS[k];
+    return `<li${a >= v ? ' class="fait"' : ''}>${it.icone} ${it.nom} : <strong>${formatQty(Math.min(a, v))} / ${formatQty(v)}</strong> apportés${(c[k] || 0) > 0 && a < v ? ` <span class="muted">(${formatQty(c[k])} portés)</span>` : ''}</li>`;
+  }).join('');
+  const porte = Object.keys(nx.manque).some((k) => (c[k] || 0) > 0);
+  const paye = nx.pret && state.pieces + EPS >= nx.pieces;
+  const ouvre = [`un quai de ${nx.quai} cases`, `${nx.commandes} commandes par passage`, nx.rang ? `le rang ${nx.niveau} du catalogue (${nx.rang} articles)` : null, nx.plafond ? `jusqu'à ${nx.plafond} villageois` : null].filter(Boolean).join(', ');
+  const boutons = `<div class="row">
+    <button type="button" class="btn small${porte && p.ici ? ' primary' : ''}" data-action="port-apporter"${porte && p.ici ? '' : ' disabled'}>🧱 Apporter au chantier</button>
+    <button type="button" class="btn${paye && p.ici ? ' primary' : ''}" data-action="port-agrandir"${paye && p.ici ? '' : ' disabled'}>🏗️ Agrandir (−${formatCoins(nx.pieces)} 💰)</button></div>`;
+  const aide = nx.pret ? 'Tout est au chantier : il reste à payer.' : `Porte au port ${MATERIAUX(nx.manque)} (l'onglet Porter, sur la ferme), puis apporte-les au chantier ; tu peux le faire en plusieurs fois.`;
+  return `${tete}<h3 class="section-title">🏗️ Le niveau ${nx.niveau}</h3><p>Il ouvre ${ouvre}.</p>
+    <ul class="item-lines chantier-port">${lignes}<li>💰 ${formatCoins(nx.pieces)} pièces, payées au comptoir</li></ul><p class="muted">${aide}</p>${boutons}`;
+}
+
 // La fenêtre (`fenetre` : dans la fenêtre flottante de la carte, les onglets sont dans son en-tête).
 export function renderPort(fenetre = false) {
   const tab = currentTab(), p = presence();
   const body = tab.id === 'vendre' ? vendreHtml(p)
     : tab.id === 'porter' ? porterHtml()
-      : `<h3 class="section-title">🌱 Semences et engrais</h3>${slotsHtml(etalPort(state).map((o) => achatSlot(o, p.ici)), 'Aucune semence en vente.')}`;
+      : tab.id === 'commandes' ? commandesHtml(p)
+        : tab.id === 'import' ? importHtml(p)
+          : tab.id === 'niveau' ? niveauHtml(p)
+            : `<h3 class="section-title">🌱 Semences et engrais</h3>${slotsHtml(etalPort(state).map((o) => achatSlot(o, p.ici)), 'Aucune semence en vente.')}`;
   const html = `${bandeauHtml(p)}${body}`;
   return fenetre ? html : `<h2>${PORT.ICONE} ${PORT.NOM}</h2>${portTabsHtml()}${html}`;
 }
@@ -204,17 +291,47 @@ export function renderPortModal() {
 function aideTexte(tab) {
   const base = `${ouEstLePort()} Approche-toi du comptoir, sous la halle (touche-le : ton personnage y va).`;
   if (tab === 'vendre') return `${base} Le port t'achète tout ce que tu y portes (l'onglet Porter : charge-le sur la ferme), à prix fixe : le bac emporte tout, sans limite. Sous la halle, « Tout décharger » vend ton chargement d'un coup. Chaque unité vendue baisse de ${DATA.MARCHE.PAS} points le cours d'achat de l'objet, sans passer sous son plancher.`;
+  if (tab === 'commandes') return `${base} À chaque passage (tous les ${DATA.PORT.BAC.PERIODE} jours, ${heuresBac()}), le bac apporte des commandes, tirées de ce que tu sais produire. Porte ce qu'elles demandent (l'onglet Porter, sur la ferme) et honore-les au comptoir : le prix de vente, plus la prime, plus de l'expérience. Elles valent jusqu'au passage suivant ; une commande manquée ne coûte rien. Le bac emporte aussi tout ce que tu vends : tes caisses attendent sur le quai et partent avec lui.`;
+  if (tab === 'import') return `${base} Le bac importe ce que l'île n'a pas : des jeunes arbres, des plants de vigne, les espèces de la serre, des bêtes, des plans. Une commande se paie d'avance et arrive à la ferme au passage suivant. Chaque niveau du port ouvre un rang du catalogue ; ce que ton niveau débloquait le reste.`;
+  if (tab === 'niveau') return `${base} Agrandir le port allonge son quai, ouvre un rang du catalogue d'import, fait venir plus de commandes à chaque passage et accueillir plus de villageois. Chaque niveau demande des matériaux, que tu portes au chantier (en une ou plusieurs fois), et des pièces.`;
   if (tab === 'porter') return `Ce que tu vends au port, tu l'y portes. Chaque objet a un volume (un, plus pour le bois, la pierre, les minerais et les lingots). À la main : ${capaciteDe('mains')} volumes ; la brouette (l'Atelier) : ${capaciteDe('brouette')} ; la charrette attelée au cheval (l'Atelier, avec un cheval) : ${capaciteDe('charrette')}. Charge sur la ferme : ce qui ne tient pas reste ici, rien ne se perd. Sur un chemin, tu vas plus vite, à pied comme à cheval.`;
   return `${base} Le port vend les semences que ton niveau a débloquées (et l'engrais) ; leur prix monte un peu à chaque achat : produire les tiennes reste plus rentable. Les outils et les animaux se fabriquent à l'Atelier.`;
 }
 
 /* ---------- la carte : le lieu du port, le comptoir touché ---------- */
 
-// À chaque veille (js/ui/loop.js) : le lieu du port posé dans le moteur dès que le Web Worker a tiré les éléments.
+// À chaque veille (js/ui/loop.js) : le lieu du port posé dans le moteur dès que le Web Worker a tiré les éléments ;
+// le bac (fiche I1c : watchBac).
 export function watchPort() {
-  if (!villageActif(state) || lieuPort(state)) return;
+  if (!villageActif(state)) return;
+  watchBac();
+  if (lieuPort(state)) return;
   const T = farmTerrain(state), sol = T && T.MONDE ? solDuMonde(T) : null, L = sol && sol.lieux ? sol.lieux() : null;
   if (L && L.port) poserPort(farmSeed(state), L.port);
+}
+
+// Le bac (fiche I1c) : ses passages (bac.js avancerBac : son arrivée, son départ), et ce qu'ils disent au joueur : la
+// cloche et un mot à son arrivée (ses commandes, les imports livrés).
+function watchBac() {
+  if (!state || setupPending(state)) return;
+  const r = avancerBac(state);
+  if (!r) return;
+  const avis = prendreAvisBac(state);
+  for (const a of avis.slice(-1)) {
+    const livres = a.livres.map((x) => { const ar = articleDe(x.cle, state); const n = ar ? x.quantite * (ar.lot || 1) : 0; return ar ? `${nomArticle(ar)[1]} ${nomArticle(ar)[0]}${n > 1 ? ` × ${n}` : ''}` : ''; }).filter(Boolean);
+    const morceaux = [a.commandes ? `${a.commandes} commande${a.commandes > 1 ? 's' : ''} t'attend${a.commandes > 1 ? 'ent' : ''} au comptoir` : null, livres.length ? `livré à la ferme : ${livres.join(', ')}` : null].filter(Boolean);
+    const rendus = a.rendus.length ? ' (une bête sans place : son prix t\'est rendu)' : '';
+    notify(`⛴️ Le bac accoste au port${morceaux.length ? ` : ${morceaux.join(' ; ')}` : '.'}${rendus}`, { kind: 'info', cible: { fenetre: 'comptoir' } });
+    son('cloche');
+  }
+  if (avis.length || r.depart || r.arrivees.length) { persistState(); refresh(); }
+}
+
+// Le bac pour la scène (js/carte/ferme/bac.js) : { aQuai, caisses, jour, heures } ; null le chantier éteint.
+export function bacModele() {
+  if (!state || !villageActif(state)) return null;
+  const e = etatBac(state);
+  return e ? { aQuai: e.aQuai, caisses: caissesAQuai(state), jour: e.jour, heures: e.heures } : null;
 }
 
 // Un appui sur le comptoir (le personnage y va) : la fenêtre du port.
@@ -275,6 +392,27 @@ registerActions({
   'portage-reprendre': () => {
     const r = applyResult(executer('portage.reprendre', { case: Math.max(0, ouPerso()) }));
     if (r.ok) notify(`↩️ Repris à la ferme : ${formatQty(r.n)}.`, { kind: 'info' });
+  },
+  'port-honorer': (target) => {
+    const r = applyResult(executer('port.honorer', { commande: target.dataset.commande, case: Math.max(0, ouPerso()) }));
+    if (r.ok) notify(`📦 Commande honorée : ${DATA.OBJETS[r.commande.objet].icone} × ${r.commande.quantite} (+${formatCoins(r.gain)} 💰, dont ${formatCoins(r.prime)} de prime ; +${r.xp} XP).`, { kind: 'info' });
+  },
+  'port-importer': (target) => {
+    const r = applyResult(executer('port.importer', { article: target.dataset.article, quantite: 1, case: Math.max(0, ouPerso()) }));
+    if (r.ok) { const [nom, icone] = nomArticle(r.article); notify(`🚢 Commandé : ${icone} ${nom} (−${formatCoins(r.cout)} 💰). Il arrive au bac du ${formatDay(r.arrive)}.`, { kind: 'info' }); }
+  },
+  'port-apporter': () => {
+    const r = applyResult(executer('port.apporter', { case: Math.max(0, ouPerso()) }));
+    if (r.ok) notify(`🧱 Apporté au chantier du port : ${MATERIAUX(r.apporte)}.${Object.keys(r.manque).length ? ` Il manque encore ${MATERIAUX(r.manque)}.` : ' Tout y est : il reste à payer.'}`, { kind: 'info' });
+  },
+  'port-agrandir': () => {
+    const r = applyResult(executer('port.agrandir', { case: Math.max(0, ouPerso()) }));
+    if (!r.ok) return;
+    notify(`🏗️ Le port passe au niveau ${r.niveau} : son quai s'allonge.`, { kind: 'info' });
+    son('niveau');
+    persistState();
+    // (le monde de la partie est celui du niveau du port : la scène se refait avec son quai plus long)
+    setTimeout(() => location.reload(), 1200);
   },
   'port-vendre': (target) => {
     const item = target.dataset.item;

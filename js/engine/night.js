@@ -39,6 +39,7 @@ import { voisinsNuit } from './voisins.js';
 import { enExpedition, tentePortee } from './equipement.js';
 import { villageoisNuit } from './villageois.js';
 import { tachesNuit } from './taches.js';
+import { avancerBac } from './bac.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
@@ -308,6 +309,9 @@ export function runNight(state) {
   // (I3c, taches.js : avant, chacun finit ses actions du jour ; sa nuit les met dans son journal)
   const taches = tachesNuit(state);
   if (taches) state.nuit.taches = taches;
+  // (fiche I1c, bac.js : le bac du jour est passé et reparti ; un passage manqué est rattrapé)
+  const bac = avancerBac(state, { nuit: true });
+  if (bac && bac.arrivees.length) state.nuit.bac = bac;
   const villageois = villageoisNuit(state);
   if (villageois) state.nuit.villageois = villageois;
   // E-8 : un monde partagé (state.mondePartage, posé à la mise en ligne : docs/monde-partage.md, M.3) n'est

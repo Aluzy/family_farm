@@ -47,7 +47,7 @@ son île et son village ; une chronique note ce qui s'y passe.
 |---|---|---|
 | Comment le serveur fait avancer l'horloge commune, et à quel coût ? | I9a2 | Par pas de 5 s de jeu, tant qu'un joueur est connecté ; le monde dort sans joueur. |
 | En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs. |
-| L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | À mesurer par la simulation ; régler les prix des niveaux du port et la part. |
+| L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | I1c : non, sur 80 nuits de simulation (le port en prend 6 800 pièces, 814 en caisse à la nuit 80) ; à revoir avec la part (I4) et quand le joueur simulé ira plus loin que le palier 6. |
 | La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | Fixe au départ (un réglage), revue après simulation. |
 | La raison d'explorer sans hameaux à découvrir. | I1c, I8b | Des espèces sauvages à rapporter et à cultiver ; des sites à exploiter. |
 
@@ -77,7 +77,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | Lot | Fiches | Ce qu'il apporte |
 |---|---|---|
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
-| 1. Le port | I1a (fait), I1b (fait), I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
+| 1. Le port | I1a (fait), I1b (fait), I1c (fait) | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
 | 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
@@ -192,7 +192,84 @@ Ce qui est posé (I1b) :
   l'aller et au retour. `node scripts/simulate.mjs --village` allume le réglage (le chapitre 7 et le dépannage n'y
   sont que des constats : les paliers demandent des villageois).
 - **Les tests** : `tests/engine/village-commerce.test.mjs` (dont 25 nuits du joueur automatique, le réglage allumé).
-- Reste : le bac, les commandes et l'import (I1c) ; les prix (I4). (Le chemin du port et le portage : I2, plus bas.)
+- Reste : les prix (I4). (Le chemin du port et le portage : I2, plus bas ; le bac, les commandes et l'import : I1c, plus bas.)
+
+## Le bac, les commandes et le catalogue d'import (I1c, fait)
+
+Ce qui est posé (I1c ; les réglages : `PORT.BAC`, `PORT.COMMANDES`, `PORT.IMPORT`, `PORT.NIVEAUX[].prix` et
+`.commandes`, data/village.json ; le moteur : `js/engine/bac.js`) :
+
+- **La vente reste libre** (D11) : sous la halle, tout se vend, sans quota ni attente (I1b, I2). Ce qui a été vendu
+  depuis le dernier départ du bac attend sur le quai (`state.port.vendu`, noté par `vendreCharge` et la tournée d'un
+  villageois) : la scène le montre en caisses (une par `BAC.CAISSE` = 12 volumes, `CAISSES_MAX` = 4 au plus), qui
+  partent avec lui. Ni entrepôt, ni place à gérer.
+- **Le bac** : il accoste tous les `BAC.PERIODE` = 3 jours (les jours multiples de 3), de 9 h à 17 h
+  (`BAC.HEURES`), le long des quatre dernières cases du quai, du côté opposé à la cale. Sa venue se déduit du jour :
+  `avancerBac` (la page à chaque veille, la nuit, et chaque lecture du port) traite les passages qui ont eu lieu
+  depuis le dernier traité (`state.port.passe`), `RATTRAPAGE` = 3 au plus (les plus récents : les imports attendus
+  arrivent au premier), puis son départ (`state.port.parti`). C'est le seul bac du jeu : `villageois.js` lit
+  `jourDeBac` et ses heures (`VILLAGE.ARRIVEE.PERIODE`, `HEURE` et `FIN` sont retirés). La scène
+  (`js/carte/ferme/bac.js`, `model.bac` : `js/ui/port.js` `bacModele`) : il arrive du large en glissant
+  (`BAC.ARRIVEE_S` = 7 s), se balance à quai, sa passerelle posée ; il repart vers le large, les caisses s'effacent
+  avec lui ; la carte ouverte pendant qu'il est à quai, il y est d'un coup. La page sonne la cloche et dit son
+  arrivée (ses commandes, ce qui est livré). Le calendrier marque ses jours (⛴️) et dit ses heures.
+- **Les commandes** : à chaque passage, `NIVEAUX[niveau − 1].commandes` (2, 3, 3, 4, 5) demandes tirées de la graine
+  et du jour du passage (`tirerCommandes`, sans toucher au hasard de la partie) parmi ce que le joueur sait produire
+  (`savoirProduire` : les cultures récoltées, les plats préparés, les œufs, la laine et le lait de ses bêtes) : un
+  objet, une quantité (de quoi valoir `COMMANDES.VALEUR` = 50, 90, 150, 230, 340 pièces selon le niveau, ± 30 %,
+  entre 2 et 40), une prime (25 à 60 %, par pas de 5). Valables jusqu'au passage suivant ; on les honore au comptoir
+  avec ce qu'on a porté (le portage, comme la vente) : le prix de vente (`encaisserVente` : son XP, le cours), plus
+  la prime (« Prime du bac »), plus `COMMANDES.XP` = 15 XP ; l'objectif du jour `commande_bac` se note. Manquée,
+  elle s'efface sans rien coûter (B-1).
+- **Le catalogue d'import** (`IMPORT.RANGS`, un rang par niveau du port) : 1, les jeunes arbres (50 à 60 pièces) et
+  les plants de vigne (30 les 4) ; 2, le cacao, la vanille, le café (par 2), le sucre et les épices (par 10) ; 3, une
+  poule (60), un mouton (160), une vache (260) ; 4, les plans des meubles de collection (300 à 600) ; 5, les graines
+  de fleurs rares (par 5). Ce que le niveau du joueur débloquait le reste (un jeune arbre : le Verger ; une culture :
+  son déblocage ; une bête : son bâtiment et sa place) : le catalogue ajoute la condition du port, et ces objets ne
+  s'achètent plus tout de suite au comptoir (`enVenteAuPort`). Une commande se paie d'avance (« Import : … ») et
+  arrive à la ferme au passage suivant (`livrerImport` : à l'inventaire ; une bête à son bâtiment, son prix rendu
+  s'il n'y a plus de place ; un plan appris). Les plants sauvages de l'île (I7e) s'y inscrivent par
+  `inscrireSauvage(state, objet)`, au rang `SAUVAGES.RANG`, au prix de vente × `SAUVAGES.MARGE` %.
+- **Les niveaux du port** (`NIVEAUX[k].prix`) : niveau 2, 1 800 pièces, 24 planches, 16 pierres ; 3, 5 000 pièces,
+  40 planches, 30 pierres, 6 lingots de fer ; 4, 11 000 pièces, 60 planches, 40 pierres, 12 lingots de fer ; 5,
+  24 000 pièces, 80 planches, 60 pierres, 20 lingots de fer, 10 lingots de cuivre (41 800 pièces en tout). Les
+  matériaux s'apportent au chantier du port (`apporterAuChantier`, `state.port.chantier`), depuis ce qu'on a porté,
+  en une ou plusieurs fois (les lingots, qui ne se vendent pas, se chargent pour le chantier :
+  `materiauDuChantier`) ; puis on paie (`agrandirPort`, « Port agrandi »). Chaque niveau allonge le quai (8, 9, 10,
+  11, 12 cases), ouvre un rang du catalogue, apporte plus de commandes par passage et accueille plus de villageois
+  (`VILLAGE.ARRIVEE.PLAFOND`). Le monde de la partie est celui du niveau du port (`cadre.PORT`) : la page se
+  recharge.
+- **La fenêtre** (`js/ui/port.js`) : trois onglets de plus, Commandes du bac 📦 (le bac, son prochain passage, ses
+  caisses ; les commandes, ce qui en est porté, la prime, « Honorer »), Import 🚢 (ce qui est attendu ; le catalogue
+  par rang, chaque article avec son prix et, fermé, pourquoi) et Le port 🏗️ (son niveau ; le chantier du suivant : ce
+  qui est apporté, ce qui manque, les pièces ; ce qu'il ouvre ; « Apporter au chantier », « Agrandir »). Les
+  commandes du moteur : `port.honorer`, `port.importer`, `port.apporter`, `port.agrandir` (`commandes.js`).
+- **Les dessins** (`scripts/carte/port_bac.py`, posés par `scripts/carte/port.py` dans la planche des hameaux, à la
+  suite des sortes du port : `bac_port`, `passerelle_port`, `caisses_bac`) : le bac (vers le sud, 38 × 60 : 660
+  couleurs ; vers l'est, 72 × 44 : 737), la passerelle (80 et 97), les caisses chargées (107, 167, 227).
+- **La sauvegarde** : format 90, `state.port` (`niveau`, `passe`, `parti`, `commandes`, `honorees`, `imports`,
+  `vendu`, `chantier`, `sauvages`, `avis`) ; il naît avec une partie neuve du chantier (ou une partie d'essai, ou au
+  premier besoin, sans rattraper les bacs d'avant elle) ; la migration 89 → 90 répare un port abîmé et laisse une
+  partie sans port telle quelle.
+- **Le joueur automatique** (`bot.js`) : il honore les commandes (il charge d'abord ce qu'elles demandent, puis, au
+  port, les honore avant de décharger), agrandit le port (l'étape `port` : au palier 4 le niveau 2, au palier 6 le
+  niveau 3, à la fin du plan les niveaux 3 à 5 ; il économise pour lui, en charge les matériaux dès que ses pièces
+  font `SIMULATION.PORT.CHANTIER` = la moitié du prix ; les planches qu'il n'a plus la force de fabriquer lui sont
+  fournies, comptées) et achète ses jeunes arbres par l'import (commandés, plantés à leur livraison).
+- **La simulation** (`node scripts/simulate.mjs --village`, 80 nuits, graine 1) : avant I1c, le palier 4 restait
+  bloqué (« Agrandir le port ») de la nuit 22 à la fin. Après : le port au niveau 2 à la nuit 31, le palier 5 à la
+  nuit 33 (35 pour le joueur minimal), le palier 6 à la nuit 45 (44) ; le niveau 3 à la nuit 75 ; le palier 6 attend
+  un commerce ouvert (I5a) et l'amitié des villageois (I6a). Les pièces en caisse à la nuit 80 : 814 (joueur
+  appliqué), 21 (minimal) ; avant I1c, 62 et 435 (le joueur dépensait tout en appareils). Les primes du bac :
+  ≈ 1 050 pièces sur la partie (9 % des gains) ; le port : 6 800 pièces (64 % des dépenses du joueur appliqué). Sur
+  les nuits 41 à 60, il économise pour le niveau 3 (net + 118 par jour, 2 747 en caisse à la nuit 60), puis le paie.
+  Éteint, le CSV de la simulation est le même octet pour octet.
+- **Les tests** : `tests/engine/village-bac.test.mjs` (les jours du bac ; la vente sans limite et les caisses ; les
+  commandes tirées, honorées, manquées ; le catalogue, l'import payé d'avance et livré au passage suivant, la bête
+  sans place, le plan ; le rattrapage après une absence, la nuit ; les niveaux ; la sauvegarde ; éteint, rien).
+- Reste : la part des villageois et les prix (I4) ; les plants sauvages à cultiver (I7e, qui appellera
+  `inscrireSauvage`) ; les contrats d'export en volume (I8b) ; le port en ligne (I9c) ; montrer le chantier du port
+  sur la carte (des matériaux empilés) ; que la tournée d'un villageois honore les commandes.
 
 ## Le chemin du port, modifiable, et le portage (I2, fait)
 
@@ -272,8 +349,8 @@ Ce qui est posé (I2 ; les réglages : `VILLAGE.DEHORS`, `VILLAGE.CHEMIN`, `VILL
 - **La maison libre** : une pièce close du genre maison, marquée par une **boîte aux lettres** (un bloc fabriqué à
   l'Atelier, posé dehors contre sa porte : `blocs.js`, `maisonsMarquees`), avec un lit que la famille ne prend pas ;
   la famille dort d'abord dans les autres lits (`couchages`). Un villageois par maison.
-- **L'arrivée** (`VILLAGE.ARRIVEE`) : un jour de bac (avant I1c, tous les `PERIODE` jours ; `jourDeBac` lira le bac
-  du port), de `HEURE` à `FIN` h ; le premier dès la première maison libre ; les suivants s'il y a de quoi manger
+- **L'arrivée** (`VILLAGE.ARRIVEE`) : un jour de bac (depuis I1c, celui du bac du port : `js/engine/bac.js`
+  `jourDeBac`, `PORT.BAC.PERIODE`), pendant que le bac est à quai (`PORT.BAC.HEURES`) ; le premier dès la première maison libre ; les suivants s'il y a de quoi manger
   (`RESERVE_JOURS`) et si le port le permet (`PLAFOND[niveau]`, un port sans niveau compte pour 1). Il part de la
   case du port (`caseArrivee` : `plan.lieux.port` quand I1a l'aura posé, sinon le bout du chemin de la ferme),
   marche à sa porte, frappe, dit une ligne ; une notification ; la carte du joueur compte les villageois (un appui :
@@ -461,7 +538,7 @@ ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo).
   lettres fabriquées à l'Atelier), puis confie à chacun la première tâche libre de `TACHES` (d'abord ce qui nourrit,
   puis ce qui se vend), son outil fabriqué et donné. `node scripts/simulate.mjs --village` passe ainsi du palier 3 au
   palier 4 (nuit 22 pour le joueur appliqué, 23 pour le minimal ; avant : bloqué au palier 3) ; le palier 4 attend
-  l'agrandissement du port (I1c). Deux villageois (le plafond d'un port de niveau 1), sur 80 nuits : l'un aux champs
+  l'agrandissement du port (I1c, depuis fait : voir plus haut). Deux villageois (le plafond d'un port de niveau 1), sur 80 nuits : l'un aux champs
   (≈ 7 actions par jour sur 12 : ≈ 15 blés, 9 fraises, 6,5 épinards, 4,7 oignons, 4,4 carottes, 2,8 tomates… et leurs
   graines), l'autre aux bêtes (≈ 2 actions par jour sur 4 : la laine, ≈ 1,3 par jour ; les poules et les œufs, le
   joueur simulé s'en occupe avant lui).

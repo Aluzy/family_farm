@@ -103,6 +103,9 @@ test('une partie neuve suit les paliers : state.palier, la forme de state.campag
 test('chaque objectif du chantier se compte, et un champ absent compte 0', () => {
   const s = createNewGame(8);
   const n = (type, extra = {}) => compterObjectifIle(s, { type, cible: 1, ...extra });
+  // (une partie neuve du chantier a son port, au niveau de départ : fiche I1c)
+  assertEqual(n('portNiveau'), DATA.PORT.NIVEAU_DEPART, 'le port du départ');
+  delete s.port;
   for (const t of OBJECTIFS_ILE) assertEqual(n(t, { palier: 2 }), 0, `${t} : rien encore`);
   assertEqual(compterObjectifIle(s, { type: 'recoltes' }), null, 'un type de campaign.js : pas ici');
   // ventesPort : state.campagne.compteurs.ventesPort (I1b)

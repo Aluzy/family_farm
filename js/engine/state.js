@@ -12,7 +12,8 @@ import { newTechPoints } from './techtree.js';
 import { remboursementCommerce } from './ile.js';
 import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
-import { nouveauDehors, villageActif } from './village.js';
+import { nouveauDehors, nouveauPort, villageActif } from './village.js';
+import { reparerPort } from './bac.js';
 import { decoderSegments, encoderSegments } from './dehors.js';
 import { VEHICULES } from './portage.js';
 import { commencerPaliers } from './paliers.js';
@@ -165,7 +166,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
   s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s), caseDepart(farmTerrain(s))), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
   // le chantier « l'île à bâtir » allumé : la partie suit les paliers de l'île (paliers.js, fiche I7a)
-  if (villageActif(s)) { commencerPaliers(s); s.dehors = nouveauDehors(); }
+  if (villageActif(s)) { commencerPaliers(s); s.dehors = nouveauDehors(); s.port = nouveauPort(s.day); }
   return s;
 }
 
@@ -907,6 +908,15 @@ export const MIGRATIONS = {
   88: (state) => {
     const out = { ...state, version: 89 };
     if (Array.isArray(state.villageois)) out.villageois = state.villageois.map(reparerTaches);
+    return out;
+  },
+  // v89 → v90 (le chantier « l'île à bâtir », fiche I1c) : le port de la partie (state.port, js/engine/bac.js : son
+  // niveau, le dernier passage du bac traité, ses commandes, les imports attendus, ce qui attend le bac, le chantier du
+  // niveau suivant). Il ne naît qu'avec le chantier : une partie d'avant n'en a pas et reste telle quelle (une partie
+  // d'essai le reçoit au premier besoin, sans rattraper les bacs d'avant) ; un port abîmé est réparé.
+  89: (state) => {
+    const out = { ...state, version: 90 };
+    if ('port' in state) out.port = reparerPort(state.port, Number.isInteger(state.day) ? state.day : 1);
     return out;
   },
 };

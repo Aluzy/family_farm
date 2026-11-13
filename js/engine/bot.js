@@ -9,7 +9,7 @@ import { marcheOuvert } from './devices.js';
 import { tick } from './energy.js';
 import { addItem, countItem, expiringSoon, inventoryCounts, lotRank, lotsOf } from './inventory.js';
 import { fridgeLevel, fridgeRate, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, stockCount, upgradeFridge } from './fridge.js';
-import { buyItem, buyPrice, isBuyable, sellPrice } from './market.js';
+import { buyItem, buyPrice, isBuyable, sellableCount, sellPrice } from './market.js';
 import { eatSnack } from './family.js';
 import { boitePosee, depenserMembre, deposerBoite, jaugeMembre, mangeurs, repasStep, valeurAliment } from './repas.js';
 import { actionCost, energyLevel, energyMax } from './stamina.js';
@@ -62,8 +62,12 @@ import { ESPECES_FAUNE } from './monde-faune.js';
 import { buildFridge, FRIGO_OBJET } from './fridge.js';
 import { takeItem } from './inventory.js';
 import { villageActif } from './village.js';
-import { acheterAuPort, dechargerAuPort, PORT, portDuMonde, vendreAuPort } from './port.js';
-import { chargerPortage, choisirVehicule, refusVehicule, volumeDe } from './portage.js';
+import { acheterAuPort, dechargerAuPort, niveauPort, PORT, portDuMonde, vendreAuPort } from './port.js';
+import {
+  agrandirPort, apporterAuChantier, articleDe, articleRefus, avancerBac, commanderImport, commandesDuBac, honorerCommande,
+  importsAttendus, objetImporte, prochainNiveau,
+} from './bac.js';
+import { chargeDe, chargerPortage, choisirVehicule, refusVehicule, volumeDe } from './portage.js';
 import { bonusChemin } from './dehors.js';
 import { chevalPossede } from './cheval.js';
 import { takeWheat } from './animals.js';
@@ -627,9 +631,15 @@ function botBatir(state, id) {
 }
 
 // Un jeune arbre du Verger : acheté à la calèche (son prix), puis planté. { cost, buy }.
+// (I1c, le chantier allumé : il vient par le bac ; commandé au port, payé d'avance, il est planté à sa livraison)
 function botArbre(state, espece) {
   const item = DATA.ATELIER.BLOCS[espece] && DATA.ATELIER.BLOCS[espece].objet;
   if (!item || !isBuyable(item)) return { locked: true };
+  if (villageActif(state) && objetImporte(item)) return botImport(state, `objet:${item}`, () => {
+    const r = testBatir(state, espece);
+    if (r.ok) takeItem(state, item, 1);
+    return r;
+  });
   const cost = buyPrice(state, item);
   return {
     cost,
@@ -641,6 +651,37 @@ function botArbre(state, espece) {
       return r;
     },
   };
+}
+
+// I1c : un article du catalogue d'import, pour un usage (`utiliser` : planter le jeune arbre…) : livré, il s'en sert ;
+// attendu, il patiente ; sinon il le commande au port (payé d'avance, il arrive au passage suivant du bac). { cost, buy }
+// ou { locked }.
+function botImport(state, cle, utiliser) {
+  const a = articleDe(cle, state);
+  if (!a) return { locked: true };
+  if (a.sorte === 'objet' && countItem(state, a.id) >= 1) return { cost: 0, buy: utiliser };
+  if (importsAttendus(state).some((x) => x.cle === cle)) return { locked: true };
+  if (articleRefus(state, a)) return { locked: true };
+  return {
+    cost: a.prix,
+    buy: () => (botCalecheLa(state) ? commanderImport(state, cle, 1, null, { sansPresence: true }) : { ok: false, error: 'Pas au port.' }),
+  };
+}
+
+// I1c : agrandir le port jusqu'au niveau `niveau` : les matériaux apportés au chantier (il les charge avant sa sortie :
+// botChargement), puis les pièces. { done }, { locked } ou { cost, buy }.
+function botPort(state, niveau) {
+  if (!villageActif(state)) return { done: true };
+  if (niveauPort(state) >= niveau) return { done: true };
+  const nx = prochainNiveau(state);
+  if (!nx) return { done: true };
+  // (il économise pour lui : tant que les pièces manquent, botBuy s'arrête là ; ses pièces réunies, il attend d'être
+  // au port, ses matériaux apportés, sans les dépenser ailleurs : `attendre`)
+  if (!canPay(state, nx.pieces + DATA.SIMULATION.CAISSE)) return { cost: nx.pieces, buy: () => ({ ok: false }) };
+  if (!botCalecheLa(state)) return { attendre: true };
+  apporterAuChantier(state, null, { sansPresence: true });
+  if (!prochainNiveau(state).pret) return { attendre: true };
+  return { cost: nx.pieces, buy: () => agrandirPort(state, null, { sansPresence: true }) };
 }
 
 // Ce qu'il reste à faire pour une étape du plan : { done }, { locked } ou { cost, buy }.
@@ -716,6 +757,9 @@ export function botStepInfo(state, step, eveilS) {
     // (le Verger s'ouvre avec le premier arbre planté)
     case 'verger':
       return isUnlocked(state, 'verger') ? { done: true } : { locked: true };
+    // I1c : un niveau du port (le chantier allumé ; éteint : rien à faire)
+    case 'port':
+      return botPort(state, step.niveau || 2);
     case 'arbres': {
       if (!isUnlocked(state, 'verger')) return { locked: true };
       const v = state.verger;
@@ -778,6 +822,7 @@ export function botBuy(state, eveilS) {
       if (rates.has(step)) continue;
       const info = botStepInfo(state, step, eveilS);
       if (info.done || info.locked) continue;
+      if (info.attendre) return;   // (I1c : il garde ses pièces pour le port, botPort)
       // une caisse reste en réserve pour les graines et le blé (sauf pour l'eau et l'énergie)
       // (ce qui ne coûte rien, fabriqué à l'Atelier, ne demande pas de caisse : fiche 7c)
       const target = info.cost ? info.cost + (step.type === 'infra' ? 0 : S.CAISSE) : 0;
@@ -869,16 +914,55 @@ function botChargement(state) {
   aCharger.set(state, voulu);
   try { botStore(state); botSell(state); } finally { aCharger.delete(state); }
   voulu.sort((a, b) => sellPrice(b.item) / volumeDe(b.item) - sellPrice(a.item) / volumeDe(a.item) || (a.item < b.item ? -1 : 1));
+  // (I1c : d'abord ce qui honore une commande du bac et les matériaux du chantier du port : botAPorter)
   let n = 0;
-  for (const { item, qty } of voulu) { const r = chargerPortage(state, item, qty, null, { sansPresence: true }); if (r.ok) n += r.n; }
+  for (const { item, qty } of [...botAPorter(state, true), ...voulu]) { const r = chargerPortage(state, item, qty, null, { sansPresence: true }); if (r.ok) n += r.n; }
   return n;
+}
+
+/* -- I1c : le bac, ses commandes, le chantier du port. Avant de partir, il charge en premier de quoi honorer les
+   commandes du bac (ce qu'il a, hors semences gardées) et, quand ses pièces approchent du prix du niveau suivant du
+   port (SIMULATION.PORT.CHANTIER, en part du prix) et qu'il le vise encore (NIVEAU_MAX), ses matériaux (réunis : les
+   planches fabriquées, la pierre et les lingots fournis). Au port, avant de décharger (tout ce qui reste se vend), il
+   honore les commandes et apporte les matériaux au chantier ; botBuy paie le niveau (l'étape « port » du plan). */
+function botVisePort(state) {
+  const SP = DATA.SIMULATION.PORT, nx = villageActif(state) ? prochainNiveau(state) : null;
+  return nx && nx.niveau <= (SP.NIVEAU_MAX || 1) && state.pieces >= nx.pieces * (SP.CHANTIER || 0) ? nx : null;
+}
+// Ce qu'il porte en plus : [{ item, qty }]. `reunir` : les matériaux qui manquent sont réunis (sinon : ce qu'il a).
+function botAPorter(state, reunir = false) {
+  if (!villageActif(state)) return [];
+  const out = [], semences = botSemences(state), charge = (k) => chargeDe(state)[k] || 0;
+  for (const c of commandesDuBac(state)) {
+    const manque = c.quantite - c.charge;
+    if (manque <= 0) continue;
+    if (Math.floor(sellableCount(state, c.objet) + EPS) - (semences[c.objet] || 0) >= manque) out.push({ item: c.objet, qty: manque });
+  }
+  const nx = botVisePort(state);
+  if (nx) {
+    for (const [k, n] of Object.entries(nx.manque)) {
+      const q = n - charge(k);
+      if (q <= 0) continue;
+      // (les planches : fabriquées à l'Atelier ; trop fatigué pour toutes, le reste lui est fourni, compté comme les
+      // bruts : materiauxFournis)
+      if (reunir && !botReunir(state, { [k]: q }) && k === 'planche') fournir(state, k, q - countItem(state, k));
+      if (countItem(state, k) >= 1) out.push({ item: k, qty: Math.min(q, Math.floor(countItem(state, k))) });
+    }
+  }
+  return out;
+}
+// Au port (avant de décharger) : les commandes qu'il peut honorer, les matériaux au chantier.
+function botAuBac(state) {
+  avancerBac(state);
+  for (const c of commandesDuBac(state)) if (c.prete) honorerCommande(state, c.id, null, { sansPresence: true });
+  if (prochainNiveau(state)) apporterAuChantier(state, null, { sansPresence: true });
 }
 
 // La sortie au port, si elle s'impose : il y va, joue `fn` (le commerce possible), rentre. → vrai s'il y est allé.
 export function botSortiePort(state, fn) {
   const SP = DATA.SIMULATION.PORT;
   if (!villageActif(state) || !marcheOuvert(state) || sortiesPort.get(state) === state.day) return false;
-  if (botValeurAVendre(state) < SP.SEUIL && !botManqueGraines(state)) return false;
+  if (botValeurAVendre(state) < SP.SEUIL && !botManqueGraines(state) && !botAPorter(state).length) return false;
   const g = farmSeed(state), lieu = g === null ? null : portDuMonde(g), T = farmTerrain(state);
   if (!lieu) return false;
   const vehicule = botVehicule(state);
@@ -890,7 +974,7 @@ export function botSortiePort(state, fn) {
   sortiesPort.set(state, state.day);
   const charge = botChargement(state);
   botMarche(state, aller);
-  botPassageCaleche(state, () => { if (charge) dechargerAuPort(state, null, { sansPresence: true }); fn(); });
+  botPassageCaleche(state, () => { botAuBac(state); if (charge) dechargerAuPort(state, null, { sansPresence: true }); fn(); });
   botMarche(state, aller);
   return true;
 }
@@ -1227,6 +1311,11 @@ let nomsObjets = null;
 export function posteSimulation(libelle, montant = 0) {
   let [tete, ...reste] = String(libelle || '').split(' : ');
   if (tete === 'Port') tete = montant > 0 ? 'Vente' : 'Achat';
+  // (I1c : une commande du bac honorée est une vente, sa prime à part ; un import, un achat ; un niveau du port)
+  if (tete === 'Bac') tete = 'Vente';
+  if (tete === 'Import' && montant < 0) tete = 'Achat';
+  if (tete === 'Prime du bac') return 'primes_bac';
+  if (tete.startsWith('Port agrandi')) return 'port';
   const nom = reste.join(' : ');
   if (!nomsObjets) nomsObjets = new Map(Object.entries(DATA.OBJETS).map(([id, d]) => [d.nom, id]));
   const id = nomsObjets.get(nom), def = id ? DATA.OBJETS[id] : null;

@@ -27,10 +27,17 @@ import { villageActif } from './village.js';
 import { farmTerrain } from './terrain.js';
 import { chevalPossede } from './cheval.js';
 import { horsFerme } from './dehors.js';
+import { noterVenteBac } from './bac.js';
 
 const P = () => DATA.VILLAGE.PORTAGE;
 const nLots = (lots) => (Array.isArray(lots) ? lots.reduce((t, l) => t + (l.qty || 0), 0) : 0);
 export const VEHICULES = ['mains', 'brouette', 'charrette'];
+
+// Un matériau du chantier du port (fiche I1c : PORT.NIVEAUX[].prix, les planches, la pierre, les lingots) : il se
+// porte au port même s'il ne se vend pas (les lingots) ; déchargé sous la halle, ce qui ne se vend pas reste chargé.
+export function materiauDuChantier(item) {
+  return item !== 'pieces' && ((DATA.PORT && DATA.PORT.NIVEAUX) || []).some((n) => n.prix && n.prix[item] > 0);
+}
 
 // Le volume d'une unité de `item`.
 export function volumeDe(item) {
@@ -128,7 +135,7 @@ export function chargerPortage(state, item, qty, ou = null, o = {}) {
   const p = portageDe(state), def = DATA.OBJETS[item];
   if (!p) return fail('Il n\'y a pas de port.');
   if (!def) return fail('Objet inconnu.');
-  if (def.invendable) return fail(`${def.nom} ne se vend pas au port.`);
+  if (def.invendable && !materiauDuChantier(item)) return fail(`${def.nom} ne se vend pas au port.`);
   if (!o.sansPresence && !surLaFerme(state, ou)) return fail('On charge sur la ferme.');
   const voulu = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
   if (voulu <= 0) return fail('Rien à charger.');
@@ -183,6 +190,7 @@ export function vendreCharge(state, item, qty) {
   keepLots(p.charge, item, lots);
   const gain = encaisserVente(state, item, n, 'Port');
   bumpCounter(state, 'ventesPort', gain);   // (les paliers de l'île, paliers.js : ventesPort)
+  noterVenteBac(state, item, n);            // (fiche I1c : la vente attend le bac, en caisses sur le quai)
   return { ok: true, sold: n, gain };
 }
 
