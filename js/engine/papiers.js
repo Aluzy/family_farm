@@ -11,17 +11,20 @@
 
    state.papiers = { [case du mur]: motif } (en bas) ; state.papiersEtage = { [case du mur]: motif }
    (à l'étage : la face du mur rehaussé, ou du mur de l'étage, au-dessus d'une case d'une pièce de
-   l'étage, js/engine/etage.js piecesNiveau). Un mur repris garde son papier noté (il ne se voit plus,
+   l'étage, js/engine/etage.js piecesNiveau) ; state.papiersNiveau2 au niveau 2, de même (chaque niveau, les
+   mêmes mécaniques : le créateur, novembre 2026). Un mur repris garde son papier noté (il ne se voit plus,
    papiersVisibles) : Annuler, qui le repose, le retrouve tapissé. */
 
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { countItem } from './inventory.js';
 import { blocsPoses, hauteurPile, piecesCloses } from './blocs.js';
-import { etageBlocs, fenetresEtage, murEtage, piecesNiveau } from './etage.js';
+import { etageBlocs, fenetresEtage, murEtage, niveauxEtage, piecesNiveau } from './etage.js';
 import { farmTerrain } from './terrain.js';
 
-const CHAMP = { 0: 'papiers', 1: 'papiersEtage' };
+const CHAMP = { 0: 'papiers', 1: 'papiersEtage', 2: 'papiersNiveau2' };
+// (les niveaux où l'on tapisse : le sol et chaque niveau du dessus)
+const niveauOk = (n) => n === 0 || niveauxEtage().includes(n);
 export const AUCUN = 'aucun';
 
 // Les motifs (dans l'ordre des images de assets/papiers_peints.png).
@@ -40,7 +43,7 @@ export function papiersDebloques(state) {
   return motifsPapier().filter((m) => papierDebloque(state, m));
 }
 
-// Les papiers posés au niveau `niveau` (0 : en bas, 1 : à l'étage) : { [case du mur]: motif }.
+// Les papiers posés au niveau `niveau` (0 : en bas, 1 : à l'étage, 2 : au-dessus) : { [case du mur]: motif }.
 export function papiersPoses(state, niveau = 0) {
   const v = state && state[CHAMP[niveau]];
   return v && typeof v === 'object' ? v : {};
@@ -73,14 +76,14 @@ export function pieceTapissable(state, tile, niveau = 0) {
 // Les murs dont on voit la face depuis la pièce `piece` (au niveau `niveau`) : [case du mur], triés.
 export function facesPiece(state, piece, niveau = 0) {
   if (!piece) return [];
-  const W = farmTerrain(state).LARGEUR, B = blocsPoses(state), E = etageBlocs(state), F = fenetresEtage(state);
+  const W = farmTerrain(state).LARGEUR, B = blocsPoses(state), E = etageBlocs(state, niveau || 1), F = fenetresEtage(state, niveau || 1);
   const dedans = new Set(piece.cases), out = new Set();
   for (const c of piece.cases) {
     const m = c - W;
     if (m < 0 || dedans.has(m)) continue;
     if (!niveau) {
       if (murPleinBas(B[m])) out.add(m);
-    } else if (murEtage(state, m) && !F[m] && !(E[m] && !murPleinBas(E[m])) && (E[m] || hauteurPile(state, m) >= niveau + 1)) out.add(m);
+    } else if (murEtage(state, m, niveau) && !F[m] && !(E[m] && !murPleinBas(E[m])) && (E[m] || hauteurPile(state, m) >= niveau + 1)) out.add(m);
   }
   return [...out].sort((a, b) => a - b);
 }
@@ -88,12 +91,12 @@ export function facesPiece(state, piece, niveau = 0) {
 // Pose le papier `motif` (ou AUCUN : le retire) sur tous les murs de la pièce close qui contient la
 // case `tile`, au niveau `niveau`. → { ok, motif, murs, avant: { [mur]: motif | AUCUN } } ou un refus.
 export function tapisserPiece(state, tile, motif, niveau = 0) {
-  if (niveau !== 0 && niveau !== 1) return fail('Le papier peint se pose en bas ou à l\'étage.');
+  if (!niveauOk(niveau)) return fail('Le papier peint se pose en bas ou dans les pièces des niveaux du dessus.');
   const retire = motif === AUCUN;
   if (!retire && !(DATA.PAPIERS_PEINTS || {})[motif]) return fail('Ce papier peint n\'existe pas.');
   if (!retire && !papierDebloque(state, motif)) return fail(`Le papier peint « ${DATA.PAPIERS_PEINTS[motif].nom} » s'achète avec des gemmes 💎 (sur ta carte de joueur, sous tes pièces).`);
   const piece = pieceTapissable(state, tile, niveau);
-  if (!piece) return fail(niveau ? 'Touche une case d\'une pièce close de l\'étage.' : 'Touche une case d\'une pièce close : une pièce fermée de murs, avec une porte.');
+  if (!piece) return fail(niveau ? `Touche une case d'une pièce close ${niveau === 1 ? 'de l\'étage' : `du niveau ${niveau}`}.` : 'Touche une case d\'une pièce close : une pièce fermée de murs, avec une porte.');
   const murs = facesPiece(state, piece, niveau);
   if (!murs.length) return fail('Cette pièce n\'a pas de mur plein au fond où poser le papier.');
   const P = papiersPoses(state, niveau), avant = {};
@@ -106,7 +109,7 @@ export function tapisserPiece(state, tile, motif, niveau = 0) {
 // Remet sur ces murs les papiers d'avant (l'annulation d'un tapisserPiece) : { [mur]: motif | AUCUN }.
 // Un motif non débloqué n'est pas reposé.
 export function tapisserMurs(state, murs, niveau = 0) {
-  if (niveau !== 0 && niveau !== 1) return fail('Le papier peint se pose en bas ou à l\'étage.');
+  if (!niveauOk(niveau)) return fail('Le papier peint se pose en bas ou dans les pièces des niveaux du dessus.');
   const avant = {}, P = papiersPoses(state, niveau);
   for (const [k, motif] of Object.entries(murs || {})) {
     const m = Number(k);

@@ -334,11 +334,17 @@ function calculerToits(state, B, E, W) {
 // « etage:<tuile> » (blocs.js couchages : après ceux du bas).
 export function couchagesEtage(state) {
   const E = etageBlocs(state);
-  if (!Object.keys(E).length) return [];
+  if (!Object.keys(E).length && !Object.keys(etageBlocs(state, 2)).length) return [];
   const clos = new Set();
   for (const t of toits(state)) if (t.niveau === 1) for (const c of t.cases) clos.add(c);
-  return Object.keys(E).map(Number).filter((t) => clos.has(t) && (E[t] === 'paillasse' || (DATA.ATELIER.BLOCS[E[t]] && DATA.ATELIER.BLOCS[E[t]].lit)))
-    .sort((a, b) => a - b).map((t) => 'etage:' + t);
+  const couchage = (sorte) => sorte === 'paillasse' || !!(DATA.ATELIER.BLOCS[sorte] && DATA.ATELIER.BLOCS[sorte].lit);
+  const un = Object.keys(E).map(Number).filter((t) => clos.has(t) && couchage(E[t])).sort((a, b) => a - b).map((t) => 'etage:' + t);
+  // (au niveau 2 : dans une pièce dont tout le pourtour y monte, « etage2:<tuile> » ; le même sommeil)
+  const E2 = etageBlocs(state, 2);
+  if (!Object.keys(E2).length) return un;
+  const clos2 = new Set();
+  for (const p of piecesNiveau(state, 2)) for (const c of p.cases) clos2.add(c);
+  return un.concat(Object.keys(E2).map(Number).filter((t) => clos2.has(t) && couchage(E2[t])).sort((a, b) => a - b).map((t) => 'etage2:' + t));
 }
 
 // Une station posée à l'étage : elle est là, comme en bas (blocs.js poserBloc) ; reprise (ou rangée),

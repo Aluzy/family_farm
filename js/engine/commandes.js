@@ -188,7 +188,7 @@ const CONTROLES = {
   // les papiers peints (js/engine/papiers.js) : un motif, ou « aucun » ; le niveau 0 (en bas) ou 1 (l'étage) ;
   // des murs et leur motif (l'annulation : { [case du mur]: motif | aucun }, 400 au plus)
   motif: (v) => v === AUCUN || (typeof v === 'string' && !!(DATA.PAPIERS_PEINTS || {})[v]),
-  niveauPapier: (v) => v === 0 || v === 1,
+  niveauPapier: (v) => v === 0 || v === 1 || v === 2,
   murs: (v) => !!v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length > 0 && Object.keys(v).length <= 400
     && Object.entries(v).every(([k, m]) => /^\d{1,7}$/.test(k) && (m === AUCUN || (typeof m === 'string' && !!(DATA.PAPIERS_PEINTS || {})[m]))),
 };

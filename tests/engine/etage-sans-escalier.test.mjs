@@ -7,8 +7,8 @@
    ========================================================================== */
 
 import {
-  addItem, blocsPoses, buildAtelier, countItem, DATA, empriseNiveau, etageBlocs, etageEmprise, executerCommande, farmTerrain, fenetresHautes,
-  hauteurPile, poserBloc, poseEtageStatus, poserEtage, rehausser, reprendreBloc, reprendreEtage, testFarmMap,
+  addItem, blocsPoses, buildAtelier, choisirLit, couchages, countItem, DATA, empriseNiveau, etageBlocs, etageEmprise, executerCommande, farmTerrain, fenetresHautes,
+  hauteurPile, papiersVisibles, poserBloc, poseEtageStatus, poserEtage, rehausser, reprendreBloc, reprendreEtage, testFarmMap,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, garden, setInv, test, tireless } from './aide.mjs';
 
@@ -132,4 +132,27 @@ test('niveau 2 : les mêmes mécaniques qu\'à l\'étage, avec ou sans escalier'
   assertEqual([etageBlocs(s, 2)[b], countItem(s, obj('lanterne'))], [undefined, 2], 'la lanterne au-dessus de l\'escalier de l\'étage revient');
   // pas d'escalier au dernier niveau
   assert(!poseEtageStatus(s, 'escalier', p.dedans[3], 0, 2).ok);
+});
+
+test('niveau 2 : une paillasse dans une pièce du niveau 2 est un couchage (« etage2:<case> »), qu\'on choisit', () => {
+  const s = chantier('dodo2');
+  const p = piece(s, 6, 5, true, 2);
+  addItem(s, obj('paillasse'), 1);
+  const t = p.dedans[2];
+  assert(poserEtage(s, 'paillasse', t, 0, null, 2).ok);
+  assert(couchages(s).includes('etage2:' + t), JSON.stringify(couchages(s)));
+  const r = choisirLit(s, 'etage2:' + t);
+  assert(r.ok, r.error);
+});
+
+test('niveau 2 : le papier peint s\'y pose sur les murs du fond, comme en bas et à l\'étage', () => {
+  const s = chantier('papier2');
+  const p = piece(s, 6, 5, true, 2);
+  addItem(s, DATA.PAPIERS_PEINTS.damas.objet, 1);
+  const r = executerCommande(s, { type: 'piece.tapisser', args: { case: p.dedans[0], motif: 'damas', niveau: 2 } });
+  assert(r.ok, r.error);
+  assert(r.murs.length >= 4, `${r.murs.length} murs`);
+  assertEqual(papiersVisibles(s, 2).length, r.murs.length);
+  for (const inv of r.inverses) assert(executerCommande(s, inv).ok);
+  assertEqual(papiersVisibles(s, 2).length, 0, 'Annuler le retire');
 });
