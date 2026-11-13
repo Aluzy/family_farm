@@ -219,7 +219,9 @@ export function botReattribuer(state, V = villageoisDe(state)) {
   if (!avecTache.length) return null;
   const bas = soldeLePlusBas(state, R.JOURS, avecTache.map((v) => v.id));
   if (!bas || !bas.complet) return null;
-  const v = V.find((x) => x.id === bas.id), m = memo[v.id] || (memo[v.id] = { releves: {}, dernier: { tache: null, jour: -Infinity }, tenu: false });
+  const v = V.find((x) => x.id === bas.id);
+  if ((R.GARDER || []).includes(v.tache)) return null;   // (ce qui nourrit le village ne se retire pas)
+  const m = memo[v.id] || (memo[v.id] = { releves: {}, dernier: { tache: null, jour: -Infinity }, tenu: false });
   if (m.dernier.tache === v.tache && state.day - m.dernier.jour < R.JOURS) return null;
   const releves = m.releves[v.tache] || (m.releves[v.tache] = []);
   if (m.dernier.tache !== v.tache) releves.length = 0;   // (une tâche reprise : ses relevés recommencent)

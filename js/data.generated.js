@@ -5146,7 +5146,14 @@ export const RAW_DATA = {
       "MAISON_PALIER": 3,
       "MAISON": { "paillasse": 1, "boite_aux_lettres": 1 },
       "TACHES": ["champs", "betes", "cuisine", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"],
-      "REATTRIBUER": { "JOURS": 7, "SEMAINES": 2, "SEUIL": 0, "MARGE": 0 }
+      "REATTRIBUER": {
+        "JOURS": 7,
+        "SEMAINES": 2,
+        "SEUIL": 0,
+        "MARGE": 0,
+        "GARDER": ["champs"],
+        "VERS": ["betes", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"]
+      }
     },
     "BATIR": {
       "foyer": { "paillasse": 4 },
