@@ -58,14 +58,14 @@ test('seul : un adulte tiré de la graine, sans compagnon, ni enfant, ni animal'
 test('le nom de l\'île : proposé d\'après la graine, modifiable, borné comme le nom de famille', () => {
   const s = createNewGame(22);
   const n = nomIlePropose(s);
-  assert(DATA.VILLAGE.DEPART.NOMS_ILE.includes(n), n);
+  assert(DATA.VILLAGE.NOMS.ILE.includes(n), n);
   assertEqual(nomIlePropose(createNewGame(22)), n, 'la même graine, le même nom');
-  for (const x of DATA.VILLAGE.DEPART.NOMS_ILE) assert(x.length >= DATA.DEPART.NOM_MIN && x.length <= DATA.DEPART.NOM_MAX, `${x} : dans les bornes`);
-  assertEqual(nomIle(s), '', 'pas encore nommée');
+  for (const x of DATA.VILLAGE.NOMS.ILE) assert(x.length >= DATA.DEPART.NOM_MIN && x.length <= DATA.DEPART.NOM_MAX, `${x} : dans les bornes`);
+  assertEqual(nomIle(s), n, 'nommée d\'emblée du nom proposé (I7g), que l\'écran de départ propose');
   assertEqual(nommerIle(s, 'x').ok, false, 'trop court');
   assertEqual(nommerIle(s, 'x'.repeat(DATA.DEPART.NOM_MAX + 1)).ok, false, 'trop long');
   assert(nommerIle(s, '  Île   des Essais ').ok);
-  assertEqual(s.noms, { ile: 'Île des Essais' }, 'gardé dans state.noms.ile, nettoyé');
+  assertEqual(s.noms.ile, 'Île des Essais', 'gardé dans state.noms.ile, nettoyé');
   // (une partie commencée sans nom choisi : le nom proposé)
   const d = depart(22);
   assertEqual(nomIle(d), n);
@@ -193,13 +193,13 @@ test('la sauvegarde : v94 → v95, une partie d\'avant inchangée, ce qui est ab
   const s = departGarde();
   const avant = copie(s);
   delete avant.noms; delete avant.didacticielIle; delete avant.dehors.ferme;
-  const m = migrate({ v: 92, t: 0, s: { ...copie(avant), version: 92 } });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migrate({ v: 92, t: 0, s: { ...copie(avant), version: 92 } }, 95);
+  assertEqual(m.version, 95, 'jusqu\'à la fiche I7b (I7g, ensuite, nomme l\'île d\'une partie du chantier)');
   assertEqual(['noms' in m, 'didacticielIle' in m, m.dehors.ferme], [false, false, undefined], 'rien d\'ajouté à une partie d\'avant');
-  const abime = migrate({ v: 92, t: 0, s: { ...copie(s), version: 92, noms: { ile: 'x', autre: 'Le Village' }, didacticielIle: 'non' } });
-  assertEqual(abime.noms, { autre: 'Le Village' }, 'un nom illisible s\'en va');
+  const abime = migrate({ v: 92, t: 0, s: { ...copie(s), version: 92, noms: { ile: 'x', autre: 'Le Village' }, didacticielIle: 'non' } }, 95);
+  assert(abime.noms.ile !== 'x', 'un nom illisible s\'en va (noms.js, reparerNoms : l\'île renommée à la graine)');
   assertEqual(abime.didacticielIle.fini, true, 'un didacticiel illisible est fini');
-  const bon = migrate({ v: 92, t: 0, s: { ...copie(s), version: 92 } });
+  const bon = migrate({ v: 92, t: 0, s: { ...copie(s), version: 92 } }, 95);
   assertEqual([bon.noms, bon.didacticielIle, bon.dehors.ferme], [s.noms, s.didacticielIle, 'vierge'], 'gardé tel quel');
 });
 

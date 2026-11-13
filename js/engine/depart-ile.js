@@ -3,7 +3,7 @@
    (data/village.json).
 
    - L'écran de départ (js/ui/depart.js) : « Seul » (familleSeule : un adulte tiré de la graine, sans compagnon) ou
-     la famille composée comme avant ; puis le nom de l'île (nomIlePropose, tiré de la graine ; nommerIle le garde
+     la famille composée comme avant ; puis le nom de l'île (nomIlePropose : le nom tiré de la graine, noms.js ; nommerIle le garde
      dans state.noms.ile, borné comme le nom de famille : DEPART.NOM_MIN à NOM_MAX signes ; la fiche I7g fera le
      module des noms autour de ce champ).
    - La terre vierge : la ferme n'a pas de chemin intérieur (village.js fermeVierge, monde.js genererMonde). Le seul
@@ -26,6 +26,7 @@ import { niveauPort } from './port.js';
 import { fermeVierge, nouveauDehors, villageActif } from './village.js';
 import { chemin } from './chemin.js';
 import { addItem } from './inventory.js';
+import { nomDe, proposerNom } from './noms.js';
 import { blocAt, caseBatissable, enLot, poserBloc } from './blocs.js';
 import { deposerBoite } from './repas.js';
 import { platDuVisiteur } from './bienvenue.js';
@@ -36,10 +37,10 @@ const rngDe = (state, cle) => mulberry32(hache(`${farmSeed(state) || 'ile'}:${cl
 
 /* ---------- l'écran de départ ---------- */
 
-// Le nom d'île proposé (un de NOMS_ILE, tiré de la graine).
+// Le nom d'île proposé : celui que la partie a reçu à sa création (fiche I7g, noms.js : un de VILLAGE.NOMS.ILE, tiré de
+// la graine), sinon un nom tiré de la même liste.
 export function nomIlePropose(state) {
-  const L = D().NOMS_ILE;
-  return L[Math.floor(rngDe(state, 'nom-ile')() * L.length)] || L[0];
+  return nomDe(state, 'ile') || proposerNom(state, 'ile');
 }
 
 // Le nom de l'île de la partie, ou '' (une partie d'avant, ou le chantier éteint).

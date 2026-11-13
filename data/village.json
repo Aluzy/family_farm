@@ -816,7 +816,7 @@
       "Le nouveau départ (fiche I7b ; le moteur : js/engine/depart-ile.js et js/engine/didacticiel-ile.js ; l'écran : js/ui/depart.js,",
       "le didacticiel : js/ui/didacticiel-ile.js). L'écran de départ dit PHRASE, puis « Seul » (un adulte tiré de la graine,",
       "sans compagnon : un appui) ou « En famille » (la famille composée comme avant, le compagnon facultatif) ; puis on nomme",
-      "son île : un nom de NOMS_ILE proposé (tiré de la graine), modifiable (DEPART.NOM_MIN à NOM_MAX signes, comme le nom de",
+      "son île : un nom de NOMS.ILE proposé (tiré de la graine, js/engine/noms.js), modifiable (DEPART.NOM_MIN à NOM_MAX signes, comme le nom de",
       "famille ; gardé dans state.noms.ile). La ferme est une terre vierge : pas de chemin intérieur (monde.js genererMonde) ;",
       "le seul chemin part de la porte de l'abri et va à la sortie de la ferme, où commence le tronçon du port : des blocs de",
       "chemin du joueur (state.sols), tracés le long de l'ancien couloir du chemin (un pas hors de lui coûte HORS_COULOIR",
@@ -830,12 +830,6 @@
     ],
     "DEPART": {
       "PHRASE": "Une île, un abri, un port. Tout est à bâtir.",
-      "NOMS_ILE": [
-        "Île aux Mouettes", "Île de Brume", "Île Verte", "Île des Saules", "Île aux Lucioles", "Île de la Lune",
-        "Île Fleurie", "Île aux Hérons", "Île du Phare", "Île des Genêts", "Île aux Fougères", "Île Douce",
-        "Île des Pins", "Île Ronde", "Île des Vents", "Île Bleue", "Île aux Oiseaux", "Île de Clairval",
-        "Île aux Lavandes", "Île des Brumes", "Île Belle-Rive", "Île aux Galets", "Île des Mûres", "Île Sauvage"
-      ],
       "PIECES": 450,
       "LARGEUR": 2, "SORTIE": 6, "HORS_COULOIR": 4,
       "PORT": 12,
