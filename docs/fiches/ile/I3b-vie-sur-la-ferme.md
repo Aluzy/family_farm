@@ -58,3 +58,20 @@ toujours à l'écran : la fluidité est un critère de la fiche.
 
 Celles du README du chantier. Avant de figer les horaires et les vitesses, proposer deux ou trois
 réglages filmés (GIF) et faire choisir, comme la fiche 32. Captures : matin, repas, pluie, nuit.
+
+## I3b+ (vie sociale)
+
+Fait après la fiche, à la demande de l'utilisateur (« des liens visibles », « plus vivant ») ; le détail est dans
+[`docs/ile.md`](../../ile.md) (« Les villageois : la vie sociale »).
+
+- **Les réglages filmés choisis** : « animé » (`VITESSE` 1, `CRENEAU` 0,5, `FLANER` 0,2 et 0,4, `CHEMIN` 1,5).
+- **Qui se connaît** (`js/engine/villageois-liens.js`, `connaissance`) : déduit des jours ensemble, des maisons
+  voisines, de la table et d'une affinité tirée de la graine ; I6b le remplacera par son affinité sauvegardée.
+- **Des sorties qui ont un but**, sur la grille des créneaux de cette fiche : visite chez un ami, rendez-vous à deux
+  ou trois sur la place ou au puits, promenade à deux, puiser de l'eau, voir le jardin, les bêtes ou un ouvrage
+  (`VILLAGE.SOCIAL.BUTS`) ; déterministes, loin de la vue comme près.
+- **La scène** (`js/carte/ferme/villageois-social.js`) : au but, un geste ou un emoji ; les causeries à tour de
+  rôle (et à table) ; se croiser et se saluer (une émotion, deux répliques), un bout de chemin entre amis, un regard
+  vers l'ami qui passe, un salut au personnage du joueur.
+- **Les répliques** : `VILLAGE.SOCIAL.REPLIQUES` (86 paires) et `SOCIAL.JOUEUR`.
+- **Les tests** : `tests/engine/village-social.test.mjs`.

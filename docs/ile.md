@@ -79,7 +79,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
 | 1. Le port | I1a (fait), I1b (fait), I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 | Le chemin de la ferme au port, modifiable ; porter la marchandise |
-| 3. Les villageois | I3a (fait), I3b (fait), I3c, I3d | L'arrivée, la vie sur la ferme, les tâches, le tableau |
+| 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c, I3d | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a, I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
@@ -230,7 +230,8 @@ Ce qui est posé (I3b) :
   13 h 15 et de 18 h 30 à 19 h 30, veillée chez lui jusqu'au coucher (21 h 15), chacun son retard (`DECALE`, 0,5 h
   au plus) ; entre les repas, des créneaux de 0,75 h (communs à tous) où il flâne une fois sur `FLANER` (0,35 le
   matin, 0,6 l'après-midi), sinon va et vient. `VITESSE` 0,9 (fois un adulte de la famille), `CHEMIN` 2 (le prix
-  d'un pas hors des chemins posés). Ces réglages sont ceux proposés ; ils n'ont pas encore été choisis sur film.
+  d'un pas hors des chemins posés). Ces réglages étaient ceux proposés ; le réglage « animé » a été choisi depuis (plus
+  bas : CRENEAU 0,5, FLANER 0,2 et 0,4, VITESSE 1, CHEMIN 1,5).
 - **La scène** (`js/carte/ferme/villageois.js`), sur le socle des comportements : `CarteKit.machine` (un état par
   état de la fiche, une transition revue quatre fois par seconde qui le fait passer au segment de l'heure), la
   grille de l'image (`CarteKit.perception` : villageois, famille, bêtes de la ferme) et le pas des habitants
@@ -254,8 +255,76 @@ Ce qui est posé (I3b) :
   planches. Avant, sans eux à l'écran, l'image s'alourdissait déjà avec le nombre de villageois : le modèle de la
   carte (`villageoisPourLaCarte`, refait à chaque rendu de la page) relevait les maisons et les lits de la famille
   pour chacun (≈ 15 ms pour 15) ; il est maintenant gardé tant que rien ne change (0,04 ms).
-- Reste : les réglages (horaire, vitesse, prix des chemins) à faire choisir sur deux ou trois films, comme la fiche
-  32 ; les tâches (I3c) prendront la place des créneaux « dehors ».
+- Les réglages choisis sur film (parmi calme, normal, animé) : « animé » : `VITESSE` 1, `CRENEAU` 0,5, `FLANER` 0,2 le
+  matin et 0,4 l'après-midi, `CHEMIN` 1,5. Les tâches (I3c) prendront des créneaux à la place des sorties.
+
+## Les villageois : la vie sociale (I3b+, fait)
+
+À la demande de l'utilisateur, après I3b : « que les villageois paraissent plus liés les uns aux autres », qu'on sente
+une communauté. Rien n'est sauvé (pas de nouveau format) : tout se déduit de la graine, du jour, des maisons et de
+l'heure, comme la journée de I3b ; loin de la vue, rien ne s'anime.
+
+- **Qui se connaît** (`js/engine/villageois-liens.js`) : `connaissance(state, a, b)` → `{ degre, nom, score, jours }`
+  (0 inconnu, 1 connaissance, 2 ami). Le score (0 à 100) : `PAR_JOUR` par jour passé ensemble sur l'île (depuis
+  l'arrivée du second), plus `VOISIN` si leurs boîtes aux lettres sont à `VOISINE` cases au plus, plus `TABLE` s'ils
+  mangent à la même table, plus une affinité tirée de la graine et des deux ids (0 à `AFFINITE`) ; connaissance dès
+  `PALIERS.connaissance` (10), ami dès `PALIERS.ami` (40). La famille du joueur (`b = 'famille'`) : connue dès
+  l'arrivée, amie après `FAMILLE_AMI` jours (4). `liensDuVillage` (toutes les paires, gardées pour le jour),
+  `liensPourLaCarte` (le modèle de la carte). **I6b le remplacera** par l'affinité sauvegardée : seul le corps de
+  `scoreDe` change (le commentaire du module et la fiche I6b le disent).
+- **Des sorties qui ont un but** (`villageois-journee.js`, `VILLAGE.SOCIAL.BUTS`) : la grille des créneaux de I3b
+  reste le socle ; chaque créneau dehors est maintenant choisi pour tout le village à la fois, créneau par créneau
+  (déterministe), et tire au poids un but qui a un lieu libre : **visite** (il va devant la porte d'un ami, tourné
+  vers elle ; l'ami, chez lui `RECOIT` h, « recoit », sort à côté de sa porte), **rendez-vous** (à deux ou trois, en
+  petit cercle devant le puits ou sur la place : lieu « groupe », tourné vers le centre), **promenade** à deux entre
+  amis (un meneur, un ami à son côté, jusqu'à un point des chemins ou de la place), **eau** (devant le puits),
+  **jardin**, **bêtes** (par-dessus la barrière de l'enclos), **ouvrage** (`OUVRAGES` : une ruche, un bassin, un
+  arbre fruitier…), **port** (si son chemin fait `PORT_MAX` cases au plus : pas encore, le chemin du port est long) ;
+  à défaut, il va et vient comme en I3b. Une sortie à plusieurs dure `DUREE` créneaux (2 : le temps d'y aller et
+  d'y rester), si tous y sont libres ; l'ami chez qui l'on va est plutôt un voisin (le poids : le score divisé par
+  la distance des maisons). Jamais avec un inconnu ni avec un villageois au repos. Le segment porte `but` : `{ sorte, cle (la même pour ceux
+  qui le font ensemble), avec, role ('visiteur', 'hote', 'meneur', 'suit'), emoji }` ; les lieux nouveaux :
+  « devant » (une case, tournée vers `vers`) et « groupe » ; les lieux des sorties (`lieuxDesSorties`, gardés avec
+  ceux de I3b) : le devant de chaque porte, la case d'où l'on puise, les cercles, les cases d'où regarder.
+- **La scène** (`js/carte/ferme/villageois-social.js`, posée sur `villageois.js`) :
+  - au but, il fait quelque chose de visible : tourné vers ce qu'il est venu voir, un emoji (💧 🌱 🐑 👀) ; au puits,
+    il puise (le geste « ramasse ») ; à la porte d'un ami, il frappe (« Toc, toc ! ») ; l'hôte attend qu'on ait
+    frappé (9 s au plus), puis sort ;
+  - la promenade : le meneur attend son ami, puis ils marchent côte à côte (l'ami à son côté, `villageoisSuivre`) ;
+  - les causeries : ceux qui ont la même clé, arrivés, se font face (à trois, ils regardent qui parle) et échangent
+    des répliques à tour de rôle (une toutes les `TOUR` s, la bulle de l'autre s'efface quand il répond), une
+    émotion au début ; à table, ceux du même repas causent aussi ;
+  - se croiser : deux villageois qui se connaissent, à `RAYON` px, s'arrêtent, se tournent l'un vers l'autre, une
+    émotion (😊 👋 😄 ❤️ selon le degré et l'humeur), deux répliques l'une après l'autre (`DUREE` : 1,6 s entre
+    connaissances, 2,5 s entre amis) ; des amis font parfois un bout de chemin ensemble (`ENSEMBLE`, `BOUT` s) ;
+    deux inconnus, un signe de tête une fois sur deux ; pas deux fois la même paire en `ATTENTE` s, et chacun
+    reprend sa route 7 s avant d'en saluer un autre ;
+  - debout, il tourne la tête vers un ami qui passe (`REGARD` px) ; le personnage du joueur qui passe à `JOUEUR` px
+    d'un villageois qui connaît la famille reçoit un salut (un emoji, une bulle, une fois en `JOUEUR_ATTENTE` s) ;
+  - le visage sourit le temps d'un salut ou d'une émotion (`CarteVisages`, la réaction « joie ») ; l'emoji est celui
+    des habitants (`amis.js`, `emojiHabitant`), les bulles celles des villageois.
+- **Les répliques** (`VILLAGE.SOCIAL.REPLIQUES`, 86 paires ; `echangeVillageois`) : par degré (connaissance, ami),
+  moment (matin, jour, soir), météo (pluie, clair), humeur (triste), et ce qu'ils font (visite, groupe, promenade,
+  repas) ; tirées de la graine, de la paire et du jour, le rang de l'échange avance dans la liste (une causerie ne se
+  répète pas avant d'en avoir fait le tour). `SOCIAL.JOUEUR` : ce qu'on dit au personnage du joueur (`{joueur}`).
+  Une bulle tient une réplique : pas de fenêtre, pas de personnage écrit. Un appui sur un villageois à son but dit ce
+  qu'il y fait (`SOCIAL.ACTIVITE`).
+- **Les mesures** (comme I3b : Chromium, téléphone émulé 412 × 915, DPR 2, processeur ralenti × 4 ; 15 villageois à
+  l'écran, installés depuis plusieurs jours, la place à 15 h ; trois fenêtres de 6 s, médianes ; la machine chargée,
+  charge 1,8 à 3,2 sur 4 cœurs, plus lente que lors des mesures de I3b) : le système « villageois », à réglage égal
+  (« animé »), coûte 0,7 à 0,9 ms par passage avec I3b et 1,5 à 1,85 ms avec I3b+ (quatre mesures de chaque) ; à 5
+  et 10 villageois, 0,55 et 1,1 ms. Le surcoût (≈ 0,8 ms ici, soit ≈ 0,4 ms dans les conditions de I3b, où I3b
+  mesurait 0,41 ms) vient surtout de ce qu'ils marchent davantage (plus d'images de marche, plus de recherches de
+  chemin), des bulles (leur place n'est plus écrite que si elle change, le cadre de l'écran et la largeur du calque
+  sont relevés une fois par image), puis de la vie sociale elle-même (≈ 0,2 ms : les causeries et les croisements
+  revus dix fois par seconde, les emojis jamais mesurés). Les pointes (7 à 15 ms, rares) sont des recherches de
+  chemin et l'écriture d'une bulle. Le temps d'une image (médiane) reste du même ordre : 17 à 19 ms avec I3b, 19 à
+  23 ms avec I3b+.
+- **Les tests** : `tests/engine/village-social.test.mjs` (la connaissance, les sorties et leurs compagnons, jamais
+  avec un inconnu, le déterminisme, jamais dans un mur sur un lot de fermes, les répliques) ;
+  `village-journee.test.mjs` suit les sorties à but. Éteint, rien ne change (le CSV de la simulation est le même).
+- Reste : l'affinité sauvegardée et ce qu'elle change (I6b) ; la visite du soir et s'asseoir côte à côte (I6b) ;
+  le port quand son chemin sera court (I2) ; les tâches prendront des créneaux (I3c).
 
 ## Les règles qui ne changent pas
 

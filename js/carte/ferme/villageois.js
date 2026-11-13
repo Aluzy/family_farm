@@ -32,6 +32,12 @@
  * lève ; ses fenêtres s'éclairent le soir tant qu'il est chez lui, éveillé (villageoisLumiere, fenetres.js).
  * Avec « animations réduites », il va d'un point à l'autre sans marcher.
  *
+ * I3b+ (la vie sociale, villageois-social.js) : un segment peut avoir un but (seg.but : une visite, un rendez-vous,
+ * une promenade à deux, puiser de l'eau, voir le jardin, les bêtes, un ouvrage) et un lieu « devant » (tourné vers ce
+ * qu'il vient voir) ou « groupe » (une place d'un petit cercle) ; villageoisCommence, villageoisArrive et
+ * villageoisVit passent la main à la vie sociale (villageoisDebutBut, villageoisAuBut, villageoisSocialPas), et
+ * stepVillageois finit par villageoisSocial (causeries, croisements, saluts).
+ *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
  */
 (function (global) {
@@ -53,6 +59,7 @@
   const DEPART = [0, 1, 2, 3, 4, 6, 8];        // cases autour de sa case de départ (la première libre et reliée)
   const BOITE = { l: 8, h: 30, bas: 3 };       // l'appui sur lui, autour de ses pieds
   const DEHORS = new Set(['dehors', 'flaner']);
+  const JOIE = { reaction: 'joie' };              // (I3b+ : il sourit quand il salue)
 
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // (le hasard à graine de chacun : son id ; les mêmes coups d'œil pour le même villageois)
@@ -63,7 +70,7 @@
   // Chaque état : marcher jusqu'à son lieu, puis sa posture ; debout dehors, il regarde autour de lui de temps en
   // temps. Les états ne diffèrent que par la posture, que villageoisArrive pose à l'arrivée (villageoisBut la choisit).
   const vivre = { pas(m, dt, c) { c.scene.villageoisVit(m, dt, c); } };
-  const ETATS = { lever: vivre, dehors: vivre, repas: vivre, flaner: vivre, rentrer: vivre, dormir: vivre, repos: vivre, abri: vivre };
+  const ETATS = { lever: vivre, dehors: vivre, repas: vivre, flaner: vivre, rentrer: vivre, dormir: vivre, repos: vivre, abri: vivre, recoit: vivre };
   const VIE = K.machine(ETATS, [
     // l'heure a tourné : le segment suivant de sa journée (pas pendant qu'il parle)
     { si: (m, c) => !!c.seg && c.seg !== m.seg && !m.parle, fait: (m, c) => c.scene.villageoisCommence(m, c.seg, c) },
@@ -112,6 +119,8 @@
         this.villageoisImage(m, dt, c);
       }
       for (const id of [...vus.keys()]) if (!ids.has(id)) this.villageoisFin(id);
+      // (I3b+ : la vie sociale, dans la vue : causeries, croisements, saluts ; villageois-social.js)
+      if (this.villageoisSocial) this.villageoisSocial(c);
     },
 
     // La grille de l'image (le socle, CarteKit.perception) : les villageois debout, la famille, les bêtes de la ferme
@@ -277,11 +286,22 @@
         const g = K.regard((t % W) * T + T / 2 - p.x, Math.floor(t / W) * T + T / 2 - p.y);
         return { x: p.x, y: p.y, pose: { genre: 'debout', face: g.face, flip: g.flip } };
       }
-      let p = this.villageoisPied(lieu.case, m);
+      const W = this.grid.cols, vers = Number.isInteger(lieu.vers) ? lieu.vers : null;
+      // (I3b+ : devant ce qu'il vient voir, ou dans un petit cercle : au milieu de la case, un peu vers le centre)
+      const vise = lieu.genre === 'devant' || lieu.genre === 'groupe';
+      let p = vise ? { x: (lieu.case % W) * T + T / 2, y: (Math.floor(lieu.case / W) + 1) * T - 2 } : this.villageoisPied(lieu.case, m);
+      if (lieu.genre === 'groupe' && vers !== null) {
+        const q = { x: p.x + ((vers % W) * T + T / 2 - p.x) * 0.38, y: p.y + ((Math.floor(vers / W) + 1) * T - 2 - p.y) * 0.38 };
+        if (libre(q)) p = q;
+      }
       if (!libre(p)) p = this.pres ? this.pres(lieu.case, 2) : null;
       if (!p) return null;
+      if (vers !== null) {
+        const g = K.regard((vers % W) * T + T / 2 - p.x, (Math.floor(vers / W) + 1) * T - 2 - p.y);
+        return { x: p.x, y: p.y, pose: { genre: 'debout', face: g.face, flip: g.flip } };
+      }
       // (chez lui, sous la pluie, le soir : tourné vers nous ; dehors : où il regarde, au hasard)
-      return { x: p.x, y: p.y, pose: { genre: 'debout', face: DEHORS.has(m.etat) ? null : 'bas', flip: false } };
+      return { x: p.x, y: p.y, pose: { genre: 'debout', face: DEHORS.has(m.etat) && !vise ? null : 'bas', flip: false } };
     },
 
     // Le segment `seg` de sa journée commence : il quitte sa posture (il se lève, se relève), puis va à son lieu.
@@ -296,7 +316,7 @@
       const b = this.villageoisBut(m, seg.lieu);
       if (m.couche && !(b && b.pose.genre === 'lit' && b.pose.L === m.couche)) this.villageoisLeve(m);
       if (m.assis) this.villageoisRelever(m);
-      m.chemin = []; m.puis = null; m.demande = null;
+      m.chemin = []; m.puis = null; m.demande = null; m.suit = null; m.attend = null; m.auBut = false; m.toque = 0; m.geste = null;
       if (!b) { m.but = null; return; }
       m.but = b;
       if (m.premier || reducedMotion() || (this.villageoisLoin(m, c.vue) && this.villageoisLoin(b, c.vue))) {
@@ -307,6 +327,8 @@
       }
       if (Math.hypot(b.x - m.x, b.y - m.y) < 2) { this.villageoisArrive(m); return; }
       m.demande = { x: b.x, y: b.y };
+      // (I3b+ : l'hôte attend qu'on frappe, le meneur attend son ami, l'ami marche à son côté)
+      if (this.villageoisDebutBut) this.villageoisDebutBut(m, seg, c);
     },
 
     // Le prix d'un pas vers la case `i` (fermier.path, info.cout) : 1 sur un chemin posé, HORAIRE.CHEMIN ailleurs.
@@ -357,6 +379,8 @@
         return;
       }
       if (P.face) { m.face = P.face; m.flip = !!P.flip; }
+      // (I3b+ : ce qu'il fait à son but : villageois-social.js)
+      if (this.villageoisAuBut) this.villageoisAuBut(m);
     },
 
     // Il se relève de son siège : sur la case libre d'où il s'y est assis.
@@ -375,6 +399,8 @@
         m.parle = null;
         this.villageoisBulleOff(m);
       }
+      // (I3b+ : il salue, il attend un ami, il marche à son côté : villageois-social.js)
+      if (this.villageoisSocialPas && this.villageoisSocialPas(m, dt, c)) return;
       if (m.demande) {
         if (c.trajets < TRAJETS.n && (!c.trajets || performance.now() - c.t0 < TRAJETS.ms)) { c.trajets++; this.villageoisTrajet(m, c); }
         return;
@@ -392,7 +418,7 @@
       }
       if (m.puis) { const f = m.puis; m.puis = null; f(); return; }
       // sur place, debout dehors (ou qui a renoncé) : un coup d'œil de temps en temps
-      if (!m.couche && !m.assis && (DEHORS.has(m.etat) || m.renonce)) {
+      if (!m.couche && !m.assis && (DEHORS.has(m.etat) || m.renonce) && !(m.seg && m.seg.but && !m.renonce)) {
         m.regard -= dt;
         if (m.regard <= 0) {
           m.regard = entre(m.h, REGARD[0], REGARD[1]);
@@ -415,9 +441,12 @@
       let nom;
       if (m.marchait) nom = `marche_${m.face}_${K.imageMarche(m.marche)}`;
       else if (m.assis) nom = `assis_${m.face}_${m.etat === 'repas' && !m.parle ? Math.floor((now + m.dec) / 700) % 2 : 0}`;
+      // (I3b+ : il puise au puits)
+      else if (m.geste) nom = `ramasse_${[0, 1, 2, 2, 1, 0][Math.min(5, Math.floor(((now - m.geste.t0) / 1800) * 6))]}`;
       else nom = `idle_${m.face}_${Math.floor((now + m.dec) / 600) % 2}`;
       s.setFrame(c.C(nom)).setPosition(Math.round(m.x), Math.round(m.y)).setFlipX(m.flip).setAlpha(m.alpha).setAngle(0).setDepth(m.assis ? m.assis.depth : m.y);
-      if (global.CarteVisages) global.CarteVisages.suivre(this, s);
+      // (un salut : il sourit)
+      if (global.CarteVisages) global.CarteVisages.suivre(this, s, m.salut ? JOIE : undefined);
       this.villageoisBullePlace(m);
     },
 
@@ -472,7 +501,7 @@
       const m = this.villageoisVus && this.villageoisVus.get(id), B = this.ctx.bridge;
       if (!m || !B || !B.villageois) return;
       const activite = m.phase !== 'vie' ? 'dehors' : m.couche ? 'dormir' : m.renonce ? 'flaner' : m.etat;
-      const r = B.villageois('parle', id, { activite, n: m.n++ });
+      const r = B.villageois('parle', id, { activite, n: m.n++, but: m.seg && m.seg.but ? m.seg.but.sorte : null });
       if (!r || !r.prenom) return;
       const humeur = r.humeurTexte ? `<span class="habitant-bulle-metier">${esc(r.humeurTexte)}</span>` : '';
       const texte = [r.salut, r.texte].filter(Boolean).join(' ');
@@ -498,19 +527,37 @@
       m.bulle.until = performance.now() + ms;
     },
 
-    // Sa bulle au-dessus de lui (dans l'écran : près d'un bord, elle se décale).
+    // Sa bulle au-dessus de lui (dans l'écran : près d'un bord, elle se décale). Le cadre de l'écran et la largeur du
+    // calque sont relevés une fois par image (villageoisCadre) ; la place n'est écrite que si elle change (I3b+ : les
+    // bulles sont plus nombreuses, chaque lecture ou écriture de la page coûte).
     villageoisBullePlace(m) {
       const b = m.bulle;
       if (!b) return;
       if (performance.now() >= b.until) { this.villageoisBulleOff(m); return; }
-      const f = this.screenFrame ? this.screenFrame() : null;
-      if (!f) return;
+      const F = this.villageoisCadre();
+      if (!F) return;
+      const f = F.f;
       if (!b.w) { b.w = b.el.offsetWidth; b.h = b.el.offsetHeight; }
-      const Lw = this.ctx.labelLayer.clientWidth || Infinity;
-      const x = Math.max(4, Math.min(Lw - b.w - 4, (m.x - f.left) * f.k - b.w / 2));
+      const x = Math.max(4, Math.min(F.Lw - b.w - 4, (m.x - f.left) * f.k - b.w / 2));
       const haut = m.couche ? 18 : m.assis ? 26 : 30;
       // (près du haut de l'écran : elle reste dedans)
-      b.el.style.transform = `translate(${Math.round(x)}px,${Math.round(Math.max(4, (m.y - haut - f.top) * f.k - b.h))}px)`;
+      const t = `translate(${Math.round(x)}px,${Math.round(Math.max(4, (m.y - haut - f.top) * f.k - b.h))}px)`;
+      if (t !== b.t) { b.t = t; b.el.style.transform = t; }
+    },
+
+    // Le cadre de l'écran (screenFrame) et la largeur du calque des étiquettes, relevés une fois par image : { f, Lw },
+    // ou null.
+    villageoisCadre() {
+      const now = this.game && this.game.loop ? this.game.loop.frame : performance.now();
+      const C = this.villageoisCadreMemo || (this.villageoisCadreMemo = { image: -1, f: null, Lw: Infinity, lu: -Infinity });
+      if (C.image !== now) {
+        C.image = now;
+        C.f = this.screenFrame ? this.screenFrame() : null;
+        // (la largeur du calque : une fois par seconde, elle ne change qu'avec la fenêtre)
+        const t = performance.now();
+        if (t - C.lu > 1000) { C.lu = t; C.Lw = (this.ctx.labelLayer && this.ctx.labelLayer.clientWidth) || Infinity; }
+      }
+      return C.f ? C : null;
     },
 
     villageoisBulleOff(m) {
@@ -523,6 +570,7 @@
       if (m.s) m.s.destroy();
       if (m.drap) m.drap.destroy();
       this.villageoisBulleOff(m);
+      if (m.emoji && this.emojiOff) this.emojiOff(m);
       this.villageoisVus.delete(id);
     },
 
@@ -563,6 +611,9 @@
         id: m.id, phase: m.phase, etat: m.etat, lieu: m.seg && m.seg.lieu ? m.seg.lieu.genre : null, x: Math.round(m.x), y: Math.round(m.y),
         visible: !!(m.s && m.s.visible), alpha: m.alpha, bulle: m.bulle ? m.bulle.el.textContent : null, chemin: m.chemin ? m.chemin.length : 0,
         lit: !!m.couche, assis: !!m.assis, renonce: !!m.renonce, demande: !!m.demande,
+        but: m.seg && m.seg.but ? m.seg.but.sorte : null, role: m.seg && m.seg.but ? m.seg.but.role || null : null, cle: m.seg && m.seg.but ? m.seg.but.cle : null,
+        auBut: !!m.auBut, salut: m.salut ? (m.salut.joueur ? 'joueur' : m.salut.o.id) : null, suit: m.suit ? m.suit.o.id : null, attend: !!m.attend,
+        emoji: m.emoji ? m.emoji.el.textContent : null, face: m.face,
       }));
     },
   });

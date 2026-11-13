@@ -14,7 +14,9 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 - **Les noms** : on dit « villageois » (plus « habitant »), « port » (plus « calèche » ni « Marché »),
   « île » et « village » (plus « hameau »), dans le code neuf et dans les textes du jeu.
 - **Pas de récit** : aucune fiche n'ajoute de personnage écrit, de scène ni de dialogue. Les phrases
-  des villageois tiennent en une bulle et sortent de `HABITANTS.PHRASES` et `PROPOS`.
+  des villageois tiennent en une bulle et sortent de `HABITANTS.PHRASES` et `PROPOS` (et, depuis I3b+, des
+  petits échanges entre villageois de `VILLAGE.SOCIAL.REPLIQUES` : deux répliques, une bulle chacune, sans
+  personnage écrit).
 - **Vérifications communes** : `npm run build && npm test` (« Tout est vert »), `node tests/smoke.mjs`,
   puis `node scripts/simulate.mjs` à partir de I0b (son code de sortie doit rester 0).
 - **Livraison commune** : un commit sur la branche de travail, pas de push ; mettre à jour le tableau
@@ -32,7 +34,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I1c — le bac, les commandes et le catalogue d'import](I1c-bac-commandes-import.md) | 1 | I1b | à faire |
 | [I2 — le chemin du port, modifiable, et le portage](I2-chemin-et-portage.md) | 2 | I1b | à faire |
 | [I3a — l'arrivée d'un villageois](I3a-arrivee-villageois.md) | 3 | I0a | fait |
-| [I3b — la vie des villageois sur la ferme](I3b-vie-sur-la-ferme.md) | 3 | I3a | fait (les réglages filmés à faire choisir) |
+| [I3b — la vie des villageois sur la ferme](I3b-vie-sur-la-ferme.md) | 3 | I3a | fait (réglage « animé » choisi) ; I3b+ (vie sociale : qui se connaît, sorties à but, saluts, causeries) : fait |
 | [I3c — les tâches attribuées](I3c-taches.md) | 3 | I3b | à faire |
 | [I3d — le tableau des villageois](I3d-tableau.md) | 3 | I3c | à faire |
 | [I4 — les prix des filières, la part et la bourse](I4-prix-part-bourse.md) | 4 | I3d, I1b | à faire |
@@ -40,7 +42,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I5b — la mercerie](I5b-mercerie.md) | 5 | I5a | à faire |
 | [I5c — la scierie, la boulangerie, la fromagerie](I5c-autres-commerces.md) | 5 | I5a | à faire |
 | [I6a — l'amitié avec les villageois](I6a-amitie.md) | 6 | I3b | à faire |
-| [I6b — les liens entre villageois](I6b-liens.md) | 6 | I6a | à faire |
+| [I6b — les liens entre villageois](I6b-liens.md) | 6 | I6a | à faire (I3b+ en a posé la scène et un remplaçant de l'affinité) |
 | [I6c — les traits de personnalité](I6c-traits.md) | 6 | I6b, I3c | à faire |
 | [I7a — les objectifs sans récit](I7a-objectifs.md) | 7 | I0a | fait, sauf le point 6 (le joueur automatique suit les paliers : après I0b) |
 | [I7b — le nouveau départ](I7b-nouveau-depart.md) | 7 | I7a, I1b, I3a | à faire |
