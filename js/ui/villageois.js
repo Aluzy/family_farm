@@ -1,3 +1,4 @@
+import { bourseFicheHtml, direAvisEtal } from './etal.js';
 import { DATA } from '../engine/catalog.js';
 import { escapeHtml } from '../engine/format.js';
 import { farmTerrain } from '../engine/terrain.js';
@@ -97,6 +98,8 @@ export function watchVillageois() {
   if (hourOfDay(state) >= DATA.PORT.BAC.HEURES[1]) for (const v of villageoisDe(state)) if (v.accueil === 'en_route' && accueillirVillageois(state, v.id)) change = true;
   const avis = villageoisDe(state).some((v) => Array.isArray(v.avis) && v.avis.length);
   if (avis) direAvis();
+  // (I4 : un achat à l'étal, une notification)
+  if (direAvisEtal()) change = true;
   if (change || avis) {
     persistState();
     refresh();
@@ -342,6 +345,7 @@ export function ouvrirFicheVillageois(id) {
       ${amitieHtml(id, f)}
       ${liensFicheHtml(id)}
       ${f.enfant ? `<dt>🪁 Journée</dt><dd>Les enfants ne travaillent pas : ${f.genre === 'm' ? 'il' : 'elle'} joue sur la place.</dd>` : tacheHtml(id)}
+      ${f.enfant ? '' : bourseFicheHtml(id)}
     </dl>
     ${repos}
     <button type="button" class="btn primary" data-action="close-modal" id="villageois-close">Fermer</button>`, { labelledBy: 'villageois-title', className: 'modal bois villageois-modal', focus: '#villageois-close', preventScroll: true });

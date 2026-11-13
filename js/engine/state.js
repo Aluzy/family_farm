@@ -36,6 +36,7 @@ import { nouveauCompagnon } from './compagnon.js';
 import { nouveauRecit } from './recit.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
 import { reparerLiens } from './liens.js';
+import { reparerBourse, reparerEtal } from './bourse.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -932,6 +933,17 @@ export const MIGRATIONS = {
   // n'en a pas : ses paires partent, à leur première nuit, de l'estimation d'I3b+ (ce que la partie montrait) ; ce qui
   // est abîmé est réparé (un foyer dont un membre n'est plus là s'en va). Sans villageois (le réglage éteint), rien.
   91: (state) => reparerLiens({ ...state, version: 92 }),
+  // v92 → v93 (le chantier « l'île à bâtir », fiche I4) : la part et la bourse des villageois (js/engine/bourse.js :
+  // v.panier, ce qui attend le bac ; v.reste ; v.achat, son achat du jour ; v.achats, les derniers ; v.affaires, ses
+  // vêtements et ses meubles ; v.commande, ce qu'il attend du bac ; v.plaisir ; v.vente), et l'étal du joueur
+  // (state.etal : ce qui y est en vente). Une partie d'avant n'en a pas : chacun part d'un panier vide, sa bourse
+  // gardée ; ce qui est abîmé est remis à vide. Sans villageois ni étal (le réglage éteint), rien ne change.
+  92: (state) => {
+    const out = { ...state, version: 93 };
+    if (Array.isArray(state.villageois)) out.villageois = state.villageois.map(reparerBourse);
+    if ('etal' in state) out.etal = reparerEtal(state.etal);
+    return out;
+  },
 };
 
 // Le dehors d'une sauvegarde (la migration v87 → v88) : { troncon, chemins (des segments lisibles) }.

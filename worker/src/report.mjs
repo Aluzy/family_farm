@@ -177,6 +177,8 @@ export const GAME_ACTIONS = {
   'fridge-in': 'Utiliser le réfrigérateur',
   'boite-deposer': 'Remplir la boîte à nourriture',
   'boite-reprendre': 'Remplir la boîte à nourriture',
+  'etal-mettre': 'Tenir l\'étal des villageois',
+  'etal-reprendre': 'Tenir l\'étal des villageois',
   'fridge-in-all': 'Utiliser le réfrigérateur',
   'fridge-in-urgent': 'Utiliser le réfrigérateur',
   'frigo-ranger': 'Utiliser le réfrigérateur',

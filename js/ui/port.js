@@ -1,4 +1,4 @@
-import { DATA } from '../engine/catalog.js';
+import { DATA, prixIle } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
 import { countItem } from '../engine/inventory.js';
 import { fridgeCount } from '../engine/fridge.js';
@@ -109,15 +109,15 @@ function bandeauHtml(p) {
 }
 
 function venteSlot(item, ici) {
-  const it = DATA.OBJETS[item], n = charge(item);
-  return shopSlot(it.icone, it.nom, `data-item="${item}"`, it.prix, pxText(String(n), 'light'), n < 1 || !ici,
-    `${it.nom} : ${formatCoins(it.prix)} pièces l'unité, ${formatQty(n)} chargé${n > 1 ? 's' : ''}`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="vendre"');
+  const it = DATA.OBJETS[item], n = charge(item), prix = prixIle(item);
+  return shopSlot(it.icone, it.nom, `data-item="${item}"`, prix, pxText(String(n), 'light'), n < 1 || !ici,
+    `${it.nom} : ${formatCoins(prix)} pièces l'unité, ${formatQty(n)} chargé${n > 1 ? 's' : ''}`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="vendre"');
 }
 
 // Une case à charger (l'onglet Porter) : son volume au lieu du prix.
 function chargeSlot(item, ferme) {
   const it = DATA.OBJETS[item], n = vendable(item);
-  return shopSlot(it.icone, it.nom, `data-item="${item}"`, it.prix, pxText(String(n), 'light'), n < 1 || !ferme,
+  return shopSlot(it.icone, it.nom, `data-item="${item}"`, prixIle(item), pxText(String(n), 'light'), n < 1 || !ferme,
     `${it.nom} : ${formatQty(n)} à la ferme, ${volumeDe(item)} volume${volumeDe(item) > 1 ? 's' : ''} l'unité`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="charger"');
 }
 
@@ -140,7 +140,7 @@ function porterHtml() {
 
 // L'onglet Vendre : ce qui est chargé ; sous la halle, tout décharger.
 function vendreHtml(p) {
-  const v = vendablesPort(state), gain = v.reduce((t, k) => t + charge(k) * DATA.OBJETS[k].prix, 0);
+  const v = vendablesPort(state), gain = v.reduce((t, k) => t + charge(k) * prixIle(k), 0);
   const bouton = p.ici && v.length ? `<div class="row"><button type="button" class="btn primary" data-action="port-decharger">⬇️ Tout décharger sous la halle (+${formatCoins(gain)} 💰)</button></div>` : '';
   // (fiche I1c : des matériaux du chantier du port portés : les y apporter avant de tout vendre)
   const nx = prochainNiveau(state), chantier = nx && Object.keys(nx.manque).some((k) => charge(k) > 0)
@@ -243,12 +243,12 @@ function ficheHtml(o) {
   const it = DATA.OBJETS[o.id], p = presence();
   const absent = p.ici ? '' : `<li>${p.texte}</li>`;
   if (o.mode === 'vendre') {
-    const n = charge(o.id), attrs = `data-action="port-vendre" data-item="${o.id}"`;
-    const lots = [lotBtn(attrs, 1, '×1', `+${formatCoins(it.prix)} 💰`, n >= 1 && p.ici)];
-    if (n >= 5) lots.push(lotBtn(attrs, 5, '×5', `+${formatCoins(5 * it.prix)} 💰`, p.ici));
-    if (n > 1 && n !== 5) lots.push(lotBtn(attrs, n, `Tout (${n})`, `+${formatCoins(n * it.prix)} 💰`, p.ici));
+    const n = charge(o.id), attrs = `data-action="port-vendre" data-item="${o.id}"`, prix = prixIle(o.id);
+    const lots = [lotBtn(attrs, 1, '×1', `+${formatCoins(prix)} 💰`, n >= 1 && p.ici)];
+    if (n >= 5) lots.push(lotBtn(attrs, 5, '×5', `+${formatCoins(5 * prix)} 💰`, p.ici));
+    if (n > 1 && n !== 5) lots.push(lotBtn(attrs, n, `Tout (${n})`, `+${formatCoins(n * prix)} 💰`, p.ici));
     return `
-      <div class="item-head"><span class="item-icon" aria-hidden="true">${it.icone}</span><span class="item-title"><strong id="item-title">${it.nom}</strong><span class="num">${formatCoins(it.prix)} 💰 l'unité</span></span></div>
+      <div class="item-head"><span class="item-icon" aria-hidden="true">${it.icone}</span><span class="item-title"><strong id="item-title">${it.nom}</strong><span class="num">${formatCoins(prix)} 💰 l'unité</span></span></div>
       <ul class="item-lines"><li>Chargé : ${formatQty(n)}</li>${absent}</ul>
       <div class="row item-actions lot-btns">${lots.join('')}</div>`;
   }
@@ -380,7 +380,7 @@ registerActions({
   },
   'portage-recoltes': () => {
     // (les récoltes : les légumes, les fruits et les produits de la ferme, les plus chers d'abord)
-    const items = chargeablesPort(state).filter((k) => ['légume', 'fruit', 'produit'].includes(DATA.OBJETS[k].categorie)).sort((a, b) => DATA.OBJETS[b].prix / volumeDe(b) - DATA.OBJETS[a].prix / volumeDe(a));
+    const items = chargeablesPort(state).filter((k) => ['légume', 'fruit', 'produit'].includes(DATA.OBJETS[k].categorie)).sort((a, b) => prixIle(b) / volumeDe(b) - prixIle(a) / volumeDe(a));
     let n = 0, plein = false;
     for (const k of items) {
       const r = executer('portage.charger', { objet: k, quantite: vendable(k), case: Math.max(0, ouPerso()) });

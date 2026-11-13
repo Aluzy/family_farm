@@ -1297,8 +1297,9 @@
     // réfrigérateur, plus haut qu'un bloc : toute sa hauteur).
     stationAt(wx, wy) {
       for (const e of (this.blocks || new Map()).values()) {
-        const win = BLOCS_CARTE.fenetres[e.sorte], h = e.sorte === 'refrigerateur' ? 34 : 24;
-        if (win && Math.abs(wx - e.x) <= T / 2 + 2 && wy <= e.y + 2 && wy >= e.y - h) return win;
+        // (I4 : l'étal du joueur, deux cases de large et son auvent)
+        const win = BLOCS_CARTE.fenetres[e.sorte], h = e.sorte === 'refrigerateur' ? 34 : e.sorte === 'etal' ? 30 : 24, demi = e.sorte === 'etal' ? T + 2 : T / 2 + 2;
+        if (win && Math.abs(wx - e.x) <= demi && wy <= e.y + 2 && wy >= e.y - h) return win;
       }
       return null;
     },

@@ -400,7 +400,7 @@ const CULTURE_MONTE = 0;
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
     // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable ; sur le bac à semis, la Serre ;
     // sur la meule, le Moulin ; sur la boîte à nourriture, ce qu'elle contient (le silo : silo.js, siloAt)
-    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost' },
+    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost', etal: 'etal' },
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne (le silo :
     // le pied de sa première colonne)
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'bloc_silo' },
@@ -571,6 +571,8 @@ const CULTURE_MONTE = 0;
     // suit le blé qu'ils contiennent)
     'distributeur_0', 'distributeur_1', 'distributeur_2', 'distributeur_3', 'distributeur_4',
     'mangeoire_grain_vide', 'mangeoire_grain_pleine',
+    // l'étal du joueur (l'île à bâtir, fiche I4 : scripts/batiments/etal.py) : vide, ou garni de ce qu'il vend
+    'etal_vide', 'etal_garni',
     // le râtelier de l'Écurie (scripts/personnage/cheval.py)
     'ratelier',
     // le four, redessiné par le joueur (scripts/batiments/four.py) : éteint, puis les images de son feu (FOUR)

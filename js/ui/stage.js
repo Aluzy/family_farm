@@ -77,6 +77,7 @@ import { casesOuvertesMonde, mondeCueillis, mondePris, noterIci } from '../engin
 import { botteFromStage, ramasserFromStage, verserChaineFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
 import { ouvrirDiagnosticChaine } from './chaines-aide.js';
 import { botteleuses } from '../engine/botteleuse.js';
+import { etalGarni } from '../engine/bourse.js';
 import { chaines } from '../engine/chaines.js';
 import { distributeurDe, distributeurs, grainDans } from '../engine/distributeur.js';
 import { chevalMonte, chevalOu, friandiseGalop, vitesseCheval } from '../engine/cheval.js';
@@ -711,6 +712,8 @@ function dessinPont(tile) {
 // meuble_distributeur_<0 à 4>.png : vide à plein), la mangeoire pleine tant qu'il en a.
 function dessinBloc(b, tile) {
   if (b.pont) return dessinPont(tile);
+  // (I4 : l'étal, garni tant qu'il a quelque chose en vente : assets/meuble_etal_<vide|garni>.png)
+  if (b.etal) return etalGarni(state) ? 'etal_garni' : 'etal_vide';
   if (b.bac) return (Number.isInteger(tile) && dessinBac(state, tile)) || `bac_${b.bac}_vide`;
   if (b.distributeur === 'machine') {
     const f = grainDans(state, tile) / DATA.DISTRIBUTEUR.CAPACITE;

@@ -486,6 +486,16 @@ export function testBatir(state, id) {
 // Le chantier « l'île à bâtir » (fiche I3a) : bâtit d'un coup, sur un coin d'herbe libre, la maison d'un
 // villageois : une pièce close de 5 × 4 cases (la porte au milieu du bas), `lits` paillasses dedans, et la boîte
 // aux lettres dehors, contre la porte (en bas à gauche). → { ok, coin, porte, boite, lits: [cases] } ou un refus.
+// Fiche I4 (l'étal du joueur, bourse.js) : pose l'étal de l'inventaire dans un coin libre de la ferme (deux cases de
+// large, la case de devant libre), comme le joueur ; `donner` : l'objet donné juste avant (les tests). → { ok, case }.
+export function poserEtalLibre(state, donner = false) {
+  const z = coinLibre(state, 2, 2);
+  if (!z) return fail('Plus de place libre sur la ferme.');
+  const t = z.r * z.W + z.c;
+  const r = donner ? poserDonne(state, 'etal', t) : poserBloc(state, 'etal', t);
+  return r.ok ? { ok: true, case: t } : r;
+}
+
 export function testMaisonVillageois(state, lits = 1) {
   const z = coinLibre(state, 5, 5);
   if (!z) return fail('Plus de place libre sur la ferme.');

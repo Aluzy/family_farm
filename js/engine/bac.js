@@ -45,7 +45,7 @@
    Le chantier éteint (villageActif), rien ici ne se lit ni ne s'écrit.
    ========================================================================== */
 
-import { DATA } from './catalog.js';
+import { DATA, prixIle } from './catalog.js';
 import { EPS, mulberry32 } from './base.js';
 import { canPay, fail, NO_COINS, pay } from './devices.js';
 import { earn } from './compta.js';
@@ -54,7 +54,7 @@ import { clockHours, nightActive } from './clock.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
 import { addLot, keepLots, pullLots } from './inventory.js';
-import { encaisserVente, sellPrice } from './market.js';
+import { encaisserVente } from './market.js';
 import { bumpCounter, isUnlocked } from './campaign.js';
 import { cropProduct } from './crops.js';
 import { gainXp } from './levels.js';
@@ -63,6 +63,7 @@ import { accueillirAnimal, animalRefus, cowCount, sheepCount } from './animals.j
 import { offrirPlan, planConnu } from './plans.js';
 import { niveauPort, portOuvert } from './port.js';
 import { chargeDe, portageDe, volumeDe } from './portage.js';
+import { vendrePaniers } from './bourse.js';
 
 const P = () => DATA.PORT;
 const B = () => DATA.PORT.BAC;
@@ -197,7 +198,11 @@ function arriveeDuBac(state, p, jour, tirer) {
   const manquees = p.commandes.length;
   p.commandes = tirer ? tirerCommandes(state, jour) : [];
   p.honorees = 0;
-  p.avis.push({ quoi: 'bac', jour, livres, rendus, commandes: p.commandes.length, manquees });
+  // (fiche I4, bourse.js : le panier de chaque villageois se vend pour lui, et part dans les caisses ; sa commande
+  // arrive, qui a de quoi en passe une)
+  const vg = vendrePaniers(state, jour, p.vendu);
+  const ventes = Object.values(vg.ventes).reduce((t, n) => t + n, 0);
+  p.avis.push({ quoi: 'bac', jour, livres, rendus, commandes: p.commandes.length, manquees, ...(ventes ? { ventesVillageois: ventes } : {}) });
 }
 
 // Ce que la page doit dire au joueur : [{ quoi: 'bac', jour, livres, rendus, commandes, manquees }] ; retirés.
@@ -239,7 +244,7 @@ export function savoirProduire(state) {
   if (state.poulailler && state.poulailler.poules > 0) out.add('oeuf');
   if (state.paturage && Array.isArray(state.paturage.moutons) && sheepCount(state) > 0) out.add('laine');
   if (state.paturage && Array.isArray(state.paturage.vaches) && cowCount(state) > 0) out.add('lait');
-  return [...out].filter((it) => DATA.OBJETS[it] && !DATA.OBJETS[it].invendable && sellPrice(it) > 0).sort();
+  return [...out].filter((it) => DATA.OBJETS[it] && !DATA.OBJETS[it].invendable && prixIle(it) > 0).sort();
 }
 
 // Combien de commandes par passage au niveau n.
@@ -263,7 +268,7 @@ export function tirerCommandes(state, jour) {
     const item = reste[Math.floor(rnd() * reste.length)];
     pris.add(item);
     const v = valeur * (1 + ((rnd() * 2 - 1) * (Number(C.ECART) || 0)) / 100);
-    const quantite = Math.max(C.QUANTITE[0], Math.min(C.QUANTITE[1], Math.round(v / sellPrice(item))));
+    const quantite = Math.max(C.QUANTITE[0], Math.min(C.QUANTITE[1], Math.round(v / prixIle(item))));
     const pas = Math.floor((C.PRIME[1] - C.PRIME[0]) / 5) + 1;
     const prime = C.PRIME[0] + 5 * Math.floor(rnd() * pas);
     out.push({ id: `c${jour}-${k + 1}`, objet: item, quantite, prime, jour });
@@ -273,7 +278,7 @@ export function tirerCommandes(state, jour) {
 
 // Ce que paie une commande : { base (le prix de vente), prime, total, xp }.
 export function paiementCommande(c) {
-  const base = c.quantite * sellPrice(c.objet);
+  const base = c.quantite * prixIle(c.objet);
   const prime = Math.round((base * c.prime) / 100);
   return { base, prime, total: base + prime, xp: Math.max(0, Math.floor(Number(DATA.PORT.COMMANDES.XP) || 0)) };
 }
@@ -330,7 +335,7 @@ export function articleDe(cle, state = null) {
   if (sorte === 'sauvage' && DATA.OBJETS[id]) {
     const S = DATA.PORT.IMPORT.SAUVAGES;
     if (state && !(objet(state.port) && Array.isArray(state.port.sauvages) && state.port.sauvages.includes(id))) return null;
-    return { cle, sorte, id, prix: Math.max(1, Math.round((sellPrice(id) * S.MARGE) / 100)) * S.LOT, lot: S.LOT, rang: S.RANG };
+    return { cle, sorte, id, prix: Math.max(1, Math.round((prixIle(id) * S.MARGE) / 100)) * S.LOT, lot: S.LOT, rang: S.RANG };
   }
   return null;
 }

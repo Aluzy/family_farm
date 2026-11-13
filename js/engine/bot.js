@@ -1,3 +1,4 @@
+import { caseEtal, envieDe, mettreALEtal, vendableALEtal } from './bourse.js';
 import { DATA, dishPrice, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
 import {
@@ -38,7 +39,7 @@ import { chainesSansCarte } from './chaines.js';
 import { sleep } from './night.js';
 import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
 import { createNewGame, houseRepaired, starterBlock } from './depart.js';
-import { testBatir, testLabourerSerre, testMaisonVillageois } from './testmode.js';
+import { poserEtalLibre, testBatir, testLabourerSerre, testMaisonVillageois } from './testmode.js';
 import { maisonsLibres, plafondVillageois, villageoisDe } from './villageois.js';
 import { attribuer, donnerOutil, postesDe, reprendreOutil, tacheDef, tacheManque } from './taches.js';
 import { soldeLePlusBas } from './tableau.js';
@@ -197,6 +198,26 @@ export function botVillageois(state) {
     }
   }
   botReattribuer(state, V);
+  botEtal(state, V);
+}
+
+// I4 (bourse.js) : l'étal. Dès qu'un villageois est là, il le fabrique et le pose ; chaque jour, il y met de ce qu'un
+// villageois adore, aime ou dont il a besoin (ETAL.PAR_OBJET unités au plus de chaque objet), sans passer sous
+// VIVRES_GARDES dans l'inventaire (deux fois autant de ce qui se mange : la boîte commune passe avant).
+export function botEtal(state, V = villageoisDe(state)) {
+  const E = DATA.SIMULATION.VILLAGEOIS && DATA.SIMULATION.VILLAGEOIS.ETAL;
+  if (!E || !villageActif(state) || !V.some((v) => !v.enfant && !v.accueil)) return false;
+  if (caseEtal(state) === null) {
+    if (!countItem(state, 'etal') && !botFabriquer(state, 'etal')) return false;
+    if (!poserEtalLibre(state).ok) return false;
+  }
+  const garde = DATA.SIMULATION.VIVRES_GARDES || 0, deja = (state.etal && state.etal.objets) || {};
+  const voulus = Object.keys(inventoryCounts(state)).filter((o) => vendableALEtal(o) && V.some((v) => !v.enfant && envieDe(v, o))).sort();
+  for (const o of voulus) {
+    const n = Math.min(E.PAR_OBJET - (deja[o] || 0), Math.floor(countItem(state, o)) - garde * (DATA.OBJETS[o].energie > 0 ? 2 : 1));
+    if (n > 0) mettreALEtal(state, o, n);
+  }
+  return true;
 }
 
 // I3d : le tableau des villageois (tableau.js). Une fois par jour, il regarde le villageois dont le solde de la semaine
@@ -931,8 +952,8 @@ const sortiesPort = new WeakMap();   // la partie → le jour de sa dernière so
 // Ce que botSell vendrait au port, en pièces (à peu près : la laine, le blé et les vivres en trop).
 function botValeurAVendre(state) {
   const S = DATA.SIMULATION, semences = botSemences(state);
-  let v = countItem(state, 'laine') * DATA.OBJETS.laine.prix;
-  v += Math.max(0, Math.floor(countItem(state, DATA.SILO.ITEM) - S.BLE_MAX)) * DATA.OBJETS[DATA.SILO.ITEM].prix;
+  let v = countItem(state, 'laine') * sellPrice('laine', state);
+  v += Math.max(0, Math.floor(countItem(state, DATA.SILO.ITEM) - S.BLE_MAX)) * sellPrice(DATA.SILO.ITEM, state);
   for (const item of Object.keys(inventoryCounts(state))) {
     const def = DATA.OBJETS[item];
     if (!def || def.plat || !def.mangeable || !['légume', 'fruit', 'produit'].includes(def.categorie)) continue;
@@ -968,7 +989,7 @@ function botChargement(state) {
   const voulu = [];
   aCharger.set(state, voulu);
   try { botStore(state); botSell(state); } finally { aCharger.delete(state); }
-  voulu.sort((a, b) => sellPrice(b.item) / volumeDe(b.item) - sellPrice(a.item) / volumeDe(a.item) || (a.item < b.item ? -1 : 1));
+  voulu.sort((a, b) => sellPrice(b.item, state) / volumeDe(b.item) - sellPrice(a.item, state) / volumeDe(a.item) || (a.item < b.item ? -1 : 1));
   // (I1c : d'abord ce qui honore une commande du bac et les matériaux du chantier du port : botAPorter)
   let n = 0;
   for (const { item, qty } of [...botAPorter(state, true), ...voulu]) { const r = chargerPortage(state, item, qty, null, { sansPresence: true }); if (r.ok) n += r.n; }
@@ -1097,6 +1118,10 @@ function botSemences(state) {
 function botStore(state) {
   const f = state.frigo, reserve = botSemences(state);
   if (f.construit) {
+    // (I4 : sur l'île, les baies — des milliers, cueillies en passant — ne remplissent plus le frigo, où mangent la
+    // famille et les villageois : il en garde VIVRES_GARDES au frais, le reste attend dans l'inventaire ; avant, le
+    // frigo plein de baies laissait les villageois sur leur faim, cinq baies par repas)
+    if (villageActif(state)) reserve.baies = Math.max(reserve.baies || 0, Math.floor(countItem(state, 'baies')) - DATA.SIMULATION.VIVRES_GARDES);
     if (f.appareil.allume && !isBroken(f.appareil)) moveAllToFridge(state, reserve);
     return;
   }

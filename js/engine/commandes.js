@@ -127,6 +127,9 @@
    Les liens entre villageois (l'île à bâtir, fiche I6b ; js/engine/liens.js, sans inverse) :
      villageois.foyer     { a, b, maison? }     proposer à deux proches de vivre ensemble (la maison : sa boîte aux lettres)
      villageois.enfant    { foyer }             proposer à un foyer d'accueillir un enfant (il viendra par le prochain bac)
+   L'étal du joueur (l'île à bâtir, fiche I4 ; js/engine/bourse.js, l'inverse l'un de l'autre) :
+     etal.mettre      { objet, quantite }       mettre en vente à l'étal (de l'inventaire, puis du réfrigérateur)
+     etal.reprendre   { objet, quantite }       reprendre de l'étal (à l'inventaire)
 */
 
 import { objectifsARevoir } from './campaign.js';
@@ -146,6 +149,7 @@ import { pickUp } from './ramassage.js';
 import { recolterBac, semerBac } from './bacs.js';
 import { cueillirMassif } from './massifs.js';
 import { remplirTonnelet } from './tonnelets.js';
+import { mettreALEtal, reprendreDeLEtal } from './bourse.js';
 import { engraisser, jeterAuCompost } from './compost.js';
 import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, stopCurrent } from './kitchen.js';
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
@@ -621,6 +625,14 @@ export const COMMANDES = {
   'villageois.enfant': {
     args: { foyer: 'texte' },
     executer: (state, { foyer }) => accueillirEnfant(state, foyer),
+  },
+  'etal.mettre': {
+    args: { objet: 'objet', quantite: 'quantite' },
+    executer: (state, { objet, quantite }) => mettreALEtal(state, objet, quantite),
+  },
+  'etal.reprendre': {
+    args: { objet: 'objet', quantite: 'quantite' },
+    executer: (state, { objet, quantite }) => reprendreDeLEtal(state, objet, quantite),
   },
 };
 

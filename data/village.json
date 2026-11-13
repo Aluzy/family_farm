@@ -315,6 +315,7 @@
       },
       "ACTIVITE": {
         "visite": ["Je rends visite à un ami.", "On cause un peu, devant la porte.", "Je passais dire bonjour."],
+        "etal": ["Je fais mes courses à ton étal.", "Je regarde ce que tu vends.", "Ton étal est bien garni !"],
         "rdv": ["On se retrouve entre amis.", "On bavarde un peu, ici.", "On refait le monde, sur la place."],
         "promenade": ["On se promène à deux.", "Un petit tour avec un ami.", "On marche un peu ensemble."],
         "eau": ["Je viens puiser de l'eau.", "L'eau du puits est bien fraîche."],
@@ -641,6 +642,88 @@
       "MAINS": 12, "BROUETTE": 40, "CHARRETTE": 160,
       "VOLUMES": { "bois": 2, "planche": 2, "pierre": 3, "minerai_fer": 3, "minerai_cuivre": 3, "minerai_or": 3, "minerai_platine": 3,
         "lingot_fer": 3, "lingot_cuivre": 3, "lingot_or": 3, "lingot_platine": 3, "bloc_silo": 4, "pierre_angle": 3 }
+    },
+    "//PRIX": [
+      "Les prix des filières (fiche I4 ; le calcul : js/engine/catalog.js, prixDeLIle). Sur l'île, toute transformation",
+      "rend entre FOURCHETTE[0] et FOURCHETTE[1] % de la valeur de ses entrées : chaque recette porte son coefficient",
+      "(coefPrix, en %) et le prix de sa sortie s'en déduit au chargement, comme celui des plats. Les recettes de",
+      "l'Atelier et les transformations des stations ont le leur dans data/recipes.json (une entrée : 135, deux : 145,",
+      "trois ou plus : 150) ; la cuisine garde ses coefficients (CUISINE.COEF_PLAT, les recettes de luxe). ARTISANS :",
+      "les recettes des commerces que le lot 5 ouvrira (le tissage, la couture, la menuiserie) ; elles ne se fabriquent",
+      "pas encore, mais elles donnent dès maintenant le prix de l'île du tissu, des vêtements et des meubles. Le jeu",
+      "d'avant (le réglage éteint) garde ses prix écrits. EXCEPTIONS : ce que la règle ne couvre pas, et pourquoi",
+      "(tests/test-data.mjs refuse une recette hors de la fourchette qui n'y est pas notée)."
+    ],
+    "PRIX": {
+      "FOURCHETTE": [130, 160],
+      "ARTISANS": {
+        "tissu": { "entrees": { "laine": 2 }, "sortie": { "tissu": 1 }, "coefPrix": 135 },
+        "gants_travail": { "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "coefPrix": 140 },
+        "manteau_chaud": { "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "coefPrix": 145 },
+        "salopette": { "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "coefPrix": 145 },
+        "meuble_chaise": { "entrees": { "planche": 2 }, "sortie": { "meuble_chaise": 1 }, "coefPrix": 140 },
+        "meuble_chevet": { "entrees": { "planche": 2 }, "sortie": { "meuble_chevet": 1 }, "coefPrix": 140 },
+        "meuble_table_basse": { "entrees": { "planche": 3 }, "sortie": { "meuble_table_basse": 1 }, "coefPrix": 140 },
+        "meuble_table": { "entrees": { "planche": 4 }, "sortie": { "meuble_table": 1 }, "coefPrix": 140 },
+        "meuble_commode": { "entrees": { "planche": 5 }, "sortie": { "meuble_commode": 1 }, "coefPrix": 145 },
+        "meuble_bibliotheque": { "entrees": { "planche": 6 }, "sortie": { "meuble_bibliotheque": 1 }, "coefPrix": 145 },
+        "meuble_armoire_chene": { "entrees": { "planche": 8 }, "sortie": { "meuble_armoire_chene": 1 }, "coefPrix": 150 },
+        "meuble_buffet": { "entrees": { "planche": 6, "pierre": 2 }, "sortie": { "meuble_buffet": 1 }, "coefPrix": 150 },
+        "meuble_lit_enfant": { "entrees": { "planche": 4, "tissu": 1 }, "sortie": { "meuble_lit_enfant": 1 }, "coefPrix": 145 },
+        "meuble_lit_adulte": { "entrees": { "planche": 6, "tissu": 2 }, "sortie": { "meuble_lit_adulte": 1 }, "coefPrix": 145 },
+        "meuble_canape": { "entrees": { "planche": 4, "tissu": 3 }, "sortie": { "meuble_canape": 1 }, "coefPrix": 150 },
+        "meuble_tapis_1": { "entrees": { "fibre": 6 }, "sortie": { "meuble_tapis_1": 1 }, "coefPrix": 135 },
+        "meuble_tapis_2": { "entrees": { "tissu": 2, "colorant_rouge": 1 }, "sortie": { "meuble_tapis_2": 1 }, "coefPrix": 145 },
+        "meuble_tapis_3": { "entrees": { "tissu": 2, "colorant_bleu": 1 }, "sortie": { "meuble_tapis_3": 1 }, "coefPrix": 145 }
+      },
+      "EXCEPTIONS": {
+        "paille": "La botteleuse (une machine, pas une recette) rend une paille par fibre : à une pièce l'unité, un prix ne descend pas sous une pièce."
+      }
+    },
+    "//PART": [
+      "La part du villageois (fiche I4 ; le moteur : js/engine/bourse.js). Chaque nuit, PART % de la valeur de ce que son",
+      "travail a produit ce jour-là (au prix de l'île, moins ce qu'il a pris au coffre pour le faire) lui revient. Elle est",
+      "prise sur le produit, jamais sur la caisse du joueur (B-1 : pas de dette) : il garde des objets de sa récolte, les",
+      "plus chers d'abord, dans son panier (v.panier), qui se vend pour lui au prochain passage du bac (sa bourse). Ce qui",
+      "est déjà parti du coffre (vendu, mangé) ne se reprend pas ; un reste plus petit qu'un objet attend le lendemain",
+      "(v.reste). La tournée du port ne prend rien : ses pièces sont celles du joueur. Le tableau (I3d) compte la part",
+      "dans le coût (J.part)."
+    ],
+    "PART": 30,
+    "//BOURSE": [
+      "La bourse dépensée (fiche I4 ; le moteur : js/engine/bourse.js ; la fenêtre de l'étal : js/ui/etal.js). Un villageois",
+      "achète ce qu'il aime (ses goûts : adoré, puis aimé) et ce dont il a besoin (BESOINS : un vêtement, un meuble pour",
+      "sa maison, une fois chacun) :",
+      "  - à l'étal du joueur (le bloc « etal », fabriqué à l'Atelier, posé dehors) : le joueur y met en vente ce qu'il",
+      "    veut (ETAL.PLACES objets différents, ETAL.QUANTITE de chacun), au prix de vente de l'île ; un villageois qui a",
+      "    de quoi s'y rend après le travail (un créneau de la fin d'après-midi : la journée, villageois-journee.js), un",
+      "    achat par jour au plus (ACHATS), au milieu de son créneau (la nuit fait celui qu'on n'a pas vu) : l'objet",
+      "    quitte l'étal, ses pièces vont au joueur (« Étal : … ») ; ce qu'il adore, ce qu'il aime, ce qui lui manquait",
+      "    monte son bonheur cette nuit-là (BONHEUR) ; ce qu'il déteste, il ne l'achète pas ;",
+      "  - puis aux commerces (le lot 5) ;",
+      "  - enfin par le bac (IMPORT) : au passage du bac, qui a IMPORT.SEUIL pièces ou plus commande pour lui un objet qu'il",
+      "    adore (au prix de l'île × IMPORT.MARGE %, IMPORT.MIN au moins ; IMPORT.MAX unités au plus, en gardant IMPORT.GARDE",
+      "    pièces pour l'étal) : l'argent quitte l'île ; l'objet arrive au passage suivant (IMPORT.BONHEUR cette nuit-là ; ce",
+      "    qui se mange, il le mange).",
+      "PHRASES : ce qu'il dit en arrivant à l'étal ({objet} : ce qu'il vient prendre). Ce qu'il a acheté est gardé (v.achats :",
+      "les ACHATS_GARDES derniers ; v.affaires : ses vêtements et ses meubles)."
+    ],
+    "BOURSE": {
+      "ETAL": { "PLACES": 6, "QUANTITE": 20, "EMOJI": "🛒" },
+      "ACHATS": 1,
+      "ACHATS_GARDES": 6,
+      "BONHEUR": { "adore": 6, "aime": 3, "besoin": 4 },
+      "BESOINS": {
+        "vetement": ["manteau_chaud", "gants_travail", "salopette", "chapeau_paille", "tablier", "bottes"],
+        "meuble": ["meuble_chaise", "meuble_chevet", "meuble_table_basse", "meuble_tapis_1", "meuble_tapis_2", "meuble_tapis_3", "meuble_commode", "meuble_bibliotheque", "lanterne"]
+      },
+      "IMPORT": { "SEUIL": 120, "MARGE": 150, "MIN": 30, "MAX": 4, "GARDE": 40, "BONHEUR": 5 },
+      "PHRASES": [
+        "Pour moi : {objet}, s'il te plaît.",
+        "{objet} ! Juste ce qu'il me fallait.",
+        "Je me fais plaisir : {objet}.",
+        "Ça, je le prends : {objet}. Voilà les pièces."
+      ]
     }
   },
   "//TACHES": [

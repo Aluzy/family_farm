@@ -47,8 +47,8 @@ son île et son village ; une chronique note ce qui s'y passe.
 |---|---|---|
 | Comment le serveur fait avancer l'horloge commune, et à quel coût ? | I9a2 | Par pas de 5 s de jeu, tant qu'un joueur est connecté ; le monde dort sans joueur. |
 | En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs. |
-| L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | I1c : non, sur 80 nuits de simulation (le port en prend 6 800 pièces, 814 en caisse à la nuit 80) ; à revoir avec la part (I4) et quand le joueur simulé ira plus loin que le palier 6. |
-| La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | Fixe au départ (un réglage), revue après simulation. |
+| L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | I1c : non, sur 80 nuits de simulation (le port en prend 6 800 pièces, 814 en caisse à la nuit 80). I4 : le joueur minimal finit à 242 pièces (le port au niveau 3), l'appliqué à 2 727 pour une borne de 1 412 : il a payé le niveau 2 tôt et n'atteint pas le niveau 3 avant la nuit 80 (ses matériaux, pas ses pièces : à 3 500 pièces, il ne le prend pas davantage). À revoir quand le joueur simulé ira plus loin que le palier 6. |
+| La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | I4 : fixe, `VILLAGE.PART` = 30 % (à 20 %, le villageois des champs rapporte 2,5 fois son coût, au bord de la fourchette ; à 40 %, la partie simulée s'appauvrit). |
 | La raison d'explorer sans hameaux à découvrir. | I1c, I8b | Des espèces sauvages à rapporter et à cultiver ; des sites à exploiter. |
 
 ## Les constats d'où l'on part
@@ -80,7 +80,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 1. Le port | I1a (fait), I1b (fait), I1c (fait) | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
 | 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d (fait) | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
-| 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
+| 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
@@ -267,7 +267,7 @@ Ce qui est posé (I1c ; les réglages : `PORT.BAC`, `PORT.COMMANDES`, `PORT.IMPO
 - **Les tests** : `tests/engine/village-bac.test.mjs` (les jours du bac ; la vente sans limite et les caisses ; les
   commandes tirées, honorées, manquées ; le catalogue, l'import payé d'avance et livré au passage suivant, la bête
   sans place, le plan ; le rattrapage après une absence, la nuit ; les niveaux ; la sauvegarde ; éteint, rien).
-- Reste : la part des villageois et les prix (I4) ; les plants sauvages à cultiver (I7e, qui appellera
+- Reste : ~~la part des villageois et les prix (I4)~~ (fait, plus bas) ; les plants sauvages à cultiver (I7e, qui appellera
   `inscrireSauvage`) ; les contrats d'export en volume (I8b) ; le port en ligne (I9c) ; montrer le chantier du port
   sur la carte (des matériaux empilés) ; que la tournée d'un villageois honore les commandes.
 
@@ -555,7 +555,7 @@ ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo).
   jeu, actions comprises (une action relit les pièces quand un arbre tombe) ; sans tâche, rien ne change (0,17 ms).
   Les postes et l'attente sont gardés tant que rien ne bouge (`signatureTaches`) : sans cela, la journée coûtait
   10 ms.
-- Reste : la part du villageois et la valeur de ce qu'il produit (I4) ; la brouette, la charrette et un chemin du
+- Reste : ~~la part du villageois et la valeur de ce qu'il produit (I4)~~ (fait, plus bas) ; la brouette, la charrette et un chemin du
   port plus court pour la navette (I2) ; les postes préférés (I6c) ; montrer ce qu'il porte (un panier, une botte).
 
 ## Les villageois : le tableau (I3d, fait)
@@ -602,7 +602,7 @@ Ce que chaque villageois a coûté et produit, hier et sur les sept derniers jou
   de repos, ce qui est pris au coffre, la part ; sept jours glissants et hier ; le total, trois soldes différents, le
   rendement, le tri ; ce qui manque ; le journal de la nuit ; le joueur automatique ; éteint). Éteint, le CSV de la
   simulation est le même octet pour octet.
-- Reste : les prix et la part (I4 : `J.part` attend d'être versée) ; les ventes des commerces (lot 5) ; ce que les
+- Reste : ~~les prix et la part (I4 : `J.part` attend d'être versée)~~ (fait : I4 la verse, plus bas) ; les ventes des commerces (lot 5) ; ce que les
   champs d'un villageois récoltent est compté à lui seul, même quand le joueur l'aurait récolté (le premier passé
   prend) ; l'eau d'arrosage et l'énergie ne sont pas comptées ; le tableau ne garde que sept jours.
 
@@ -784,6 +784,129 @@ foyer. Le moteur : `js/engine/liens.js` ; les réglages : `VILLAGE.LIENS` (`data
   repas apporté ne nourrit pas (choix B-1 : pas de nourriture tirée de rien) ; l'enfant ne grandit pas ; à table, une
   table de jardin d'une case ne laisse pas de « côte à côte » (ses quatre sièges se touchent tous) ; le joueur
   automatique ne propose ni foyer ni enfant ; les liens en ligne (I9d).
+
+## Les prix des filières, la part et la bourse (I4, fait)
+
+Rendre l'économie des villageois juste et lisible : chaque transformation ajoute de la valeur, le villageois garde une
+part de ce qu'il produit, et sa bourse sert à quelque chose. Le calcul des prix : `js/engine/catalog.js` ; la part, la
+bourse et l'étal : `js/engine/bourse.js` ; les réglages : `VILLAGE.PRIX`, `VILLAGE.PART`, `VILLAGE.BOURSE`
+(`data/village.json`) et `coefPrix` sur les recettes (`data/recipes.json`).
+
+- **Le relevé, avant** (au prix écrit ; 125 recettes de prix : 93 de l'Atelier, 14 transformations des stations, et
+  les 18 recettes d'artisans posées ici, que le lot 5 fabriquera) : 67 recettes rendaient **moins** que leurs
+  entrées, 34 entre 100 et 129 %, 21 dans la fourchette, 3 au-dessus (le mur de bois 250 %, le carrelage 200 %).
+  Les filières de la fiche :
+
+  | Filière | Avant (entrées → sortie) | Après, sur l'île |
+  |---|---|---|
+  | bois → planche | 2 bois (4) → 4 : 100 % | 4 → 6 : 150 % |
+  | planche → porte | 3 planches (12) → 12 : 100 % | 18 → 24 : 133 % |
+  | planche → meuble (chaise, lit) | 2 planches (8) → 7 : 88 % ; 6 planches + 2 tissus (60) → 30 : 50 % | 12 → 17 : 142 % ; 100 → 145 : 145 % |
+  | minerai → lingot → outil | 4 minerais + 3 bois (14) → 15 : 107 % ; l'outil n'a pas de prix | 14 → 20 : 143 % (le lingot reste invendable : il sert à l'arbre et au port) |
+  | lingot → porte de fer, candélabre | 34 → 22 : 65 % ; 38 → 30 : 79 % | 46 → 67 : 146 % ; 48 → 72 : 150 % |
+  | laine → tissu → vêtement | 2 laines (24) → 18 : 75 % ; 3 tissus (54) + 20 de façon → 36 : 67 % (sans la façon) | 24 → 32 : 133 % ; 96 → 139 : 145 % |
+  | lait → fromage | 3 laits (24) → 31 : 129 % (un plat) ; 3 laits d'alpage (36) → 47 : 131 % | le plat garde son coefficient ; la tomme : 36 → 49 : 136 % |
+  | blé → farine → pain | 1 blé (2) → 2 : 100 % ; 2 farines + l'eau (5) → 8 : 160 % | 2 → 3 : 150 % ; 7 → 11 : 157 % |
+  | fibre → corde, paillasse ; paille | 3 fibres (3) → 3 : 100 % ; 2 → 3 : 150 % ; 10 fibres → 10 pailles (la botteleuse) | 3 → 4 : 133 % ; 2 → 3 : 150 % ; la paille : exception notée |
+  | l'équipement, les machines (brouette, charrette, tente, meule) | 34 à 52 % | 144 à 150 % |
+
+- **La règle** : sur l'île, toute transformation rend entre `VILLAGE.PRIX.FOURCHETTE` (130 et 160) % de ses entrées.
+  Chaque recette porte son `coefPrix` (une entrée : 135, deux : 145, trois ou plus : 150 ; le bois en planche,
+  plancher, mur, poteau : 145, pour que l'arrondi tienne) et le prix de sa sortie s'en déduit au chargement
+  (`prixDeLIle` : comme les plats, de recette en recette, à l'entier le plus proche, une pièce au moins). Les plats
+  gardent leurs coefficients, recalculés sur les prix de l'île de leurs ingrédients (le pain 8 → 11, la tarte aux
+  pommes 26 → 29). `VILLAGE.PRIX.ARTISANS` : le tissu, les gants, le manteau, la salopette, onze meubles (la chaise, le
+  lit, le canapé, l'armoire…), les recettes des commerces du lot 5, qui donnent dès maintenant leur prix de l'île.
+  `VILLAGE.PRIX.EXCEPTIONS` : la paille (une machine, une pièce l'unité, un prix ne descend pas sous 1). Les sorties
+  invendables (la ruche, les bacs, les meubles de jardin) et les recettes sans objet (les outils, les bêtes) n'en ont
+  pas. Après : **125 recettes sur 125 dans la fourchette, une fois les prix arrondis.** Le contrôle :
+  `scripts/lib/data.mjs` (un `coefPrix` hors de la fourchette, sans exception notée, est une erreur des données) et
+  `tests/test-data.mjs` (les prix arrondis, et les filières qui ne perdent plus rien).
+- **La voie choisie : des prix nouveaux seulement le réglage allumé.** `DATA.OBJETS[…].prix` reste le prix écrit ; les
+  prix de l'île sont à part (`DATA.PRIX_ILE`, ceux qui changent ; `prixIle(objet)`) ; `market.js`
+  `sellPrice(objet, state)` rend l'un ou l'autre selon `villageActif(state)` (la vente, l'achat, le cours) ; le code
+  du chantier (le port, le bac et ses commandes, le tableau, la fenêtre du port, l'étal) lit ceux de l'île. Éteint, le
+  CSV de la simulation est le même octet pour octet ; la bascule (I9h) n'aura qu'à faire des prix de l'île les prix
+  tout court. Rien à migrer (les prix ne se gardent pas) : la fenêtre de retour d'I7f le dira en une ligne.
+- **La part** (`VILLAGE.PART` = 30 %) : chaque nuit, une fois que tous ont mangé, chacun garde 30 % de la valeur de ce
+  que son travail a produit ce jour-là (au prix de l'île, moins ce qu'il a pris au coffre pour le faire : la cuisine
+  ne prend que sur ce qu'elle ajoute ; la tournée du port, rien : ses pièces sont celles du joueur). Elle est **prise
+  sur le produit, jamais sur la caisse** (B-1) : des objets de sa récolte quittent le coffre (l'inventaire, le
+  réfrigérateur, le blé du Silo) pour son panier (`v.panier`), ce qui ne se mange pas d'abord, jamais les graines
+  (sauf s'il n'a produit que cela) ; ce qui est déjà vendu ou mangé ne se reprend pas ; un reste plus petit qu'un
+  objet attend le lendemain (`v.reste`, jamais plus que l'objet le plus cher de sa journée). S'il a encore faim après
+  la boîte commune, il mange de son panier (il est à lui). Le panier se vend pour lui au passage suivant du bac (sa
+  bourse ; les objets partent dans les caisses). Le tableau (I3d) l'affiche dans le coût (`J.part`, « 👛 Sa part »).
+- **La bourse dépensée** (`VILLAGE.BOURSE`) :
+  - **l'étal du joueur** : un bloc fabriqué à l'Atelier (4 planches, 3 fibres), posé dehors, deux cases de large, un
+    seul. Un appui dessus ouvre sa fenêtre (`js/ui/etal.js`) : ce qui est en vente (6 sortes, 20 de chacune, au prix
+    de l'île ; qui l'aime, ❤️ s'il l'adore), ce qu'on y met de l'inventaire, les bourses du village. Chaque jour,
+    `achatsDuJour` décide qui y va : dans l'ordre des id, un objet chacun, ce qu'il adore, puis ce dont il a besoin
+    (`BESOINS` : un vêtement, un meuble pour sa maison, une fois chacun), puis ce qu'il aime, s'il peut le payer ;
+    jamais ce qu'il déteste. Sa journée lui donne un créneau de la fin d'après-midi devant l'étal (le but « etal »,
+    🛒, ce qu'il dit en arrivant : `BOURSE.PHRASES`) ; le moteur fait l'achat au milieu du créneau (`avancerAchats`,
+    à chaque pas de la ferme ; la nuit fait celui qu'on n'a pas vu). Ses pièces vont au joueur (« Étal : … », une
+    notification), son plaisir monte sa cible de bonheur cette nuit-là (adoré 6, besoin 4, aimé 3) ; ce qui se mange,
+    il le mange à son repas (`v.provisions`, avant la boîte : le tableau ne le compte pas) ; un vêtement, un meuble va
+    à ses affaires (`v.affaires`). Remis en vente dans la journée, un objet peut tenter un autre villageois ;
+  - les commerces : le lot 5 ;
+  - **le bac** (`IMPORT`) : au passage du bac, qui a 120 pièces ou plus commande pour lui un objet qu'il adore (le prix
+    de l'île × 150 %, 30 au moins ; 4 au plus, en gardant 40 pièces pour l'étal) : l'argent quitte l'île ; l'objet
+    arrive au passage suivant (son plaisir, 5 ; ce qui se mange, il le mange).
+  - La fiche du villageois dit sa bourse (ses pièces, sa part qui attend le bac, ses derniers achats, sa commande).
+- **La sauvegarde** : format 93 (`v.panier`, `v.reste`, `v.achat`, `v.achats`, `v.affaires`, `v.provisions`,
+  `v.commande`, `v.plaisir`, `v.vente` ; `state.etal`). La migration 92 → 93 (`reparerBourse`, `reparerEtal`) remet à
+  vide ce qui est illisible et garde la bourse. Les commandes `etal.mettre` et `etal.reprendre`.
+- **Le dessin** (`scripts/batiments/etal.py`, `assets/meuble_etal_<vide|garni>.png`, 32 × 40, vu de haut à 45°) : le
+  comptoir de planches (10 rangées de face, 10 de plateau), deux poteaux, l'auvent rayé rouge et crème (son dessus
+  raccourci, son lambrequin à festons), l'ardoise des prix ; vide, une cagette dont on voit le fond et un torchon
+  plié ; garni, un panier de pommes, une cagette de carottes, un pot de miel et une meule entamée. 733 couleurs
+  (vide) et 759 (garni) ; un dessin en aplats de la même chose en aurait 20 à 25.
+- **Le joueur automatique** (`botEtal`, `SIMULATION.VILLAGEOIS.ETAL`) : dès qu'un villageois est là, il fabrique et
+  pose l'étal, et y met chaque jour 2 de ce qu'un villageois aime (sans passer sous 10 dans l'inventaire, 20 de ce qui
+  se mange). Une correction en passant (le réglage allumé seulement) : il ne remplit plus le réfrigérateur de baies —
+  des milliers, la famille et les villageois n'y trouvaient que cela (cinq baies par repas, la moitié de leur faim).
+  Dès que la part changeait le chemin de la partie simulée, il achetait le réfrigérateur et les villageois se
+  reposaient un jour sur deux.
+- **L'équilibre** (`node scripts/simulate.mjs --village` et une mesure jour par jour du tableau, graine 1, 80 nuits ;
+  le rapport : ce que sa tâche rapporte, moins ce qu'elle prend au coffre, sur son coût, le repas et la part) :
+  - joueur appliqué : **les champs 2,07** (87 pièces par jour de travail, 16 de repas, 26 de part ; 2,87 avant I4,
+    sans part) : bien placé, dans la fourchette 1,5–2,5 ; les bêtes 0,23, le fauchage 0,27, la cueillette 0,43 : mal
+    placés (le joueur simulé soigne ses bêtes lui-même ; la fibre vaut une pièce), **sous** leur coût, comme avant I4
+    (0,22, 0,27, 0,41) ;
+  - joueur minimal : la pêche 1,20, les champs 0,69, les bêtes 0,63 (il ne laboure presque pas : le villageois des
+    champs a peu à récolter) ;
+  - la part sur la partie : 2 010 pièces (appliqué), 540 (minimal) ; dépensées : 45 achats à l'étal (162 pièces, au
+    joueur) et 8 imports (900 pièces, hors de l'île) ; 611 restent dans les bourses à la nuit 80 (474 chez celle des
+    champs) ;
+  - les pièces en caisse à la nuit 80 : 2 727 (appliqué : la borne d'I0b, 2 fois la dépense des 20 dernières nuits,
+    vaut 1 412 : constat en échec ; il a payé le niveau 2 du port tôt, nuit 34, et n'atteint pas le niveau 3 avant la
+    nuit 80, faute de matériaux, pas de pièces) ; 242 (minimal, le port au niveau 3). Avant I4 : 1 842 (borne 3 646)
+    et 3 483. Le palier 6 : nuit 62 (69 avant) et 44 (62 avant).
+  - la part à 20 % : les champs 2,51 ; à 40 % : la partie s'appauvrit (les champs à 0,81). 30 % est gardé.
+  - les prix des niveaux du port (1 800 / 5 000 / 11 000 / 24 000) : pas changés. Le niveau 3 à 3 500 ou 4 000 ne
+    change rien chez le joueur appliqué (ce sont ses matériaux qui manquent), le minimal le paie de toute façon vers
+    la nuit 75 ; les niveaux 4 et 5 sont hors de portée des 80 nuits simulées : à revoir quand les commerces (lot 5)
+    rapporteront.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, trois villageois, quatre nuits jouées par le moteur : des parts, un
+  bac passé) : l'étal posé près de la place, garni ; en fin d'après-midi, un villageois quitte la place, s'arrête
+  devant l'étal, tourné vers lui, et dit « Ça, je le prends : ratatouille 🍲. Voilà les pièces. » ; au milieu de son
+  créneau, la notification « 🛒 Arthur a acheté 🍲 ratatouille à ton étal : +18 » (une autre fois : « Théo a acheté
+  🍚 riz au lait à ton étal ❤️ : +16 ») ; le tableau (la part dans le coût, « 👛 Sa
+  part » jour par jour), la fiche (« 👛 Bourse : 67 · sa part (30 % de ce qu'il produit) : rien en attente ; ⛴️ Attend
+  du bac : 2 × soupe de légumes »), la fenêtre de l'étal ; l'étal le soir. Aucune erreur dans la console.
+- **Les tests** : `tests/engine/village-bourse.test.mjs` (la part prise sur le produit, jamais sur la caisse, pas de
+  dette, le reste ; la nuit et le tableau ; le bac, le panier vendu, l'import et ses provisions ; l'étal, ses refus,
+  les commandes ; qui y va, son créneau, l'achat au milieu, ses pièces au joueur, un par jour ; la nuit, le plaisir,
+  ce qu'il mange ; le joueur automatique ; la sauvegarde ; éteint) ; `tests/test-data.mjs` (la fourchette, les
+  filières, les refus) ; `cuisine.test.mjs` (les plats sur l'île, la vente selon le réglage) ; `village-tableau`
+  (les prix de l'île) et `colorants` (la recette du mortier, son `coefPrix`) adaptés.
+- Reste : les commerces (lot 5 : la bourse y dépensée, les recettes d'artisans fabriquées) ; les tâches mal placées
+  restent sous leur coût (une proposition : compter la fibre et la paille à ce qu'elles font gagner — la botte, la
+  corde —, ou donner plus d'actions au fauchage et à la cueillette ; c'est I3c qui les règle) ; la part fixe (selon
+  l'amitié, les traits : I6c) ; ce qui est en vente à l'étal ne périt pas ; l'étal repris, ce qu'il portait reste en
+  vente (la fenêtre permet de le reprendre) ; les meubles achetés vont aux affaires du villageois, pas encore dans sa
+  maison ; la bourse du meilleur producteur monte encore (474 à la nuit 80) : `IMPORT.MAX` est le réglage.
 
 ## Les règles qui ne changent pas
 

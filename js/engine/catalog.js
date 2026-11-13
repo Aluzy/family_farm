@@ -20,6 +20,8 @@ export function buildCatalog(raw) {
   applyProductionPriceMultiplier(data);
   applyDishTimeDivisor(data);
   registerDishItems(data);
+  // (le chantier « l'île à bâtir », fiche I4 : les prix de l'île, déduits des recettes ; le jeu d'avant garde les siens)
+  data.PRIX_ILE = prixDeLIle(data);
   return data;
 }
 
@@ -179,4 +181,90 @@ export function recipeOutput(id) {
 
 export function recipeOutputQty(id) {
   return DATA.RECETTES[id].qteSortie || 1;
+}
+
+/* ---------- Le chantier « l'île à bâtir », fiche I4 : les prix des filières ----------
+
+   Sur l'île, toute transformation rend entre VILLAGE.PRIX.FOURCHETTE (130 et 160) % de la valeur de ses entrées :
+   chaque recette porte son coefficient (coefPrix, en %) et le prix de sa sortie s'en déduit au chargement, comme
+   celui des plats, plutôt que d'être écrit à la main. Les recettes qui comptent (recettesDePrix) :
+   - celles de l'Atelier (ATELIER.RECETTES[].coefPrix ; data/recipes.json) qui rendent un objet vendu au port ;
+   - les transformations des stations (RECETTES[].transformation et coefPrix : la farine, l'huile, les lingots,
+     les colorants, la tomme) ;
+   - celles des artisans (VILLAGE.PRIX.ARTISANS, data/village.json : le tissu, les vêtements, les meubles, que les
+     commerces du lot 5 fabriqueront ; ce sont leurs prix de référence dès maintenant).
+   Les plats gardent leurs coefficients (CUISINE.COEF_PLAT, RECETTES[].coefPrix) : leur prix se recalcule sur ceux
+   de l'île de leurs ingrédients (la farine, l'huile). Un objet que rien ne fabrique garde son prix (les récoltes, le
+   bois, la pierre).
+
+   Le jeu d'avant (le réglage éteint) ne lit rien de tout cela : DATA.OBJETS[…].prix reste le prix écrit, octet pour
+   octet. Les prix de l'île sont dans DATA.PRIX_ILE (seulement ceux qui changent) ; prixIle(objet) les lit, et
+   market.js sellPrice(objet, state) choisit selon villageActif(state). Des entiers : au plus proche, une pièce au
+   moins. */
+
+// Les recettes qui font un prix sur l'île : [{ id, sorte ('atelier', 'station', 'artisan'), entrees ([{ options,
+// qte }] : l'un des objets de options, le plus cher compte), sortie, qte, coef }].
+export function recettesDePrix(data = DATA) {
+  const out = [];
+  for (const [id, r] of Object.entries((data.ATELIER && data.ATELIER.RECETTES) || {})) {
+    if (r.coefPrix == null || !r.sortie) continue;
+    const [sortie, qte] = Object.entries(r.sortie)[0];
+    out.push({ id, sorte: 'atelier', entrees: Object.entries(r.entrees || {}).map(([o, n]) => ({ options: [o], qte: n })), sortie, qte, coef: r.coefPrix });
+  }
+  for (const [id, r] of Object.entries(data.RECETTES || {})) {
+    if (!r.transformation || r.coefPrix == null) continue;
+    out.push({ id, sorte: 'station', entrees: r.ingredients.map((ing) => ({ options: ingredientOptions(ing), qte: ing.qte })), sortie: r.sortie, qte: r.qteSortie || 1, coef: r.coefPrix });
+  }
+  const A = (data.VILLAGE && data.VILLAGE.PRIX && data.VILLAGE.PRIX.ARTISANS) || {};
+  for (const [id, r] of Object.entries(A)) {
+    if (id.startsWith('//') || !r || !r.sortie) continue;
+    const [sortie, qte] = Object.entries(r.sortie)[0];
+    out.push({ id, sorte: 'artisan', entrees: Object.entries(r.entrees || {}).map(([o, n]) => ({ options: [o], qte: n })), sortie, qte, coef: r.coefPrix });
+  }
+  return out;
+}
+
+// Les prix de l'île : { objet: prix } pour ceux qui diffèrent du prix écrit (DATA.OBJETS[…].prix). Chaque sortie
+// d'une recette de prix vaut coef % de ses entrées (à leur prix de l'île), divisé par ce qu'elle rend ; un plat, son
+// coefficient de la cuisine sur ses ingrédients ; le reste, son prix écrit. Une sortie que deux recettes rendent :
+// la première compte (recettesDePrix, dans l'ordre).
+export function prixDeLIle(data) {
+  const parSortie = new Map();
+  for (const r of recettesDePrix(data)) if (!parSortie.has(r.sortie)) parSortie.set(r.sortie, r);
+  const isDish = (id) => !!data.RECETTES[id] && !data.RECETTES[id].transformation;
+  const memo = new Map(), enCours = new Set();
+  const valeur = (o) => {
+    if (memo.has(o)) return memo.get(o);
+    const def = data.OBJETS[o];
+    if (!def) return 0;
+    if (enCours.has(o)) throw new Error(`Prix de l'île en boucle : ${[...enCours, o].join(' → ')}`);
+    enCours.add(o);
+    let p = def.prix;
+    const r = parSortie.get(o);
+    if (r) {
+      const cout = r.entrees.reduce((t, e) => t + Math.max(...e.options.map(valeur)) * e.qte, 0);
+      p = Math.max(1, Math.floor((cout * r.coef) / Math.max(1, r.qte) / 100 + 0.5));
+    } else if (isDish(o) && !def.retire) {
+      const recipe = data.RECETTES[o], C = data.CUISINE;
+      const somme = recipe.ingredients.reduce((t, ing) => t + Math.max(...ingredientOptions(ing).map(valeur)) * ing.qte, 0) + (recipe.eau || 0) * C.PRIX_EAU;
+      p = roundPct(somme, recipe.coefPrix != null ? recipe.coefPrix : C.COEF_PLAT);
+    }
+    enCours.delete(o);
+    memo.set(o, p);
+    return p;
+  };
+  const out = {};
+  for (const o of Object.keys(data.OBJETS)) {
+    if (typeof data.OBJETS[o].prix !== 'number') continue;
+    const p = valeur(o);
+    if (p !== data.OBJETS[o].prix) out[o] = p;
+  }
+  return out;
+}
+
+// Le prix de vente de `objet` sur l'île (fiche I4 : celui du port, de l'étal, du tableau des villageois).
+export function prixIle(objet, data = DATA) {
+  const p = data.PRIX_ILE && data.PRIX_ILE[objet];
+  if (Number.isInteger(p)) return p;
+  return data.OBJETS[objet] ? data.OBJETS[objet].prix : 0;
 }

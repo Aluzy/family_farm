@@ -44,7 +44,10 @@ qui deviennent les premiers candidats à s'installer chez lui.
    forêt ». Rien d'autre n'est gardé.
 8. **Le retour** : au premier lancement après la migration, une fenêtre d'une page dit ce qui a
    changé (cinq lignes : le port, les villageois, tes amis vont venir, tes commandes sont
-   remboursées, les prix ont changé) et offre un cadeau de bienvenue (réglé).
+   remboursées, les prix ont changé) et offre un cadeau de bienvenue (réglé). Les prix (fiche I4) : rien à migrer
+   (ils ne se gardent pas dans la sauvegarde ; `market.js` `sellPrice(objet, state)` lit ceux de l'île dès que
+   `villageActif`) ; la ligne dit que ce qu'on fabrique se vend désormais plus cher que ses matières (de 30 à 60 %),
+   et que les villageois gardent une part de ce qu'ils produisent.
 9. **La sûreté** : avant de migrer, garder une copie de la partie d'avant dans le navigateur
    (exportable depuis ⚙️ Options), au cas où.
 10. **Les tests** : chaque partie de `anciennes-parties.json` migre sans erreur, puis joue 10 nuits

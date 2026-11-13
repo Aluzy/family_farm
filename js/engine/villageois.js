@@ -15,6 +15,7 @@ import { cleDiversite, tirerApparence } from './apparence.js';
 import { ajouterAmitie, amitieDe, goutsTires } from './amitie.js';
 import { validApparence } from './family.js';
 import { bonheurDesLiens, foyerDe } from './liens.js';
+import { mangerSesProvisions, mangerSonPanier, plaisirDuJour, prendrePart } from './bourse.js';
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -311,10 +312,23 @@ export function meublesMaison(state, v) {
 // baisse pas. Mal nourri ou sans lit : il se repose demain. → son entrée du journal.
 function nuitDe(state, v, jour) {
   const besoin = v.enfant ? DATA.FAMILLE.AJ.enfant : besoinAdulte();
-  const r = mangerAuRangement(state, besoin);
+  // (fiche I4, bourse.js : il mange d'abord ce qu'il s'est acheté, puis à la boîte commune pour le reste)
+  const siens = mangerSesProvisions(v, besoin);
+  const r0 = mangerAuRangement(state, Math.max(0, besoin - siens.energie));
+  // (encore faim : sa part qui attend le bac est à lui, il en mange)
+  const reste = besoin - siens.energie - r0.energie;
+  if (reste > 0) {
+    const p = mangerSonPanier(v, reste);
+    for (const [o, n] of Object.entries(p.mange)) siens.mange[o] = (siens.mange[o] || 0) + n;
+    siens.energie += p.energie;
+  }
+  const r = { ...r0, energie: r0.energie + siens.energie };
+  const tout = { ...r0.mange };
+  for (const [o, n] of Object.entries(siens.mange)) tout[o] = (tout[o] || 0) + n;
   const C = DATA.BONHEUR.CIBLE;
   // (fiche I6b, liens.js : un ami au village, un proche, un repas apporté par un ami)
-  const cible = Math.max(0, Math.min(DATA.BONHEUR.MAX, C.BASE + platsBonheur(r.mange) + varieteBonheur(r.mange) + meublesMaison(state, v) + bonheurDesLiens(state, v)));
+  // (fiche I4, bourse.js : un achat qui lui a plu aujourd'hui, à l'étal ou par le bac)
+  const cible = Math.max(0, Math.min(DATA.BONHEUR.MAX, C.BASE + platsBonheur(tout) + varieteBonheur(tout) + meublesMaison(state, v) + bonheurDesLiens(state, v) + plaisirDuJour(v, jour)));
   const avant = Number.isFinite(Number(v.bonheur)) ? Number(v.bonheur) : DATA.BONHEUR.DEPART;
   const faim = Math.max(0, besoin - r.energie);
   // (comme la famille : CIBLE.FAIM s'il a eu faim, ATELIER.BONHEUR_SANS_COUCHAGE sans lit ; 0 tous deux dans le jeu, B-1)
@@ -326,6 +340,8 @@ function nuitDe(state, v, jour) {
   const reposDuJour = !!v.repos;   // (I3d : il s'est reposé aujourd'hui, la nuit d'avant l'avait dit)
   v.repos = faim > 0 || sansLit;
   const J = { jour, mange: r.mange, energie: r.energie, besoin, lit: v.lit ?? null, bonheur: v.bonheur - Math.round(avant) };
+  // (I4 : ce qu'il a mangé de ses provisions, payé de sa bourse : pas un coût pour la ferme)
+  if (Object.keys(siens.mange).length) J.siens = siens.mange;
   if (reposDuJour) J.repos = true;   // (le tableau, tableau.js : un jour de repos compte son repas et aucun produit)
   // (I3c, taches.js : sa journée de travail, que tachesNuit vient de finir ; le tableau la lit : tableau.js)
   const T = v.travail;
@@ -362,7 +378,16 @@ export function villageoisNuit(state) {
     if (J.energie >= J.besoin) repas++;
     if (J.lit === null) sansLit.push(v.id);
   }
-  return { arrive, repas, sansLit };
+  // (fiche I4, bourse.js : une fois que tous ont mangé, chacun garde sa part de ce qu'il a produit aujourd'hui, prise
+  // sur le produit, jamais sur la caisse ; le tableau la compte dans son coût)
+  let part = 0;
+  for (const v of V) {
+    const J = Array.isArray(v.journal) ? v.journal[v.journal.length - 1] : null;
+    if (!J || J.jour !== jour || !J.produit) continue;
+    const p = prendrePart(state, v, J);
+    if (p > 0) { J.part = p; part += p; }
+  }
+  return { arrive, repas, sansLit, part };
 }
 
 /* ---------- la fiche et la carte ---------- */

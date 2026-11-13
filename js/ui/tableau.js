@@ -99,8 +99,9 @@ function tableauHtml(T) {
         </tr></tfoot>
       </table>
     </div>
-    <p class="muted tableau-aide">Le coût : ce qu'il a mangé à la boîte et ce que son travail a pris au coffre (les légumes d'un plat, la graine
-      ressemée) ; le produit : ce que son travail a rapporté. Le solde est un repère pour choisir qui fait quoi${t.ventes ? ` ; la tournée du port a vendu pour ${pieces(t.ventes)} ce que la ferme avait déjà` : ''}. Un appui sur un prénom : ses sept jours.</p>
+    <p class="muted tableau-aide">Le coût : ce qu'il a mangé à la boîte, sa part (${DATA.VILLAGE.PART} % de ce qu'il produit, gardée sur sa récolte et
+      vendue pour lui au bac) et ce que son travail a pris au coffre (les légumes d'un plat, la graine ressemée) ; le produit : ce que
+      son travail a rapporté. Le solde est un repère pour choisir qui fait quoi${t.ventes ? ` ; la tournée du port a vendu pour ${pieces(t.ventes)} ce que la ferme avait déjà` : ''}. Un appui sur un prénom : ses sept jours.</p>
     <button type="button" class="btn primary" data-action="close-modal" id="tableau-close">Fermer</button>`;
 }
 

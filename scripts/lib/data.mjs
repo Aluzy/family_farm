@@ -1167,6 +1167,32 @@ export function validateData(data) {
   if (!Array.isArray(N.CHAPITRES_XP) || N.CHAPITRES_XP.length !== data.CHAPITRES.liste.length) err('NIVEAUX.CHAPITRES_XP', 'un nombre par chapitre');
   if (!Array.isArray(N.CHAPITRE_NIVEAU) || N.CHAPITRE_NIVEAU.length !== data.CHAPITRES.liste.length + 1) err('NIVEAUX.CHAPITRE_NIVEAU', 'un niveau par chapitre, plus un pour la campagne finie');
 
+  // Le chantier « l'île à bâtir », fiche I4 : les prix des filières. Toute transformation (une recette de l'Atelier qui
+  // rend un objet, une transformation des stations, une recette d'artisan de VILLAGE.PRIX.ARTISANS) porte un coefPrix
+  // dans VILLAGE.PRIX.FOURCHETTE, sauf exception notée (VILLAGE.PRIX.EXCEPTIONS : l'id de la recette, et pourquoi).
+  const PX = data.VILLAGE && data.VILLAGE.PRIX;
+  if (PX) {
+    const F = PX.FOURCHETTE, EX = PX.EXCEPTIONS || {};
+    if (!(Array.isArray(F) && F.length === 2 && F.every(isInt) && F[0] > 100 && F[0] <= F[1])) err('VILLAGE.PRIX.FOURCHETTE', 'deux pourcentages entiers [min, max], au-dessus de 100');
+    else {
+      const borne = (where, id, coef) => {
+        if (coef == null) return;
+        if (!isInt(coef)) err(where, 'coefPrix est un pourcentage entier (140 = ×1,4)');
+        else if ((coef < F[0] || coef > F[1]) && typeof EX[id] !== 'string') err(where, `coefPrix ${coef} hors de la fourchette ${F[0]}–${F[1]} % (sinon, une exception notée : VILLAGE.PRIX.EXCEPTIONS)`);
+      };
+      for (const [id, r] of Object.entries((data.ATELIER && data.ATELIER.RECETTES) || {})) borne(`ATELIER.RECETTES.${id}`, id, r.coefPrix);
+      for (const [id, r] of Object.entries(data.RECETTES || {})) if (r.transformation) borne(`RECETTES.${id}`, id, r.coefPrix);
+      for (const [id, r] of Object.entries(PX.ARTISANS || {})) {
+        const where = `VILLAGE.PRIX.ARTISANS.${id}`;
+        if (!r || typeof r !== 'object' || !r.sortie || Object.keys(r.sortie).length !== 1) { err(where, 'une recette : entrees, sortie (un objet), coefPrix'); continue; }
+        for (const [o, n] of Object.entries(r.entrees || {})) { needItem(`${where}.entrees`, o); if (!(isInt(n) && n > 0)) err(`${where}.entrees.${o}`, 'une quantité entière positive'); }
+        for (const [o, n] of Object.entries(r.sortie)) { needItem(`${where}.sortie`, o); if (!(isInt(n) && n > 0)) err(`${where}.sortie.${o}`, 'une quantité entière positive'); }
+        if (r.coefPrix == null) err(where, 'il lui faut son coefPrix');
+        borne(where, id, r.coefPrix);
+      }
+    }
+  }
+
   return { errors, warnings };
 }
 

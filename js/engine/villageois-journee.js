@@ -11,6 +11,7 @@ import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.
 import { connaissance } from './villageois-liens.js';
 import { manqueDit, postesDe, signatureTaches, tacheDef, travailleAujourdhui } from './taches.js';
 import { entraidesDuJour, foyerDe, liensSignature } from './liens.js';
+import { achatsDuJour, achatsSignature, caseEtal, devantEtal, phraseEtal } from './bourse.js';
 
 /* ---------- la journée des villageois sur la ferme (le chantier « l'île à bâtir », fiche I3b) ----------
 
@@ -69,7 +70,7 @@ const TABLES_DEHORS = new Set(['table_jardin', 'table_rondins']);
 const TABLES = new Set([...TABLES_DEHORS, 'meuble_table']);
 export const ETATS_VILLAGEOIS = ['lever', 'dehors', 'repas', 'flaner', 'rentrer', 'dormir', 'repos', 'abri', 'recoit', 'travail'];
 // (I3b+ : les buts d'une sortie, SOCIAL.BUTS ; le but d'un segment : seg.but.sorte)
-export const BUTS_VILLAGEOIS = ['visite', 'rdv', 'promenade', 'eau', 'jardin', 'betes', 'ouvrage', 'port', 'banc', 'jeu'];
+export const BUTS_VILLAGEOIS = ['visite', 'rdv', 'promenade', 'eau', 'jardin', 'betes', 'ouvrage', 'port', 'banc', 'jeu', 'etal'];
 
 const graineDe = (state) => farmSeed(state) || 'ile';
 const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1));
@@ -264,7 +265,7 @@ export function journeeDuVillage(state, jour = jourDe(state)) {
   const avecTache = V.some((v) => v.tache);
   // (I6b : les liens, gardés dans la partie, et les repas apportés)
   const cle = JSON.stringify([graineDe(state), jour, H(), SB(), (DATA.VILLAGE.SOCIAL || {}).CONNAISSANCE, (DATA.VILLAGE || {}).LIENS, liensSignature(state), lp ? [lp.case, lp.chemin] : 0, avecTache ? signatureTaches(state) : 0,
-    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0, v.enfant ? 1 : 0])]);
+    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0, v.enfant ? 1 : 0]), achatsSignature(state, jour)]);
   const deja = memoJours.get(cle);
   if (deja && deja.L === L) return deja.J;
   const J = calculerJournee(state, jour, V, L);
@@ -326,6 +327,8 @@ function calculerJournee(state, jour, V, L) {
   // 2. I3c : les créneaux de travail ; puis les créneaux dehors, pour tout le village
   planDuTravail(state, jour, gens, L, prendre, C);
   planDesCreneaux(state, jour, gens, L, prendre);
+  // (I4 : qui va à l'étal du joueur, après le travail)
+  planDesAchats(state, jour, gens, prendre);
   // (I6b : les repas apportés à midi, les visites du soir)
   const apportes = repasApportes(state, jour, gens, L);
   const soirees = visitesDuSoir(state, jour, gens, L);
@@ -394,6 +397,28 @@ function calculerJournee(state, jour, V, L) {
     out.set(x.v.id, pluie ? sousLaPluie(segs, pluie, x.enMaison) : segs);
   }
   return out;
+}
+
+// I4 (bourse.js) : ceux qui vont à l'étal aujourd'hui y passent un créneau de l'après-midi, le premier qui commence
+// après le travail (TACHES.TRAVAIL) et qu'il ne fait pas avec un autre (sinon le dernier) ; devant l'étal (bourse.js
+// devantEtal),
+// tourné vers lui (le but « etal », son emoji et ce qu'il dit en arrivant). Remplit x.plan.
+function planDesAchats(state, jour, gens, prendre) {
+  const achats = achatsDuJour(state, jour), etal = caseEtal(state), devant = devantEtal(state);
+  if (!achats.size || etal === null || !devant.length) return;
+  const plages = Array.isArray((DATA.TACHES || {}).TRAVAIL) ? DATA.TACHES.TRAVAIL : [];
+  const fin = plages.length ? Math.max(...plages.map((p) => p[1])) : 16.5;
+  const emoji = ((DATA.VILLAGE.BOURSE || {}).ETAL || {}).EMOJI || '';
+  for (const x of gens) {
+    const a = achats.get(x.v.id);
+    if (!a) continue;
+    const libres = x.apres.filter((p) => { const q = x.plan.get(p.k); return !(q && q.but && q.but.avec && q.but.avec.length); });
+    // (tout l'après-midi avec d'autres : le dernier créneau, l'autre ira seul)
+    const p = libres.find((q) => q.x >= fin - 1e-9) || libres[libres.length - 1] || x.apres[x.apres.length - 1];
+    if (!p) continue;
+    const t = devant.find((c) => prendre(`etal:${p.k}`, c)) ?? devant[0];
+    x.plan.set(p.k, { etat: 'dehors', lieu: { genre: 'devant', case: t, vers: etal }, but: { sorte: 'etal', cle: `etal:${x.v.id}:${jour}`, avec: [], emoji, dit: phraseEtal(state, x.v.id, a.objet), objet: a.objet } });
+  }
 }
 
 // Les créneaux de la grille commune entre `de` et `a` h : [{ k (son rang dans la grille), x, y, fl (la chance de

@@ -42,6 +42,7 @@ import { amitieVillageoisNuit } from './villageois-amitie.js';
 import { tachesNuit } from './taches.js';
 import { liensFinDeNuit, liensNuit } from './liens.js';
 import { avancerBac } from './bac.js';
+import { achatsNuit } from './bourse.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
@@ -311,6 +312,9 @@ export function runNight(state) {
   // (I3c, taches.js : avant, chacun finit ses actions du jour ; sa nuit les met dans son journal)
   const taches = tachesNuit(state);
   if (taches) state.nuit.taches = taches;
+  // (fiche I4, bourse.js : l'achat à l'étal qu'on n'a pas vu se fait)
+  const achats = achatsNuit(state);
+  if (achats) state.nuit.achatsEtal = achats;
   // (I6b, liens.js : les liens montent de ce que les villageois ont vécu ensemble aujourd'hui, avant leur nuit)
   const liens = liensNuit(state);
   if (liens) state.nuit.liens = liens;

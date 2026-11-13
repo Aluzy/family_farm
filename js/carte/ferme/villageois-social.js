@@ -46,6 +46,7 @@
   const VITESSE = K.VITESSES.famille.adulte;   // px/s
   const TOC_MS = 1800;                         // « Toc, toc ! »
   const EMOJI_MS = 2200;                       // l'emoji d'un but, d'un salut
+  const ACHAT_MS = 3200;                       // I4 : ce qu'il dit en arrivant à l'étal
   const PUISE_MS = 1800;                       // le geste au puits
   const BABIL = { px: 96, ms: 1500 };          // le babil : près du personnage, un à la fois
   const COTE = 12;                             // px : l'ami qui marche à côté
@@ -156,6 +157,8 @@
         return;
       }
       if (but.emoji && !(but.avec && but.avec.length)) this.villageoisEmoji(m, but.emoji, EMOJI_MS);
+      // (I4 : à l'étal du joueur, ce qu'il vient y prendre ; le moteur fait l'achat, bourse.js)
+      if (but.sorte === 'etal' && but.dit) this.villageoisDit(m, but.dit, ACHAT_MS);
       if (but.sorte === 'eau' && !reducedMotion()) m.geste = { fin: now + PUISE_MS, t0: now };
     },
 

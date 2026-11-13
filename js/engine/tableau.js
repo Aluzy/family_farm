@@ -1,4 +1,4 @@
-import { DATA } from './catalog.js';
+import { DATA, prixIle } from './catalog.js';
 import { villageActif } from './village.js';
 import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.js';
 import { tacheAttente, tacheDef } from './taches.js';
@@ -14,7 +14,7 @@ import { validApparence } from './family.js';
    s'en sert (bot.js, botVillageois : il réattribue la tâche dont le solde est le plus bas).
 
    - Le coût d'un jour : ce qu'il a mangé à la boîte commune, au prix de vente de chaque aliment (market.js,
-     sellPrice : DATA.OBJETS[…].prix, le prix fixe du port) ; sa part versée (J.part : 0 avant I4, qui la versera) ;
+     sellPrice : depuis I4, le prix de l'île, catalog.js prixIle) ; sa part versée (J.part : bourse.js, fiche I4) ;
      et ce que son travail a pris au coffre (J.utilise, taches.js : les ingrédients d'une préparation, la graine
      ressemée, le blé des poules, ce que la tournée du port a vendu), au même prix. Sans cela, la cuisine compterait
      son plat sans ses légumes, et la tournée les pièces d'objets que d'autres ont produits.
@@ -44,7 +44,7 @@ const joursDe = (periode) => PERIODES[periode] || PERIODES.semaine;
 export function valeurPort(o) {
   if (o === 'pieces') return 1;
   const d = DATA.OBJETS[o];
-  return d && !d.invendable ? Math.max(0, entier(d.prix)) : 0;
+  return d && !d.invendable ? Math.max(0, entier(prixIle(o))) : 0;
 }
 
 // Les entrées du journal de `v` sur la période : celles des `periode` jours qui finissent hier, de la plus ancienne à

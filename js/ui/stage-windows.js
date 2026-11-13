@@ -55,6 +55,8 @@ import { renderChapterBanner } from './chapitres.js';
 import { paliersSuivis } from '../engine/paliers.js';
 import { renderBoite } from './boite.js';
 import { renderTonnelets } from './tonnelet.js';
+import { renderEtal } from './etal.js';
+import { caseEtal } from '../engine/bourse.js';
 import { tonneletsPoses } from '../engine/tonnelets.js';
 import { renderComposts } from './compost.js';
 import { compostsPoses } from '../engine/compost.js';
@@ -301,6 +303,11 @@ export const STAGE_WINDOWS = {
   tonnelet: {
     nom: 'Tonnelets', icone: DATA.TONNELET.ICONE, ok: () => tonneletsPoses(state).length > 0, bois: true,
     corps: () => renderTonnelets(),
+  },
+  // L'étal du joueur (l'île à bâtir, fiche I4 ; un appui sur lui) : ce qui y est en vente aux villageois, y mettre.
+  etal: {
+    nom: 'Étal', icone: '🛒', ok: () => villageActif(state) && caseEtal(state) !== null, bois: true,
+    corps: () => renderEtal(),
   },
   // Les bacs à compost posés dehors (un appui sur l'un d'eux) : ce qu'ils contiennent, y jeter des aliments.
   compost: {

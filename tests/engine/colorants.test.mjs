@@ -24,7 +24,10 @@ function partieAtelier() {
 const COLORANTS = { rouge: 'fleur_coquelicot', orange: 'fleur_pavot', jaune: 'fleur_tournesol', vert: 'epinard', bleu: 'fleur_myosotis' };
 
 test('le mortier : sa recette d\'Atelier, son bloc posé dans la maison, une station sans électricité', () => {
-  assertEqual(DATA.ATELIER.RECETTES.mortier, { entrees: { pierre: 4, planche: 1 }, sortie: { mortier: 1 } });
+  // (I4 : son coefficient de prix sur l'île, coefPrix, en plus)
+  const { coefPrix, ...mortier } = DATA.ATELIER.RECETTES.mortier;
+  assertEqual(mortier, { entrees: { pierre: 4, planche: 1 }, sortie: { mortier: 1 } });
+  assert(coefPrix >= 130 && coefPrix <= 160, 'son coefficient de prix de l\'île');
   const b = DATA.ATELIER.BLOCS.mortier;
   assertEqual([b.objet, b.dedans, b.bloque, b.station], ['mortier', true, true, 'mortier']);
   assertEqual([DATA.STATIONS.mortier.electrique, DATA.STATIONS.mortier.action], [false, 'broyer']);
