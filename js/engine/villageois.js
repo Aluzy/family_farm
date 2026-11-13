@@ -12,7 +12,7 @@ import { maisonsMarquees, litsDeLaFamille, piecesCloses } from './blocs.js';
 import { mangerAuRangement, reserveRangement } from './repas.js';
 import { platsBonheur, varieteBonheur, versCible } from './bonheur.js';
 import { cleDiversite, tirerApparence } from './apparence.js';
-import { goutsDe } from './amitie.js';
+import { ajouterAmitie, amitieDe, goutsTires } from './amitie.js';
 import { validApparence } from './family.js';
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
@@ -216,8 +216,9 @@ export function tirerVillageois(state, rang = villageoisDe(state).length + 1) {
   const perso = persos.length ? un(persos) : un(HABITANTS.PERSOS.adulte[genre]);
   const deja = new Set(V.filter((v) => objet(v.apparence)).map((v) => cleDiversite(v.apparence)));
   const apparence = tirerApparence(rngDe(`${g}:villageois:apparence:${rang}`), { enfant: false, genre }, deja);
-  // (ses goûts : ceux d'amitie.js, tirés de son id dans la partie, gardés avec lui)
-  const gouts = goutsDe({ id: `${g}:villageois:${rang}`, enfant: false, metier: null });
+  // (ses goûts : tirés de son rang dans la partie, parmi ceux de tous les métiers des hameaux, gardés avec lui ;
+  // fiche I6a, amitie.js goutsTires)
+  const gouts = goutsTires(`${g}:villageois:${rang}`);
   return { prenom, genre, perso, apparence, gouts };
 }
 
@@ -237,6 +238,8 @@ export function arriverVillageois(state, o = {}) {
     accueil: o.direct ? null : 'en_route', sansMaison: null, avis: o.direct ? ['arrive'] : [], journal: [],
   };
   state.villageois.push(v);
+  // (fiche I6a : la famille l'accueille, l'amitié commence à VILLAGE.AMITIE.ACCUEIL points, « poli »)
+  if (!amitieDe(state).pnj[v.id]) ajouterAmitie(state, v.id, Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0);
   return { ok: true, villageois: v };
 }
 
@@ -354,6 +357,12 @@ function porteDe(state, m) {
   const W = farmTerrain(state).LARGEUR, b = m.boite;
   const pres = (d) => Math.abs((d % W) - (b % W)) <= 1 && Math.abs(Math.floor(d / W) - Math.floor(b / W)) <= 1;
   return m.piece.portes.find(pres) ?? m.piece.portes[0];
+}
+
+// La case de la porte de la maison du villageois `id` (fiche I6a : un invité à un repas en part), ou null.
+export function porteVillageois(state, id) {
+  const v = trouverVillageois(state, id), m = v && maisonDe(state, v);
+  return m ? porteDe(state, m) : null;
 }
 
 // Son humeur, d'après son bonheur et son dernier repas : 'faim', 'heureux', 'content' ou 'triste' (les seuils des

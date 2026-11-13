@@ -8,7 +8,12 @@
 
    state.demandes = { seq, liste: [{ id, hameau, membre, prenom, metier, objet, n, motif, jour, fin }], faites,
      annonces: [ids] (les nouvelles de la nuit, à dire au matin : l'interface les vide) }.
-   Le tirage suit la graine de la ferme et le jour : la même partie, les mêmes demandes. */
+   Le tirage suit la graine de la ferme et le jour : la même partie, les mêmes demandes.
+
+   Fiche I6a (le chantier « l'île à bâtir ») : les villageois font aussi des demandes (demandesVillageoisNuit, le
+   réglage allumé), dans la même liste, sous le « hameau » HAMEAU_VILLAGE (amitie.js) : les besoins du métier des
+   hameaux qui répond à sa tâche (VILLAGE.AMITIE.METIERS), VILLAGE.AMITIE.DEMANDES.MAX ouvertes au plus pour le village
+   (les hameaux gardent leurs MAX) ; elles se rendent et s'oublient comme les autres. */
 
 import { DATA } from './catalog.js';
 import { mulberry32 } from './base.js';
@@ -17,7 +22,8 @@ import { farmSeed } from './terrain.js';
 import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { habitantsDe } from './habitants.js';
-import { ajouterAmitie, amitieDe, cleDe, palierAmitie, trouverPnj } from './amitie.js';
+import { ajouterAmitie, amitieDe, cleDe, HAMEAU_VILLAGE, palierAmitie, trouverPnj } from './amitie.js';
+import { villageActif } from './village.js';
 
 const D = () => DATA.DEMANDES;
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -53,6 +59,7 @@ export function texteDemande(d) {
 
 // L'annonce du matin d'une demande (avec le nom de son hameau).
 export function annonceDemande(state, d) {
+  if (d.hameau === HAMEAU_VILLAGE) return remplir(DATA.VILLAGE.AMITIE.PHRASES.annonce, { prenom: d.prenom, n: d.n, objet: nomObjet(d.objet) });
   const h = habitantsDe(state)[d.hameau];
   return remplir(D().PHRASES.annonce, { prenom: d.prenom, hameau: (h && h.nom) || 'un hameau', n: d.n, objet: nomObjet(d.objet) });
 }
@@ -62,7 +69,8 @@ export function demandesNuit(state) {
   if (state.mondePartage) return null;
   const d = demandesDe(state), jour = state.day;
   d.liste = d.liste.filter((x) => x.fin >= jour);
-  if (jour < D().DEPUIS || d.liste.length >= D().MAX) return null;
+  // (celles des villageois, fiche I6a, ont leur compte à part)
+  if (jour < D().DEPUIS || d.liste.filter((x) => x.hameau !== HAMEAU_VILLAGE).length >= D().MAX) return null;
   const rnd = mulberry32(hache(`${farmSeed(state)}:demandes:${jour}`));
   if (rnd() >= D().CHANCE) return null;
   // (les habitants adultes des hameaux déjà visités, sans demande ouverte, dans un ordre fixe)
@@ -79,6 +87,32 @@ export function demandesNuit(state) {
   const [obj, min, max, motif] = besoins[Math.floor(rnd() * besoins.length)];
   d.seq += 1;
   const dem = { id: `dem-${d.seq}`, hameau: hid, membre: m.id, prenom: m.prenom, metier, objet: obj, n: min + Math.floor(rnd() * (max - min + 1)), motif, motifPhrase: Math.floor(rnd() * 1000), jour, fin: jour + D().DUREE - 1 };
+  d.liste.push(dem);
+  d.annonces.push(dem.id);
+  return dem;
+}
+
+// Fiche I6a : la nuit (runNight, après demandesNuit), un villageois peut faire une demande (VILLAGE.AMITIE.DEMANDES :
+// CHANCE, MAX ouvertes pour le village, DEPUIS jours après son arrivée), selon sa tâche (VILLAGE.AMITIE.METIERS → les
+// BESOINS de ce métier). Le réglage éteint ou sans villageois : rien (la partie n'est pas touchée). → la demande, ou null.
+export function demandesVillageoisNuit(state, villageois) {
+  if (state.mondePartage || !villageActif(state) || !Array.isArray(villageois) || !villageois.length) return null;
+  const A = DATA.VILLAGE.AMITIE || {}, R = A.DEMANDES || {};
+  const d = demandesDe(state), jour = state.day;
+  d.liste = d.liste.filter((x) => x.fin >= jour);
+  const ouvertes = d.liste.filter((x) => x.hameau === HAMEAU_VILLAGE);
+  if (ouvertes.length >= (Number(R.MAX) || 0)) return null;
+  const rnd = mulberry32(hache(`${farmSeed(state)}:demandes-village:${jour}`));
+  if (rnd() >= (Number(R.CHANCE) || 0)) return null;
+  const deja = new Set(ouvertes.map((x) => x.membre));
+  const qui = villageois.filter((v) => !deja.has(v.id) && jour - (Number(v.arrive) || 0) >= (Number(R.DEPUIS) || 0) && v.accueil !== 'en_route');
+  if (!qui.length) return null;
+  const v = qui[Math.floor(rnd() * qui.length)];
+  const M = A.METIERS || {}, metier = D().BESOINS[M[v.tache]] ? M[v.tache] : D().BESOINS[M['*']] ? M['*'] : 'jardinier';
+  const besoins = D().BESOINS[metier];
+  const [obj, min, max, motif] = besoins[Math.floor(rnd() * besoins.length)];
+  d.seq += 1;
+  const dem = { id: `dem-${d.seq}`, hameau: HAMEAU_VILLAGE, membre: v.id, prenom: v.prenom, metier, objet: obj, n: min + Math.floor(rnd() * (max - min + 1)), motif, motifPhrase: Math.floor(rnd() * 1000), jour, fin: jour + D().DUREE - 1 };
   d.liste.push(dem);
   d.annonces.push(dem.id);
   return dem;

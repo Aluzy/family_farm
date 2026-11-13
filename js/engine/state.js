@@ -34,6 +34,7 @@ import { nouvelEquipement } from './equipement.js';
 import { BIENVENUE, nouvelleBienvenue } from './bienvenue.js';
 import { nouveauCompagnon } from './compagnon.js';
 import { nouveauRecit } from './recit.js';
+import { reparerAmitieVillageois } from './villageois-amitie.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -919,6 +920,12 @@ export const MIGRATIONS = {
     if ('port' in state) out.port = reparerPort(state.port, Number.isInteger(state.day) ? state.day : 1);
     return out;
   },
+  // v90 → v91 (le chantier « l'île à bâtir », fiche I6a) : l'amitié avec les villageois (js/engine/villageois-amitie.js),
+  // gardée dans state.amitie.pnj[l'id du villageois] comme celle des habitants. Chaque villageois a ses goûts (tirés
+  // s'ils manquent ou sont abîmés) et sa fiche d'amitié (ACCUEIL points s'il n'en avait pas : la famille l'avait
+  // accueilli) ; un présent illisible s'en va ; la demande d'un villageois qui n'est plus là s'oublie. Les amitiés des
+  // habitants des hameaux ne sont pas touchées (I7f). Sans villageois (le réglage éteint), rien ne change.
+  90: (state) => reparerAmitieVillageois({ ...state, version: 91 }),
 };
 
 // Le dehors d'une sauvegarde (la migration v87 → v88) : { troncon, chemins (des segments lisibles) }.

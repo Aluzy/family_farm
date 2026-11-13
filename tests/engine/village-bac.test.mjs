@@ -310,7 +310,7 @@ test('les niveaux : les matériaux apportés au chantier, les pièces payées ; 
 /* ---------- la sauvegarde, le réglage éteint ---------- */
 
 test('la sauvegarde : v89 → v90 ; le port gardé, un port abîmé réparé, une partie d\'avant sans port laissée telle quelle', () => {
-  assertEqual(STATE_VERSION, 90);
+  assert(STATE_VERSION >= 90, 'le format 90 ou plus');
   const { s, ou } = auPort('sauvegarde', 2, 10);
   s.progression.niveau = 40;
   s.pieces = 300;
@@ -318,7 +318,7 @@ test('la sauvegarde : v89 → v90 ; le port gardé, un port abîmé réparé, un
   s.port.vendu = { carotte: 7 };
   s.port.chantier = { planche: 3 };
   const m = migrate({ ...copie(s), version: 89 });
-  assertEqual(m.version, 90);
+  assertEqual(m.version, STATE_VERSION);
   assertEqual([m.port.niveau, m.port.imports.length, m.port.vendu, m.port.chantier], [1, 1, { carotte: 7 }, { planche: 3 }], 'gardé');
   const abime = migrate({ ...copie(s), version: 89, port: { niveau: 'x', commandes: 'non', imports: [{ cle: 'objet:licorne', quantite: 1 }], vendu: { carotte: -2, inconnu: 4 } } });
   assertEqual([abime.port.niveau, abime.port.commandes, abime.port.imports, abime.port.vendu], [1, [], [], {}], 'réparé');

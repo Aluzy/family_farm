@@ -13,9 +13,14 @@
 // partie solo : son prénom, son allure, son niveau, le nom de sa famille, où il joue) à l'ouverture du volet et
 // toutes les PUBLIER_MS : c'est ce qui le dit « en ligne » chez ses amis. Jamais d'adresse e-mail.
 // Un lien jeu.html#ami=MOON-XXXXX (partagé par un ami) envoie la demande, une fois connecté.
+//
+// Fiche I6a (le chantier « l'île à bâtir », le réglage allumé) : en tête du volet, « Sur l'île » liste les
+// villageois (sans compte : ils sont dans la partie), leur palier d'amitié, un 🎁 s'ils gardent un présent, un 📜
+// s'ils ont une demande ; toucher l'un ouvre sa fiche (js/ui/villageois.js).
 
 import { levelProgress } from '../engine/levels.js';
-import { memberPerso, validApparence } from '../engine/index.js';
+import { amitieVillageois, memberPerso, validApparence, villageActif, villageoisDe } from '../engine/index.js';
+import { ouvrirFicheVillageois } from './villageois.js';
 import { registerActions } from './actions.js';
 import { appelServeur, compteGarde, personnageSolo, quandConnecte } from './compte.js';
 import { mondeActuel } from './en-ligne.js';
@@ -150,7 +155,24 @@ function ligneMessage(m) {
   return `<div class="amis-msg"><span><strong>${echapper(m.prenom)}</strong> ${MOTS[m.type](m)}</span>${act}</div>`;
 }
 
+// (I6a) Les villageois de l'île et leur amitié : '' le réglage éteint ou sans villageois.
+function ileHtml() {
+  if (!state || !villageActif(state)) return '';
+  const V = villageoisDe(state);
+  if (!V.length) return '';
+  const lignes = V.map((v) => {
+    const A = amitieVillageois(state, v.id);
+    if (!A) return '';
+    return `<button type="button" class="amis-v amis-ile" data-action="amis-villageois" data-id="${echapper(v.id)}">${avatar({ perso: v.perso, apparence: validApparence(v.apparence, false) }, 2)}<span class="amis-id"><strong>${echapper(v.prenom)}</strong><span class="amis-ou">💛 ${echapper(A.nom)} · ${A.pts}/${A.max}${A.present ? ' · 🎁' : ''}${A.demande ? ' · 📜' : ''}</span></span></button>`;
+  }).join('');
+  return `<div class="amis-liste amis-ile-liste"><h3>🏝️ Sur l'île · ${V.length}</h3>${lignes}</div>`;
+}
+
 function voletHtml() {
+  return ileHtml() + voletCompteHtml();
+}
+
+function voletCompteHtml() {
   if (!compteGarde()) {
     return `<p class="amis-vide">Pour avoir des amis, inviter et rejoindre leurs fermes, connecte-toi au jeu en ligne : il suffit de ton adresse e-mail (personne d'autre ne la voit).</p>
       <div class="amis-pied"><button class="btn primary" type="button" data-action="amis-connexion">🌐 Me connecter</button></div>`;
@@ -334,6 +356,7 @@ async function partager(texte) {
 registerActions({
   'amis-ouvrir': () => ouvrirAmis(),
   'amis-fermer': () => { ouvert = false; fiche = null; ajout = false; aRetirer = null; dessiner(); },
+  'amis-villageois': (target) => { ouvert = false; fiche = null; dessiner(); ouvrirFicheVillageois(target.dataset.id); },
   'amis-fiche': (el) => { fiche = el.dataset.compte; aRetirer = null; dessiner(); },
   'amis-fiche-fermer': () => { fiche = null; aRetirer = null; dessiner(); },
   'amis-ajouter': () => { ajout = true; dessiner(); const c = document.getElementById('amis-code'); if (c) c.focus(); },

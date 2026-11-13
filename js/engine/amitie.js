@@ -6,6 +6,7 @@ import { addItem, countItem, takeItem } from './inventory.js';
 import { habitantsDe } from './habitants.js';
 import { ajouterConfiance, ajouterRelation, confiance, relation, RECIT } from './recit.js';
 import { STYLES, styleInfo, stylePrefere } from './styles.js';
+import { villageActif } from './village.js';
 
 /* ---------- l'amitié avec les habitants des hameaux (data/amitie.json) ----------
 
@@ -57,8 +58,20 @@ export function amitieDe(state) {
   return a;
 }
 
-// L'habitant `membreId` du hameau `hameauId` : { h, f, m, cle } ou null.
+// Le chantier « l'île à bâtir » (fiche I6a, js/engine/villageois-amitie.js) : les villageois ont leur amitié ici,
+// comme les habitants, sous le « hameau » HAMEAU_VILLAGE (la clé : l'id du villageois, « vg-1 »). Ses goûts sont les
+// siens (v.gouts, tirés à son arrivée : goutsTires). Le chantier éteint, il n'y a pas de villageois : rien ne change.
+export const HAMEAU_VILLAGE = 'village';
+const VILLAGE_H = Object.freeze({ nom: 'le village', foyers: [], style: null });
+const estVillageois = (m) => !!m && typeof m.id === 'string' && /^vg-\d+$/.test(m.id) && objet(m.gouts);
+
+// L'habitant `membreId` du hameau `hameauId` : { h, f, m, cle } ou null (un villageois : { h, f: null, m (le
+// villageois), cle (son id), villageois: true }).
 export function trouverPnj(state, hameauId, membreId) {
+  if (hameauId === HAMEAU_VILLAGE) {
+    const v = villageActif(state) && Array.isArray(state.villageois) ? state.villageois.find((x) => x && x.id === membreId) : null;
+    return v ? { h: VILLAGE_H, f: null, m: v, cle: v.id, villageois: true } : null;
+  }
   const h = habitantsDe(state)[hameauId];
   for (const f of (h && h.foyers) || []) {
     const m = (f.membres || []).find((x) => x.id === membreId);
@@ -113,6 +126,8 @@ const sorteDe = (m) => (m.enfant ? 'enfant' : AMITIE.METIERS[m.metier] ? m.metie
 // Ses goûts : { objet: 'adore' | 'aime' | 'deteste' } (les autres objets : neutres). Un personnage écrit a
 // les siens (ECRITS) ; un autre les tire de son id dans la liste de son métier, puis la liste commune.
 export function goutsDe(m) {
+  // (un villageois : les siens, tirés à son arrivée)
+  if (estVillageois(m)) return { ...m.gouts };
   const cle = cleDe(m);
   const out = {};
   if (AMITIE.ECRITS[cle]) {
@@ -131,6 +146,29 @@ export function goutsDe(m) {
       const it = pris[Math.floor(rnd() * pris.length)];
       out[it] = s;
       tas.splice(tas.indexOf(it), 1);
+    }
+  }
+  return out;
+}
+
+// Les goûts d'un villageois (fiche I6a), tirés de `graine` (« graine:villageois:rang ») : GOUTS[sorte] objets de
+// chaque sorte, pris parmi les listes de tous les métiers adultes des hameaux et la liste commune (pas de métier
+// sur l'île : ses goûts sont à lui, ils ne suivent pas la tâche qu'on lui confie, qui change). Un objet n'est que
+// d'une sorte ; l'ordre est fixe (la même graine, les mêmes goûts).
+export function goutsTires(graine) {
+  const rnd = mulberry32(hache(`gouts-tires:${graine}`));
+  const out = {};
+  for (const s of SORTES) {
+    const tas = [];
+    for (const [metier, L] of Object.entries(AMITIE.METIERS).sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+      if (metier === 'enfant') continue;
+      for (const it of L[s] || []) if (!tas.includes(it)) tas.push(it);
+    }
+    for (const it of AMITIE.COMMUN[s] || []) if (!tas.includes(it)) tas.push(it);
+    const libres = tas.filter((it) => !out[it] && DATA.OBJETS[it]);
+    for (let k = 0; k < (AMITIE.GOUTS[s] || 0) && libres.length; k++) {
+      const it = libres.splice(Math.floor(rnd() * libres.length), 1)[0];
+      out[it] = s;
     }
   }
   return out;

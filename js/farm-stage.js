@@ -1603,10 +1603,17 @@
     const s = getScene();
     return !!(s && s.ready && s.compagnonDit && s.compagnonDit(c));
   }
-  // L'amitié (js/carte/ferme/amis.js) : la réaction `emotion` de l'habitant `id` (un cadeau…).
+  // L'amitié (js/carte/ferme/amis.js) : la réaction `emotion` de l'habitant `id` (un cadeau…) ; I6a : ou du
+  // villageois `id` (js/carte/ferme/villageois.js villageoisEmotion).
   function emotion(id, e) {
     const s = getScene();
-    return !!(s && s.emotionHabitant && s.emotionHabitant(id, e));
+    if (!s) return false;
+    return !!((s.emotionHabitant && s.emotionHabitant(id, e)) || (s.villageoisEmotion && s.villageoisEmotion(id, e)));
   }
-  global.FarmStage = { emotion, compagnonDit, mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, scene: getScene }; // scene() : pour le débogage et les tests
+  // I6a : le villageois `id` dit `texte` (sa réaction à un cadeau, un goût qu'il confie), `ms` millisecondes.
+  function villageoisDit(id, texte, ms) {
+    const s = getScene();
+    return !!(s && s.ready && s.villageoisDitParId && s.villageoisDitParId(id, texte, ms));
+  }
+  global.FarmStage = { emotion, villageoisDit, compagnonDit, mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

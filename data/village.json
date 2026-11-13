@@ -110,7 +110,7 @@
       "si leurs maisons (leurs boîtes aux lettres) sont à VOISINE cases au plus, plus TABLE s'ils mangent à la même",
       "table ; s'y ajoute une affinité tirée de la graine et des deux ids (de 0 à AFFINITE). Connaissance dès",
       "PALIERS.connaissance, ami dès PALIERS.ami. La famille du joueur : connue dès l'arrivée (on l'a accueilli), amie",
-      "après FAMILLE_AMI jours. Deux villageois qui ont la même tâche (I3c) gagnent COLLEGUE de plus par jour (on se lie",
+      "dès le palier AMITIE.FAMILLE_AMI de l'amitié du joueur avec lui (I6a). Deux villageois qui ont la même tâche (I3c) gagnent COLLEGUE de plus par jour (on se lie",
       "en travaillant ensemble). La fiche I6b remplacera ce calcul par l'affinité sauvegardée (liens.js), sans toucher",
       "à ceux qui le lisent.",
       "BUTS : ce qu'il fait d'un créneau dehors, tiré au poids (un poids par but ; un but sans lieu, ou sans ami libre,",
@@ -133,10 +133,12 @@
       "l'échange, parmi ceux du degré (connaissance, ami), du moment (matin, jour, soir), de la météo (pluie, clair),",
       "de l'humeur (triste : l'un des deux est triste ou a faim) et de ce qu'ils font (visite, groupe, promenade, repas à",
       "la même table ; travail : au même poste, fiche I3c ; en se croisant : ceux du moment, un échange sur deux) ;",
-      "JOUEUR : ce qu'un villageois dit au personnage du joueur (par degré)."
+      "JOUEUR : ce qu'un villageois dit au personnage du joueur (par degré ; I6a : par palier d'amitié, proche et intime",
+      "plus chaleureux ; retrouvailles, revu après AMITIE.RETROUVAILLES.JOURS jours ; present, quand il en a un pour lui).",
+      "CROISE.JOUEUR_AMI (I6a) : la distance d'où un ami proche, ou celui qui a un présent, salue le personnage."
     ],
     "SOCIAL": {
-      "CONNAISSANCE": { "PAR_JOUR": 2, "VOISIN": 2, "VOISINE": 14, "TABLE": 1, "AFFINITE": 30, "PALIERS": { "connaissance": 10, "ami": 40 }, "FAMILLE_AMI": 4, "COLLEGUE": 2 },
+      "CONNAISSANCE": { "PAR_JOUR": 2, "VOISIN": 2, "VOISINE": 14, "TABLE": 1, "AFFINITE": 30, "PALIERS": { "connaissance": 10, "ami": 40 }, "COLLEGUE": 2 },
       "BUTS": {
         "POIDS": { "visite": 2, "rdv": 1.5, "promenade": 2, "eau": 1.5, "voir": 2.5, "port": 1 },
         "RECOIT": 0.1,
@@ -145,8 +147,8 @@
         "OUVRAGES": ["ruche", "bassin", "fontaine_", "ornement_", "massif_", "bloc_silo", "citerne", "compost", "station_robot", "tonnelet", "tas_citrouilles", "citrouille_halloween", "bonhomme_neige", "bac_", "pommier", "poirier", "cerisier", "abricotier", "pecher", "mangeoire_grain", "distributeur"],
         "EMOJI": { "eau": "💧", "jardin": "🌱", "betes": "🐑", "ouvrage": "👀", "port": "⚓", "promenade": "🌿" }
       },
-      "CROISE": { "RAYON": 24, "ATTENTE": 40, "DUREE": [1.6, 2.5], "SIGNE": 0.5, "ENSEMBLE": 0.35, "BOUT": 12, "REGARD": 48, "JOUEUR": 28, "JOUEUR_ATTENTE": 60, "TOUR": 3.2 },
-      "EMOJI": { "connaissance": ["👋", "😊"], "ami": ["😄", "❤️", "😊", "👋"], "triste": ["🙂"] },
+      "CROISE": { "RAYON": 24, "ATTENTE": 40, "DUREE": [1.6, 2.5], "SIGNE": 0.5, "ENSEMBLE": 0.35, "BOUT": 12, "REGARD": 48, "JOUEUR": 28, "JOUEUR_AMI": 56, "JOUEUR_ATTENTE": 60, "TOUR": 3.2 },
+      "EMOJI": { "connaissance": ["👋", "😊"], "ami": ["😄", "❤️", "😊", "👋"], "proche": ["😄", "❤️", "🥰"], "intime": ["❤️", "🥰", "😄"], "retrouvailles": ["😄", "🥰"], "present": ["🎁"], "triste": ["🙂"] },
       "REPLIQUES": {
         "connaissance": [
           ["Bonjour, {prenom} !", "Bonjour ! Ça va bien ?"],
@@ -273,7 +275,11 @@
       },
       "JOUEUR": {
         "connaissance": ["Bonjour, {joueur} !", "Salut, {joueur} !", "Belle journée, {joueur} !", "Oh, bonjour !", "Ça va, {joueur} ?"],
-        "ami": ["{joueur} ! Ça fait plaisir !", "Coucou, {joueur} !", "Merci pour tout, {joueur} !", "Te voilà, {joueur} !", "Toujours au travail, {joueur} ?"]
+        "ami": ["{joueur} ! Ça fait plaisir !", "Coucou, {joueur} !", "Merci pour tout, {joueur} !", "Te voilà, {joueur} !", "Toujours au travail, {joueur} ?"],
+        "proche": ["{joueur} ! Je pensais justement à toi !", "Ah, {joueur} ! Ma journée est plus belle.", "Viens, {joueur}, que je te dise bonjour !", "{joueur} ! Tu as une minute pour moi ?", "Quel plaisir de te croiser, {joueur} !"],
+        "intime": ["{joueur} ! Toi, tu me fais toujours sourire.", "Mon ami {joueur} ! Viens là !", "{joueur} ! L'île ne serait pas pareille sans toi.", "Ah, te voilà enfin, {joueur} ! Je t'attendais.", "{joueur} ! Tu sais que tu comptes, ici ?"],
+        "retrouvailles": ["{joueur} ! Te revoilà ! Ça faisait longtemps !", "Oh, {joueur} ! Tu m'as manqué, tu sais.", "{joueur} ! Quelle joie de te revoir !"],
+        "present": ["{joueur} ! Attends, j'ai un petit quelque chose pour toi !", "Tiens, {joueur}, je t'ai gardé ça !", "{joueur} ! C'est pour toi, de bon cœur."]
       },
       "ACTIVITE": {
         "visite": ["Je rends visite à un ami.", "On cause un peu, devant la porte.", "Je passais dire bonjour."],
@@ -285,6 +291,84 @@
         "ouvrage": ["J'admire ce que tu as bâti.", "C'est du beau travail, ça."],
         "port": ["Je descends voir le port.", "J'aime regarder les bateaux."]
       }
+    },
+    "//AMITIE": [
+      "L'amitié du joueur avec les villageois (fiche I6a ; le moteur : js/engine/villageois-amitie.js, posé sur",
+      "js/engine/amitie.js et data/amitie.json : les mêmes paliers et les mêmes gains qu'avec les habitants des hameaux,",
+      "AMITIE.PAROLE à la première conversation du jour, AMITIE.CADEAU selon son goût, AMITIE.RETROUVAILLES, une demande",
+      "honorée DEMANDES.AMITIE, un repas partagé AMITIE.INVITATION.REPAS). Elle est gardée dans",
+      "state.amitie.pnj[l'id du villageois]. Pas de bonus de production lié à l'amitié.",
+      "ACCUEIL : les points d'amitié de son arrivée (la famille l'a accueilli : « poli »). FAMILLE_AMI : le palier d'où",
+      "la famille du joueur est son amie dans la vie sociale (villageois-liens.js, connaissance(state, id, 'famille') ;",
+      "avant ce palier : une connaissance).",
+      "Ses goûts sont tirés à son arrivée (amitie.js goutsTires : parmi les listes de tous les métiers des hameaux et la",
+      "liste commune, AMITIE.GOUTS objets de chaque sorte) et gardés avec lui (v.gouts) : ils ne changent pas avec sa",
+      "tâche. CONFIE : dès le palier PALIER, il dit un de ses goûts que tu ne connais pas encore, une fois sur CHANCE à",
+      "la première conversation du jour, et chaque fois qu'un cadeau lui fait passer un palier ; ils rejoignent ceux",
+      "qu'on découvre en offrant.",
+      "METIERS : le métier des hameaux dont il prend les présents (AMITIE.RETOUR.PRESENTS) et les besoins",
+      "(DEMANDES.BESOINS), selon sa tâche (I3c ; sans tâche : « * »). Le présent : chaque nuit, un ami au palier",
+      "AMITIE.RETOUR.PALIER ou plus en prépare un avec AMITIE.RETOUR.CHANCE[palier] % de chance, s'il n'en a pas déjà un ;",
+      "il te le donne en main propre, quand il te salue ou que tu lui parles (s'il attend, rien ne se perd).",
+      "DEMANDES : chaque nuit, avec CHANCE, un villageois là depuis DEPUIS jours, sans demande ouverte, en fait une (MAX",
+      "ouvertes au plus pour le village) ; elle dure DEMANDES.DUREE jours, puis s'oublie sans rien coûter (B-1).",
+      "TACHE_SANS_HUMEUR : le palier d'où il accepte une tâche qu'il n'aime pas sans perdre d'humeur (les tâches qu'il",
+      "aime viendront avec les traits, I6c). PROPOS_PART : la part des conversations où il dit un sujet du moment",
+      "(VILLAGE.PROPOS).",
+      "PHRASES : cadeau (sa réaction, par goût), gout (ce qu'il confie ; {Objet} en tête de phrase, {objet} dedans),",
+      "present ({quoi} : ce qu'il donne), retrouvailles, annonce (sa demande, au matin), table (ce qu'il dit à un repas",
+      "partagé, avec AMITIE.INVITATION.PAROLES.TABLE, sans la calèche). Chacune tient en une bulle."
+    ],
+    "AMITIE": {
+      "ACCUEIL": 10,
+      "FAMILLE_AMI": 2,
+      "CONFIE": { "PALIER": 2, "CHANCE": 0.35 },
+      "TACHE_SANS_HUMEUR": 3,
+      "PROPOS_PART": 0.4,
+      "METIERS": { "bois": "bucheron", "pierre": "mineur", "peche": "pecheur", "betes": "berger", "cueillette": "cueilleur", "verger": "cueilleur", "champs": "jardinier", "fauchage": "jardinier", "cuisine": "jardinier", "navette": "jardinier", "*": "jardinier" },
+      "DEMANDES": { "CHANCE": 0.35, "MAX": 2, "DEPUIS": 2 },
+      "PHRASES": {
+        "cadeau": {
+          "adore": ["Oh ! J'adore ça ! Merci !", "Mon préféré ! Tu as deviné ?", "Ça, c'est un vrai cadeau ! Merci !"],
+          "aime": ["Oh, merci ! J'aime bien ça.", "C'est gentil, ça me fait plaisir !", "Merci ! Ça tombe bien."],
+          "neutre": ["Merci, c'est gentil.", "Oh, merci beaucoup !"],
+          "deteste": ["Oh… merci quand même.", "Hum… c'est l'intention qui compte !"]
+        },
+        "gout": {
+          "adore": ["Tu sais ce que j'adore ? {objet} !", "Un secret : {objet}, j'en raffole.", "{Objet}… rien ne me fait plus plaisir !"],
+          "aime": ["J'aime bien {objet}, tu sais.", "{Objet}, ça me fait toujours plaisir.", "Si tu as {objet} en trop, pense à moi !"],
+          "deteste": ["Entre nous, {objet}… très peu pour moi !", "Je te le dis : {objet}, je n'aime pas du tout."]
+        },
+        "present": ["Tiens, c'est pour toi : {quoi}. De bon cœur !", "Je t'ai gardé ça : {quoi}. Pour toi !", "Un petit présent : {quoi}. Merci pour tout !"],
+        "retrouvailles": ["Te revoilà ! Ça faisait longtemps.", "Quelle joie de te revoir !", "Ah, te voilà enfin ! Tu m'as manqué."],
+        "annonce": "📜 {prenom} a une demande pour toi : {n} × {objet}.",
+        "table": ["Ça fait du bien de manger ensemble.", "Quel bon repas, entre voisins !", "On est bien, sur cette île.", "Le village, c'est aussi ça : une table à partager."]
+      }
+    },
+    "//PROPOS": [
+      "Ce que disent les villageois de ce qu'ils voient (fiche I6a ; js/engine/propos.js proposVillageois, comme les",
+      "habitants : HABITANTS.PROPOS dans data/monde.json). GARDES : les sujets des habitants qu'ils disent tels quels (la",
+      "ferme, la lune, la météo, le mois, leurs goûts). Les sujets réécrits pour le village ont ici leurs phrases",
+      "(ferme_cultures, ferme_poules, ferme_maison, cadeau_merci, ami_proche, jours) ; les nouveaux aussi : village_ami et",
+      "village_voisin (un villageois qu'il connaît : {ami}, {voisin}), village_collegue (la même tâche : {collegue}),",
+      "village_nouveau (arrivé depuis 3 jours au plus : {qui}), village_depuis (depuis combien de jours il est là),",
+      "port_bac (le bac passe demain). Les autres (le hameau, la calèche, les cousins, les fêtes, les projets) ne sont",
+      "pas dits par un villageois. {e} : l'accord de celui qui parle. Une phrase tient en une bulle."
+    ],
+    "PROPOS": {
+      "GARDES": ["ferme_vide", "ferme_moutons", "ferme_vaches", "ferme_ruches", "ferme_verger", "ferme_moulin", "gout_connu", "lune_pleine", "lune_nouvelle", "lune_croissante", "lune_decroissante", "meteo_pluie", "meteo_brume", "mois"],
+      "ferme_cultures": ["Ton coin de {culture} a fière allure, ce matin !", "Ta {culture} pousse bien. Tu me diras ton secret ?", "Je passe devant ta {culture} chaque jour : quel plaisir !", "{n} parcelles cultivées ? Tu as la main verte.", "La {culture}, ça aime la patience. Toi aussi, on dirait !", "Avec toute cette {culture}, l'île ne manquera pas de soupe."],
+      "ferme_poules": ["Tes {n} poules, elles pondent bien ?", "Je les entends, tes poules, le matin. Ça réveille !", "Des poules sur l'île, c'est des œufs au petit-déjeuner !", "Un peu de blé chaque jour, et tes poules te le rendront en œufs."],
+      "ferme_maison": ["Ta ferme a bien changé depuis que je suis là.", "Tu as encore construit quelque chose ? Tu ne t'arrêtes jamais !", "Le village prend forme, grâce à toi.", "Une maison qui grandit, c'est une famille heureuse."],
+      "cadeau_merci": ["Merci encore pour ton cadeau. J'y pense encore !", "Ton cadeau de l'autre jour m'a fait tellement plaisir.", "Ton cadeau a trouvé sa place chez moi. Merci !"],
+      "ami_proche": ["Quand je te vois arriver, ma journée s'éclaire.", "Je ne regrette pas d'avoir pris le bac jusqu'ici, tu sais.", "Si tu as besoin de quoi que ce soit, tu sais où me trouver.", "Il y a toujours une place pour toi à ma table.", "Sur cette île, je me sens chez moi. Grâce à toi."],
+      "jours": ["Déjà {jours} jours sur l'île ! Le temps file.", "{jours} jours sur l'île… et tant de choses déjà bâties."],
+      "village_depuis": ["Ça fait {jours} jours que j'ai débarqué. Je me sens chez moi.", "Déjà {jours} jours ici ! Je ne regrette pas le voyage."],
+      "village_ami": ["{ami} et moi, on s'entend vraiment bien.", "Si tu cherches {ami}, on est souvent ensemble.", "Avec {ami}, on se raconte tout. Enfin, presque !", "{ami} m'a bien aidé{e} ce matin. Un vrai ami."],
+      "village_voisin": ["Tu connais bien {voisin} ? Dis-lui bonjour de ma part.", "{voisin} m'a parlé de toi hier. Que du bien !", "J'apprends à connaître {voisin}. Quelqu'un de bien.", "{voisin} a ri toute la soirée hier. Ça fait du bien !"],
+      "village_collegue": ["Avec {collegue}, on fait une bonne équipe, au travail.", "{collegue} travaille avec moi : le temps passe plus vite.", "Le travail à deux, avec {collegue}, c'est plus gai."],
+      "village_nouveau": ["Tu as vu ? {qui} vient d'arriver par le bac !", "{qui} s'installe à peine. On l'aidera un peu.", "Bienvenue à {qui} ! Le village grandit."],
+      "port_bac": ["Le bac passe demain. Qui sait qui il amènera ?", "Demain, c'est jour de bac. J'irai voir le port !", "Le bac arrive demain : l'île va avoir de la visite."]
     },
     "//PALIERS": [
       "Les paliers de l'île (fiche I7a, js/engine/paliers.js) : avec ACTIF, une partie neuve suit ces sept paliers à la",

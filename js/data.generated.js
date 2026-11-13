@@ -8712,7 +8712,6 @@ export const RAW_DATA = {
         "TABLE": 1,
         "AFFINITE": 30,
         "PALIERS": { "connaissance": 10, "ami": 40 },
-        "FAMILLE_AMI": 4,
         "COLLEGUE": 2
       },
       "BUTS": {
@@ -8754,10 +8753,19 @@ export const RAW_DATA = {
         "BOUT": 12,
         "REGARD": 48,
         "JOUEUR": 28,
+        "JOUEUR_AMI": 56,
         "JOUEUR_ATTENTE": 60,
         "TOUR": 3.2
       },
-      "EMOJI": { "connaissance": ["👋", "😊"], "ami": ["😄", "❤️", "😊", "👋"], "triste": ["🙂"] },
+      "EMOJI": {
+        "connaissance": ["👋", "😊"],
+        "ami": ["😄", "❤️", "😊", "👋"],
+        "proche": ["😄", "❤️", "🥰"],
+        "intime": ["❤️", "🥰", "😄"],
+        "retrouvailles": ["😄", "🥰"],
+        "present": ["🎁"],
+        "triste": ["🙂"]
+      },
       "REPLIQUES": {
         "connaissance": [
           ["Bonjour, {prenom} !", "Bonjour ! Ça va bien ?"],
@@ -8890,6 +8898,30 @@ export const RAW_DATA = {
           "Merci pour tout, {joueur} !",
           "Te voilà, {joueur} !",
           "Toujours au travail, {joueur} ?"
+        ],
+        "proche": [
+          "{joueur} ! Je pensais justement à toi !",
+          "Ah, {joueur} ! Ma journée est plus belle.",
+          "Viens, {joueur}, que je te dise bonjour !",
+          "{joueur} ! Tu as une minute pour moi ?",
+          "Quel plaisir de te croiser, {joueur} !"
+        ],
+        "intime": [
+          "{joueur} ! Toi, tu me fais toujours sourire.",
+          "Mon ami {joueur} ! Viens là !",
+          "{joueur} ! L'île ne serait pas pareille sans toi.",
+          "Ah, te voilà enfin, {joueur} ! Je t'attendais.",
+          "{joueur} ! Tu sais que tu comptes, ici ?"
+        ],
+        "retrouvailles": [
+          "{joueur} ! Te revoilà ! Ça faisait longtemps !",
+          "Oh, {joueur} ! Tu m'as manqué, tu sais.",
+          "{joueur} ! Quelle joie de te revoir !"
+        ],
+        "present": [
+          "{joueur} ! Attends, j'ai un petit quelque chose pour toi !",
+          "Tiens, {joueur}, je t'ai gardé ça !",
+          "{joueur} ! C'est pour toi, de bon cœur."
         ]
       },
       "ACTIVITE": {
@@ -8902,6 +8934,132 @@ export const RAW_DATA = {
         "ouvrage": ["J'admire ce que tu as bâti.", "C'est du beau travail, ça."],
         "port": ["Je descends voir le port.", "J'aime regarder les bateaux."]
       }
+    },
+    "AMITIE": {
+      "ACCUEIL": 10,
+      "FAMILLE_AMI": 2,
+      "CONFIE": { "PALIER": 2, "CHANCE": 0.35 },
+      "TACHE_SANS_HUMEUR": 3,
+      "PROPOS_PART": 0.4,
+      "METIERS": {
+        "bois": "bucheron",
+        "pierre": "mineur",
+        "peche": "pecheur",
+        "betes": "berger",
+        "cueillette": "cueilleur",
+        "verger": "cueilleur",
+        "champs": "jardinier",
+        "fauchage": "jardinier",
+        "cuisine": "jardinier",
+        "navette": "jardinier",
+        "*": "jardinier"
+      },
+      "DEMANDES": { "CHANCE": 0.35, "MAX": 2, "DEPUIS": 2 },
+      "PHRASES": {
+        "cadeau": {
+          "adore": ["Oh ! J'adore ça ! Merci !", "Mon préféré ! Tu as deviné ?", "Ça, c'est un vrai cadeau ! Merci !"],
+          "aime": ["Oh, merci ! J'aime bien ça.", "C'est gentil, ça me fait plaisir !", "Merci ! Ça tombe bien."],
+          "neutre": ["Merci, c'est gentil.", "Oh, merci beaucoup !"],
+          "deteste": ["Oh… merci quand même.", "Hum… c'est l'intention qui compte !"]
+        },
+        "gout": {
+          "adore": ["Tu sais ce que j'adore ? {objet} !", "Un secret : {objet}, j'en raffole.", "{Objet}… rien ne me fait plus plaisir !"],
+          "aime": ["J'aime bien {objet}, tu sais.", "{Objet}, ça me fait toujours plaisir.", "Si tu as {objet} en trop, pense à moi !"],
+          "deteste": ["Entre nous, {objet}… très peu pour moi !", "Je te le dis : {objet}, je n'aime pas du tout."]
+        },
+        "present": [
+          "Tiens, c'est pour toi : {quoi}. De bon cœur !",
+          "Je t'ai gardé ça : {quoi}. Pour toi !",
+          "Un petit présent : {quoi}. Merci pour tout !"
+        ],
+        "retrouvailles": ["Te revoilà ! Ça faisait longtemps.", "Quelle joie de te revoir !", "Ah, te voilà enfin ! Tu m'as manqué."],
+        "annonce": "📜 {prenom} a une demande pour toi : {n} × {objet}.",
+        "table": [
+          "Ça fait du bien de manger ensemble.",
+          "Quel bon repas, entre voisins !",
+          "On est bien, sur cette île.",
+          "Le village, c'est aussi ça : une table à partager."
+        ]
+      }
+    },
+    "PROPOS": {
+      "GARDES": [
+        "ferme_vide",
+        "ferme_moutons",
+        "ferme_vaches",
+        "ferme_ruches",
+        "ferme_verger",
+        "ferme_moulin",
+        "gout_connu",
+        "lune_pleine",
+        "lune_nouvelle",
+        "lune_croissante",
+        "lune_decroissante",
+        "meteo_pluie",
+        "meteo_brume",
+        "mois"
+      ],
+      "ferme_cultures": [
+        "Ton coin de {culture} a fière allure, ce matin !",
+        "Ta {culture} pousse bien. Tu me diras ton secret ?",
+        "Je passe devant ta {culture} chaque jour : quel plaisir !",
+        "{n} parcelles cultivées ? Tu as la main verte.",
+        "La {culture}, ça aime la patience. Toi aussi, on dirait !",
+        "Avec toute cette {culture}, l'île ne manquera pas de soupe."
+      ],
+      "ferme_poules": [
+        "Tes {n} poules, elles pondent bien ?",
+        "Je les entends, tes poules, le matin. Ça réveille !",
+        "Des poules sur l'île, c'est des œufs au petit-déjeuner !",
+        "Un peu de blé chaque jour, et tes poules te le rendront en œufs."
+      ],
+      "ferme_maison": [
+        "Ta ferme a bien changé depuis que je suis là.",
+        "Tu as encore construit quelque chose ? Tu ne t'arrêtes jamais !",
+        "Le village prend forme, grâce à toi.",
+        "Une maison qui grandit, c'est une famille heureuse."
+      ],
+      "cadeau_merci": [
+        "Merci encore pour ton cadeau. J'y pense encore !",
+        "Ton cadeau de l'autre jour m'a fait tellement plaisir.",
+        "Ton cadeau a trouvé sa place chez moi. Merci !"
+      ],
+      "ami_proche": [
+        "Quand je te vois arriver, ma journée s'éclaire.",
+        "Je ne regrette pas d'avoir pris le bac jusqu'ici, tu sais.",
+        "Si tu as besoin de quoi que ce soit, tu sais où me trouver.",
+        "Il y a toujours une place pour toi à ma table.",
+        "Sur cette île, je me sens chez moi. Grâce à toi."
+      ],
+      "jours": ["Déjà {jours} jours sur l'île ! Le temps file.", "{jours} jours sur l'île… et tant de choses déjà bâties."],
+      "village_depuis": ["Ça fait {jours} jours que j'ai débarqué. Je me sens chez moi.", "Déjà {jours} jours ici ! Je ne regrette pas le voyage."],
+      "village_ami": [
+        "{ami} et moi, on s'entend vraiment bien.",
+        "Si tu cherches {ami}, on est souvent ensemble.",
+        "Avec {ami}, on se raconte tout. Enfin, presque !",
+        "{ami} m'a bien aidé{e} ce matin. Un vrai ami."
+      ],
+      "village_voisin": [
+        "Tu connais bien {voisin} ? Dis-lui bonjour de ma part.",
+        "{voisin} m'a parlé de toi hier. Que du bien !",
+        "J'apprends à connaître {voisin}. Quelqu'un de bien.",
+        "{voisin} a ri toute la soirée hier. Ça fait du bien !"
+      ],
+      "village_collegue": [
+        "Avec {collegue}, on fait une bonne équipe, au travail.",
+        "{collegue} travaille avec moi : le temps passe plus vite.",
+        "Le travail à deux, avec {collegue}, c'est plus gai."
+      ],
+      "village_nouveau": [
+        "Tu as vu ? {qui} vient d'arriver par le bac !",
+        "{qui} s'installe à peine. On l'aidera un peu.",
+        "Bienvenue à {qui} ! Le village grandit."
+      ],
+      "port_bac": [
+        "Le bac passe demain. Qui sait qui il amènera ?",
+        "Demain, c'est jour de bac. J'irai voir le port !",
+        "Le bac arrive demain : l'île va avoir de la visite."
+      ]
     },
     "PALIERS": [
       {

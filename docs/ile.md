@@ -82,7 +82,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
-| 6. Les liens | I6a, I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
+| 6. Les liens | I6a (fait), I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a, I8b | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
@@ -415,7 +415,7 @@ l'heure, comme la journée de I3b ; loin de la vue, rien ne s'anime.
   l'arrivée du second), plus `VOISIN` si leurs boîtes aux lettres sont à `VOISINE` cases au plus, plus `TABLE` s'ils
   mangent à la même table, plus une affinité tirée de la graine et des deux ids (0 à `AFFINITE`) ; connaissance dès
   `PALIERS.connaissance` (10), ami dès `PALIERS.ami` (40). La famille du joueur (`b = 'famille'`) : connue dès
-  l'arrivée, amie après `FAMILLE_AMI` jours (4). `liensDuVillage` (toutes les paires, gardées pour le jour),
+  l'arrivée, amie dès le palier « cordial » de l'amitié du joueur (I6a ; avant : après 4 jours). `liensDuVillage` (toutes les paires, gardées pour le jour),
   `liensPourLaCarte` (le modèle de la carte). **I6b le remplacera** par l'affinité sauvegardée : seul le corps de
   `scoreDe` change (le commentaire du module et la fiche I6b le disent).
 - **Des sorties qui ont un but** (`villageois-journee.js`, `VILLAGE.SOCIAL.BUTS`) : la grille des créneaux de I3b
@@ -557,6 +557,83 @@ ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo).
   10 ms.
 - Reste : la part du villageois et la valeur de ce qu'il produit (I4) ; la brouette, la charrette et un chemin du
   port plus court pour la navette (I2) ; les postes préférés (I6c) ; montrer ce qu'il porte (un panier, une botte).
+
+## Les villageois : l'amitié (I6a, fait)
+
+Ce qui liait le joueur aux habitants des hameaux, rebranché sur les villageois, sans rien recopier : l'amitié d'un
+villageois est celle d'`amitie.js` (les mêmes paliers, `RECIT.PALIERS` ; les mêmes gains, `data/amitie.json`), sous le
+« hameau » `HAMEAU_VILLAGE` (`'village'` ; la clé : l'id du villageois, `state.amitie.pnj['vg-1']`). `trouverPnj` le
+trouve ; `parlerAmitie`, `offrir`, `amitieAvec`, `rendreDemande`, `inviter`, `servirRepas`, `souvenirParole` servent tels
+quels. Ce qui est propre à l'île est dans `js/engine/villageois-amitie.js` et `VILLAGE.AMITIE` (`data/village.json`).
+
+- **Les gains** : l'accueil (`ACCUEIL`, 10 points : « poli », la famille l'a accueilli), la première conversation du
+  jour (`AMITIE.PAROLE`, 2), les retrouvailles (`RETROUVAILLES` : revu après 7 jours sans échange, 3 de plus ; il le
+  dit, et le salut de la scène aussi), un cadeau par jour (`AMITIE.CADEAU` : adoré 8, aimé 4, neutre 1, détesté −4),
+  une demande honorée (`DEMANDES.AMITIE`, 6), un repas partagé (`AMITIE.INVITATION.REPAS`). Jamais de perte par
+  l'absence.
+- **Les goûts : tirés, pas « par tâche préférée ».** Ils sont tirés à son arrivée (`goutsTires` : parmi les listes de
+  tous les métiers adultes des hameaux et la liste commune, `AMITIE.GOUTS` de chaque sorte) et gardés avec lui
+  (`v.gouts`). Pourquoi : la tâche est choisie par le joueur et change d'un clic ; des goûts qui la suivraient
+  changeraient avec elle (un cadeau adoré hier, neutre demain) et feraient de la tâche un levier d'amitié ; il n'y a
+  pas encore de « tâche préférée » (elle viendra avec les traits, I6c) ; les goûts tirés ont le grand tas de tous les
+  métiers, deux villageois ne se ressemblent pas. Avant I6a, les villageois tiraient ceux du « jardinier ».
+- **Ce que l'amitié change**, sans cadence d'usine et sans bonus de production (un test : la même journée de travail,
+  ami intime ou simple connaissance) :
+  - **le salut au personnage** (`villageois-liens.js` `echangeVillageois(…, 'joueur')`) suit le palier :
+    `SOCIAL.JOUEUR.proche` et `intime`, plus chaleureux, avec ❤️ 🥰 ; `retrouvailles` ; un ami proche (ou qui garde un
+    présent) salue de plus loin (`CROISE.JOUEUR_AMI`, 56 px au lieu de 28) et plus longtemps ;
+  - **la famille est son amie** dans la vie sociale (`connaissance(state, id, 'famille')`) dès le palier
+    `FAMILLE_AMI` (« cordial ») ; avant, une connaissance (I3b+ disait : après 4 jours ; la scène suit maintenant ce
+    que le joueur a vécu avec lui) ;
+  - **il dit ses goûts** : dès `CONFIE.PALIER` (« cordial »), une fois sur `CONFIE.CHANCE` (0,35) à la première
+    conversation du jour, et chaque fois qu'un cadeau lui fait passer un palier (`confierGout` ; « Tu sais ce que
+    j'adore ? la tarte aux pommes ! ») ;
+  - **le présent d'un ami** (`AMITIE.RETOUR`) : la nuit, un ami « proche » ou plus en prépare un (15 %, 25 % intime),
+    un objet de son métier (`VILLAGE.AMITIE.METIERS` : la tâche donne le métier des hameaux dont il prend les
+    présents et les besoins ; sans tâche, le jardinier) ; il ne le pose pas devant la porte : il te le donne en main
+    propre, en te saluant (🎁) ou quand tu lui parles (`donnerPresent`) ; s'il attend, rien ne se perd ;
+  - **la tâche acceptée sans perdre d'humeur** dès `TACHE_SANS_HUMEUR` (« proche ») : `tacheSansHumeur` ; il n'y a
+    pas encore de tâche qu'il n'aime pas (les traits, I6c, la liront) ;
+  - **un artisan ami apprend de nouvelles pièces** : I5a lira `palierVillageois`.
+- **Parler** (la bulle de la carte, `parlerVillageois` après `paroleVillageois`) : son palier, sa jauge, le gain
+  (+2), « 🎁 Offrir » et « 📋 Sa fiche » ; le texte dit, dans l'ordre : le présent qu'il te donne, le souvenir d'un
+  repas partagé, sa demande (la première fois du jour, puis un appui sur deux), un goût confié, un sujet du moment
+  (`PROPOS_PART`, 0,4 ; pas au travail ni s'il attend son outil), sinon ce qu'il fait. Sa joie se voit (😊, son
+  visage sourit : `villageoisEmotion`) ; un palier passé, une notification.
+- **Offrir** (la fenêtre « Offrir » des habitants, `data-hameau="village"` : `offrirVillageois`) : l'objectif du jour
+  `cadeau_villageois` ; dans la scène, sa réaction (`PHRASES.cadeau`, 😊 ou 🤢), puis le goût qu'il confie
+  (`FarmStage.villageoisDit`).
+- **Les demandes** (`demandes.js` `demandesVillageoisNuit`, après `demandesNuit`) : chaque nuit, avec
+  `DEMANDES.CHANCE` (0,35), un villageois là depuis `DEPUIS` jours (2), sans demande ouverte, en fait une, selon sa
+  tâche (les `DEMANDES.BESOINS` du métier de `METIERS`) ; `MAX` (2) ouvertes pour le village, à part du compte des
+  hameaux ; annoncée au matin (`PHRASES.annonce`, le carnet 📜 dit « du village ») ; elle dure `DEMANDES.DUREE`
+  (7 jours) puis s'oublie sans rien coûter (B-1) ; honorée depuis « Offrir » ou sa fiche : l'amitié et un présent.
+- **Les invitations** (`invitations.js`) : `relationsInvitables` liste les villageois (tous connus ; leur « métier » :
+  leur tâche) ; le message passe « de porte en porte » (plus d'Achille quand on n'invite que des villageois) ; le jour
+  dit, le villageois vient lui-même (`invites.js` : il quitte sa journée, `m.invite`, part de là où il est, sinon de sa
+  porte, s'assoit, mange, remercie, puis reprend sa journée de là où il s'est levé) ; à table, ni calèche ni « chez
+  nous » (`PHRASES.table`). Il s'en souvient ensuite, comme un habitant.
+- **Les propos** (`proposVillageois`, `VILLAGE.PROPOS`) : `GARDES`, les sujets des habitants dits tels quels (la
+  ferme, la lune, la météo, le mois, ses goûts) ; réécrits pour le village : `ferme_cultures`, `ferme_poules`,
+  `ferme_maison`, `cadeau_merci`, `ami_proche`, `jours` ; nouveaux : `village_ami`, `village_voisin`,
+  `village_collegue`, `village_nouveau`, `village_depuis`, `port_bac`. Retirés (jamais dits par un villageois) : le
+  hameau, la calèche, les cousins, les visites et l'entraide des hameaux, la réserve, les projets, les fêtes, les
+  sujets d'enfant. Chaque phrase tient en une bulle (96 caractères au plus, un test).
+- **L'interface** : la fiche du villageois gagne son palier (la jauge, ce qu'il reste), ses goûts connus, le présent
+  qu'il garde, sa demande en cours (de quoi la rendre), « 🎁 Offrir » et « 🍽️ L'inviter à un repas » (la fenêtre
+  des évènements, lui coché) ; la liste des villageois dit le palier de chacun (🎁, 📜) ; la fenêtre des amis (💌)
+  commence par « 🏝️ Sur l'île » : les villageois, leur palier, un appui ouvre leur fiche (même sans compte en ligne).
+- **La sauvegarde** : format 91 ; la migration 90 → 91 (`reparerAmitieVillageois`) : chaque villageois a ses goûts
+  (tirés s'ils manquent) et sa fiche d'amitié (`ACCUEIL` s'il n'en avait pas) ; un présent illisible s'en va ; la
+  demande d'un villageois parti s'oublie. Les amitiés des hameaux ne sont pas touchées (I7f). Sans villageois, rien.
+- **Les tests** : `tests/engine/village-amitie.test.mjs` (l'arrivée et les goûts, parler et les retrouvailles, les
+  cadeaux et le goût confié, le présent en main propre, le salut et la famille, pas de bonus de production, les
+  demandes, les invitations et le souvenir, les propos et la bulle, la sauvegarde, éteint) ; `amitie`, `demandes`,
+  `invitations`, `propos` restent verts réglage éteint ; `village-social` suit la famille amie par l'amitié. Éteint,
+  le CSV de la simulation est le même octet pour octet.
+- Reste : le joueur automatique ne parle pas aux villageois et n'offre rien (il les invite quand il invite) ; les
+  tâches qu'il aime et les humeurs (I6c) ; les pièces de l'artisan ami (I5a) ; le retrait du récit (`RECIT.PALIERS`
+  reste la table des paliers, I7c) ; le bot ne rend pas les demandes des villageois.
 
 ## Les règles qui ne changent pas
 

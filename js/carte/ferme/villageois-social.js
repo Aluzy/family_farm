@@ -23,7 +23,9 @@
  *     (SIGNE), sans un mot ; pas deux fois la même paire en ATTENTE s ;
  *   - debout, il tourne la tête vers un ami qui passe (REGARD px) ;
  *   - le personnage du joueur qui passe près d'un villageois qui le connaît (JOUEUR px) : il se tourne vers lui, le
- *     salue (un emoji, une bulle : SOCIAL.JOUEUR) ; une fois en JOUEUR_ATTENTE s.
+ *     salue (un emoji, une bulle : SOCIAL.JOUEUR) ; une fois en JOUEUR_ATTENTE s. I6a : le salut suit l'amitié du
+ *     joueur (le modèle : liens.amitie, le palier ; liens.present) : un ami proche salue de plus loin (JOUEUR_AMI) et
+ *     plus chaleureusement ; celui qui garde un présent le donne en saluant (🎁, la page l'ajoute à l'inventaire).
  *
  * Les bulles sont celles des villageois (villageoisBulle) ; l'emoji, celui des habitants (amis.js, emojiHabitant) ;
  * le visage sourit le temps d'un salut (js/carte/visages.js, la réaction « joie »). Méthodes de la scène de la ferme
@@ -62,6 +64,15 @@
       const H = this.ctx.lastModel && this.ctx.lastModel.villageoisHeure;
       return (H && H.social) || DEFAUT;
     },
+    // I6a : le palier d'amitié du joueur avec le villageois `a` (0 à 4), et s'il garde un présent pour lui.
+    villageoisPalier(a) {
+      const H = this.ctx.lastModel && this.ctx.lastModel.villageoisHeure, L = H && H.liens;
+      return (L && L.amitie && L.amitie[a]) || 0;
+    },
+    villageoisPresent(a) {
+      const H = this.ctx.lastModel && this.ctx.lastModel.villageoisHeure, L = H && H.liens;
+      return !!(L && L.present && L.present[a]);
+    },
     villageoisDegre(a, b) {
       const H = this.ctx.lastModel && this.ctx.lastModel.villageoisHeure, L = H && H.liens;
       if (!L) return 0;
@@ -71,7 +82,8 @@
 
     // Il dit `texte` (une bulle courte, `ms`) ; son babil près du personnage.
     villageoisDit(m, texte, ms, c) {
-      if (!texte) return;
+      // (I6a : il parle au personnage — sa bulle, un cadeau, un goût confié — : une causerie ne la recouvre pas)
+      if (!texte || (m.parle && performance.now() < m.parle.until)) return;
       this.villageoisBulle(m, `<span class="habitant-bulle-texte">${esc(texte)}</span>`, ms);
       const j = c && c.joueur;
       const now = performance.now();
@@ -335,14 +347,20 @@
       const dedans = (m) => m.x > vue.x && m.x < vue.right && m.y > vue.y && m.y < vue.bottom;
       for (const m of this.villageoisVus.values()) {
         if (!dispo(m) || m.salut || !dedans(m) || now < (m.salutApres || 0)) continue;
-        // le personnage qui passe : un salut (s'il le connaît)
-        if (j && jBouge && now >= (m.salueJoueur || 0) && Math.hypot(j.x - m.x, j.y - m.y) < (R.JOUEUR || 28) && this.villageoisDegre(m.id, 'famille') >= 1 && B && B.villageois) {
+        // le personnage qui passe : un salut (s'il le connaît) ; I6a : un ami proche, ou qui garde un présent pour lui,
+        // le salue de plus loin (JOUEUR_AMI), même arrêté s'il a un présent ; le salut dure un peu plus
+        const cadeau = this.villageoisPresent(m.id), proche = cadeau || this.villageoisPalier(m.id) >= 3;
+        const portee = proche ? (R.JOUEUR_AMI || 56) : (R.JOUEUR || 28);
+        if (j && (jBouge || cadeau) && now >= (m.salueJoueur || 0) && Math.hypot(j.x - m.x, j.y - m.y) < portee && this.villageoisDegre(m.id, 'famille') >= 1 && B && B.villageois) {
           m.salueJoueur = now + (R.JOUEUR_ATTENTE || 60) * 1000;
           const r = B.villageois('echange', m.id, { avec: 'joueur', n: (m.nJoueur = (m.nJoueur || 0) + 1) });
           if (r && r.lignes && r.lignes[0]) {
-            m.salut = { joueur: true, fin: now + 1600, dit: null };
-            this.villageoisEmoji(m, r.emoji[0], 1600);
-            this.villageoisDit(m, r.lignes[0], 1800, c);
+            const ms = r.cadeau ? 3200 : proche ? 2400 : 1600;
+            m.salut = { joueur: true, fin: now + ms, dit: null };
+            this.villageoisEmoji(m, r.cadeau ? '🎁' : r.emoji[0], ms);
+            this.villageoisDit(m, r.lignes[0], ms + 200, c);
+            // (le présent donné : la page l'a mis dans l'inventaire ; il ne le redonne pas avant le prochain modèle)
+            if (r.cadeau && this.ctx.lastModel && this.ctx.lastModel.villageoisHeure && this.ctx.lastModel.villageoisHeure.liens) delete (this.ctx.lastModel.villageoisHeure.liens.present || {})[m.id];
             continue;
           }
         }

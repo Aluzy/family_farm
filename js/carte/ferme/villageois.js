@@ -63,6 +63,7 @@
   const BOITE = { l: 8, h: 30, bas: 3 };       // l'appui sur lui, autour de ses pieds
   const DEHORS = new Set(['dehors', 'flaner']);
   const JOIE = { reaction: 'joie' };              // (I3b+ : il sourit quand il salue)
+  const EMOTION_MS = 2600;                        // (I6a : une réaction, un cadeau, le temps qu'elle dure)
 
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // (le hasard à graine de chacun : son id ; les mêmes coups d'œil pour le même villageois)
@@ -115,6 +116,13 @@
           continue;
         }
         // la journée : le segment de l'heure, la machine, l'image (sa marche : HORAIRE.VITESSE fois celle d'un adulte)
+        // (I6a : invité à un repas, il est à table ; invites.js le montre, puis lui rend sa journée)
+        if (m.invite) {
+          m.s.setVisible(false);
+          if (m.bulle) this.villageoisBulleOff(m);
+          if (m.emoji && this.emojiOff) this.emojiOff(m);
+          continue;
+        }
         m.vite = (md.villageoisHeure && Number(md.villageoisHeure.vitesse)) || 1;
         const J = v.journee;
         c.seg = J && heure !== null ? J.find((s) => heure >= s.de && heure < s.a) || J[J.length - 1] : null;
@@ -452,8 +460,9 @@
       else if (m.travail && this.villageoisGesteImage && (nom = this.villageoisGesteImage(m, dt))) { /* le geste */ }
       else nom = `idle_${m.face}_${Math.floor((now + m.dec) / 600) % 2}`;
       s.setFrame(c.C(nom)).setPosition(Math.round(m.x), Math.round(m.y)).setFlipX(m.flip).setAlpha(m.alpha).setAngle(0).setDepth(m.assis ? m.assis.depth : m.y);
-      // (un salut : il sourit)
-      if (global.CarteVisages) global.CarteVisages.suivre(this, s, m.salut ? JOIE : undefined);
+      // (un salut : il sourit ; I6a : une réaction, un cadeau, le temps qu'elle dure)
+      if (m.reaction && now >= m.reaction.fin) m.reaction = null;
+      if (global.CarteVisages) global.CarteVisages.suivre(this, s, m.salut ? JOIE : m.reaction || undefined);
       this.villageoisBullePlace(m);
     },
 
@@ -512,12 +521,43 @@
       if (!r || !r.prenom) return;
       const humeur = r.humeurTexte ? `<span class="habitant-bulle-metier">${esc(r.humeurTexte)}</span>` : '';
       const texte = [r.salut, r.texte].filter(Boolean).join(' ');
-      this.villageoisBulle(m, `<strong>${esc(r.prenom)}</strong><span class="habitant-bulle-texte">${esc(texte)}</span>${humeur}`
+      // (I6a : l'amitié, comme chez les habitants : son palier, sa jauge, ce que la conversation a donné, « Offrir »)
+      const A = r.amitie;
+      const ami = A ? `<span class="habitant-bulle-ami"><span class="ami-coeur" aria-hidden="true">💛</span> ${esc(A.nom)}<span class="ami-jauge" role="img" aria-label="Amitié : ${A.pts} sur ${A.max}"><span style="width:${Math.round((A.pts * 100) / A.max)}%"></span></span>${A.gain > 0 ? `<span class="ami-gain">+${A.gain}</span>` : ''}</span>`
+        + `<button type="button" class="habitant-bulle-offrir" data-action="ami-offrir-open" data-hameau="village" data-id="${esc(id)}">🎁 Offrir</button>` : '';
+      this.villageoisBulle(m, `<strong>${esc(r.prenom)}</strong><span class="habitant-bulle-texte">${esc(texte)}</span>${humeur}${ami}`
         + `<button type="button" class="habitant-bulle-offrir" data-action="villageois-fiche" data-id="${esc(id)}">📋 Sa fiche</button>`, PAROLE_MS);
+      // (sa joie de te voir, de te retrouver ; le présent qu'il te tend)
+      if (r.present) this.villageoisEmotion(id, 'present');
+      else if (r.emotion) this.villageoisEmotion(id, r.emotion);
       if (m.phase === 'vie' && !m.couche) m.parle = { until: performance.now() + PAROLE_MS };
       if (m.s && !m.couche && !m.assis) { const j = this.fermier && this.fermier.pos ? this.fermier.pos() : null; if (j) ({ face: m.face, flip: m.flip } = K.regard(j.x - m.x, j.y - m.y)); }
       // (sa voix : le babil des habitants, js/son.js)
       if (this.habitantBabil && !m.couche) this.habitantBabil(m, texte);
+    },
+
+    // I6a : une réaction du villageois `id` (un cadeau reçu, la joie de te voir, un présent qu'il te tend) : un emoji
+    // au-dessus de sa tête, son visage (la joie, ou les yeux plissés du dégoût), le temps EMOTION_MS. → true s'il est là.
+    villageoisEmotion(id, emotion) {
+      const m = this.villageoisVus && this.villageoisVus.get(id);
+      if (!m || !m.s || m.invite) return false;
+      const E = { joie: ['😊', 'joie'], present: ['🎁', 'joie'], degout: ['🤢', 'degout'], tristesse: ['😔', 'tristesse'], surprise: ['😮', 'surprise'] }[emotion];
+      if (!E) return false;
+      if (this.villageoisEmoji) this.villageoisEmoji(m, E[0], EMOTION_MS);
+      m.reaction = { reaction: E[1], fort: emotion !== 'degout', fin: performance.now() + EMOTION_MS };
+      return true;
+    },
+    // I6a : il dit `texte` (sa réaction à un cadeau, un goût qu'il confie), tourné vers le personnage. → true s'il est là.
+    villageoisDitParId(id, texte, ms = PAROLE_MS) {
+      const m = this.villageoisVus && this.villageoisVus.get(id);
+      if (!m || !m.s || m.invite || !texte) return false;
+      const v = m.v || {};
+      this.villageoisBulle(m, `<strong>${esc(v.prenom || '')}</strong><span class="habitant-bulle-texte">${esc(texte)}</span>`, ms);
+      if (m.phase === 'vie' && !m.couche) m.parle = { until: performance.now() + ms };
+      const j = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
+      if (j && !m.couche && !m.assis) ({ face: m.face, flip: m.flip } = K.regard(j.x - m.x, j.y - m.y));
+      if (this.habitantBabil && !m.couche) this.habitantBabil(m, texte);
+      return true;
     },
 
     villageoisBulle(m, html, ms) {
