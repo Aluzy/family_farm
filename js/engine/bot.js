@@ -40,7 +40,8 @@ import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
 import { createNewGame, houseRepaired, starterBlock } from './depart.js';
 import { testBatir, testLabourerSerre, testMaisonVillageois } from './testmode.js';
 import { maisonsLibres, plafondVillageois, villageoisDe } from './villageois.js';
-import { attribuer, donnerOutil, tacheDef, tacheManque } from './taches.js';
+import { attribuer, donnerOutil, postesDe, reprendreOutil, tacheDef, tacheManque } from './taches.js';
+import { soldeLePlusBas } from './tableau.js';
 import { paliersSuivis } from './paliers.js';
 import { aCruche, crucheCapacite, eauCruche, puitsCases, puitsPose, remplirCruche } from './cruche.js';
 import { acheterCaleche, vendreCaleche, poserTournee, tourneeDuPlan } from './caleche.js';
@@ -195,6 +196,58 @@ export function botVillageois(state) {
       break;
     }
   }
+  botReattribuer(state, V);
+}
+
+// I3d : le tableau des villageois (tableau.js). Une fois par jour, il regarde le villageois dont le solde de la semaine
+// est le plus bas. S'il a fait sa tâche une semaine pleine (REATTRIBUER.JOURS jours de suite, sans repos : le solde
+// juge alors la tâche, pas la faim), et pas plus tôt que JOURS jours après le relevé d'avant, ce solde est relevé pour
+// cette tâche (par villageois). Les SEMAINES derniers relevés de sa tâche faits, leur somme la juge : une tâche libre
+// qu'il a déjà faite a donné mieux, de plus de MARGE pièces : il y retourne, et s'y tient ; sinon, sous SEUIL, et
+// s'il ne s'est pas encore tenu à une tâche, il essaie la première tâche libre de VERS (TACHES par défaut) qu'il n'a
+// pas faite. Une seule semaine juge mal les champs (une récolte tombe ou non dans la semaine). → la tâche donnée, ou
+// null.
+const essaisTaches = new WeakMap();   // la partie → { jour (le dernier passage), [id]: { releves: { tache: [soldes] }, dernier, tenu } }
+export function botReattribuer(state, V = villageoisDe(state)) {
+  const S = DATA.SIMULATION.VILLAGEOIS, R = S && S.REATTRIBUER;
+  if (!R || !villageActif(state) || !V.length) return null;
+  const memo = essaisTaches.get(state) || {};
+  essaisTaches.set(state, memo);
+  if (memo.jour === state.day) return null;
+  memo.jour = state.day;
+  const avecTache = V.filter((v) => tacheDef(v.tache) && !v.accueil);
+  if (!avecTache.length) return null;
+  const bas = soldeLePlusBas(state, R.JOURS, avecTache.map((v) => v.id));
+  if (!bas || !bas.complet) return null;
+  const v = V.find((x) => x.id === bas.id), m = memo[v.id] || (memo[v.id] = { releves: {}, dernier: { tache: null, jour: -Infinity }, tenu: false });
+  if (m.dernier.tache === v.tache && state.day - m.dernier.jour < R.JOURS) return null;
+  const releves = m.releves[v.tache] || (m.releves[v.tache] = []);
+  if (m.dernier.tache !== v.tache) releves.length = 0;   // (une tâche reprise : ses relevés recommencent)
+  releves.push(bas.solde);
+  m.dernier = { tache: v.tache, jour: state.day };
+  const n = Math.max(1, Number(R.SEMAINES) || 1);
+  if (releves.length < n) return null;
+  const juge = (t) => m.releves[t].slice(-n).reduce((a, x) => a + x, 0);
+  const solde = juge(v.tache);
+  const prises = new Set(V.filter((x) => x !== v).map((x) => x.tache).filter(Boolean));
+  const libres = (R.VERS || S.TACHES || []).filter((t) => t !== v.tache && tacheDef(t) && !prises.has(t));
+  const faites = (t) => Array.isArray(m.releves[t]) && m.releves[t].length >= n;
+  const mieux = libres.filter((t) => faites(t) && juge(t) > solde + (Number(R.MARGE) || 0)).sort((a, b) => juge(b) - juge(a));
+  const neuves = m.tenu || solde >= (Number(R.SEUIL) || 0) ? [] : libres.filter((t) => !faites(t));
+  for (const t of [...mieux, ...neuves]) {
+    const def = tacheDef(t);
+    if (!postesDe(state, t, v).length) continue;   // (pas de poste : pas aujourd'hui)
+    if (def.outil && v.outil !== def.outil) {
+      if (!botOutil(state, def.outil)) continue;
+      if (v.outil && hasTool(state, v.outil)) continue;
+      if (!donnerOutil(state, v.id, def.outil).ok) continue;
+    } else if (!def.outil && v.outil && !hasTool(state, v.outil)) reprendreOutil(state, v.id);
+    if (tacheManque(state, v, t)) continue;
+    attribuer(state, v.id, t);
+    if (mieux.includes(t)) m.tenu = true;
+    return t;
+  }
+  return null;
 }
 
 /* ---------- entretien, énergie, infrastructure ---------- */

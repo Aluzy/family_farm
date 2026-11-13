@@ -62,6 +62,7 @@ import './ui/animations.js';
 import './ui/aide.js';
 import './ui/options.js';
 import './ui/compta.js';
+import './ui/tableau.js';
 import './ui/toasts.js';
 import './ui/actions.js';
 import './ui/events.js';

@@ -35,7 +35,8 @@ import { validApparence } from './family.js';
      accueil ('en_route' : il marche du port à sa maison, la scène le montre ; null : il est chez lui),
      sansMaison (le jour où il a perdu sa maison, ou null), avis ([« arrive », « sans_maison », « installe »] :
      ce que la page doit encore dire au joueur), journal ([{ jour, mange, energie, besoin, lit, bonheur, et (I3c) tache,
-     actions, produit }] : ses derniers jours, VILLAGE.ARRIVEE.JOURNAL au plus) ;
+     actions, produit, et (I3d) repos (true : il s'est reposé ce jour-là), utilise (ce que son travail a pris au coffre) }] : ses derniers jours, VILLAGE.ARRIVEE.JOURNAL
+     au plus ; le tableau des villageois les lit, tableau.js) ;
      et (I3c, taches.js) tache, outil, vendre, semis, travail }].
 
    Une maison libre : une pièce close du genre maison de la terre du joueur, marquée « à un villageois » par une
@@ -312,11 +313,15 @@ function nuitDe(state, v, jour) {
   if (!penalite('BONHEUR_BAISSE')) apres = Math.max(avant, apres);
   v.bonheur = Math.max(0, Math.min(DATA.BONHEUR.MAX, Math.round(apres)));
   v.faim = faim;
+  const reposDuJour = !!v.repos;   // (I3d : il s'est reposé aujourd'hui, la nuit d'avant l'avait dit)
   v.repos = faim > 0 || sansLit;
   const J = { jour, mange: r.mange, energie: r.energie, besoin, lit: v.lit ?? null, bonheur: v.bonheur - Math.round(avant) };
-  // (I3c, taches.js : sa journée de travail, que tachesNuit vient de finir ; I3d la lira)
+  if (reposDuJour) J.repos = true;   // (le tableau, tableau.js : un jour de repos compte son repas et aucun produit)
+  // (I3c, taches.js : sa journée de travail, que tachesNuit vient de finir ; le tableau la lit : tableau.js)
   const T = v.travail;
   if (v.tache || (T && T.jour === jour && T.actions)) Object.assign(J, { tache: v.tache || (T && T.tache) || null, actions: T && T.jour === jour ? T.actions : 0, produit: T && T.jour === jour ? { ...T.produit } : {} });
+  // (I3d : ce que son travail a pris au coffre, s'il a pris quelque chose)
+  if (T && T.jour === jour && objet(T.utilise) && Object.keys(T.utilise).length) J.utilise = { ...T.utilise };
   if (!Array.isArray(v.journal)) v.journal = [];
   v.journal.push(J);
   const max = Math.max(1, Number(ARRIVEE.JOURNAL) || 7);

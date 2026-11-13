@@ -36,7 +36,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I3a — l'arrivée d'un villageois](I3a-arrivee-villageois.md) | 3 | I0a | fait |
 | [I3b — la vie des villageois sur la ferme](I3b-vie-sur-la-ferme.md) | 3 | I3a | fait (réglage « animé » choisi) ; I3b+ (vie sociale : qui se connaît, sorties à but, saluts, causeries) : fait |
 | [I3c — les tâches attribuées](I3c-taches.md) | 3 | I3b | fait |
-| [I3d — le tableau des villageois](I3d-tableau.md) | 3 | I3c | à faire |
+| [I3d — le tableau des villageois](I3d-tableau.md) | 3 | I3c | fait (le coût compte aussi ce que le travail prend au coffre ; le joueur automatique réattribue après deux semaines pleines) |
 | [I4 — les prix des filières, la part et la bourse](I4-prix-part-bourse.md) | 4 | I3d, I1b | à faire |
 | [I5a — l'atelier d'artisan, sa boutique, la forge](I5a-artisan-forge.md) | 5 | I4, I6a | à faire |
 | [I5b — la mercerie](I5b-mercerie.md) | 5 | I5a | à faire |

@@ -204,6 +204,8 @@ export const INTERFACE_ACTIONS = new Set([
   'villageois-liste', 'villageois-fiche',
   // (fiche I3c : la liste des tâches, ce que porte la tournée du port)
   'villageois-taches', 'villageois-vendre',
+  // (fiche I3d : le tableau des villageois : js/ui/tableau.js)
+  'tableau-ouvrir', 'tableau-periode', 'tableau-tri', 'tableau-detail',
   // (les gemmes : js/ui/gemmes.js)
   'gemmes-ouvrir', 'gemmes-onglet', 'gemmes-pack', 'gemmes-payer', 'gemmes-acheter', 'gemmes-connexion',
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',

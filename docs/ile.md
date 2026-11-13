@@ -79,7 +79,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
 | 1. Le port | I1a (fait), I1b (fait), I1c (fait) | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
-| 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
+| 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d (fait) | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
@@ -529,7 +529,7 @@ ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo).
   villageois dit **qui fait quoi** ; un appui long sur un poste de la carte (un arbre, un rocher, l'étang, le
   poulailler, la cuisinière, un buisson ; `tachesDuPoste`) propose « Confier à… ».
 - **Le journal** : chaque nuit, l'entrée du journal du villageois (7 jours) gagne `tache`, `actions` et `produit`
-  (`{ objet: n }`), à côté de `mange` (I3d le lira). `quiFaitQuoi` donne la vue d'ensemble du jour.
+  (`{ objet: n }`), à côté de `mange` (le tableau, I3d, le lit). `quiFaitQuoi` donne la vue d'ensemble du jour.
 - **La sauvegarde** : format 89 (`v.tache`, `v.outil`, `v.vendre`, `v.semis` (ce qu'il ressèmera), `v.travail` (sa
   journée de travail)) ; la migration 88 → 89 (`reparerTaches`) remet à vide une valeur abîmée. Les commandes
   `villageois.attribuer`, `villageois.outil` et `villageois.vendre` (`commandes.js`).
@@ -557,6 +557,54 @@ ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo).
   10 ms.
 - Reste : la part du villageois et la valeur de ce qu'il produit (I4) ; la brouette, la charrette et un chemin du
   port plus court pour la navette (I2) ; les postes préférés (I6c) ; montrer ce qu'il porte (un panier, une botte).
+
+## Les villageois : le tableau (I3d, fait)
+
+Ce que chaque villageois a coûté et produit, hier et sur les sept derniers jours, pour décider qui fait quoi.
+
+- **Le calcul** (`js/engine/tableau.js`, pur) : tout se lit dans le journal de chaque villageois (ses 7 derniers jours,
+  `ARRIVEE.JOURNAL` : la sauvegarde n'a pas eu à garder plus, elle reste au format 91). Le **coût** d'un jour : ce
+  qu'il a mangé à la boîte, au prix de vente de chaque aliment (`sellPrice`, le prix fixe du port) ; sa part versée
+  (`J.part`, 0 avant I4) ; et **ce que son travail a pris au coffre** (`J.utilise`, nouveau : les ingrédients d'un plat,
+  la graine ressemée, le blé des poules, ce que la tournée du port vend), au même prix. Sans ce dernier poste, la
+  cuisine comptait son plat sans ses légumes (un plat vaut à peu près ses ingrédients) et la tournée les pièces
+  d'objets que d'autres avaient produits. Le **produit** : chaque objet, sa quantité, sa valeur au port (0 pour ce qui
+  ne se vend pas). Le **solde** : produit moins coût. Le **rendement** : ce que sa tâche a produit (moins ce qu'elle a
+  pris) par jour de travail, en % de la moyenne des tâches faites dans le village sur la période. Des entiers
+  partout. Un jour de repos (`J.repos`, nouveau : noté par la nuit) compte son repas et aucun produit. Les périodes :
+  « hier », « semaine » (les sept jours glissants qui finissent hier). `tableauVillage`, `bilanVillageois`,
+  `trierTableau`, `manqueCourt` (« sans outil : une hache », « en repos : pas assez à manger », « sans poste : … »,
+  « rien à porter au port », « sans tâche »).
+- **La fenêtre** (`js/ui/tableau.js`) : le bouton 📊 sur la carte du joueur, à côté des pièces, dès qu'il y a un
+  villageois ; une ligne par villageois (portrait, prénom, tâche et ce qu'elle a donné, coût, produit, solde,
+  humeur), triable par colonne (un second appui inverse le sens) ; « Hier » et « 7 jours » ; le total du village ;
+  sous la ligne, ce qui lui manque aujourd'hui. Un appui sur un prénom : ses sept jours (chaque jour : sa tâche, ses
+  actions, ce qu'il a mangé, ce qu'il a pris au coffre, ce qu'il a produit, le solde), son rendement, « Sa fiche ».
+  Sur un téléphone, la tâche et l'humeur se replient en icônes sous le prénom et les en-têtes s'abrègent : à 380 px
+  de large, rien ne déborde. Aucune couleur d'alarme (B-1) : un solde négatif s'écrit comme un autre ; la fenêtre dit
+  que c'est un repère. La fiche du villageois n'est pas touchée.
+- **Le joueur automatique** (`bot.js`, `botReattribuer`, `SIMULATION.VILLAGEOIS.REATTRIBUER`) : une fois par jour, il
+  regarde le villageois au solde de la semaine le plus bas ; après une semaine pleine sur sa tâche (7 jours, sans
+  repos : le solde juge la tâche, pas la faim), il relève ce solde ; deux relevés (`SEMAINES`, une semaine juge mal les
+  champs : une récolte tombe ou non dedans) sous `SEUIL` (0), il essaie la première tâche libre qu'il n'a pas faite ;
+  une tâche déjà faite qui a donné mieux, il y retourne et s'y tient. Une première version (une semaine, toute tâche
+  essayée tour à tour) enlevait les champs au villageois qui nourrissait le village : les jours de repos doublaient.
+  Mesure (`node scripts/simulate.mjs --village`, 80 nuits, et la même partie sans la réattribution) : le joueur appliqué déplace un
+  villageois deux fois (les bêtes → la cuisine à la nuit 30, la cuisine → la cueillette à la nuit 49), le minimal quatre
+  fois (les champs → la cuisine → le bois → la pierre, les bêtes → la cuisine). Les pièces à la nuit 80 : 3 346 → 3 456
+  (appliqué, + 3 %) et 1 744 → 3 372 (minimal, ≈ × 2) ; le solde du village sur la partie : 2 821 → 2 860 et −1 308 →
+  −720 ; le palier 6 : nuit 54 → 59 (appliqué) et 70 → 65 (minimal). Mais les jours de repos montent (59 → 77 sur
+  180 → 219 jours-villageois chez l'appliqué, qui loge un quatrième villageois ; 45 → 67 sur 222 chez le minimal) : la
+  cuisine, où il va volontiers (son solde est voisin de zéro, mieux que les bêtes que le joueur simulé soigne déjà),
+  prend à la boîte ce que les autres auraient mangé. Le gain est réel mais petit et bruité ; une semaine de solde ne
+  voit pas qui nourrit le village.
+- **Les tests** : `tests/engine/village-tableau.test.mjs` (une semaine écrite à la main : coût, produit, solde, le jour
+  de repos, ce qui est pris au coffre, la part ; sept jours glissants et hier ; le total, trois soldes différents, le
+  rendement, le tri ; ce qui manque ; le journal de la nuit ; le joueur automatique ; éteint). Éteint, le CSV de la
+  simulation est le même octet pour octet.
+- Reste : les prix et la part (I4 : `J.part` attend d'être versée) ; les ventes des commerces (lot 5) ; ce que les
+  champs d'un villageois récoltent est compté à lui seul, même quand le joueur l'aurait récolté (le premier passé
+  prend) ; l'eau d'arrosage et l'énergie ne sont pas comptées ; le tableau ne garde que sept jours.
 
 ## Les villageois : l'amitié (I6a, fait)
 

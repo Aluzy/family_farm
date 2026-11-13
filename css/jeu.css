@@ -4183,3 +4183,56 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
 .villageois-vendre-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px 10px; margin: 8px 0 12px; }
 .villageois-vendre { display: flex; align-items: center; gap: 6px; }
 .villageois-modal .btn.small { padding: 2px 8px; font-size: 0.85em; min-height: 0; }
+/* I3d : le tableau des villageois (js/ui/tableau.js). Le bouton 📊 à côté des pièces ; une ligne par villageois, triable ;
+   sur un téléphone, la tâche et l'humeur se replient dans la cellule du prénom. Des repères, pas des reproches (B-1) :
+   aucun solde n'a de couleur d'alarme. */
+.player-ligne { display: flex; align-items: center; gap: calc(3 * var(--hp)); }
+.player-card .player-tableau {
+  display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; min-height: calc(13 * var(--hp));
+  border-radius: 9px; border: 2px solid #3f7f6a; background: #e6f6ef; color: #1f4a3c; font-size: 0.85rem; line-height: 1.1; cursor: pointer;
+}
+.player-card .player-tableau:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+.modal.tableau-modal { max-width: min(760px, 96vw); }
+.tableau-modal h2 { display: flex; align-items: center; gap: 8px; }
+.tableau-portrait { display: inline-flex; flex-shrink: 0; }
+.tableau-portrait .perso-px { --s: 44px; }
+.tableau-modal h2 .tableau-portrait .perso-px { --s: var(--portrait-64, 64px); }
+.tableau-periodes { display: flex; gap: 6px; margin: 4px 0 6px; }
+.tableau-periode { flex: 1; padding: 6px 8px; border-radius: 8px; border: 2px solid rgba(var(--wood-bg-rgb), 0.5); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.tableau-periode.actif { background: rgba(var(--wood-bg-rgb), 0.25); border-color: currentColor; }
+.tableau-dates { margin: 0 0 6px; }
+.tableau-cadre { max-width: 100%; overflow-x: auto; }
+.tableau-village { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.tableau-village th, .tableau-village td { padding: 4px 6px; text-align: left; vertical-align: middle; border-bottom: 1px solid rgba(var(--wood-bg-rgb), 0.35); }
+.tableau-village thead th { padding: 0; border-bottom-width: 2px; }
+.tableau-village .t-num { text-align: right; white-space: nowrap; }
+.tableau-village thead .t-num .tableau-tri { text-align: right; }
+.tableau-tri { width: 100%; padding: 6px; border: 0; background: none; color: inherit; font: inherit; text-align: inherit; cursor: pointer; white-space: nowrap; }
+.tableau-tri:focus-visible, .tableau-qui:focus-visible { outline: 3px solid var(--rose); outline-offset: -3px; border-radius: 6px; }
+.tableau-qui { display: flex; align-items: center; gap: 6px; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.tableau-nom { display: flex; flex-direction: column; }
+.tableau-village .t-court { display: none; }
+.tableau-village .t-mini { display: none; font-size: 0.9em; }
+.tableau-objets { display: block; font-size: 0.85em; opacity: 0.85; }
+.tableau-village tbody th { font-weight: normal; }
+.tableau-village tbody th .tableau-nom { font-weight: 700; }
+.tableau-village tr.tableau-ligne:has(+ .tableau-manque) > * { border-bottom: 0; }
+.tableau-manque td { padding-top: 0; font-size: 0.9em; color: var(--text-muted); }
+.tableau-village tfoot th, .tableau-village tfoot td { border-bottom: 0; border-top: 2px solid rgba(var(--wood-bg-rgb), 0.5); font-weight: 700; }
+.tableau-aide { margin: 8px 0 12px; }
+.tableau-resume { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 8px 0; }
+.tableau-resume dt { font-weight: 700; }
+.tableau-resume dd { margin: 0; }
+.tableau-jours { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 6px; }
+.tableau-jour { padding: 6px 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card, #fff8ee); }
+.tableau-jour-tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.tableau-jour-solde { margin-left: auto; white-space: nowrap; }
+.tableau-jour ul { margin: 2px 0 0; padding-left: 0; list-style: none; font-size: 0.9em; }
+@media (max-width: 560px) {
+  .tableau-village .t-second, .tableau-village .t-long { display: none; }
+  .tableau-village .t-mini, .tableau-village .t-court { display: inline; }
+  .tableau-village th, .tableau-village td { padding: 4px 2px; }
+  .tableau-tri { padding: 6px 2px; }
+  .tableau-portrait .perso-px { --s: 32px; }
+  .tableau-qui { gap: 3px; }
+}

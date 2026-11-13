@@ -50,9 +50,10 @@ import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
 
    Ce que la partie garde (format 88) : v.tache (l'id de sa tâche, ou null), v.outil (l'outil confié, ou null),
    v.vendre (la navette : les objets que le joueur a marqués « à vendre »), v.semis ({ case: culture } : ce qu'il
-   ressèmera là), v.travail ({ jour, tache, actions, produit: { objet: n }, essai } : sa journée de travail). Le
-   journal du villageois (villageois.js, nuitDe) reçoit chaque nuit { jour, tache, actions, produit, mange } (I3d le
-   lira). Les tests : tests/engine/village-taches.test.mjs. */
+   ressèmera là), v.travail ({ jour, tache, actions, produit: { objet: n }, utilise (I3d : ce qu'il a pris au coffre),
+   essai } : sa journée de travail). Le journal du villageois (villageois.js, nuitDe) reçoit chaque nuit { jour, tache,
+   actions, produit, utilise, mange } (le tableau des villageois le lit : tableau.js). Les tests :
+   tests/engine/village-taches.test.mjs. */
 
 const TA = () => DATA.TACHES || {};
 const LISTE = () => TA().LISTE || {};
@@ -441,7 +442,8 @@ function stock(state) {
 
 // `fn` comme le joueur le ferait, l'outil `outil` en main, sans rien lui coûter : son énergie, son expérience et ses
 // objectifs du jour sont remis comme avant (le travail est celui du villageois). → le résultat de fn, avec `produit`
-// ({ objet: n } : ce qui est entré au coffre).
+// ({ objet: n } : ce qui est entré au coffre) et (I3d) `utilise` ({ objet: n } : ce qui en est sorti pour le travail :
+// les ingrédients d'une préparation, la graine ressemée, le blé des poules, ce que la tournée vend).
 function commeLeJoueur(state, outil, fn) {
   const energie = state.energie;
   const prog = state.progression ? JSON.stringify(state.progression) : null;
@@ -460,9 +462,10 @@ function commeLeJoueur(state, outil, fn) {
     if (!avait) state.outils[outil] = false;
   }
   if (!r || !r.ok) return r || fail('Rien à faire.');
-  const apres = stock(state), produit = {};
+  const apres = stock(state), produit = {}, utilise = {};
   for (const [k, n] of Object.entries(apres)) if (n > (avant[k] || 0)) produit[k] = n - (avant[k] || 0);
-  return { ...r, produit: { ...produit, ...(r.produit || {}) } };
+  for (const [k, n] of Object.entries(avant)) if (n > (apres[k] || 0)) utilise[k] = n - (apres[k] || 0);
+  return { ...r, produit: { ...produit, ...(r.produit || {}) }, utilise };
 }
 
 // La cible la plus proche de la case `pres` parmi `l` ([{ case }]).
@@ -583,7 +586,7 @@ function uneAction(state, v, pres) {
 // Sa journée de travail (v.travail), remise à zéro un autre jour.
 function travailDe(state, v) {
   const j = jourDe(state);
-  if (!objet(v.travail) || v.travail.jour !== j) v.travail = { jour: j, tache: v.tache || null, actions: 0, produit: {}, essai: 0 };
+  if (!objet(v.travail) || v.travail.jour !== j) v.travail = { jour: j, tache: v.tache || null, actions: 0, produit: {}, utilise: {}, essai: 0 };
   v.travail.tache = v.tache || null;
   return v.travail;
 }
@@ -609,6 +612,9 @@ export function actionsDues(state, v, h = clockHours(state)) {
 function noterAction(v, T, r) {
   T.actions += 1;
   for (const [k, n] of Object.entries(r.produit || {})) if (n > 0) T.produit[k] = (T.produit[k] || 0) + n;
+  // (I3d : ce qu'elle a pris au coffre, que le tableau compte dans son coût : tableau.js)
+  if (!objet(T.utilise)) T.utilise = {};
+  for (const [k, n] of Object.entries(r.utilise || {})) if (n > 0) T.utilise[k] = (T.utilise[k] || 0) + n;
 }
 
 // Il fait ses actions dues jusqu'à `dues` ; une action sans rien à faire se retente ESSAI h plus tard (sauf la
