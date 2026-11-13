@@ -283,8 +283,9 @@ test('la veillée de pleine lune : d\'elle-même, le soir, sans plats', () => {
   assertEqual(f.map((x) => [x.sorte, x.debut, x.fin]), [['pleine_lune', VV.FETES.VEILLEE[0], VV.FETES.VEILLEE[1]]]);
   s.day = d;
   const J = journeeDuVillage(s);
-  const h = (VV.FETES.VEILLEE[0] + VV.FETES.VEILLEE[1]) / 2 + 0.2;
-  assert(V.every((v) => { const x = (J.get(v.id) || []).find((y) => h >= y.de && h < y.a); return x && x.but && x.but.sorte === 'fete'; }), 'tous à la veillée');
+  // (chacun y vient ; I6c : un matinal la quitte un peu avant son coucher, qui tombe parfois avant sa fin)
+  const [v0, v1] = VV.FETES.VEILLEE;
+  assert(V.every((v) => (J.get(v.id) || []).some((y) => y.but && y.but.sorte === 'fete' && y.de < v1 && y.a > v0 && y.a - y.de >= 0.25)), 'tous à la veillée');
   assertEqual(fetesVillageNuit(s).sorte, 'pleine_lune');
   assertEqual(fetesTenues(s), 1);
   // seul au village : pas de veillée
