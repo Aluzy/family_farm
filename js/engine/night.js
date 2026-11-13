@@ -46,6 +46,7 @@ import './vocation-production.js';   // (fiche I8b : le calcul de la ferme produ
 import { liensFinDeNuit, liensNuit } from './liens.js';
 import { avancerBac } from './bac.js';
 import { achatsNuit } from './bourse.js';
+import { artisansNuit } from './artisans.js';
 import { vocationsNuit } from './vocations.js';
 import './vocation-village.js';   // (la convivialité s'enregistre au socle des vocations)
 import { fetesVillageNuit } from './fetes-village.js';
@@ -322,6 +323,10 @@ export function runNight(state) {
   // (fiche I4, bourse.js : l'achat à l'étal qu'on n'a pas vu se fait)
   const achats = achatsNuit(state);
   if (achats) state.nuit.achatsEtal = achats;
+  // (fiche I5a, artisans.js : l'achat au comptoir qu'on n'a pas vu ; les jours de pratique, l'envie d'un commerce,
+  // l'ancienneté de l'artisan, ce que l'amitié lui a appris)
+  const artisans = artisansNuit(state);
+  if (artisans) state.nuit.artisans = artisans;
   // (I8a, projets-village.js : ceux qui ont travaillé au chantier du village comptent leur journée ; un projet peut finir)
   const chantier = projetsVillageNuit(state);
   if (chantier) state.nuit.chantierVillage = chantier;

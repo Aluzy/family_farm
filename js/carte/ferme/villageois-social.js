@@ -164,7 +164,8 @@
       }
       if (but.emoji && !(but.avec && but.avec.length)) this.villageoisEmoji(m, but.emoji, EMOJI_MS);
       // (I4 : à l'étal du joueur, ce qu'il vient y prendre ; le moteur fait l'achat, bourse.js)
-      if (but.sorte === 'etal' && but.dit) this.villageoisDit(m, but.dit, ACHAT_MS);
+      // (I5a : au comptoir d'un commerce, de même ; artisans.js)
+      if ((but.sorte === 'etal' || but.sorte === 'commerce') && but.dit) this.villageoisDit(m, but.dit, ACHAT_MS);
       if (but.sorte === 'eau' && !reducedMotion()) m.geste = { fin: now + PUISE_MS, t0: now };
     },
 

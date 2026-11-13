@@ -553,7 +553,8 @@ function etageEnPeril(state, blocs) {
 //     clé (et un plancher au sol, state.sols, qui n'est pas un bloc ; les sols n'ont pas de genre).
 // Un bloc d'un autre genre n'y entre pas (poseStatus) ; un mur ou une porte qui, repris,
 // mêlerait deux enceintes de genres différents ne se reprend pas (reprendreBloc).
-export const GENRES_PIECE = { maison: 'la maison', poulailler: 'le Poulailler', paturage: 'l\'Étable', serre: 'la Serre', silo: 'le Silo', moulin: 'le Moulin' };
+// (fiche I5a, le chantier « l'île à bâtir » : un commerce, l'établi de son métier et son comptoir ; artisans.js)
+export const GENRES_PIECE = { maison: 'la maison', poulailler: 'le Poulailler', paturage: 'l\'Étable', serre: 'la Serre', silo: 'le Silo', moulin: 'le Moulin', commerce: 'un commerce' };
 
 // Le genre d'un bloc : 'maison', l'id d'un bâtiment, ou null (sans genre : la batterie ; ou
 // dehors : les murs, les portes, le puits…).
@@ -563,6 +564,7 @@ export function genreBloc(sorte) {
   if (s.batiment) return s.batiment;
   if (s.ecurie) return 'ecurie';
   if (s.station === 'moulin') return 'moulin';
+  if (s.commerce || s.comptoir) return 'commerce';
   if (sorte === 'paillasse' || s.station || s.meuble) return 'maison';
   return null;
 }
@@ -656,7 +658,7 @@ export function conseilsPieces(state) {
   const trous = candidats.filter((x) => !candidats.some((y) => y !== x && y.ferme2.has(x.c))).map((x) => x.c);
   const portesDe = (e) => [...e.bord].filter((t) => sorteDe(B[t]).porte);
   const sansPorte = enceintes.filter((e) => !portesDe(e).length).map((e) => e.cases.sort((x, y) => x - y));
-  const NOMS = { maison: 'Maison', poulailler: 'Le Poulailler', paturage: 'L\'Étable', serre: 'La Serre', silo: 'Le Silo', moulin: 'Le Moulin', ecurie: 'L\'Écurie' };
+  const NOMS = { maison: 'Maison', poulailler: 'Le Poulailler', paturage: 'L\'Étable', serre: 'La Serre', silo: 'Le Silo', moulin: 'Le Moulin', ecurie: 'L\'Écurie', commerce: 'Un commerce : l\'établi et le comptoir, l\'enseigne dehors' };
   // (fiche I3a : une maison marquée d'une boîte aux lettres est celle d'un villageois)
   const marquees = village ? new Set(maisonsMarquees(state).map((m) => m.piece)) : new Set();
   const pieces = piecesCloses(state).map((p) => {
@@ -682,6 +684,13 @@ export function genrePiece(state, tile) {
 function refusGenre(state, sorte, p) {
   const B = blocsPoses(state), g = genreBloc(sorte), deja = genreDe(B, p);
   const s = sorteDe(sorte);
+  // (I5a : un commerce a deux blocs, l'établi et le comptoir ; un seul établi)
+  if (deja === 'commerce' && g === 'commerce') {
+    const B2 = blocsDe(B, p.cases);
+    if (s.commerce && B2.some((b) => sorteDe(b.sorte).commerce)) return `Ce commerce a déjà son établi. ${s.nom} : dans une autre enceinte.`;
+    if (s.comptoir && B2.some((b) => sorteDe(b.sorte).comptoir)) return 'Ce commerce a déjà son comptoir.';
+    return null;
+  }
   if (deja && deja !== 'maison') return `Cette enceinte est ${GENRES_PIECE[deja]} : on n'y pose que son bloc (et un plancher). ${s.nom} : dans une autre enceinte.`;
   if (g && g !== 'maison') {
     if (deja === 'maison') return `Cette enceinte est la maison : ${GENRES_PIECE[g]} se bâtit dans une autre enceinte.`;

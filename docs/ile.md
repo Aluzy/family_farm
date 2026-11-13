@@ -81,7 +81,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
 | 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d (fait) | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
-| 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
+| 5. Les artisans | I5a (fait), I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d à I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
@@ -602,7 +602,7 @@ Ce que chaque villageois a coûté et produit, hier et sur les sept derniers jou
   de repos, ce qui est pris au coffre, la part ; sept jours glissants et hier ; le total, trois soldes différents, le
   rendement, le tri ; ce qui manque ; le journal de la nuit ; le joueur automatique ; éteint). Éteint, le CSV de la
   simulation est le même octet pour octet.
-- Reste : ~~les prix et la part (I4 : `J.part` attend d'être versée)~~ (fait : I4 la verse, plus bas) ; les ventes des commerces (lot 5) ; ce que les
+- Reste : ~~les prix et la part (I4 : `J.part` attend d'être versée)~~ (fait : I4 la verse, plus bas) ; ~~les ventes des commerces (lot 5)~~ (I5a : une ligne par commerce) ; ce que les
   champs d'un villageois récoltent est compté à lui seul, même quand le joueur l'aurait récolté (le premier passé
   prend) ; l'eau d'arrosage et l'énergie ne sont pas comptées ; le tableau ne garde que sept jours.
 
@@ -680,7 +680,7 @@ quels. Ce qui est propre à l'île est dans `js/engine/villageois-amitie.js` et 
   `invitations`, `propos` restent verts réglage éteint ; `village-social` suit la famille amie par l'amitié. Éteint,
   le CSV de la simulation est le même octet pour octet.
 - Reste : le joueur automatique ne parle pas aux villageois et n'offre rien (il les invite quand il invite) ; les
-  tâches qu'il aime et les humeurs (I6c, fait) ; les pièces de l'artisan ami (I5a) ; le retrait du récit (l'échelle est
+  tâches qu'il aime et les humeurs (I6c, fait) ; ~~les pièces de l'artisan ami (I5a)~~ (fait) ; le retrait du récit (l'échelle est
   maintenant `AMITIE.ECHELLE`, I7c) ; le bot ne rend pas les demandes des villageois.
 
 ## Les villageois : les liens entre eux (I6b, fait)
@@ -849,7 +849,7 @@ bourse et l'étal : `js/engine/bourse.js` ; les réglages : `VILLAGE.PRIX`, `VIL
     notification), son plaisir monte sa cible de bonheur cette nuit-là (adoré 6, besoin 4, aimé 3) ; ce qui se mange,
     il le mange à son repas (`v.provisions`, avant la boîte : le tableau ne le compte pas) ; un vêtement, un meuble va
     à ses affaires (`v.affaires`). Remis en vente dans la journée, un objet peut tenter un autre villageois ;
-  - les commerces : le lot 5 ;
+  - les commerces : le lot 5 (I5a, fait : plus bas, le comptoir d'un commerce) ;
   - **le bac** (`IMPORT`) : au passage du bac, qui a 120 pièces ou plus commande pour lui un objet qu'il adore (le prix
     de l'île × 150 %, 30 au moins ; 4 au plus, en gardant 40 pièces pour l'étal) : l'argent quitte l'île ; l'objet
     arrive au passage suivant (son plaisir, 5 ; ce qui se mange, il le mange).
@@ -901,12 +901,134 @@ bourse et l'étal : `js/engine/bourse.js` ; les réglages : `VILLAGE.PRIX`, `VIL
   ce qu'il mange ; le joueur automatique ; la sauvegarde ; éteint) ; `tests/test-data.mjs` (la fourchette, les
   filières, les refus) ; `cuisine.test.mjs` (les plats sur l'île, la vente selon le réglage) ; `village-tableau`
   (les prix de l'île) et `colorants` (la recette du mortier, son `coefPrix`) adaptés.
-- Reste : les commerces (lot 5 : la bourse y dépensée, les recettes d'artisans fabriquées) ; les tâches mal placées
+- Reste : les commerces (lot 5 : la bourse y dépensée, les recettes d'artisans fabriquées ; I5a, fait pour la forge) ; les tâches mal placées
   restent sous leur coût (une proposition : compter la fibre et la paille à ce qu'elles font gagner — la botte, la
   corde —, ou donner plus d'actions au fauchage et à la cueillette ; c'est I3c qui les règle) ; la part fixe (selon
   l'amitié, les traits : I6c) ; ce qui est en vente à l'étal ne périt pas ; l'étal repris, ce qu'il portait reste en
   vente (la fenêtre permet de le reprendre) ; les meubles achetés vont aux affaires du villageois, pas encore dans sa
   maison ; la bourse du meilleur producteur monte encore (474 à la nuit 80) : `IMPORT.MAX` est le réglage.
+
+## Les commerces d'artisans : le socle et la forge (I5a, fait)
+
+Un villageois qui a pratiqué une filière peut en faire son métier : il ouvre un commerce, achète ses matières au coffre
+de la ferme, transforme, vend au comptoir. Tout reste artisanal (D5) : un établi, un artisan, quelques lots par jour,
+pas d'électricité. Le moteur : `js/engine/artisans.js` ; les réglages : la section `ARTISANS` (`data/village.json`) ;
+la page : `js/ui/commerce.js` (la fenêtre du commerce, la fiche, les notifications) ; les dessins :
+`scripts/batiments/forge.py`.
+
+- **Le socle** : une sorte de commerce est une entrée de `ARTISANS.COMMERCES` (`forge` : son nom, son icône, la tâche de
+  sa filière `tache`, son établi `etabli` et son enseigne `enseigne` (des blocs), son geste et son emoji, ses phrases
+  `ENVIE` et `PHRASES`, ses `RECETTES` `{ entrees, sortie, palier }`, ses `CLIENTS`). Le local : une pièce close du genre
+  « commerce » (`blocs.js` : l'établi et le comptoir seulement, un de chaque) et l'enseigne dehors, à `ENSEIGNE` (2)
+  cases au plus d'une porte (`locaux`, `localDe`). Le comptoir (`comptoir`) est commun à toutes les sortes. L'artisan a
+  pour tâche celle de son commerce : `v.tache` = la sorte, que `taches.js tacheDef` lit dans `ARTISANS.COMMERCES`
+  (`tacheCommerce` : elle n'est pas dans `TACHES.LISTE`, le joueur ne la confie pas) ; son poste est devant l'établi
+  (le lieu « commerce », `postesCommerce`) ; une action est un lot (`lotCommerce`) ; la journée, la nuit, le journal du
+  villageois, le tableau suivent comme pour toute tâche. **I5b et I5c n'ont qu'à ajouter une sorte** (ses données, ses
+  deux blocs, leurs dessins, ses recettes).
+- **Ouvrir (D15)** : trois conditions, puis la décision du joueur.
+  - **l'envie** : chaque nuit (`artisansNuit`), une journée de travail compte un jour de pratique de sa tâche
+    (`v.pratique`) ; à `JOURS` (10) jours de la tâche de la filière, l'envie naît (`v.envies`) : une notification au
+    réveil, une ligne de la chronique (le type `envie`, « Albin rêve d'ouvrir une forge. »), sa bulle quand on lui parle
+    (`ENVIE`, à la première conversation du jour puis une fois sur deux : `envieAParler`, `parlerVillageois`), la marque
+    « 💭 Envie » sur sa fiche. Elle ne s'éteint pas (B-1), même s'il change de tâche ;
+  - **l'affinité** : l'amitié avec le joueur au palier `AMITIE` (2, « cordial » ; celui du palier 6 de l'île) ;
+  - **le local** bâti, libre.
+  La fiche dit chaque condition (✅ ou ⏳, et ce qui manque : « encore 7 points d'amitié », « l'enseigne du forgeron
+  dehors, à 2 cases au plus de la porte ») et porte le bouton « Ouvrir la forge » ; rien ne presse, aucune minuterie
+  cachée. À l'ouverture (`ouvrirCommerce`) : le nom proposé et la ligne de la chronique (I7g `commerceOuvert`, « Albin
+  ouvre la forge des Saules »), écrit sur l'enseigne (`nomDe` ; renommé dans la fenêtre du commerce, « 🎲 » propose un
+  autre nom), la fête de l'ouverture (I8a `fixerFeteOuverture`, le premier jour libre), le villageois devenu artisan.
+  Le palier 6 (`commerces`) compte `state.commerces` (le contrat d'I7a gardé).
+- **Le travail** : `LOTS` (3) lots par jour, un de plus tous les `ANCIENNETE` (20) jours de travail, `LOTS_MAX` (5) au
+  plus ; ni l'argent ni une machine ne les font monter, ni le travail à deux. Un lot : d'abord une commande du joueur,
+  sinon la première recette connue (l'ordre des données : il fond d'abord) dont il a moins de `STOCK` (4) au comptoir.
+  Ses matières : son stock d'abord (ses lingots), puis le coffre de la ferme (l'inventaire du joueur, en lui laissant
+  `GARDE` (2) de chacune), **achetées de sa bourse au prix de vente de l'île : les pièces vont au joueur** (« Forge des
+  Saules : 4 minerai de fer, 3 bois » dans les Comptes). Bourse vide, il ne fait que les commandes. **L'amitié lui
+  apprend des pièces** (le `palier` de chaque recette, `recettesConnues`) : au palier « cordial », le lingot de fer, les
+  clous, la lame d'outil ; « proche », les charnières et le lingot de cuivre ; « intime », le lingot d'or.
+- **La vente** :
+  - au joueur, dans la fenêtre du commerce (au prix de vente ; le lingot, invendable au port, a le sien au comptoir) :
+    ses pièces vont dans la bourse de l'artisan ;
+  - aux villageois (`achatsCommercesDuJour`) : un achat par jour au plus, ce qu'ils adorent, puis ce dont ils ont besoin
+    (`CLIENTS` : une lame d'outil tous les `ENTRETIEN` (7) jours pour qui tient un outil), puis ce qu'ils aiment, s'ils
+    peuvent le payer ; leur journée leur donne un créneau de la fin d'après-midi dans la pièce, devant le comptoir (le
+    but « commerce », 🏪, ce qu'ils disent en arrivant : `PHRASES_COMPTOIR`) ; le moteur fait l'achat au milieu du
+    créneau (`avancerCommerces` ; la nuit, celui qu'on n'a pas vu) ; une notification ;
+  - au bac : à son passage (`commercesAuBac`, `bac.js`), ce qui dépasse `BAC` (1) de chaque pièce qui se vend au port
+    part dans ses caisses, pour la bourse de l'artisan. (La fiche disait « la navette » : c'est le bac qui l'emporte,
+    sans tournée ; la tournée des villageois reste celle du joueur.)
+  - **à façon** : le joueur apporte la matière (elle quitte son inventaire à la commande) et paie `FACON` (25) % du prix
+    de la pièce (`FACON_MIN` 2 au moins) ; ou **payée d'avance** (le prix de la pièce ; l'artisan achète la matière au
+    coffre). `COMMANDES` (3) en attente au plus ; elles passent avant le reste ; la pièce entre dans l'inventaire (une
+    notification).
+- **L'Atelier du joueur** : les clous, les charnières et les lames sont des recettes de l'Atelier (`commerce: "forge"`),
+  qui ne s'y font plus **seulement quand une forge ouverte les sait** (`atelier.js recetteDebloquee`, `c.connues`) : sans
+  forge, le joueur fait tout lui-même ; une forge qui ne sait pas encore les charnières les laisse à l'Atelier. Elles
+  entrent dans le comptoir (4 planches, 4 clous) et l'enseigne (2 planches, 2 charnières, 2 clous) : le premier
+  commerce se bâtit avec les pièces de l'Atelier, les suivants avec celles de la forge. Prix de l'île : lingot de fer
+  20, clous 7 (×4 par lingot, 140 %), charnière 14 (×2, 140 %), lame 32 (145 %).
+- **Le journal et le tableau** : chaque commerce garde ses `JOURNAL` (7) jours (`c.journal` : lots, ce qu'il a fait,
+  acheté, payé à la ferme, ses ventes au joueur, aux villageois, au bac, la façon). Le tableau des villageois a une
+  ligne « 🏪 Les commerces » (`tableauVillage().commerces`, `bilanCommerce`) : fait, payé à la ferme, vendu, en vente,
+  sa bourse ; dans la ligne de l'artisan, son produit est ce qu'il a payé à la ferme (`J.produit.pieces`, comme la
+  tournée du port) et il ne prend pas de part (son commerce le paie).
+- **L'enseigne** : la carte écrit le nom du commerce sur sa planche (`BLOCS_CARTE.enseigne` « commerce »). I8a : dès le
+  palier « Un village où il fait bon vivre », la fenêtre propose les lettres débloquées (`couleursEnseigne` : dorées,
+  de lune ; `choisirLettres`).
+- **Les dessins** (`scripts/batiments/forge.py`, vus de haut à 45°, la lumière en haut à gauche, un contour d'un pixel,
+  sans ombre portée) : l'enclume et son foyer (32 × 46 : le foyer de pierres, sa margelle dont on voit le dessus, la
+  cuvette du feu vue d'en haut — le fond plus clair vers l'avant, la paroi gauche éclairée, la droite dans l'ombre —, la
+  cheminée de briques et sa gueule, le soufflet ; le billot aux cernes et l'enclume d'acier poli, la bigorne, le
+  marteau) éteint, et allumé en deux images de braises qui alternent (`enclume_foyer_braise_0` et `_1` : la lumière du
+  feu teinte la margelle, la gueule, le flanc de l'enclume) ; le comptoir (32 × 26 : les panneaux encadrés, le plateau,
+  le registre, la sébile, la clochette) ; l'enseigne du forgeron (32 × 46 : le poteau sur son socle, la potence de fer
+  forgé et son enclume découpée, la planche pendue, son dessus raccourci, une enclume peinte sous le nom). **Couleurs
+  comptées** : enclume et foyer 497 (allumé 566 et 567), comptoir 313, enseigne 296 (un dessin en aplats des mêmes
+  aurait 20 à 30 couleurs). La scène (`chantier.js`) : la forge d'un commerce ouvert rougeoie (ses braises alternent,
+  `BLOCS_CARTE.forge`), et le soir sa lueur passe dans le voile, dedans et à travers le toit. **Le geste « forger »**
+  (`habitants.js`, `forge`) : les cases de la pioche, trois coups courts, de profil, devant l'enclume ; pas de planche
+  nouvelle.
+- **La sauvegarde** : format 99 (`state.commerces` ; `v.pratique`, `v.envies`, `v.commerce`, `v.achatCommerce`,
+  `v.entretien`). La migration 98 → 99 (`reparerCommerces`, `reparerArtisan`) : un commerce d'une sorte inconnue s'en
+  va, son stock et ses commandes sont bornés, un commerce sans son artisan est fermé, un artisan sans commerce reprend
+  « sans tâche » ; une partie d'avant n'est pas touchée. Les commandes du moteur `commerce.ouvrir`,
+  `commerce.acheter`, `commerce.commander`, `commerce.lettres`.
+- **Le joueur automatique** (`bot.js`, `botCommerce`, `SIMULATION.VILLAGEOIS.COMMERCE`) : dès le palier 4, il met un
+  villageois à la pierre (le dernier arrivé hors des champs ; le tableau ne le lui reprend pas), lui parle chaque jour,
+  bâtit le local dès que l'envie est née (les clous et charnières de l'Atelier d'abord), décide l'ouverture ; ouvert, il
+  garde au coffre 12 minerais de fer et 8 bois (des bruts qu'il « va chercher plus loin », comptés comme les autres :
+  `materiauxFournis`). Mesure (`node scripts/simulate.mjs --village`, graine 1, 80 nuits) : **la simulation dépasse le
+  palier 6**. Joueur appliqué : l'envie à la nuit 33, la forge ouverte à la nuit 34, le palier 6 franchi à la nuit 68
+  (le port au niveau 3 venait en dernier), le palier 7 en cours dès la nuit 69 (il attend dix villageois — le port en
+  laisse venir 6 au niveau 3 — et deux commerces, I5b, I5c) ; joueur minimal : l'envie 32, la forge 36, le palier 6
+  franchi à la nuit 80. La forge lui rapporte ce qu'elle paie pour sa matière : ≈ 760 et 880 pièces de plus sur la partie
+  (`gain_autres` 980 → 1 739, 1 180 → 2 063) ; elle fait 4 lots par jour après 20 jours, en vend surtout au bac (328
+  pièces sur sa dernière semaine), sa bourse monte (284 à la nuit 80). Personne ne lui achète de lame dans la partie
+  simulée (les villageois à outil y sont rares : les champs, les bêtes). Le palier 5 du minimal passe de la nuit 41 à 51
+  (un villageois à la pierre dès le palier 4). Éteint, le CSV est le même octet pour octet.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, trois villageois) : au réveil, « 💭 Paul rêve d'ouvrir une forge : va
+  lui parler, et regarde sa fiche. » ; sa bulle (« Une forge à moi, avec une enclume : j'y pense souvent. ») ; sa
+  fiche (les trois conditions, le local manquant) ; le local bâti (dehors, le toit et l'enseigne ; dedans, l'enclume, le
+  foyer, le comptoir) ; la décision (« Paul ouvre la forge du Vieux Chêne ! La fête de l'ouverture : … ») ; le forgeron à
+  l'enclume (le geste, un GIF), ses lots (trois lingots de fer dans la journée, la matière payée au joueur : 42 pièces) ; la forge le soir,
+  dehors (sa lueur sur le toit) et dedans ; un villageois qui vient chercher une lame au comptoir (« Pour moi : lame d'outil 🔪, s'il te plaît. »,
+  la notification) ; la fenêtre du commerce (ce qu'il fait aujourd'hui, en vente, lui commander),
+  un achat du joueur, une commande à façon ; la fenêtre sur un téléphone ; la ligne du tableau ; la chronique. Aucune
+  erreur dans la console.
+- **Les tests** : `tests/engine/village-artisans.test.mjs` (l'envie, comptée la nuit, sa ligne et sa bulle, qui ne
+  s'éteint pas ; les conditions, ce qui manque, la décision, ce qu'elle fait ; le poste, `LOTS`, l'ancienneté, pas
+  l'argent ; les matières de sa bourse, son stock d'abord, `GARDE`, bourse vide ; l'amitié et les recettes ; la vente
+  au joueur, aux villageois, au bac ; la façon et les commandes payées ; l'Atelier jamais bloqué ; le tableau ; la
+  sauvegarde ; les commandes ; le joueur automatique ; éteint).
+- Reste : fermer un commerce, changer d'artisan (un commerce sans artisan n'existe que par une sauvegarde abîmée) ; la
+  mercerie (I5b) et les autres commerces (I5c) ; le même commerce comme cause de lien entre villageois (I6b) ; les
+  pièces de la forge dans d'autres recettes de l'Atelier (aujourd'hui : le comptoir et l'enseigne ; la porte de fer, la
+  brouette, la charrette pourraient les prendre sur l'île) ; la forge n'achète que ce que le coffre a (le joueur ne
+  choisit pas ce qu'il lui laisse, au-delà de `GARDE`) ; l'enseigne n'a qu'un dessin (pas de variante de bois) ; la
+  fumée de la cheminée de la forge ; un villageois à la pierre trouve vite les rochers de la ferme épuisés (sans
+  rochers, pas de jour de pratique : l'envie tarde).
 
 ## Les villageois : les traits de personnalité (I6c, fait)
 

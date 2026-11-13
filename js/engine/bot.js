@@ -39,7 +39,8 @@ import { chainesSansCarte } from './chaines.js';
 import { sleep } from './night.js';
 import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
 import { createNewGame, houseRepaired, starterBlock } from './depart.js';
-import { poserEtalLibre, testBatir, testLabourerSerre, testMaisonVillageois } from './testmode.js';
+import { poserEtalLibre, testBatir, testLabourerSerre, testLocalCommerce, testMaisonVillageois } from './testmode.js';
+import { commerceOuvertDeSorte, commercesOuverts, conditionsCommerce, defCommerce, localLibre, locaux, ouvrirCommerce } from './artisans.js';
 import { maisonsLibres, plafondVillageois, villageoisDe } from './villageois.js';
 import { attribuer, donnerOutil, marquerAVendre, postesDe, reprendreOutil, tacheDef, tacheManque } from './taches.js';
 import { soldeLePlusBas } from './tableau.js';
@@ -55,7 +56,7 @@ import { castLine } from './outils.js';
 import { atelierConstruit, buildAtelier, craft, craftStatus, ramassables, ramasser } from './atelier.js';
 import { commencerObjectifs, majObjectifs } from './objectifs.js';
 import { majCaleche } from './caleche.js';
-import { goutPour, offrable, offrir, parlerAmitie, visiterHameau } from './amitie.js';
+import { goutPour, HAMEAU_VILLAGE, offrable, offrir, parlerAmitie, visiterHameau } from './amitie.js';
 import { habitantsDe } from './habitants.js';
 import { invitationDuMoment, invitationsDe, inviter, platsServables, relationsInvitables, servirRepas } from './invitations.js';
 import { apporterAuProjet, projetDuHameau } from './projets.js';
@@ -214,6 +215,74 @@ export function botVillageois(state) {
   if (strat && strat.REATTRIBUER === false) return;
   botReattribuer(state, V);
   botEtal(state, V);
+  botCommerce(state, V);
+}
+
+// Fiche I5a (artisans.js) : la forge (SIMULATION.VILLAGEOIS.COMMERCE). Dès le palier PALIER, sans commerce de la sorte
+// SORTE, il choisit un candidat (celui qui fait déjà la tâche de la filière, sinon le dernier arrivé qui ne fait pas une
+// tâche de GARDER) et lui confie cette tâche (son outil fabriqué et donné) ; le tableau ne la lui reprend pas
+// (botReattribuer). Il lui parle chaque jour (l'amitié : +2 par jour, AMITIE.PAROLE). Dès que son envie est née, il
+// bâtit le local (l'établi, le comptoir, l'enseigne fabriqués à l'Atelier, posés comme le joueur ; les murs d'un coup :
+// testLocalCommerce), puis il décide l'ouverture quand tout y est. Ouvert, il garde au coffre MATIERES (le minerai, le bois) de la
+// filière (les matériaux bruts qu'il va chercher plus loin : SIMULATION.BRUTS, comptés par materiauxFournis), que
+// l'artisan lui achète. → l'id du commerce ouvert aujourd'hui, ou null.
+const candidatsCommerce = new WeakMap();   // la partie → { id (le candidat), jour (sa dernière conversation) }
+export function botCommerce(state, V = villageoisDe(state)) {
+  const S = DATA.SIMULATION.VILLAGEOIS && DATA.SIMULATION.VILLAGEOIS.COMMERCE;
+  if (!S || !villageActif(state) || !defCommerce(S.SORTE)) return null;
+  const d = defCommerce(S.SORTE), palier = paliersSuivis(state) ? state.palier : Infinity;
+  if (commerceOuvertDeSorte(state, S.SORTE)) {
+    for (const [o, n] of Object.entries(S.MATIERES || {})) fournir(state, o, Math.max(0, n - Math.floor(countItem(state, o))));
+    // (il parle chaque jour à l'artisan : l'amitié lui apprend de nouvelles pièces)
+    const c = commercesOuverts(state).find((x) => x.sorte === S.SORTE), m = candidatsCommerce.get(state) || {};
+    candidatsCommerce.set(state, m);
+    if (c && m.jour !== state.day) { m.jour = state.day; parlerAmitie(state, HAMEAU_VILLAGE, c.qui); }
+    return null;
+  }
+  if (palier < (S.PALIER || 1)) return null;
+  const adultes = V.filter((v) => !v.enfant && !v.accueil);
+  if (!adultes.length) return null;
+  const m = candidatsCommerce.get(state) || {};
+  candidatsCommerce.set(state, m);
+  let v = adultes.find((x) => x.id === m.id) || adultes.find((x) => x.envies && Number.isInteger(x.envies[S.SORTE])) || adultes.find((x) => x.tache === d.tache);
+  const garder = new Set(((DATA.SIMULATION.VILLAGEOIS.REATTRIBUER || {}).GARDER) || []);
+  // (le dernier arrivé qui ne fait pas une tâche de GARDER ; et dont l'outil, s'il en a un, peut revenir au joueur)
+  const T = tacheDef(d.tache);
+  const libre = (x) => !garder.has(x.tache) && (!x.outil || x.outil === T.outil || !hasTool(state, x.outil));
+  if (!v) v = [...adultes].reverse().find(libre);
+  if (!v) return null;
+  m.id = v.id;
+  // (sa tâche : celle de la filière, tant que l'envie n'est pas née)
+  if (v.tache !== d.tache && !(v.envies && Number.isInteger(v.envies[S.SORTE]))) {
+    if (T.outil && v.outil !== T.outil) {
+      if (!botOutil(state, T.outil)) return null;
+      if (!donnerOutil(state, v.id, T.outil).ok) { m.id = null; return null; }
+    }
+    attribuer(state, v.id, d.tache);
+  }
+  // (l'amitié : une conversation par jour)
+  if (m.jour !== state.day) { m.jour = state.day; parlerAmitie(state, HAMEAU_VILLAGE, v.id); }
+  if (!(v.envies && Number.isInteger(v.envies[S.SORTE]))) return null;
+  // (le local : fabriqué, posé)
+  if (!localLibre(state, S.SORTE) && !locaux(state, S.SORTE).length) {
+    const blocs = [d.etabli, (DATA.ARTISANS || {}).COMPTOIR || 'comptoir', d.enseigne];
+    // (les pièces qu'il faut d'abord : les clous, les charnières, fabriqués à l'Atelier tant qu'aucune forge ne les fait)
+    const R = DATA.ATELIER.RECETTES;
+    const avecPieces = (b) => {
+      for (const [o, n] of Object.entries((R[b] && R[b].entrees) || {})) {
+        const manque = n - Math.floor(countItem(state, o));
+        const sous = manque > 0 && Object.keys(R).find((k) => R[k].sortie && R[k].sortie[o] && R[k].commerce);
+        if (sous && !botFabriquer(state, sous, Math.ceil(manque / R[sous].sortie[o]))) return false;
+      }
+      return botFabriquer(state, b);
+    };
+    for (const b of blocs) if (!countItem(state, b) && !avecPieces(b)) return null;
+    if (!testLocalCommerce(state, S.SORTE, false).ok) return null;
+  }
+  const C = conditionsCommerce(state, v.id, S.SORTE);
+  if (!C || !C.ok) return null;
+  const r = ouvrirCommerce(state, v.id, S.SORTE);
+  return r.ok ? r.commerce.id : null;
 }
 
 // I4 (bourse.js) : l'étal. Dès qu'un villageois est là, il le fabrique et le pose ; chaque jour, il y met de ce qu'un
@@ -251,7 +320,9 @@ export function botReattribuer(state, V = villageoisDe(state)) {
   essaisTaches.set(state, memo);
   if (memo.jour === state.day) return null;
   memo.jour = state.day;
-  const avecTache = V.filter((v) => tacheDef(v.tache) && !v.accueil);
+  // (fiche I5a : un artisan tient son commerce, on ne le déplace pas)
+  const cand = candidatsCommerce.get(state);
+  const avecTache = V.filter((v) => tacheDef(v.tache) && !tacheDef(v.tache).commerce && !v.accueil && !(cand && cand.id === v.id && !commercesOuverts(state).length));
   if (!avecTache.length) return null;
   const bas = soldeLePlusBas(state, R.JOURS, avecTache.map((v) => v.id));
   if (!bas || !bas.complet) return null;

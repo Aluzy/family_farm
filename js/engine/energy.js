@@ -18,6 +18,7 @@ import { repasStep } from './repas.js';
 import { penalite } from './inventory.js';
 import { avancerTaches } from './taches.js';
 import { avancerAchats } from './bourse.js';
+import { avancerCommerces } from './artisans.js';
 
 /* ---------- énergie : stockage et prélèvement ---------- */
 
@@ -172,6 +173,7 @@ function pasDeFerme(state, dtMs, { usure = true, horloge = true, eveilMax = Infi
     repasStep(state); // la famille mange à la boîte quand elle a faim (repas.js)
     avancerTaches(state); // I3c : les villageois font les actions que l'heure leur doit (taches.js ; éteint : rien)
     avancerAchats(state); // I4 : qui est à l'étal y achète (bourse.js ; éteint : rien)
+    avancerCommerces(state); // I5a : qui est au comptoir d'un commerce y achète (artisans.js ; éteint : rien)
   }
   noteEnergyRecord(state); // Lot 9 : record d'énergie stockée
 }

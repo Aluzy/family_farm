@@ -81,6 +81,7 @@ import { botteFromStage, ramasserFromStage, verserChaineFromStage, verserFromSta
 import { ouvrirDiagnosticChaine } from './chaines-aide.js';
 import { botteleuses } from '../engine/botteleuse.js';
 import { etalGarni } from '../engine/bourse.js';
+import { commercesOuverts, defCommerce, lettresCommerce, localDe, nomCommerce } from '../engine/artisans.js';
 import { chaines } from '../engine/chaines.js';
 import { distributeurDe, distributeurs, grainDans } from '../engine/distributeur.js';
 import { chevalMonte, chevalOu, friandiseGalop, vitesseCheval } from '../engine/cheval.js';
@@ -689,7 +690,9 @@ function meubleDe(sorte, tile, etage = false) {
     // (une enseigne de ferme : le nom de la famille, dans la couleur que sa peinture donne au texte ; fiche I7g, le
     // panneau du village : le nom du village, sinon celui de l'île, js/engine/noms.js nomAffiche)
     const enseigne = b.enseigne ? { matiere: b.enseigne, nom: familyName(state), texte: texteEnseigne(b, teinte) }
-      : b.panneau === 'village' ? { matiere: 'village', nom: nomAffiche(state), texte: texteEnseigne(b, teinte) } : null;
+      : b.panneau === 'village' ? { matiere: 'village', nom: nomAffiche(state), texte: texteEnseigne(b, teinte) }
+      // (fiche I5a : l'enseigne d'un commerce, son nom ; I7g, noms.js ; sans commerce ouvert, le nom de sa sorte)
+        : b.enseigneCommerce ? { matiere: 'commerce', nom: nomEnseigne(b, tile), texte: lettresEnseigne(tile) || texteEnseigne(b, teinte) } : null;
     return { meuble: { dessin: dessinBloc(b, tile, sorte), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
   }
   const sens = b && b.tourne && Number.isInteger(tile) ? (niv ? sensEtage(state, tile, niv) : sensBloc(state, tile)) : 0;
@@ -699,6 +702,21 @@ function meubleDe(sorte, tile, etage = false) {
   const teinte = Number.isInteger(tile) ? (niv ? varianteEtage(state, tile, niv) : varianteBloc(state, tile)) : null;
   const couleurs = teinte ? couleursVariante(sorte, teinte) : null;
   return { meuble: { dessin: b.meuble, largeur: mes.largeur, hauteur: mes.hauteur, bloque: !!b.bloque, plat: !!b.plat, lit: !!b.lit, ...(sens ? { sens, vue: v.vue, miroir: v.miroir } : {}), ...(couleurs ? { variante: teinte, couleurs } : {}) } };
+}
+
+// Le nom écrit sur l'enseigne d'un commerce (fiche I5a) : celui du commerce dont c'est l'enseigne, sinon le nom de sa
+// sorte (« La forge »).
+function nomEnseigne(b, tile) {
+  if (!villageActif(state)) return '';
+  const c = Number.isInteger(tile) ? commercesOuverts(state).find((x) => { const l = localDe(state, x); return l && l.enseigne === tile; }) : null;
+  return c ? nomCommerce(state, c) : ((defCommerce(b.enseigneCommerce) || {}).nom || '');
+}
+
+// Les lettres de l'enseigne d'un commerce (I8a : une couleur débloquée, choisie dans sa fenêtre), ou null.
+function lettresEnseigne(tile) {
+  if (!villageActif(state) || !Number.isInteger(tile)) return null;
+  const c = commercesOuverts(state).find((x) => { const l = localDe(state, x); return l && l.enseigne === tile; });
+  return c ? lettresCommerce(state, c) : null;
 }
 
 // La couleur du nom sur une enseigne de ferme : celle que donne sa peinture (data/meubles.json PEINTURES, `texte`).
@@ -723,6 +741,8 @@ function dessinBloc(b, tile, sorte) {
   if (b.pont) return dessinPont(tile);
   // (I4 : l'étal, garni tant qu'il a quelque chose en vente : assets/meuble_etal_<vide|garni>.png)
   if (b.etal) return etalGarni(state) ? 'etal_garni' : 'etal_vide';
+  // (fiche I5a : l'établi d'un commerce ouvert, sa forge allumée ; ses braises rougeoient, chantier.js stepFires)
+  if (b.commerce && Number.isInteger(tile) && villageActif(state) && commercesOuverts(state).some((c) => c.etabli === tile)) return `${b.dessin}_braise_0`;
   // (fiche I8a : un bâtiment d'un projet du village, en chantier tant qu'il n'est pas fini ; js/engine/projets-village.js)
   if (b.projetVillage) return dessinProjet(state, sorte);
   if (b.bac) return (Number.isInteger(tile) && dessinBac(state, tile)) || `bac_${b.bac}_vide`;

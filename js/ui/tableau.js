@@ -103,10 +103,34 @@ function tableauHtml(T) {
         </tr></tfoot>
       </table>
     </div>
+    ${commercesHtml(T)}
     <p class="muted tableau-aide">Le coût : ce qu'il a mangé à la boîte, sa part (${DATA.VILLAGE.PART} % de ce qu'il produit, gardée sur sa récolte et
       vendue pour lui au bac) et ce que son travail a pris au coffre (les légumes d'un plat, la graine ressemée) ; le produit : ce que
       son travail a rapporté. Le solde est un repère pour choisir qui fait quoi${t.ventes ? ` ; la tournée du port a vendu pour ${pieces(t.ventes)} ce que la ferme avait déjà` : ''}. Un appui sur un prénom : ses sept jours.</p>
     <button type="button" class="btn primary" data-action="close-modal" id="tableau-close">Fermer</button>`;
+}
+
+// Fiche I5a : une ligne par commerce ouvert (artisans.js bilanCommerce) : ses lots et ce qu'il a fait, ce qu'il a payé à
+// la ferme pour ses matières, ce qu'il a vendu (à toi, aux villageois, au bac), la façon, ce qu'il a en vente.
+function commercesHtml(T) {
+  if (!T.commerces || !T.commerces.length) return '';
+  const objets = (m) => Object.entries(m || {}).filter(([, n]) => n > 0).map(([o, n]) => `${formatNumber(n)} ${icone(o)}`).join(' ');
+  const lignes = T.commerces.map((c) => `<tr class="tableau-ligne tableau-commerce">
+      <th scope="row" class="t-qui"><button type="button" class="tableau-qui" data-action="stage-open" data-window="commerce" title="La fenêtre du commerce"><span class="tableau-nom">${c.icone} ${escapeHtml(c.nom)}<span class="t-mini" aria-hidden="true">${escapeHtml(c.prenom)}</span></span></button></th>
+      <td class="t-tache t-second">${formatNumber(c.lots)} lot${c.lots > 1 ? 's' : ''}${objets(c.fait) ? ` : <span class="tableau-objets">${objets(c.fait)}</span>` : ''}</td>
+      <td class="t-num" title="Ce qu'il a payé à la ferme pour ses matières">${formatNumber(c.paye)}</td>
+      <td class="t-num" title="Ce qu'il a vendu (à toi, aux villageois, au bac) et facturé à façon">${formatNumber(c.total)}</td>
+      <td class="t-num t-solde" title="Ce qu'il a en vente au comptoir">${objets(c.stock) || '—'}</td>
+      <td class="t-humeur t-second"><span title="Sa bourse">👛 ${formatNumber(c.bourse)}</span></td>
+    </tr>`).join('');
+  return `<h3 class="tableau-commerces-titre">🏪 Les commerces</h3>
+    <div class="tableau-cadre">
+      <table class="tableau-village tableau-commerces">
+        <thead><tr><th scope="col" class="t-qui">Commerce</th><th scope="col" class="t-tache t-second">Fait</th><th scope="col" class="t-num">Payé à la ferme</th><th scope="col" class="t-num">Vendu</th><th scope="col" class="t-num">En vente</th><th scope="col" class="t-humeur t-second">Bourse</th></tr></thead>
+        <tbody>${lignes}</tbody>
+      </table>
+    </div>
+    <p class="muted tableau-aide">Un commerce achète ses matières au coffre de la ferme (ces pièces sont pour toi), puis vend ce qu'il fait au comptoir et au bac (ses pièces sont pour lui) : dans la ligne de l'artisan, son produit est ce qu'il a payé à la ferme.</p>`;
 }
 
 // Le tableau (la période et le tri choisis). `focus` : ce qui prend le focus (l'en-tête qu'on vient d'appuyer).

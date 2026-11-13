@@ -1619,6 +1619,28 @@ export const RAW_DATA = {
       "rachetable": false,
       "village": true
     },
+    "enclume_foyer": {
+      "nom": "Enclume et foyer",
+      "icone": "⚒️",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "comptoir": { "nom": "Comptoir", "icone": "🏪", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "enseigne_forge": {
+      "nom": "Enseigne du forgeron",
+      "icone": "🪧",
+      "prix": 20,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "clous": { "nom": "Clous", "icone": "📌", "prix": 5, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "charniere": { "nom": "Charnière", "icone": "🔗", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "lame": { "nom": "Lame d'outil", "icone": "🔪", "prix": 22, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "brouette": { "nom": "Brouette", "icone": "🛒", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "charrette": { "nom": "Charrette", "icone": "🛞", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "lavoir": {
@@ -2229,6 +2251,17 @@ export const RAW_DATA = {
         "village": true,
         "port": 2
       },
+      "enclume_foyer": { "entrees": { "pierre": 8, "lingot_fer": 3, "bois": 4 }, "sortie": { "enclume_foyer": 1 }, "village": true, "coefPrix": 150 },
+      "comptoir": { "entrees": { "planche": 4, "clous": 4 }, "sortie": { "comptoir": 1 }, "village": true, "coefPrix": 145 },
+      "enseigne_forge": {
+        "entrees": { "planche": 2, "charniere": 2, "clous": 2 },
+        "sortie": { "enseigne_forge": 1 },
+        "village": true,
+        "coefPrix": 150
+      },
+      "clous": { "entrees": { "lingot_fer": 1 }, "sortie": { "clous": 4 }, "village": true, "commerce": "forge", "coefPrix": 135 },
+      "charniere": { "entrees": { "lingot_fer": 1 }, "sortie": { "charniere": 2 }, "village": true, "commerce": "forge", "coefPrix": 135 },
+      "lame": { "entrees": { "lingot_fer": 1, "bois": 1 }, "sortie": { "lame": 1 }, "village": true, "commerce": "forge", "coefPrix": 145 },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
@@ -2408,6 +2441,37 @@ export const RAW_DATA = {
         "unique": true,
         "dessin": "quai_chargement",
         "largeur": 2,
+        "village": true
+      },
+      "enclume_foyer": {
+        "nom": "Enclume et foyer",
+        "objet": "enclume_foyer",
+        "dedans": true,
+        "bloque": true,
+        "dessin": "enclume_foyer",
+        "largeur": 2,
+        "commerce": "forge",
+        "village": true
+      },
+      "comptoir": {
+        "nom": "Comptoir",
+        "objet": "comptoir",
+        "dedans": true,
+        "bloque": true,
+        "dessin": "comptoir",
+        "largeur": 2,
+        "comptoir": true,
+        "village": true
+      },
+      "enseigne_forge": {
+        "nom": "Enseigne du forgeron",
+        "objet": "enseigne_forge",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "enseigne_forge",
+        "largeur": 2,
+        "enseigneCommerce": "forge",
+        "texte": "#2b1a0e",
         "village": true
       },
       "refrigerateur": {
@@ -3376,7 +3440,8 @@ export const RAW_DATA = {
           "tonnelet",
           "quai_chargement"
         ]
-      }
+      },
+      "commerces": { "nom": "Commerces", "icone": "🏪", "blocs": ["enclume_foyer", "comptoir", "enseigne_forge"] }
     },
     "SILO": { "LARGEUR": 2, "HAUTEUR": 3, "HAUTEUR_MAX": 6, "BLES_PAR_BLOC": 10 },
     "ARBRE_ECART": 3,
@@ -5372,7 +5437,8 @@ export const RAW_DATA = {
         "GARDER": ["champs"],
         "VERS": ["betes", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"]
       },
-      "ETAL": { "PAR_OBJET": 2 }
+      "ETAL": { "PAR_OBJET": 2 },
+      "COMMERCE": { "PALIER": 4, "SORTE": "forge", "MATIERES": { "minerai_fer": 12, "bois": 8 } }
     },
     "VOCATIONS": {
       "village": { "nom": "Vocation village", "eveilS": 60 },
@@ -9243,6 +9309,7 @@ export const RAW_DATA = {
       "ACTIVITE": {
         "visite": ["Je rends visite à un ami.", "On cause un peu, devant la porte.", "Je passais dire bonjour."],
         "etal": ["Je fais mes courses à ton étal.", "Je regarde ce que tu vends.", "Ton étal est bien garni !"],
+        "commerce": ["Je fais un tour au comptoir.", "Je viens voir ce que l'artisan a fait aujourd'hui.", "Une petite emplette au commerce."],
         "rdv": ["On se retrouve entre amis.", "On bavarde un peu, ici.", "On refait le monde, sur la place."],
         "promenade": ["On se promène à deux.", "Un petit tour avec un ami.", "On marche un peu ensemble."],
         "eau": ["Je viens puiser de l'eau.", "L'eau du puits est bien fraîche."],
@@ -9275,6 +9342,7 @@ export const RAW_DATA = {
         "fauchage": "jardinier",
         "cuisine": "jardinier",
         "navette": "jardinier",
+        "forge": "mineur",
         "*": "jardinier"
       },
       "DEMANDES": { "CHANCE": 0.35, "MAX": 2, "DEPUIS": 2 },
@@ -9534,6 +9602,7 @@ export const RAW_DATA = {
         "palier": { "icone": "🏅", "texte": "Palier {n} franchi : {titre}.", "cle": "palier:{n}" },
         "port": { "icone": "🏗️", "texte": "Le port passe au niveau {niveau}.", "cle": "port:{niveau}" },
         "commerce": { "icone": "🛠️", "texte": "{prenom} ouvre {commerce}.", "cle": "commerce:{id}" },
+        "envie": { "icone": "💭", "texte": "{prenom} rêve d'ouvrir {quoi}.", "cle": "envie:{qui}:{sorte}" },
         "proche": { "icone": "💞", "texte": "{pa} et {pb} deviennent proches.", "cle": "proche:{a}|{b}" },
         "foyer": { "icone": "🏡", "texte": "{pa} et {pb} s'installent ensemble.", "cle": "foyer:{id}" },
         "fete": { "icone": "🎊", "texte": "{Nom} {lieu}.", "cle": "fete:{id}:{jour}" },
@@ -9545,6 +9614,7 @@ export const RAW_DATA = {
         "palier": ["un palier franchi", "{n} paliers franchis"],
         "port": ["le port agrandi", "le port agrandi {n} fois"],
         "commerce": ["un commerce ouvert", "{n} commerces ouverts"],
+        "envie": ["une envie de commerce", "{n} envies de commerce"],
         "proche": ["deux villageois devenus proches", "{n} paires devenues proches"],
         "foyer": ["un foyer formé", "{n} foyers formés"],
         "fete": ["une fête", "{n} fêtes"],
@@ -10095,6 +10165,56 @@ export const RAW_DATA = {
         "donne": "un aller-retour au port : PORTEE objets marqués « à vendre », vendus au comptoir",
         "SANS": "Il n'y a pas de port sur l'île.",
         "PHRASES": ["Je descends au port.", "Le panier est lourd aujourd'hui !", "Je vends tout ça au comptoir."]
+      }
+    }
+  },
+  "ARTISANS": {
+    "AMITIE": 2,
+    "JOURS": 10,
+    "LOTS": 3,
+    "LOTS_MAX": 5,
+    "ANCIENNETE": 20,
+    "STOCK": 4,
+    "GARDE": 2,
+    "BAC": 1,
+    "FACON": 25,
+    "FACON_MIN": 2,
+    "COMMANDES": 3,
+    "JOURNAL": 7,
+    "ENSEIGNE": 2,
+    "ENTRETIEN": 7,
+    "COMPTOIR": "comptoir",
+    "EMOJI": "🏪",
+    "PHRASES_COMPTOIR": ["Pour moi : {objet}, s'il te plaît.", "{objet} ! Voilà les pièces.", "Pour mon outil : {objet}, s'il te plaît."],
+    "COMMERCES": {
+      "forge": {
+        "nom": "La forge",
+        "un": "une forge",
+        "icone": "⚒️",
+        "metier": "forgeron",
+        "tache": "pierre",
+        "etabli": "enclume_foyer",
+        "enseigne": "enseigne_forge",
+        "LOCAL": { "etabli": "l'enclume et son foyer", "enseigne": "l'enseigne du forgeron" },
+        "geste": "forge",
+        "emoji": "🔨",
+        "donne": "un lot à l'enclume : il fond un lingot, ou forge des clous, des charnières, une lame",
+        "SANS": "Le local de la forge n'est plus complet : l'enclume et le foyer, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "J'aimerais bien ouvrir une forge… le minerai, je le connais.",
+          "Une forge à moi, avec une enclume : j'y pense souvent.",
+          "Tout ce minerai… j'aimerais le fondre moi-même, dans une forge."
+        ],
+        "PHRASES": ["Je bats le fer tant qu'il est chaud !", "Encore un lingot, et je forge des clous.", "Le foyer ronfle bien aujourd'hui."],
+        "RECETTES": {
+          "lingot_fer": { "entrees": { "minerai_fer": 4, "bois": 3 }, "sortie": { "lingot_fer": 1 }, "palier": 2 },
+          "clous": { "entrees": { "lingot_fer": 1 }, "sortie": { "clous": 4 }, "palier": 2 },
+          "charniere": { "entrees": { "lingot_fer": 1 }, "sortie": { "charniere": 2 }, "palier": 3 },
+          "lame": { "entrees": { "lingot_fer": 1, "bois": 1 }, "sortie": { "lame": 1 }, "palier": 2 },
+          "lingot_cuivre": { "entrees": { "minerai_cuivre": 4, "bois": 3 }, "sortie": { "lingot_cuivre": 1 }, "palier": 3 },
+          "lingot_or": { "entrees": { "minerai_or": 4, "bois": 4 }, "sortie": { "lingot_or": 1 }, "palier": 4 }
+        },
+        "CLIENTS": { "lame": "outil" }
       }
     }
   },

@@ -29,6 +29,7 @@ export const SOMMEIL_PERMISES = new Set([
   'liens-foyer-ok', 'liens-enfant', // (I6b : un foyer, un enfant attendu : ils s'installent, l'enfant viendra par le bac)
   'chronique-epingler', 'chronique-note-ok', 'chronique-note-effacer', 'noms-ok', // (I7g : la chronique et les noms : rien ne bouge sur la ferme)
   'vocation-projet-envoyer', 'vocation-projet-abandonner', // (I8a : envoyer au chantier du village, ou l'en rappeler ; abandonner un projet)
+  'commerce-onglet', 'commerce-nom-autre', 'commerce-nommer', // (I5a : la fenêtre du commerce, passer de l'un à l'autre ; le nommer)
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'portail',
@@ -50,6 +51,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'tonnelet-remplir', // (le tonnelet : y mettre une tomme d'alpage, un moût de houblon)
   'compost-jeter', 'engrais-many', 'engrais-toggle', // (le bac à compost : y jeter des aliments ; prendre l'engrais en main, le glisser sur les cultures)
   'etal-mettre', 'etal-reprendre', // (I4 : l'étal des villageois, comme la boîte)
+  'commerce-ouvrir', 'commerce-acheter', 'commerce-commander', 'commerce-lettres', // (I5a : ouvrir un commerce, y acheter, lui commander une pièce ; les lettres de son enseigne)
 ]);
 
 // Plusieurs actions, une même fonction (elle reçoit le nom de l'action en 3e argument).

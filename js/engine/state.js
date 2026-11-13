@@ -42,6 +42,7 @@ import { reparerPaliersVocations } from './vocations.js';
 import { reparerFetes } from './fetes-village.js';
 import { reparerProjetsVillage } from './projets-village.js';
 import { reparerProduction } from './production.js';
+import { reparerArtisan, reparerCommerces } from './artisans.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -997,6 +998,20 @@ export const MIGRATIONS = {
   97: (state) => {
     const out = { ...state, version: 98 };
     if ('production' in state) out.production = reparerProduction(state.production, state.port && Number.isInteger(state.port.passe) ? state.port.passe : 0);
+    return out;
+  },
+  // v98 → v99 (le chantier « l'île à bâtir », fiche I5a) : les commerces d'artisans (js/engine/artisans.js :
+  // state.commerces, leur boutique, leurs commandes, leur ancienneté et leur journal) ; sur chaque villageois, les jours
+  // de pratique de chaque tâche (v.pratique), ses envies de commerce (v.envies), le commerce qu'il tient (v.commerce),
+  // son achat du jour au comptoir (v.achatCommerce), sa dernière lame (v.entretien). Une partie d'avant n'en a pas et
+  // reste telle quelle ; ce qui est abîmé est réparé (un commerce d'une sorte inconnue s'en va, un artisan sans
+  // commerce reprend « sans tâche », un commerce sans son artisan est fermé).
+  98: (state) => {
+    const out = { ...state, version: 99 };
+    if ('commerces' in state) out.commerces = reparerCommerces(state.commerces, state.villageois);
+    if (Array.isArray(state.villageois) && ('commerces' in state || state.villageois.some((v) => v && typeof v === 'object' && ('pratique' in v || 'envies' in v || 'commerce' in v)))) {
+      out.villageois = state.villageois.map((v) => reparerArtisan(v, out.commerces || []));
+    }
     return out;
   },
 };

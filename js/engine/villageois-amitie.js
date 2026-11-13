@@ -18,6 +18,7 @@ import { evenementsVillageois, foyerDe, liensVillageois, voisinDe } from './lien
 import { goutTache, noterIndice, partDesTraits, phraseTrait, sujetsDesTraits, traitsDe } from './traits.js';
 import { figurants, souvenirsDe } from './chronique.js';
 import { ileEnPhrase } from './noms.js';
+import { envieAParler } from './artisans.js';
 
 /* ---------- l'amitié avec les villageois (le chantier « l'île à bâtir », fiche I6a) ----------
 
@@ -281,6 +282,9 @@ export function parlerVillageois(state, id, r, o = {}) {
   const d = demandeDe(state, id);
   if (d) r.demande = d.id;
   if (!special && d && (g.premiere || Math.floor(Number(o.n) || 0) % 2 === 0)) special = texteDemande(d);
+  // (fiche I5a, artisans.js : l'envie d'ouvrir un commerce, il la dit, à la première conversation du jour puis une fois
+  // sur deux ; elle ne s'éteint pas tant qu'il n'a pas le sien)
+  if (!special) { const e = envieAParler(state, v, g.premiere, o.n); if (e) { special = e.texte; r.envie = e.sorte; } }
   // (dès « cordial », il te confie parfois un de ses goûts)
   const C = A().CONFIE || {};
   if (!special && g.premiere && B.palier >= (Number(C.PALIER) || 2) && rnd() < (Number(C.CHANCE) || 0)) {

@@ -61,7 +61,9 @@
       "TACHES": ["champs", "betes", "cuisine", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"],
       "REATTRIBUER": { "JOURS": 7, "SEMAINES": 2, "SEUIL": 0, "MARGE": 0, "GARDER": ["champs"], "VERS": ["betes", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"] },
       "//ETAL": "I4 : dès qu'un villageois est là, il pose un étal (bourse.js) et y met chaque jour, de ce qu'un villageois aime ou dont il a besoin, PAR_OBJET unités au plus de chaque objet, sans passer sous VIVRES_GARDES dans l'inventaire.",
-      "ETAL": { "PAR_OBJET": 2 }
+      "ETAL": { "PAR_OBJET": 2 },
+      "//COMMERCE": "I5a : dès le palier PALIER, il prépare un commerce de la sorte SORTE (bot.js botCommerce) : un villageois à la tâche de la filière, une conversation par jour, le local bâti dès que l'envie est née, puis l'ouverture ; ouvert, il garde au coffre MATIERES (le minerai et le bois qu'il va chercher plus loin), que l'artisan lui achète.",
+      "COMMERCE": { "PALIER": 4, "SORTE": "forge", "MATIERES": { "minerai_fer": 12, "bois": 8 } }
     },
     "//VOCATIONS": [
       "I8b : les deux stratégies qui comparent les vocations de l'île (node scripts/simulate.mjs --vocations, le chantier",

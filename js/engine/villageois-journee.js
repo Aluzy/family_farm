@@ -12,6 +12,7 @@ import { connaissance } from './villageois-liens.js';
 import { manqueDit, postesDe, signatureTaches, tacheDef, travailleAujourdhui } from './taches.js';
 import { entraidesDuJour, foyerDe, liensSignature } from './liens.js';
 import { achatsDuJour, achatsSignature, caseEtal, devantEtal, phraseEtal } from './bourse.js';
+import { achatsCommercesDuJour, commerceDe, commercesSignature, devantComptoir, localDe, phraseComptoir } from './artisans.js';
 import { brefDesTraits, butsDesTraits, horaireDesTraits, soirDesTraits, traitsDe } from './traits.js';
 import { feteDuJourVillage, presentsALaFete, signatureFetes } from './fetes-village.js';
 import { auChantier, centreDeLaPlace, postesChantier, signatureProjets } from './projets-village.js';
@@ -89,7 +90,7 @@ const TABLES_DEHORS = new Set(['table_jardin', 'table_rondins']);
 const TABLES = new Set([...TABLES_DEHORS, 'meuble_table']);
 export const ETATS_VILLAGEOIS = ['lever', 'dehors', 'repas', 'flaner', 'rentrer', 'dormir', 'repos', 'abri', 'recoit', 'travail'];
 // (I3b+ : les buts d'une sortie, SOCIAL.BUTS ; le but d'un segment : seg.but.sorte)
-export const BUTS_VILLAGEOIS = ['visite', 'rdv', 'promenade', 'eau', 'jardin', 'betes', 'ouvrage', 'port', 'banc', 'jeu', 'etal', 'fete'];
+export const BUTS_VILLAGEOIS = ['visite', 'rdv', 'promenade', 'eau', 'jardin', 'betes', 'ouvrage', 'port', 'banc', 'jeu', 'etal', 'fete', 'commerce'];
 
 const graineDe = (state) => farmSeed(state) || 'ile';
 const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1));
@@ -288,7 +289,7 @@ export function journeeDuVillage(state, jour = jourDe(state)) {
   const cle = JSON.stringify([graineDe(state), jour, H(), SB(), (DATA.VILLAGE.SOCIAL || {}).CONNAISSANCE, (DATA.VILLAGE || {}).LIENS, liensSignature(state), lp ? [lp.case, lp.chemin] : 0, avecTache ? signatureTaches(state) : 0,
     V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0, v.enfant ? 1 : 0, traitsDe(v).join('+'), v.chantier || 0]),
     // (I4 : les achats du jour ; I6c : les traits ; I8a : la fête du jour, le chantier du village)
-    achatsSignature(state, jour), DATA.TRAITS ? 1 : 0, signatureFetes(state, jour), signatureProjets(state)]);
+    achatsSignature(state, jour), DATA.TRAITS ? 1 : 0, signatureFetes(state, jour), signatureProjets(state), commercesSignature(state, jour)]);
   const deja = memoJours.get(cle);
   if (deja && deja.L === L) return deja.J;
   const J = calculerJournee(state, jour, V, L);
@@ -362,6 +363,8 @@ function calculerJournee(state, jour, V, L) {
   planDesCreneaux(state, jour, gens, L, prendre);
   // (I4 : qui va à l'étal du joueur, après le travail)
   planDesAchats(state, jour, gens, prendre);
+  // (I5a : qui va au comptoir d'un commerce, après le travail)
+  planDesCommerces(state, jour, gens, prendre);
   // (I6b : les repas apportés à midi, les visites du soir)
   const apportes = repasApportes(state, jour, gens, L);
   const soirees = visitesDuSoir(state, jour, gens, L);
@@ -455,6 +458,28 @@ function planDesAchats(state, jour, gens, prendre) {
     if (!p) continue;
     const t = devant.find((c) => prendre(`etal:${p.k}`, c)) ?? devant[0];
     x.plan.set(p.k, { etat: 'dehors', lieu: { genre: 'devant', case: t, vers: etal }, but: { sorte: 'etal', cle: `etal:${x.v.id}:${jour}`, avec: [], emoji, dit: phraseEtal(state, x.v.id, a.objet), objet: a.objet } });
+  }
+}
+
+// Fiche I5a (artisans.js) : ceux qui vont au comptoir d'un commerce aujourd'hui y passent un créneau de l'après-midi
+// (après le travail, pas celui de l'étal ni un qu'il fait avec un autre ; sinon le dernier) : dans la pièce du
+// commerce, devant le comptoir, tourné vers lui (le but « commerce », son emoji et ce qu'il dit en arrivant).
+function planDesCommerces(state, jour, gens, prendre) {
+  const achats = achatsCommercesDuJour(state, jour);
+  if (!achats.size) return;
+  const plages = Array.isArray((DATA.TACHES || {}).TRAVAIL) ? DATA.TACHES.TRAVAIL : [];
+  const fin = plages.length ? Math.max(...plages.map((p) => p[1])) : 16.5;
+  const emoji = (DATA.ARTISANS || {}).EMOJI || '';
+  for (const x of gens) {
+    const a = achats.get(x.v.id);
+    if (!a) continue;
+    const c = commerceDe(state, a.commerce), l = c && localDe(state, c), devant = c ? devantComptoir(state, c) : [];
+    if (!l || l.comptoir === null || !devant.length) continue;
+    const libres = x.apres.filter((p) => { const q = x.plan.get(p.k); return !(q && q.but && ((q.but.avec && q.but.avec.length) || q.but.sorte === 'etal')); });
+    const p = libres.find((q) => q.x >= fin - 1e-9) || libres[libres.length - 1];
+    if (!p) continue;
+    const t = devant.find((q) => prendre(`commerce:${p.k}`, q)) ?? devant[0];
+    x.plan.set(p.k, { etat: 'dehors', lieu: { genre: 'devant', case: t, vers: l.comptoir, dedans: true }, but: { sorte: 'commerce', cle: `commerce:${x.v.id}:${jour}`, avec: [], emoji, dit: phraseComptoir(state, x.v.id, a.objet), objet: a.objet, commerce: c.id } });
   }
 }
 
@@ -854,7 +879,8 @@ function insererFete(segs, f) {
 function sousLaPluie(segs, p, enMaison) {
   // (I3c : le travail dehors aussi ; à la cuisine, il reste à son poste)
   // (I8a : la fête du village continue sous la pluie)
-  const dehors = (s) => !(s.but && s.but.sorte === 'fete') && (s.etat === 'dehors' || s.etat === 'flaner' || (s.etat === 'repas' && s.lieu && s.lieu.dehors) || (s.etat === 'travail' && !(s.lieu && s.lieu.dedans)));
+  // (I5a : au comptoir d'un commerce, on est à l'abri)
+  const dehors = (s) => !(s.but && (s.but.sorte === 'fete' || s.but.sorte === 'commerce')) && (s.etat === 'dehors' || s.etat === 'flaner' || (s.etat === 'repas' && s.lieu && s.lieu.dehors) || (s.etat === 'travail' && !(s.lieu && s.lieu.dedans)));
   const out = [];
   let abri = null;
   for (const s of segs) {

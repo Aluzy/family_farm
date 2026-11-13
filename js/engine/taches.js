@@ -29,6 +29,7 @@ import { millPending, startMilling } from './kitchen.js';
 import { contratsAcceptes, livrerDepuisLaFerme } from './contrats.js';
 import { quaiDeChargement } from './production.js';
 import { chevalPossede } from './cheval.js';
+import { commerceDuVillageois, estTacheCommerce, lotCommerce, lotsDuJour, postesCommerce, tacheCommerce } from './artisans.js';
 
 /* ---------- les tâches attribuées (le chantier « l'île à bâtir », fiche I3c) ----------
 
@@ -67,7 +68,12 @@ import { chevalPossede } from './cheval.js';
    Fiche I6b (les liens, liens.js) : deux amis (VILLAGE.LIENS.TRAVAIL.PALIER : le degré « ami ») à la même tâche, qui y
    travaillent tous deux aujourd'hui, gagnent TRAVAIL.ACTIONS action par jour à eux deux (actionsDuJour : celui des
    deux qui a le plus petit id la fait) ; dans une équipe de plus de deux, les paires d'amis se forment dans l'ordre
-   des id, chacun dans une paire au plus. Un enfant (v.enfant) ne travaille pas. */
+   des id, chacun dans une paire au plus. Un enfant (v.enfant) ne travaille pas.
+
+   Fiche I5a (les commerces, artisans.js) : l'artisan a pour tâche celle de son commerce (v.tache : la sorte, « forge »),
+   qui n'est pas dans TACHES.LISTE (tacheDef la lit dans ARTISANS.COMMERCES : tacheCommerce) : son poste est devant
+   l'établi (le lieu « commerce »), une action est un lot (lotCommerce), ses actions du jour sont ses lots (lotsDuJour).
+   Le joueur ne la confie pas : elle vient avec l'ouverture du commerce (artisans.js ouvrirCommerce). */
 
 const TA = () => DATA.TACHES || {};
 const LISTE = () => TA().LISTE || {};
@@ -80,8 +86,9 @@ export function listeTaches() {
 }
 
 // La définition de la tâche `id` (TACHES.LISTE), ou null.
+// (fiche I5a : la tâche d'un commerce, artisans.js tacheCommerce)
 export function tacheDef(id) {
-  return (typeof id === 'string' && LISTE()[id]) || null;
+  return (typeof id === 'string' && (LISTE()[id] || tacheCommerce(id))) || null;
 }
 
 // Les outils qu'un villageois peut tenir : ceux qu'une tâche demande.
@@ -229,7 +236,8 @@ export function postesDe(state, id, v = null) {
   const def = tacheDef(id);
   if (!def) return [];
   const L = lieuxDuVillage(state);
-  const sig = `${id}:${v && Number.isInteger(v.maison) ? v.maison : '-'}:${signatureTaches(state)}`;
+  // (I5a : le poste d'un artisan est celui de son commerce)
+  const sig = `${id}:${v && Number.isInteger(v.maison) ? v.maison : '-'}:${v && estTacheCommerce(id) ? v.id : ''}:${signatureTaches(state)}`;
   const m = postesMemo.get(sig);
   if (m && m.L === L) return m.postes;
   const postes = calculerPostes(state, id, v, def, L);
@@ -324,6 +332,8 @@ function calculerPostes(state, id, v, def, L) {
       }
       return proche(l);
     }
+    // (fiche I5a : l'artisan, devant l'établi de son commerce, dans la pièce)
+    case 'commerce': return postesCommerce(state, v);
     case 'machine': {
       // (fiche I8b : devant chaque machine qu'il sert : l'entonnoir d'une chaîne prête, la meule du Moulin, le four)
       const l = [], pris = new Set();
@@ -453,6 +463,10 @@ export function attribuer(state, id, tache) {
   if (tache !== null && tache !== '' && !tacheDef(tache)) return fail('Tâche inconnue.');
   // (I6b : les enfants ne travaillent pas, ils jouent sur la place)
   if (v.enfant && tache) return fail('Les enfants ne travaillent pas : ils jouent sur la place.');
+  // (fiche I5a : l'artisan tient son commerce, et la tâche d'un commerce vient avec son ouverture)
+  const sien = commerceDuVillageois(state, v.id);
+  if (sien && tache !== sien.sorte) return fail(`${v.prenom} tient son commerce : c'est sa tâche.`);
+  if (!sien && estTacheCommerce(tache)) return fail('On ne la confie pas : elle vient avec l\'ouverture du commerce, sur sa fiche.');
   v.tache = tache || null;
   if (!Array.isArray(v.vendre)) v.vendre = [];
   return { ok: true, tache: v.tache, manque: v.tache ? tacheManque(state, v, v.tache) : null };
@@ -607,7 +621,10 @@ function tourDesMachines(state, def) {
 // Une action de la tâche de `v`, près de la case `pres` (ce qu'il a devant lui à son poste). → { ok, produit } ou un
 // refus (rien à faire : rien de mûr, plus de poisson…).
 function uneAction(state, v, pres) {
-  const id = v.tache, def = tacheDef(id), L = lieuxDuVillage(state), W = L.W, o = origineDe(state, v, L);
+  const id = v.tache, def = tacheDef(id);
+  // (fiche I5a : un lot à l'établi de son commerce)
+  if (def && def.commerce) return lotCommerce(state, v);
+  const L = lieuxDuVillage(state), W = L.W, o = origineDe(state, v, L);
   const outil = def.outil || null;
   switch (id) {
     case 'champs': {
@@ -771,6 +788,8 @@ function travailADeux(state) {
 export function actionsDuJour(state, v) {
   const def = tacheDef(v && v.tache);
   if (!def) return 0;
+  // (fiche I5a : un artisan fait ses lots, pas plus : ni à deux ni avec une machine)
+  if (def.commerce) { const c = commerceDuVillageois(state, v.id); return c ? lotsDuJour(c) : 0; }
   return def.ACTIONS + (villageActif(state) ? travailADeux(state).get(v.id) || 0 : 0);
 }
 

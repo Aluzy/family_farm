@@ -57,6 +57,7 @@ import { paliersSuivis } from '../engine/paliers.js';
 import { renderBoite } from './boite.js';
 import { renderTonnelets } from './tonnelet.js';
 import { renderEtal } from './etal.js';
+import { commerceFenetreOk, renderCommerce, renderCommerceOnglets } from './commerce.js';
 import { caseEtal } from '../engine/bourse.js';
 import { tonneletsPoses } from '../engine/tonnelets.js';
 import { renderComposts } from './compost.js';
@@ -309,6 +310,13 @@ export const STAGE_WINDOWS = {
   etal: {
     nom: 'Étal', icone: '🛒', ok: () => villageActif(state) && caseEtal(state) !== null, bois: true,
     corps: () => renderEtal(),
+  },
+  // Un commerce d'artisan (l'île à bâtir, fiche I5a ; un appui sur son établi, son comptoir, son enseigne, ou la fiche
+  // de l'artisan) : ce qu'il fait aujourd'hui, ce qu'il a en vente, lui commander une pièce ; un onglet par commerce.
+  commerce: {
+    nom: 'Commerce', icone: '🏪', ok: () => commerceFenetreOk(), bois: true,
+    onglets: () => renderCommerceOnglets(),
+    corps: () => renderCommerce(),
   },
   // Les bacs à compost posés dehors (un appui sur l'un d'eux) : ce qu'ils contiennent, y jeter des aliments.
   compost: {

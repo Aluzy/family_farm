@@ -106,6 +106,7 @@ export * from './chronique.js';
 export * from './taches.js';
 export * from './tableau.js';
 export * from './bourse.js';
+export * from './artisans.js';
 export * from './port.js';
 export * from './dehors.js';
 export * from './portage.js';

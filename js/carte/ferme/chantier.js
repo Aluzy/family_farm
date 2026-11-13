@@ -587,9 +587,17 @@
       const cuisine = this.cuisineOn ? (F.reducedMotion() ? Cu.frames[0] : image(Cu, true)) : BLOCS_CARTE.frames[Cu.sorte];
       // (le four redessiné, dessiné comme un meuble : son image éteinte, ou celle de son feu)
       const four = this.fireOn ? Fe.images[Math.floor(time * Fe.fps / 1000) % Fe.images.length] : Fe.eteint;
+      // (fiche I5a : la forge d'un commerce ouvert, ses braises qui rougeoient : ses deux images alternent au hasard)
+      const Fo = BLOCS_CARTE.forge, calmeF = F.reducedMotion();
       // (et ceux des niveaux du dessus, js/carte/ferme/etage.js : etageStations)
       for (const e of [...this.blocks.values(), ...(this.etageStations || [])]) {
         if (!e.img || !e.img.active) continue;
+        if (Fo && e.dessin && Fo.images.includes(e.dessin)) {
+          if (!calmeF && (!e.braiseT || time >= e.braiseT)) { e.braiseT = time + (0.5 + Math.random()) * 1000 / Fo.fps; e.braiseF = Math.random() < 0.5 ? 0 : 1; }
+          const k = 'meuble_' + Fo.images[calmeF ? 0 : e.braiseF || 0];
+          if (e.img.texture.key !== k && this.textures.exists(k)) e.img.setTexture(k);
+          continue;
+        }
         if (e.sorte === Fe.sorte && e.dessin) {
           if (e.img.texture.key !== four && this.textures.exists(four)) e.img.setTexture(four);
           continue;
@@ -644,7 +652,7 @@
           e.nomVu = cle;
           const L = C.largeur[E.matiere] || 16;
           e.nomTxt.setText(E.nom).setColor(E.texte).setScale(1);
-          if (E.matiere === 'village') e.nomTxt.setAlign('center');   // (fiche I7g : le panneau du village, deux lignes centrées)
+          if (E.matiere === 'village' || E.matiere === 'commerce') e.nomTxt.setAlign('center');   // (fiche I7g : le panneau du village, deux lignes centrées ; I5a : l'enseigne d'un commerce)
           // (trop long : sur deux lignes, coupé à l'espace ou au trait d'union le plus près du milieu, s'il y en a)
           if (e.nomTxt.width > L / C.deuxLignes) {
             const coupes = [...E.nom].map((c, i) => (c === ' ' || c === '-' ? i : -1)).filter((i) => i > 0);
@@ -682,6 +690,9 @@
       const LC = BLOCS_CARTE.lampeChevet, lampes = [];
       for (const e of (this.blocks || new Map()).values()) if (LC.dessins.includes(e.dessin) && e.img) lampes.push({ img: e.img, x: e.x, y: e.y - 1, e });
       for (const e of this.etageLampes || []) if (vu(e)) lampes.push({ img: e.img, x: e.x, y: e.y, e });
+      // (fiche I5a : les forges allumées des commerces : BLOCS_CARTE.forge)
+      const forges = [];
+      for (const e of (this.blocks || new Map()).values()) if (e.img && BLOCS_CARTE.forge.images.includes(e.dessin)) forges.push(e);
       // (les cheminées, en bas et à l'étage : BLOCS_CARTE.cheminee)
       const cheminees = [];
       for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('cheminee_')) cheminees.push({ img: e.img, x: e.x, y: e.y - 1, e });
@@ -697,7 +708,7 @@
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
       const guirlandes = this.guirlandes && this.guirlandes.size ? [...this.guirlandes.values()] : [];
-      if (!list.length && !lampes.length && !guirlandes.length && !cheminees.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !(this.feteLumieres && this.feteLumieres()) && !this.calecheSprite && !luit) return;
+      if (!list.length && !lampes.length && !guirlandes.length && !cheminees.length && !forges.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !(this.feteLumieres && this.feteLumieres()) && !this.calecheSprite && !luit) return;
       if (!this.lanternLights) {
         this.lanternLights = [];
         lueur(this.textures);
@@ -782,6 +793,23 @@
             e.haloFeu = this.add.pointlight(c.x + F.dx, c.y + F.dy, Hh.couleur, Hh.rayon, Hh.intensite, Hh.attenuation).setDepth(V.depth + 1);
           }
           if (e.haloFeu) e.haloFeu.setVisible(true).setPosition(c.x + F.dx, c.y + F.dy).setAlpha(k);
+        }
+      }
+      // les forges des commerces (fiche I5a) : le soir, la lueur de leurs braises dans le voile, qui vacille ; un halo (WebGL)
+      {
+        const Fo = BLOCS_CARTE.forge, allumee = nuit > Fo.allume;
+        for (const e of forges) {
+          if (!allumee || !e.img.active) { if (e.haloForge) e.haloForge.setVisible(false); continue; }
+          if (!calme && (!e.forgeT || time >= e.forgeT)) { e.forgeT = time + 120 + Math.random() * 160; e.forgeK = 1 - Fo.vacille + Math.random() * Fo.vacille * 2; }
+          const k = (calme ? 1 : e.forgeK || 1) * Math.min(1, nuit / 0.4) * e.img.alpha, S = Fo.sol, Fy = Fo.foyer;
+          out.push({ key: 'lueur', x: e.x + S.dx, y: e.y + S.dy, tint: S.teinte, alpha: S.alpha * k, scaleX: S.rayon / R, scaleY: (S.rayon * S.aplati) / R });
+          out.push({ key: 'lueur', x: e.x + Fy.dx, y: e.y + Fy.dy, tint: Fy.teinte, alpha: Fy.alpha * k, scaleX: Fy.rayon / R, scaleY: Fy.rayon / R });
+          if (webgl && !e.haloForge) {
+            const Hh = Fo.halo;
+            e.haloForge = this.add.pointlight(e.x + Fy.dx, e.y + Fy.dy, Hh.couleur, Hh.rayon, Hh.intensite, Hh.attenuation).setDepth(V.depth + 1);
+            e.img.once('destroy', () => { if (e.haloForge) { e.haloForge.destroy(); e.haloForge = null; } });
+          }
+          if (e.haloForge) e.haloForge.setVisible(true).setPosition(e.x + Fy.dx, e.y + Fy.dy).setAlpha(k);
         }
       }
       // les lampes de chevet : allumées le soir, une lueur chaude qui respire à peine ; leur halo (WebGL)
@@ -1328,7 +1356,9 @@
     stationAt(wx, wy) {
       for (const e of (this.blocks || new Map()).values()) {
         // (I4 : l'étal du joueur, deux cases de large et son auvent)
-        const win = BLOCS_CARTE.fenetres[e.sorte], h = e.sorte === 'refrigerateur' ? 34 : e.sorte === 'etal' ? 30 : 24, demi = e.sorte === 'etal' ? T + 2 : T / 2 + 2;
+        // (I5a : l'établi, le comptoir et l'enseigne d'un commerce, deux cases de large ; l'enseigne, haute)
+        const large = e.sorte === 'etal' || e.sorte === 'enclume_foyer' || e.sorte === 'comptoir' || e.sorte === 'enseigne_forge';
+        const win = BLOCS_CARTE.fenetres[e.sorte], h = e.sorte === 'refrigerateur' ? 34 : e.sorte === 'etal' ? 30 : e.sorte === 'enseigne_forge' ? 40 : 24, demi = large ? T + 2 : T / 2 + 2;
         if (win && Math.abs(wx - e.x) <= demi && wy <= e.y + 2 && wy >= e.y - h) return win;
       }
       return null;

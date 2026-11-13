@@ -132,6 +132,11 @@
    L'étal du joueur (l'île à bâtir, fiche I4 ; js/engine/bourse.js, l'inverse l'un de l'autre) :
      etal.mettre      { objet, quantite }       mettre en vente à l'étal (de l'inventaire, puis du réfrigérateur)
      etal.reprendre   { objet, quantite }       reprendre de l'étal (à l'inventaire)
+   Les commerces d'artisans (l'île à bâtir, fiche I5a ; js/engine/artisans.js, sans inverse) :
+     commerce.ouvrir    { id, sorte }                   le villageois `id` ouvre le commerce `sorte` (forge…) : la décision du joueur
+     commerce.acheter   { commerce, objet, quantite }   acheter au comptoir du commerce (au prix de vente : à l'artisan)
+     commerce.commander { commerce, recette, facon? }   lui commander une pièce, payée d'avance ou à façon (la matière du joueur)
+     commerce.lettres   { commerce, lettres? }          les lettres de son enseigne (une couleur débloquée ; sans : d'origine)
 */
 
 import { objectifsARevoir } from './campaign.js';
@@ -152,6 +157,7 @@ import { recolterBac, semerBac } from './bacs.js';
 import { cueillirMassif } from './massifs.js';
 import { remplirTonnelet } from './tonnelets.js';
 import { mettreALEtal, reprendreDeLEtal } from './bourse.js';
+import { acheterAuCommerce, choisirLettres, commanderAuCommerce, ouvrirCommerce } from './artisans.js';
 import { engraisser, jeterAuCompost } from './compost.js';
 import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, stopCurrent } from './kitchen.js';
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
@@ -654,6 +660,22 @@ export const COMMANDES = {
   'etal.reprendre': {
     args: { objet: 'objet', quantite: 'quantite' },
     executer: (state, { objet, quantite }) => reprendreDeLEtal(state, objet, quantite),
+  },
+  'commerce.ouvrir': {
+    args: { id: 'texte', sorte: 'texte' },
+    executer: (state, { id, sorte }) => ouvrirCommerce(state, id, sorte),
+  },
+  'commerce.acheter': {
+    args: { commerce: 'texte', objet: 'objet', quantite: 'quantite' },
+    executer: (state, { commerce, objet, quantite }) => acheterAuCommerce(state, commerce, objet, quantite),
+  },
+  'commerce.commander': {
+    args: { commerce: 'texte', recette: 'texte', facon: 'drapeau?' },
+    executer: (state, { commerce, recette, facon = false }) => commanderAuCommerce(state, commerce, recette, { facon }),
+  },
+  'commerce.lettres': {
+    args: { commerce: 'texte', lettres: 'texte?' },
+    executer: (state, { commerce, lettres = null }) => choisirLettres(state, commerce, lettres),
   },
 };
 
