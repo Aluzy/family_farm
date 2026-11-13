@@ -249,7 +249,8 @@ export function objectiveValue(state, obj) {
     // version 1.22 : le plus d'exemplaires d'un objet (`item`) eus en même temps
     case 'objet': return Math.max(countItem(state, obj.item), (k.objets && k.objets[obj.item]) || 0);
     // fiche 9b : le grand monde
-    case 'caleche': return Math.floor(k.calecheVentes || 0);
+    // (le chantier « l'île à bâtir » allumé, fiche I1b : la calèche ne commerce plus, les ventes au port comptent)
+    case 'caleche': return Math.floor((k.calecheVentes || 0) + (villageActif(state) ? k.ventesPort || 0 : 0));
     case 'achatsHameaux': return Math.floor(k.achatsHameaux || 0);
     case 'pecheMer': return Math.floor(k.pecheMer || 0);
     case 'hameaux': return Object.keys(hameauxVus(state)).length;

@@ -7,7 +7,7 @@ import { farmSeed, farmTerrain } from './terrain.js';
 import { villageActif } from './village.js';
 import { hourOfDay, nightActive } from './clock.js';
 import { penalite } from './inventory.js';
-import { maisonsMarquees, litsDeLaFamille } from './blocs.js';
+import { maisonsMarquees, litsDeLaFamille, piecesCloses } from './blocs.js';
 import { mangerAuRangement, reserveRangement } from './repas.js';
 import { platsBonheur, varieteBonheur, versCible } from './bonheur.js';
 import { cleDiversite, tirerApparence } from './apparence.js';
@@ -92,11 +92,12 @@ export function maisonsLibres(state) {
 
 // La maison du villageois `v` telle qu'elle est sur la carte : { boite, piece, lits (ceux que la famille ne
 // prend pas) }, ou null (sa boîte, sa pièce ou ses lits disparus).
-function maisonDe(state, v) {
+// `deja` : { marquees, famille } (maisonsMarquees, litsDeLaFamille), relevés une fois pour tous (la carte, fiche I3b).
+function maisonDe(state, v, deja = null) {
   if (v.maison === null || v.maison === undefined) return null;
-  const m = maisonsMarquees(state).find((x) => x.boite === v.maison);
+  const m = (deja ? deja.marquees : maisonsMarquees(state)).find((x) => x.boite === v.maison);
   if (!m) return null;
-  const famille = litsDeLaFamille(state);
+  const famille = deja ? deja.famille : litsDeLaFamille(state);
   const lits = m.piece.paillasses.filter((c) => !famille.has(c));
   return lits.length ? { boite: m.boite, piece: m.piece, lits } : null;
 }
@@ -391,18 +392,29 @@ export function ficheVillageois(state, id) {
 }
 
 // Pour la scène (le modèle de la carte) : [{ id, prenom, genre, perso, apparence, accueil, porte (une case d'une
-// porte de sa maison, ou null), lit (son couchage, ou null), depart (la case d'où il arrive), toc, phrase }] ;
+// porte de sa maison, ou null), lit (son couchage, ou null), piece (une case de sa maison, ou null : la lumière de
+// ses fenêtres, fiche I3b), depart (la case d'où il arrive), toc, phrase }] ;
 // null le chantier éteint ou sans villageois. `plan` : celui du monde (caseArrivee).
+// (fiche I3b : la page refait ce modèle à chaque rendu ; gardé tant que les pièces, les villageois, la famille et
+// l'heure de leur arrivée ne changent pas, sinon les maisons et les lits de la famille relevés une fois pour tous)
+let carteCle = null, carteMemo = null;
 export function villageoisPourLaCarte(state, plan = null) {
   const V = villageoisDe(state);
   if (!V.length) return null;
   const depart = caseArrivee(state, plan);
-  return V.map((v) => {
-    const m = maisonDe(state, v);
+  const F = (state.famille && state.famille.membres) || [];
+  const cle = [piecesCloses(state), JSON.stringify([V.map((v) => [v.id, v.maison, v.lit, v.accueil, v.perso, v.prenom]), F.map((m) => m.id), state.litPrincipal ?? null,
+    depart, V.some((v) => v.accueil) ? hourOfDay(state) : 0, farmSeed(state)])];
+  if (carteMemo && carteCle && carteCle[0] === cle[0] && carteCle[1] === cle[1]) return carteMemo;
+  const deja = { marquees: maisonsMarquees(state), famille: litsDeLaFamille(state) };
+  carteCle = cle;
+  return (carteMemo = V.map((v) => {
+    const m = maisonDe(state, v, deja);
     return {
       id: v.id, prenom: v.prenom, genre: v.genre, perso: v.perso, apparence: validApparence(v.apparence, false),
       accueil: v.accueil || null, porte: m ? porteDe(state, m) : null, lit: m && m.lits.includes(v.lit) ? v.lit : null,
+      piece: m ? m.piece.cases[0] : null,
       depart, toc: ARRIVEE.TOC || '', phrase: v.accueil ? phraseArrivee(state, v.id) : '',
     };
-  });
+  }));
 }

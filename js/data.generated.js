@@ -5111,6 +5111,7 @@ export const RAW_DATA = {
     "MATERIAUX_GARDES": 40,
     "VIVRES_GARDES": 10,
     "SEMENCES_GARDEES": 6,
+    "PORT": { "SEUIL": 60, "VITESSE": 3.6 },
     "BATIR": {
       "foyer": { "paillasse": 4 },
       "puits": { "puits_pierre": 1 },
@@ -8626,6 +8627,40 @@ export const RAW_DATA = {
         "{prenom}, pour te servir : me voilà chez moi."
       ]
     },
+    "HORAIRE": {
+      "LEVER": 6.5,
+      "SORTIE": 7.5,
+      "MIDI": 12,
+      "REPRISE": 13.25,
+      "SOUPER": 18.5,
+      "VEILLEE": 19.5,
+      "COUCHER": 21.25,
+      "DECALE": 0.5,
+      "CRENEAU": 0.75,
+      "FLANER": [0.35, 0.6],
+      "PLACE": 3,
+      "PROMENADE": 8,
+      "VITESSE": 0.9,
+      "CHEMIN": 2
+    },
+    "PHRASES": {
+      "ACTIVITE": {
+        "lever": ["Je me lève à peine.", "Encore un peu de café et je sors.", "Le jour se lève sur l'île."],
+        "dehors": ["Je fais le tour de la ferme.", "Je me dégourdis les jambes.", "Il fait bon marcher par ici."],
+        "repas": ["C'est l'heure de manger.", "À table !", "Ça sent bon, ce midi."],
+        "flaner": ["Je prends le temps de souffler.", "On est bien, sur ce banc.", "Je regarde pousser tes cultures."],
+        "rentrer": ["Je rentre à la maison.", "La journée s'achève, je rentre.", "Une veillée au chaud, et au lit."],
+        "dormir": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
+        "repos": ["Je me repose aujourd'hui.", "Une journée tranquille à la maison.", "Je reprends des forces."],
+        "abri": ["Quelle averse ! Je reste à l'abri.", "J'attends que la pluie passe.", "Il pleut des cordes."]
+      },
+      "HUMEUR": {
+        "heureux": ["On vit bien, sur l'île.", "La vie est douce, ici.", "Je suis bien, dans ma maison."],
+        "content": ["Ça va, ça va.", "Tout va bien, merci !", "Encore une belle journée."],
+        "triste": ["J'ai eu une petite semaine. Ça ira mieux demain !", "Un peu de soleil me ferait du bien."],
+        "faim": ["La boîte à nourriture est un peu légère, ces jours-ci.", "Je mangerais bien une bonne soupe."]
+      }
+    },
     "PALIERS": [
       {
         "titre": "S'installer",
@@ -8852,7 +8887,7 @@ export const RAW_DATA = {
               "icone": "⚓",
               "libelle": "Vendre une récolte au port",
               "sous": "Sous la halle, au bout du chemin",
-              "taches": [{ "type": "compte", "quoi": "vendre", "n": 1, "guide": "caleche" }]
+              "taches": [{ "type": "compte", "quoi": "vendre", "n": 1, "guide": "port" }]
             },
             {
               "id": "replanter",
@@ -8872,7 +8907,7 @@ export const RAW_DATA = {
             "quoi": "vendre",
             "n": [20, 10, 300],
             "si": "marche",
-            "guide": "caleche"
+            "guide": "port"
           },
           {
             "id": "parler",
@@ -8907,7 +8942,11 @@ export const RAW_DATA = {
   },
   "PORT": {
     "NOM": "Le port",
+    "ICONE": "⚓",
     "NIVEAU_DEPART": 1,
+    "PORTEE": 3,
+    "HEURES": [6, 21],
+    "ELEMENT": { "nom": "Le port", "icone": "⚓", "note": "au comptoir de la halle, au bout du chemin : vends tes récoltes, achète des graines" },
     "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 70, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
     "NIVEAUX": [
       { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },

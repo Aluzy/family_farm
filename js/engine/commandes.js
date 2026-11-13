@@ -111,6 +111,10 @@
      nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
      nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
                                                 (le monde en ligne la joue, quand tous sont couchés)
+   Le commerce au port (l'île à bâtir, fiche I1b ; js/engine/port.js, sans inverse : une vente, un achat ne se
+   défont pas) — `case` : celle du personnage, à PORT.PORTEE cases du comptoir :
+     port.vendre      { objet, quantite, case } vendre au comptoir (au prix de vente : market.js)
+     port.acheter     { objet, quantite, case } acheter une semence (à son cours, qui monte)
 */
 
 import { objectifsARevoir } from './campaign.js';
@@ -144,6 +148,7 @@ import { harvestTree } from './orchard.js';
 import { buyTech } from './techtree.js';
 import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
+import { acheterAuPort, vendreAuPort } from './port.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -535,6 +540,14 @@ export const COMMANDES = {
   'nuit.partagee': {
     args: {},
     executer: (state) => nuitPartagee(state),
+  },
+  'port.vendre': {
+    args: { objet: 'objet', quantite: 'quantite', case: 'case' },
+    executer: (state, { objet, quantite, case: c }) => vendreAuPort(state, objet, Math.max(1, Math.floor(quantite)), c),
+  },
+  'port.acheter': {
+    args: { objet: 'objet', quantite: 'quantite', case: 'case' },
+    executer: (state, { objet, quantite, case: c }) => acheterAuPort(state, objet, Math.max(1, Math.floor(quantite)), c),
   },
 };
 

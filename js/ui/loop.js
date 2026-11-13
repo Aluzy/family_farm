@@ -22,6 +22,7 @@ import { mesurer } from './chrono.js';
 import { watchChapters } from './chapitres.js';
 import { watchLevels } from './niveaux.js';
 import { sceneCaleche, watchCaleche } from './caleche.js';
+import { watchPort } from './port.js';
 import { proposerScene } from './scene.js';
 import { lieuDuPerso } from './stage.js';
 import { aFait, acteEnCours, deHameau } from '../engine/recit.js';
@@ -332,6 +333,7 @@ function veiller(ticked) {
   watchDay();
   watchMail();
   watchCaleche(); // fiche 7c : la tournée posée, les arrêts aux hameaux, son arrivée à la ferme
+  watchPort(); // l'île à bâtir (fiche I1b) : le lieu du port posé dans le moteur
   watchBienvenue(); // fiche 18 : la visite de bienvenue du deuxième jour se met en route
   watchVillageois(); // l'île à bâtir (fiche I3a) : un jour de bac, un villageois arrive ; ses maisons, ses avis
   watchRobot();

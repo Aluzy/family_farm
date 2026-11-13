@@ -3,6 +3,7 @@ import { EPS } from './base.js';
 import { techFlag } from './techtree.js';
 import { noteCompta } from './compta.js';
 import { levelBlock, unlockLevel } from './levels.js';
+import { villageActif } from './village.js';
 
 /* ---------- appareils : fabrication et sélecteurs ---------- */
 
@@ -98,13 +99,15 @@ export function farmOpen(state) {
 }
 
 // La calèche (le Marché de la ferme, devenu voyageur : caleche.js, fiche 7c) commerce-t-elle avec
-// le joueur ? Au niveau qui débloque « marche » (NIVEAUX).
+// le joueur ? Au niveau qui débloque « marche » (NIVEAUX). Le chantier « l'île à bâtir » allumé (fiche
+// I1b), c'est le port qui commerce, au même niveau (port.js, portOuvert : il y faut aussi être, à ses heures).
 export function marcheOuvert(state) {
   return !levelBlock(state, 'marche');
 }
 
-// Pourquoi elle ne commerce pas encore (texte).
-export function marcheFerme() {
+// Pourquoi elle ne commerce pas encore (texte) : la calèche, ou le port (le chantier allumé).
+export function marcheFerme(state) {
+  if (villageActif(state)) return `Le port commerce avec toi à partir du niveau ${unlockLevel('marche')}.`;
   return `La calèche commerce avec toi à partir du niveau ${unlockLevel('marche')}.`;
 }
 

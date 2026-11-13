@@ -995,7 +995,7 @@
         if (!hoeing && this.malleAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.malleAt(wx, wy)) return { malle: true };
         // le visiteur de la visite de bienvenue (js/carte/ferme/visite.js) : il redit sa phrase
         if (!hoeing && this.visiteurAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.visiteurAt(wx, wy)) return { visiteur: true };
-        // un villageois (l'île à bâtir, fiche I3a : js/carte/ferme/villageois.js) : sa fiche
+        // un villageois (l'île à bâtir, fiches I3a et I3b : js/carte/ferme/villageois.js) : sa bulle
         if (!hoeing && this.villageoisAt && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
           const vg = this.villageoisAt(wx, wy);
           if (vg) return { villageois: vg };
@@ -1293,8 +1293,9 @@
         if (hit.habitant) { this.habitantParle(hit.habitant); return; }
         if (hit.compagnon) { if (this.ctx.bridge.compagnonTouche) this.ctx.bridge.compagnonTouche(); return; }
         if (hit.visiteur) { if (this.visiteur) this.visiteParle(this.visiteur); return; }
-        if (hit.villageois) { if (this.ctx.bridge.villageois) this.ctx.bridge.villageois('fiche', hit.villageois); return; }
+        if (hit.villageois) { this.villageoisParle(hit.villageois); return; }   // (fiche I3b : sa bulle, villageois.js)
         if (hit.invite) { const G = this.invitesVus; if (G) this.inviteBulle(hit.invite, (G.paroles.table || [])[Math.floor(Math.random() * (G.paroles.table || []).length)], 4500); return; }
+        if (hit.comptoir) { this.comptoirTouche(hit.comptoir); return; }
         if (hit.panneau) { if (this.ctx.bridge.hameauPanneau) this.ctx.bridge.hameauPanneau({ id: hit.panneau.id, nom: hit.panneau.nom, style: hit.panneau.style }); return; }
         if (hit.hameauRefus) { if (this.ctx.bridge.hameauRefus) this.ctx.bridge.hameauRefus(hit.hameauRefus.outil, hit.hameauRefus.nom); return; }
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien

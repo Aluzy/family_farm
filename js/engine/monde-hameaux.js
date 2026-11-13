@@ -795,9 +795,12 @@ export function planPort(m, port, niveau) {
     pieces: [{ genre: 'halle', cases: dedans }], lits: [], foyer: null, fenetres: [], dedans,
   };
   const panneau = C.ajoute.has('panneau') ? ix(...O.panneau) : null;
+  // (le comptoir, ses cases : un appui dessus ouvre la fenêtre du port, fiche I1b, js/carte/ferme/hameaux.js)
+  const lgComptoir = SORTES_HAMEAUX[SORTE_HAMEAU.comptoir].largeur || 1;
+  const comptoir = C.ajoute.has('comptoir') ? Array.from({ length: lgComptoir }, (_, k) => ix(O.comptoir[0] + k, O.comptoir[1])) : [];
   return {
     plan: {
-      id: 'port', nom: DATA.PORT.NOM, case: port.case, style: 'cote', metier: null, batisse: 'port', niveau,
+      id: 'port', nom: DATA.PORT.NOM, case: port.case, style: 'cote', metier: null, batisse: 'port', niveau, comptoir,
       cadre: { x0, y0, x1, y1 },
       place: { centre: port.case, cases: [], puits: null, banc: null, panneau },
       maisons: [halle], jardins: [], travail: [], ruelles: [], lanternes, quai,

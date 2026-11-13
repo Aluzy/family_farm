@@ -4,7 +4,7 @@ import {
   allDevices, batteryCapacity, canPay, farmOpen, isBroken, isOwned, maintainDevice, needsService, panelOutput, pay, pumpFlow,
   repairDevice, starterOf, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from './devices.js';
-import { awakeRequired } from './clock.js';
+import { awakeHours, awakeRequired } from './clock.js';
 import { marcheOuvert } from './devices.js';
 import { tick } from './energy.js';
 import { addItem, countItem, expiringSoon, inventoryCounts, lotRank, lotsOf } from './inventory.js';
@@ -58,6 +58,8 @@ import { noterEncyclopedie } from './encyclopedie.js';
 import { ESPECES_FAUNE } from './monde-faune.js';
 import { buildFridge, FRIGO_OBJET } from './fridge.js';
 import { takeItem } from './inventory.js';
+import { villageActif } from './village.js';
+import { acheterAuPort, PORT, portDuMonde, vendreAuPort } from './port.js';
 import { takeWheat } from './animals.js';
 import { posteCompta, suivreComptes } from './compta.js';
 
@@ -236,7 +238,7 @@ function botBuySeed(state, item) {
   if (!isBuyable(item) || !botCalecheLa(state)) return false;
   const price = buyPrice(state, item);
   if (price > DATA.SIMULATION.PRIX_GRAINE_MAX + EPS || !canPay(state, price)) return false;
-  return acheterCaleche(state, item, 1, null, { sansPresence: true }).ok === true;
+  return botAcheter(state, item, 1).ok === true;
 }
 
 function botHasSeed(state, culture) {
@@ -589,7 +591,7 @@ function botArbre(state, espece) {
     cost,
     buy: () => {
       if (!botCalecheLa(state)) return { ok: false, error: 'La calèche n\'est pas là.' };
-      if (countItem(state, item) < 1 && !buyItem(state, item, 1).ok) return { ok: false, error: 'Pas assez de pièces.' };
+      if (countItem(state, item) < 1 && !botAcheter(state, item, 1).ok) return { ok: false, error: 'Pas assez de pièces.' };
       const r = testBatir(state, espece);
       if (r.ok) takeItem(state, item, 1);
       return r;
@@ -761,7 +763,64 @@ export function botPassageCaleche(state, fn) {
   aLaCaleche.add(state);
   try { return fn(); } finally { if (!deja) aLaCaleche.delete(state); }
 }
-const sellItem = (state, item, qty) => (botCalecheLa(state) ? vendreCaleche(state, item, qty, null, { sansPresence: true }) : { ok: false });
+// (le chantier « l'île à bâtir » allumé, fiche I1b : au port, où le mène sa sortie, botSortiePort)
+const sellItem = (state, item, qty) => (!botCalecheLa(state) ? { ok: false }
+  : villageActif(state) ? vendreAuPort(state, item, qty, null, { sansPresence: true }) : vendreCaleche(state, item, qty, null, { sansPresence: true }));
+function botAcheter(state, item, qty) {
+  if (!botCalecheLa(state)) return { ok: false };
+  return villageActif(state) ? acheterAuPort(state, item, qty, null, { sansPresence: true }) : acheterCaleche(state, item, qty, null, { sansPresence: true });
+}
+
+/* -- I1b : la sortie au port (le chantier allumé) --
+   La calèche ne commerce plus : le joueur simulé va au port, au bout du chemin, quand ce qu'il a à vendre vaut
+   SIMULATION.PORT.SEUIL pièces ou plus, ou qu'il lui manque des graines pour une parcelle vide ; une sortie par
+   jour au plus, à la dernière série d'actions de la journée. La marche se compte en temps d'éveil d'après la
+   distance (le chemin du port et la moitié de la ferme, à SIMULATION.PORT.VITESSE cases par seconde) : à
+   l'aller, il commerce à son arrivée (le comptoir ouvert, PORT.HEURES), puis il rentre. */
+const sortiesPort = new WeakMap();   // la partie → le jour de sa dernière sortie au port
+
+// Ce que botSell vendrait au port, en pièces (à peu près : la laine, le blé et les vivres en trop).
+function botValeurAVendre(state) {
+  const S = DATA.SIMULATION, semences = botSemences(state);
+  let v = countItem(state, 'laine') * DATA.OBJETS.laine.prix;
+  v += Math.max(0, Math.floor(countItem(state, DATA.SILO.ITEM) - S.BLE_MAX)) * DATA.OBJETS[DATA.SILO.ITEM].prix;
+  for (const item of Object.keys(inventoryCounts(state))) {
+    const def = DATA.OBJETS[item];
+    if (!def || def.plat || !def.mangeable || !['légume', 'fruit', 'produit'].includes(def.categorie)) continue;
+    v += Math.max(0, Math.floor(countItem(state, item) - S.VIVRES_GARDES - (semences[item] || 0))) * def.prix;
+  }
+  return v;
+}
+
+// Lui manque-t-il des graines : une parcelle vide, et rien à y semer ?
+function botManqueGraines(state) {
+  const vide = state.potager.parcelles.some((p) => !p.culture);
+  return vide && !plantableCropsFor(state, DATA.POTAGER.LIEU).some((c) => seedStock(state, c) >= 1 - EPS);
+}
+
+// La marche (aller ou retour) : `secondes` d'éveil, par pas de PAS_S.
+function botMarche(state, secondes) {
+  const pas = DATA.SIMULATION.PAS_S;
+  for (let t = 0; t + EPS < secondes; t += pas) tick(state, Math.min(pas, secondes - t));
+}
+
+// La sortie au port, si elle s'impose : il y va, joue `fn` (le commerce possible), rentre. → vrai s'il y est allé.
+export function botSortiePort(state, fn) {
+  const SP = DATA.SIMULATION.PORT;
+  if (!villageActif(state) || !marcheOuvert(state) || sortiesPort.get(state) === state.day) return false;
+  if (botValeurAVendre(state) < SP.SEUIL && !botManqueGraines(state)) return false;
+  const g = farmSeed(state), lieu = g === null ? null : portDuMonde(g), T = farmTerrain(state);
+  if (!lieu) return false;
+  const aller = (lieu.chemin + (T.FERME ? T.FERME.LARGEUR / 2 : 0)) / SP.VITESSE;
+  // (il faut arriver au comptoir ouvert)
+  const arrivee = awakeHours(state) + aller / DATA.TEMPS.SECONDES_PAR_HEURE;
+  if (arrivee < PORT.HEURES[0] || arrivee >= PORT.HEURES[1]) return false;
+  sortiesPort.set(state, state.day);
+  botMarche(state, aller);
+  botPassageCaleche(state, fn);
+  botMarche(state, aller);
+  return true;
+}
 
 // Vend ce qui périrait demain (hors réserve de semences et ce que la famille mangera ce soir), la laine,
 // le blé en trop et la paille en trop. Avec un réfrigérateur en marche, on range au lieu de vendre.
@@ -1047,8 +1106,8 @@ function botActions(state, strat, options, soir) {
   botMonde(state); // fiche 9b : une sortie dans le grand monde, si le chapitre la demande
   botVoisins(state); // I0b : le hameau voisin, si le chapitre demande un ami, un repas, un projet
   botInviter(state);
-  // I0b : la calèche à son passage (le seul moment où il commerce)
-  botPassageCaleche(state, () => {
+  // I0b : la calèche à son passage (le seul moment où il commerce) ; I1b : le chantier allumé, sa sortie au port
+  (villageActif(state) ? botSortiePort : botPassageCaleche)(state, () => {
     botStore(state); // version 1.10 : ranger d'abord, vendre ce qui n'a pas tenu au frais
     botSell(state);
     botAchatsHameaux(state);
@@ -1090,8 +1149,10 @@ export function botDay(state, strat, options) {
 // plats, produits, autres), les graines, les achats aux hameaux, les appareils, les technologies, les
 // bâtiments, l'entretien, le courrier ; sinon le début du libellé (posteCompta).
 let nomsObjets = null;
-export function posteSimulation(libelle) {
-  const [tete, ...reste] = String(libelle || '').split(' : ');
+// (I1b : « Port : … » est une vente au port quand `montant` est un gain, un achat sinon)
+export function posteSimulation(libelle, montant = 0) {
+  let [tete, ...reste] = String(libelle || '').split(' : ');
+  if (tete === 'Port') tete = montant > 0 ? 'Vente' : 'Achat';
   const nom = reste.join(' : ');
   if (!nomsObjets) nomsObjets = new Map(Object.entries(DATA.OBJETS).map(([id, d]) => [d.nom, id]));
   const id = nomsObjets.get(nom), def = id ? DATA.OBJETS[id] : null;
@@ -1136,7 +1197,7 @@ export function simulatePlay(state, strategyId, nights = DATA.SIMULATION.NUITS, 
   let jour = null;
   const arreter = suivreComptes((s, montant, libelle) => {
     if (s !== state || !jour) return;
-    const poste = posteSimulation(libelle), sorte = montant > 0 ? jour.gains : jour.depenses;
+    const poste = posteSimulation(libelle, montant), sorte = montant > 0 ? jour.gains : jour.depenses;
     sorte[poste] = (sorte[poste] || 0) + Math.abs(montant);
   });
   try {

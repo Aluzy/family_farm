@@ -10,10 +10,13 @@
 //   node scripts/simulate.mjs                       # les deux stratégies, 80 nuits
 //   node scripts/simulate.mjs --nuits 60 --graine 7
 //   node scripts/simulate.mjs --strategie applique  # ou minimal, ou toutes
+//   node scripts/simulate.mjs --village             # le chantier « l'île à bâtir » allumé (VILLAGE.ACTIF)
 //
 // Options : --nuits N (80), --graine N (1), --strategie applique|minimal|toutes,
 //           --csv fichier (simulation.csv), --svg fichier (simulation-bonheur.svg),
-//           --racine dossier/du/jeu (une autre copie du dépôt), --lissage N (nuits de la moyenne mobile).
+//           --racine dossier/du/jeu (une autre copie du dépôt), --lissage N (nuits de la moyenne mobile),
+//           --village (fiche I1b : le réglage VILLAGE.ACTIF allumé ; le joueur simulé commerce au port, la
+//           partie suit les paliers de l'île ; le chapitre 7 et le dépannage n'y sont que des constats).
 // Code de sortie : 0 si toutes les vérifications sont OK, 1 sinon ; « l'argent qui s'empile » n'est qu'un
 // constat (fiche I0b) : son échec est dit, sans changer le code de sortie.
 // Le CSV porte aussi les comptes de chaque nuit, par poste (gain_*, depense_* : fiche I0b) ; la fin de la
@@ -32,7 +35,7 @@ function option(name, fallback) {
   return i >= 0 && i + 1 < args.length ? args[i + 1] : fallback;
 }
 if (args.includes('--aide') || args.includes('--help')) {
-  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 24).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 23).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
   process.exit(0);
 }
 
@@ -47,6 +50,9 @@ try {
   process.exit(2);
 }
 const S = E.DATA.SIMULATION;
+// I1b : --village allume le chantier « l'île à bâtir » (le port remplace la calèche, les paliers les chapitres)
+const village = args.includes('--village');
+if (village) E.DATA.VILLAGE.ACTIF = true;
 
 const nuits = Math.max(1, Math.floor(Number(option('nuits', S.NUITS))));
 const graine = Math.floor(Number(option('graine', S.GRAINE)));
@@ -123,7 +129,7 @@ writeFileSync(svgPath, svgBonheur(parties));
 
 const pad = (v, n) => String(v).padStart(n);
 const affiche = [1, 5, 8, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80].filter((n) => n <= nuits);
-console.log(`Simulation : ${nuits} nuits, graine ${graine}, moteur de ${racine}`);
+console.log(`Simulation : ${nuits} nuits, graine ${graine}, moteur de ${racine}${village ? ', le chantier « l\'île à bâtir » allumé (--village)' : ''}`);
 for (const id of ids) {
   const rows = parties[id];
   console.log(`\n== ${S.STRATEGIES[id].nom} (${S.STRATEGIES[id].eveilS} s d'éveil par jour) ==`);
@@ -182,7 +188,8 @@ if (!parties.applique) {
   verifie(
     `Un joueur qui achète 1 ${D.item} par nuit peut encore se la payer à la nuit ${D.nuit}`,
     !!r30 && !!r30.depannage && r30.depannage.possible,
-    r30 && r30.depannage ? `Nuit ${D.nuit} : prochaine unité à ${num(r30.depannage.prix)} 💰, le joueur avait de quoi l'acheter : ${r30.depannage.possible ? 'oui' : 'non'} (pièces au réveil : ${num(r30.pieces)}).` : 'Pas de donnée.',
+    r30 && r30.depannage ? `Nuit ${D.nuit} : prochaine unité à ${num(r30.depannage.prix)} 💰, le joueur avait de quoi l'acheter : ${r30.depannage.possible ? 'oui' : 'non'} (pièces au réveil : ${num(r30.pieces)}).` : `Pas de donnée${village ? ' (au port, il n\'achète que les jours où il y va)' : ''}.`,
+    { constat: village },
   );
 
   // 4. I0b : le chapitre 7 atteint avant la nuit N (SIMULATION.VERIFS.CHAPITRE_7_AVANT)
@@ -191,7 +198,8 @@ if (!parties.applique) {
   verifie(
     `Chapitre 7 atteint avant la nuit ${N}`,
     !!ch7 && ch7.nuit < N,
-    ch7 ? `Chapitre 7 en cours dès la nuit ${ch7.nuit}.` : `Chapitre ${rows[rows.length - 1].chapitre} à la dernière nuit (${rows[rows.length - 1].nuit}).`,
+    ch7 ? `Chapitre 7 en cours dès la nuit ${ch7.nuit}.` : `Chapitre ${rows[rows.length - 1].chapitre} à la dernière nuit (${rows[rows.length - 1].nuit})${village ? ' (les paliers de l\'île demandent des villageois, que le joueur simulé ne loge pas encore)' : ''}.`,
+    { constat: village },
   );
 
   // 5. I0b : l'argent qui s'empile (un constat : n'entraîne pas de code de sortie non nul) : les pièces en

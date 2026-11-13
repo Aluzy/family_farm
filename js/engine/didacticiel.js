@@ -9,6 +9,7 @@ import { aCruche, puitsPose } from './cruche.js';
 import { marcheOuvert } from './devices.js';
 import { absoluteHours } from './clock.js';
 import { CALECHE, tourneeDe, etatCaleche } from './caleche.js';
+import { villageActif } from './village.js';
 import { hameauxVus } from './monde-hameaux.js';
 import { butBoussole } from './monde-vu.js';
 import { offrirSac } from './equipement.js';
@@ -278,8 +279,12 @@ function donnerSac(state) {
 
 /* -- fiche 9b : le grand monde -- */
 
-// Les pièces gagnées à la calèche depuis le début de la partie (campaign.js : calecheVentes).
-const ventesCaleche = (state) => (state.campagne && state.campagne.compteurs && state.campagne.compteurs.calecheVentes) || 0;
+// Les pièces gagnées à la calèche depuis le début de la partie (campaign.js : calecheVentes) ; le chantier « l'île
+// à bâtir » allumé (fiche I1b), au port aussi (ventesPort).
+const ventesCaleche = (state) => {
+  const k = (state.campagne && state.campagne.compteurs) || {};
+  return (k.calecheVentes || 0) + (villageActif(state) ? k.ventesPort || 0 : 0);
+};
 
 // Le personnage est-il hors de la ferme (sa case : state.monde.ici, que la carte donne à chaque pas) ?
 export function horsDeLaFerme(state) {

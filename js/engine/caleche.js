@@ -14,6 +14,7 @@ import { genererMonde } from './monde.js';
 import { elementsDuMonde } from './monde-gen.js';
 import { etatCaleche, heureTournee, tourneeDuPlan, vueDeSens } from './caleche-tournee.js';
 import { nomCocher, noterFait } from './recit.js';
+import { villageActif } from './village.js';
 
 /* ---------- la calèche : le Marché qui fait le tour du monde (docs/grand-monde.md, fiche 7c) ----------
 
@@ -60,6 +61,11 @@ import { nomCocher, noterFait } from './recit.js';
    Chaque hameau peuplé garde son dernier passage : habitants[id].caleche = { jour, achats, pieces }. */
 
 export const CALECHE = DATA.CALECHE;
+
+// Le chantier « l'île à bâtir » allumé (fiche I1b) : la calèche roule encore (jusqu'à la fiche I7e), mais ne
+// commerce plus ; on vend et on achète au port (port.js). Ce qu'elle répond.
+export const CALECHE_AU_PORT = 'La calèche ne commerce plus : on vend et on achète au port, sous la halle, au bout du chemin.';
+const auPort = (state) => villageActif(state);
 
 /* ---------- la tournée (caleche-tournee.js : le tour, la position à toute heure) ---------- */
 
@@ -118,6 +124,7 @@ function distanceA(tour, e, ou) {
 
 // Peut-on commercer avec elle, le personnage sur la case `ou` ? { ok, raison, e (etatCaleche), dist }.
 export function calecheIci(state, ou) {
+  if (auPort(state)) return { ok: false, raison: CALECHE_AU_PORT, e: null, dist: Infinity };
   if (!marcheOuvert(state)) return { ok: false, raison: marcheFerme(state), e: null, dist: Infinity };
   const tour = tourneeDe(state);
   if (!tour) return { ok: false, raison: 'La calèche est encore loin sur les chemins.', e: null, dist: Infinity };
@@ -339,6 +346,7 @@ export function devisCaleche(state, item, qty = 1) {
 export function acheterCaleche(state, item, qty = 1, ou = null, o = {}) {
   const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
+  if (auPort(state)) return fail(CALECHE_AU_PORT);
   if (!o.sansPresence) { const ici = calecheIci(state, ou); if (!ici.ok) return fail(ici.raison); }
   const J = jourDe(state);
   if (isBuyable(item)) {
@@ -366,6 +374,7 @@ export function acheterCaleche(state, item, qty = 1, ou = null, o = {}) {
 
 // Le joueur (sur la case `ou`) lui vend `qty` unités de `item` (au prix de vente : market.js).
 export function vendreCaleche(state, item, qty, ou = null, o = {}) {
+  if (auPort(state)) return fail(CALECHE_AU_PORT);
   if (!o.sansPresence) { const ici = calecheIci(state, ou); if (!ici.ok) return fail(ici.raison); }
   const r = sellItem(state, item, qty);
   if (r.ok) {
@@ -417,6 +426,7 @@ export function deposerMalle(state, item, qty) {
   const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
   if (def.invendable) return fail(`${def.nom} ne se vend pas.`);
+  if (auPort(state)) return fail(CALECHE_AU_PORT);
   if (!marcheOuvert(state)) return fail(marcheFerme(state));
   let reste = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
   if (reste <= 0) return fail('Rien à déposer.');
@@ -463,6 +473,7 @@ export function reprendreTout(state) {
 export function commanderCaleche(state, item, qty = 1) {
   const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
+  if (auPort(state)) return fail(CALECHE_AU_PORT);
   if (!marcheOuvert(state)) return fail(marcheFerme(state));
   const m = malleDe(state), q = Math.max(1, Math.floor(Number(qty)) || 1);
   let r, sorte;

@@ -37,6 +37,64 @@
         "{prenom}, pour te servir : me voilà chez moi."
       ]
     },
+    "//HORAIRE": [
+      "La journée d'un villageois sur la ferme (fiche I3b, js/engine/villageois-journee.js ; la scène :",
+      "js/carte/ferme/villageois.js), d'après celle des habitants des hameaux (HABITANTS.HORAIRE). Il dort jusqu'à LEVER,",
+      "se lève et reste chez lui jusqu'à SORTIE, sort ; il mange assis de MIDI à REPRISE et de SOUPER à VEILLEE (à la",
+      "table de sa maison, sinon à la table commune dehors : une table de jardin ou en rondins et ses sièges ; sans place,",
+      "chez lui) ; il rentre à VEILLEE (ses fenêtres s'éclairent) et se couche à COUCHER. Chacun a son retard, tiré de",
+      "la graine, du jour et de son id : de 0 à DECALE h au lever, à la sortie et à la veillée, la moitié aux repas et au",
+      "coucher (ils ne partent pas tous à la même minute). Entre les repas, la journée est faite de créneaux de CRENEAU h",
+      "(les mêmes pour tous) : à chacun, il va et vient dehors (un point des chemins posés, de la place ou des abords de",
+      "sa maison) ou, une fois sur FLANER[0] le matin et FLANER[1] l'après-midi, il flâne (assis sur un banc libre, sinon",
+      "debout sur la place, autour du puits ou de la table commune, à PLACE cases au plus). Sans chemin ni place, il se",
+      "promène à PROMENADE cases au plus de sa porte. Mal nourri ou sans lit la nuit d'avant (repos), il reste chez lui",
+      "entre les repas. Sous la pluie (meteo.js), il s'abrite chez lui (sans maison : dans l'abri de départ), repas du",
+      "dehors compris. Tout se déduit de l'heure (le même villageois au même endroit pour deux joueurs, I9d) ; loin de la",
+      "vue, la scène le pose où il doit être, sans trajet. VITESSE : sa marche, en fois celle d'un adulte de la famille ;",
+      "CHEMIN : le prix d'un pas hors des chemins posés (1 : aucune préférence) ; il les prend s'ils ne l'allongent pas",
+      "de plus de ce prix."
+    ],
+    "HORAIRE": {
+      "LEVER": 6.5,
+      "SORTIE": 7.5,
+      "MIDI": 12,
+      "REPRISE": 13.25,
+      "SOUPER": 18.5,
+      "VEILLEE": 19.5,
+      "COUCHER": 21.25,
+      "DECALE": 0.5,
+      "CRENEAU": 0.75,
+      "FLANER": [0.35, 0.6],
+      "PLACE": 3,
+      "PROMENADE": 8,
+      "VITESSE": 0.9,
+      "CHEMIN": 2
+    },
+    "//PHRASES": [
+      "Ce que dit un villageois qu'on touche (fiche I3b, js/engine/villageois-journee.js paroleVillageois) : une bulle,",
+      "sans fenêtre. Le salut de l'heure (HABITANTS.PHRASES.salut, sans ce qui parle du hameau), puis une phrase de ce",
+      "qu'il fait (ACTIVITE : lever, dehors, repas, flaner, rentrer, dormir, repos, abri) et une de son humeur (HUMEUR :",
+      "heureux, content, triste, faim ; humeurVillageois). Tirées de la graine, du jour et du rang de l'appui."
+    ],
+    "PHRASES": {
+      "ACTIVITE": {
+        "lever": ["Je me lève à peine.", "Encore un peu de café et je sors.", "Le jour se lève sur l'île."],
+        "dehors": ["Je fais le tour de la ferme.", "Je me dégourdis les jambes.", "Il fait bon marcher par ici."],
+        "repas": ["C'est l'heure de manger.", "À table !", "Ça sent bon, ce midi."],
+        "flaner": ["Je prends le temps de souffler.", "On est bien, sur ce banc.", "Je regarde pousser tes cultures."],
+        "rentrer": ["Je rentre à la maison.", "La journée s'achève, je rentre.", "Une veillée au chaud, et au lit."],
+        "dormir": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
+        "repos": ["Je me repose aujourd'hui.", "Une journée tranquille à la maison.", "Je reprends des forces."],
+        "abri": ["Quelle averse ! Je reste à l'abri.", "J'attends que la pluie passe.", "Il pleut des cordes."]
+      },
+      "HUMEUR": {
+        "heureux": ["On vit bien, sur l'île.", "La vie est douce, ici.", "Je suis bien, dans ma maison."],
+        "content": ["Ça va, ça va.", "Tout va bien, merci !", "Encore une belle journée."],
+        "triste": ["J'ai eu une petite semaine. Ça ira mieux demain !", "Un peu de soleil me ferait du bien."],
+        "faim": ["La boîte à nourriture est un peu légère, ces jours-ci.", "Je mangerais bien une bonne soupe."]
+      }
+    },
     "//PALIERS": [
       "Les paliers de l'île (fiche I7a, js/engine/paliers.js) : avec ACTIF, une partie neuve suit ces sept paliers à la",
       "place des sept chapitres de la campagne (data/campaign.json), sans introduction ni personnage : un titre, une",
@@ -170,13 +228,13 @@
         { "titre": "La première vente", "recompense": { "xp": 80, "pieces": 40 },
           "objectifs": [
             { "id": "recolte", "icone": "🥕", "libelle": "Récolter une culture", "sous": "Touche une plante mûre", "taches": [{ "type": "compte", "quoi": "recolter", "n": 1, "guide": "recolter" }] },
-            { "id": "vente", "icone": "⚓", "libelle": "Vendre une récolte au port", "sous": "Sous la halle, au bout du chemin", "taches": [{ "type": "compte", "quoi": "vendre", "n": 1, "guide": "caleche" }] },
+            { "id": "vente", "icone": "⚓", "libelle": "Vendre une récolte au port", "sous": "Sous la halle, au bout du chemin", "taches": [{ "type": "compte", "quoi": "vendre", "n": 1, "guide": "port" }] },
             { "id": "replanter", "icone": "🌱", "libelle": "Replanter", "taches": [{ "type": "compte", "quoi": "planter", "n": 1, "guide": "semis" }] }
           ] }
       ],
       "TIRES": {
         "LISTE": [
-          { "id": "vendre", "icone": "⚓", "libelle": "Gagner {n} pièce{s} au port", "quoi": "vendre", "n": [20, 10, 300], "si": "marche", "guide": "caleche" },
+          { "id": "vendre", "icone": "⚓", "libelle": "Gagner {n} pièce{s} au port", "quoi": "vendre", "n": [20, 10, 300], "si": "marche", "guide": "port" },
           { "id": "parler", "icone": "💬", "libelle": "Parler à {n} villageois", "quoi": "parler", "n": [1, 0.25, 4], "si": "villageois", "guide": "parler" },
           { "id": "cadeau", "icone": "🎁", "libelle": "Offrir un cadeau à un villageois", "quoi": "cadeau_villageois", "n": [1, 0, 1], "si": "villageois", "guide": "parler" },
           { "id": "commande", "icone": "📦", "libelle": "Honorer {n} commande{s} du bac", "quoi": "commande_bac", "n": [1, 0.25, 3], "si": "bac", "guide": "port" }
@@ -210,11 +268,21 @@
     "HAMEAUX.SORTES ; le quai et la cale sont du genre « ponton » (sur l'eau, sous ce qui marche dessus).",
     "BLOQUE : celles qui ferment leur case à la marche (le quai et la cale s'ouvrent).",
     "LANTERNE : la lumière des lanternes, le soir (js/carte/ferme/hameaux.js) : une flaque au sol, la lueur de",
-    "la vitre (rayon, aplati, teinte, alpha, dx et dy px depuis le pied), comme le réverbère de la ferme."
+    "la vitre (rayon, aplati, teinte, alpha, dx et dy px depuis le pied), comme le réverbère de la ferme.",
+    "Le commerce (fiche I1b, js/engine/port.js ; la fenêtre : js/ui/port.js) : au comptoir de la halle, on vend",
+    "tout ce qui se vendait à la calèche, au même prix, et on achète les semences débloquées, à leur cours",
+    "(js/engine/market.js) ; la calèche ne commerce plus. PORTEE : à combien de cases au plus d'une case du comptoir",
+    "le personnage commerce (toute la halle). HEURES : l'heure d'ouverture et celle de fermeture du comptoir (de 6 h,",
+    "le réveil, à 21 h). ICONE : celle du port (la fenêtre, le menu, les messages). ELEMENT : ce que l'écran d'un",
+    "niveau dit du commerce qu'il ouvre (à la place de NIVEAUX.ELEMENTS.marche, la calèche)."
   ],
   "PORT": {
     "NOM": "Le port",
+    "ICONE": "⚓",
     "NIVEAU_DEPART": 1,
+    "PORTEE": 3,
+    "HEURES": [6, 21],
+    "ELEMENT": { "nom": "Le port", "icone": "⚓", "note": "au comptoir de la halle, au bout du chemin : vends tes récoltes, achète des graines" },
     "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 70, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
     "NIVEAUX": [
       { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },

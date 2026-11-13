@@ -15,6 +15,8 @@ import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
 import { carnetDuJour, changerObjectif, majObjectifs, objectifsActifs, semaineDe, tacheAFaire } from '../engine/objectifs.js';
 import { villageActif } from '../engine/village.js';
+import { distanceAuComptoir, heuresPort, PORT, portDansSesHeures } from '../engine/port.js';
+import { marcheFerme, marcheOuvert } from '../engine/devices.js';
 import { applyResult } from './game-actions.js';
 import { montrerLieu } from '../engine/monde-vu.js';
 import { state } from './store.js';
@@ -61,6 +63,16 @@ const GUIDES = {
     cible: () => (carteOuverte() ? null : menuCarte()),
   }),
   parler: () => ({ texte: () => 'Au hameau, touche un <b>habitant</b> pour lui parler.' }),
+  // l'île à bâtir (fiche I1b) : vendre au port (l'objectif du jour « vendre », la commande du bac)
+  port: () => ({
+    texte: () => {
+      const S = window.FarmStage, ou = S && S.persoCase ? S.persoCase() : -1;
+      if (!marcheOuvert(state)) return `${marcheFerme(state)} En attendant, continue ta ferme : la bulle attend.`;
+      const heures = portDansSesHeures(state) ? '' : ` Le comptoir est ouvert ${heuresPort()} : reviens à ces heures-là.`;
+      if (distanceAuComptoir(state, ou) <= PORT.PORTEE) return `Touche le <b>comptoir</b>, sous la halle : l'onglet 💰 Vendre, puis une récolte.${heures}`;
+      return `Le <b>port</b> est au bout du chemin qui sort de la ferme, sur la côte : suis le chemin, ou mène-y la boussole (la carte du monde, touche ⚓ le port). Sous la halle, touche le <b>comptoir</b> et vends une récolte.${heures}`;
+    },
+  }),
   // (les objectifs tirés après la première semaine)
   cuisiner: () => ({ texte: () => 'Touche la <b>cuisinière</b> dans ta maison, puis choisis un plat dont tu as les ingrédients.', carte: () => ({ blocs: ['cuisiniere'] }) }),
   pecher: () => ({

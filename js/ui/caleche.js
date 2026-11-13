@@ -35,6 +35,8 @@ import { habitantsDe } from '../engine/habitants.js';
 import { meubleRefus } from '../engine/meubles.js';
 import { itemsText } from './common.js';
 import { proposerScene } from './scene.js';
+import { renvoiAuPort } from './port.js';
+import { villageActif } from '../engine/village.js';
 
 /* ---------- la calèche (fiche 7c : le Marché qui fait le tour du monde) ----------
 
@@ -173,7 +175,7 @@ export function marketTabsHtml() {
 
 // Une case : `act` = attributs de l'appui (data-mode, data-item), `prix` en haut à gauche, `coin`
 // en bas à droite (texte en police pixel, ou HTML).
-function shopSlot(icone, nom, act, prix, coin, off, label) {
+export function shopSlot(icone, nom, act, prix, coin, off, label) {
   const price = prix === null ? '' : `<span class="shop-slot-price">${pxText(String(Math.round(prix)), 'light')}<span class="shop-coin" aria-hidden="true">💰</span></span>`;
   return `<button type="button" class="inv-slot shop-slot${off ? ' off' : ''}" data-action="shop-item" ${act} title="${nom}" aria-label="${label}">` +
     `${price}<span class="inv-slot-icon" aria-hidden="true">${icone}</span>` +
@@ -233,7 +235,7 @@ function buySlot(o, ici, malle = false) {
     `${it.nom} : ${formatCoins(o.prix)} pièces${o.sorte === 'coffre' ? `, ${o.stock} dans son coffre` : `, ${formatQty(n)} en stock`}`);
 }
 
-function slotsHtml(slots, empty) {
+export function slotsHtml(slots, empty) {
   const html = slots.join('');
   return html ? `<div class="inv-slots">${html}</div>` : `<p class="hint">${empty}</p>`;
 }
@@ -354,7 +356,7 @@ export function renderComptoir(fenetre = false) {
 
 let shopOpen = null; // { mode, id } — mode : vendre, acheter
 
-function lotBtn(attrs, q, label, total, ok) {
+export function lotBtn(attrs, q, label, total, ok) {
   return `<button type="button" class="btn lot-btn" ${attrs} data-q="${q}"${ok ? '' : ' disabled'}><span>${label}</span><small class="num">${total}</small></button>`;
 }
 
@@ -490,7 +492,8 @@ export function watchCaleche() {
   if (e && e.etat === 'arret' && e.arret.sorte === 'ferme') {
     if (annonce !== state.day) {
       annonce = state.day;
-      notify(`🔔 Ding, ding ! La calèche est arrivée à la ferme, devant l'entrée${marcheOuvert(state) ? ' : vends-lui tes récoltes, achète-lui des graines' : ''}. Elle repart vers ${heureTexte(CALECHE.FERME + CALECHE.ARRET_FERME)}.`, { kind: 'info' });
+      // (le chantier « l'île à bâtir » allumé, fiche I1b : elle ne commerce plus, elle passe sans s'annoncer)
+      if (!villageActif(state)) notify(`🔔 Ding, ding ! La calèche est arrivée à la ferme, devant l'entrée${marcheOuvert(state) ? ' : vends-lui tes récoltes, achète-lui des graines' : ''}. Elle repart vers ${heureTexte(CALECHE.FERME + CALECHE.ARRET_FERME)}.`, { kind: 'info' });
     }
   } else if (e && annonce === null) annonce = e.t > 0 && e.etat !== 'gite' ? state.day : null;   // (déjà passée en arrivant)
   if (stageWindow === 'comptoir') retenirCaleche();
@@ -512,6 +515,7 @@ export function malleDepuisCarte() {
 
 // Un appui sur la malle (le personnage arrivé devant) : la fenêtre de la calèche (Vendre : on y dépose).
 export function malleToucheeDepuisCarte() {
+  if (villageActif(state)) { renvoiAuPort('La malle de la calèche'); return; }   // (fiche I1b : le port)
   if (!marcheOuvert(state)) { notify(`${CALECHE.ICONE} ${marcheFerme(state)}`, { kind: 'info' }); return; }
   openStageWindow('comptoir');
 }
@@ -535,6 +539,7 @@ export function calecheDepuisCarte() {
 // Un appui sur la calèche : là, sa fenêtre ; en chemin et tout près, on la hèle (et sa fenêtre
 // s'ouvre) ; sinon, où elle va.
 export function calecheToucheeDepuisCarte() {
+  if (villageActif(state)) { renvoiAuPort(`${CALECHE.ICONE} La calèche`); return; }   // (fiche I1b : le port)
   if (sceneCaleche()) return;
   const ou = ouPerso();
   if (!marcheOuvert(state)) {

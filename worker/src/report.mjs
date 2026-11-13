@@ -59,6 +59,9 @@ export const GAME_ACTIONS = {
   'sell-item': 'Vendre',
   'buy-item': 'Acheter à la calèche (une semence, un produit des hameaux)',
   'caleche-heler': 'Héler la calèche',
+  'port-vendre': 'Vendre au port',
+  'port-acheter': 'Acheter au port (une semence)',
+  'port-boussole': 'Mener la boussole au port',
   'deposer-item': 'Déposer dans la malle ce que la calèche vendra',
   'malle-reprendre': 'Reprendre de la malle ce qui attendait d\'être vendu',
   'commander-item': 'Commander à la calèche (livré dans la malle)',
@@ -206,6 +209,7 @@ export const INTERFACE_ACTIONS = new Set([
   'carte-monde-open', 'carte-monde-zoom', 'carte-monde-centre', 'carte-monde-lieu', // fiche 8 : la carte du monde (l'ouvrir, la régler, choisir un lieu)
   'arbre-planter', 'arbre-annuler', 'arbre-case', // planter un arbre depuis l'Inventaire : choisir la case // l'Encyclopédie, un livre qui se remplit au fil de la partie
   'inv-item', // Inventaire : fiche d'un objet
+  'port-fiche', 'port-aide', // le port (fiche I1b) : fiche d'un article, aide de l'onglet
   'shop-item', 'market-help', // la calèche : fiche d'un article, aide de l'onglet // Famille : mode modification, aide de la ration quotidienne
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
   'mail-open', // version 1.3 : ouvrir une lettre du courrier

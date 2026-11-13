@@ -28,11 +28,11 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I0a — le réglage de bascule et l'archive](I0a-reglage-et-archive.md) | 0 | — | fait |
 | [I0b — le joueur automatique remis d'aplomb](I0b-joueur-automatique.md) | 0 | I0a | fait |
 | [I1a — le port sur l'île](I1a-port-sur-l-ile.md) | 1 | I0a | fait |
-| [I1b — le commerce au port](I1b-commerce-au-port.md) | 1 | I1a | à faire |
+| [I1b — le commerce au port](I1b-commerce-au-port.md) | 1 | I1a | fait |
 | [I1c — le bac, les commandes et le catalogue d'import](I1c-bac-commandes-import.md) | 1 | I1b | à faire |
 | [I2 — le chemin du port, modifiable, et le portage](I2-chemin-et-portage.md) | 2 | I1b | à faire |
 | [I3a — l'arrivée d'un villageois](I3a-arrivee-villageois.md) | 3 | I0a | fait |
-| [I3b — la vie des villageois sur la ferme](I3b-vie-sur-la-ferme.md) | 3 | I3a | à faire |
+| [I3b — la vie des villageois sur la ferme](I3b-vie-sur-la-ferme.md) | 3 | I3a | fait (les réglages filmés à faire choisir) |
 | [I3c — les tâches attribuées](I3c-taches.md) | 3 | I3b | à faire |
 | [I3d — le tableau des villageois](I3d-tableau.md) | 3 | I3c | à faire |
 | [I4 — les prix des filières, la part et la bourse](I4-prix-part-bourse.md) | 4 | I3d, I1b | à faire |

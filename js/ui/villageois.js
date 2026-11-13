@@ -2,12 +2,13 @@ import { DATA } from '../engine/catalog.js';
 import { escapeHtml } from '../engine/format.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { setupPending } from '../engine/depart.js';
-import { hourOfDay } from '../engine/clock.js';
+import { clockHours, hourOfDay, nightActive } from '../engine/clock.js';
 import { villageActif } from '../engine/village.js';
 import {
   accueillirVillageois, ARRIVEE, arriveeDue, arriverVillageois, ficheVillageois, nombreVillageois, prendreAvis, trouverVillageois,
   verifierMaisons, villageoisDe, villageoisPourLaCarte,
 } from '../engine/villageois.js';
+import { journeesPourLaCarte, lieuxDuVillage, paroleVillageois } from '../engine/villageois-journee.js';
 import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
 import { plancheAvecChargement } from './apparence.js';
@@ -26,7 +27,10 @@ import { notify } from './toasts.js';
        le nouveau venu se met en route ; les maisons sont vérifiées (pas pendant qu'on construit : un mur repris
        puis reposé ne le met pas dehors) ; ce que le moteur a à dire devient une notification ;
      - le modèle de la carte (villageoisModele : le port, s'il est dans le plan du monde, sinon le bout du chemin) ;
-     - le pont de la carte (villageoisDepuisCarte) : il a frappé (« accueilli »), un appui sur lui (« fiche ») ;
+     - le pont de la carte (villageoisDepuisCarte) : il a frappé (« accueilli »), un appui sur lui (« parle » : sa
+       bulle, fiche I3b ; son bouton ouvre sa fiche : l'action villageois-fiche) ;
+     - fiche I3b : sa journée (js/engine/villageois-journee.js : où il est à chaque heure) et l'horloge, pour que la
+       scène le fasse vivre (villageoisModele, villageoisHorloge) ;
      - la carte du joueur compte les villageois (villageoisCarteHtml) ; un appui ouvre leur liste ;
      - sa fiche : prénom, maison, humeur, depuis quand il est là.
    Le chantier éteint (villageActif), rien ici ne se montre. */
@@ -81,15 +85,34 @@ function lieuxDuMonde() {
 }
 
 // Le modèle de la carte (js/ui/stage.js) : null le chantier éteint ou sans villageois.
+// Fiche I3b : chacun porte sa journée (journee : les segments de 0 à 24 h, js/engine/villageois-journee.js).
 export function villageoisModele() {
   if (!state || !villageActif(state) || !nombreVillageois(state)) return null;
-  return villageoisPourLaCarte(state, lieuxDuMonde());
+  const L = villageoisPourLaCarte(state, lieuxDuMonde());
+  const J = journeesPourLaCarte(state) || {};
+  for (const v of L || []) v.journee = J[v.id] || null;
+  return L;
+}
+
+// Fiche I3b : l'heure du jeu pour la scène des villageois : { h (0 à 24, décimales comprises), t (performance.now()
+// du relevé), s (secondes réelles par heure de jeu : la scène avance l'heure entre deux modèles), nuit, chemins
+// (les cases des chemins posés de la ferme : ils les préfèrent), vitesse et chemin (VILLAGE.HORAIRE) } ; null le
+// chantier éteint ou sans villageois.
+export function villageoisHorloge() {
+  if (!state || !villageActif(state) || !nombreVillageois(state)) return null;
+  return {
+    h: clockHours(state), t: typeof performance !== 'undefined' ? performance.now() : 0, s: DATA.TEMPS.SECONDES_PAR_HEURE,
+    nuit: nightActive(state), chemins: lieuxDuVillage(state).chemins,
+    vitesse: Number(DATA.VILLAGE.HORAIRE.VITESSE) || 1, chemin: Number(DATA.VILLAGE.HORAIRE.CHEMIN) || 1,
+  };
 }
 
 // Le pont de la carte : `geste` « accueilli » (il a frappé et dit sa ligne : il est chez lui, la notification),
-// « fiche » (un appui sur lui).
-export function villageoisDepuisCarte(geste, id) {
+// « fiche » (le bouton de sa bulle), « parle » (un appui sur lui, fiche I3b : sa bulle, paroleVillageois ; `o` :
+// { activite (ce que la scène le voit faire), n (le rang de l'appui) }).
+export function villageoisDepuisCarte(geste, id, o = {}) {
   if (geste === 'fiche') { ouvrirFicheVillageois(id); return { ok: true }; }
+  if (geste === 'parle') return paroleVillageois(state, id, { ...o, heure: clockHours(state) });
   if (geste !== 'accueilli') return { ok: false };
   const v = accueillirVillageois(state, id);
   if (!v) return { ok: false };
