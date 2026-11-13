@@ -7,12 +7,11 @@ import { countItem } from '../engine/inventory.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { HAMEAUX, hameauxVus } from '../engine/monde-hameaux.js';
 import { ficheHameau, garantiDuHameau, habitantAgit, habitantsDe, installerEcrits, peuplerHameau } from '../engine/habitants.js';
-import { paroleHameau } from '../engine/recit.js';
+import { ateliersDuHameau, paroleHameau } from '../engine/recit-aiguillage.js';   // (fiche I7c : par l'aiguillage du récit)
 import { reparerToit, toitsUses, USURE } from '../engine/usure.js';
 import { proposerScene } from './scene.js';
 import { registerActions } from './actions.js';
 import { applyResult } from './game-actions.js';
-import { ateliersDuHameau } from '../engine/ile.js';
 import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
 import { plancheAvecChargement } from './apparence.js';

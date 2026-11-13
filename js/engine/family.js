@@ -383,6 +383,14 @@ export function findMember(state, id) {
   return state.famille.membres.find((m) => m.id === id) || null;
 }
 
+// Le genre du personnage principal : 'f' ou 'm' (par défaut) ; le personnage principal, sinon le premier adulte, sinon
+// le premier membre (le texte d'une lettre, campaign.js ; le récit, recit.js, le reprend tel quel : fiche I7c).
+export function genreJoueur(state) {
+  const f = state.famille;
+  const m = !f || !Array.isArray(f.membres) ? null : findMember(state, f.principal) || f.membres.find((x) => !x.enfant) || f.membres[0] || null;
+  return m && m.genre === 'f' ? 'f' : 'm';
+}
+
 // Items que la famille pourrait manger mais qui servent aussi de plants
 // (aujourd'hui la patate) : ce sont ceux dont la réserve se règle.
 export function reservableItems() {

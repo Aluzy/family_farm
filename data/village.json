@@ -844,8 +844,8 @@
       "famille ; gardé dans state.noms.ile). La ferme est une terre vierge : pas de chemin intérieur (monde.js genererMonde) ;",
       "le seul chemin part de la porte de l'abri et va à la sortie de la ferme, où commence le tronçon du port : des blocs de",
       "chemin du joueur (state.sols), tracés le long de l'ancien couloir du chemin (un pas hors de lui coûte HORS_COULOIR",
-      "fois plus), LARGEUR cases de large, trois sur les SORTIE dernières cases. Pas de visite de bienvenue : son plat",
-      "(BIENVENUE.PLATS) attend dans une boîte à nourriture posée dans l'abri. Le didacticiel de l'île : ETAPES, dans",
+      "fois plus), LARGEUR cases de large, trois sur les SORTIE dernières cases. Pas de visite de bienvenue : PLAT (le plat",
+      "qu'elle apportait) attend dans une boîte à nourriture posée dans l'abri (fiche I7c : sans rien lire du récit). Le didacticiel de l'île : ETAPES, dans",
       "l'ordre, une ligne chacune (la bulle, une flèche sur ce qu'il faut toucher) ; une étape faite (ou déjà faite) passe",
       "d'elle-même, chacune se passe (« Passer »), le tout aussi ; rien ne bloque. On porte au port ce qu'on y vend (le",
       "portage, fiche I2) : la récolte se charge sur la ferme avant de partir. PORT : à combien de cases du comptoir on est",
@@ -855,6 +855,7 @@
     "DEPART": {
       "PHRASE": "Une île, un abri, un port. Tout est à bâtir.",
       "PIECES": 450,
+      "PLAT": "gratin_patates",
       "LARGEUR": 2, "SORTIE": 6, "HORS_COULOIR": 4,
       "PORT": 12,
       "ETAPES": [

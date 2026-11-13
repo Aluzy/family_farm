@@ -9,6 +9,7 @@ import { recipeUnlocked } from './kitchen.js';
 import { ETAPES } from './didacticiel.js';
 import { hameauxVus } from './monde-hameaux.js';
 import { equipementDe } from './equipement.js';
+import { recitPour } from './recit-aiguillage.js';
 
 /* ---------- quand une page de l'encyclopédie se découvre ----------
    Chaque entrée de l'encyclopédie (encyclopedie_ferme_familiale.json) a sa liste
@@ -114,7 +115,7 @@ export function conditionRemplie(state, cond, evenements = {}, memo = null) {
     case 'piece_close': return piecesCloses(state).length > 0;
     case 'veillee': return isUnlocked(state, 'veillee');
     case 'courrier': return Array.isArray(state.courrier) && state.courrier.length > 0;
-    case 'fait': return !!(state.recit && state.recit.faits && Array.isArray(state.recit.faits[v]));
+    case 'fait': return recitPour(state).faitNote(state, v);   // (fiche I7c : par l'aiguillage ; l'île, aucun)
     default: return false;
   }
 }

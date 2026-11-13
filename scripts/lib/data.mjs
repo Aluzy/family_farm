@@ -764,7 +764,14 @@ export function validateData(data) {
       needItem(`AMITIE.RETOUR.PRESENTS.${m}`, it);
       if (!(Array.isArray(v) && v.length === 2 && v.every((n) => isInt(n) && n >= 1) && v[0] <= v[1])) err(`AMITIE.RETOUR.PRESENTS.${m}.${it}`, '[de, à] : deux entiers, 1 ou plus, dans l\'ordre');
     }
-    const paliers = ((data.RECIT && data.RECIT.PALIERS) || []).length;
+    // (fiche I7c : l'échelle de l'amitié, la même que celle du récit tant qu'il est là ; les villageois de l'île la lisent ici)
+    const E = AM.ECHELLE || {};
+    if (!(isInt(E.MAX) && E.MAX > 0)) err('AMITIE.ECHELLE.MAX', 'un entier positif');
+    if (!Array.isArray(E.PALIERS) || E.PALIERS[0] !== 0 || E.PALIERS.some((x, i) => !isInt(x) || (i > 0 && x <= E.PALIERS[i - 1]) || x > E.MAX)) err('AMITIE.ECHELLE.PALIERS', 'des entiers croissants, le premier à 0, jusqu\'à MAX');
+    if (!Array.isArray(E.NOMS) || !Array.isArray(E.PALIERS) || E.NOMS.length !== E.PALIERS.length || E.NOMS.some((n) => typeof n !== 'string' || !n)) err('AMITIE.ECHELLE.NOMS', 'un nom par palier');
+    const R = data.RECIT;
+    if (R && R.PALIERS && JSON.stringify([E.MAX, E.PALIERS, E.NOMS]) !== JSON.stringify([R.RELATION_MAX, R.PALIERS, R.PALIER_NOMS])) err('AMITIE.ECHELLE', 'la même échelle que le récit (RECIT.RELATION_MAX, PALIERS, PALIER_NOMS) : le jeu d\'avant ne doit pas bouger');
+    const paliers = (E.PALIERS || []).length;
     for (const k of ['REMISE', 'DELAI']) if (!(Array.isArray(AM[k]) && AM[k].length === paliers && AM[k].every((n) => isInt(n) && n >= 0))) err(`AMITIE.${k}`, `un entier positif par palier (${paliers})`);
   }
   if (data.HABITANTS) {
@@ -1175,6 +1182,10 @@ export function validateData(data) {
   // Le chantier « l'île à bâtir », fiche I4 : les prix des filières. Toute transformation (une recette de l'Atelier qui
   // rend un objet, une transformation des stations, une recette d'artisan de VILLAGE.PRIX.ARTISANS) porte un coefPrix
   // dans VILLAGE.PRIX.FOURCHETTE, sauf exception notée (VILLAGE.PRIX.EXCEPTIONS : l'id de la recette, et pourquoi).
+  // (fiche I7c : le plat du premier jour sur l'île, sans visite de bienvenue : un plat cuisiné qui existe)
+  const DP = data.VILLAGE && data.VILLAGE.DEPART;
+  if (DP && !isDish(data, DP.PLAT)) err('VILLAGE.DEPART.PLAT', 'un plat (une recette de RECETTES)');
+
   const PX = data.VILLAGE && data.VILLAGE.PRIX;
   if (PX) {
     const F = PX.FOURCHETTE, EX = PX.EXCEPTIONS || {};

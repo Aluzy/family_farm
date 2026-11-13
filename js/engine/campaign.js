@@ -11,7 +11,8 @@ import { houseRepaired } from './depart.js';
 import { farmTerrain } from './terrain.js';
 import { hameauxVus } from './monde-hameaux.js';
 import { partVue } from './monde-vu.js';
-import { ageFait, aFait, genreJoueur } from './recit.js';
+import { genreJoueur } from './family.js';
+import { recitPour } from './recit-aiguillage.js';
 import { offrirPlan } from './plans.js';
 import { habitantsDe } from './habitants.js';
 import { cleDe, palierAmitie } from './amitie.js';
@@ -410,16 +411,13 @@ function mailDue(state, def) {
   if (q.chapitre) tests.push(!!state.campagne && chapterReached(state) >= q.chapitre);
   if (q.fait) {
     const faits = Array.isArray(q.fait) ? q.fait : [q.fait];
-    tests.push(faits.every((f) => aFait(state, f)) && (!q.apres || ageFait(state, faits[0]) !== null && premierJour(state, faits[0]) + q.apres <= state.day));
+    // (fiche I7c : les faits du récit, par l'aiguillage ; le chantier allumé, aucun, et le courrier ne vient pas)
+    const R = recitPour(state);
+    tests.push(faits.every((f) => R.aFait(state, f)) && (!q.apres || R.ageFait(state, faits[0]) !== null && R.premierJourFait(state, faits[0]) + q.apres <= state.day));
   }
   return tests.length > 0 && tests.every(Boolean);
 }
 
-// Le jour où le fait `id` a été noté la première fois (state.recit.faits : [premier, dernier, fois]).
-function premierJour(state, id) {
-  const f = state.recit && state.recit.faits && state.recit.faits[id];
-  return Array.isArray(f) && Number.isInteger(f[0]) ? f[0] : state.day;
-}
 
 // Fait arriver les lettres dont la condition vient d'être remplie : les cadeaux
 // vont dans l'inventaire, la lettre dans state.courrier (non lue). Une lettre

@@ -13,8 +13,12 @@ import { earn } from './compta.js';
 import { genererMonde } from './monde.js';
 import { elementsDuMonde } from './monde-gen.js';
 import { etatCaleche, heureTournee, tourneeDuPlan, vueDeSens } from './caleche-tournee.js';
-import { nomCocher, noterFait } from './recit.js';
+import { recitPour } from './recit-aiguillage.js';
 import { villageActif } from './village.js';
+
+// (fiche I7c : le récit passe par l'aiguillage ; le chantier allumé, la calèche ne commerce plus, rien n'est noté)
+const nomCocher = (state, majuscule = true) => recitPour(state).nomCocher(state, majuscule);
+const noterFait = (state, fait) => recitPour(state).noterFait(state, fait);
 
 /* ---------- la calèche : le Marché qui fait le tour du monde (docs/grand-monde.md, fiche 7c) ----------
 

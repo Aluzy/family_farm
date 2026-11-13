@@ -1,5 +1,6 @@
 import { escapeHtml } from '../engine/format.js';
-import { jouerScene, RECIT, scenesPossibles } from '../engine/recit.js';
+import { RECIT } from '../engine/recit.js';
+import { jouerScene, scenesPossibles } from '../engine/recit-aiguillage.js';   // (fiche I7c : l'île à bâtir n'a pas de scène)
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';

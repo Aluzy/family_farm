@@ -9,6 +9,7 @@ import { tirerApparence } from './apparence.js';
 import { validApparence } from './family.js';
 import { proposDuMoment } from './propos.js';
 import { demandeDe, texteDemande } from './demandes.js';
+import { recitPour } from './recit-aiguillage.js';
 
 /* ---------- les habitants des hameaux du grand monde (docs/grand-monde.md : fiche 7b) ----------
 
@@ -185,9 +186,8 @@ export function installerEcrits(state, hameauId, plan = null, prenomF = null, pr
   const h = habitantsDe(state)[hameauId];
   if (!h || !Array.isArray(h.foyers)) return 0;
   const g = garantiDuHameau(state, hameauId);
-  const P = (DATA.RECIT && DATA.RECIT.PERSONNAGES) || {};
-  const recit = (state.recit && typeof state.recit === 'object' && state.recit.faits) || {};
-  const ecrits = Object.entries(P).filter(([rid, d]) => d.habite && d.habite.hameau === g && !(Array.isArray(recit[`${rid}.parti`])));
+  // (fiche I7c : les personnages écrits du récit, par l'aiguillage ; l'île n'en a pas, ses hameaux non plus)
+  const ecrits = recitPour(state).ecritsDuHameau(state, g);
   const present = (rid) => h.foyers.some((f) => (f.membres || []).some((m) => m.recit === rid));
   const aPlacer = ecrits.filter(([rid]) => !present(rid));
   if (!aPlacer.length) return 0;

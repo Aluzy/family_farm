@@ -1,13 +1,14 @@
 import { DATA } from '../engine/catalog.js';
 import { proposerScene, sceneCarteDepuisCarte, sceneCarteModele } from './scene.js';
 import { positionGardee, positionNoter } from './position.js';
-import { aFait, noterVisite, RECIT, toucherLieu } from '../engine/recit.js';
-import { fermeLuit, geodeLuit, visiteObservatoire } from '../engine/fil-lune.js';
+import { aFait, RECIT } from '../engine/recit.js';
+// (fiche I7c : ce qui ferait paraître du récit passe par l'aiguillage ; l'île à bâtir n'en lit rien. La fiche I7d
+// retire le reste de la page)
+import { fermeLuit, geodeLuit, noterVisite, ouvrirSecret, toucherLieu, visiteObservatoire } from '../engine/recit-aiguillage.js';
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { arroseesParLaPluie, brume as brumeDuMoment, pleut } from '../engine/meteo.js';
 import { fetesDuJour } from '../engine/fetes.js';
-import { ouvrirSecret } from '../engine/secrets.js';
 import { entreeEncyclopedie } from '../engine/encyclopedie.js';
 import { familyName, mainCharacter, setupPending } from '../engine/depart.js';
 import { nomAffiche } from '../engine/noms.js';
@@ -1130,6 +1131,7 @@ function annoncerPage(id) {
 // nuit, la longue-vue, et une page de son carnet du ciel).
 function stageCabane() {
   const r = visiteObservatoire(state);
+  if (!r) return;   // (fiche I7c : l'île n'a pas d'observatoire qui parle, la cabane est muette)
   persistState();
   setTimeout(() => {
     notify(`🔭 ${r.texte}`, { kind: 'info' });

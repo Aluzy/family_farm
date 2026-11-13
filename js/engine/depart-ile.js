@@ -29,7 +29,6 @@ import { addItem } from './inventory.js';
 import { nomDe, proposerNom } from './noms.js';
 import { blocAt, caseBatissable, enLot, poserBloc } from './blocs.js';
 import { deposerBoite } from './repas.js';
-import { platDuVisiteur } from './bienvenue.js';
 import { commencerDidacticielIle } from './didacticiel-ile.js';
 
 const D = () => DATA.VILLAGE.DEPART;
@@ -119,16 +118,14 @@ export function poserTronconAbri(state) {
 
 /* ---------- le premier jour sans visite ---------- */
 
-// Le plat de la visite de bienvenue, dans une boîte à nourriture posée dans l'abri (la rangée du bas, au fond à
-// droite : le four et la cuisinière gardent leur place à gauche, la case derrière la porte reste le passage). La
-// visite est notée faite, la scène d'arrivée du récit aussi (elle n'a pas lieu). → le plat.
+// Le plat du premier jour (DEPART.PLAT, celui que la visite de bienvenue apportait), dans une boîte à nourriture posée
+// dans l'abri (la rangée du bas, au fond à droite : le four et la cuisinière gardent leur place à gauche, la case
+// derrière la porte reste le passage). La visite est notée faite (state.bienvenue, que la page d'avant lit encore
+// jusqu'à la fiche I7d). Fiche I7c : rien n'est lu du récit ; la scène d'arrivée n'a plus à être notée dite, aucune
+// scène ne se joue sur l'île (recit-muet.js). → le plat.
 function platDansLAbri(state) {
-  const plat = platDuVisiteur(null);
+  const plat = DATA.VILLAGE.DEPART.PLAT;
   state.bienvenue = { etat: 'faite', qui: null, plat, remis: null, jour: state.day };
-  if (state.recit && typeof state.recit === 'object') {
-    if (!state.recit.dites || typeof state.recit.dites !== 'object') state.recit.dites = {};
-    state.recit.dites.arrivee = state.day;
-  }
   const a = state.abriDepart;
   if (!a || !Array.isArray(a.sols) || !plat) return plat;
   const W = farmTerrain(state).LARGEUR, P = DATA.DIDACTICIEL.ABRI;

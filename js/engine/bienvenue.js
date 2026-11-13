@@ -7,6 +7,7 @@ import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { HABITANTS, habitantsDe, metierHabitant, peuplerHameau } from './habitants.js';
 import { validApparence } from './family.js';
+import { deHameau } from './fetes.js';
 
 /* ---------- la visite de bienvenue (fiche 18) ----------
 
@@ -47,15 +48,9 @@ export function bienvenueDe(state) {
   return b;
 }
 
-// « de Brume-Haute », « du Moulin », « des Saules », « d'Orval » (le nom d'un hameau, après « de »).
-export function deHameau(nom) {
-  const n = String(nom || '');
-  if (/^Les /.test(n)) return n.replace(/^Les /, 'des ');
-  if (/^Le /.test(n)) return n.replace(/^Le /, 'du ');
-  if (/^La /.test(n)) return `de ${n.replace(/^La /, 'la ')}`;
-  if (/^L'/.test(n)) return `de ${n.replace(/^L'/, 'l\'')}`;
-  return /^[aeiouyhàâéèêëîïôûAEIOUYHÀÂÉÈÊËÎÏÔÛ]/.test(n) ? `d'${n}` : `de ${n}`;
-}
+// « de Brume-Haute », « du Moulin », « des Saules », « d'Orval » (le nom d'un hameau, après « de ») : il vit dans
+// fetes.js (fiche I7c), d'où les fêtes et les propos le lisent sans passer par la visite.
+export { deHameau };
 
 const rngDe = (cle) => mulberry32(hache(cle));
 

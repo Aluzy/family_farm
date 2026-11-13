@@ -46,7 +46,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I6c — les traits de personnalité](I6c-traits.md) | 6 | I6b, I3c | fait (douze traits, deux ou trois chacun ; découverts en les voyant vivre ou en les écoutant ; le réglage « marqué » en place, « doux » filmé aussi : à faire choisir ; voir docs/ile.md) |
 | [I7a — les objectifs sans récit](I7a-objectifs.md) | 7 | I0a | fait, sauf le point 6 (le joueur automatique suit les paliers : après I0b) |
 | [I7b — le nouveau départ](I7b-nouveau-depart.md) | 7 | I7a, I1b, I3a | fait (« seul » en trois appuis, la terre vierge, le didacticiel d'une ligne par étape, 15 étapes ; une étape « charger » ajoutée : le portage d'I2 ; pas de test avec un joueur réel) |
-| [I7c — le récit retiré du moteur](I7c-recit-moteur.md) | 7 | I7a, I6a | à faire |
+| [I7c — le récit retiré du moteur](I7c-recit-moteur.md) | 7 | I7a, I6a | fait (un aiguillage, deux récits : l'ancien éteint, le muet allumé ; la page passe par lui pour ce qui ferait parler le récit ; la confiance ne débloquait rien de mécanique ; les lieux du récit gardés muets ; pas de nouveau format ; voir docs/ile.md) |
 | [I7d — le récit retiré de l'interface, de l'aide et de l'encyclopédie](I7d-recit-interface.md) | 7 | I7c | à faire |
 | [I7e — les hameaux, la calèche et les boucles de chemins retirés](I7e-hameaux-caleche.md) | 7 | I7d, I1c, I2 | à faire |
 | [I7f — la migration des parties en cours](I7f-migration.md) | 7 | I7e, I7g, I3a | à faire |

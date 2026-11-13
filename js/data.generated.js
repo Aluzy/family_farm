@@ -8393,6 +8393,7 @@ export const RAW_DATA = {
     "REMBOURSEMENT": { "PRIX_NIVEAUX": [0, 3000, 8000, 20000] }
   },
   "AMITIE": {
+    "ECHELLE": { "MAX": 100, "PALIERS": [0, 10, 25, 45, 70], "NOMS": ["inconnu", "poli", "cordial", "proche", "intime"] },
     "CADEAU": { "adore": 8, "aime": 4, "neutre": 1, "deteste": -4 },
     "PAROLE": 2,
     "VISITE": 1,
@@ -9926,6 +9927,7 @@ export const RAW_DATA = {
     "DEPART": {
       "PHRASE": "Une île, un abri, un port. Tout est à bâtir.",
       "PIECES": 450,
+      "PLAT": "gratin_patates",
       "LARGEUR": 2,
       "SORTIE": 6,
       "HORS_COULOIR": 4,

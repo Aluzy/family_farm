@@ -6,7 +6,6 @@ import { farmSeed } from './terrain.js';
 import { addItem } from './inventory.js';
 import { villageActif } from './village.js';
 import { noterObjectif } from './objectifs-compte.js';
-import { RECIT } from './recit.js';
 import {
   AMITIE, HAMEAU_VILLAGE, amitieAvec, amitieDe, fiche, goutsTires, offrir, palierAmitie, parlerAmitie,
 } from './amitie.js';
@@ -23,7 +22,7 @@ import { ileEnPhrase } from './noms.js';
 /* ---------- l'amitié avec les villageois (le chantier « l'île à bâtir », fiche I6a) ----------
 
    Ce qui liait le joueur aux habitants des hameaux, rebranché sur les villageois. Rien n'est recopié : l'amitié
-   d'un villageois est celle d'amitie.js (les mêmes paliers, RECIT.PALIERS ; les mêmes gains, data/amitie.json), sous
+   d'un villageois est celle d'amitie.js (les mêmes paliers, AMITIE.ECHELLE ; les mêmes gains, data/amitie.json), sous
    le « hameau » HAMEAU_VILLAGE (state.amitie.pnj[l'id du villageois]) ; ses demandes sont celles de demandes.js, ses
    invitations celles d'invitations.js, ses propos ceux de propos.js. Ici, ce qui est propre à l'île (VILLAGE.AMITIE,
    data/village.json) :
@@ -345,7 +344,7 @@ export function reparerAmitieVillageois(state) {
     const p = objet(a.pnj[v.id]) ? a.pnj[v.id] : null;
     if (!p) { a.pnj[v.id] = { pts: Number(A().ACCUEIL) || 0, gouts: {} }; continue; }
     const pts = Number(p.pts);
-    p.pts = Number.isFinite(pts) ? Math.max(0, Math.min(RECIT.RELATION_MAX, Math.round(pts))) : Number(A().ACCUEIL) || 0;
+    p.pts = Number.isFinite(pts) ? Math.max(0, Math.min(DATA.AMITIE.ECHELLE.MAX, Math.round(pts))) : Number(A().ACCUEIL) || 0;
     p.gouts = objet(p.gouts) ? Object.fromEntries(Object.entries(p.gouts).filter(([it, s]) => DATA.OBJETS[it] && ['adore', 'aime', 'neutre', 'deteste'].includes(s))) : {};
     if ('present' in p && !presentValide(p.present)) delete p.present;
   }

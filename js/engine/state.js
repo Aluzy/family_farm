@@ -9,7 +9,6 @@ import {
 import { makePlot, seedItem, startPlots, zoneTile } from './crops.js';
 import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
-import { remboursementCommerce } from './ile.js';
 import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
 import { nouveauDehors, nouveauPort, villageActif } from './village.js';
@@ -33,9 +32,8 @@ import { genererFerme } from './ferme-generee.js';
 import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
 import { nouvelEquipement } from './equipement.js';
-import { BIENVENUE, nouvelleBienvenue } from './bienvenue.js';
 import { nouveauCompagnon } from './compagnon.js';
-import { nouveauRecit } from './recit.js';
+import { recitDAvant, recitPour } from './recit-aiguillage.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
 import { reparerLiens } from './liens.js';
 import { reparerBourse, reparerEtal } from './bourse.js';
@@ -141,13 +139,16 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     caleche: nouvelleCaleche(), // la calèche (caleche.js, fiche 7c) : son coffre, ses retenues
     equipement: nouvelEquipement(), // fiche 11 : les pièces de chaque membre, le sac (equipement.js)
     litPrincipal: null, // fiche 17 : le lit choisi par le personnage principal (blocs.js choisirLit ; null : le premier)
-    bienvenue: nouvelleBienvenue(), // fiche 18 : la visite de bienvenue du deuxième jour (bienvenue.js)
+    // fiche 18 : la visite de bienvenue du deuxième jour (bienvenue.js) ; fiche I7c : le chantier allumé, déjà faite
+    // (l'aiguillage du récit, recit-aiguillage.js : la partie naissante, le réglage seul décide)
+    bienvenue: recitPour(null).nouvelleBienvenue(),
     // fiche 19 : le compagnon aide à la ferme (compagnon.js) : l'option, ce qu'il a fait aujourd'hui, sa
     // cruche. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
     compagnon: nouveauCompagnon(),
     // le récit de Céron (recit.js, docs/recit/) : les faits, les relations, la confiance des hameaux, les
-    // répliques dites, le carnet. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
-    recit: nouveauRecit(),
+    // répliques dites, le carnet. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas).
+    // Fiche I7c : le chantier allumé, un récit vide que rien n'écrit (recit-muet.js ; la page d'avant le lit encore)
+    recit: recitPour(null).nouveauRecit(),
     amitie: { pnj: {}, visites: {}, porte: [] }, // l'amitié avec les habitants des hameaux (js/engine/amitie.js)
     invitations: { seq: 0, liste: [] },
     plans: { connus: {}, explores: {}, amis: {} },
@@ -535,8 +536,8 @@ export const MIGRATIONS = {
   // v61 → v62 : la visite de bienvenue (bienvenue.js, fiche 18). Une partie qui n'a pas passé le jour
   // de la visite l'attend ; une partie plus avancée ne la reçoit pas (« faite », sans plat).
   61: (state) => {
-    const b = nouvelleBienvenue();
-    if ((Number(state.day) || 1) > BIENVENUE.JOUR) b.etat = 'faite';
+    const b = recitDAvant().nouvelleBienvenue();
+    if ((Number(state.day) || 1) > recitDAvant().jourBienvenue()) b.etat = 'faite';
     return { ...state, bienvenue: b, version: 62 };
   },
   // v62 → v63 : le récit, lot 7 (l'économie de l'île) : les commerces du niveau 10 disparaissent (la veillée à
@@ -544,7 +545,7 @@ export const MIGRATIONS = {
   // compté comme un gain de la journée (compta : remboursement).
   62: (state) => {
     const { commerce, ...reste } = state;
-    const rendu = remboursementCommerce(commerce);
+    const rendu = recitDAvant().remboursementCommerce(commerce);
     const out = { ...reste, version: 63 };
     if (rendu > 0) {
       out.pieces = (Number(state.pieces) || 0) + rendu;
@@ -572,14 +573,14 @@ export const MIGRATIONS = {
     const l = Array.isArray(out.courrier) ? out.courrier.find((x) => x && x.id === 'notaire_legs') : null;
     if (!l) return out;
     if (l.verse) {
-      const r = out.recit && typeof out.recit === 'object' && !Array.isArray(out.recit) ? out.recit : nouveauRecit();
+      const r = out.recit && typeof out.recit === 'object' && !Array.isArray(out.recit) ? out.recit : recitDAvant().nouveauRecit();
       const faits = r.faits && typeof r.faits === 'object' && !Array.isArray(r.faits) ? r.faits : {};
       const j = Math.max(1, Math.floor(Number(state.day) || 1));
       if (!Array.isArray(faits['enveloppe.ouverte'])) faits['enveloppe.ouverte'] = [j, j, 1];
       out.recit = { ...r, faits };
     } else {
       out.courrier = out.courrier.map((x) => (x === l ? { ...x, verse: true } : x));
-      addItem(out, DATA.RECIT.ENVELOPPE.OBJET, 1);
+      addItem(out, recitDAvant().objetEnveloppe(), 1);
     }
     return out;
   },

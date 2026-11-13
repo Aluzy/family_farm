@@ -83,7 +83,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
-| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c à I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
+| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d à I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
@@ -680,8 +680,8 @@ quels. Ce qui est propre à l'île est dans `js/engine/villageois-amitie.js` et 
   `invitations`, `propos` restent verts réglage éteint ; `village-social` suit la famille amie par l'amitié. Éteint,
   le CSV de la simulation est le même octet pour octet.
 - Reste : le joueur automatique ne parle pas aux villageois et n'offre rien (il les invite quand il invite) ; les
-  tâches qu'il aime et les humeurs (I6c, fait) ; les pièces de l'artisan ami (I5a) ; le retrait du récit (`RECIT.PALIERS`
-  reste la table des paliers, I7c) ; le bot ne rend pas les demandes des villageois.
+  tâches qu'il aime et les humeurs (I6c, fait) ; les pièces de l'artisan ami (I5a) ; le retrait du récit (l'échelle est
+  maintenant `AMITIE.ECHELLE`, I7c) ; le bot ne rend pas les demandes des villageois.
 
 ## Les villageois : les liens entre eux (I6b, fait)
 
@@ -1054,7 +1054,70 @@ Ce qui est posé (I7b ; les réglages : `VILLAGE.DEPART`, data/village.json ; le
   villageois et sa tâche. Aucune erreur dans la console.
 - Reste : le test avec un joueur qui ne connaît pas le jeu (`docs/test-utilisateur.md`) n'est pas fait ; sous une
   fenêtre par-dessus (la liste des villageois), la bulle passe sous son voile ; le panneau « Ville » au bout de
-  l'ancien chemin reste ; retirer `bienvenue.js` et l'ancien didacticiel (I7c, I7d).
+  l'ancien chemin reste ; retirer `bienvenue.js` et l'ancien didacticiel de la page (I7d ; le moteur ne lit plus la
+  visite allumé, I7c).
+
+## Le récit retiré du moteur (I7c, fait)
+
+Le moteur d'une partie du chantier ne lit plus rien du récit : ni personnages écrits, ni scènes, ni répliques, ni
+confiance, ni courrier, ni ateliers tenus par un personnage, ni visite de bienvenue, ni pierre de lune, ni secrets.
+Éteint, le jeu est le même octet pour octet (le CSV de la simulation, les tests du récit).
+
+- **L'aiguillage** (`js/engine/recit-aiguillage.js`) : le seul point d'entrée du moteur vers le récit. Deux
+  implémentations d'une même petite interface : `RECIT_ANCIEN` (`recit-ancien.js`, le jeu publié : elle passe aux
+  modules du récit tels quels) et `RECIT_MUET` (`recit-muet.js`, l'île : aucun fait, aucune relation, aucune
+  confiance, aucune scène, aucun lieu qui parle, la nuit ne fait rien du récit). `recitPour(state)` choisit, en un seul
+  `if`, celle de la partie ; `recitDAvant()` sert aux migrations des formats d'avant le chantier. L'interface :
+  `nouveauRecit`, `nouvelleBienvenue` (la partie neuve), `nuit` (la visite, l'empreinte, la dérive, les toits),
+  `aFait`, `ageFait`, `noterFait`, `premierJourFait`, `faitNote` (les faits), `ecrit`, `relation`, `ajouterRelation`,
+  `confiance`, `ajouterConfiance`, `ecritsDuHameau`, `nomCocher`, `facteurPousse` (la pierre de lune), et ce que la
+  page demande au récit : `scenesPossibles`, `jouerScene`, `paroleHameau`, `toucherLieu`, `noterVisite`,
+  `visiteObservatoire`, `geodeLuit`, `fermeLuit`, `ouvrirSecret`, `ateliersDuHameau` (ré-exportés par l'aiguillage
+  sous leur nom ; la page les y prend : `js/ui/scene.js`, `stage.js`, `habitants.js`, une ligne d'import chacun).
+- **Hors de l'aiguillage**, ce qui n'est pas du récit en sort : l'échelle de l'amitié (`AMITIE.ECHELLE`,
+  data/amitie.json : la même que `RECIT.RELATION_MAX`, `PALIERS`, `PALIER_NOMS`, build-data le vérifie ; amitie.js,
+  invitations.js, villageois-amitie.js la lisent), `genreJoueur` (family.js : le courrier), `deHameau` (fetes.js : les
+  fêtes et les propos), le plat du premier jour (`VILLAGE.DEPART.PLAT`, depart-ile.js, à la place de `platDuVisiteur`).
+  depart-ile.js ne note plus la scène d'arrivée dite : aucune scène ne se joue sur l'île.
+- **Le relevé** (21 fichiers du moteur, dont les six du récit ; la version complète est jointe au compte rendu de la
+  fiche) : amitie.js (l'échelle, les personnages écrits, leurs relations, la confiance de la nuit), caleche.js (le nom
+  du cocher, une vente notée : déjà inerte allumé, I1b), campaign.js (les faits du courrier ; `DATA.COURRIER` reste, le
+  courrier ne part pas allumé, I7a), crops.js (la pierre de lune ; les effets de la lune passent par lune.js, pas par
+  fil-lune.js : inchangés), decouverte.js (la condition `fait:`), habitants.js (les personnages écrits installés dans
+  les hameaux garantis : aucun allumé), invitations.js, night.js (`bienvenueNuit`, `recitNuit`), projets.js (la
+  confiance d'un projet de hameau), state.js (la partie neuve ; les migrations 61 à 64 par `recitDAvant`),
+  villageois-amitie.js, depart-ile.js, fetes.js et propos.js (`deHameau`) : tous passent par l'aiguillage ou n'en ont
+  plus besoin. Restent, inertes allumé : l'index (`export *` des six modules, pour la page et les tests d'avant : rien
+  n'y tourne à l'import), `DATA.COURRIER` (campaign.js), `DATA.BIENVENUE.PLATS` (la fête d'un hameau, I7e),
+  `state.bienvenue` marquée faite (la page d'avant le lit, I7d), les lieux du récit du plan du monde.
+- **Les mécaniques** : la **confiance** est retirée ; elle ne débloquait rien de mécanique (aucune condition de scène
+  ni de réplique ne la lit ; elle choisissait le salut des habitants). Ce que le récit ouvrait d'autre : les ateliers
+  de Basile et Garance → les commerces, ouverts au palier 6 (paliers, I5a à I5c ; les meubles de l'ébéniste : au
+  catalogue d'import du port, proposé, pas fait) ; les graines de la serre → le palier 6 (déjà, I7a) ; les espèces de
+  l'exploration → les sauvages du port (I1c) ; la pierre de lune, l'enveloppe, les trésors des secrets : rien. La
+  **veillée** du récit ne se joue plus allumé (ni au Gué ni à la ferme : aucune scène) ; celle du village (I8a) se tient
+  seule. Les **ateliers** : `ateliersDuHameau` rend [] allumé, la calèche ne s'ouvre plus. Les **lieux du récit**
+  (l'observatoire, l'atelier de Frida, l'épave, la cale, l'amas d'améthyste) et les secrets restent sur la carte, muets :
+  ils sont placés avant le port, les ôter le déplacerait. Le carnet du récit : rien du chantier ne le lit.
+- **La sauvegarde** : pas de nouveau format. Une partie du chantier garde un `state.recit` vide, que rien n'écrit, et
+  sa visite de bienvenue marquée faite (la page d'avant les lit encore).
+- **Les tests** : `tests/engine/village-sans-recit.test.mjs` (la lecture des imports : aucun module du moteur
+  n'importe le récit, hors ses modules, `recit-ancien.js` — que seul l'aiguillage importe — et l'index ; depuis
+  village.js, et depuis tout module, le récit ne s'atteint que par l'aiguillage ; la page prend à l'aiguillage ce qui
+  ferait parler le récit ; le récit vidé — `DATA.RECIT`, `SECRETS`, `ILE`, `COURRIER` —, les hameaux garantis peuplés,
+  30 nuits du joueur automatique sans erreur : ni personnage écrit, ni fait, ni courrier, aucune scène, aucun lieu ni
+  secret qui parle ; éteint, le récit d'avant ; les deux récits ont la même interface). `village-depart` vérifie
+  qu'aucune scène ne se joue au premier jour. Les tests du récit restent verts éteint.
+- **La simulation** : éteint, le CSV est le même octet pour octet ; `--village`, le même aussi (le joueur simulé ne
+  touchait pas au récit ; le plat de bienvenue posé la nuit ne changeait rien).
+- **Vérifié dans Chromium** : une partie de l'île (`?village=1`, « Seul ») jouée 35 jours (le joueur automatique et le
+  bouton « Dormir »), deux pleines lunes (la veillée du village le jour 34), sans erreur de console ; aucun nom de
+  personnage écrit, ni lettre, ni scène, ni page de carnet ; `state.recit` vide. Une partie normale : la scène d'arrivée
+  sur la carte, la visite de bienvenue le deuxième jour.
+- Reste (I7d) : la page lit encore le récit pour le reste (le carnet et son bouton, l'inventaire, la calèche, la boucle
+  du jeu, l'ancien didacticiel, les noms des paliers d'amitié), l'élément « veillee » du niveau 10 et son texte ;
+  (I7e) les hameaux, leurs fêtes et leurs projets ; (I7f) le `state.recit` et la visite des parties d'avant, la ligne
+  `avant` de la chronique ; (I9h) les fichiers du récit, l'aiguillage et `recit-ancien.js`.
 
 ## La chronique et les noms (I7g, fait)
 

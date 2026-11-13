@@ -19,8 +19,7 @@ import { dayOfMonth, monthName, moonPhase } from './lune.js';
 import { meteoDuJour } from './meteo.js';
 import { evenementsDe, liensDe, trouverHabitant } from './voisins.js';
 import { habitantsDe } from './habitants.js';
-import { aHameau, fetesAVenir, fetesDuJour, nomFete, venuALaFete } from './fetes.js';
-import { deHameau } from './bienvenue.js';
+import { aHameau, deHameau, fetesAVenir, fetesDuJour, nomFete, venuALaFete } from './fetes.js';
 import { clockHours } from './clock.js';
 
 const PROPOS = () => DATA.HABITANTS.PROPOS;

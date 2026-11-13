@@ -20,6 +20,7 @@ import {
   nomIlePropose, nommerIle, passerDidacticielIle, passerEtapeIle, simulatePlay, solsPoses, STATE_VERSION, villageoisDe,
 } from '../../js/engine/index.js';
 import { blocGid } from '../../js/engine/planche.js';
+import { scenesPossibles } from '../../js/engine/recit-aiguillage.js';
 import { assert, assertEqual, avecVillage, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
@@ -119,8 +120,10 @@ test('la terre vierge : pas de chemin intérieur ; le seul chemin va de la porte
 test('le premier jour sans visite : pas de visite ni de scène d\'arrivée, le plat attend dans l\'abri', () => {
   const s = departGarde();
   assertEqual(s.bienvenue.etat, 'faite', 'la visite n\'a pas lieu');
-  assert(Number.isInteger(s.recit.dites.arrivee), 'la scène d\'arrivée est notée dite');
-  const plat = DATA.BIENVENUE.PLATS['*'];
+  // (fiche I7c : la scène d'arrivée n'a plus à être notée dite : aucune scène ne se joue sur l'île, le récit reste vide)
+  assertEqual(scenesPossibles(s, { lieu: 'ferme' }), [], 'aucune scène sur la ferme');
+  assertEqual(s.recit.dites, {}, 'rien n\'est noté au récit');
+  const plat = DATA.VILLAGE.DEPART.PLAT;
   assertEqual(boiteCounts(s), { [plat]: 1 }, 'le plat dans la boîte à nourriture');
   const boite = Object.entries(s.blocs).find(([, k]) => k === 'boite_nourriture');
   assert(boite && s.abriDepart.sols.includes(Number(boite[0])), 'la boîte est dans l\'abri');

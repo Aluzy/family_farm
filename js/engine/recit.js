@@ -5,7 +5,7 @@ import { fail } from './devices.js';
 import { hourOfDay } from './clock.js';
 import { moonPhase } from './lune.js';
 import { chapterReached, isUnlocked } from './campaign.js';
-import { findMember, memberName } from './family.js';
+import { findMember, genreJoueur, memberName } from './family.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
 import { soilCount } from './crops.js';
@@ -204,11 +204,9 @@ function principal(state) {
   return findMember(state, f.principal) || f.membres.find((m) => !m.enfant) || f.membres[0] || null;
 }
 
-// Le genre du personnage principal : 'f' ou 'm' (par défaut).
-export function genreJoueur(state) {
-  const m = principal(state);
-  return m && m.genre === 'f' ? 'f' : 'm';
-}
+// Le genre du personnage principal : 'f' ou 'm' (par défaut). (fiche I7c : il vit dans family.js, d'où le courrier de
+// campaign.js le lit sans passer par le récit)
+export { genreJoueur };
 
 function aDesEnfants(state) {
   return !!(state.famille && Array.isArray(state.famille.membres) && state.famille.membres.some((m) => m.enfant));

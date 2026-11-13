@@ -19,12 +19,22 @@ import { farmSeed } from './terrain.js';
 import { addItem } from './inventory.js';
 import { habitantsDe } from './habitants.js';
 import { ajouterAmitie, cleDe } from './amitie.js';
-import { deHameau } from './bienvenue.js';
 import { noterChronique } from './chronique.js';
 
 const FE = () => DATA.FETES;
 const MOIS = () => DATA.LUNE.JOURS_MOIS;
 const GARDE = 30;
+
+// « de Brume-Haute », « du Moulin », « des Saules », « d'Orval » (le nom d'un hameau, après « de »). (fiche I7c : il
+// vivait dans bienvenue.js, qui le reprend d'ici ; les fêtes et les propos le lisent sans passer par le récit)
+export function deHameau(nom) {
+  const n = String(nom || '');
+  if (/^Les /.test(n)) return n.replace(/^Les /, 'des ');
+  if (/^Le /.test(n)) return n.replace(/^Le /, 'du ');
+  if (/^La /.test(n)) return `de ${n.replace(/^La /, 'la ')}`;
+  if (/^L'/.test(n)) return `de ${n.replace(/^L'/, 'l\'')}`;
+  return /^[aeiouyhàâéèêëîïôûAEIOUYHÀÂÉÈÊËÎÏÔÛ]/.test(n) ? `d'${n}` : `de ${n}`;
+}
 
 // « à » devant le nom d'un hameau : aux Genêts, au Gué, à la Combe, à l'Orée, à Brévans.
 export function aHameau(nom) {
