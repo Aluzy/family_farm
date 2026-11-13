@@ -42,7 +42,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I5b — la mercerie](I5b-mercerie.md) | 5 | I5a | à faire |
 | [I5c — la scierie, la boulangerie, la fromagerie](I5c-autres-commerces.md) | 5 | I5a | à faire |
 | [I6a — l'amitié avec les villageois](I6a-amitie.md) | 6 | I3b | fait (goûts tirés, pas « par tâche préférée » ; le présent d'un ami donné en main propre) |
-| [I6b — les liens entre villageois](I6b-liens.md) | 6 | I6a | à faire (I3b+ en a posé la scène et un remplaçant de l'affinité) |
+| [I6b — les liens entre villageois](I6b-liens.md) | 6 | I6a | fait (l'affinité gardée, les paliers, le bonheur, le travail à deux, l'entraide, le banc à deux, la visite du soir, les foyers et l'enfant ; un repas apporté ne nourrit pas ; voir docs/ile.md) |
 | [I6c — les traits de personnalité](I6c-traits.md) | 6 | I6b, I3c | à faire |
 | [I7a — les objectifs sans récit](I7a-objectifs.md) | 7 | I0a | fait, sauf le point 6 (le joueur automatique suit les paliers : après I0b) |
 | [I7b — le nouveau départ](I7b-nouveau-depart.md) | 7 | I7a, I1b, I3a | à faire |

@@ -65,6 +65,9 @@ export const GAME_ACTIONS = {
   'villageois-donner': 'Donner un outil à un villageois',
   'villageois-reprendre': 'Reprendre l\'outil d\'un villageois',
   'villageois-vendre-ok': 'Marquer ce qui est à vendre (la tournée du port)',
+  // (fiche I6b : les liens entre villageois, js/ui/liens.js)
+  'liens-foyer-ok': 'Installer deux villageois proches dans un foyer',
+  'liens-enfant': 'Proposer à un foyer d\'accueillir un enfant',
   'port-acheter': 'Acheter au port (une semence)',
   'port-decharger': 'Décharger sous la halle du port (tout ce qui est chargé se vend)',
   'port-honorer': 'Honorer une commande du bac',
@@ -206,6 +209,8 @@ export const INTERFACE_ACTIONS = new Set([
   'villageois-taches', 'villageois-vendre',
   // (fiche I3d : le tableau des villageois : js/ui/tableau.js)
   'tableau-ouvrir', 'tableau-periode', 'tableau-tri', 'tableau-detail',
+  // (fiche I6b : la vue d'ensemble des liens, proposer un foyer)
+  'liens-village', 'liens-foyer',
   // (les gemmes : js/ui/gemmes.js)
   'gemmes-ouvrir', 'gemmes-onglet', 'gemmes-pack', 'gemmes-payer', 'gemmes-acheter', 'gemmes-connexion',
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',

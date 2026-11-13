@@ -30,6 +30,8 @@ import { buildMode, state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
+import { direAvisLien, liensFicheHtml } from './liens.js';
+import { arriveeEnfantRefus, arriverEnfant } from '../engine/liens.js';
 
 /* ---------- les villageois, côté page (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -54,6 +56,9 @@ import { notify } from './toasts.js';
        jauge, « 🎁 Offrir ») ; le présent qu'un ami te donne en te saluant ou en te parlant ; sa fiche dit son palier, ses
        goûts connus, sa demande en cours, le présent qu'il garde pour toi, et propose de lui offrir un cadeau ou de
        l'inviter à un repas ; la liste des villageois dit le palier de chacun.
+     - I6b (les liens entre villageois, js/engine/liens.js ; la page : js/ui/liens.js) : sa fiche dit ses liens et son
+       foyer, la liste des villageois mène à la vue d'ensemble (« 🤝 Les liens ») ; les avis de la nuit (deux amis, un
+       foyer, un enfant, un repas apporté) deviennent des notifications.
    Le chantier éteint (villageActif), rien ici ne se montre. */
 
 const WATCH_MS = 1000;
@@ -69,6 +74,7 @@ function direAvis() {
     if (quoi === 'arrive') notify(`🏝️ ${v.prenom} est arrivé${accord(v, 'e', '')} par le bac et s'installe dans sa maison.`, { kind: 'info' });
     else if (quoi === 'sans_maison') notify(`🏚️ ${v.prenom} n'a plus de maison (sa boîte aux lettres, son lit ou sa pièce ont disparu) : ${accord(v, 'elle', 'il')} dort à l'abri et attend une maison libre.`, { kind: 'alerte' });
     else if (quoi === 'installe') notify(`🏠 ${v.prenom} a trouvé une maison libre et s'y installe.`, { kind: 'info' });
+    else direAvisLien(v, quoi);
   }
 }
 
@@ -84,6 +90,8 @@ export function watchVillageois() {
     change = r.perdues.length > 0 || r.installes.length > 0;
   }
   if (arriveeDue(state) && arriverVillageois(state).ok) change = true;
+  // (I6b : sinon, l'enfant qu'un foyer attend débarque de ce bac)
+  else if (!nightActive(state) && arriveeEnfantRefus(state) === null && arriverEnfant(state).ok) change = true;
   // (en route depuis le matin, sans que la carte l'ait vu arriver — elle était fermée, le personnage ailleurs — : à
   // la fin de l'heure d'arrivée, il est chez lui)
   if (hourOfDay(state) >= DATA.PORT.BAC.HEURES[1]) for (const v of villageoisDe(state)) if (v.accueil === 'en_route' && accueillirVillageois(state, v.id)) change = true;
@@ -184,7 +192,7 @@ export function villageoisCarteHtml() {
   return `<button type="button" class="player-villageois" data-action="villageois-liste" title="${t}" aria-label="${t}"><span aria-hidden="true">🏝️</span> <span class="num">${n}</span></button>`;
 }
 
-const portrait = (f) => persoHtml(f.perso, false, '', '', f.apparence ? plancheAvecChargement(f.apparence, false) : null);
+const portrait = (f) => persoHtml(f.perso, !!f.enfant, '', '', f.apparence ? plancheAvecChargement(f.apparence, !!f.enfant) : null);
 const HUMEUR_ICONE = { heureux: '😊', content: '🙂', triste: '😔', faim: '🍽️' };
 
 function bonheurHtml(f) {
@@ -327,12 +335,13 @@ export function ouvrirFicheVillageois(id) {
   const repos = f.repos ? `<p class="muted">😴 Aujourd'hui, ${f.genre === 'm' ? 'il' : 'elle'} se repose (mal nourri${f.genre === 'm' ? '' : 'e'} ou sans lit la nuit dernière).</p>` : '';
   openModal(`
     <h2 id="villageois-title"><span class="villageois-portrait">${portrait(f)}</span> ${escapeHtml(f.prenom)}</h2>
-    <p class="muted">Villageois${f.genre === 'm' ? '' : 'e'} de l'île, ${escapeHtml(depuisTexte(f))}.</p>
+    <p class="muted">${f.enfant ? 'Enfant' : `Villageois${f.genre === 'm' ? '' : 'e'}`} de l'île, ${escapeHtml(depuisTexte(f))}.</p>
     <dl class="villageois-fiche">
       <dt>🏠 Maison</dt><dd>${escapeHtml(f.maison)}</dd>
       <dt>${HUMEUR_ICONE[f.humeur] || '🙂'} Humeur</dt><dd>${escapeHtml(f.humeurTexte)} · bonheur ${bonheurHtml(f)}</dd>
       ${amitieHtml(id, f)}
-      ${tacheHtml(id)}
+      ${liensFicheHtml(id)}
+      ${f.enfant ? `<dt>🪁 Journée</dt><dd>Les enfants ne travaillent pas : ${f.genre === 'm' ? 'il' : 'elle'} joue sur la place.</dd>` : tacheHtml(id)}
     </dl>
     ${repos}
     <button type="button" class="btn primary" data-action="close-modal" id="villageois-close">Fermer</button>`, { labelledBy: 'villageois-title', className: 'modal bois villageois-modal', focus: '#villageois-close', preventScroll: true });
@@ -359,7 +368,8 @@ export function ouvrirListeVillageois() {
     <h2 id="villageois-liste-title">🏝️ Les villageois : qui fait quoi</h2>
     <p class="muted">${V.length} villageois sur l'île. Un nouveau venu débarque un jour de bac s'il trouve une maison libre : une pièce close avec un lit libre et une boîte aux lettres contre sa porte.</p>
     <ul class="villageois-liste">${lignes}</ul>
-    <button type="button" class="btn primary" data-action="close-modal" id="villageois-liste-close">Fermer</button>`, { labelledBy: 'villageois-liste-title', className: 'modal bois villageois-modal', focus: '#villageois-liste-close', preventScroll: true });
+    <div class="row"><button type="button" class="btn" data-action="liens-village">🤝 Les liens du village</button>
+    <button type="button" class="btn primary" data-action="close-modal" id="villageois-liste-close">Fermer</button></div>`, { labelledBy: 'villageois-liste-title', className: 'modal bois villageois-modal', focus: '#villageois-liste-close', preventScroll: true });
 }
 
 registerActions({

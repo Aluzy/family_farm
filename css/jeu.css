@@ -4236,3 +4236,11 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
   .tableau-portrait .perso-px { --s: 32px; }
   .tableau-qui { gap: 3px; }
 }
+/* I6b : les liens entre villageois (la fiche, la vue d'ensemble) */
+.liens-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.lien-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.lien-qui { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.lien-portrait .perso-px { --s: var(--portrait-32, 32px); }
+.lien-etat { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 0.9em; }
+.lien-palier { white-space: nowrap; }
+.lien-jauge { width: 52px; }

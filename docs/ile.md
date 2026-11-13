@@ -82,7 +82,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d (fait) | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
-| 6. Les liens | I6a (fait), I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
+| 6. Les liens | I6a (fait), I6b (fait), I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a, I8b | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
@@ -416,8 +416,8 @@ l'heure, comme la journée de I3b ; loin de la vue, rien ne s'anime.
   mangent à la même table, plus une affinité tirée de la graine et des deux ids (0 à `AFFINITE`) ; connaissance dès
   `PALIERS.connaissance` (10), ami dès `PALIERS.ami` (40). La famille du joueur (`b = 'famille'`) : connue dès
   l'arrivée, amie dès le palier « cordial » de l'amitié du joueur (I6a ; avant : après 4 jours). `liensDuVillage` (toutes les paires, gardées pour le jour),
-  `liensPourLaCarte` (le modèle de la carte). **I6b le remplacera** par l'affinité sauvegardée : seul le corps de
-  `scoreDe` change (le commentaire du module et la fiche I6b le disent).
+  `liensPourLaCarte` (le modèle de la carte). **I6b l'a remplacé** par l'affinité sauvegardée (`liens.js`) : seul le
+  corps de `scoreDe` a changé ; ce calcul reste l'estimation d'une paire qui n'a pas encore passé de nuit ensemble.
 - **Des sorties qui ont un but** (`villageois-journee.js`, `VILLAGE.SOCIAL.BUTS`) : la grille des créneaux de I3b
   reste le socle ; chaque créneau dehors est maintenant choisi pour tout le village à la fois, créneau par créneau
   (déterministe), et tire au poids un but qui a un lieu libre : **visite** (il va devant la porte d'un ami, tourné
@@ -469,7 +469,7 @@ l'heure, comme la journée de I3b ; loin de la vue, rien ne s'anime.
 - **Les tests** : `tests/engine/village-social.test.mjs` (la connaissance, les sorties et leurs compagnons, jamais
   avec un inconnu, le déterminisme, jamais dans un mur sur un lot de fermes, les répliques) ;
   `village-journee.test.mjs` suit les sorties à but. Éteint, rien ne change (le CSV de la simulation est le même).
-- Reste : l'affinité sauvegardée et ce qu'elle change (I6b) ; la visite du soir et s'asseoir côte à côte (I6b) ;
+- Reste : l'affinité sauvegardée et ce qu'elle change (I6b, fait) ; la visite du soir et s'asseoir côte à côte (I6b, fait) ;
   le port quand son chemin sera court (I2) ; les tâches prennent des créneaux (I3c, fait).
 
 ## Les villageois : les tâches (I3c, fait)
@@ -515,7 +515,7 @@ ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo).
   `RAYON` cases de sa maison s'il y en a, sinon les plus proches de la ferme. **Deux villageois à la même tâche** ont des
   postes voisins (le poste de l'équipe, puis les plus proches de lui : l'autre côté du même arbre) et la même clé : ils
   causent un peu (`SOCIAL.REPLIQUES.travail`, une réplique toutes les `CAUSE` s, la première quelques secondes après
-  s'y être mis). Ils se lient en travaillant ensemble : `CONNAISSANCE.COLLEGUE` de plus par jour (I6b le reprendra).
+  s'y être mis). Ils se lient en travaillant ensemble : `CONNAISSANCE.COLLEGUE` de plus par jour (I6b l'a repris : `LIENS.GAINS.POSTE`).
   Sous la pluie, le travail du dehors devient l'abri (la cuisine continue) ; la nuit fait les actions qui restent.
 - **La scène** (`js/carte/ferme/villageois-travail.js`) : arrivé à son poste, il fait le geste de sa tâche en boucle
   (les gestes des habitants des hameaux, `CarteKit.GESTES_HABITANTS` : la hache, la pioche, la faux, la canne,
@@ -682,6 +682,108 @@ quels. Ce qui est propre à l'île est dans `js/engine/villageois-amitie.js` et 
 - Reste : le joueur automatique ne parle pas aux villageois et n'offre rien (il les invite quand il invite) ; les
   tâches qu'il aime et les humeurs (I6c) ; les pièces de l'artisan ami (I5a) ; le retrait du récit (`RECIT.PALIERS`
   reste la table des paliers, I7c) ; le bot ne rend pas les demandes des villageois.
+
+## Les villageois : les liens entre eux (I6b, fait)
+
+Ce qu'I3b+ déduisait chaque jour (qui se connaît) est maintenant une affinité gardée, qui monte de ce que les
+villageois vivent ensemble ; elle change leurs habitudes, leur bonheur, leur travail, et deux proches peuvent fonder un
+foyer. Le moteur : `js/engine/liens.js` ; les réglages : `VILLAGE.LIENS` (`data/village.json`) ; la page :
+`js/ui/liens.js`. Tout reste doux (B-1) : les liens ne baissent jamais, personne ne se sépare.
+
+- **L'affinité** (`state.liens`) : entre deux villageois, un entier de 0 à 100, gardé dans une demi-matrice compacte
+  (`aff` : deux chiffres en base 36 par paire, dans l'ordre `ordre` des villageois ; 15 villageois : 210 caractères).
+  Chaque nuit (`liensNuit`, dans `runNight` après les tâches et avant la nuit des villageois : la journée lue est celle
+  qu'ils ont vécue), elle monte de `GAINS` : `ILE` 1 (ils vivent sur la même île), `VOISIN` 1 (boîtes aux lettres à
+  `VOISINE` 14 cases au plus), `POSTE` 4 (la même tâche, le même jour ; le même commerce s'y ajoutera avec I5a),
+  `TABLE` 1 (la même table au même repas), `SORTIE` 1 (une visite, un rendez-vous, une promenade, un banc à deux),
+  `FETE` 4 (le même repas du joueur, l'invitation d'I6a ; les fêtes d'I8a s'y brancheront), `FOYER` 3 (le même toit),
+  `ENTRAIDE` 5 (un repas apporté). Au-delà de `LENT` (45), un gain compte pour moitié : on devient proche plus lentement
+  qu'ami. Elle ne baisse jamais. Une paire qui n'a pas encore passé de nuit ensemble (un nouveau venu, une partie
+  d'avant I6b) vaut l'estimation d'I3b+ (`SOCIAL.CONNAISSANCE` : les jours ensemble et l'affinité tirée), la même que la
+  partie montrait : la migration ne change rien à l'écran ; un nouveau venu part de l'affinité tirée seule (0 à
+  `AFFINITE` 20).
+- **Les paliers** (`PALIERS`) : connaissance (10), camarade (25), ami (45), proche (75). `connaissance(state, a, b)`
+  rend toujours `{ degre, nom, score, jours }` (et `palier`, 0 à 4) : seul le corps de `scoreDe` a changé
+  (`scorePaire`) ; le degré lu par la journée, la scène et les répliques : 1 connaissance ou camarade, 2 ami, 3
+  proche (`degre >= 2` : des amis). Les répliques gagnent `proche`, `soiree`, `apporte`, `banc`.
+  Au même poste (le fauchage), deux villageois partis de 12 sont camarades après 2 nuits et amis après 5 (Chromium ;
+  en Node, partis de 16 : 2 et 5) ; les autres, sans poste commun, restent camarades sur le même temps. Au bois, quand
+  les arbres autour de leur maison sont abattus, le travail attend (I3c) et ils se lient moins vite.
+- **Ce que les liens changent** :
+  - **le bonheur** (`bonheurDesLiens`, lu par la nuit du villageois) : un ami au village monte sa cible de
+    `BONHEUR.AMI` (4), un proche de `BONHEUR.PROCHE` (6, le plus grand des deux) ; un repas apporté, de
+    `ENTRAIDE.BONHEUR` (6) cette nuit-là ;
+  - **le travail à deux** (`taches.js` `actionsDuJour`) : deux amis (`TRAVAIL.PALIER` 3, « ami ») à la même tâche, qui
+    y travaillent tous deux aujourd'hui, gagnent `TRAVAIL.ACTIONS` (1) action par jour à eux deux (celui des deux qui a
+    le plus petit id) ; dans une équipe plus grande, les paires d'amis se forment dans l'ordre des id ; la fiche et
+    « qui fait quoi » le disent (9 / 9 au lieu de 8) ;
+  - **l'entraide** (reprise de `voisins.js` : un foyer qui a eu faim reçoit à manger d'un ami) : qui se repose demain
+    (mal nourri ou sans lit) reçoit au repas de midi la visite de son meilleur ami (ami ou proche, ni au repos, ni
+    sous le même toit), qui lui apporte un repas (`planifierEntraide`, `liensFinDeNuit` ; `entraidesDuJour`) : il va
+    à sa porte avec 🍲, frappe, l'autre sort, ils causent (`REPLIQUES.apporte`). Ni la boîte ni le coffre ne paient ce
+    repas (il le partage de bon cœur) : du bonheur et de l'affinité, pas de nourriture en plus ;
+  - **les habitudes** (`villageois-journee.js`) : deux amis s'assoient côte à côte sur deux bancs voisins (le but
+    « banc », `SOCIAL.BUTS.POIDS.banc` 1,5, l'état « flaner », ils causent comme à table) ; à table, chacun prend le
+    siège le plus près d'un ami déjà assis ; la **visite du soir** (`visitesDuSoir`, `SOIR`) : après le souper, chacun,
+    avec `CHANCE` 0,35, va voir un ami (plutôt un voisin, plutôt le plus lié) ; il frappe, l'ami sort, ils causent
+    (`REPLIQUES.soiree`, 🌙), une heure au plus (`DUREE`), une visite par `PAR` (3) villageois au plus chaque soir ;
+    la promenade à deux d'I3b+ continue.
+- **Les foyers** : deux proches (`FOYER.PALIER`) peuvent vivre ensemble si le joueur le leur propose (le bouton
+  « 🏡 Leur proposer un foyer » de la fiche, `formerFoyer`, la commande `villageois.foyer`) dans une maison à deux lits
+  (une maison de villageois avec deux lits d'adulte que la famille ne prend pas, où n'habite personne d'autre
+  qu'eux : `maisonsPourFoyer`) : ils s'y installent, chacun son lit, mangent à sa table s'il y en a une ; l'autre
+  maison se libère (un nouveau venu pourra la prendre). `verifierMaisons` laisse à chacun son lit sous un toit
+  partagé ; rien ne les sépare. **L'enfant** : un foyer dont la maison a un lit d'enfant libre peut en accueillir un
+  si le joueur le propose (« 👶 Accueillir un enfant », `accueillirEnfant`, `villageois.enfant`) : il vient par le
+  prochain bac (le seul nouveau venu de ce passage ; la nuit l'installe d'un coup s'il n'est pas venu), dort dans le
+  lit d'enfant, mange (le besoin d'un enfant), ne travaille pas (`attribuer` refuse) et joue sur la place (le but
+  « jeu », 🪁) ; ses parents et lui sont proches dès son arrivée (`ENFANT.PARENTS` 85). Il ne compte pas dans le
+  plafond du port. La scène lui donne la planche d'un enfant.
+- **La scène** (`villageois-social.js`, `villageois.js`) : le banc à deux (assis, ils causent), la visite du soir et
+  le repas apporté se jouent comme une visite (il frappe, l'ami sort, ils se font face et causent), avec leur emoji
+  (🍲 🌙) gardé pendant la causerie ; le salut des amis et des proches (degré 3) comme avant. **Les bulles ne se
+  recouvrent plus** : celles de ceux qui parlent ensemble (un salut à trois, une table, une causerie) sont placées
+  l'une après l'autre dans l'image ; celle qui en chevauche une monte au-dessus (sinon passe dessous).
+- **L'interface** (`js/ui/liens.js`) : la fiche d'un villageois montre son foyer et ses liens (un portrait, le palier,
+  une jauge, du plus fort au plus faible ; un appui ouvre la fiche de l'autre), « 🏡 Leur proposer un foyer » pour un
+  proche (la liste des maisons qui conviennent, sinon ce qu'il faut bâtir), « 👶 Accueillir un enfant » ; la liste
+  des villageois mène à **la vue d'ensemble** (« 🤝 Les liens du village » : les foyers, puis les proches, les amis,
+  les camarades, deux portraits et une jauge par paire). Les avis de la nuit deviennent des notifications (« 😊 X et Y
+  sont devenus amis », « 💞 … proches », « 🏡 … s'installent ensemble », « 👶 … est arrivé par le bac », « 🍲 X a
+  apporté un repas à Y »).
+- **Les propos** (`VILLAGE.PROPOS`, `villageois-amitie.js`) : les sujets des habitants, rebranchés sur les liens de
+  l'île : `voisin` (son plus proche voisin qu'il connaît), `lien_ami` (son meilleur ami), `visite_recue`,
+  `visite_faite` (une visite du soir), `entraide_recue`, `entraide_donnee` (un repas apporté), et `foyer`, `enfant`.
+  Ce qui se passe rejoint les événements entre voisins (`voisins.js` `noterEvenement`, hameau « village », `RECENT`
+  jours, `EVENEMENTS` gardés) : rien n'est recopié.
+- **La sauvegarde** : format 92 ; la migration 91 → 92 (`reparerLiens`) pose des liens vides (les paires partent de
+  leur estimation à la première nuit) et répare ce qui est abîmé (un id ou un chiffre illisible, un foyer dont un
+  membre n'est plus là, une entraide vers personne). Sans villageois, rien.
+- **Les tests** : `tests/engine/village-liens.test.mjs` (l'affinité gardée et ses causes, une à une, jamais de baisse,
+  la moitié au-delà de LENT ; les paliers et le degré ; camarades puis amis au même poste ; le bonheur ; le travail à
+  deux ; l'entraide de bout en bout ; le banc à deux, à table près d'un ami, la visite du soir ; le foyer ; l'enfant ;
+  le déterminisme ; la sauvegarde et les commandes ; éteint). `village-social` suit les nouveaux paliers ;
+  `village-amitie` laisse dire aux villageois `voisin`, `lien_ami`, `visite_*`, `entraide_*` (ceux de l'île) ;
+  `voisins.test.mjs` est vert réglage éteint. Éteint, le CSV de la simulation est le même octet pour octet.
+- **Les mesures** (comme I3b+ : Chromium, téléphone émulé 412 × 915, DPR 2, processeur ralenti × 4 ; 15 villageois
+  installés, la place à 15 h ; trois fenêtres de 6 s ; deux paires de mesures avant → après, chaque fois une partie
+  neuve, donc une autre ferme ; la machine chargée, charge 2,3 à 2,9 sur 4 cœurs) : le système « villageois » coûte 1,64
+  et 2,05 ms par passage avant, 1,67 et 1,69 ms après (10 à 15 villageois à l'écran) : pas d'écart au-delà du bruit. Le
+  temps d'une image (médiane, 19 à 32 ms) varie surtout avec le soleil et le brouillard de la ferme tirée. Dans le
+  moteur (Node), la nuit des liens à 15 villageois (105 paires) relit la journée gardée ; la journée se recalcule une
+  fois par jour, comme avant (sa clé compte maintenant la signature des liens).
+- **Vérifié dans Chromium** (`jeu.html?village=1`, quatre villageois, la place avec deux bancs côte à côte, une maison
+  à deux lits) : deux villageois au fauchage, partis de 12, sont camarades après 2 nuits et amis après 5 (« 😊 Achille
+  et Garance sont devenus amis »), le travail à deux leur donne 9 actions au lieu de 8 ; ils mangent ensemble à la table
+  commune et causent ; l'une au repos, l'autre lui apporte un repas à midi (🍲, « Toc, toc ! », « Tiens, c'est pour
+  toi. Repose-toi bien. » — « Tu es trop gentil, Achille. ») ; deux amis assis côte à côte sur deux bancs ; une visite
+  du soir (« J'ai vu ta lumière, alors je passe. ») ; proches, la fiche propose un foyer, ils s'installent dans la
+  maison à deux lits et y dorment côte à côte ; la vue d'ensemble des liens ; quatre bulles à table ne se recouvrent
+  plus (avant : empilées l'une sur l'autre). Aucune erreur dans la console.
+- Reste : le même commerce (I5a) et les fêtes (I8a) comme causes de lien ; les traits et leurs affinités (I6c) ; un
+  repas apporté ne nourrit pas (choix B-1 : pas de nourriture tirée de rien) ; l'enfant ne grandit pas ; à table, une
+  table de jardin d'une case ne laisse pas de « côte à côte » (ses quatre sièges se touchent tous) ; le joueur
+  automatique ne propose ni foyer ni enfant ; les liens en ligne (I9d).
 
 ## Les règles qui ne changent pas
 

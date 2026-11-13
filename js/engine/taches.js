@@ -20,6 +20,8 @@ import { noterVenteBac } from './bac.js';
 import { bumpCounter } from './campaign.js';
 import { trouverVillageois, villageoisDe } from './villageois.js';
 import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
+import { connaissance } from './villageois-liens.js';
+import { liensSignature } from './liens.js';
 
 /* ---------- les tâches attribuées (le chantier « l'île à bâtir », fiche I3c) ----------
 
@@ -53,7 +55,12 @@ import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
    ressèmera là), v.travail ({ jour, tache, actions, produit: { objet: n }, utilise (I3d : ce qu'il a pris au coffre),
    essai } : sa journée de travail). Le journal du villageois (villageois.js, nuitDe) reçoit chaque nuit { jour, tache,
    actions, produit, utilise, mange } (le tableau des villageois le lit : tableau.js). Les tests :
-   tests/engine/village-taches.test.mjs. */
+   tests/engine/village-taches.test.mjs.
+
+   Fiche I6b (les liens, liens.js) : deux amis (VILLAGE.LIENS.TRAVAIL.PALIER : le degré « ami ») à la même tâche, qui y
+   travaillent tous deux aujourd'hui, gagnent TRAVAIL.ACTIONS action par jour à eux deux (actionsDuJour : celui des
+   deux qui a le plus petit id la fait) ; dans une équipe de plus de deux, les paires d'amis se forment dans l'ordre
+   des id, chacun dans une paire au plus. Un enfant (v.enfant) ne travaille pas. */
 
 const TA = () => DATA.TACHES || {};
 const LISTE = () => TA().LISTE || {};
@@ -383,6 +390,8 @@ export function attribuer(state, id, tache) {
   const v = trouverVillageois(state, id);
   if (!v) return fail('Villageois inconnu.');
   if (tache !== null && tache !== '' && !tacheDef(tache)) return fail('Tâche inconnue.');
+  // (I6b : les enfants ne travaillent pas, ils jouent sur la place)
+  if (v.enfant && tache) return fail('Les enfants ne travaillent pas : ils jouent sur la place.');
   v.tache = tache || null;
   if (!Array.isArray(v.vendre)) v.vendre = [];
   return { ok: true, tache: v.tache, manque: v.tache ? tacheManque(state, v, v.tache) : null };
@@ -598,14 +607,55 @@ function heuresDeTravail(state, v) {
   return { l, total: l.reduce((t, [de, a]) => t + (a - de), 0) };
 }
 
-// Combien d'actions il devrait avoir faites à l'heure `h` : ACTIONS, à parts égales sur ses heures de travail.
+// I6b : les actions de plus du travail à deux (voir plus haut) : Map(id → n), gardée tant que le jour, les tâches et
+// les liens ne changent pas.
+let deuxCle = null, deuxMemo = null;
+function travailADeux(state) {
+  const V = villageoisDe(state), TR = ((DATA.VILLAGE || {}).LIENS || {}).TRAVAIL || {};
+  const plus = Math.max(0, Math.floor(Number(TR.ACTIONS) || 0)), palier = Number(TR.PALIER) || 3;
+  const cle = JSON.stringify([jourDe(state), plus, palier, liensSignature(state), V.map((v) => [v.id, v.tache || 0, !!v.repos, v.outil || 0, v.accueil || 0])]);
+  if (deuxMemo && deuxCle === cle && deuxMemo.s === state) return deuxMemo.m;
+  const m = new Map();
+  if (plus) {
+    const parTache = new Map();
+    for (const v of [...V].sort((a, b) => (a.id < b.id ? -1 : 1))) {
+      if (!v.tache || v.enfant || !travailleAujourdhui(state, v)) continue;
+      if (!parTache.has(v.tache)) parTache.set(v.tache, []);
+      parTache.get(v.tache).push(v);
+    }
+    for (const l of parTache.values()) {
+      const pris = new Set();
+      for (let i = 0; i < l.length; i++) for (let j = i + 1; j < l.length; j++) {
+        if (pris.has(l[i].id) || pris.has(l[j].id)) continue;
+        const c = connaissance(state, l[i].id, l[j].id);
+        if (!c || (c.palier ?? 0) < palier) continue;
+        pris.add(l[i].id); pris.add(l[j].id);
+        m.set(l[i].id, (m.get(l[i].id) || 0) + plus);
+      }
+    }
+  }
+  deuxCle = cle;
+  deuxMemo = { s: state, m };
+  return m;
+}
+
+// Ses actions du jour : ACTIONS de sa tâche, et (I6b) celle du travail à deux avec un ami.
+export function actionsDuJour(state, v) {
+  const def = tacheDef(v && v.tache);
+  if (!def) return 0;
+  return def.ACTIONS + (villageActif(state) ? travailADeux(state).get(v.id) || 0 : 0);
+}
+
+// Combien d'actions il devrait avoir faites à l'heure `h` : ses actions du jour, à parts égales sur ses heures de
+// travail.
 export function actionsDues(state, v, h = clockHours(state)) {
   const def = tacheDef(v.tache);
   if (!def || !travailleAujourdhui(state, v)) return 0;
   const { l, total } = heuresDeTravail(state, v);
   if (!(total > 0)) return 0;
+  const n = actionsDuJour(state, v);
   const fait = l.reduce((t, [de, a]) => t + Math.max(0, Math.min(h, a) - de), 0);
-  return Math.min(def.ACTIONS, Math.floor((def.ACTIONS * fait) / total + 1e-9));
+  return Math.min(n, Math.floor((n * fait) / total + 1e-9));
 }
 
 // Une action faite : son compte et ce qu'elle a donné.
@@ -667,7 +717,7 @@ export function tachesNuit(state) {
   for (const v of villageoisDe(state)) {
     if (!v.tache) continue;
     const T = travailDe(state, v);
-    if (travailleAujourdhui(state, v)) travailler(state, v, tacheDef(v.tache).ACTIONS, true);
+    if (travailleAujourdhui(state, v)) travailler(state, v, actionsDuJour(state, v), true);
     out[v.id] = { tache: v.tache, actions: T.actions, produit: { ...T.produit } };
   }
   return Object.keys(out).length ? out : null;
@@ -684,7 +734,7 @@ export function quiFaitQuoi(state) {
     const etat = !def ? 'libre' : v.repos ? 'repos' : raison ? 'attend' : 'travail';
     return {
       id: v.id, prenom: v.prenom, genre: v.genre, tache: def ? v.tache : null, nom: def ? def.nom : '', icone: def ? def.icone : '',
-      outil: v.outil || null, etat, raison, actions: T ? T.actions : 0, sur: def ? def.ACTIONS : 0, produit: T ? { ...T.produit } : {},
+      outil: v.outil || null, etat, raison, actions: T ? T.actions : 0, sur: def ? actionsDuJour(state, v) : 0, produit: T ? { ...T.produit } : {},
     };
   });
 }

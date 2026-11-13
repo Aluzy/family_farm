@@ -26,6 +26,7 @@ export const SOMMEIL_PERMISES = new Set([
   'fiche-case', 'fiche-equiper', 'fiche-tente', // (fiche 11 : habiller la famille ; le récit, lot 8 : la tente)
   'cheval-fiche', 'cheval-aide', // (le galop : voir la fiche du cheval)
   'villageois-attribuer', 'villageois-donner', 'villageois-reprendre', 'villageois-vendre-ok', // (I3c : confier une tâche, un outil, ce qu'il porte au port : il s'y mettra au matin)
+  'liens-foyer-ok', 'liens-enfant', // (I6b : un foyer, un enfant attendu : ils s'installent, l'enfant viendra par le bac)
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'portail',
