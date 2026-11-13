@@ -25,11 +25,12 @@ export const SOMMEIL_PERMISES = new Set([
   'carte-monde-but', 'carte-monde-ferme', 'port-boussole', // (fiche 8 : choisir le but de la boussole, rien ne bouge ; le port, I1b)
   'fiche-case', 'fiche-equiper', 'fiche-tente', // (fiche 11 : habiller la famille ; le récit, lot 8 : la tente)
   'cheval-fiche', 'cheval-aide', // (le galop : voir la fiche du cheval)
+  'villageois-attribuer', 'villageois-donner', 'villageois-reprendre', 'villageois-vendre-ok', // (I3c : confier une tâche, un outil, ce qu'il porte au port : il s'y mettra au matin)
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'portail',
   'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
-  'sell-item', 'buy-item', 'caleche-heler', 'port-vendre', 'port-acheter', 'deposer-item', 'malle-reprendre', 'commander-item', 'malle-annuler', 'malle-prendre', 'promesse-confier', 'ile-commander', 'ile-meuble', 'cheval-toggle', 'galop-pomme', 'cheval-remplir', 'cheval-reprendre', 'plant-all', 'plant-many', 'hoe-many', 'ami-offrir', 'evt-inviter', 'evt-annuler', 'repas-servir',
+  'sell-item', 'buy-item', 'caleche-heler', 'port-vendre', 'port-acheter', 'port-decharger', 'portage-charger', 'portage-recoltes', 'portage-reprendre', 'portage-vehicule', 'deposer-item', 'malle-reprendre', 'commander-item', 'malle-annuler', 'malle-prendre', 'promesse-confier', 'ile-commander', 'ile-meuble', 'cheval-toggle', 'galop-pomme', 'cheval-remplir', 'cheval-reprendre', 'plant-all', 'plant-many', 'hoe-many', 'ami-offrir', 'evt-inviter', 'evt-annuler', 'repas-servir',
   'toit-reparer', 'projet-apporter', 'enveloppe-ouvrir', // (le récit, lot 9 : réparer un toit de hameau, ouvrir l'enveloppe de Maurice)
   'pierre-poser', // (le récit, lot 10 : poser la pierre de lune sur la ferme)
   'harvest-tree',

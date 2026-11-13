@@ -1571,6 +1571,17 @@ export const RAW_DATA = {
       "rachetable": false,
       "village": true
     },
+    "pont_planches": {
+      "nom": "Pont de planches",
+      "icone": "🌉",
+      "prix": 4,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "brouette": { "nom": "Brouette", "icone": "🛒", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "charrette": { "nom": "Charrette", "icone": "🛞", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "casque_lampe": { "nom": "Casque à lampe", "icone": "⛑‍💡", "prix": 30, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "chapeau_paille": { "nom": "Chapeau de paille", "icone": "👒‍🌾", "prix": 6, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "bottes": { "nom": "Bottes de marche", "icone": "👢‍🟫", "prix": 10, "mangeable": false, "categorie": "équipement", "rachetable": false },
@@ -2079,6 +2090,14 @@ export const RAW_DATA = {
       "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 } },
       "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
       "boite_aux_lettres": { "entrees": { "planche": 2, "bois": 1 }, "sortie": { "boite_aux_lettres": 1 }, "village": true },
+      "pont_planches": { "entrees": { "planche": 3, "bois": 2 }, "sortie": { "pont_planches": 2 }, "village": true },
+      "brouette": { "entrees": { "planche": 4, "lingot_fer": 1, "bois": 2 }, "sortie": { "brouette": 1 }, "village": true },
+      "charrette": {
+        "entrees": { "planche": 10, "lingot_fer": 3, "bois": 6, "corde": 2 },
+        "sortie": { "charrette": 1 },
+        "village": true,
+        "debloque": "ecurie"
+      },
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
       "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
       "mortier": { "entrees": { "pierre": 4, "planche": 1 }, "sortie": { "mortier": 1 } },
@@ -2204,6 +2223,16 @@ export const RAW_DATA = {
         "bloque": true,
         "dessin": "boite_aux_lettres",
         "villageois": true
+      },
+      "pont_planches": {
+        "nom": "Pont de planches",
+        "objet": "pont_planches",
+        "dehors": true,
+        "pont": true,
+        "plat": true,
+        "dessin": "pont_planches",
+        "tourne": true,
+        "village": true
       },
       "refrigerateur": {
         "nom": "Réfrigérateur",
@@ -3050,6 +3079,7 @@ export const RAW_DATA = {
           "sol_flotte",
           "sol_pastel",
           "chemin",
+          "pont_planches",
           "sol_pas_ardoise",
           "sol_pas_pierre",
           "sol_pas_bois",
@@ -5112,6 +5142,11 @@ export const RAW_DATA = {
     "VIVRES_GARDES": 10,
     "SEMENCES_GARDEES": 6,
     "PORT": { "SEUIL": 60, "VITESSE": 3.6 },
+    "VILLAGEOIS": {
+      "MAISON_PALIER": 3,
+      "MAISON": { "paillasse": 1, "boite_aux_lettres": 1 },
+      "TACHES": ["champs", "betes", "cuisine", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"]
+    },
     "BATIR": {
       "foyer": { "paillasse": 4 },
       "puits": { "puits_pierre": 1 },
@@ -8653,7 +8688,9 @@ export const RAW_DATA = {
         "dormir": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
         "repos": ["Je me repose aujourd'hui.", "Une journée tranquille à la maison.", "Je reprends des forces."],
         "abri": ["Quelle averse ! Je reste à l'abri.", "J'attends que la pluie passe.", "Il pleut des cordes."],
-        "recoit": ["J'attends une visite.", "Un ami doit passer me voir.", "Je guette la porte : on vient me voir !"]
+        "recoit": ["J'attends une visite.", "Un ami doit passer me voir.", "Je guette la porte : on vient me voir !"],
+        "travail": ["Je suis au travail.", "Le travail, ça ne se fait pas tout seul !"],
+        "attend": ["J'attends de pouvoir me mettre au travail : {raison}", "Je ne peux pas encore travailler : {raison}"]
       },
       "HUMEUR": {
         "heureux": ["On vit bien, sur l'île.", "La vie est douce, ici.", "Je suis bien, dans ma maison."],
@@ -8670,7 +8707,8 @@ export const RAW_DATA = {
         "TABLE": 1,
         "AFFINITE": 30,
         "PALIERS": { "connaissance": 10, "ami": 40 },
-        "FAMILLE_AMI": 4
+        "FAMILLE_AMI": 4,
+        "COLLEGUE": 2
       },
       "BUTS": {
         "POIDS": { "visite": 2, "rdv": 1.5, "promenade": 2, "eau": 1.5, "voir": 2.5, "port": 1 },
@@ -8825,6 +8863,18 @@ export const RAW_DATA = {
           ["Regarde comme c'est beau, par là.", "On a de la chance de vivre ici."],
           ["Tu marches trop vite !", "Pardon, j'avais hâte de voir !"],
           ["Tu te souviens de ton arrivée ?", "Comme si c'était hier !"]
+        ],
+        "travail": [
+          ["On s'y remet, {prenom} ?", "Allez, courage, on y est presque !"],
+          ["Tu me passes un coup de main ?", "Bien sûr, à deux ça va plus vite !"],
+          ["Ça avance bien, non ?", "On fait du bon travail, tous les deux."],
+          ["Tu as vu tout ce qu'on a fait ce matin ?", "Le joueur va être content !"],
+          ["Je commence à avoir faim.", "Tiens bon, c'est bientôt midi !"],
+          ["Tu as l'œil, {prenom} !", "Je regarde comment tu fais, tiens !"],
+          ["Une petite pause ?", "Juste le temps de souffler, alors."],
+          ["Attention où tu mets les pieds !", "Merci, j'ai failli tomber !"],
+          ["On forme une bonne équipe.", "La meilleure de l'île !"],
+          ["Encore un peu et on a fini.", "Après, une bonne soupe !"]
         ]
       },
       "JOUEUR": {
@@ -9125,6 +9175,178 @@ export const RAW_DATA = {
           }
         ]
       }
+    },
+    "DEHORS": [
+      "chemin",
+      "sol_pas_ardoise",
+      "sol_pas_pierre",
+      "sol_pas_bois",
+      "lanterne",
+      "candelabre",
+      "pont_planches",
+      "barriere",
+      "barriere_blanche",
+      "barriere_rouge",
+      "barriere_grise",
+      "barriere_chene",
+      "barriere_verte",
+      "barriere_lavande",
+      "banc_jardin",
+      "banc_rondins",
+      "banc_pierre"
+    ],
+    "CHEMIN": { "VITESSE": 50, "PINCEAU": 2, "PRES_FERME": 8 },
+    "PORTAGE": {
+      "MAINS": 12,
+      "BROUETTE": 40,
+      "CHARRETTE": 160,
+      "VOLUMES": {
+        "bois": 2,
+        "planche": 2,
+        "pierre": 3,
+        "minerai_fer": 3,
+        "minerai_cuivre": 3,
+        "minerai_or": 3,
+        "minerai_platine": 3,
+        "lingot_fer": 3,
+        "lingot_cuivre": 3,
+        "lingot_or": 3,
+        "lingot_platine": 3,
+        "bloc_silo": 4,
+        "pierre_angle": 3
+      }
+    }
+  },
+  "TACHES": {
+    "TRAVAIL": [[8, 11.5], [13.5, 16.5]],
+    "PAUSE": 1,
+    "POSTE": 2,
+    "CAUSE": 26,
+    "ESSAI": 0.5,
+    "RAYON": 28,
+    "LISTE": {
+      "champs": {
+        "nom": "Les champs",
+        "icone": "🌱",
+        "ACTIONS": 12,
+        "outil": null,
+        "lieu": "champs",
+        "geste": "arrose",
+        "emoji": "🌱",
+        "donne": "une parcelle récoltée, arrosée ou ressemée",
+        "SANS": "Il n'y a pas de parcelle labourée sur la ferme.",
+        "PHRASES": ["Je m'occupe des champs.", "Ça pousse bien, cette année !", "Encore une rangée et je fais une pause."]
+      },
+      "betes": {
+        "nom": "Les bêtes",
+        "icone": "🐔",
+        "ACTIONS": 4,
+        "outil": null,
+        "lieu": "betes",
+        "geste": "ramasse",
+        "emoji": "🥚",
+        "donne": "les poules nourries, les œufs pris, un mouton tondu, le lait et la laine pris",
+        "SANS": "Il n'y a ni poulailler ni étable avec des bêtes.",
+        "PHRASES": ["Je soigne les bêtes.", "Les poules ont bon appétit ce matin !", "Doucement, ma belle…"]
+      },
+      "verger": {
+        "nom": "Le verger et les ruches",
+        "icone": "🍎",
+        "ACTIONS": 4,
+        "outil": null,
+        "lieu": "verger",
+        "geste": "ramasse",
+        "emoji": "🍎",
+        "donne": "un arbre en fruits cueilli, une ruche pleine récoltée",
+        "SANS": "Il n'y a ni arbre fruitier planté ni ruche.",
+        "PHRASES": ["Je surveille le verger.", "Les abeilles sont de bonne humeur !", "Ces fruits sentent bon !"]
+      },
+      "bois": {
+        "nom": "Le bois",
+        "icone": "🪵",
+        "ACTIONS": 6,
+        "outil": "hache",
+        "lieu": "arbre",
+        "geste": "hache",
+        "emoji": "🪵",
+        "donne": "un coup de hache : HACHE.BOIS bois, HACHE.CHUTE de plus quand l'arbre tombe (et sa graine)",
+        "SANS": "Il n'y a plus d'arbre debout près de sa maison.",
+        "PHRASES": ["Je coupe du bois.", "Attention, ça va tomber !", "Du bon bois bien sec, pour l'hiver."]
+      },
+      "pierre": {
+        "nom": "La pierre et le minerai",
+        "icone": "🪨",
+        "ACTIONS": 6,
+        "outil": "pioche",
+        "lieu": "rocher",
+        "geste": "pioche",
+        "emoji": "🪨",
+        "donne": "un coup de pioche : PIOCHE.PIERRE pierre (le minerai d'un gisement)",
+        "SANS": "Il n'y a plus de rocher près de sa maison.",
+        "PHRASES": ["Je casse des cailloux.", "Il est coriace, celui-là !", "Encore quelques coups…"]
+      },
+      "peche": {
+        "nom": "La pêche",
+        "icone": "🎣",
+        "ACTIONS": 6,
+        "outil": "canne",
+        "lieu": "rive",
+        "geste": "peche",
+        "emoji": "🐟",
+        "donne": "un lancer dans l'étang ou la mare de la ferme (le quota du jour du joueur)",
+        "SANS": "Il n'y a ni étang ni mare sur la ferme.",
+        "PHRASES": ["Chut, ça mord !", "Le poisson se fait prier aujourd'hui.", "Rien de tel qu'une ligne à l'eau."]
+      },
+      "cueillette": {
+        "nom": "La cueillette",
+        "icone": "🫐",
+        "ACTIONS": 4,
+        "outil": null,
+        "lieu": "cueillette",
+        "geste": "ramasse",
+        "emoji": "🫐",
+        "donne": "ce que la ferme offre ce matin : une baie, une branche, un caillou",
+        "SANS": "La ferme n'offre rien à cueillir ce matin.",
+        "PHRASES": ["Je fais la cueillette.", "Les buissons sont pleins ce matin !", "Une pour le panier, une pour moi…"]
+      },
+      "fauchage": {
+        "nom": "Le fauchage et la paille",
+        "icone": "🌾",
+        "ACTIONS": 8,
+        "outil": "faux",
+        "lieu": "herbe",
+        "geste": "faux",
+        "emoji": "🌾",
+        "donne": "un coup de faux : FAUX.FIBRE fibre (une botteleuse posée en fait de la paille)",
+        "SANS": "Il n'y a plus d'herbe haute près de sa maison.",
+        "PHRASES": ["Je fauche l'herbe haute.", "Ça fera de la bonne paille.", "Quel parfum, l'herbe coupée !"]
+      },
+      "cuisine": {
+        "nom": "La cuisine",
+        "icone": "🍲",
+        "ACTIONS": 2,
+        "outil": null,
+        "lieu": "cuisine",
+        "geste": "cuisine",
+        "emoji": "🍲",
+        "donne": "une préparation lancée à la cuisinière ou au four",
+        "RECETTES": ["soupe_legumes", "ratatouille", "omelette", "poisson_grille", "salade_tomates", "pain", "gratin_patates", "tarte_pommes"],
+        "SANS": "Il faut une cuisinière ou un four dans le foyer.",
+        "PHRASES": ["Je prépare à manger pour tout le monde.", "Ça mijote !", "Une pincée de sel, et voilà."]
+      },
+      "navette": {
+        "nom": "La tournée du port",
+        "icone": "⚓",
+        "ACTIONS": 2,
+        "PORTEE": 10,
+        "outil": null,
+        "lieu": "port",
+        "geste": "ramasse",
+        "emoji": "💰",
+        "donne": "un aller-retour au port : PORTEE objets marqués « à vendre », vendus au comptoir",
+        "SANS": "Il n'y a pas de port sur l'île.",
+        "PHRASES": ["Je descends au port.", "Le panier est lourd aujourd'hui !", "Je vends tout ça au comptoir."]
+      }
     }
   },
   "PORT": {
@@ -9134,7 +9356,19 @@ export const RAW_DATA = {
     "PORTEE": 3,
     "HEURES": [6, 21],
     "ELEMENT": { "nom": "Le port", "icone": "⚓", "note": "au comptoir de la halle, au bout du chemin : vends tes récoltes, achète des graines" },
-    "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 70, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
+    "PLAN": {
+      "QUAI": 12,
+      "LARGEUR": 2,
+      "EAU": 3,
+      "HALLE": [6, 4],
+      "FERME": 80,
+      "LOIN": 100,
+      "HAMEAU": 26,
+      "LIEUX": 12,
+      "PRIX_MAX": 2400,
+      "PAS": 2,
+      "ESSAIS": 8
+    },
     "NIVEAUX": [
       { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },
       { "quai": 8, "ajoute": ["caisses"] },

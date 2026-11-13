@@ -1,3 +1,4 @@
+import { DATA } from './catalog.js';
 import { blocGid } from './planche.js';
 import { hache, teinteHerbe } from './ferme-generee.js';
 import { AUCUNE_EAU, BIOME, BIOMES, bruitDuMonde, champsDuMonde, elementsDuMonde, releve } from './monde-gen.js';
@@ -178,11 +179,36 @@ export function elementsSol(ctx) {
   const t0 = Date.now();
   const { cadre, lire } = ctx, W = cadre.LARGEUR, H = cadre.HAUTEUR, F = cadre.FERME;
   const el = elementsDuMonde(ctx.graine, cadre, lire);
-  const chemins = new Uint8Array(W * H);
-  const { riviere } = BIOME;
   // (le chemin du port, fiche I1a : à part dans le plan, lieux.port.chemin, la tournée de la calèche ne le suit
   // pas ; il se peint et se marche comme les autres)
   const traces = el.lieux.port && el.lieux.port.chemin.length ? [...el.chemins, el.lieux.port.chemin] : el.chemins;
+  const { chemins, coins } = tracerChemins(ctx, el, traces);
+  ctx.elements = el;
+  ctx.reserves = reservesDuMonde(el, W, H);
+  ctx.chemins = chemins;
+  ctx.cheminCoins = coins;
+  // (fiche I2 : les chemins possédés, s'il y en a ; la nature, elle, garde les chemins du plan)
+  ctx.cheminsNature = chemins;
+  ctx.coinsNature = coins;
+  if (ctx.poses) peindreCheminsPoses(ctx);
+  // les hameaux bâtis (monde-hameaux.js, fiche 7a) : leur plan, une fois ; ce qu'ils bâtissent est
+  // réservé (ni arbre, ni rocher, ni bête), leur terre battue se peint comme un chemin
+  // (et le port, fiche I1a : cadre.PORT, son niveau)
+  ctx.hameaux = plansDesHameaux({ graine: ctx.graine, W, H, F, lieux: el.lieux, chemins: ctx.cheminsNature, biome: (i) => biomeDe(ctx, i), niveauPort: cadre.PORT || 0 });
+  for (let i = 0; i < W * H; i++) if (ctx.hameaux.emprise[i]) ctx.reserves[i] = 1;
+  ctx.mesures.hameaux = ctx.hameaux.ms;
+  ctx.mesures.elements = Date.now() - t0;
+  return el;
+}
+
+// Les cases et les coins des chemins tracés `traces` (des listes de cases voisines) : { chemins (Uint8Array, une
+// valeur par case : 1 un chemin sur la terre, 2 un gué), coins (Uint8Array, (W + 1) × (H + 1) : 1 un coin du
+// chemin dessiné) } (elementsSol).
+function tracerChemins(ctx, el, traces) {
+  const { cadre, lire } = ctx, W = cadre.LARGEUR, H = cadre.HAUTEUR, F = cadre.FERME;
+  const chemins = new Uint8Array(W * H);
+
+  const { riviere } = BIOME;
   for (const ch of traces) {
     for (const i of ch) {
       const c = i % W, r = Math.floor(i / W);
@@ -229,18 +255,117 @@ export function elementsSol(ctx) {
       }
     }
   }
-  ctx.elements = el;
-  ctx.reserves = reservesDuMonde(el, W, H);
-  ctx.chemins = chemins;
-  ctx.cheminCoins = coins;
-  // les hameaux bâtis (monde-hameaux.js, fiche 7a) : leur plan, une fois ; ce qu'ils bâtissent est
-  // réservé (ni arbre, ni rocher, ni bête), leur terre battue se peint comme un chemin
-  // (et le port, fiche I1a : cadre.PORT, son niveau)
-  ctx.hameaux = plansDesHameaux({ graine: ctx.graine, W, H, F, lieux: el.lieux, chemins, biome: (i) => biomeDe(ctx, i), niveauPort: cadre.PORT || 0 });
-  for (let i = 0; i < W * H; i++) if (ctx.hameaux.emprise[i]) ctx.reserves[i] = 1;
-  ctx.mesures.hameaux = ctx.hameaux.ms;
-  ctx.mesures.elements = Date.now() - t0;
-  return el;
+  return { chemins, coins };
+}
+
+/* ---------- les chemins possédés (le chantier « l'île à bâtir », fiche I2 : js/engine/dehors.js) ----------
+
+   Dans une partie du chantier, le joueur possède des chemins hors de la ferme (state.dehors : des segments) : le
+   tronçon du port, converti en blocs de chemin à la création de la partie, et ceux qu'il pose. Le contexte les
+   reçoit (poserCheminsSol, avant les éléments ; puis à chaque changement : majCheminsSol) : ctx.poses = { troncon
+   ('a_poser' : le tronçon est à convertir ici, puis 'pose' ; 'pose' : il est converti, le plan ne le peint plus ;
+   'genere' : une partie d'avant, le tronçon généré reste peint), set (un Set de cases) }. Les cases de ctx.chemins
+   et les coins de ctx.cheminCoins (ce qui se peint et se marche) sont alors ceux des chemins du plan (sans le
+   tronçon du port, sauf 'genere') et ceux des chemins possédés : une case possédée est un chemin (un gué sur une
+   rivière ; rien sur la mer, un lac, une falaise, un sommet), ses quatre coins sont du chemin. La nature (les
+   arbres, les rochers, les bêtes, les hameaux) lit toujours les chemins du plan (ctx.cheminsNature,
+   ctx.coinsNature) : retirer un chemin ne fait rien pousser, en poser n'arrache rien. Sans ctx.poses, rien ne
+   change (le chantier éteint, une partie sans chemin possédé). */
+
+// Le tronçon du port converti en cases de chemin : les cases du tracé (lieux.port.chemin) et, d'un pinceau de
+// CHEMIN.PINCEAU × PINCEAU cases (la case, celles de droite et du dessous), leurs voisines ; à CHEMIN.PRES_FERME
+// cases de la ferme au plus, les trois cases de large de sa sortie. Hors de la ferme, ni la mer, ni un lac, ni une
+// falaise, ni un sommet ; une rivière, oui (un gué). → les cases, dans l'ordre.
+export function tronconDuPort(ctx) {
+  elementsSol(ctx);
+  const el = ctx.elements, port = el.lieux && el.lieux.port, W = ctx.cadre.LARGEUR, H = ctx.cadre.HAUTEUR, F = ctx.cadre.FERME;
+  if (!port || !port.chemin || !port.chemin.length) return [];
+  const C = (DATA.VILLAGE && DATA.VILLAGE.CHEMIN) || { PINCEAU: 2, PRES_FERME: 8 }, P = Math.max(1, C.PINCEAU | 0), M = C.PRES_FERME | 0;
+  const dansFerme = (x, y) => x >= F.X && y >= F.Y && x < F.X + F.LARGEUR && y < F.Y + F.HAUTEUR;
+  const pres = (x, y) => x >= F.X - M && y >= F.Y - M && x < F.X + F.LARGEUR + M && y < F.Y + F.HAUTEUR + M;
+  const out = new Set();
+  for (const i of port.chemin) {
+    const c = i % W, r = Math.floor(i / W), d0 = pres(c, r) ? -1 : 0, d1 = pres(c, r) ? 1 : P - 1;
+    for (let dy = d0; dy <= d1; dy++) {
+      for (let dx = d0; dx <= d1; dx++) {
+        const x = c + dx, y = r + dy, j = y * W + x;
+        if (x < 0 || y < 0 || x >= W || y >= H || dansFerme(x, y)) continue;
+        const b = biomeDe(ctx, j);
+        if (b === BIOME.riviere || !FERMES[b]) out.add(j);
+      }
+    }
+  }
+  return [...out].sort((a, b) => a - b);
+}
+
+// Les chemins possédés de la partie, donnés au contexte : { troncon, cases } (avant ses éléments : ils se peignent
+// dès la première région ; après : majCheminsSol). null : aucun (le contexte d'avant).
+export function poserCheminsSol(ctx, poses) {
+  if (!poses) { ctx.poses = null; return; }
+  ctx.poses = { troncon: poses.troncon || 'genere', set: new Set(poses.cases || []) };
+}
+
+// Ce qui se peint et se marche avec les chemins possédés (elementsSol, ctx.poses) : la base (les chemins du plan,
+// sans le tronçon du port s'il est converti), puis les cases possédées. Le tronçon à convertir l'est ici
+// (ctx.tronconPose : ses cases, pour la partie).
+function peindreCheminsPoses(ctx) {
+  const el = ctx.elements, P = ctx.poses;
+  if (P.troncon === 'a_poser') {
+    const t = tronconDuPort(ctx);
+    for (const j of t) P.set.add(j);
+    ctx.tronconPose = t;
+    P.troncon = 'pose';
+  }
+  if (P.troncon === 'pose') {
+    const b = tracerChemins(ctx, el, el.chemins);
+    ctx.cheminsBase = b.chemins; ctx.coinsBase = b.coins;
+  } else { ctx.cheminsBase = ctx.cheminsNature; ctx.coinsBase = ctx.coinsNature; }
+  ctx.chemins = ctx.cheminsBase.slice();
+  ctx.cheminCoins = ctx.coinsBase.slice();
+  for (const j of P.set) majCaseChemin(ctx, j);
+}
+
+// La case j et ses coins, d'après la base et les cases possédées.
+function majCaseChemin(ctx, j) {
+  const W = ctx.cadre.LARGEUR, H = ctx.cadre.HAUTEUR, F = ctx.cadre.FERME, cv = W + 1, P = ctx.poses.set;
+  const c = j % W, r = Math.floor(j / W);
+  if (c < 0 || r < 0 || c >= W || r >= H) return;
+  const ferme = c >= F.X && r >= F.Y && c < F.X + F.LARGEUR && r < F.Y + F.HAUTEUR;
+  if (!ferme) {
+    const b = biomeDe(ctx, j);
+    ctx.chemins[j] = P.has(j) ? (b === BIOME.riviere ? 2 : FERMES[b] ? 0 : 1) : ctx.cheminsBase[j];
+  }
+  // (ses quatre coins : du chemin s'ils l'étaient dans la base, ou si une case possédée hors de l'eau les touche)
+  for (const [X, Y] of [[c, r], [c + 1, r], [c, r + 1], [c + 1, r + 1]]) {
+    let v = ctx.coinsBase[Y * cv + X];
+    if (!v) {
+      for (const [dx, dy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
+        const x = X + dx, y = Y + dy, k = y * W + x;
+        if (x >= 0 && y >= 0 && x < W && y < H && P.has(k) && ctx.chemins[k] === 1) { v = 1; break; }
+      }
+    }
+    ctx.cheminCoins[Y * cv + X] = v;
+  }
+}
+
+// Les chemins possédés changent (`cases` : toutes celles de la partie) : les cases qui changent et leurs coins
+// sont refaits. → les clés des régions à refaire (« rx,ry » : celles qui touchent une case changée, à deux cases
+// près : leur bord peint, leurs coins).
+export function majCheminsSol(ctx, cases) {
+  if (!ctx.poses) poserCheminsSol(ctx, { troncon: 'genere', cases: [] });
+  const neuf = new Set(cases || []), P = ctx.poses.set, changees = [];
+  for (const j of neuf) if (!P.has(j)) changees.push(j);
+  for (const j of P) if (!neuf.has(j)) changees.push(j);
+  ctx.poses.set = neuf;
+  if (!ctx.elements || !changees.length) return [];
+  if (!ctx.cheminsBase) peindreCheminsPoses(ctx);
+  else for (const j of changees) majCaseChemin(ctx, j);
+  const W = ctx.cadre.LARGEUR, N = ctx.taille, cles = new Set();
+  for (const j of changees) {
+    const c = j % W, r = Math.floor(j / W);
+    for (const [dx, dy] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) cles.add(Math.floor(Math.max(0, c + dx) / N) + ',' + Math.floor(Math.max(0, r + dy) / N));
+  }
+  return [...cles];
 }
 
 // Le nom du sol de la case i (« herbe », « sable », « eau_basse »…, « eau » : SOLS_MONDE.sols), sans
@@ -340,6 +465,21 @@ export function solDeRegion(ctx, rx, ry) {
   const cw = l + 9, chc = h + 9, kx0 = x0 - 4, ky0 = y0 - 4;
   const cSol = new Uint8Array(cw * chc), cCh = new Uint8Array(cw * chc), cTe = new Uint8Array(cw * chc), cDeep = new Uint8Array(cw * chc);
   const poids = new Float32Array(2 + NS), vus = [];
+  const cChN = ctx.poses ? new Uint8Array(cw * chc) : cCh;
+  // (le coin (X, Y), de sol s, est-il du chemin, d'après ces cases et ces coins des chemins ? Aux abords de la ferme,
+  // le chemin d'avant : un coin dont deux des quatre cases sont du chemin ; son raccord avec celui de la ferme ne
+  // bouge pas)
+  const coinChemin = (s, X, Y, chemins, coins) => {
+    if (X >= F.X - S.PRES_FERME && Y >= F.Y - S.PRES_FERME && X <= F.X + F.LARGEUR + S.PRES_FERME && Y <= F.Y + F.HAUTEUR + S.PRES_FERME) {
+      let n = 0;
+      for (const [dx, dy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
+        const x2 = Math.min(W - 1, Math.max(0, X + dx)), y2 = Math.min(H - 1, Math.max(0, Y + dy));
+        if (chemins[y2 * W + x2] === 1) n++;
+      }
+      return s !== EAU && n >= 2 ? 1 : 0;
+    }
+    return s !== EAU && s !== SOL.falaise && s !== SOL.neige && X >= 0 && Y >= 0 && X <= W && Y <= H && (coins[Y * cv + X] || terreHameau(X, Y)) ? 1 : 0;
+  };
   // (un coin de la terre battue d'un hameau : une des quatre cases qui le touchent en est ; la place
   // et les ruelles se peignent comme le chemin, monde-hameaux.js)
   const TH = ctx.hameaux.terre;
@@ -353,7 +493,7 @@ export function solDeRegion(ctx, rx, ry) {
       if (X >= F.X && Y >= F.Y && X <= F.X + F.LARGEUR && Y <= F.Y + F.HAUTEUR) {
         // un coin de la ferme (son bord) : le sien
         const s = ferme.sommets[(Y - F.Y) * fv + X - F.X];
-        cSol[k] = s === 2 ? EAU : HERBE; cCh[k] = s === 1 ? 1 : 0; cTe[k] = ferme.teintes[(Y - F.Y) * fv + X - F.X];
+        cSol[k] = s === 2 ? EAU : HERBE; cCh[k] = cChN[k] = s === 1 ? 1 : 0; cTe[k] = ferme.teintes[(Y - F.Y) * fv + X - F.X];
         continue;
       }
       const g = (Y - 1 - gy0) * gw + X - 1 - gx0;   // la case haut-gauche du coin
@@ -394,16 +534,9 @@ export function solDeRegion(ctx, rx, ry) {
         s = seul;
       }
       cSol[k] = s;
-      if (X >= F.X - S.PRES_FERME && Y >= F.Y - S.PRES_FERME && X <= F.X + F.LARGEUR + S.PRES_FERME && Y <= F.Y + F.HAUTEUR + S.PRES_FERME) {
-        // (aux abords de la ferme, le chemin d'avant : un coin dont deux des quatre cases sont du
-        // chemin ; son raccord avec celui de la ferme ne bouge pas)
-        let n = 0;
-        for (const [dx, dy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
-          const x2 = Math.min(W - 1, Math.max(0, X + dx)), y2 = Math.min(H - 1, Math.max(0, Y + dy));
-          if (ctx.chemins[y2 * W + x2] === 1) n++;
-        }
-        cCh[k] = s !== EAU && n >= 2 ? 1 : 0;
-      } else cCh[k] = s !== EAU && s !== SOL.falaise && s !== SOL.neige && X >= 0 && Y >= 0 && X <= W && Y <= H && (CC[Y * cv + X] || terreHameau(X, Y)) ? 1 : 0;
+      cCh[k] = coinChemin(s, X, Y, ctx.chemins, CC);
+      // (fiche I2 : la nature lit les chemins du plan, quoi que possède le joueur)
+      if (cChN !== cCh) cChN[k] = coinChemin(s, X, Y, ctx.cheminsNature, ctx.coinsNature);
       cTe[k] = ctx.teinte(X - F.X, Y - F.Y);
     }
   }
@@ -496,7 +629,7 @@ export function solDeRegion(ctx, rx, ry) {
   // et des buissons ferment leurs cases. Entre ses tirages et sa pose, les rochers, les falaises,
   // l'épave (monde-roches.js), qui s'écartent des arbres ; leurs petites pièces après les plantes.
   const g = {
-    cx0, cy0, cl, ch: chh, x0, y0, l, h, cSol, cCh, cTe, cw, kx0, ky0, EAU, codes: CODES_SOLS, marche, biomeDe: (i) => biomeDe(ctx, i),
+    cx0, cy0, cl, ch: chh, x0, y0, l, h, cSol, cCh: cChN, cTe, cw, kx0, ky0, EAU, codes: CODES_SOLS, marche, biomeDe: (i) => biomeDe(ctx, i),
     solBrut: (i, x, y) => solDe(ctx, biomeDe(ctx, i), i, x, y),
   };
   let r = null, tir = null;

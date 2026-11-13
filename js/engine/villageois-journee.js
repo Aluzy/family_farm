@@ -9,6 +9,7 @@ import { meteoDuJour } from './meteo.js';
 import { noterObjectif } from './objectifs-compte.js';
 import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.js';
 import { connaissance } from './villageois-liens.js';
+import { manqueDit, postesDe, signatureTaches, tacheDef, travailleAujourdhui } from './taches.js';
 
 /* ---------- la journée des villageois sur la ferme (le chantier « l'île à bâtir », fiche I3b) ----------
 
@@ -41,7 +42,15 @@ import { connaissance } from './villageois-liens.js';
    puits, se promener à deux, puiser de l'eau, voir le jardin, les bêtes, un ouvrage, descendre au port), tiré pour
    tout le village à la fois (calculerJournee) d'après qui se connaît (villageois-liens.js, connaissance) ; les lieux
    de ces buts (lieuxDesSorties) : 'devant' (une case, tournée vers `vers`) et 'groupe' (une case d'un petit cercle,
-   tournée vers son centre `vers`). Les tests : tests/engine/village-social.test.mjs. */
+   tournée vers son centre `vers`). Les tests : tests/engine/village-social.test.mjs.
+
+   I3c (les tâches, taches.js) : celui qui a une tâche, s'il peut la faire aujourd'hui (travailleAujourdhui : ni au
+   repos, ni sans son outil, ni sans poste), travaille aux créneaux de TACHES.TRAVAIL (planDuTravail, avant les
+   sorties) : l'état « travail », à son poste (lieu 'devant', tourné vers ce qu'il travaille : `vers`), le but
+   { sorte: 'travail', tache, cle, avec (ses camarades au même poste), geste, emoji } ; PAUSE créneaux de chaque plage
+   restent des sorties (le puits, un ami), et les repas, le matin avant le travail et la fin d'après-midi ne changent
+   pas. Deux villageois à la même tâche ont des postes voisins (ceux du premier, rangés depuis sa maison) et la même
+   clé : ils causent un peu. Les tests : tests/engine/village-taches.test.mjs. */
 
 const H = () => (DATA.VILLAGE && DATA.VILLAGE.HORAIRE) || {};
 const P = () => (DATA.VILLAGE && DATA.VILLAGE.PHRASES) || {};
@@ -49,7 +58,7 @@ const SB = () => (DATA.VILLAGE && DATA.VILLAGE.SOCIAL && DATA.VILLAGE.SOCIAL.BUT
 const SIEGES = new Set(['chaise_jardin', 'banc_jardin', 'meuble_chaise', 'banc_rondins', 'chaise_peinte', 'banc_pierre']);
 const TABLES_DEHORS = new Set(['table_jardin', 'table_rondins']);
 const TABLES = new Set([...TABLES_DEHORS, 'meuble_table']);
-export const ETATS_VILLAGEOIS = ['lever', 'dehors', 'repas', 'flaner', 'rentrer', 'dormir', 'repos', 'abri', 'recoit'];
+export const ETATS_VILLAGEOIS = ['lever', 'dehors', 'repas', 'flaner', 'rentrer', 'dormir', 'repos', 'abri', 'recoit', 'travail'];
 // (I3b+ : les buts d'une sortie, SOCIAL.BUTS ; le but d'un segment : seg.but.sorte)
 export const BUTS_VILLAGEOIS = ['visite', 'rdv', 'promenade', 'eau', 'jardin', 'betes', 'ouvrage', 'port'];
 
@@ -240,8 +249,10 @@ export function journeeDuVillage(state, jour = jourDe(state)) {
   if (!V.length) return new Map();
   const L = lieuxDuVillage(state);
   const lp = lieuPort(state);
-  const cle = JSON.stringify([graineDe(state), jour, H(), SB(), (DATA.VILLAGE.SOCIAL || {}).CONNAISSANCE, lp ? [lp.case, lp.chemin] : 0,
-    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive])]);
+  // (I3c : sa tâche, et si elle attend : un outil donné, une parcelle labourée la remettent en route)
+  const avecTache = V.some((v) => v.tache);
+  const cle = JSON.stringify([graineDe(state), jour, H(), SB(), (DATA.VILLAGE.SOCIAL || {}).CONNAISSANCE, lp ? [lp.case, lp.chemin] : 0, avecTache ? signatureTaches(state) : 0,
+    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0])]);
   const deja = memoJours.get(cle);
   if (deja && deja.L === L) return deja.J;
   const J = calculerJournee(state, jour, V, L);
@@ -300,7 +311,8 @@ function calculerJournee(state, jour, V, L) {
     x.plan = new Map();
     gens.push(x);
   }
-  // 2. les créneaux dehors, pour tout le village
+  // 2. I3c : les créneaux de travail ; puis les créneaux dehors, pour tout le village
+  planDuTravail(state, jour, gens, L, prendre, C);
   planDesCreneaux(state, jour, gens, L, prendre);
   // 3. les segments
   const out = new Map();
@@ -355,6 +367,78 @@ function bornesCreneaux(de, a, C, fl) {
   const z = b.length - 1;
   if (z > 0 && b[z].y - b[z].x < C / 3) { b[z - 1].y = b[z].y; b.pop(); }
   return b.filter((p) => p.y > p.x);
+}
+
+// I3c : les créneaux de travail de ceux qui travaillent aujourd'hui (voir plus haut). Pour chaque plage de
+// TACHES.TRAVAIL, les créneaux dont le milieu y tombe, moins PAUSE tirés (jamais le premier) ; un poste tient POSTE
+// créneaux de la grille commune (le même rang de poste pour tous à la même heure), les camarades d'une tâche se
+// suivent sur les postes de celui qui a le plus petit id (des postes voisins). Remplit x.plan.
+function planDuTravail(state, jour, gens, L, prendre, C) {
+  const TT = DATA.TACHES || {}, plages = Array.isArray(TT.TRAVAIL) ? TT.TRAVAIL : [];
+  if (!plages.length) return;
+  const g = graineDe(state), N = Math.max(1, Number(TT.POSTE) || 2), pauses = Math.max(0, Number(TT.PAUSE) || 0);
+  const parTache = new Map();
+  for (const x of gens) {
+    if (!x.v.tache || !travailleAujourdhui(state, x.v)) continue;
+    let l = parTache.get(x.v.tache);
+    if (!l) parTache.set(x.v.tache, (l = []));
+    l.push(x);
+  }
+  for (const [tache, equipe] of parTache) {
+    const def = tacheDef(tache), postes = postesDe(state, tache, equipe[0].v);
+    if (!postes.length) continue;
+    // (les créneaux de travail de chacun : k → le rang du poste)
+    const travail = equipe.map((x) => {
+      const ks = new Map();
+      plages.forEach(([a, b], w) => {
+        const l = [...x.parK.values()].filter((p) => (p.x + p.y) / 2 >= a && (p.x + p.y) / 2 < b).map((p) => p.k);
+        const rnd = rngDe(`${g}:pause:${x.v.id}:${jour}:${w}`);
+        const libres = new Set();
+        for (let n = 0; n < pauses && l.length > 2; n++) libres.add(l[1 + Math.floor(rnd() * (l.length - 1))]);
+        const k0 = Math.floor(a / C);
+        for (const k of l) if (!libres.has(k)) ks.set(k, w * 1000 + Math.floor((k - k0) / N));
+      });
+      return ks;
+    });
+    const buts = new Map(), W = L.W;
+    equipe.forEach((x, r) => {
+      for (const [k, rang] of travail[r]) {
+        // (son poste : au rang du poste, celui de l'équipe (le premier, tiré de la liste), puis, pour ses camarades,
+        // les plus proches de lui (l'autre côté du même arbre, le rocher voisin) ; pris à ce créneau : le suivant)
+        const ordre = ordreDesPostes(postes, rang, W);
+        let p = null;
+        for (let i = 0; i < ordre.length && !p; i++) if (prendre('c' + k, ordre[(r + i) % ordre.length].case)) p = ordre[(r + i) % ordre.length];
+        if (!p) continue;
+        const cle = `travail:${tache}:${rang}:${p.case}`;
+        let but = buts.get(cle);
+        // (le même but et le même lieu sur les créneaux d'un même poste : un seul segment)
+        if (!but) {
+          buts.set(cle, (but = { sorte: 'travail', tache, cle: `travail:${tache}:${rang}`, avec: [], geste: def.geste || 'ramasse', emoji: def.emoji || '', poste: p.case }));
+          but.lieu = { genre: 'devant', case: p.case, vers: Number.isInteger(p.vers) ? p.vers : undefined, dedans: !!p.dedans, travail: true };
+        }
+        x.plan.set(k, { etat: 'travail', lieu: but.lieu, but });
+      }
+    });
+    // (ses camarades : ceux de la même tâche, au même rang de poste, à 4 cases au plus)
+    const pres = (a, b) => Math.max(Math.abs((a % W) - (b % W)), Math.abs(Math.floor(a / W) - Math.floor(b / W))) <= 4;
+    const tous = [...buts.values()], qui = new Map();
+    for (const x of equipe) for (const a of x.plan.values()) if (a.but && a.but.sorte === 'travail') qui.set(a.but, x.v.id);
+    const groupes = tous.map((b) => tous.filter((o) => o.cle === b.cle && pres(o.poste, b.poste)).map((o) => qui.get(o)).filter(Boolean));
+    tous.forEach((b, i) => {
+      const ids = [...new Set(groupes[i])].sort();
+      b.avec = ids.filter((id) => id !== qui.get(b));
+      b.cle = `${b.cle}:${ids[0] || qui.get(b)}`;
+    });
+  }
+}
+
+// Les postes au rang `rang` (planDuTravail) : celui de l'équipe (un rang sur deux, le suivant de la liste), puis
+// les autres, du plus proche au plus loin de lui.
+function ordreDesPostes(postes, rang, W) {
+  const n = postes.length, i0 = (((Math.floor(rang / 1000) * 5) + (rang % 1000)) * 2) % n, p0 = postes[i0].case;
+  // (pas juste au-dessus ou au-dessous de lui : ils se cacheraient l'un l'autre)
+  const d = (t) => { const dc = Math.abs((t % W) - (p0 % W)), dr = Math.abs(Math.floor(t / W) - Math.floor(p0 / W)); return Math.max(dc, dr) + (dc === 0 && dr <= 1 ? 3 : 0); };
+  return postes.map((p, i) => [p, i === i0 ? -1 : d(p.case)]).sort((a, b) => a[1] - b[1]).map((e) => e[0]);
 }
 
 // Les créneaux dehors de tout le village (voir calculerJournee) : pour chaque créneau de la grille, dans l'ordre des
@@ -498,7 +582,8 @@ function planDesCreneaux(state, jour, gens, L, prendre) {
 // Sous la pluie (de p[0] à p[1] h) : ce qui se fait dehors (dehors, flâner, un repas à une table du dehors) devient
 // « abri », chez lui ; les segments sont coupés aux heures de l'averse.
 function sousLaPluie(segs, p, enMaison) {
-  const dehors = (s) => s.etat === 'dehors' || s.etat === 'flaner' || (s.etat === 'repas' && s.lieu && s.lieu.dehors);
+  // (I3c : le travail dehors aussi ; à la cuisine, il reste à son poste)
+  const dehors = (s) => s.etat === 'dehors' || s.etat === 'flaner' || (s.etat === 'repas' && s.lieu && s.lieu.dehors) || (s.etat === 'travail' && !(s.lieu && s.lieu.dedans));
   const out = [];
   let abri = null;
   for (const s of segs) {
@@ -544,8 +629,11 @@ export function paroleVillageois(state, id, o = {}) {
   // (I3b+ : au but d'une sortie, ce qu'il y fait : SOCIAL.ACTIVITE)
   const A = (DATA.VILLAGE.SOCIAL || {}).ACTIVITE || {};
   const but = etat === 'dehors' && BUTS_VILLAGEOIS.includes(o.but) && A[o.but] ? o.but : null;
+  // (I3c : au travail, une phrase de sa tâche ; sa tâche attend (un outil, un poste) : il le dit)
+  const def = tacheDef(v.tache), manque = etat !== 'dormir' && etat !== 'repas' ? manqueDit(state, v) : '';
+  const texte = etat === 'travail' && def ? un(def.PHRASES) : manque ? un((P().ACTIVITE || {}).attend).replace('{raison}', manque) : un(but ? A[but] : (P().ACTIVITE || {})[etat]);
   return {
-    id: v.id, prenom: v.prenom, genre: v.genre, etat, but, salut, texte: un(but ? A[but] : (P().ACTIVITE || {})[etat]),
+    id: v.id, prenom: v.prenom, genre: v.genre, etat, but, salut, texte, tache: def ? v.tache : null,
     humeur, humeurTexte: etat === 'dormir' ? '' : un((P().HUMEUR || {})[humeur]),
   };
 }

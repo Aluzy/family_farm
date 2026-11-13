@@ -58,6 +58,8 @@ function scoreDe(state, va, vb, L, W) {
   }
   const ta = tableDe(L, va);
   if (ta !== null && ta === tableDe(L, vb)) parJour += Number(c.TABLE) || 0;
+  // (I3c : la même tâche, on se lie en travaillant ensemble)
+  if (va.tache && va.tache === vb.tache) parJour += Number(c.COLLEGUE) || 0;
   const score = Math.min(100, Math.round(jours * parJour + affinite(state, va.id, vb.id) * (Number(c.AFFINITE) || 0)));
   return { score, jours };
 }
@@ -74,7 +76,7 @@ let memoCle = null, memo = null;
 export function liensDuVillage(state) {
   const V = villageoisDe(state);
   const L = V.length ? lieuxDuVillage(state) : null;
-  const cle = JSON.stringify([graineDe(state), jourDe(state), C(), V.map((v) => [v.id, v.maison, v.arrive])]);
+  const cle = JSON.stringify([graineDe(state), jourDe(state), C(), V.map((v) => [v.id, v.maison, v.arrive, v.tache || 0])]);
   if (memo && memoCle === cle && memo.L === L) return memo;
   const paires = new Map(), famille = new Map();
   const W = farmTerrain(state).LARGEUR, fa = Math.max(0, Number(C().FAMILLE_AMI) || 0);

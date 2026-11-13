@@ -39,7 +39,7 @@ FERME = [
     'vache.png', 'mouton.png', 'poule.png', 'herbe_haute.png', 'herbe_haute_fleurs.png',
     'puits.png', 'citerne.png', 'asperseur.png', 'robot.png', 'station_robot.png',
     'verger.png', 'arbre_clair_sp.png', 'pin_clair_sp.png', 'ramassables.png', 'pas_japonais.png',
-    'portails.png', 'soil_dry.png', 'soil_wet.png', 'soil_wet_serre.png', 'tente.png',
+    'portails.png', 'soil_dry.png', 'soil_wet.png', 'soil_wet_serre.png', 'tente.png', 'brouette.png', 'charrette.png',
 ]
 
 

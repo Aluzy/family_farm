@@ -35,6 +35,21 @@
       "retour (le personnage marche à 58 px par seconde, 3,6 cases)."
     ],
     "PORT": { "SEUIL": 60, "VITESSE": 3.6 },
+    "//VILLAGEOIS": [
+      "I3c : le chantier allumé, le joueur simulé loge des villageois et leur confie des tâches (js/engine/bot.js,",
+      "botVillageois). Dès le palier MAISON_PALIER des paliers de l'île, tant que le port en laisse venir (le plafond de",
+      "VILLAGE.ARRIVEE), il bâtit une maison de villageois quand aucune n'est libre : une pièce close de 5 × 4 cases, un",
+      "lit, une boîte aux lettres contre sa porte (MAISON : ses pièces maîtresses, fabriquées à l'Atelier ; les murs",
+      "posés d'un coup, comme pour ses autres bâtiments). Le nouveau venu débarque au bac suivant (la nuit l'installe).",
+      "Puis il donne à chacun la première tâche de TACHES qu'aucun autre n'a et qui a son poste (d'abord ce qui nourrit,",
+      "puis ce qui se vend) ; l'outil qu'elle demande, il le fabrique à l'Atelier et le lui donne (puis en refait un",
+      "pour lui quand il en a besoin)."
+    ],
+    "VILLAGEOIS": {
+      "MAISON_PALIER": 3,
+      "MAISON": { "paillasse": 1, "boite_aux_lettres": 1 },
+      "TACHES": ["champs", "betes", "cuisine", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"]
+    },
     "//BATIR": [
       "I0b : les pièces maîtresses de chaque bâtiment, fabriquées à l'Atelier avec leurs matériaux avant d'être posées",
       "(js/engine/bot.js botBatir ; les murs, portes et barrières autour sont posés d'un coup). Aucun n'a de prix en pièces."

@@ -11,6 +11,12 @@
 import { DATA } from './catalog.js';
 import { commencerPaliers } from './paliers.js';
 
+// Le dehors d'une partie neuve du chantier (fiche I2, js/engine/dehors.js) : le tronçon du port est à convertir en
+// chemins du joueur (le Web Worker du sol le fait, ou dehors.js assurerTroncon dans Node).
+export function nouveauDehors() {
+  return { troncon: 'a_poser', chemins: [] };
+}
+
 // Le chantier est-il allumé pour cette partie ?
 export function villageActif(state) {
   if (DATA.VILLAGE && DATA.VILLAGE.ACTIF === true) return true;
@@ -21,6 +27,7 @@ export function villageActif(state) {
 // (paliers.js, fiche I7a : state.palier).
 export function allumerEssaiVillage(state) {
   state.essais = { ...(state.essais || {}), village: true };
+  if (!state.dehors) state.dehors = nouveauDehors();
   return commencerPaliers(state);
 }
 

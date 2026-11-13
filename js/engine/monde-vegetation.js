@@ -160,7 +160,7 @@ export function vegetationDeRegion(ctx, g) {
     if (X < 0 || Y < 0 || X >= W || Y >= H) return false;
     if (X >= F.X - FM && Y >= F.Y - FM && X < F.X + F.LARGEUR + FM && Y < F.Y + F.HAUTEUR + FM) return false;
     const i = Y * W + X;
-    return !ctx.chemins[i] && !reserve[i];
+    return !(ctx.cheminsNature || ctx.chemins)[i] && !reserve[i];
   };
   // les tirages de chaque case du cadre : la table de sa case (ou null), son image (sorte + 1 ;
   // 0 : rien), sa force

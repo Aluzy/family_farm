@@ -78,8 +78,8 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 |---|---|---|
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
 | 1. Le port | I1a (fait), I1b (fait), I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
-| 2. Le chemin | I2 | Le chemin de la ferme au port, modifiable ; porter la marchandise |
-| 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c, I3d | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
+| 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
+| 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a, I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
@@ -192,7 +192,76 @@ Ce qui est posé (I1b) :
   l'aller et au retour. `node scripts/simulate.mjs --village` allume le réglage (le chapitre 7 et le dépannage n'y
   sont que des constats : les paliers demandent des villageois).
 - **Les tests** : `tests/engine/village-commerce.test.mjs` (dont 25 nuits du joueur automatique, le réglage allumé).
-- Reste : le chemin du port est long (I2 : le portage) ; le bac, les commandes et l'import (I1c) ; les prix (I4).
+- Reste : le bac, les commandes et l'import (I1c) ; les prix (I4). (Le chemin du port et le portage : I2, plus bas.)
+
+## Le chemin du port, modifiable, et le portage (I2, fait)
+
+Ce qui est posé (I2 ; les réglages : `VILLAGE.DEHORS`, `VILLAGE.CHEMIN`, `VILLAGE.PORTAGE`, data/village.json) :
+
+- **Le chemin possédé** (`js/engine/dehors.js`) : dans une partie neuve du chantier, `state.dehors = { troncon, chemins }`.
+  Le tronçon généré de la sortie de la ferme au port (`lieux.port.chemin`) devient des blocs de chemin du joueur :
+  chaque case du tracé et un pinceau de `CHEMIN.PINCEAU` × `PINCEAU` cases (2 : la case, sa droite, le dessous ; à
+  `PRES_FERME` cases de la ferme, trois de large, le raccord avec sa sortie ne bouge pas) ; une case de rivière reste un
+  gué. La conversion se fait dans le Web Worker du sol (`monde-sol.js`, `tronconDuPort`), qui renvoie les cases avec
+  « pret » ; la page les pose (`poserTroncon`) ; dans Node, `assurerTroncon` fait le même calcul. La forme gardée est
+  compacte : des segments `[écart, longueur]` à plat (`encoderSegments`, une rangée de chemin = un segment). Mesures :
+  le tronçon de la graine 1 fait 599 cases, 100 segments, 618 octets ; celui de la partie d'essai (graine 200364) 865
+  cases, 210 segments, 1 234 octets. 600 cases de plus : en allée de deux de large, quelques octets ; posées une à une,
+  chacune isolée (le pire : 687 segments), `state.dehors` fait 2 966 octets et la partie 7 809 (contre 5 461). Le seul
+  tronçon de la graine 1 gardé une case par entrée, comme `state.sols`, ferait 10 783 octets. `troncon` : `a_poser` (partie neuve), `pose` (converti : le sol ne peint plus le tracé),
+  `genere` (une partie d'avant : son tronçon généré reste peint tel quel jusqu'à I7f ; ce qu'on pose dehors s'y ajoute).
+- **Le sol** : le contexte du sol reçoit les chemins possédés (`poserCheminsSol` à l'« init » du Worker,
+  `majCheminsSol` puis le message « chemins » à chaque changement : les régions déjà faites qui les touchent sont
+  refaites et repeintes, la carte du monde est redemandée). Ce qui se peint et se marche (`ctx.chemins`,
+  `ctx.cheminCoins`) suit les chemins possédés ; la nature (arbres, rochers, bêtes, hameaux) lit toujours les chemins
+  du plan (`ctx.cheminsNature`) : retirer un chemin ne fait rien pousser. Éteint ou sans chemin possédé, rien ne change.
+- **Bâtir hors de la ferme** (`poseDehorsStatus`, demandé par `blocs.js poseStatus` hors de la ferme, le chantier
+  allumé) : les blocs de `VILLAGE.DEHORS` (chemin, pas japonais, lanterne, réverbère, pont de planches, barrières,
+  bancs) ; refusés : la mer et les lacs (« l'eau profonde »), la falaise et les sommets, la rivière (sauf le pont), le
+  pied d'un arbre, d'un buisson ou d'un rocher (pris, sa case se libère), l'emprise du port (son cadre et
+  `HAMEAUX.RESERVE` cases autour) et des hameaux, une région pas encore dessinée. Un chemin possédé se lit comme un sol
+  « chemin » (`solAt`) : le mode Construire le pose, le reprend, le déplace comme sur la ferme ; les autres blocs vont
+  dans `state.blocs` et `state.sols` (cases du monde). Le **pont de planches** (`pont_planches`, l'Atelier : 3 planches
+  et 2 bois pour deux) se pose sur une rivière, tourné en travers (son sens) ; ses cases s'ouvrent à la marche (la
+  page les ajoute aux cases ouvertes, `casesPonts`).
+- **L'effet du chemin** : sur un chemin (un chemin possédé, un chemin posé sur la ferme, le chemin de la ferme :
+  `surChemin`), on va `CHEMIN.VITESSE` % plus vite (50), à pied comme à cheval (`js/ui/stage.js` : la vitesse de la case
+  du personnage, `modèle.pied`, `modèle.chevalVitesse`). La carte du monde dessine les chemins possédés.
+- **Le portage** (`js/engine/portage.js`) : `state.portage = { vehicule, charge }`. Chaque objet a un volume (un ;
+  `PORTAGE.VOLUMES` : bois et planches 2, pierre, minerais et lingots 3, bloc de silo 4). À la main `MAINS` (12) volumes,
+  la brouette `BROUETTE` (40), la charrette attelée au cheval `CHARRETTE` (160 ; il faut un cheval). On charge sur la
+  ferme (de l'inventaire puis du réfrigérateur, avec la fraîcheur des lots ; ce qui ne tient pas reste à la ferme),
+  on reprend sur la ferme, on décharge sous la halle : tout ce qui est chargé se vend d'un coup (`dechargerAuPort`) ;
+  `vendreAuPort` ne vend plus que ce qui est chargé ; les semences achetées vont droit à la ferme. Les commandes
+  `port.decharger`, `portage.charger`, `portage.reprendre`, `portage.vehicule`. La fenêtre du port gagne l'onglet
+  « Porter » (le véhicule, la place, « Charger les récoltes », ce qu'on charge) ; « Vendre » montre le chargement et,
+  sous la halle, « Tout décharger ». La brouette et la charrette se fabriquent à l'Atelier (recettes `village`).
+- **Les dessins** (`scripts/carte/portage.py`, vus de haut à 45°) : le pont (8 images : du nord au sud et d'ouest en
+  est, selon ses voisins ; 597 couleurs pour les 8, 174 à 177 chacune), la brouette (`assets/brouette.png`, 3 vues × 4
+  temps de la roue, 425 couleurs, 207 pour une case), la charrette attelée (`assets/charrette.png`, d'après la calèche :
+  3 vues × 5 temps × 2 couches, 1 205 couleurs, 579 pour une case). La scène (`js/carte/portage.js`) : la brouette
+  devant le personnage à pied, la charrette à la place du cheval sellé (il s'assied sur son banc), quand quelque chose
+  est chargé (`modèle.portage`).
+- **Le joueur automatique** : avant sa sortie, il fabrique une brouette s'il le peut, note ce qu'il vendrait et en charge
+  le plus cher au volume d'abord ; sa marche va 50 % plus vite (le chemin), `CHEVAL.VITESSE` fois avec un cheval ; au
+  port, il décharge. Avec `--village`, ses gains de fin de partie tombent d'environ 430 à 185 pièces par jour (la
+  brouette porte 40 volumes) : l'argent ne s'empile plus (la vérification passe).
+- **La sauvegarde** : format 88 ; la migration v87 → v88 répare `dehors` et `portage` s'ils sont là et n'ajoute rien à
+  une partie d'avant.
+- **Les durées d'un aller** (la ferme, de son milieu, au port ; 58 px/s à pied, 30 s par heure de jeu ; graines 1 à 8,
+  aller de 350 à 517 cases) : à pied hors chemin 3,2 à 4,8 h (moyenne 4,1) ; à cheval 2,3 à 3,4 h (2,95) ; à pied
+  sur le chemin 2,2 à 3,2 h (2,75) ; à cheval sur le chemin 1,5 à 2,3 h (1,97) ; au galop (la pomme dorée) sur le
+  chemin 0,9 à 1,3 h. **La vitesse seule ne suffit pas** à faire l'aller en une heure de jeu à cheval : le port est
+  placé « le plus loin de la ferme » (`PORT.PLAN`, 200 à 265 cases à vol d'oiseau ; le tracé fait 1,4 à 1,6 fois
+  cette distance, et la demi-ferme ajoute 72 cases, 0,3 h à cheval sur le chemin). Proposition (non faite ici) : choisir
+  la côte la plus proche qui convient à partir de `PORT.PLAN.FERME` (70) plutôt que la plus loin, à 80 à 100 cases à vol
+  d'oiseau : l'aller à cheval sur le chemin tomberait vers 0,9 à 1 h (à pied sur le chemin, 1,3 à 1,4 h) ; ou un
+  raccourci (un bac côtier, un second quai près de la ferme) dans une fiche à part. Dans Chromium (sans écran, où la
+  scène tourne au ralenti : 32 px/s à pied au lieu de 58), le rapport mesuré chemin/herbe est de 1,3 à pied et 1,5 à
+  cheval ; l'aller à cheval avec la charrette, sur 426 cases, y a pris 143 s.
+- **Les tests** : `tests/engine/village-chemin.test.mjs` ; `village-commerce` charge avant de vendre.
+- Reste : retirer les boucles vers les hameaux (I7e) ; convertir le tronçon des parties d'avant (I7f) ; le chargement
+  ne vieillit pas la nuit (il garde sa fraîcheur) ; un chemin repris du tronçon rend un bloc (1 pièce au port).
 
 ## Les villageois : l'arrivée (I3a, fait)
 
@@ -256,7 +325,7 @@ Ce qui est posé (I3b) :
   carte (`villageoisPourLaCarte`, refait à chaque rendu de la page) relevait les maisons et les lits de la famille
   pour chacun (≈ 15 ms pour 15) ; il est maintenant gardé tant que rien ne change (0,04 ms).
 - Les réglages choisis sur film (parmi calme, normal, animé) : « animé » : `VITESSE` 1, `CRENEAU` 0,5, `FLANER` 0,2 le
-  matin et 0,4 l'après-midi, `CHEMIN` 1,5. Les tâches (I3c) prendront des créneaux à la place des sorties.
+  matin et 0,4 l'après-midi, `CHEMIN` 1,5. Les tâches (I3c, fait) prennent des créneaux à la place des sorties.
 
 ## Les villageois : la vie sociale (I3b+, fait)
 
@@ -324,7 +393,93 @@ l'heure, comme la journée de I3b ; loin de la vue, rien ne s'anime.
   avec un inconnu, le déterminisme, jamais dans un mur sur un lot de fermes, les répliques) ;
   `village-journee.test.mjs` suit les sorties à but. Éteint, rien ne change (le CSV de la simulation est le même).
 - Reste : l'affinité sauvegardée et ce qu'elle change (I6b) ; la visite du soir et s'asseoir côte à côte (I6b) ;
-  le port quand son chemin sera court (I2) ; les tâches prendront des créneaux (I3c).
+  le port quand son chemin sera court (I2) ; les tâches prennent des créneaux (I3c, fait).
+
+## Les villageois : les tâches (I3c, fait)
+
+Le cœur de la nouvelle boucle : le joueur confie une tâche à chaque villageois, qui la fait chaque jour à son poste ;
+ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo).
+
+- **Les tâches** (`TACHES`, `data/village.json`) : les champs (récolter ce qui est mûr, arroser ce qui a soif avec
+  l'eau du réservoir, ressemer de sa dernière culture), les bêtes (nourrir les poules, prendre les œufs, tondre,
+  prendre le lait et la laine), le verger et les ruches, le bois (hache), la pierre et le minerai (pioche), la pêche
+  (canne : l'étang ou la mare de la ferme), la cueillette (ce que la ferme offre ce matin), le fauchage et la paille
+  (faux ; une botteleuse posée en fait de la paille), la cuisine (une préparation lancée à la cuisinière ou au four,
+  `RECETTES`), la **navette** (« la tournée du port » dans le jeu : « navette » est un mot que les textes du jeu n'emploient plus ;
+  un aller-retour au port, `PORTEE` objets marqués « à vendre » sur sa fiche, vendus au
+  comptoir ; la brouette et la charrette viendront avec I2). Chacune : `ACTIONS` par jour (2 à 12), ce que donne une
+  action (`donne`), son outil, son lieu, son geste, son emoji, ce que dit la fiche sans poste (`SANS`), ses phrases.
+- **Le moteur** (`js/engine/taches.js`) : `attribuer(state, id, tache)` ; le travail se fait **à l'heure** (`avancerTaches`,
+  à chaque pas de la ferme, `energy.js`) : `ACTIONS` à parts égales sur ses créneaux de travail du jour
+  (`actionsDues`) ; la nuit (`tachesNuit`, avant `villageoisNuit`) fait ce qui reste (la page fermée, l'averse). Chaque
+  action passe par **les fonctions du joueur** (`harvestPlot`, `waterPlot`, `plantPlot`, `feedAllHens`, `pickUp`,
+  `shear`, `harvestTree`, `recolterRuche`, `chopTree`, `mineRock`, `castLine`, `ramasser`, `scytheGrass`,
+  `verserFibres`, `startRecipe`, `vendreAuPort`) : une carotte récoltée par lui est une carotte récoltée (les
+  compteurs de la campagne et des paliers comptent), un arbre coupé repousse comme les autres, le quota de pêche du
+  jour est celui du joueur, la pioche améliorée lui profite. Mais ni l'énergie, ni l'XP, ni les objectifs du jour du
+  joueur (`commeLeJoueur` les remet comme avant). Un arbre, un rocher entamé est fini d'abord. Une action sans rien à
+  faire se retente `ESSAI` h plus tard. En repos (I3a), il ne fait rien ; sans son outil ou sans poste, la tâche
+  **attend** et le dit (sa fiche, sa bulle : « il me faut une hache. »), et il vit sa journée comme avant.
+- **Les automatisations, la règle** : tout se lit dans la partie au moment de l'action, le premier passé prend. Une
+  parcelle arrosée (l'asperseur, l'averse, le robot, le joueur) n'a plus soif : il ne l'arrose pas une seconde fois ;
+  une récolte prise par le robot n'est plus mûre : il ne la prend pas, et le robot ne reprend pas ce qu'il a récolté.
+- **Les outils** : le joueur fabrique l'outil à l'Atelier et le donne (`donnerOutil` : il quitte sa barre d'outils, le
+  villageois le garde, `v.outil`) ; il le reprend (`reprendreOutil`) s'il n'en a pas déjà un. Celui que le villageois
+  tenait revient au joueur quand il en reçoit un autre.
+- **La journée** (`villageois-journee.js`, `planDuTravail`, avant les sorties de I3b+) : les créneaux dont le milieu tombe
+  dans `TRAVAIL` (8 h à 11 h 30, 13 h 30 à 16 h 30) sont du travail (l'état « travail », à son poste : un lieu
+  « devant », tourné vers ce qu'il travaille), sauf `PAUSE` créneau tiré par plage (jamais le premier), qui reste une
+  sortie de la vie sociale (le puits, un ami, la place). Le lever, le début de matinée, **les repas avec les autres**
+  (la table commune), la fin d'après-midi (après 16 h 30 : les visites, les rendez-vous, les promenades) et la veillée ne
+  changent pas. Un poste tient `POSTE` créneaux (une heure de jeu), puis il passe au suivant. Les postes (`postesDe`) :
+  à côté des parcelles, des enclos, des arbres fruitiers et des ruches ; de part et d'autre du pied d'un arbre ou d'un
+  rocher, à côté d'une touffe d'herbe haute (de profil, la hache, la pioche, la faux) ; sur la rive au-dessus de l'eau ;
+  devant la cuisinière ; le coffre (devant la maison de la famille) puis le comptoir du port, pour la navette ; à
+  `RAYON` cases de sa maison s'il y en a, sinon les plus proches de la ferme. **Deux villageois à la même tâche** ont des
+  postes voisins (le poste de l'équipe, puis les plus proches de lui : l'autre côté du même arbre) et la même clé : ils
+  causent un peu (`SOCIAL.REPLIQUES.travail`, une réplique toutes les `CAUSE` s, la première quelques secondes après
+  s'y être mis). Ils se lient en travaillant ensemble : `CONNAISSANCE.COLLEGUE` de plus par jour (I6b le reprendra).
+  Sous la pluie, le travail du dehors devient l'abri (la cuisine continue) ; la nuit fait les actions qui restent.
+- **La scène** (`js/carte/ferme/villageois-travail.js`) : arrivé à son poste, il fait le geste de sa tâche en boucle
+  (les gestes des habitants des hameaux, `CarteKit.GESTES_HABITANTS` : la hache, la pioche, la faux, la canne,
+  l'arrosoir, se baisser, remuer la marmite ; les mêmes cases des planches, pas de dessin nouveau), une courte pause
+  entre deux ; chaque action que le moteur compte pendant qu'on le regarde fait monter l'emoji de ce qu'elle donne
+  (🪵 🪨 🐟 🌱…) ; rien n'est compté par la scène (la règle de la fiche 7b). Quand il cause, il pose son outil et se
+  tourne vers l'autre. Un passant qu'il connaît le salue comme ailleurs (I3b+).
+- **L'interface** (`js/ui/villageois.js`) : sa fiche dit sa tâche (où il en est aujourd'hui, ce qu'il a produit, ce
+  qui lui manque), son outil (« Donner ma hache », « Reprendre ») ; le bouton « Tâche » ouvre la liste (celles qu'il
+  peut faire, ce qui manque aux autres, qui l'a déjà) ; la navette, ce qu'elle porte (« à vendre ») ; la liste des
+  villageois dit **qui fait quoi** ; un appui long sur un poste de la carte (un arbre, un rocher, l'étang, le
+  poulailler, la cuisinière, un buisson ; `tachesDuPoste`) propose « Confier à… ».
+- **Le journal** : chaque nuit, l'entrée du journal du villageois (7 jours) gagne `tache`, `actions` et `produit`
+  (`{ objet: n }`), à côté de `mange` (I3d le lira). `quiFaitQuoi` donne la vue d'ensemble du jour.
+- **La sauvegarde** : format 89 (`v.tache`, `v.outil`, `v.vendre`, `v.semis` (ce qu'il ressèmera), `v.travail` (sa
+  journée de travail)) ; la migration 88 → 89 (`reparerTaches`) remet à vide une valeur abîmée. Les commandes
+  `villageois.attribuer`, `villageois.outil` et `villageois.vendre` (`commandes.js`).
+- **Le joueur automatique** (`bot.js`, `botVillageois`, `SIMULATION.VILLAGEOIS`) : dès le palier 3, il bâtit une maison
+  de villageois quand aucune n'est libre et que le port en laisse venir un de plus (la paillasse et la boîte aux
+  lettres fabriquées à l'Atelier), puis confie à chacun la première tâche libre de `TACHES` (d'abord ce qui nourrit,
+  puis ce qui se vend), son outil fabriqué et donné. `node scripts/simulate.mjs --village` passe ainsi du palier 3 au
+  palier 4 (nuit 22 pour le joueur appliqué, 23 pour le minimal ; avant : bloqué au palier 3) ; le palier 4 attend
+  l'agrandissement du port (I1c). Deux villageois (le plafond d'un port de niveau 1), sur 80 nuits : l'un aux champs
+  (≈ 7 actions par jour sur 12 : ≈ 15 blés, 9 fraises, 6,5 épinards, 4,7 oignons, 4,4 carottes, 2,8 tomates… et leurs
+  graines), l'autre aux bêtes (≈ 2 actions par jour sur 4 : la laine, ≈ 1,3 par jour ; les poules et les œufs, le
+  joueur simulé s'en occupe avant lui).
+- **Les tests** : `tests/engine/village-taches.test.mjs` (chaque tâche par les fonctions du joueur, dans les bornes du
+  monde ; sans outil, rien ; en repos, rien ; pas de double récolte ni de double arrosage ; la journée, la pause, les
+  camarades côte à côte ; à l'heure puis la nuit ; le journal ; la sauvegarde ; les commandes ; le joueur automatique ;
+  éteint, rien) ; `compagnon.test.mjs` reste vert. Éteint, le CSV de la simulation est le même octet pour octet.
+- **Les mesures** (comme I3b+ : Chromium, téléphone émulé 412 × 915, DPR 2, processeur ralenti × 4 ; 15 villageois ;
+  trois fenêtres de 6 s ; la machine très chargée, charge 5 à 11 sur 4 cœurs : les chiffres sont bruités) : le système
+  « villageois » à 15 h (sans tâche), avant → après : 2,0 et 2,9 ms → 2,5 et 2,7 ms (deux paires de mesures : pas d'écart
+  au-delà du bruit) ; 15 villageois au travail (bois, pierre, fauchage, cueillette), 9 h 30 à 10 h 30, la vue sur les
+  postes : 1,5 à 2,3 ms (5 à 9 à l'écran, beaucoup encore en marche vers leur poste). Dans le moteur (Node), à 15
+  villageois au travail : la journée gardée 0,06 ms (0,05 avant), le pas de la ferme 3,4 ms en moyenne sur une heure de
+  jeu, actions comprises (une action relit les pièces quand un arbre tombe) ; sans tâche, rien ne change (0,17 ms).
+  Les postes et l'attente sont gardés tant que rien ne bouge (`signatureTaches`) : sans cela, la journée coûtait
+  10 ms.
+- Reste : la part du villageois et la valeur de ce qu'il produit (I4) ; la brouette, la charrette et un chemin du
+  port plus court pour la navette (I2) ; les postes préférés (I6c) ; montrer ce qu'il porte (un panier, une botte).
 
 ## Les règles qui ne changent pas
 

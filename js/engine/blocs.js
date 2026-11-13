@@ -27,6 +27,7 @@ import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
 import { villageActif } from './village.js';
+import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, retirerCheminDehors } from './dehors.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -57,9 +58,10 @@ export function solsPoses(state) {
   return state.sols && typeof state.sols === 'object' ? state.sols : {};
 }
 
-// La sorte du sol posé sur `tile`, ou null.
+// La sorte du sol posé sur `tile`, ou null. (Le chantier « l'île à bâtir », fiche I2 : hors de la ferme, un chemin
+// possédé est un sol « chemin », gardé à part : js/engine/dehors.js.)
 export function solAt(state, tile) {
-  return solsPoses(state)[tile] || null;
+  return solsPoses(state)[tile] || (cheminDehorsSur(state, tile) ? 'chemin' : null);
 }
 
 // Ce qui est posé sur les blocs (la pompe sur le puits, un tableau sur un mur) : { [case]: sorte }.
@@ -921,6 +923,8 @@ export function poseStatus(state, sorte, tile, sens = 0) {
     const C = DATA.ATELIER.CONSTRUCTION;
     return { ok: false, raison: `L'Atelier : il faut ${Object.entries(C).map(([o, n]) => `${n} ${DATA.OBJETS[o].nom.toLowerCase()}`).join(' et ')} (ramasse-les sur la carte).` };
   }
+  // (le chantier « l'île à bâtir », fiche I2 : hors de la ferme, sur l'île, les blocs de VILLAGE.DEHORS : dehors.js)
+  if (villageActif(state) && horsFerme(T, tile)) return poseDehorsStatus(state, sorte, tile);
   // le même mur posé sur un mur : il se rehausse d'un bloc (jusqu'à HAUTEUR_MAX)
   if (s.mur && blocAt(state, tile) === sorte) {
     return hauteurMur(state, tile) < DATA.ATELIER.HAUTEUR_MAX ? { ok: true } : { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
@@ -1110,6 +1114,10 @@ function poser(state, sorte, tile, sens = 0) {
   if (s.sur) {
     if (!state.blocsDessus || typeof state.blocsDessus !== 'object') state.blocsDessus = {};
     state.blocsDessus[tile] = sorte;
+  } else if (s.sol && sorte === 'chemin' && villageActif(state) && horsFerme(farmTerrain(state), tile)) {
+    // (hors de la ferme, un chemin possédé : dans ses segments, js/engine/dehors.js)
+    poserCheminDehors(state, tile);
+    return { ok: true, sorte, case: tile };
   } else if (s.sol) {
     if (!state.sols || typeof state.sols !== 'object') state.sols = {};
     const avant = state.sols[tile];
@@ -1196,7 +1204,8 @@ export function reprendreBloc(state, tile, opts) {
   const variante = !dessus && bloc ? varianteBloc(state, tile) : null;
   if (dessus) delete state.blocsDessus[tile];
   else if (bloc) { delete state.blocs[tile]; setHauteur(state, tile, 1); setFenetre(state, tile, null); if (state.sens) delete state.sens[tile]; if (state.teintes) delete state.teintes[tile]; }
-  else delete state.sols[tile];
+  else if (state.sols && state.sols[tile]) delete state.sols[tile];
+  else retirerCheminDehors(state, tile);   // (un chemin possédé hors de la ferme, fiche I2)
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);
   // (une ruche pleine : son miel vient avec elle)

@@ -257,11 +257,11 @@ test('sa fiche : prénom, maison, humeur, depuis quand il est là', () => {
 /* ---------- la sauvegarde ---------- */
 
 test('la sauvegarde : v86 → v87, sans villageois rien ne s\'ajoute ; une liste abîmée est réparée', () => {
-  assertEqual(STATE_VERSION, 87);
+  assert(STATE_VERSION >= 87, 'le format 87 au moins');
   const ancienne = { ...copie(createNewGame(3)), version: 86 };
   delete ancienne.villageois;
   const m = migrate(ancienne);
-  assertEqual(m.version, 87);
+  assertEqual(m.version, STATE_VERSION);
   assert(!('villageois' in m), 'une partie d\'avant : pas de champ villageois');
   const { s } = ile(16);
   versLeBac(s);

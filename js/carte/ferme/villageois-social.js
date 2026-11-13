@@ -126,6 +126,8 @@
       const but = m.seg && m.seg.but;
       if (!but || m.auBut) return;
       m.auBut = true;
+      // (I3c : à son poste de travail, il s'y met : villageois-travail.js)
+      if (but.sorte === 'travail') { if (this.villageoisAuTravail) this.villageoisAuTravail(m); return; }
       if (!m.s || !m.s.visible) return;
       const now = performance.now();
       if (but.role === 'visiteur') {
@@ -268,7 +270,8 @@
       for (const [cle, cs] of C) if (!ici.has(cle) && now - cs.vu > 4000) C.delete(cle);
       for (const [cle, l] of ici) {
         let cs = C.get(cle);
-        if (!cs) C.set(cle, (cs = { n: 0, tour: 0, prochain: now + 500, vu: now, parle: null, debut: true }));
+        // (I3c : au travail, on s'y met d'abord ; le premier mot vient un peu après)
+        if (!cs) C.set(cle, (cs = { n: 0, tour: 0, prochain: now + (cle.startsWith('travail:') ? 9000 : 500), vu: now, parle: null, debut: true }));
         cs.vu = now;
         if (l.length < 2) continue;
         l.sort((a, b) => (a.id < b.id ? -1 : 1));
@@ -312,6 +315,8 @@
           });
         }
         cs.prochain = now + tour * 2 + 600 + (cs.n % 3) * 500;
+        // (I3c : au travail, on cause un peu, puis on s'y remet : TACHES.CAUSE s entre deux échanges)
+        if (sorte === 'travail') cs.prochain = now + (Number(R.CAUSE) || 26) * 1000 * (0.7 + (cs.n % 4) * 0.2);
       }
     },
 

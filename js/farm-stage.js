@@ -136,6 +136,8 @@
         if (K.MALLE) A.feuille(this, K.MALLE.key, K.MALLE.file, { frameWidth: K.MALLE.w, frameHeight: K.MALLE.h }, v);
         // le cheval : sellé, seul (à l'Écurie), son poteau (js/carte/cheval.js)
         if (K.chargeCheval) K.chargeCheval(this, v);
+        // la brouette et la charrette attelée (l'île à bâtir, fiche I2 : js/carte/portage.js)
+        if (K.chargePortage) K.chargePortage(this, v);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
         L.json('perso_cases', v('personnages/cases.json'));
@@ -459,6 +461,20 @@
             d.held = true;
             this.setHover(null);
             this.showTankTip(true);
+          }, LONG_PRESS_MS);
+        }
+        // I3c (l'île à bâtir) : appui maintenu sur un poste de travail (un arbre, un rocher, l'étang, le poulailler, la
+        // cuisinière…) : « confier à… » (js/ui/villageois.js) ; rien là où aucune tâche ne se fait (l'appui reste un appui).
+        const mv = this.ctx.lastModel && this.ctx.lastModel.villageois;
+        if (!this.drag.holdTimer && !this.drag.labour && !this.drag.fort && !(this.ctx.lastModel && this.ctx.lastModel.bati) && mv && mv.length && this.ctx.bridge.villageois) {
+          const d = this.drag, t = this.tileAtPoint(wp.x, wp.y);
+          d.holdTimer = setTimeout(() => {
+            if (this.drag !== d || d.moved) return;
+            const r = this.ctx.bridge.villageois('poste', null, { case: t });
+            if (!r || !r.ok) return;
+            d.held = true;
+            this.setHover(null);
+            K.vibre('houe');
           }, LONG_PRESS_MS);
         }
       }

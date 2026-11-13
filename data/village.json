@@ -79,7 +79,8 @@
       "Ce que dit un villageois qu'on touche (fiche I3b, js/engine/villageois-journee.js paroleVillageois) : une bulle,",
       "sans fenêtre. Le salut de l'heure (HABITANTS.PHRASES.salut, sans ce qui parle du hameau), puis une phrase de ce",
       "qu'il fait (ACTIVITE : lever, dehors, repas, flaner, rentrer, dormir, repos, abri, et recoit : il attend une",
-      "visite chez lui ; au but d'une sortie, celle de SOCIAL.ACTIVITE) et une de son humeur (HUMEUR : heureux,",
+      "visite chez lui ; au but d'une sortie, celle de SOCIAL.ACTIVITE ; I3c : travail, à son poste, une phrase de sa",
+      "tâche, TACHES.LISTE[tâche].PHRASES ; attend : sa tâche attend, {raison} ce qui manque) et une de son humeur (HUMEUR : heureux,",
       "content, triste, faim ; humeurVillageois). Tirées de la graine, du jour et du rang de l'appui."
     ],
     "PHRASES": {
@@ -92,7 +93,9 @@
         "dormir": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
         "repos": ["Je me repose aujourd'hui.", "Une journée tranquille à la maison.", "Je reprends des forces."],
         "abri": ["Quelle averse ! Je reste à l'abri.", "J'attends que la pluie passe.", "Il pleut des cordes."],
-        "recoit": ["J'attends une visite.", "Un ami doit passer me voir.", "Je guette la porte : on vient me voir !"]
+        "recoit": ["J'attends une visite.", "Un ami doit passer me voir.", "Je guette la porte : on vient me voir !"],
+        "travail": ["Je suis au travail.", "Le travail, ça ne se fait pas tout seul !"],
+        "attend": ["J'attends de pouvoir me mettre au travail : {raison}", "Je ne peux pas encore travailler : {raison}"]
       },
       "HUMEUR": {
         "heureux": ["On vit bien, sur l'île.", "La vie est douce, ici.", "Je suis bien, dans ma maison."],
@@ -110,7 +113,8 @@
       "si leurs maisons (leurs boîtes aux lettres) sont à VOISINE cases au plus, plus TABLE s'ils mangent à la même",
       "table ; s'y ajoute une affinité tirée de la graine et des deux ids (de 0 à AFFINITE). Connaissance dès",
       "PALIERS.connaissance, ami dès PALIERS.ami. La famille du joueur : connue dès l'arrivée (on l'a accueilli), amie",
-      "après FAMILLE_AMI jours. La fiche I6b remplacera ce calcul par l'affinité sauvegardée (liens.js), sans toucher",
+      "après FAMILLE_AMI jours. Deux villageois qui ont la même tâche (I3c) gagnent COLLEGUE de plus par jour (on se lie",
+      "en travaillant ensemble). La fiche I6b remplacera ce calcul par l'affinité sauvegardée (liens.js), sans toucher",
       "à ceux qui le lisent.",
       "BUTS : ce qu'il fait d'un créneau dehors, tiré au poids (un poids par but ; un but sans lieu, ou sans ami libre,",
       "ne se tire pas) : visite (il va à la porte d'un ami, frappe ; l'ami, chez lui, sort après RECOIT h et ils",
@@ -131,11 +135,11 @@
       "l'autre, {joueur} : celui du personnage du joueur. Tirés de la graine, du jour, de la paire et du rang de",
       "l'échange, parmi ceux du degré (connaissance, ami), du moment (matin, jour, soir), de la météo (pluie, clair),",
       "de l'humeur (triste : l'un des deux est triste ou a faim) et de ce qu'ils font (visite, groupe, promenade, repas à",
-      "la même table ; en se croisant : ceux du moment, un échange sur deux) ;",
+      "la même table ; travail : au même poste, fiche I3c ; en se croisant : ceux du moment, un échange sur deux) ;",
       "JOUEUR : ce qu'un villageois dit au personnage du joueur (par degré)."
     ],
     "SOCIAL": {
-      "CONNAISSANCE": { "PAR_JOUR": 2, "VOISIN": 2, "VOISINE": 14, "TABLE": 1, "AFFINITE": 30, "PALIERS": { "connaissance": 10, "ami": 40 }, "FAMILLE_AMI": 4 },
+      "CONNAISSANCE": { "PAR_JOUR": 2, "VOISIN": 2, "VOISINE": 14, "TABLE": 1, "AFFINITE": 30, "PALIERS": { "connaissance": 10, "ami": 40 }, "FAMILLE_AMI": 4, "COLLEGUE": 2 },
       "BUTS": {
         "POIDS": { "visite": 2, "rdv": 1.5, "promenade": 2, "eau": 1.5, "voir": 2.5, "port": 1 },
         "RECOIT": 0.1,
@@ -256,6 +260,18 @@
           ["Regarde comme c'est beau, par là.", "On a de la chance de vivre ici."],
           ["Tu marches trop vite !", "Pardon, j'avais hâte de voir !"],
           ["Tu te souviens de ton arrivée ?", "Comme si c'était hier !"]
+        ],
+        "travail": [
+          ["On s'y remet, {prenom} ?", "Allez, courage, on y est presque !"],
+          ["Tu me passes un coup de main ?", "Bien sûr, à deux ça va plus vite !"],
+          ["Ça avance bien, non ?", "On fait du bon travail, tous les deux."],
+          ["Tu as vu tout ce qu'on a fait ce matin ?", "Le joueur va être content !"],
+          ["Je commence à avoir faim.", "Tiens bon, c'est bientôt midi !"],
+          ["Tu as l'œil, {prenom} !", "Je regarde comment tu fais, tiens !"],
+          ["Une petite pause ?", "Juste le temps de souffler, alors."],
+          ["Attention où tu mets les pieds !", "Merci, j'ai failli tomber !"],
+          ["On forme une bonne équipe.", "La meilleure de l'île !"],
+          ["Encore un peu et on a fini.", "Après, une bonne soupe !"]
         ]
       },
       "JOUEUR": {
@@ -418,6 +434,148 @@
           { "id": "commande", "icone": "📦", "libelle": "Honorer {n} commande{s} du bac", "quoi": "commande_bac", "n": [1, 0.25, 3], "si": "bac", "guide": "port" }
         ]
       }
+    },
+    "//DEHORS": [
+      "Bâtir hors de la ferme (fiche I2, js/engine/dehors.js ; le mode Construire : js/ui/chantier.js). Sur l'île, hors",
+      "de la terre de la ferme, le mode Construire accepte les blocs de cette liste, et eux seuls (pas de mur ni de",
+      "maison : ils restent sur la terre du joueur). On ne bâtit ni dans l'eau (la mer, un lac : seul le pont de planches",
+      "se pose sur une rivière), ni sur une falaise ou un sommet, ni sur le pied d'un arbre ou d'un rocher (abattu ou",
+      "cassé, sa case se libère), ni dans l'emprise du port (le port, ses abords et une marge : la halle, le quai, la",
+      "cale) ou d'un hameau (son cadre), ni sur une région de l'île que la page n'a pas encore dessinée."
+    ],
+    "DEHORS": ["chemin", "sol_pas_ardoise", "sol_pas_pierre", "sol_pas_bois", "lanterne", "candelabre", "pont_planches",
+      "barriere", "barriere_blanche", "barriere_rouge", "barriere_grise", "barriere_chene", "barriere_verte", "barriere_lavande",
+      "banc_jardin", "banc_rondins", "banc_pierre"],
+    "//CHEMIN": [
+      "Le chemin du port, possédé (fiche I2, js/engine/dehors.js). Dans une partie neuve du chantier, les cases du tronçon",
+      "généré de la sortie de la ferme au port deviennent des blocs de chemin du joueur (state.dehors.chemins : des",
+      "segments, une rangée à la fois) : il les retire (le bloc revient dans l'inventaire), les déplace, en pose ailleurs ;",
+      "le sol du monde ne peint plus ce tronçon de lui-même (js/engine/monde-sol.js : il peint les chemins possédés). Le",
+      "tronçon tracé (une case de large, de case en case) devient PINCEAU × PINCEAU cases (la case du tracé, celle de",
+      "droite, celles du dessous) ; à PRES_FERME cases de la ferme au plus, les trois cases de large de sa sortie (le",
+      "raccord ne bouge pas). Une case de rivière sous le tronçon reste un gué (on y passe) ; ailleurs, une rivière se",
+      "passe sur un pont de planches. VITESSE : sur un chemin (un chemin posé, sur la ferme ou dehors, le chemin de la",
+      "ferme), le personnage va VITESSE % plus vite, à pied comme à cheval (js/ui/stage.js : la vitesse de sa case)."
+    ],
+    "CHEMIN": { "VITESSE": 50, "PINCEAU": 2, "PRES_FERME": 8 },
+    "//PORTAGE": [
+      "Le portage (fiche I2, js/engine/portage.js ; la fenêtre du port, js/ui/port.js) : ce qu'on vend au port, on l'y",
+      "porte. Sur la ferme, on charge (de l'inventaire et du réfrigérateur, avec leur fraîcheur) ; sous la halle, on",
+      "décharge : tout ce qui est chargé se vend d'un coup, au prix du port. Chaque objet a un volume (un par défaut,",
+      "VOLUMES pour les lourds). On porte MAINS volumes à la main ; une brouette (BROUETTE volumes) ou la charrette",
+      "attelée au cheval (CHARRETTE volumes, en selle seulement) en portent davantage : on choisit sur la ferme comment",
+      "on part. Ce qui ne tient pas reste à la ferme (rien ne se perd) ; on peut tout décharger à la ferme. Les semences",
+      "achetées au port vont droit à la ferme (elles ne pèsent rien). La brouette et la charrette se fabriquent à",
+      "l'Atelier (la charrette : avec un cheval)."
+    ],
+    "PORTAGE": {
+      "MAINS": 12, "BROUETTE": 40, "CHARRETTE": 160,
+      "VOLUMES": { "bois": 2, "planche": 2, "pierre": 3, "minerai_fer": 3, "minerai_cuivre": 3, "minerai_or": 3, "minerai_platine": 3,
+        "lingot_fer": 3, "lingot_cuivre": 3, "lingot_or": 3, "lingot_platine": 3, "bloc_silo": 4, "pierre_angle": 3 }
+    }
+  },
+  "//TACHES": [
+    "Les tâches attribuées (fiche I3c ; le moteur : js/engine/taches.js ; la journée : js/engine/villageois-journee.js ;",
+    "la scène : js/carte/ferme/villageois-travail.js ; la fiche : js/ui/villageois.js). Le joueur confie une tâche à",
+    "chaque villageois (« Tâche », sur sa fiche) ; il la fait chaque jour, à son poste, par les mêmes fonctions que le",
+    "joueur (une carotte récoltée par lui est une carotte récoltée), sans l'énergie, l'expérience ni les objectifs du",
+    "jour du joueur, dans les bornes du monde (un arbre coupé repousse comme les autres, le quota de pêche du jour vaut",
+    "pour lui). Ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo). En repos (mal nourri ou sans",
+    "lit la nuit d'avant), il ne fait rien.",
+    "TRAVAIL : les heures de travail, le matin et l'après-midi : les créneaux de la journée (VILLAGE.HORAIRE.CRENEAU)",
+    "dont le milieu tombe dans l'une de ces plages sont des créneaux de travail ; PAUSE créneaux de chaque plage",
+    "(tirés de la graine, du jour et de son id) restent des sorties de la vie sociale (I3b+ : le puits, un ami, la",
+    "place) ; les repas, les créneaux d'avant le travail et ceux d'après (le retour, le soir) ne changent pas. POSTE :",
+    "un poste de travail tient POSTE créneaux de suite, puis il passe au suivant (un autre arbre, une autre parcelle).",
+    "Deux villageois à la même tâche travaillent côte à côte (des postes voisins) et causent un peu : une réplique de",
+    "SOCIAL.REPLIQUES.travail toutes les CAUSE s (la scène). ESSAI : une action sans rien à faire (rien de mûr, plus",
+    "de poisson) se retente ESSAI h plus tard. RAYON : à combien de cases de sa maison il cherche un poste (les",
+    "arbres, les rochers, l'herbe haute, les baies de la ferme).",
+    "LISTE : les tâches, dans l'ordre de la fiche. Chacune : nom, icone, ACTIONS (les actions qu'il fait par jour, à",
+    "parts égales sur ses créneaux de travail ; la nuit fait celles qui restent), donne (ce que donne une action :",
+    "celle du joueur), outil (l'outil qu'il faut : le joueur le fabrique à l'Atelier et le lui donne ; null : aucun),",
+    "lieu (où est son poste), geste (celui des habitants, js/carte/ferme/habitants.js), emoji (la bulle à chaque action",
+    "vue), SANS (ce que dit la fiche quand il n'y a pas de poste), PHRASES (ce qu'il dit au travail, quand on le",
+    "touche). Les champs : récolter ce qui est mûr, puis arroser ce qui a soif (l'eau du réservoir), puis ressemer",
+    "une parcelle vide de sa dernière culture (les graines de l'inventaire). Les bêtes : nourrir les poules, prendre",
+    "les œufs, tondre les moutons prêts, prendre le lait et la laine. Le verger : cueillir un arbre en fruits, récolter",
+    "une ruche pleine. Le bois : un coup de hache (l'arbre tombe au troisième, et repousse) ; la pierre : un coup de",
+    "pioche (le minerai d'un gisement aussi ; la pioche améliorée lui profite) ; la pêche : un lancer dans l'étang ou",
+    "la mare de la ferme (le quota du jour du joueur) ; la cueillette : ce que la ferme offre ce matin (baies,",
+    "branches, cailloux) ; le fauchage : un coup de faux (la fibre ; une botteleuse posée en fait de la paille) ; la",
+    "cuisine : une préparation lancée à la cuisinière ou au four (RECETTES, la première dont les ingrédients sont là) ; la",
+    "navette : un aller-retour au port (PORTEE objets au plus de ce que le joueur a marqué « à vendre » sur sa fiche,",
+    "vendus au comptoir, l'argent au joueur ; la brouette et la charrette viendront avec la fiche I2)."
+  ],
+  "TACHES": {
+    "TRAVAIL": [[8, 11.5], [13.5, 16.5]],
+    "PAUSE": 1,
+    "POSTE": 2,
+    "CAUSE": 26,
+    "ESSAI": 0.5,
+    "RAYON": 28,
+    "LISTE": {
+      "champs": {
+        "nom": "Les champs", "icone": "🌱", "ACTIONS": 12, "outil": null, "lieu": "champs", "geste": "arrose", "emoji": "🌱",
+        "donne": "une parcelle récoltée, arrosée ou ressemée",
+        "SANS": "Il n'y a pas de parcelle labourée sur la ferme.",
+        "PHRASES": ["Je m'occupe des champs.", "Ça pousse bien, cette année !", "Encore une rangée et je fais une pause."]
+      },
+      "betes": {
+        "nom": "Les bêtes", "icone": "🐔", "ACTIONS": 4, "outil": null, "lieu": "betes", "geste": "ramasse", "emoji": "🥚",
+        "donne": "les poules nourries, les œufs pris, un mouton tondu, le lait et la laine pris",
+        "SANS": "Il n'y a ni poulailler ni étable avec des bêtes.",
+        "PHRASES": ["Je soigne les bêtes.", "Les poules ont bon appétit ce matin !", "Doucement, ma belle…"]
+      },
+      "verger": {
+        "nom": "Le verger et les ruches", "icone": "🍎", "ACTIONS": 4, "outil": null, "lieu": "verger", "geste": "ramasse", "emoji": "🍎",
+        "donne": "un arbre en fruits cueilli, une ruche pleine récoltée",
+        "SANS": "Il n'y a ni arbre fruitier planté ni ruche.",
+        "PHRASES": ["Je surveille le verger.", "Les abeilles sont de bonne humeur !", "Ces fruits sentent bon !"]
+      },
+      "bois": {
+        "nom": "Le bois", "icone": "🪵", "ACTIONS": 6, "outil": "hache", "lieu": "arbre", "geste": "hache", "emoji": "🪵",
+        "donne": "un coup de hache : HACHE.BOIS bois, HACHE.CHUTE de plus quand l'arbre tombe (et sa graine)",
+        "SANS": "Il n'y a plus d'arbre debout près de sa maison.",
+        "PHRASES": ["Je coupe du bois.", "Attention, ça va tomber !", "Du bon bois bien sec, pour l'hiver."]
+      },
+      "pierre": {
+        "nom": "La pierre et le minerai", "icone": "🪨", "ACTIONS": 6, "outil": "pioche", "lieu": "rocher", "geste": "pioche", "emoji": "🪨",
+        "donne": "un coup de pioche : PIOCHE.PIERRE pierre (le minerai d'un gisement)",
+        "SANS": "Il n'y a plus de rocher près de sa maison.",
+        "PHRASES": ["Je casse des cailloux.", "Il est coriace, celui-là !", "Encore quelques coups…"]
+      },
+      "peche": {
+        "nom": "La pêche", "icone": "🎣", "ACTIONS": 6, "outil": "canne", "lieu": "rive", "geste": "peche", "emoji": "🐟",
+        "donne": "un lancer dans l'étang ou la mare de la ferme (le quota du jour du joueur)",
+        "SANS": "Il n'y a ni étang ni mare sur la ferme.",
+        "PHRASES": ["Chut, ça mord !", "Le poisson se fait prier aujourd'hui.", "Rien de tel qu'une ligne à l'eau."]
+      },
+      "cueillette": {
+        "nom": "La cueillette", "icone": "🫐", "ACTIONS": 4, "outil": null, "lieu": "cueillette", "geste": "ramasse", "emoji": "🫐",
+        "donne": "ce que la ferme offre ce matin : une baie, une branche, un caillou",
+        "SANS": "La ferme n'offre rien à cueillir ce matin.",
+        "PHRASES": ["Je fais la cueillette.", "Les buissons sont pleins ce matin !", "Une pour le panier, une pour moi…"]
+      },
+      "fauchage": {
+        "nom": "Le fauchage et la paille", "icone": "🌾", "ACTIONS": 8, "outil": "faux", "lieu": "herbe", "geste": "faux", "emoji": "🌾",
+        "donne": "un coup de faux : FAUX.FIBRE fibre (une botteleuse posée en fait de la paille)",
+        "SANS": "Il n'y a plus d'herbe haute près de sa maison.",
+        "PHRASES": ["Je fauche l'herbe haute.", "Ça fera de la bonne paille.", "Quel parfum, l'herbe coupée !"]
+      },
+      "cuisine": {
+        "nom": "La cuisine", "icone": "🍲", "ACTIONS": 2, "outil": null, "lieu": "cuisine", "geste": "cuisine", "emoji": "🍲",
+        "donne": "une préparation lancée à la cuisinière ou au four",
+        "RECETTES": ["soupe_legumes", "ratatouille", "omelette", "poisson_grille", "salade_tomates", "pain", "gratin_patates", "tarte_pommes"],
+        "SANS": "Il faut une cuisinière ou un four dans le foyer.",
+        "PHRASES": ["Je prépare à manger pour tout le monde.", "Ça mijote !", "Une pincée de sel, et voilà."]
+      },
+      "navette": {
+        "nom": "La tournée du port", "icone": "⚓", "ACTIONS": 2, "PORTEE": 10, "outil": null, "lieu": "port", "geste": "ramasse", "emoji": "💰",
+        "donne": "un aller-retour au port : PORTEE objets marqués « à vendre », vendus au comptoir",
+        "SANS": "Il n'y a pas de port sur l'île.",
+        "PHRASES": ["Je descends au port.", "Le panier est lourd aujourd'hui !", "Je vends tout ça au comptoir."]
+      }
     }
   },
   "//PORT": [
@@ -432,11 +590,11 @@
     "PLAN : l'emplacement. Une case de terre (plage, prairie, lande) au bord de la mer, d'où un quai de QUAI",
     "cases (celui du niveau 5) avance droit vers le sud ou vers l'est, sur LARGEUR cases de large, l'eau libre",
     "sur EAU cases de chaque côté au-delà des deux premières cases et deux cases plus loin que son bout ; la terre",
-    "derrière pour la halle (HALLE : largeur, profondeur, en cases) et ses abords. À FERME cases au moins de la",
-    "ferme, HAMEAU d'un hameau, LIEUX des autres lieux (coins de pêche, grottes, lieux du récit, secrets). On",
+    "derrière pour la halle (HALLE : largeur, profondeur, en cases) et ses abords. Entre FERME et LOIN cases de la",
+    "ferme (à vol d'oiseau, depuis son bord : l'aller reste court ; sans côte dans cette fenêtre, au-delà), HAMEAU d'un hameau, LIEUX des autres lieux (coins de pêche, grottes, lieux du récit, secrets). On",
     "y va à pied depuis la sortie de la ferme sans passer la montagne (le chemin la contourne) et pour PRIX_MAX",
     "au plus (la somme des prix des pas, PLAN_MONDE.CHEMINS.COUTS) ; parmi ces cases (une sur PAS de chaque",
-    "côté), la plus loin de la ferme. ESSAIS : les chemins tentés, des plus loin aux moins loin. Si aucune côte",
+    "côté), parmi les ESSAIS côtes les plus proches dont le chemin se trouve, celle au chemin le plus court. Si aucune côte",
     "ne convient (trop découpée, trop de lieux), l'eau libre de côté puis la distance aux lieux se relâchent.",
     "NIVEAUX : du niveau 1 au niveau 5, la longueur du quai et ce que le niveau ajoute (le niveau 1 : le quai",
     "court, la halle, sa cale, son panneau et ses deux lanternes ; ensuite des caisses, des tonneaux, le mât à",
@@ -461,7 +619,7 @@
     "PORTEE": 3,
     "HEURES": [6, 21],
     "ELEMENT": { "nom": "Le port", "icone": "⚓", "note": "au comptoir de la halle, au bout du chemin : vends tes récoltes, achète des graines" },
-    "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 70, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
+    "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 80, "LOIN": 100, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
     "NIVEAUX": [
       { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },
       { "quai": 8, "ajoute": ["caisses"] },
