@@ -40,6 +40,7 @@ import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frig
 import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } from './cuisine.js';
 import { renderTechno } from './techno.js';
 import { villageoisCarteHtml } from './villageois.js';
+import { tableauCarteHtml } from './tableau.js';
 import { membrePortraitHtml, persoHtml, renderFamille } from './famille.js';
 import { renderNotifications } from './notifications.js';
 import { inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
@@ -509,6 +510,7 @@ export function renderIndicators() {
   const famille = 'data-action="stage-goto" data-window="famille"';
   const el = document.getElementById('player-card');
   const argent = `${formatCoins(state.pieces)} pièces. Voir les comptes`;
+  const tableau = tableauCarteHtml();
   const html =
     `<span class="player-medaillon">` +
       `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
@@ -521,9 +523,12 @@ export function renderIndicators() {
     `</span>` +
     `<span class="player-cote">` +
       playerGaugesHtml() +
+      // (l'île à bâtir, fiche I3d : le tableau des villageois, à côté des pièces, quand il y en a un ; sinon rien ne change)
+      (tableau ? '<span class="player-ligne">' : '') +
       `<button type="button" class="player-money" data-action="open-compta" title="Voir les comptes" aria-label="${argent}">` +
         `<span class="hud-pastille" aria-hidden="true">${state.pieces >= 0 ? pxText(Math.round(state.pieces).toLocaleString('fr-FR').replace(/\s/g, ' ')) : `<span class="num">${formatCoins(state.pieces)}</span>`}</span>` +
         `<i class="hud-ico piece" aria-hidden="true"></i></button>` +
+      (tableau ? `${tableau}</span>` : '') +
       // (connecté au jeu en ligne : le solde de gemmes, qui ouvre ses achats : js/ui/gemmes.js)
       gemmesHtml() +
       // (l'île à bâtir, fiche I3a : le compte des villageois, qui ouvre leur liste ; rien le chantier éteint)

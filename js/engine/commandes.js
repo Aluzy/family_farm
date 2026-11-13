@@ -124,6 +124,9 @@
      villageois.attribuer { id, tache }        confier une tâche (TACHES.LISTE) au villageois `id` ; « aucune » : plus de tâche
      villageois.outil     { id, outil }        lui donner son outil (hache, pioche, faux, canne) ; « reprendre » : le reprendre
      villageois.vendre    { id, objets }       la navette : ce qu'il porte au port (les objets marqués « à vendre »)
+   Les liens entre villageois (l'île à bâtir, fiche I6b ; js/engine/liens.js, sans inverse) :
+     villageois.foyer     { a, b, maison? }     proposer à deux proches de vivre ensemble (la maison : sa boîte aux lettres)
+     villageois.enfant    { foyer }             proposer à un foyer d'accueillir un enfant (il viendra par le prochain bac)
 */
 
 import { objectifsARevoir } from './campaign.js';
@@ -161,6 +164,7 @@ import { acheterAuPort, dechargerAuPort, vendreAuPort } from './port.js';
 import { agrandirPort, apporterAuChantier, commanderImport, honorerCommande } from './bac.js';
 import { chargerPortage, choisirVehicule, dechargerPortage } from './portage.js';
 import { attribuer, donnerOutil, marquerAVendre, reprendreOutil } from './taches.js';
+import { accueillirEnfant, formerFoyer } from './liens.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -609,6 +613,14 @@ export const COMMANDES = {
   'villageois.vendre': {
     args: { id: 'texte', objets: 'objets' },
     executer: (state, { id, objets }) => marquerAVendre(state, id, objets),
+  },
+  'villageois.foyer': {
+    args: { a: 'texte', b: 'texte', maison: 'case?' },
+    executer: (state, { a, b, maison = null }) => formerFoyer(state, a, b, maison),
+  },
+  'villageois.enfant': {
+    args: { foyer: 'texte' },
+    executer: (state, { foyer }) => accueillirEnfant(state, foyer),
   },
 };
 

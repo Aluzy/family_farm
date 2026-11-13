@@ -15,6 +15,7 @@ import { souvenirParole } from './invitations.js';
 import { CONDITIONS_PROPOS, direSujet } from './propos.js';
 import { jourDeBac, trouverVillageois, villageoisDe } from './villageois.js';
 import { connaissance } from './villageois-liens.js';
+import { evenementsVillageois, foyerDe, liensVillageois, voisinDe } from './liens.js';
 
 /* ---------- l'amitié avec les villageois (le chantier « l'île à bâtir », fiche I6a) ----------
 
@@ -145,7 +146,7 @@ export function amitieVillageoisNuit(state) {
 // mêmes conditions, propos.js), et ceux de l'île.
 const SUJETS_ILE = [
   ['village_ami', ({ state, v }) => {
-    const L = villageoisDe(state).filter((o) => o.id !== v.id).map((o) => ({ o, c: connaissance(state, v.id, o.id) })).filter((x) => x.c && x.c.degre === 2);
+    const L = villageoisDe(state).filter((o) => o.id !== v.id).map((o) => ({ o, c: connaissance(state, v.id, o.id) })).filter((x) => x.c && x.c.degre >= 2);
     L.sort((x, y) => y.c.score - x.c.score || (x.o.id < y.o.id ? -1 : 1));
     return L.length ? { ami: L[0].o.prenom } : null;
   }],
@@ -166,6 +167,40 @@ const SUJETS_ILE = [
     return j >= 5 ? { jours: j } : null;
   }],
   ['port_bac', ({ state }) => (jourDeBac(state, jourDe(state) + 1) ? {} : null)],
+  // I6b (liens.js) : ses liens et ce qui s'est passé entre villageois (les sujets des habitants, sur les liens de l'île)
+  ['voisin', ({ state, v }) => {
+    const o = voisinDe(state, v);
+    return o ? { voisin: o.prenom } : null;
+  }],
+  ['lien_ami', ({ state, v }) => {
+    const o = liensVillageois(state, v.id).find((l) => l.palier >= 3 && !l.enfant);
+    return o ? { ami: o.prenom, il_ami: o.genre === 'm' ? 'il' : 'elle' } : null;
+  }],
+  ['visite_recue', ({ state, v }) => {
+    const e = evenementsVillageois(state, v.id).filter((x) => x.sorte === 'visite' && x.chez === v.id).pop();
+    return e ? { qui: e.quiPrenom, e_qui: e.quiGenre === 'm' ? '' : 'e' } : null;
+  }],
+  ['visite_faite', ({ state, v }) => {
+    const e = evenementsVillageois(state, v.id).filter((x) => x.sorte === 'visite' && x.qui === v.id).pop();
+    return e ? { chez: e.chezPrenom } : null;
+  }],
+  ['entraide_recue', ({ state, v }) => {
+    const e = evenementsVillageois(state, v.id).filter((x) => x.sorte === 'entraide' && x.chez === v.id).pop();
+    return e ? { qui: e.de } : null;
+  }],
+  ['entraide_donnee', ({ state, v }) => {
+    const e = evenementsVillageois(state, v.id).filter((x) => x.sorte === 'entraide' && x.qui === v.id).pop();
+    return e ? { aide: e.a } : null;
+  }],
+  ['foyer', ({ state, v }) => {
+    const f = foyerDe(state, v.id), o = f && !v.enfant && f.membres.find((x) => x !== v.id);
+    const c = o && trouverVillageois(state, o);
+    return c ? { conjoint: c.prenom } : null;
+  }],
+  ['enfant', ({ state, v }) => {
+    const f = foyerDe(state, v.id), e = f && !v.enfant && f.enfant && trouverVillageois(state, f.enfant);
+    return e ? { enfant: e.prenom, il_enfant: e.genre === 'm' ? 'Il' : 'Elle' } : null;
+  }],
 ];
 const CONDITIONS_ILE = Object.fromEntries(SUJETS_ILE);
 

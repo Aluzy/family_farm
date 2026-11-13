@@ -40,6 +40,7 @@ import { enExpedition, tentePortee } from './equipement.js';
 import { villageoisDe, villageoisNuit } from './villageois.js';
 import { amitieVillageoisNuit } from './villageois-amitie.js';
 import { tachesNuit } from './taches.js';
+import { liensFinDeNuit, liensNuit } from './liens.js';
 import { avancerBac } from './bac.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -310,11 +311,17 @@ export function runNight(state) {
   // (I3c, taches.js : avant, chacun finit ses actions du jour ; sa nuit les met dans son journal)
   const taches = tachesNuit(state);
   if (taches) state.nuit.taches = taches;
+  // (I6b, liens.js : les liens montent de ce que les villageois ont vécu ensemble aujourd'hui, avant leur nuit)
+  const liens = liensNuit(state);
+  if (liens) state.nuit.liens = liens;
   // (fiche I1c, bac.js : le bac du jour est passé et reparti ; un passage manqué est rattrapé)
   const bac = avancerBac(state, { nuit: true });
   if (bac && bac.arrivees.length) state.nuit.bac = bac;
   const villageois = villageoisNuit(state);
   if (villageois) state.nuit.villageois = villageois;
+  // (I6b : un ami apportera demain un repas à qui se repose ; l'enfant d'un foyer, s'il n'est pas venu par le bac)
+  const liensFin = liensFinDeNuit(state);
+  if (liensFin) state.nuit.liensFin = liensFin;
   // (I6a, villageois-amitie.js : un ami proche prépare parfois un présent, qu'il te donnera en main propre)
   const amisIle = amitieVillageoisNuit(state);
   if (amisIle) state.nuit.amitieVillageois = amisIle;

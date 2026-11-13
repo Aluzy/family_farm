@@ -10,6 +10,7 @@ import { noterObjectif } from './objectifs-compte.js';
 import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.js';
 import { connaissance } from './villageois-liens.js';
 import { manqueDit, postesDe, signatureTaches, tacheDef, travailleAujourdhui } from './taches.js';
+import { entraidesDuJour, foyerDe, liensSignature } from './liens.js';
 
 /* ---------- la journée des villageois sur la ferme (le chantier « l'île à bâtir », fiche I3b) ----------
 
@@ -50,7 +51,15 @@ import { manqueDit, postesDe, signatureTaches, tacheDef, travailleAujourdhui } f
    { sorte: 'travail', tache, cle, avec (ses camarades au même poste), geste, emoji } ; PAUSE créneaux de chaque plage
    restent des sorties (le puits, un ami), et les repas, le matin avant le travail et la fin d'après-midi ne changent
    pas. Deux villageois à la même tâche ont des postes voisins (ceux du premier, rangés depuis sa maison) et la même
-   clé : ils causent un peu. Les tests : tests/engine/village-taches.test.mjs. */
+   clé : ils causent un peu. Les tests : tests/engine/village-taches.test.mjs.
+
+   I6b (les liens, liens.js) : des amis s'assoient côte à côte (le but « banc » : deux bancs voisins, lieu 'siege',
+   l'état « flaner » ; à table, chacun prend le siège le plus près d'un ami déjà assis) ; la visite du soir (après le
+   souper, visitesDuSoir : il va devant la porte d'un ami, qui sort à côté ; le but « visite » avec soir: true) ; le
+   repas apporté (entraidesDuJour : au repas de midi, l'ami va à la porte de celui qui se repose, qui sort le
+   recevoir ; le but « visite » avec apporte: true, emoji 🍲) ; un enfant (v.enfant) ne travaille pas et joue sur la
+   place (le but « jeu ») ; ni lui ni un villageois au repos ne sortent avec les adultes. Les tests :
+   tests/engine/village-liens.test.mjs. */
 
 const H = () => (DATA.VILLAGE && DATA.VILLAGE.HORAIRE) || {};
 const P = () => (DATA.VILLAGE && DATA.VILLAGE.PHRASES) || {};
@@ -60,7 +69,7 @@ const TABLES_DEHORS = new Set(['table_jardin', 'table_rondins']);
 const TABLES = new Set([...TABLES_DEHORS, 'meuble_table']);
 export const ETATS_VILLAGEOIS = ['lever', 'dehors', 'repas', 'flaner', 'rentrer', 'dormir', 'repos', 'abri', 'recoit', 'travail'];
 // (I3b+ : les buts d'une sortie, SOCIAL.BUTS ; le but d'un segment : seg.but.sorte)
-export const BUTS_VILLAGEOIS = ['visite', 'rdv', 'promenade', 'eau', 'jardin', 'betes', 'ouvrage', 'port'];
+export const BUTS_VILLAGEOIS = ['visite', 'rdv', 'promenade', 'eau', 'jardin', 'betes', 'ouvrage', 'port', 'banc', 'jeu'];
 
 const graineDe = (state) => farmSeed(state) || 'ile';
 const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1));
@@ -121,6 +130,8 @@ function calculerLieux(state, pieces, sols) {
   for (const tb of tables.values()) if (tb.dehors && TABLES_DEHORS.has(tb.sorte) && tb.sieges.length && (!commune || tb.sieges.length > commune.sieges.length)) commune = tb;
   // les bancs : les sièges dehors qui ne touchent pas de table, d'où l'on s'assoit
   const bancs = Object.keys(B).map(Number).filter((t) => SIEGES.has(B[t]) && !dedans.has(t) && !autourDeTable.has(t) && voisins(t).some(libre)).sort((a, b) => a - b);
+  // (I6b : deux bancs côte à côte, sur la même rangée, pour s'asseoir à deux)
+  const duos = bancs.filter((t) => bancs.includes(t + 1) && Math.floor(t / W) === Math.floor((t + 1) / W)).map((t) => [t, t + 1]);
   // la place : autour du puits, sinon de la table commune
   const puits = Object.keys(B).map(Number).find((t) => B[t] === 'puits');
   const centre = puits !== undefined ? puits : commune ? commune.table : null;
@@ -145,7 +156,7 @@ function calculerLieux(state, pieces, sols) {
     || pieces.find((p) => !marquees.has(p) && p.paillasses.length) || null;
   const abri = pAbri ? pAbri.cases.filter((t) => libreDedans(t) && !pAbri.paillasses.includes(t)) : null;
   const sorties = lieuxDesSorties(state, { W, B, couvertes, libre, maisons, puits, place, chemins, terres, centre });
-  return { W, libre, maisons, commune, bancs, place, promenade, chemins, abri: abri && abri.length ? abri : null, F, puits: puits === undefined ? null : puits, ...sorties };
+  return { W, libre, maisons, commune, bancs, duos, place, promenade, chemins, abri: abri && abri.length ? abri : null, F, puits: puits === undefined ? null : puits, ...sorties };
 }
 
 // I3b+ : les lieux des sorties (SOCIAL.BUTS). Chaque maison de villageois gagne `devant` ({ porte, front (la case
@@ -251,8 +262,9 @@ export function journeeDuVillage(state, jour = jourDe(state)) {
   const lp = lieuPort(state);
   // (I3c : sa tâche, et si elle attend : un outil donné, une parcelle labourée la remettent en route)
   const avecTache = V.some((v) => v.tache);
-  const cle = JSON.stringify([graineDe(state), jour, H(), SB(), (DATA.VILLAGE.SOCIAL || {}).CONNAISSANCE, lp ? [lp.case, lp.chemin] : 0, avecTache ? signatureTaches(state) : 0,
-    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0])]);
+  // (I6b : les liens, gardés dans la partie, et les repas apportés)
+  const cle = JSON.stringify([graineDe(state), jour, H(), SB(), (DATA.VILLAGE.SOCIAL || {}).CONNAISSANCE, (DATA.VILLAGE || {}).LIENS, liensSignature(state), lp ? [lp.case, lp.chemin] : 0, avecTache ? signatureTaches(state) : 0,
+    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0, v.enfant ? 1 : 0])]);
   const deja = memoJours.get(cle);
   if (deja && deja.L === L) return deja.J;
   const J = calculerJournee(state, jour, V, L);
@@ -314,8 +326,11 @@ function calculerJournee(state, jour, V, L) {
   // 2. I3c : les créneaux de travail ; puis les créneaux dehors, pour tout le village
   planDuTravail(state, jour, gens, L, prendre, C);
   planDesCreneaux(state, jour, gens, L, prendre);
+  // (I6b : les repas apportés à midi, les visites du soir)
+  const apportes = repasApportes(state, jour, gens, L);
+  const soirees = visitesDuSoir(state, jour, gens, L);
   // 3. les segments
-  const out = new Map();
+  const out = new Map(), assis = new Map();
   for (const x of gens) {
     const segs = [];
     const pousse = (de, a, etat, lieu, but) => {
@@ -338,20 +353,43 @@ function calculerJournee(state, jour, V, L) {
         } else pousse(p.x, p.y, a.etat, a.lieu, a.but);
       }
     };
-    // un repas : un siège de sa table, sinon de la table commune ; sans siège, chez lui
+    // un repas : un siège de sa table, sinon de la table commune ; sans siège, chez lui. I6b : le siège le plus près
+    // d'un ami déjà assis (à égalité, le premier) : des amis mangent côte à côte
     const repas = (de, a, cle) => {
       const tables = [x.maison && x.maison.table, L.commune].filter(Boolean);
       for (const tb of tables) {
-        const s = tb.sieges.find((t) => prendre(cle + ':' + tb.table, t));
-        if (s !== undefined) { pousse(de, a, 'repas', { genre: 'siege', case: s, table: tb.table, dehors: tb.dehors }); return; }
+        const k = cle + ':' + tb.table, deja = assis.get(k) || [];
+        const amis = deja.filter((o) => { const c = connaissance(state, x.v.id, o.id); return c && c.degre >= 2; }).map((o) => o.case);
+        const pres = (t) => (amis.length ? Math.min(...amis.map((q) => Math.abs((q % L.W) - (t % L.W)) + Math.abs(Math.floor(q / L.W) - Math.floor(t / L.W)))) : 0);
+        const libres = tb.sieges.filter((t) => !(pris.get(k) || new Set()).has(t));
+        const s = [...libres].sort((p, q) => pres(p) - pres(q))[0];
+        if (s !== undefined && prendre(k, s)) {
+          if (!assis.has(k)) assis.set(k, []);
+          assis.get(k).push({ id: x.v.id, case: s });
+          pousse(de, a, 'repas', { genre: 'siege', case: s, table: tb.table, dehors: tb.dehors });
+          return;
+        }
       }
       pousse(de, a, 'repas', x.enMaison());
     };
     creneaux(x.matin);
-    repas(x.midi, x.reprise, 'midi');
+    // (I6b : le repas apporté — il va le porter à la porte de son ami ; l'ami, chez lui, sort le recevoir)
+    const ap = apportes.get(x.v.id);
+    if (ap) {
+      if (ap.avant) { const fin = Math.min(x.reprise, x.midi + ap.avant.duree); pousse(x.midi, fin, ap.avant.etat, ap.avant.lieu); pousse(fin, x.reprise, 'dehors', ap.lieu, ap.but); }
+      else pousse(x.midi, x.reprise, 'dehors', ap.lieu, ap.but);
+    } else repas(x.midi, x.reprise, 'midi');
     creneaux(x.apres);
     repas(x.souper, x.veillee, 'souper');
-    pousse(x.veillee, x.coucher, 'rentrer', x.enMaison());
+    // (I6b : la visite du soir, après le souper : il va chez un ami, qui sort à sa porte ; puis chacun rentre)
+    const so = soirees.get(x.v.id);
+    if (so) {
+      const de = Math.max(x.veillee, so.de);
+      pousse(x.veillee, de, 'rentrer', x.enMaison());
+      if (so.avant) { const fin = Math.min(so.a, de + so.avant.duree); pousse(de, fin, so.avant.etat, so.avant.lieu); pousse(fin, so.a, 'dehors', so.lieu, so.but); }
+      else pousse(de, so.a, 'dehors', so.lieu, so.but);
+      pousse(so.a, x.coucher, 'rentrer', x.enMaison());
+    } else pousse(x.veillee, x.coucher, 'rentrer', x.enMaison());
     pousse(x.coucher, 24, 'dormir', nuit);
     out.set(x.v.id, pluie ? sousLaPluie(segs, pluie, x.enMaison) : segs);
   }
@@ -472,6 +510,13 @@ function planDesCreneaux(state, jour, gens, L, prendre) {
       if (x.plan.has(k)) continue;
       const v = x.v, p = x.parK.get(k), rnd = rngDe(`${g}:but:${v.id}:${jour}:${k}`);
       if (v.repos) { x.plan.set(k, { etat: 'repos', lieu: x.enMaison() }); continue; }
+      // (I6b : un enfant joue sur la place, sinon sur les chemins ou devant sa porte)
+      if (v.enfant) {
+        const P = L.place.length ? L.place : x.promenade;
+        const q = P.length ? [P[Math.floor(rnd() * P.length)], ...P].find((t) => tenir(k, t)) : undefined;
+        x.plan.set(k, q !== undefined ? { etat: 'dehors', lieu: { genre: 'place', case: q }, but: { sorte: 'jeu', cle: `jeu:${v.id}:${k}`, avec: [], emoji: emoji('jeu') } } : { etat: 'repos', lieu: x.enMaison() });
+        continue;
+      }
       // flâner : un banc libre (le sien pris : un autre), sinon la place
       if (rnd() < p.fl) {
         const banc = L.bancs.length ? L.bancs[Math.floor(rnd() * L.bancs.length)] : null;
@@ -481,7 +526,7 @@ function planDesCreneaux(state, jour, gens, L, prendre) {
         if (q !== undefined) { x.plan.set(k, { etat: 'flaner', lieu: x.ici('place', q) }); continue; }
       }
       // les amis libres à ce créneau (le degré, le score : connaissance)
-      const amis = gens.filter((y) => y !== x && libreA(y, k)).map((y) => [y, connaissance(state, v.id, y.v.id)]).filter(([, c]) => c && c.degre >= 1);
+      const amis = gens.filter((y) => y !== x && !y.v.enfant && libreA(y, k)).map((y) => [y, connaissance(state, v.id, y.v.id)]).filter(([, c]) => c && c.degre >= 1);
       // (au poids du score, et des voisins plutôt que ceux qui habitent loin ; celui qu'il vient de quitter, au
       // créneau d'avant, beaucoup moins : on varie)
       const avant = x.plan.get(k - 1), quitte = new Set(avant && avant.but ? avant.but.avec : []);
@@ -540,6 +585,20 @@ function planDesCreneaux(state, jour, gens, L, prendre) {
           }
           return false;
         },
+        // I6b : deux amis s'assoient côte à côte, sur deux bancs voisins
+        banc: () => {
+          const l = amis.filter(([, c]) => c.degre >= 2);
+          const ds = (L.duos || []).filter(([a, b]) => libreCase(k, a) && libreCase(k, b));
+          if (!l.length || !ds.length) return false;
+          const [a, b] = ds[Math.floor(rnd() * ds.length)], [y] = tire(l);
+          if (!tenir(k, a) || !tenir(k, b)) return false;
+          const cle = `banc:${v.id}:${k}`;
+          engager(rnd, k, [
+            [x, { etat: 'flaner', lieu: { genre: 'siege', case: a }, but: { sorte: 'banc', cle, avec: [y.v.id], emoji: emoji('banc') } }],
+            [y, { etat: 'flaner', lieu: { genre: 'siege', case: b }, but: { sorte: 'banc', cle, avec: [v.id] } }],
+          ]);
+          return true;
+        },
         eau: () => {
           if (L.eau === null || !tenir(k, L.eau)) return false;
           x.plan.set(k, { etat: 'dehors', lieu: { genre: 'devant', case: L.eau, vers: L.puits }, but: { sorte: 'eau', cle: `eau:${v.id}:${k}`, avec: [], emoji: emoji('eau') } });
@@ -577,6 +636,64 @@ function planDesCreneaux(state, jour, gens, L, prendre) {
       x.plan.set(k, q !== undefined ? { etat: 'dehors', lieu: x.ici('promenade', q) } : { etat: 'repos', lieu: x.enMaison() });
     }
   }
+}
+
+// I6b : les repas apportés aujourd'hui (liens.js entraidesDuJour : { de, a }) : Map(id → { lieu, but, avant? }). Celui
+// qui apporte va devant la porte de son ami (tourné vers elle) au repas de midi ; l'ami, chez lui (il se repose),
+// sort à côté de sa porte (après RECOIT h, « recoit »). Sans porte praticable, rien : chacun mange comme d'habitude.
+function repasApportes(state, jour, gens, L) {
+  const out = new Map(), B = SB(), parId = new Map(gens.map((x) => [x.v.id, x]));
+  for (const e of entraidesDuJour(state, jour)) {
+    const x = parId.get(e.de), y = parId.get(e.a);
+    if (!x || !y || x.v.repos || out.has(x.v.id) || out.has(y.v.id)) continue;
+    const D = y.maison && y.maison.devant;
+    if (!D) continue;
+    const cle = `apporte:${x.v.id}:${jour}`, emoji = (B.EMOJI || {}).apporte || '';
+    const dedans = Number.isInteger(D.dedans) ? { genre: 'maison', case: D.dedans } : y.enMaison();
+    out.set(x.v.id, { lieu: { genre: 'devant', case: D.front, vers: D.porte }, but: { sorte: 'visite', cle, avec: [y.v.id], role: 'visiteur', apporte: true, emoji } });
+    out.set(y.v.id, { lieu: { genre: 'devant', case: D.cote, vers: D.front }, but: { sorte: 'visite', cle, avec: [x.v.id], role: 'hote', apporte: true }, avant: { etat: 'recoit', lieu: dedans, duree: Number(B.RECOIT) || 0.1 } });
+  }
+  return out;
+}
+
+// I6b : les visites du soir (LIENS.SOIR) : Map(id → { de, a, lieu, but, avant? }). Après le souper, chacun (dans un
+// ordre tiré du jour), avec CHANCE, va voir un ami (le degré « ami » ou plus ; ni un enfant, ni sous son toit, ni au
+// repos, ni déjà pris ce soir ; plutôt un voisin, plutôt le plus lié), MAX visites au plus : une par PAR villageois.
+// Le visiteur devant la porte, l'hôte sort à côté (« recoit » RECOIT h d'abord) ; DUREE h, et chacun rentre avant de
+// se coucher.
+function visitesDuSoir(state, jour, gens, L) {
+  const S = ((DATA.VILLAGE || {}).LIENS || {}).SOIR || {}, B = SB(), out = new Map();
+  const chance = Number(S.CHANCE) || 0, max = Math.floor(gens.length / Math.max(1, Number(S.PAR) || 3)) || (gens.length >= 2 ? 1 : 0);
+  if (!(chance > 0) || !max) return out;
+  const rnd0 = rngDe(`${graineDe(state)}:soir:${jour}`);
+  const ordre = gens.map((x) => [rnd0(), x]).sort((a, b) => a[0] - b[0]).map((e) => e[1]);
+  const ecart = (x, y) => (Number.isInteger(x.v.maison) && Number.isInteger(y.v.maison)
+    ? Math.max(Math.abs((x.v.maison % L.W) - (y.v.maison % L.W)), Math.abs(Math.floor(x.v.maison / L.W) - Math.floor(y.v.maison / L.W))) : 30);
+  const libre = (x) => !x.v.repos && !x.v.enfant && !x.v.accueil && !out.has(x.v.id);
+  let n = 0;
+  for (const x of ordre) {
+    if (n >= max) break;
+    if (!libre(x) || !Number.isInteger(x.v.maison)) continue;
+    const rnd = rngDe(`${graineDe(state)}:soir:${x.v.id}:${jour}`);
+    if (rnd() >= chance) continue;
+    const f = foyerDe(state, x.v.id);
+    const amis = gens.filter((y) => y !== x && libre(y) && y.maison && y.maison.devant && y.v.maison !== x.v.maison && !(f && f.membres.includes(y.v.id)))
+      .map((y) => [y, connaissance(state, x.v.id, y.v.id)]).filter(([, c]) => c && c.degre >= 2);
+    if (!amis.length) continue;
+    const poids = ([y, c]) => (c.score + 1) / (1 + ecart(x, y) / 10);
+    const tot = amis.reduce((t, e) => t + poids(e), 0);
+    let r = rnd() * tot, pris = amis[amis.length - 1];
+    for (const e of amis) { r -= poids(e); if (r <= 0) { pris = e; break; } }
+    const y = pris[0], D = y.maison.devant;
+    const de = Math.max(x.veillee, y.veillee) + 0.05, a = Math.min(de + (Number(S.DUREE) || 1), Math.min(x.coucher, y.coucher) - 0.25);
+    if (!(a > de + 0.25)) continue;
+    const cle = `soir:${x.v.id}:${jour}`, emoji = (B.EMOJI || {}).soir || '';
+    const dedans = Number.isInteger(D.dedans) ? { genre: 'maison', case: D.dedans } : y.enMaison();
+    out.set(x.v.id, { de, a, lieu: { genre: 'devant', case: D.front, vers: D.porte }, but: { sorte: 'visite', cle, avec: [y.v.id], role: 'visiteur', soir: true, emoji } });
+    out.set(y.v.id, { de, a, lieu: { genre: 'devant', case: D.cote, vers: D.front }, but: { sorte: 'visite', cle, avec: [x.v.id], role: 'hote', soir: true }, avant: { etat: 'recoit', lieu: dedans, duree: Number(B.RECOIT) || 0.1 } });
+    n++;
+  }
+  return out;
 }
 
 // Sous la pluie (de p[0] à p[1] h) : ce qui se fait dehors (dehors, flâner, un repas à une table du dehors) devient
@@ -628,7 +745,7 @@ export function paroleVillageois(state, id, o = {}) {
   const humeur = humeurVillageois(v);
   // (I3b+ : au but d'une sortie, ce qu'il y fait : SOCIAL.ACTIVITE)
   const A = (DATA.VILLAGE.SOCIAL || {}).ACTIVITE || {};
-  const but = etat === 'dehors' && BUTS_VILLAGEOIS.includes(o.but) && A[o.but] ? o.but : null;
+  const but = (etat === 'dehors' || (etat === 'flaner' && o.but === 'banc')) && BUTS_VILLAGEOIS.includes(o.but) && A[o.but] ? o.but : null;
   // (I3c : au travail, une phrase de sa tâche ; sa tâche attend (un outil, un poste) : il le dit)
   const def = tacheDef(v.tache), manque = etat !== 'dormir' && etat !== 'repas' ? manqueDit(state, v) : '';
   const texte = etat === 'travail' && def ? un(def.PHRASES) : manque ? un((P().ACTIVITE || {}).attend).replace('{raison}', manque) : un(but ? A[but] : (P().ACTIVITE || {})[etat]);

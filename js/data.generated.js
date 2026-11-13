@@ -5145,7 +5145,15 @@ export const RAW_DATA = {
     "VILLAGEOIS": {
       "MAISON_PALIER": 3,
       "MAISON": { "paillasse": 1, "boite_aux_lettres": 1 },
-      "TACHES": ["champs", "betes", "cuisine", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"]
+      "TACHES": ["champs", "betes", "cuisine", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"],
+      "REATTRIBUER": {
+        "JOURS": 7,
+        "SEMAINES": 2,
+        "SEUIL": 0,
+        "MARGE": 0,
+        "GARDER": ["champs"],
+        "VERS": ["betes", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"]
+      }
     },
     "BATIR": {
       "foyer": { "paillasse": 4 },
@@ -8705,17 +8713,9 @@ export const RAW_DATA = {
       }
     },
     "SOCIAL": {
-      "CONNAISSANCE": {
-        "PAR_JOUR": 2,
-        "VOISIN": 2,
-        "VOISINE": 14,
-        "TABLE": 1,
-        "AFFINITE": 30,
-        "PALIERS": { "connaissance": 10, "ami": 40 },
-        "COLLEGUE": 2
-      },
+      "CONNAISSANCE": { "PAR_JOUR": 2, "VOISIN": 2, "VOISINE": 14, "TABLE": 1, "AFFINITE": 30, "COLLEGUE": 2 },
       "BUTS": {
-        "POIDS": { "visite": 2, "rdv": 1.5, "promenade": 2, "eau": 1.5, "voir": 2.5, "port": 1 },
+        "POIDS": { "visite": 2, "rdv": 1.5, "promenade": 2, "banc": 1.5, "eau": 1.5, "voir": 2.5, "port": 1 },
         "RECOIT": 0.1,
         "DUREE": 2,
         "PORT_MAX": 40,
@@ -8742,7 +8742,18 @@ export const RAW_DATA = {
           "mangeoire_grain",
           "distributeur"
         ],
-        "EMOJI": { "eau": "💧", "jardin": "🌱", "betes": "🐑", "ouvrage": "👀", "port": "⚓", "promenade": "🌿" }
+        "EMOJI": {
+          "eau": "💧",
+          "jardin": "🌱",
+          "betes": "🐑",
+          "ouvrage": "👀",
+          "port": "⚓",
+          "promenade": "🌿",
+          "banc": "☺️",
+          "soir": "🌙",
+          "apporte": "🍲",
+          "jeu": "🪁"
+        }
       },
       "CROISE": {
         "RAYON": 24,
@@ -8811,6 +8822,14 @@ export const RAW_DATA = {
           ["Il fait bon, cet après-midi.", "On resterait dehors jusqu'au soir !"],
           ["Tu as fait quoi, ce matin ?", "Pas grand-chose, et c'était parfait !"]
         ],
+        "proche": [
+          ["Te voilà, toi ! Ma journée est complète.", "La mienne aussi, maintenant !"],
+          ["Je savais que je te trouverais ici.", "Tu me connais trop bien !"],
+          ["Tu viens t'asseoir avec moi ?", "Toujours, tu le sais bien."],
+          ["Qu'est-ce que je ferais sans toi, {prenom} ?", "Tu t'ennuierais, voilà tout !"],
+          ["On est bien, tous les deux.", "Comme toujours."],
+          ["Tu as bien dormi, mon ami{e} ?", "Oui ! J'ai rêvé de l'île."]
+        ],
         "soir": [
           ["Bonne soirée, {prenom} !", "Bonne soirée ! Dors bien !"],
           ["Déjà le soir...", "Les journées filent, ici."],
@@ -8869,6 +8888,29 @@ export const RAW_DATA = {
           ["On mange bien, ici.", "Mieux que sur le bac, ça !"],
           ["Il reste de la tarte ?", "Je t'en ai gardé une part !"],
           ["Bon appétit, tout le monde !", "Bon appétit !"]
+        ],
+        "soiree": [
+          ["Bonsoir ! Je ne te dérange pas ?", "Jamais ! Viens, on prend le frais."],
+          ["J'ai vu ta lumière, alors je passe.", "Tu as bien fait, j'allais m'ennuyer !"],
+          ["Une petite visite avant de dormir ?", "Avec plaisir, il fait si doux."],
+          ["Regarde les étoiles, {prenom} !", "On en voit tellement, d'ici."],
+          ["Tu me racontes ta journée ?", "Oh, il y a tant à dire !"],
+          ["Je t'ai gardé une part de tarte.", "Tu es un amour !"],
+          ["Bonne nuit, à demain !", "Dors bien, à demain !"]
+        ],
+        "apporte": [
+          ["Je t'apporte de la soupe, toute chaude !", "Oh, merci… Ça me touche beaucoup."],
+          ["Tiens, c'est pour toi. Repose-toi bien.", "Tu es trop gentil{e}, {prenom}."],
+          ["Il faut manger pour reprendre des forces !", "Merci, ça va déjà mieux."],
+          ["J'ai fait un peu trop de ragoût…", "Comme par hasard ! Merci, mon ami{e}."],
+          ["Ne bouge pas, je m'occupe de tout.", "Qu'est-ce que je ferais sans toi ?"]
+        ],
+        "banc": [
+          ["On est bien, sur ce banc.", "On y resterait des heures."],
+          ["Tu te souviens de ton premier jour ?", "Comme si c'était hier !"],
+          ["Regarde, le jardin a encore poussé.", "La famille travaille bien."],
+          ["Assieds-toi, je te garde la place.", "Merci, mes jambes te remercient !"],
+          ["Il fait bon, à l'ombre.", "Le meilleur banc de l'île."]
         ],
         "promenade": [
           ["On va jusqu'au bout du chemin ?", "Allons-y, à petits pas !"],
@@ -8932,7 +8974,11 @@ export const RAW_DATA = {
         "jardin": ["Je regarde pousser ton jardin.", "Tes cultures ont belle allure !"],
         "betes": ["Je viens voir les bêtes.", "Elles ont l'air bien, tes bêtes."],
         "ouvrage": ["J'admire ce que tu as bâti.", "C'est du beau travail, ça."],
-        "port": ["Je descends voir le port.", "J'aime regarder les bateaux."]
+        "port": ["Je descends voir le port.", "J'aime regarder les bateaux."],
+        "banc": ["On se repose un peu, côte à côte.", "Un banc, un ami : que demander de plus ?"],
+        "soir": ["Je passe la soirée chez un ami.", "Une petite visite avant d'aller dormir."],
+        "apporte": ["J'apporte un repas à un ami qui se repose.", "Il faut bien s'entraider !"],
+        "jeu": ["Je joue sur la place !", "On s'amuse bien, ici !"]
       }
     },
     "AMITIE": {
@@ -9055,11 +9101,50 @@ export const RAW_DATA = {
         "{qui} s'installe à peine. On l'aidera un peu.",
         "Bienvenue à {qui} ! Le village grandit."
       ],
+      "voisin": [
+        "{voisin} habite juste à côté. On se fait signe chaque matin !",
+        "Entre voisins, avec {voisin}, on se rend service.",
+        "Je vois la lumière de {voisin} le soir : ça rassure."
+      ],
+      "lien_ami": [
+        "{ami} et moi, on ne se quitte plus.",
+        "Tu cherches {ami} ? Demande-moi, je sais toujours où {il_ami} est !",
+        "Avec {ami}, on partage tout : le pain, les nouvelles, les fous rires."
+      ],
+      "visite_recue": [
+        "{qui} est passé{e_qui} me voir hier soir. On a bavardé jusqu'à la nuit !",
+        "J'ai eu de la visite : {qui}. Ça m'a fait chaud au cœur."
+      ],
+      "visite_faite": ["Hier soir, je suis allé{e} chez {chez}. Quelle bonne soirée !", "J'ai rendu visite à {chez} après le souper. On a bien ri."],
+      "entraide_recue": [
+        "Quand je me reposais, {qui} m'a apporté à manger. On n'oublie pas ça.",
+        "Sans {qui}, j'aurais eu le ventre vide. Quel ami !"
+      ],
+      "entraide_donnee": ["J'ai porté un repas à {aide} : entre amis, c'est normal.", "{aide} se reposait : je lui ai apporté de la soupe."],
+      "foyer": [
+        "Avec {conjoint}, on a notre maison à nous. Merci pour tout !",
+        "Vivre avec {conjoint}, c'est le bonheur tout simple.",
+        "Le soir, avec {conjoint}, on regarde la lune depuis la porte."
+      ],
+      "enfant": ["{enfant} a encore joué toute la journée sur la place !", "Tu as vu {enfant} ? {il_enfant} grandit si vite !"],
       "port_bac": [
         "Le bac passe demain. Qui sait qui il amènera ?",
         "Demain, c'est jour de bac. J'irai voir le port !",
         "Le bac arrive demain : l'île va avoir de la visite."
       ]
+    },
+    "LIENS": {
+      "AFFINITE": 20,
+      "PALIERS": { "connaissance": 10, "camarade": 25, "ami": 45, "proche": 75 },
+      "GAINS": { "ILE": 1, "VOISIN": 1, "VOISINE": 14, "POSTE": 4, "TABLE": 1, "SORTIE": 1, "FETE": 4, "FOYER": 3, "ENTRAIDE": 5 },
+      "LENT": 45,
+      "BONHEUR": { "AMI": 4, "PROCHE": 6 },
+      "TRAVAIL": { "PALIER": 3, "ACTIONS": 1 },
+      "SOIR": { "CHANCE": 0.35, "DUREE": 1, "PAR": 3 },
+      "ENTRAIDE": { "BONHEUR": 6 },
+      "FOYER": { "PALIER": 4 },
+      "ENFANT": { "PARENTS": 85 },
+      "AVIS": [3, 4]
     },
     "PALIERS": [
       {

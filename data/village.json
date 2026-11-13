@@ -104,15 +104,16 @@
     "//SOCIAL": [
       "La vie sociale des villageois (I3b+, après la fiche I3b ; le moteur : js/engine/villageois-liens.js et",
       "js/engine/villageois-journee.js ; la scène : js/carte/ferme/villageois-social.js). Rien n'est gardé dans la",
-      "partie : tout se déduit de la graine, du jour, des maisons et de l'heure.",
-      "CONNAISSANCE (connaissance(state, a, b)) : qui se connaît, et à quel degré (inconnu, connaissance, ami). Un",
-      "score de 0 à 100 : chaque jour passé ensemble sur l'île (depuis l'arrivée du second) compte PAR_JOUR, plus VOISIN",
-      "si leurs maisons (leurs boîtes aux lettres) sont à VOISINE cases au plus, plus TABLE s'ils mangent à la même",
-      "table ; s'y ajoute une affinité tirée de la graine et des deux ids (de 0 à AFFINITE). Connaissance dès",
-      "PALIERS.connaissance, ami dès PALIERS.ami. La famille du joueur : connue dès l'arrivée (on l'a accueilli), amie",
-      "dès le palier AMITIE.FAMILLE_AMI de l'amitié du joueur avec lui (I6a). Deux villageois qui ont la même tâche (I3c) gagnent COLLEGUE de plus par jour (on se lie",
-      "en travaillant ensemble). La fiche I6b remplacera ce calcul par l'affinité sauvegardée (liens.js), sans toucher",
-      "à ceux qui le lisent.",
+      "partie : tout se déduit de la graine, du jour, des maisons et de l'heure (sauf, depuis I6b, l'affinité : LIENS).",
+      "CONNAISSANCE (connaissance(state, a, b)) : qui se connaît, et à quel degré. Fiche I6b : le score de la paire est",
+      "l'affinité gardée (LIENS, js/engine/liens.js), et ses paliers ceux de LIENS.PALIERS (connaissance, camarade, ami,",
+      "proche ; le degré lu par la journée et la scène : 1 connaissance ou camarade, 2 ami, 3 proche). Ce réglage-ci ne",
+      "sert plus qu'à l'estimation d'une paire qui n'a pas encore passé de nuit ensemble (une partie d'avant I6b) : chaque",
+      "jour passé ensemble sur l'île (depuis l'arrivée du second) compte PAR_JOUR, plus VOISIN si leurs maisons (leurs",
+      "boîtes aux lettres) sont à VOISINE cases au plus, plus TABLE s'ils mangent à la même table, plus COLLEGUE à la",
+      "même tâche (I3c) ; s'y ajoute une affinité tirée de la graine et des deux ids (de 0 à LIENS.AFFINITE). La famille",
+      "du joueur : connue dès l'arrivée (on l'a accueilli), amie dès le palier AMITIE.FAMILLE_AMI de l'amitié du joueur",
+      "avec lui (I6a).",
       "BUTS : ce qu'il fait d'un créneau dehors, tiré au poids (un poids par but ; un but sans lieu, ou sans ami libre,",
       "ne se tire pas) : visite (il va à la porte d'un ami, frappe ; l'ami, chez lui, sort après RECOIT h et ils",
       "causent devant la maison), rdv (il retrouve un ou deux amis sur la place ou au puits, en petit cercle),",
@@ -138,14 +139,14 @@
       "CROISE.JOUEUR_AMI (I6a) : la distance d'où un ami proche, ou celui qui a un présent, salue le personnage."
     ],
     "SOCIAL": {
-      "CONNAISSANCE": { "PAR_JOUR": 2, "VOISIN": 2, "VOISINE": 14, "TABLE": 1, "AFFINITE": 30, "PALIERS": { "connaissance": 10, "ami": 40 }, "COLLEGUE": 2 },
+      "CONNAISSANCE": { "PAR_JOUR": 2, "VOISIN": 2, "VOISINE": 14, "TABLE": 1, "AFFINITE": 30, "COLLEGUE": 2 },
       "BUTS": {
-        "POIDS": { "visite": 2, "rdv": 1.5, "promenade": 2, "eau": 1.5, "voir": 2.5, "port": 1 },
+        "POIDS": { "visite": 2, "rdv": 1.5, "promenade": 2, "banc": 1.5, "eau": 1.5, "voir": 2.5, "port": 1 },
         "RECOIT": 0.1,
         "DUREE": 2,
         "PORT_MAX": 40,
         "OUVRAGES": ["ruche", "bassin", "fontaine_", "ornement_", "massif_", "bloc_silo", "citerne", "compost", "station_robot", "tonnelet", "tas_citrouilles", "citrouille_halloween", "bonhomme_neige", "bac_", "pommier", "poirier", "cerisier", "abricotier", "pecher", "mangeoire_grain", "distributeur"],
-        "EMOJI": { "eau": "💧", "jardin": "🌱", "betes": "🐑", "ouvrage": "👀", "port": "⚓", "promenade": "🌿" }
+        "EMOJI": { "eau": "💧", "jardin": "🌱", "betes": "🐑", "ouvrage": "👀", "port": "⚓", "promenade": "🌿", "banc": "☺️", "soir": "🌙", "apporte": "🍲", "jeu": "🪁" }
       },
       "CROISE": { "RAYON": 24, "ATTENTE": 40, "DUREE": [1.6, 2.5], "SIGNE": 0.5, "ENSEMBLE": 0.35, "BOUT": 12, "REGARD": 48, "JOUEUR": 28, "JOUEUR_AMI": 56, "JOUEUR_ATTENTE": 60, "TOUR": 3.2 },
       "EMOJI": { "connaissance": ["👋", "😊"], "ami": ["😄", "❤️", "😊", "👋"], "proche": ["😄", "❤️", "🥰"], "intime": ["❤️", "🥰", "😄"], "retrouvailles": ["😄", "🥰"], "present": ["🎁"], "triste": ["🙂"] },
@@ -193,6 +194,14 @@
           ["Tu as vu les cultures ?", "Elles poussent à vue d'œil !"],
           ["Il fait bon, cet après-midi.", "On resterait dehors jusqu'au soir !"],
           ["Tu as fait quoi, ce matin ?", "Pas grand-chose, et c'était parfait !"]
+        ],
+        "proche": [
+          ["Te voilà, toi ! Ma journée est complète.", "La mienne aussi, maintenant !"],
+          ["Je savais que je te trouverais ici.", "Tu me connais trop bien !"],
+          ["Tu viens t'asseoir avec moi ?", "Toujours, tu le sais bien."],
+          ["Qu'est-ce que je ferais sans toi, {prenom} ?", "Tu t'ennuierais, voilà tout !"],
+          ["On est bien, tous les deux.", "Comme toujours."],
+          ["Tu as bien dormi, mon ami{e} ?", "Oui ! J'ai rêvé de l'île."]
         ],
         "soir": [
           ["Bonne soirée, {prenom} !", "Bonne soirée ! Dors bien !"],
@@ -253,6 +262,29 @@
           ["Il reste de la tarte ?", "Je t'en ai gardé une part !"],
           ["Bon appétit, tout le monde !", "Bon appétit !"]
         ],
+        "soiree": [
+          ["Bonsoir ! Je ne te dérange pas ?", "Jamais ! Viens, on prend le frais."],
+          ["J'ai vu ta lumière, alors je passe.", "Tu as bien fait, j'allais m'ennuyer !"],
+          ["Une petite visite avant de dormir ?", "Avec plaisir, il fait si doux."],
+          ["Regarde les étoiles, {prenom} !", "On en voit tellement, d'ici."],
+          ["Tu me racontes ta journée ?", "Oh, il y a tant à dire !"],
+          ["Je t'ai gardé une part de tarte.", "Tu es un amour !"],
+          ["Bonne nuit, à demain !", "Dors bien, à demain !"]
+        ],
+        "apporte": [
+          ["Je t'apporte de la soupe, toute chaude !", "Oh, merci… Ça me touche beaucoup."],
+          ["Tiens, c'est pour toi. Repose-toi bien.", "Tu es trop gentil{e}, {prenom}."],
+          ["Il faut manger pour reprendre des forces !", "Merci, ça va déjà mieux."],
+          ["J'ai fait un peu trop de ragoût…", "Comme par hasard ! Merci, mon ami{e}."],
+          ["Ne bouge pas, je m'occupe de tout.", "Qu'est-ce que je ferais sans toi ?"]
+        ],
+        "banc": [
+          ["On est bien, sur ce banc.", "On y resterait des heures."],
+          ["Tu te souviens de ton premier jour ?", "Comme si c'était hier !"],
+          ["Regarde, le jardin a encore poussé.", "La famille travaille bien."],
+          ["Assieds-toi, je te garde la place.", "Merci, mes jambes te remercient !"],
+          ["Il fait bon, à l'ombre.", "Le meilleur banc de l'île."]
+        ],
         "promenade": [
           ["On va jusqu'au bout du chemin ?", "Allons-y, à petits pas !"],
           ["Il fait bon marcher avec toi.", "On refait ça demain ?"],
@@ -289,7 +321,11 @@
         "jardin": ["Je regarde pousser ton jardin.", "Tes cultures ont belle allure !"],
         "betes": ["Je viens voir les bêtes.", "Elles ont l'air bien, tes bêtes."],
         "ouvrage": ["J'admire ce que tu as bâti.", "C'est du beau travail, ça."],
-        "port": ["Je descends voir le port.", "J'aime regarder les bateaux."]
+        "port": ["Je descends voir le port.", "J'aime regarder les bateaux."],
+        "banc": ["On se repose un peu, côte à côte.", "Un banc, un ami : que demander de plus ?"],
+        "soir": ["Je passe la soirée chez un ami.", "Une petite visite avant d'aller dormir."],
+        "apporte": ["J'apporte un repas à un ami qui se repose.", "Il faut bien s'entraider !"],
+        "jeu": ["Je joue sur la place !", "On s'amuse bien, ici !"]
       }
     },
     "//AMITIE": [
@@ -368,7 +404,59 @@
       "village_voisin": ["Tu connais bien {voisin} ? Dis-lui bonjour de ma part.", "{voisin} m'a parlé de toi hier. Que du bien !", "J'apprends à connaître {voisin}. Quelqu'un de bien.", "{voisin} a ri toute la soirée hier. Ça fait du bien !"],
       "village_collegue": ["Avec {collegue}, on fait une bonne équipe, au travail.", "{collegue} travaille avec moi : le temps passe plus vite.", "Le travail à deux, avec {collegue}, c'est plus gai."],
       "village_nouveau": ["Tu as vu ? {qui} vient d'arriver par le bac !", "{qui} s'installe à peine. On l'aidera un peu.", "Bienvenue à {qui} ! Le village grandit."],
+      "voisin": ["{voisin} habite juste à côté. On se fait signe chaque matin !", "Entre voisins, avec {voisin}, on se rend service.", "Je vois la lumière de {voisin} le soir : ça rassure."],
+      "lien_ami": ["{ami} et moi, on ne se quitte plus.", "Tu cherches {ami} ? Demande-moi, je sais toujours où {il_ami} est !", "Avec {ami}, on partage tout : le pain, les nouvelles, les fous rires."],
+      "visite_recue": ["{qui} est passé{e_qui} me voir hier soir. On a bavardé jusqu'à la nuit !", "J'ai eu de la visite : {qui}. Ça m'a fait chaud au cœur."],
+      "visite_faite": ["Hier soir, je suis allé{e} chez {chez}. Quelle bonne soirée !", "J'ai rendu visite à {chez} après le souper. On a bien ri."],
+      "entraide_recue": ["Quand je me reposais, {qui} m'a apporté à manger. On n'oublie pas ça.", "Sans {qui}, j'aurais eu le ventre vide. Quel ami !"],
+      "entraide_donnee": ["J'ai porté un repas à {aide} : entre amis, c'est normal.", "{aide} se reposait : je lui ai apporté de la soupe."],
+      "foyer": ["Avec {conjoint}, on a notre maison à nous. Merci pour tout !", "Vivre avec {conjoint}, c'est le bonheur tout simple.", "Le soir, avec {conjoint}, on regarde la lune depuis la porte."],
+      "enfant": ["{enfant} a encore joué toute la journée sur la place !", "Tu as vu {enfant} ? {il_enfant} grandit si vite !"],
       "port_bac": ["Le bac passe demain. Qui sait qui il amènera ?", "Demain, c'est jour de bac. J'irai voir le port !", "Le bac arrive demain : l'île va avoir de la visite."]
+    },
+    "//LIENS": [
+      "Les liens entre villageois (fiche I6b ; le moteur : js/engine/liens.js ; la scène : js/carte/ferme/villageois-social.js ;",
+      "la fiche et la vue d'ensemble : js/ui/liens.js). Entre deux villageois, une affinité entière de 0 à 100, gardée",
+      "dans la partie (state.liens : une demi-matrice compacte), qui monte chaque nuit de ce qu'ils ont vécu ensemble",
+      "dans la journée et ne baisse jamais (B-1 : pas de brouille). GAINS, par jour : ILE (ils vivent sur la même île),",
+      "VOISIN (leurs boîtes aux lettres à VOISINE cases au plus), POSTE (ils ont travaillé à la même tâche, à des postes",
+      "voisins, fiche I3c ; le même commerce, I5a, s'y ajoutera), TABLE (ils ont mangé à la même table, au même repas),",
+      "SORTIE (une sortie à plusieurs : une visite, un rendez-vous, une promenade, un banc à deux), FETE (le même repas",
+      "du joueur, l'invitation de la fiche I6a ; les fêtes, I8a), FOYER (ils vivent sous le même toit), ENTRAIDE (l'un a",
+      "apporté un repas à l'autre). Au-delà de LENT, un gain compte pour moitié (arrondi au-dessus) : on devient proche",
+      "plus lentement qu'ami. Une paire qui n'a pas encore passé de nuit ensemble (un nouveau venu, une partie d'avant",
+      "I6b) part de l'estimation d'I3b+ (SOCIAL.CONNAISSANCE : les jours passés ensemble et une affinité tirée de la",
+      "graine), la même que la partie montrait ; un nouveau venu, de cette affinité tirée seule.",
+      "PALIERS : connaissance, camarade, ami, proche (le score d'où l'on y est). Ce qu'ils changent : un ami au village",
+      "monte la cible de bonheur de BONHEUR.AMI, un proche de BONHEUR.PROCHE (le plus grand des deux) ; deux amis",
+      "(TRAVAIL.PALIER ou plus) au même poste gagnent TRAVAIL.ACTIONS action par jour à eux deux ; des amis s'assoient",
+      "côte à côte (deux bancs voisins, SOCIAL.BUTS.POIDS.banc ; à table, à côté d'un ami déjà assis), se rendent visite",
+      "le soir (SOIR : après le souper, CHANCE pour chacun, DUREE h au plus, MAX visites par soir pour un village de",
+      "PAR villageois), et l'entraide (ENTRAIDE) : un villageois en repos (mal nourri ou sans lit) reçoit, au repas de",
+      "midi, la visite d'un ami qui lui apporte à manger (🍲) ; sa cible de bonheur monte de ENTRAIDE.BONHEUR cette",
+      "nuit-là (ni la boîte commune ni le coffre ne paient ce repas : il le partage de bon cœur).",
+      "FOYER : deux proches (PALIER) peuvent former un foyer si le joueur le leur propose et leur a bâti une maison à",
+      "deux lits (une maison de villageois avec deux lits d'adulte libres, où personne d'autre n'habite) : ils s'y",
+      "installent, mangent et dorment sous le même toit ; personne ne se sépare. ENFANT : un foyer dont la maison a un",
+      "lit d'enfant libre peut accueillir un enfant, si le joueur le propose : il vient par le bac (le prochain",
+      "passage, comme un nouveau venu, le seul de ce passage), vit avec eux, ne travaille pas et joue sur la place",
+      "(SOCIAL.BUTS.EMOJI.jeu) ; ses parents et lui sont proches dès son arrivée (PARENTS). Les enfants ne comptent pas",
+      "dans le plafond du port. Ce qui se passe (une visite du soir, un repas apporté) est gardé avec les événements",
+      "entre voisins (js/engine/voisins.js, VOISINS.EVENEMENTS, RECENT) : les villageois en parlent (PROPOS). AVIS : les",
+      "paliers qu'une notification annonce au joueur."
+    ],
+    "LIENS": {
+      "AFFINITE": 20,
+      "PALIERS": { "connaissance": 10, "camarade": 25, "ami": 45, "proche": 75 },
+      "GAINS": { "ILE": 1, "VOISIN": 1, "VOISINE": 14, "POSTE": 4, "TABLE": 1, "SORTIE": 1, "FETE": 4, "FOYER": 3, "ENTRAIDE": 5 },
+      "LENT": 45,
+      "BONHEUR": { "AMI": 4, "PROCHE": 6 },
+      "TRAVAIL": { "PALIER": 3, "ACTIONS": 1 },
+      "SOIR": { "CHANCE": 0.35, "DUREE": 1, "PAR": 3 },
+      "ENTRAIDE": { "BONHEUR": 6 },
+      "FOYER": { "PALIER": 4 },
+      "ENFANT": { "PARENTS": 85 },
+      "AVIS": [3, 4]
     },
     "//PALIERS": [
       "Les paliers de l'île (fiche I7a, js/engine/paliers.js) : avec ACTIF, une partie neuve suit ces sept paliers à la",

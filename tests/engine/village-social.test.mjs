@@ -111,7 +111,8 @@ test('connaissance : les jours ensemble, les maisons voisines, la table, l\'affi
     const scores = [];
     for (let j = 0; j < 30; j += 5) { s.day += 5; scores.push(connaissance(s, a, c).score); }
     for (let k = 1; k < scores.length; k++) assert(scores[k] >= scores[k - 1], `il ne baisse pas (${scores})`);
-    assertEqual(connaissance(s, a, c).nom, 'ami', 'amis après un mois');
+    // (I6b : les paliers de VILLAGE.LIENS.PALIERS ; ami ou proche, degré 2 ou plus)
+    assert(connaissance(s, a, c).degre >= 2 && ['ami', 'proche'].includes(connaissance(s, a, c).nom), 'amis après un mois');
     // la famille : connue dès l'arrivée, amie dès le palier VILLAGE.AMITIE.FAMILLE_AMI de l'amitié (I6a)
     const { s: t } = ile(2, 2, { il_y_a: 0 });
     assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'connaissance', 'connue dès l\'arrivée');
@@ -156,7 +157,8 @@ test('les sorties ont un but : visites, rendez-vous, promenades, eau, voir ; ceu
         const b = seg.but;
         vus.add(b.sorte);
         assert(BUTS_VILLAGEOIS.includes(b.sorte), `un but connu (${b.sorte})`);
-        assert(seg.etat === 'dehors', 'dehors');
+        // (I6b : le banc à deux, assis : « flaner »)
+        assert(seg.etat === (b.sorte === 'banc' ? 'flaner' : 'dehors'), 'dehors');
         assert(typeof b.cle === 'string' && Array.isArray(b.avec), 'une clé, des compagnons');
         if (!parCle.has(b.cle)) parCle.set(b.cle, []);
         parCle.get(b.cle).push({ id, seg });
@@ -189,7 +191,7 @@ test('les sorties ont un but : visites, rendez-vous, promenades, eau, voir ; ceu
         }
         if (b.sorte === 'promenade') {
           assertEqual(l.map((x) => x.seg.but.role).sort(), ['meneur', 'suit'], `${cle} : un meneur, un ami`);
-          for (const x of l) assert(connaissance(s, x.id, x.seg.but.avec[0]).degre === 2, 'entre amis');
+          for (const x of l) assert(connaissance(s, x.id, x.seg.but.avec[0]).degre >= 2, 'entre amis');
         }
       }
     }

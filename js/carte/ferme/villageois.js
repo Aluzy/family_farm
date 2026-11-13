@@ -151,13 +151,14 @@
     // Le villageois du modèle `v` : sa planche, où il paraît. En route (`arrive`) : son chemin du port à sa porte ;
     // sinon, sa journée commence là où l'heure le veut.
     nouveauVillageois(v, arrive) {
-      const d = { perso: v.perso, enfant: false, apparence: v.apparence || null };
+      // (fiche I6b : l'enfant d'un foyer a la planche d'un enfant)
+      const d = { perso: v.perso, enfant: !!v.enfant, apparence: v.apparence || null };
       const key = this.clePerso ? this.clePerso(d) : 'perso_' + v.perso;
       if (this.chargePerso) this.chargePerso(key, d);
       const h = K.hasard(K.graine('villageois:' + v.id));
       const m = {
         id: v.id, v, key, s: null, drap: null, bulle: null, x: 0, y: 0, face: 'bas', flip: false, marche: 0, alpha: 0, fade: 1,
-        phase: 'vie', chemin: [], until: 0, installe: 0, h, def: { enfant: false, genre: v.genre }, vite: 1,
+        phase: 'vie', chemin: [], until: 0, installe: 0, h, def: { enfant: !!v.enfant, genre: v.genre }, vite: 1,
         etat: 'repos', seg: null, but: null, demande: null, puis: null, pause: 0, evite: 0, gene: 0, couche: null, assis: null,
         regard: entre(h, REGARD[0], REGARD[1]), dec: Math.floor(entre(h, 0, 1400)), parle: null, n: 0, renonce: false, saut: null, premier: true,
       };
@@ -586,9 +587,19 @@
       const f = F.f;
       if (!b.w) { b.w = b.el.offsetWidth; b.h = b.el.offsetHeight; }
       const x = Math.max(4, Math.min(F.Lw - b.w - 4, (m.x - f.left) * f.k - b.w / 2));
-      const haut = m.couche ? 18 : m.assis ? 26 : 30;
+      const haut = m.couche ? 18 : m.assis ? 26 : (m.def && m.def.enfant) ? 22 : 30;
       // (près du haut de l'écran : elle reste dedans)
-      const t = `translate(${Math.round(x)}px,${Math.round(Math.max(4, (m.y - haut - f.top) * f.k - b.h))}px)`;
+      let y = Math.max(4, (m.y - haut - f.top) * f.k - b.h);
+      // (I6b : plusieurs qui parlent ensemble — un salut à trois, une causerie, une table — : les bulles ne se
+      // recouvrent pas ; celle qui en chevauche une déjà placée cette image monte au-dessus, sinon passe dessous)
+      const R = F.bulles;
+      for (let k = 0; k < 4; k++) {
+        const o = R.find((r) => x < r.x + r.w + 2 && x + b.w + 2 > r.x && y < r.y + r.h + 2 && y + b.h + 2 > r.y);
+        if (!o) break;
+        y = o.y - b.h - 3 >= 4 ? o.y - b.h - 3 : o.y + o.h + 3;
+      }
+      R.push({ x, y, w: b.w, h: b.h });
+      const t = `translate(${Math.round(x)}px,${Math.round(y)}px)`;
       if (t !== b.t) { b.t = t; b.el.style.transform = t; }
     },
 
@@ -596,9 +607,10 @@
     // ou null.
     villageoisCadre() {
       const now = this.game && this.game.loop ? this.game.loop.frame : performance.now();
-      const C = this.villageoisCadreMemo || (this.villageoisCadreMemo = { image: -1, f: null, Lw: Infinity, lu: -Infinity });
+      const C = this.villageoisCadreMemo || (this.villageoisCadreMemo = { image: -1, f: null, Lw: Infinity, lu: -Infinity, bulles: [] });
       if (C.image !== now) {
         C.image = now;
+        C.bulles = [];
         C.f = this.screenFrame ? this.screenFrame() : null;
         // (la largeur du calque : une fois par seconde, elle ne change qu'avec la fenêtre)
         const t = performance.now();

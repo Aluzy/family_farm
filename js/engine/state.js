@@ -35,6 +35,7 @@ import { BIENVENUE, nouvelleBienvenue } from './bienvenue.js';
 import { nouveauCompagnon } from './compagnon.js';
 import { nouveauRecit } from './recit.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
+import { reparerLiens } from './liens.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -926,6 +927,11 @@ export const MIGRATIONS = {
   // accueilli) ; un présent illisible s'en va ; la demande d'un villageois qui n'est plus là s'oublie. Les amitiés des
   // habitants des hameaux ne sont pas touchées (I7f). Sans villageois (le réglage éteint), rien ne change.
   90: (state) => reparerAmitieVillageois({ ...state, version: 91 }),
+  // v91 → v92 (le chantier « l'île à bâtir », fiche I6b) : les liens entre villageois (js/engine/liens.js : state.liens,
+  // l'affinité de chaque paire dans une demi-matrice compacte, les foyers, les repas apportés prévus). Une partie d'avant
+  // n'en a pas : ses paires partent, à leur première nuit, de l'estimation d'I3b+ (ce que la partie montrait) ; ce qui
+  // est abîmé est réparé (un foyer dont un membre n'est plus là s'en va). Sans villageois (le réglage éteint), rien.
+  91: (state) => reparerLiens({ ...state, version: 92 }),
 };
 
 // Le dehors d'une sauvegarde (la migration v87 → v88) : { troncon, chemins (des segments lisibles) }.

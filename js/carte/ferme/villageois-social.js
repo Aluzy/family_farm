@@ -26,6 +26,11 @@
  *     salue (un emoji, une bulle : SOCIAL.JOUEUR) ; une fois en JOUEUR_ATTENTE s. I6a : le salut suit l'amitié du
  *     joueur (le modèle : liens.amitie, le palier ; liens.present) : un ami proche salue de plus loin (JOUEUR_AMI) et
  *     plus chaleureusement ; celui qui garde un présent le donne en saluant (🎁, la page l'ajoute à l'inventaire).
+ *   - I6b (les liens, js/engine/liens.js) : deux amis assis côte à côte sur deux bancs voisins (le but « banc »)
+ *     causent comme à table ; la visite du soir (but.soir) et le repas apporté à un ami qui se repose (but.apporte :
+ *     🍲) se jouent comme une visite (il frappe, l'ami sort), avec leurs répliques (« soiree », « apporte ») ; le
+ *     degré monte à 3 (proche). Les bulles de ceux qui parlent ensemble ne se recouvrent plus (villageois.js,
+ *     villageoisBullePlace).
  *
  * Les bulles sont celles des villageois (villageoisBulle) ; l'emoji, celui des habitants (amis.js, emojiHabitant) ;
  * le visage sourit le temps d'un salut (js/carte/visages.js, la réaction « joie »). Méthodes de la scène de la ferme
@@ -146,6 +151,8 @@
         // (il frappe à la porte de son ami, tourné vers elle ; l'ami déjà dehors : il le salue)
         m.toque = now;
         this.villageoisDit(m, (m.v && m.v.toc) || 'Toc, toc !', TOC_MS);
+        // (I6b : le repas qu'il apporte, 🍲 ; la visite du soir, 🌙)
+        if (but.emoji) this.villageoisEmoji(m, but.emoji, EMOJI_MS + TOC_MS);
         return;
       }
       if (but.emoji && !(but.avec && but.avec.length)) this.villageoisEmoji(m, but.emoji, EMOJI_MS);
@@ -273,6 +280,8 @@
         let cle = null;
         // (à table, assis à la même table au même repas : on cause aussi)
         if (m.assis && m.seg && m.seg.etat === 'repas' && m.seg.lieu && Number.isInteger(m.seg.lieu.table) && !m.parle && m.s && m.s.visible) cle = `table:${m.seg.lieu.table}:${Math.floor(m.seg.de)}`;
+        // (I6b : assis côte à côte sur deux bancs voisins, deux amis causent aussi)
+        else if (m.assis && but && but.sorte === 'banc' && but.avec && but.avec.length && !m.parle && m.s && m.s.visible) cle = but.cle;
         else if (but && but.avec && but.avec.length && m.auBut && dispo(m) && !m.salut && !m.chemin.length && !m.demande && !m.suit) cle = but.cle;
         if (!cle) continue;
         let l = ici.get(cle);
@@ -303,14 +312,20 @@
         if (now < cs.prochain || !B || !B.villageois) continue;
         // un échange : l'un dit, l'autre répond (à tour de rôle)
         const a = l[cs.tour % l.length], b = l[(cs.tour + 1) % l.length];
-        const sorte = !a.seg.but ? 'repas' : a.seg.but.sorte === 'rdv' ? 'groupe' : a.seg.but.sorte;
+        // (I6b : la visite du soir, le repas apporté, le banc à deux ont leurs répliques)
+        const ba = a.seg.but;
+        const sorte = !ba ? 'repas' : ba.sorte === 'rdv' ? 'groupe' : ba.apporte ? 'apporte' : ba.soir ? 'soiree' : ba.sorte;
         const r = B.villageois('echange', a.id, { avec: b.id, n: cs.n++, sorte });
         cs.tour++;
         const tour = Math.max(1.2, Number(R.TOUR) || 3.2) * 1000;
         if (!r || !r.lignes || !r.lignes.length) { cs.prochain = now + tour; continue; }
         if (cs.debut) {
           cs.debut = false;
-          for (const m of l) this.villageoisEmoji(m, m === b ? r.emoji[1] : r.emoji[0], EMOJI_MS);
+          // (I6b : celui qui apporte un repas, qui vient le soir, garde son emoji : 🍲, 🌙)
+          for (const m of l) {
+            const bm = m.seg && m.seg.but;
+            this.villageoisEmoji(m, bm && bm.emoji && (bm.apporte || bm.soir) ? bm.emoji : m === b ? r.emoji[1] : r.emoji[0], EMOJI_MS);
+          }
         }
         this.villageoisDit(a, r.lignes[0], tour * 0.9, c);
         cs.parle = { m: a, fin: now + tour * 0.5 };

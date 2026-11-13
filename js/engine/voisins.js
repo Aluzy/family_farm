@@ -73,6 +73,15 @@ export function evenementsDe(state, id, foyer = null) {
   return v.evenements.filter((e) => e.jour >= depuis && (e.qui === id || e.chez === id || (foyer && (e.aFoyer === foyer || e.deFoyer === foyer))));
 }
 
+// Un événement de plus (le chantier « l'île à bâtir », fiche I6b : ce qui se passe entre villageois, hameau
+// « village » : une visite du soir, un repas apporté), les EVENEMENTS derniers gardés. → l'événement.
+export function noterEvenement(state, e) {
+  const v = voisinsDe(state);
+  v.evenements.push(e);
+  if (v.evenements.length > V().EVENEMENTS) v.evenements.splice(0, v.evenements.length - V().EVENEMENTS);
+  return e;
+}
+
 // Les événements d'un hameau (les derniers d'abord) : pour sa fiche.
 export function evenementsDuHameau(state, hid, n = 5) {
   return voisinsDe(state).evenements.filter((e) => e.hameau === hid || e.deHameau === hid).slice(-n).reverse();

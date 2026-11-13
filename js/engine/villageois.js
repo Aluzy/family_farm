@@ -14,6 +14,7 @@ import { platsBonheur, varieteBonheur, versCible } from './bonheur.js';
 import { cleDiversite, tirerApparence } from './apparence.js';
 import { ajouterAmitie, amitieDe, goutsTires } from './amitie.js';
 import { validApparence } from './family.js';
+import { bonheurDesLiens, foyerDe } from './liens.js';
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -21,7 +22,8 @@ import { validApparence } from './family.js';
    prénoms et des personnages (HABITANTS.PRENOMS, PERSOS), l'apparence (apparence.js), les goûts (amitie.js), un
    repas qui couvre le besoin d'un adulte (FAMILLE.AJ.adulte) et le bonheur qui suit les règles de la famille
    (bonheur.js). Il laisse le reste (le métier, le garde-manger, la réserve du hameau) : un villageois mange à la
-   boîte commune de la ferme. Un villageois est un adulte seul (les couples et les enfants : I6b) ; son
+   boîte commune de la ferme. Un villageois est un adulte (fiche I6b, liens.js : deux proches peuvent former un foyer
+   sous le même toit, et un foyer accueillir un enfant, v.enfant, venu par le bac) ; son
    travail est ailleurs (ses tâches : taches.js, fiche I3c). Tout est derrière le réglage du chantier (village.js, villageActif) : éteint, rien ici ne se
    lit, et une partie n'a pas de state.villageois (le champ naît avec le premier villageois).
 
@@ -35,7 +37,8 @@ import { validApparence } from './family.js';
      accueil ('en_route' : il marche du port à sa maison, la scène le montre ; null : il est chez lui),
      sansMaison (le jour où il a perdu sa maison, ou null), avis ([« arrive », « sans_maison », « installe »] :
      ce que la page doit encore dire au joueur), journal ([{ jour, mange, energie, besoin, lit, bonheur, et (I3c) tache,
-     actions, produit }] : ses derniers jours, VILLAGE.ARRIVEE.JOURNAL au plus) ;
+     actions, produit, et (I3d) repos (true : il s'est reposé ce jour-là), utilise (ce que son travail a pris au coffre) }] : ses derniers jours, VILLAGE.ARRIVEE.JOURNAL
+     au plus ; le tableau des villageois les lit, tableau.js) ;
      et (I3c, taches.js) tache, outil, vendre, semis, travail }].
 
    Une maison libre : une pièce close du genre maison de la terre du joueur, marquée « à un villageois » par une
@@ -111,11 +114,17 @@ function maisonDe(state, v, deja = null) {
 // → { perdues: [id], installes: [id] }.
 export function verifierMaisons(state) {
   const out = { perdues: [], installes: [] };
+  // (fiche I6b : sous le même toit, un foyer, chacun son lit ; un lit d'un autre n'est pas libre)
+  const litsPris = (v) => new Set(villageoisDe(state).filter((o) => o !== v && o.maison === v.maison).map((o) => o.lit));
   for (const v of villageoisDe(state)) {
     if (v.maison === null || v.maison === undefined) continue;
     const m = maisonDe(state, v);
-    if (m && m.lits.includes(v.lit)) continue;
-    if (m) { v.lit = m.lits[0]; continue; }
+    if (m && m.lits.includes(v.lit) && !litsPris(v).has(v.lit)) continue;
+    if (m) {
+      const pris = litsPris(v), libre = m.lits.find((c) => !pris.has(c));
+      // (sous un toit partagé sans lit pour lui : il garde sa maison et les siens, il dort par terre en attendant)
+      if (libre !== undefined || foyerDe(state, v.id)) { v.lit = libre ?? null; continue; }
+    }
     v.maison = null;
     v.lit = null;
     v.sansMaison = jourDe(state);
@@ -185,7 +194,8 @@ export function arriveeRefus(state, o = {}) {
   // (le premier vient dès la première maison libre ; les suivants veulent de quoi manger et un port assez grand)
   if (n >= 1) {
     if (!reserveSuffit(state, n + 1)) return `Il faut de quoi nourrir une bouche de plus : la boîte à nourriture doit couvrir ${ARRIVEE.RESERVE_JOURS} jours de repas des villageois.`;
-    if (n >= plafondVillageois(state)) return `Le port ne fait débarquer que ${plafondVillageois(state)} villageois à son niveau.`;
+    // (fiche I6b : les enfants ne comptent pas)
+    if (V.filter((v) => !v.enfant).length >= plafondVillageois(state)) return `Le port ne fait débarquer que ${plafondVillageois(state)} villageois à son niveau.`;
   }
   return null;
 }
@@ -300,10 +310,11 @@ export function meublesMaison(state, v) {
 // de sa maison ; CIBLE.FAIM de moins s'il a eu faim) ; sans pénalité (PENALITES.BONHEUR_BAISSE coupée), il ne
 // baisse pas. Mal nourri ou sans lit : il se repose demain. → son entrée du journal.
 function nuitDe(state, v, jour) {
-  const besoin = besoinAdulte();
+  const besoin = v.enfant ? DATA.FAMILLE.AJ.enfant : besoinAdulte();
   const r = mangerAuRangement(state, besoin);
   const C = DATA.BONHEUR.CIBLE;
-  const cible = Math.max(0, Math.min(DATA.BONHEUR.MAX, C.BASE + platsBonheur(r.mange) + varieteBonheur(r.mange) + meublesMaison(state, v)));
+  // (fiche I6b, liens.js : un ami au village, un proche, un repas apporté par un ami)
+  const cible = Math.max(0, Math.min(DATA.BONHEUR.MAX, C.BASE + platsBonheur(r.mange) + varieteBonheur(r.mange) + meublesMaison(state, v) + bonheurDesLiens(state, v)));
   const avant = Number.isFinite(Number(v.bonheur)) ? Number(v.bonheur) : DATA.BONHEUR.DEPART;
   const faim = Math.max(0, besoin - r.energie);
   // (comme la famille : CIBLE.FAIM s'il a eu faim, ATELIER.BONHEUR_SANS_COUCHAGE sans lit ; 0 tous deux dans le jeu, B-1)
@@ -312,11 +323,15 @@ function nuitDe(state, v, jour) {
   if (!penalite('BONHEUR_BAISSE')) apres = Math.max(avant, apres);
   v.bonheur = Math.max(0, Math.min(DATA.BONHEUR.MAX, Math.round(apres)));
   v.faim = faim;
+  const reposDuJour = !!v.repos;   // (I3d : il s'est reposé aujourd'hui, la nuit d'avant l'avait dit)
   v.repos = faim > 0 || sansLit;
   const J = { jour, mange: r.mange, energie: r.energie, besoin, lit: v.lit ?? null, bonheur: v.bonheur - Math.round(avant) };
-  // (I3c, taches.js : sa journée de travail, que tachesNuit vient de finir ; I3d la lira)
+  if (reposDuJour) J.repos = true;   // (le tableau, tableau.js : un jour de repos compte son repas et aucun produit)
+  // (I3c, taches.js : sa journée de travail, que tachesNuit vient de finir ; le tableau la lit : tableau.js)
   const T = v.travail;
   if (v.tache || (T && T.jour === jour && T.actions)) Object.assign(J, { tache: v.tache || (T && T.tache) || null, actions: T && T.jour === jour ? T.actions : 0, produit: T && T.jour === jour ? { ...T.produit } : {} });
+  // (I3d : ce que son travail a pris au coffre, s'il a pris quelque chose)
+  if (T && T.jour === jour && objet(T.utilise) && Object.keys(T.utilise).length) J.utilise = { ...T.utilise };
   if (!Array.isArray(v.journal)) v.journal = [];
   v.journal.push(J);
   const max = Math.max(1, Number(ARRIVEE.JOURNAL) || 7);
@@ -387,9 +402,10 @@ export function ficheVillageois(state, id) {
   const ou = chezLui ? `chez ${il === 'elle' ? 'elle' : 'lui'}, dans sa maison` : `à l'abri : ${il} attend une maison libre`;
   const humeur = humeurVillageois(v);
   return {
-    id: v.id, prenom: v.prenom, genre: v.genre, perso: v.perso, apparence: validApparence(v.apparence, false),
+    id: v.id, prenom: v.prenom, genre: v.genre, perso: v.perso, apparence: validApparence(v.apparence, !!v.enfant),
     maison: ou, chezLui, humeur, humeurTexte: HUMEURS[humeur][v.genre === 'm' ? 1 : 0], bonheur: v.bonheur, depuis: v.arrive,
     jours: Math.max(0, jourDe(state) - v.arrive), repos: !!v.repos, bourse: v.bourse, accueil: v.accueil || null,
+    enfant: !!v.enfant, foyer: (foyerDe(state, v.id) || {}).id || null,
   };
 }
 
@@ -405,7 +421,7 @@ export function villageoisPourLaCarte(state, plan = null) {
   if (!V.length) return null;
   const depart = caseArrivee(state, plan);
   const F = (state.famille && state.famille.membres) || [];
-  const cle = [piecesCloses(state), JSON.stringify([V.map((v) => [v.id, v.maison, v.lit, v.accueil, v.perso, v.prenom]), F.map((m) => m.id), state.litPrincipal ?? null,
+  const cle = [piecesCloses(state), JSON.stringify([V.map((v) => [v.id, v.maison, v.lit, v.accueil, v.perso, v.prenom, v.enfant ? 1 : 0]), F.map((m) => m.id), state.litPrincipal ?? null,
     depart, V.some((v) => v.accueil) ? hourOfDay(state) : 0, farmSeed(state)])];
   if (carteMemo && carteCle && carteCle[0] === cle[0] && carteCle[1] === cle[1]) return carteMemo;
   const deja = { marquees: maisonsMarquees(state), famille: litsDeLaFamille(state) };
@@ -413,7 +429,7 @@ export function villageoisPourLaCarte(state, plan = null) {
   return (carteMemo = V.map((v) => {
     const m = maisonDe(state, v, deja);
     return {
-      id: v.id, prenom: v.prenom, genre: v.genre, perso: v.perso, apparence: validApparence(v.apparence, false),
+      id: v.id, prenom: v.prenom, genre: v.genre, perso: v.perso, apparence: validApparence(v.apparence, !!v.enfant), enfant: !!v.enfant,
       accueil: v.accueil || null, porte: m ? porteDe(state, m) : null, lit: m && m.lits.includes(v.lit) ? v.lit : null,
       piece: m ? m.piece.cases[0] : null,
       depart, toc: ARRIVEE.TOC || '', phrase: v.accueil ? phraseArrivee(state, v.id) : '',

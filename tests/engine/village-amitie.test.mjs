@@ -301,7 +301,8 @@ test('les propos : ni hameau, ni calèche, ni cousin, ni fête ; les sujets de l
   s.day += 20;
   poser(s, v.id, P[3]);
   const ids = sujetsVillageois(s, v).map((x) => x.id);
-  for (const id of ids) assert(!/^(voisin|voisin_metier|lien_|visite_|entraide_|reserve_hier|caleche|projet|fete_|famille_)/.test(id), `pas ${id}`);
+  // (I6b : voisin, lien_ami, visite_*, entraide_* parlent maintenant des liens de l'île, liens.js ; ceux des hameaux, non)
+  for (const id of ids) assert(!/^(voisin_metier|voisin_enfant|lien_cousin|reserve_hier|caleche|projet|fete_|famille_)/.test(id), `pas ${id}`);
   for (const id of ['village_collegue', 'village_depuis', 'ami_proche', 'jours']) assert(ids.includes(id), `${id} est vrai`);
   // (il dit les sujets à tour de rôle, sans redire les derniers)
   const dits = [];

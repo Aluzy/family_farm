@@ -46,12 +46,20 @@
       "posés d'un coup, comme pour ses autres bâtiments). Le nouveau venu débarque au bac suivant (la nuit l'installe).",
       "Puis il donne à chacun la première tâche de TACHES qu'aucun autre n'a et qui a son poste (d'abord ce qui nourrit,",
       "puis ce qui se vend) ; l'outil qu'elle demande, il le fabrique à l'Atelier et le lui donne (puis en refait un",
-      "pour lui quand il en a besoin)."
+      "pour lui quand il en a besoin).",
+      "I3d : REATTRIBUER, il lit le tableau des villageois (js/engine/tableau.js ; bot.js, botReattribuer). Une fois par",
+      "jour, le villageois dont le solde de la semaine (ce qu'il a produit, au prix du port, moins ce qu'il a mangé) est",
+      "le plus bas, s'il a fait sa tâche JOURS jours de suite, en essaie une autre : la première tâche libre de TACHES qu'il",
+      "n'a pas encore essayée ; toutes essayées, celle qui lui a donné le meilleur solde, si elle bat l'actuelle de plus",
+      "de MARGE pièces sur la semaine. Une semaine de solde ne voit pas qui nourrit le village : celui qui fait une tâche de",
+      "GARDER (les champs) la garde, et l'on ne change que pour une tâche de VERS (sans la cuisine, qui prend à la boîte",
+      "ce que les autres auraient mangé)."
     ],
     "VILLAGEOIS": {
       "MAISON_PALIER": 3,
       "MAISON": { "paillasse": 1, "boite_aux_lettres": 1 },
-      "TACHES": ["champs", "betes", "cuisine", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"]
+      "TACHES": ["champs", "betes", "cuisine", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"],
+      "REATTRIBUER": { "JOURS": 7, "SEMAINES": 2, "SEUIL": 0, "MARGE": 0, "GARDER": ["champs"], "VERS": ["betes", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"] }
     },
     "//BATIR": [
       "I0b : les pièces maîtresses de chaque bâtiment, fabriquées à l'Atelier avec leurs matériaux avant d'être posées",

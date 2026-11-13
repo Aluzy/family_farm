@@ -7,24 +7,27 @@ import { memberName } from './family.js';
 import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.js';
 import { lieuxDuVillage } from './villageois-journee.js';
 import { AMITIE, palierAmitie } from './amitie.js';
+import { degreDuPalier, liensSignature, NOMS_LIENS, palierLien, scorePaire } from './liens.js';
 
 /* ---------- qui se connaît, au village (le chantier « l'île à bâtir », I3b+ : la vie sociale) ----------
 
    connaissance(state, a, b) dit si deux villageois se connaissent, et à quel degré : 0 inconnu, 1 connaissance,
-   2 ami. Rien n'est gardé : le degré se déduit de la partie, chaque jour (VILLAGE.SOCIAL.CONNAISSANCE) :
+   2 ami (I6b : 3 proche). I3b+ : rien n'était gardé, le degré se déduisait de la partie, chaque jour
+   (VILLAGE.SOCIAL.CONNAISSANCE) :
      - les jours passés ensemble sur l'île, depuis l'arrivée du second (v.arrive) : PAR_JOUR chacun ;
      - des maisons voisines (leurs boîtes aux lettres à VOISINE cases au plus) : VOISIN de plus par jour ;
      - la même table aux repas (celle de sa maison, sinon la table commune : lieuxDuVillage) : TABLE de plus par jour ;
      - une affinité tirée de la graine et des deux ids (de 0 à AFFINITE), qui ne change pas.
-   Le score (0 à 100) donne le degré : connaissance dès PALIERS.connaissance, ami dès PALIERS.ami. La famille du
+   Le score (0 à 100) donne le degré (I6b : les paliers de VILLAGE.LIENS.PALIERS). La famille du
    joueur (b = 'famille') : connue dès l'arrivée (elle l'a accueilli), amie dès que l'amitié du joueur avec lui
    (fiche I6a, amitie.js : state.amitie.pnj[id]) atteint le palier VILLAGE.AMITIE.FAMILLE_AMI (« cordial ») : ce que la
    scène montre (le salut au personnage) suit ce que le joueur a vécu avec lui.
 
-   C'est un remplaçant : la fiche I6b posera une affinité sauvegardée (js/engine/liens.js, qui monte avec ce que les
-   villageois vivent ensemble). Elle n'aura qu'à changer le corps de scoreDe (le score de la paire, de 0 à 100) : ceux
-   qui lisent (la journée, villageois-journee.js ; la scène, par le modèle de la carte ; les répliques) ne demandent
-   que connaissance, liensDuVillage et echangeVillageois. Pas de changement de format de sauvegarde ici.
+   Fiche I6b : le score est désormais l'affinité gardée (js/engine/liens.js, qui monte chaque nuit de ce que les
+   villageois vivent ensemble ; une paire qui n'a pas encore passé de nuit ensemble vaut le calcul ci-dessus, son
+   estimation) ; seul le corps de scoreDe a changé. Les paliers sont ceux de VILLAGE.LIENS.PALIERS (connaissance,
+   camarade, ami, proche) ; le degré qu'en lisent la journée, la scène et les répliques : 0 inconnu, 1 connaissance
+   ou camarade, 2 ami, 3 proche (degre >= 2 : des amis).
 
    echangeVillageois(state, a, b, o) : le petit échange de deux villageois qui se croisent, se rendent visite ou
    causent en groupe (VILLAGE.SOCIAL.REPLIQUES), ou ce que dit un villageois au personnage du joueur (b = 'joueur' :
@@ -32,45 +35,23 @@ import { AMITIE, palierAmitie } from './amitie.js';
 
 const S = () => (DATA.VILLAGE && DATA.VILLAGE.SOCIAL) || {};
 const C = () => S().CONNAISSANCE || {};
-export const DEGRES = ['inconnu', 'connaissance', 'ami'];
+export const DEGRES = ['inconnu', 'connaissance', 'ami', 'proche'];
 
 const graineDe = (state) => farmSeed(state) || 'ile';
 const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1));
 const rngDe = (cle) => mulberry32(hache(cle));
 const paire = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
 
-// L'affinité de la paire (de 0 à 1), tirée de la graine et des deux ids : la même dans les deux sens.
-function affinite(state, a, b) {
-  return hache(`${graineDe(state)}:affinite:${paire(a, b)}`) / 4294967296;
-}
-
-// La table où mange le villageois `v` (la case de la table : celle de sa maison, sinon la table commune), ou null.
-function tableDe(L, v) {
-  const m = v.maison !== null && v.maison !== undefined ? L.maisons.get(v.maison) : null;
-  const tb = (m && m.table) || L.commune;
-  return tb ? tb.table : null;
-}
-
-// Le score de la paire (0 à 100), et les jours passés ensemble. Le seul calcul que I6b remplacera.
+// Le score de la paire (0 à 100), et les jours passés ensemble. Fiche I6b : l'affinité gardée (js/engine/liens.js :
+// elle monte chaque nuit de ce qu'ils ont vécu ensemble), sinon (une paire qui n'a pas encore passé de nuit ensemble)
+// l'estimation d'I3b+ (les jours ensemble, les maisons voisines, la table, la même tâche, l'affinité tirée).
 function scoreDe(state, va, vb, L, W) {
-  const c = C(), jours = Math.max(0, jourDe(state) - Math.max(Number(va.arrive) || 0, Number(vb.arrive) || 0));
-  let parJour = Number(c.PAR_JOUR) || 0;
-  if (Number.isInteger(va.maison) && Number.isInteger(vb.maison)) {
-    const d = Math.max(Math.abs((va.maison % W) - (vb.maison % W)), Math.abs(Math.floor(va.maison / W) - Math.floor(vb.maison / W)));
-    if (d <= (Number(c.VOISINE) || 0)) parJour += Number(c.VOISIN) || 0;
-  }
-  const ta = tableDe(L, va);
-  if (ta !== null && ta === tableDe(L, vb)) parJour += Number(c.TABLE) || 0;
-  // (I3c : la même tâche, on se lie en travaillant ensemble)
-  if (va.tache && va.tache === vb.tache) parJour += Number(c.COLLEGUE) || 0;
-  const score = Math.min(100, Math.round(jours * parJour + affinite(state, va.id, vb.id) * (Number(c.AFFINITE) || 0)));
-  return { score, jours };
+  return scorePaire(state, va, vb, L, W);
 }
 
-const degreDe = (score) => {
-  const P = C().PALIERS || {};
-  return score >= (Number(P.ami) || 36) ? 2 : score >= (Number(P.connaissance) || 12) ? 1 : 0;
-};
+// (fiche I6b : le palier, 0 inconnu à 4 proche, et le degré qu'en lit la vie sociale : 0, 1 connaissance ou
+// camarade, 2 ami, 3 proche)
+const degreDe = (score) => degreDuPalier(palierLien(score));
 
 let memoCle = null, memo = null;
 
@@ -79,7 +60,7 @@ let memoCle = null, memo = null;
 export function liensDuVillage(state) {
   const V = villageoisDe(state);
   const L = V.length ? lieuxDuVillage(state) : null;
-  const cle = JSON.stringify([graineDe(state), jourDe(state), C(), V.map((v) => [v.id, v.maison, v.arrive, v.tache || 0])]);
+  const cle = JSON.stringify([graineDe(state), jourDe(state), C(), (DATA.VILLAGE || {}).LIENS, liensSignature(state), V.map((v) => [v.id, v.maison, v.arrive, v.tache || 0, v.foyer || 0])]);
   if (memo && memoCle === cle && memo.L === L) return memo;
   const paires = new Map(), famille = new Map();
   const W = farmTerrain(state).LARGEUR;
@@ -88,7 +69,7 @@ export function liensDuVillage(state) {
     famille.set(V[i].id, { jours });
     for (let j = i + 1; j < V.length; j++) {
       const r = scoreDe(state, V[i], V[j], L, W);
-      paires.set(paire(V[i].id, V[j].id), { degre: degreDe(r.score), score: r.score, jours: r.jours });
+      paires.set(paire(V[i].id, V[j].id), { degre: degreDe(r.score), palier: palierLien(r.score), score: r.score, jours: r.jours });
     }
   }
   memoCle = cle;
@@ -96,8 +77,9 @@ export function liensDuVillage(state) {
   return memo;
 }
 
-// Le lien de `a` et `b` (deux ids de villageois ; b = 'famille' : la famille du joueur) : { degre (0, 1, 2), nom
-// (DEGRES), score, jours }, ou null (l'un n'est pas là, ou a === b).
+// Le lien de `a` et `b` (deux ids de villageois ; b = 'famille' : la famille du joueur) : { degre (0, 1, 2, 3), palier
+// (I6b : 0 à 4), nom (NOMS_LIENS : inconnu, connaissance, camarade, ami, proche ; la famille : DEGRES), score, jours },
+// ou null (l'un n'est pas là, ou a === b).
 export function connaissance(state, a, b) {
   if (a === b) return null;
   const Lk = liensDuVillage(state);
@@ -108,7 +90,7 @@ export function connaissance(state, a, b) {
     return { degre: d, nom: DEGRES[d], score: d === 2 ? 100 : 50, jours: f.jours };
   }
   const p = Lk.paires.get(paire(a, b));
-  return p ? { degre: p.degre, nom: DEGRES[p.degre], score: p.score, jours: p.jours } : null;
+  return p ? { degre: p.degre, palier: p.palier, nom: NOMS_LIENS[p.palier], score: p.score, jours: p.jours } : null;
 }
 
 // Le degré du lien de la famille du joueur avec le villageois `id` (fiche I6a) : 1 (connue dès l'arrivée), 2 dès le
@@ -198,7 +180,7 @@ export function echangeVillageois(state, a, b, o = {}) {
   // font, d'abord : une visite parle de visite, un groupe de ce qui se dit en groupe)
   const m = meteoDuJour(state, jourDe(state)), pluie = m.sorte === 'pluie' && h >= m.debut && h < m.fin;
   const triste = [va, vb].some((v) => ['triste', 'faim'].includes(humeurVillageois(v)));
-  const pool = [...(R[DEGRES[d]] || []), ...(d === 2 ? R.connaissance || [] : []), ...(R[momentDe(h)] || [])];
+  const pool = [...(R[DEGRES[d]] || []), ...(d >= 2 ? R.connaissance || [] : []), ...(d >= 3 ? R.ami || [] : []), ...(R[momentDe(h)] || [])];
   if (pluie) pool.push(...(R.pluie || []), ...(R.pluie || []));
   else if (m.sorte === 'clair') pool.push(...(R.clair || []));
   if (triste) pool.push(...(R.triste || []), ...(R.triste || []));
