@@ -16,6 +16,7 @@ import { runChaines } from './chaines.js';
 import { advanceNight, nightSpeed } from './night.js';
 import { repasStep } from './repas.js';
 import { penalite } from './inventory.js';
+import { avancerTaches } from './taches.js';
 
 /* ---------- énergie : stockage et prélèvement ---------- */
 
@@ -168,6 +169,7 @@ function pasDeFerme(state, dtMs, { usure = true, horloge = true, eveilMax = Infi
     distribuerGrain(state); // le distributeur de grain nourrit les poules (distributeur.js)
     pluieSurLaFerme(state); // G-1 : l'averse arrose les cultures de la ferme (meteo.js)
     repasStep(state); // la famille mange à la boîte quand elle a faim (repas.js)
+    avancerTaches(state); // I3c : les villageois font les actions que l'heure leur doit (taches.js ; éteint : rien)
   }
   noteEnergyRecord(state); // Lot 9 : record d'énergie stockée
 }

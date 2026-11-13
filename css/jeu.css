@@ -4155,3 +4155,13 @@ body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
   display: flex; align-items: center; gap: 10px; width: 100%; padding: 4px 8px; text-align: left;
   border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card, #fff8ee); color: var(--text); cursor: pointer;
 }
+/* I3c : les tâches des villageois (la fiche, la liste des tâches, qui fait quoi, ce que la navette porte au port) */
+.villageois-qui { display: block; font-size: 0.9em; }
+.villageois-manque { display: block; font-size: 0.9em; color: var(--warn, #a0522d); }
+.villageois-tache-icone { font-size: 1.6em; width: 1.6em; text-align: center; flex-shrink: 0; }
+.villageois-ligne.villageois-tache.choisie { border-color: var(--rose); box-shadow: 0 0 0 2px var(--rose) inset; }
+.villageois-outils { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.villageois-modal h3 { margin: 10px 0 4px; font-size: 1em; }
+.villageois-vendre-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px 10px; margin: 8px 0 12px; }
+.villageois-vendre { display: flex; align-items: center; gap: 6px; }
+.villageois-modal .btn.small { padding: 2px 8px; font-size: 0.85em; min-height: 0; }

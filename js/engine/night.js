@@ -38,6 +38,7 @@ import { demandesNuit } from './demandes.js';
 import { voisinsNuit } from './voisins.js';
 import { enExpedition, tentePortee } from './equipement.js';
 import { villageoisNuit } from './villageois.js';
+import { tachesNuit } from './taches.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
@@ -304,6 +305,9 @@ export function runNight(state) {
   const sansCouchage = nuitSansCouchage(state).map((m) => m.id);
   // le chantier « l'île à bâtir » (fiche I3a, villageois.js) : les villageois mangent à la boîte commune, après la
   // famille, et dorment dans leur lit ; un jour de bac, un nouveau venu qui pouvait venir est là (éteint : rien)
+  // (I3c, taches.js : avant, chacun finit ses actions du jour ; sa nuit les met dans son journal)
+  const taches = tachesNuit(state);
+  if (taches) state.nuit.taches = taches;
   const villageois = villageoisNuit(state);
   if (villageois) state.nuit.villageois = villageois;
   // E-8 : un monde partagé (state.mondePartage, posé à la mise en ligne : docs/monde-partage.md, M.3) n'est

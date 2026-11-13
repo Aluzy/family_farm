@@ -79,7 +79,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
 | 1. Le port | I1a (fait), I1b (fait), I1c | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
-| 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c, I3d | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
+| 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a, I6b, I6c | L'amitié avec le joueur, les liens entre villageois, les traits |
@@ -325,7 +325,7 @@ Ce qui est posé (I3b) :
   carte (`villageoisPourLaCarte`, refait à chaque rendu de la page) relevait les maisons et les lits de la famille
   pour chacun (≈ 15 ms pour 15) ; il est maintenant gardé tant que rien ne change (0,04 ms).
 - Les réglages choisis sur film (parmi calme, normal, animé) : « animé » : `VITESSE` 1, `CRENEAU` 0,5, `FLANER` 0,2 le
-  matin et 0,4 l'après-midi, `CHEMIN` 1,5. Les tâches (I3c) prendront des créneaux à la place des sorties.
+  matin et 0,4 l'après-midi, `CHEMIN` 1,5. Les tâches (I3c, fait) prennent des créneaux à la place des sorties.
 
 ## Les villageois : la vie sociale (I3b+, fait)
 
@@ -393,7 +393,93 @@ l'heure, comme la journée de I3b ; loin de la vue, rien ne s'anime.
   avec un inconnu, le déterminisme, jamais dans un mur sur un lot de fermes, les répliques) ;
   `village-journee.test.mjs` suit les sorties à but. Éteint, rien ne change (le CSV de la simulation est le même).
 - Reste : l'affinité sauvegardée et ce qu'elle change (I6b) ; la visite du soir et s'asseoir côte à côte (I6b) ;
-  le port quand son chemin sera court (I2) ; les tâches prendront des créneaux (I3c).
+  le port quand son chemin sera court (I2) ; les tâches prennent des créneaux (I3c, fait).
+
+## Les villageois : les tâches (I3c, fait)
+
+Le cœur de la nouvelle boucle : le joueur confie une tâche à chaque villageois, qui la fait chaque jour à son poste ;
+ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo).
+
+- **Les tâches** (`TACHES`, `data/village.json`) : les champs (récolter ce qui est mûr, arroser ce qui a soif avec
+  l'eau du réservoir, ressemer de sa dernière culture), les bêtes (nourrir les poules, prendre les œufs, tondre,
+  prendre le lait et la laine), le verger et les ruches, le bois (hache), la pierre et le minerai (pioche), la pêche
+  (canne : l'étang ou la mare de la ferme), la cueillette (ce que la ferme offre ce matin), le fauchage et la paille
+  (faux ; une botteleuse posée en fait de la paille), la cuisine (une préparation lancée à la cuisinière ou au four,
+  `RECETTES`), la **navette** (« la tournée du port » dans le jeu : « navette » est un mot que les textes du jeu n'emploient plus ;
+  un aller-retour au port, `PORTEE` objets marqués « à vendre » sur sa fiche, vendus au
+  comptoir ; la brouette et la charrette viendront avec I2). Chacune : `ACTIONS` par jour (2 à 12), ce que donne une
+  action (`donne`), son outil, son lieu, son geste, son emoji, ce que dit la fiche sans poste (`SANS`), ses phrases.
+- **Le moteur** (`js/engine/taches.js`) : `attribuer(state, id, tache)` ; le travail se fait **à l'heure** (`avancerTaches`,
+  à chaque pas de la ferme, `energy.js`) : `ACTIONS` à parts égales sur ses créneaux de travail du jour
+  (`actionsDues`) ; la nuit (`tachesNuit`, avant `villageoisNuit`) fait ce qui reste (la page fermée, l'averse). Chaque
+  action passe par **les fonctions du joueur** (`harvestPlot`, `waterPlot`, `plantPlot`, `feedAllHens`, `pickUp`,
+  `shear`, `harvestTree`, `recolterRuche`, `chopTree`, `mineRock`, `castLine`, `ramasser`, `scytheGrass`,
+  `verserFibres`, `startRecipe`, `vendreAuPort`) : une carotte récoltée par lui est une carotte récoltée (les
+  compteurs de la campagne et des paliers comptent), un arbre coupé repousse comme les autres, le quota de pêche du
+  jour est celui du joueur, la pioche améliorée lui profite. Mais ni l'énergie, ni l'XP, ni les objectifs du jour du
+  joueur (`commeLeJoueur` les remet comme avant). Un arbre, un rocher entamé est fini d'abord. Une action sans rien à
+  faire se retente `ESSAI` h plus tard. En repos (I3a), il ne fait rien ; sans son outil ou sans poste, la tâche
+  **attend** et le dit (sa fiche, sa bulle : « il me faut une hache. »), et il vit sa journée comme avant.
+- **Les automatisations, la règle** : tout se lit dans la partie au moment de l'action, le premier passé prend. Une
+  parcelle arrosée (l'asperseur, l'averse, le robot, le joueur) n'a plus soif : il ne l'arrose pas une seconde fois ;
+  une récolte prise par le robot n'est plus mûre : il ne la prend pas, et le robot ne reprend pas ce qu'il a récolté.
+- **Les outils** : le joueur fabrique l'outil à l'Atelier et le donne (`donnerOutil` : il quitte sa barre d'outils, le
+  villageois le garde, `v.outil`) ; il le reprend (`reprendreOutil`) s'il n'en a pas déjà un. Celui que le villageois
+  tenait revient au joueur quand il en reçoit un autre.
+- **La journée** (`villageois-journee.js`, `planDuTravail`, avant les sorties de I3b+) : les créneaux dont le milieu tombe
+  dans `TRAVAIL` (8 h à 11 h 30, 13 h 30 à 16 h 30) sont du travail (l'état « travail », à son poste : un lieu
+  « devant », tourné vers ce qu'il travaille), sauf `PAUSE` créneau tiré par plage (jamais le premier), qui reste une
+  sortie de la vie sociale (le puits, un ami, la place). Le lever, le début de matinée, **les repas avec les autres**
+  (la table commune), la fin d'après-midi (après 16 h 30 : les visites, les rendez-vous, les promenades) et la veillée ne
+  changent pas. Un poste tient `POSTE` créneaux (une heure de jeu), puis il passe au suivant. Les postes (`postesDe`) :
+  à côté des parcelles, des enclos, des arbres fruitiers et des ruches ; de part et d'autre du pied d'un arbre ou d'un
+  rocher, à côté d'une touffe d'herbe haute (de profil, la hache, la pioche, la faux) ; sur la rive au-dessus de l'eau ;
+  devant la cuisinière ; le coffre (devant la maison de la famille) puis le comptoir du port, pour la navette ; à
+  `RAYON` cases de sa maison s'il y en a, sinon les plus proches de la ferme. **Deux villageois à la même tâche** ont des
+  postes voisins (le poste de l'équipe, puis les plus proches de lui : l'autre côté du même arbre) et la même clé : ils
+  causent un peu (`SOCIAL.REPLIQUES.travail`, une réplique toutes les `CAUSE` s, la première quelques secondes après
+  s'y être mis). Ils se lient en travaillant ensemble : `CONNAISSANCE.COLLEGUE` de plus par jour (I6b le reprendra).
+  Sous la pluie, le travail du dehors devient l'abri (la cuisine continue) ; la nuit fait les actions qui restent.
+- **La scène** (`js/carte/ferme/villageois-travail.js`) : arrivé à son poste, il fait le geste de sa tâche en boucle
+  (les gestes des habitants des hameaux, `CarteKit.GESTES_HABITANTS` : la hache, la pioche, la faux, la canne,
+  l'arrosoir, se baisser, remuer la marmite ; les mêmes cases des planches, pas de dessin nouveau), une courte pause
+  entre deux ; chaque action que le moteur compte pendant qu'on le regarde fait monter l'emoji de ce qu'elle donne
+  (🪵 🪨 🐟 🌱…) ; rien n'est compté par la scène (la règle de la fiche 7b). Quand il cause, il pose son outil et se
+  tourne vers l'autre. Un passant qu'il connaît le salue comme ailleurs (I3b+).
+- **L'interface** (`js/ui/villageois.js`) : sa fiche dit sa tâche (où il en est aujourd'hui, ce qu'il a produit, ce
+  qui lui manque), son outil (« Donner ma hache », « Reprendre ») ; le bouton « Tâche » ouvre la liste (celles qu'il
+  peut faire, ce qui manque aux autres, qui l'a déjà) ; la navette, ce qu'elle porte (« à vendre ») ; la liste des
+  villageois dit **qui fait quoi** ; un appui long sur un poste de la carte (un arbre, un rocher, l'étang, le
+  poulailler, la cuisinière, un buisson ; `tachesDuPoste`) propose « Confier à… ».
+- **Le journal** : chaque nuit, l'entrée du journal du villageois (7 jours) gagne `tache`, `actions` et `produit`
+  (`{ objet: n }`), à côté de `mange` (I3d le lira). `quiFaitQuoi` donne la vue d'ensemble du jour.
+- **La sauvegarde** : format 89 (`v.tache`, `v.outil`, `v.vendre`, `v.semis` (ce qu'il ressèmera), `v.travail` (sa
+  journée de travail)) ; la migration 88 → 89 (`reparerTaches`) remet à vide une valeur abîmée. Les commandes
+  `villageois.attribuer`, `villageois.outil` et `villageois.vendre` (`commandes.js`).
+- **Le joueur automatique** (`bot.js`, `botVillageois`, `SIMULATION.VILLAGEOIS`) : dès le palier 3, il bâtit une maison
+  de villageois quand aucune n'est libre et que le port en laisse venir un de plus (la paillasse et la boîte aux
+  lettres fabriquées à l'Atelier), puis confie à chacun la première tâche libre de `TACHES` (d'abord ce qui nourrit,
+  puis ce qui se vend), son outil fabriqué et donné. `node scripts/simulate.mjs --village` passe ainsi du palier 3 au
+  palier 4 (nuit 22 pour le joueur appliqué, 23 pour le minimal ; avant : bloqué au palier 3) ; le palier 4 attend
+  l'agrandissement du port (I1c). Deux villageois (le plafond d'un port de niveau 1), sur 80 nuits : l'un aux champs
+  (≈ 7 actions par jour sur 12 : ≈ 15 blés, 9 fraises, 6,5 épinards, 4,7 oignons, 4,4 carottes, 2,8 tomates… et leurs
+  graines), l'autre aux bêtes (≈ 2 actions par jour sur 4 : la laine, ≈ 1,3 par jour ; les poules et les œufs, le
+  joueur simulé s'en occupe avant lui).
+- **Les tests** : `tests/engine/village-taches.test.mjs` (chaque tâche par les fonctions du joueur, dans les bornes du
+  monde ; sans outil, rien ; en repos, rien ; pas de double récolte ni de double arrosage ; la journée, la pause, les
+  camarades côte à côte ; à l'heure puis la nuit ; le journal ; la sauvegarde ; les commandes ; le joueur automatique ;
+  éteint, rien) ; `compagnon.test.mjs` reste vert. Éteint, le CSV de la simulation est le même octet pour octet.
+- **Les mesures** (comme I3b+ : Chromium, téléphone émulé 412 × 915, DPR 2, processeur ralenti × 4 ; 15 villageois ;
+  trois fenêtres de 6 s ; la machine très chargée, charge 5 à 11 sur 4 cœurs : les chiffres sont bruités) : le système
+  « villageois » à 15 h (sans tâche), avant → après : 2,0 et 2,9 ms → 2,5 et 2,7 ms (deux paires de mesures : pas d'écart
+  au-delà du bruit) ; 15 villageois au travail (bois, pierre, fauchage, cueillette), 9 h 30 à 10 h 30, la vue sur les
+  postes : 1,5 à 2,3 ms (5 à 9 à l'écran, beaucoup encore en marche vers leur poste). Dans le moteur (Node), à 15
+  villageois au travail : la journée gardée 0,06 ms (0,05 avant), le pas de la ferme 3,4 ms en moyenne sur une heure de
+  jeu, actions comprises (une action relit les pièces quand un arbre tombe) ; sans tâche, rien ne change (0,17 ms).
+  Les postes et l'attente sont gardés tant que rien ne bouge (`signatureTaches`) : sans cela, la journée coûtait
+  10 ms.
+- Reste : la part du villageois et la valeur de ce qu'il produit (I4) ; la brouette, la charrette et un chemin du
+  port plus court pour la navette (I2) ; les postes préférés (I6c) ; montrer ce qu'il porte (un panier, une botte).
 
 ## Les règles qui ne changent pas
 

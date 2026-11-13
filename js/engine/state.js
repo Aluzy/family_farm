@@ -900,6 +900,15 @@ export const MIGRATIONS = {
     if ('portage' in state) out.portage = reparerPortage(state.portage);
     return out;
   },
+  // v88 → v89 (le chantier « l'île à bâtir », fiche I3c) : les tâches attribuées (js/engine/taches.js). Chaque villageois
+  // gagne sa tâche (v.tache, null), l'outil qu'on lui a confié (v.outil, null), ce que la navette porte au port (v.vendre,
+  // []), ce qu'il ressèmera (v.semis, {}) et sa journée de travail (v.travail, null) ; une valeur abîmée est remise à vide.
+  // Sans villageois (le réglage éteint), rien ne change.
+  88: (state) => {
+    const out = { ...state, version: 89 };
+    if (Array.isArray(state.villageois)) out.villageois = state.villageois.map(reparerTaches);
+    return out;
+  },
 };
 
 // Le dehors d'une sauvegarde (la migration v87 → v88) : { troncon, chemins (des segments lisibles) }.
@@ -919,6 +928,25 @@ function reparerPortage(p) {
     if (l.length) charge[k] = l;
   }
   return { vehicule: VEHICULES.includes(o.vehicule) ? o.vehicule : 'mains', charge };
+}
+
+// Les tâches d'un villageois (la migration v88 → v89, et reparerVillageois) : ce qui est lisible est gardé.
+export function reparerTaches(v) {
+  if (!v || typeof v !== 'object') return v;
+  const L = (DATA.TACHES && DATA.TACHES.LISTE) || {};
+  const outils = new Set(Object.values(L).map((d) => d.outil).filter(Boolean));
+  const T = v.travail;
+  return {
+    ...v,
+    tache: typeof v.tache === 'string' && L[v.tache] ? v.tache : null,
+    outil: typeof v.outil === 'string' && outils.has(v.outil) ? v.outil : null,
+    vendre: Array.isArray(v.vendre) ? v.vendre.filter((o) => typeof o === 'string' && DATA.OBJETS[o]) : [],
+    semis: v.semis && typeof v.semis === 'object' && !Array.isArray(v.semis)
+      ? Object.fromEntries(Object.entries(v.semis).filter(([k, c]) => /^\d+$/.test(k) && typeof c === 'string' && DATA.CULTURES[c])) : {},
+    travail: T && typeof T === 'object' && Number.isInteger(T.jour) && Number.isFinite(T.actions)
+      ? { jour: T.jour, tache: typeof T.tache === 'string' ? T.tache : null, actions: Math.max(0, Math.floor(T.actions)), produit: T.produit && typeof T.produit === 'object' && !Array.isArray(T.produit) ? T.produit : {}, essai: Number.isFinite(T.essai) ? T.essai : 0 }
+      : null,
+  };
 }
 
 // Les villageois d'une sauvegarde (la migration v86 → v87) : une liste de villageois lisibles (un id et un prénom) ;

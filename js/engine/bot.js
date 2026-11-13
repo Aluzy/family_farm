@@ -38,7 +38,10 @@ import { chainesSansCarte } from './chaines.js';
 import { sleep } from './night.js';
 import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
 import { createNewGame, houseRepaired, starterBlock } from './depart.js';
-import { testBatir, testLabourerSerre } from './testmode.js';
+import { testBatir, testLabourerSerre, testMaisonVillageois } from './testmode.js';
+import { maisonsLibres, plafondVillageois, villageoisDe } from './villageois.js';
+import { attribuer, donnerOutil, tacheDef, tacheManque } from './taches.js';
+import { paliersSuivis } from './paliers.js';
 import { aCruche, crucheCapacite, eauCruche, puitsCases, puitsPose, remplirCruche } from './cruche.js';
 import { acheterCaleche, vendreCaleche, poserTournee, tourneeDuPlan } from './caleche.js';
 import { genererMonde, regionDeCase } from './monde.js';
@@ -150,6 +153,44 @@ export function botFabriquer(state, id, n = 1) {
 function botOutil(state, id) {
   if (id === 'houe' ? hasHoe(state) : hasTool(state, id)) return true;
   return botFabriquer(state, id);
+}
+
+/* ---------- I3c : les villageois et leurs tâches ---------- */
+
+// Le chantier allumé (SIMULATION.VILLAGEOIS) : dès le palier MAISON_PALIER, une maison de villageois quand aucune
+// n'est libre et que le port en laisse venir un de plus (ses pièces maîtresses fabriquées à l'Atelier, les murs
+// posés d'un coup : testMaisonVillageois) ; puis à chacun la première tâche de TACHES que personne n'a et qui a
+// son poste, avec l'outil qu'elle demande (fabriqué à l'Atelier, puis donné).
+export function botVillageois(state) {
+  const S = DATA.SIMULATION.VILLAGEOIS;
+  if (!S || !villageActif(state)) return;
+  const V = villageoisDe(state);
+  const palier = paliersSuivis(state) ? state.palier : Infinity;
+  if (palier >= S.MAISON_PALIER && !maisonsLibres(state).length && !V.some((v) => v.maison === null || v.maison === undefined)
+    && (V.length === 0 || V.length < plafondVillageois(state))) {
+    const objets = S.MAISON || {};
+    let ok = true;
+    for (const [o, n] of Object.entries(objets)) {
+      const k = n - countItem(state, o);
+      if (k > 0 && !botFabriquer(state, o, k)) { ok = false; break; }
+    }
+    if (ok && testMaisonVillageois(state).ok) for (const [o, n] of Object.entries(objets)) takeItem(state, o, n);
+  }
+  for (const v of V) {
+    if (v.tache || v.accueil) continue;
+    const prises = new Set(V.map((x) => x.tache).filter(Boolean));
+    for (const t of S.TACHES || []) {
+      const def = tacheDef(t);
+      if (!def || prises.has(t)) continue;
+      // (l'outil qu'il faut : fabriqué, puis donné)
+      if (def.outil && v.outil !== def.outil) {
+        if (v.outil || !botOutil(state, def.outil) || !donnerOutil(state, v.id, def.outil).ok) continue;
+      }
+      if (tacheManque(state, v, t)) continue;
+      attribuer(state, v.id, t);
+      break;
+    }
+  }
 }
 
 /* ---------- entretien, énergie, infrastructure ---------- */
@@ -1134,6 +1175,7 @@ function botActions(state, strat, options, soir) {
   botMill(state);
   botCook(state);
   botServir(state); // I0b : un repas partagé, s'il y a des invités à table
+  botVillageois(state); // I3c : une maison de villageois, leurs tâches (le chantier allumé ; éteint : rien)
   if (!soir) return;
   botMonde(state); // fiche 9b : une sortie dans le grand monde, si le chapitre la demande
   botVoisins(state); // I0b : le hameau voisin, si le chapitre demande un ami, un repas, un projet

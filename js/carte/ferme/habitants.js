@@ -82,6 +82,7 @@
     faux: () => [['faux_cote_0', 0.1], ['faux_cote_1', 0.16], ['faux_cote_1', 0.08], ['faux_cote_2', 0.08], ['faux_cote_3', 0.12, 'coup'], ['faux_cote_3', 0.6]],
     cuisine: () => [['cuisine_0', 0.35], ['cuisine_1', 0.35], ['cuisine_2', 0.35], ['cuisine_3', 0.35]],
   };
+  K.GESTES_HABITANTS = SEQ;   // (I3c : les villageois au travail font les mêmes gestes, villageois-travail.js)
   // le geste de chaque métier (le moteur : HABITANTS.METIERS[m].geste) et ce qu'on y voit
   const GESTE_METIER = { bucheron: 'couper', pecheur: 'pecher', mineur: 'piocher', berger: 'traire', cueilleur: 'cueillir' };
 

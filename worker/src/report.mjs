@@ -60,6 +60,11 @@ export const GAME_ACTIONS = {
   'buy-item': 'Acheter à la calèche (une semence, un produit des hameaux)',
   'caleche-heler': 'Héler la calèche',
   'port-vendre': 'Vendre au port',
+  // (l'île à bâtir, fiche I3c : les tâches des villageois, js/ui/villageois.js)
+  'villageois-attribuer': 'Confier une tâche à un villageois',
+  'villageois-donner': 'Donner un outil à un villageois',
+  'villageois-reprendre': 'Reprendre l\'outil d\'un villageois',
+  'villageois-vendre-ok': 'Marquer ce qui est à vendre (la tournée du port)',
   'port-acheter': 'Acheter au port (une semence)',
   'port-decharger': 'Décharger sous la halle du port (tout ce qui est chargé se vend)',
   'portage-charger': 'Charger pour le port (sur la ferme)',
@@ -193,6 +198,8 @@ export const INTERFACE_ACTIONS = new Set([
   'amis-visite', 'amis-signe', 'amis-retirer', 'amis-retirer-non', 'amis-retirer-oui', 'amis-message', 'amis-copier', 'amis-partager', 'amis-connexion',
   // (l'île à bâtir, fiche I3a : la liste des villageois, la fiche d'un villageois : js/ui/villageois.js)
   'villageois-liste', 'villageois-fiche',
+  // (fiche I3c : la liste des tâches, ce que porte la tournée du port)
+  'villageois-taches', 'villageois-vendre',
   // (les gemmes : js/ui/gemmes.js)
   'gemmes-ouvrir', 'gemmes-onglet', 'gemmes-pack', 'gemmes-payer', 'gemmes-acheter', 'gemmes-connexion',
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',

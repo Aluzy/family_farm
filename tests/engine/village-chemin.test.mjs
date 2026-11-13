@@ -222,7 +222,7 @@ test('le portage : MAINS à la main, la brouette, la charrette attelée ; ce qui
 });
 
 test('la sauvegarde : la forme compacte (des segments), 600 cases mesurées ; v87 → v88 ; une partie d\'avant garde son tronçon généré', () => {
-  assertEqual(STATE_VERSION, 88);
+  assert(STATE_VERSION >= 88, 'le format 88 au moins');
   // (la forme compacte : un segment par suite de cases)
   const cases = [5, 6, 7, 20, 21, 1000, 1001, 1002, 1003];
   const seg = encoderSegments(cases);
@@ -246,7 +246,7 @@ test('la sauvegarde : la forme compacte (des segments), 600 cases mesurées ; v8
   const ancienne = { ...copie(createNewGame(3)), version: 87 };
   delete ancienne.dehors;
   const m = migrate(ancienne);
-  assertEqual(m.version, 88);
+  assertEqual(m.version, STATE_VERSION);
   assert(!('dehors' in m) && !('portage' in m), 'rien ne s\'ajoute');
   assertEqual(etatTroncon(m), 'genere', 'son tronçon reste généré');
   assertEqual(cheminsPourLeSol(m), null, 'le sol d\'avant');

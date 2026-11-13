@@ -115,6 +115,10 @@
    défont pas) — `case` : celle du personnage, à PORT.PORTEE cases du comptoir :
      port.vendre      { objet, quantite, case } vendre au comptoir (au prix de vente : market.js)
      port.acheter     { objet, quantite, case } acheter une semence (à son cours, qui monte)
+   Les tâches des villageois (l'île à bâtir, fiche I3c ; js/engine/taches.js, sans inverse) :
+     villageois.attribuer { id, tache }        confier une tâche (TACHES.LISTE) au villageois `id` ; « aucune » : plus de tâche
+     villageois.outil     { id, outil }        lui donner son outil (hache, pioche, faux, canne) ; « reprendre » : le reprendre
+     villageois.vendre    { id, objets }       la navette : ce qu'il porte au port (les objets marqués « à vendre »)
 */
 
 import { objectifsARevoir } from './campaign.js';
@@ -150,6 +154,7 @@ import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
 import { acheterAuPort, dechargerAuPort, vendreAuPort } from './port.js';
 import { chargerPortage, choisirVehicule, dechargerPortage } from './portage.js';
+import { attribuer, donnerOutil, marquerAVendre, reprendreOutil } from './taches.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -191,6 +196,10 @@ const CONTROLES = {
   mode: (v) => typeof v === 'string' && /^[a-z_]{1,20}$/.test(v),
   fleur: (v) => typeof v === 'string' && !!(DATA.BACS && DATA.BACS.FLEURS[v]),
   quantite: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e6,   // (0 : le moteur dit pourquoi)
+  // (I3c : une tâche des villageois, ou « aucune » ; un outil de travail, ou « reprendre » ; des objets à vendre)
+  tache: (v) => typeof v === 'string' && (v === 'aucune' || !!((DATA.TACHES && DATA.TACHES.LISTE) || {})[v]),
+  outil: (v) => v === 'reprendre' || v === 'hache' || v === 'pioche' || v === 'faux' || v === 'canne',
+  objets: (v) => Array.isArray(v) && v.length <= 40 && v.every((x) => typeof x === 'string' && !!DATA.OBJETS[x]),
   // les papiers peints (js/engine/papiers.js) : un motif, ou « aucun » ; le niveau 0 (en bas) ou 1 (l'étage) ;
   // des murs et leur motif (l'annulation : { [case du mur]: motif | aucun }, 400 au plus)
   motif: (v) => v === AUCUN || (typeof v === 'string' && !!(DATA.PAPIERS_PEINTS || {})[v]),
@@ -566,6 +575,18 @@ export const COMMANDES = {
   'portage.vehicule': {
     args: { vehicule: 'texte', case: 'case' },
     executer: (state, { vehicule, case: c }) => choisirVehicule(state, vehicule, c),
+  },
+  'villageois.attribuer': {
+    args: { id: 'texte', tache: 'tache' },
+    executer: (state, { id, tache }) => attribuer(state, id, tache === 'aucune' ? null : tache),
+  },
+  'villageois.outil': {
+    args: { id: 'texte', outil: 'outil' },
+    executer: (state, { id, outil }) => (outil === 'reprendre' ? reprendreOutil(state, id) : donnerOutil(state, id, outil)),
+  },
+  'villageois.vendre': {
+    args: { id: 'texte', objets: 'objets' },
+    executer: (state, { id, objets }) => marquerAVendre(state, id, objets),
   },
 };
 

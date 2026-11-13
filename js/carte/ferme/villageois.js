@@ -38,6 +38,9 @@
  * villageoisVit passent la main à la vie sociale (villageoisDebutBut, villageoisAuBut, villageoisSocialPas), et
  * stepVillageois finit par villageoisSocial (causeries, croisements, saluts).
  *
+ * I3c (les tâches, villageois-travail.js) : l'état « travail » ; à son poste, il fait le geste de sa tâche
+ * (villageoisAuTravail, villageoisGesteImage) ; une action du moteur vue, son emoji (villageoisTravailPas).
+ *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
  */
 (function (global) {
@@ -70,7 +73,7 @@
   // Chaque état : marcher jusqu'à son lieu, puis sa posture ; debout dehors, il regarde autour de lui de temps en
   // temps. Les états ne diffèrent que par la posture, que villageoisArrive pose à l'arrivée (villageoisBut la choisit).
   const vivre = { pas(m, dt, c) { c.scene.villageoisVit(m, dt, c); } };
-  const ETATS = { lever: vivre, dehors: vivre, repas: vivre, flaner: vivre, rentrer: vivre, dormir: vivre, repos: vivre, abri: vivre, recoit: vivre };
+  const ETATS = { lever: vivre, dehors: vivre, repas: vivre, flaner: vivre, rentrer: vivre, dormir: vivre, repos: vivre, abri: vivre, recoit: vivre, travail: vivre };
   const VIE = K.machine(ETATS, [
     // l'heure a tourné : le segment suivant de sa journée (pas pendant qu'il parle)
     { si: (m, c) => !!c.seg && c.seg !== m.seg && !m.parle, fait: (m, c) => c.scene.villageoisCommence(m, c.seg, c) },
@@ -119,6 +122,8 @@
         this.villageoisImage(m, dt, c);
       }
       for (const id of [...vus.keys()]) if (!ids.has(id)) this.villageoisFin(id);
+      // (I3c : une action du moteur vue, son emoji ; villageois-travail.js)
+      if (this.villageoisTravailPas) this.villageoisTravailPas();
       // (I3b+ : la vie sociale, dans la vue : causeries, croisements, saluts ; villageois-social.js)
       if (this.villageoisSocial) this.villageoisSocial(c);
     },
@@ -316,7 +321,7 @@
       const b = this.villageoisBut(m, seg.lieu);
       if (m.couche && !(b && b.pose.genre === 'lit' && b.pose.L === m.couche)) this.villageoisLeve(m);
       if (m.assis) this.villageoisRelever(m);
-      m.chemin = []; m.puis = null; m.demande = null; m.suit = null; m.attend = null; m.auBut = false; m.toque = 0; m.geste = null;
+      m.chemin = []; m.puis = null; m.demande = null; m.suit = null; m.attend = null; m.auBut = false; m.toque = 0; m.geste = null; m.travail = null;
       if (!b) { m.but = null; return; }
       m.but = b;
       if (m.premier || reducedMotion() || (this.villageoisLoin(m, c.vue) && this.villageoisLoin(b, c.vue))) {
@@ -443,6 +448,8 @@
       else if (m.assis) nom = `assis_${m.face}_${m.etat === 'repas' && !m.parle ? Math.floor((now + m.dec) / 700) % 2 : 0}`;
       // (I3b+ : il puise au puits)
       else if (m.geste) nom = `ramasse_${[0, 1, 2, 2, 1, 0][Math.min(5, Math.floor(((now - m.geste.t0) / 1800) * 6))]}`;
+      // (I3c : au travail, le geste de sa tâche ; villageois-travail.js)
+      else if (m.travail && this.villageoisGesteImage && (nom = this.villageoisGesteImage(m, dt))) { /* le geste */ }
       else nom = `idle_${m.face}_${Math.floor((now + m.dec) / 600) % 2}`;
       s.setFrame(c.C(nom)).setPosition(Math.round(m.x), Math.round(m.y)).setFlipX(m.flip).setAlpha(m.alpha).setAngle(0).setDepth(m.assis ? m.assis.depth : m.y);
       // (un salut : il sourit)
@@ -613,7 +620,8 @@
         lit: !!m.couche, assis: !!m.assis, renonce: !!m.renonce, demande: !!m.demande,
         but: m.seg && m.seg.but ? m.seg.but.sorte : null, role: m.seg && m.seg.but ? m.seg.but.role || null : null, cle: m.seg && m.seg.but ? m.seg.but.cle : null,
         auBut: !!m.auBut, salut: m.salut ? (m.salut.joueur ? 'joueur' : m.salut.o.id) : null, suit: m.suit ? m.suit.o.id : null, attend: !!m.attend,
-        emoji: m.emoji ? m.emoji.el.textContent : null, face: m.face,
+        emoji: m.emoji ? m.emoji.el.textContent : null, face: m.face, travail: m.travail ? m.travail.geste : null,
+        geste: m.travail && m.travail.seq ? m.travail.seq[Math.min(m.travail.k, m.travail.seq.length - 1)][0] : null,
       }));
     },
   });

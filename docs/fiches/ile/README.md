@@ -35,7 +35,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I2 — le chemin du port, modifiable, et le portage](I2-chemin-et-portage.md) | 2 | I1b | fait (le port reste loin : 1,5 à 2,3 h de jeu à cheval sur le chemin, voir docs/ile.md) |
 | [I3a — l'arrivée d'un villageois](I3a-arrivee-villageois.md) | 3 | I0a | fait |
 | [I3b — la vie des villageois sur la ferme](I3b-vie-sur-la-ferme.md) | 3 | I3a | fait (réglage « animé » choisi) ; I3b+ (vie sociale : qui se connaît, sorties à but, saluts, causeries) : fait |
-| [I3c — les tâches attribuées](I3c-taches.md) | 3 | I3b | à faire |
+| [I3c — les tâches attribuées](I3c-taches.md) | 3 | I3b | fait |
 | [I3d — le tableau des villageois](I3d-tableau.md) | 3 | I3c | à faire |
 | [I4 — les prix des filières, la part et la bourse](I4-prix-part-bourse.md) | 4 | I3d, I1b | à faire |
 | [I5a — l'atelier d'artisan, sa boutique, la forge](I5a-artisan-forge.md) | 5 | I4, I6a | à faire |

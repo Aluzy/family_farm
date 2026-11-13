@@ -20,8 +20,8 @@ import { validApparence } from './family.js';
    prénoms et des personnages (HABITANTS.PRENOMS, PERSOS), l'apparence (apparence.js), les goûts (amitie.js), un
    repas qui couvre le besoin d'un adulte (FAMILLE.AJ.adulte) et le bonheur qui suit les règles de la famille
    (bonheur.js). Il laisse le reste (le métier, le garde-manger, la réserve du hameau) : un villageois mange à la
-   boîte commune de la ferme. Un villageois est un adulte seul (les couples et les enfants : I6b) ; il ne travaille
-   pas encore (I3c). Tout est derrière le réglage du chantier (village.js, villageActif) : éteint, rien ici ne se
+   boîte commune de la ferme. Un villageois est un adulte seul (les couples et les enfants : I6b) ; son
+   travail est ailleurs (ses tâches : taches.js, fiche I3c). Tout est derrière le réglage du chantier (village.js, villageActif) : éteint, rien ici ne se
    lit, et une partie n'a pas de state.villageois (le champ naît avec le premier villageois).
 
    state.villageois = [{
@@ -33,8 +33,9 @@ import { validApparence } from './family.js';
      arrivée), repos (true : mal nourri ou sans lit la nuit dernière, il se repose aujourd'hui ; il ne part pas),
      accueil ('en_route' : il marche du port à sa maison, la scène le montre ; null : il est chez lui),
      sansMaison (le jour où il a perdu sa maison, ou null), avis ([« arrive », « sans_maison », « installe »] :
-     ce que la page doit encore dire au joueur), journal ([{ jour, mange, energie, besoin, lit, bonheur }] :
-     ses derniers jours, VILLAGE.ARRIVEE.JOURNAL au plus) }].
+     ce que la page doit encore dire au joueur), journal ([{ jour, mange, energie, besoin, lit, bonheur, et (I3c) tache,
+     actions, produit }] : ses derniers jours, VILLAGE.ARRIVEE.JOURNAL au plus) ;
+     et (I3c, taches.js) tache, outil, vendre, semis, travail }].
 
    Une maison libre : une pièce close du genre maison de la terre du joueur, marquée « à un villageois » par une
    boîte aux lettres posée contre sa porte (blocs.js, maisonsMarquees), où personne n'habite, avec un lit que la
@@ -321,6 +322,9 @@ function nuitDe(state, v, jour) {
   v.faim = faim;
   v.repos = faim > 0 || sansLit;
   const J = { jour, mange: r.mange, energie: r.energie, besoin, lit: v.lit ?? null, bonheur: v.bonheur - Math.round(avant) };
+  // (I3c, taches.js : sa journée de travail, que tachesNuit vient de finir ; I3d la lira)
+  const T = v.travail;
+  if (v.tache || (T && T.jour === jour && T.actions)) Object.assign(J, { tache: v.tache || (T && T.tache) || null, actions: T && T.jour === jour ? T.actions : 0, produit: T && T.jour === jour ? { ...T.produit } : {} });
   if (!Array.isArray(v.journal)) v.journal = [];
   v.journal.push(J);
   const max = Math.max(1, Number(ARRIVEE.JOURNAL) || 7);
