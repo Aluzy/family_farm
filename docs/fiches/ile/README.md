@@ -51,7 +51,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I7e — les hameaux, la calèche et les boucles de chemins retirés](I7e-hameaux-caleche.md) | 7 | I7d, I1c, I2 | à faire |
 | [I7f — la migration des parties en cours](I7f-migration.md) | 7 | I7e, I7g, I3a | à faire |
 | [I7g — la chronique et les noms](I7g-chronique-et-noms.md) | 7 | I7c | fait (avant I7c : la chronique s'ajoute au carnet, réglage allumé ; le commerce et les fêtes du village prêts à brancher, I5a, I8a ; voir docs/ile.md) |
-| [I8a — la vocation « village »](I8a-vocation-village.md) | 8 | I6b | à faire |
+| [I8a — la vocation « village »](I8a-vocation-village.md) | 8 | I6b | fait (le socle des vocations ; la convivialité, quatre paliers ; les fêtes, la veillée ; six projets dont quatre bâtiments ; voir docs/ile.md) |
 | [I8b — la vocation « ferme productive »](I8b-vocation-productive.md) | 8 | I1c, I4 | à faire |
 | [I9a — l'île partagée : la frontière et le poids](I9a-ile-partagee.md) | 9 | I7f | à faire |
 | [I9a2 — l'horloge commune](I9a2-horloge-commune.md) | 9 | I9a | à faire |

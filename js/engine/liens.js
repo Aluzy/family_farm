@@ -14,6 +14,7 @@ import { trouverVillageois, villageoisDe } from './villageois.js';
 import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
 import { gainAccords } from './traits.js';
 import { chroniqueArrivee, noterChronique } from './chronique.js';
+import { presentsALaFete } from './fetes-village.js';
 
 /* ---------- les liens entre villageois (le chantier « l'île à bâtir », fiche I6b) ----------
 
@@ -21,7 +22,8 @@ import { chroniqueArrivee, noterChronique } from './chronique.js';
    de ce qu'ils ont vécu ensemble dans la journée (liensNuit, appelé par runNight après les tâches et avant la nuit des
    villageois) et ne baisse jamais (B-1 : pas de brouille) : ILE (ils vivent sur la même île), VOISIN (leurs maisons
    proches), POSTE (la même tâche, à des postes voisins ; le même commerce, I5a), TABLE (la même table au même repas),
-   SORTIE (une visite, un rendez-vous, une promenade, un banc à deux), FETE (le même repas du joueur), FOYER (le même
+   SORTIE (une visite, un rendez-vous, une promenade, un banc à deux), FETE (le même repas du joueur ; I8a : la même
+   fête du village, fetes-village.js), FOYER (le même
    toit), ENTRAIDE (un repas apporté) ; et (fiche I6c, traits.js) les paires de traits qui s'accordent (TRAITS.ACCORDS).
    Au-delà de LENT, un gain compte pour moitié.
 
@@ -212,6 +214,8 @@ export function liensNuit(state) {
   // ce que chacun a vécu aujourd'hui : ses tables (au repas de midi, du soir), ses sorties à plusieurs, sa tâche
   const faits = new Map();
   const A = amitieDe(state).pnj || {};
+  // (I8a : ceux qui étaient à la fête du village aujourd'hui)
+  const aLaFete = new Set(presentsALaFete(state, jour));
   for (const v of V) {
     const segs = J.get(v.id) || [];
     const tables = new Set(), sorties = new Set();
@@ -223,7 +227,7 @@ export function liensNuit(state) {
     }
     const T = v.travail;
     const p = A[v.id], souv = p && Array.isArray(p.souvenirs) ? p.souvenirs[p.souvenirs.length - 1] : null;
-    faits.set(v.id, { tables, sorties, tache: T && T.jour === jour && T.actions > 0 ? T.tache : null, fete: !!(souv && souv.jour === jour) });
+    faits.set(v.id, { tables, sorties, tache: T && T.jour === jour && T.actions > 0 ? T.tache : null, fete: !!(souv && souv.jour === jour) || aLaFete.has(v.id) });
   }
   const aides = new Set(L.entraide.filter((e) => e.jour === jour).map((e) => paire(e.de, e.a)));
   const foyerDe = new Map();

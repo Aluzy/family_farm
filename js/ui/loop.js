@@ -36,6 +36,7 @@ import { watchDemandes } from './demandes.js';
 import { watchFetes } from './fetes.js';
 import { pleut } from '../engine/meteo.js';
 import { watchInvitations } from './invitations.js';
+import { watchVocations } from './vocations.js';
 import { watchPlans } from './plans.js';
 import {
   ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, watchAlerts,
@@ -344,6 +345,7 @@ function veiller(ticked) {
   watchMeteo(); // G-1 : l'averse qui commence
   watchFetes(); // V-4 : la fête du hameau (annoncée au matin ; y être pendant la fête)
   watchInvitations(); // les invitations à un repas : les réponses au matin, les invités en route
+  watchVocations(); // l'île à bâtir (fiche I8a) : au matin, la fête d'hier, le chantier du village, les paliers
   watchPlans(); // les plans de meubles offerts par un ami (le lot 4)
   watchPreparations();
   watchUnlocks();

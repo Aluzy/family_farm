@@ -1592,6 +1592,46 @@ export const RAW_DATA = {
     },
     "brouette": { "nom": "Brouette", "icone": "🛒", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "charrette": { "nom": "Charrette", "icone": "🛞", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "lavoir": {
+      "nom": "Lavoir",
+      "icone": "🧺",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "village": true
+    },
+    "kiosque": {
+      "nom": "Kiosque",
+      "icone": "🎶",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "village": true
+    },
+    "fontaine_village": {
+      "nom": "Fontaine du village",
+      "icone": "⛲",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "village": true
+    },
+    "four_commun": {
+      "nom": "Four commun",
+      "icone": "🔥",
+      "prix": 0,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "village": true
+    },
     "casque_lampe": { "nom": "Casque à lampe", "icone": "⛑‍💡", "prix": 30, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "chapeau_paille": { "nom": "Chapeau de paille", "icone": "👒‍🌾", "prix": 6, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "bottes": { "nom": "Bottes de marche", "icone": "👢‍🟫", "prix": 10, "mangeable": false, "categorie": "équipement", "rachetable": false },
@@ -2248,6 +2288,50 @@ export const RAW_DATA = {
         "bloque": true,
         "dessin": "boite_aux_lettres",
         "villageois": true
+      },
+      "lavoir": {
+        "nom": "Lavoir",
+        "objet": "lavoir",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "lavoir",
+        "largeur": 3,
+        "hauteur": 2,
+        "projetVillage": "lavoir",
+        "village": true
+      },
+      "kiosque": {
+        "nom": "Kiosque",
+        "objet": "kiosque",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "kiosque",
+        "largeur": 3,
+        "hauteur": 3,
+        "projetVillage": "kiosque",
+        "village": true
+      },
+      "fontaine_village": {
+        "nom": "Fontaine du village",
+        "objet": "fontaine_village",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "fontaine_village",
+        "largeur": 2,
+        "hauteur": 2,
+        "projetVillage": "fontaine",
+        "village": true
+      },
+      "four_commun": {
+        "nom": "Four commun",
+        "objet": "four_commun",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "four_commun",
+        "largeur": 2,
+        "hauteur": 2,
+        "projetVillage": "four",
+        "village": true
       },
       "pont_planches": {
         "nom": "Pont de planches",
@@ -3210,7 +3294,11 @@ export const RAW_DATA = {
           "boite_lettres_fer",
           "bonhomme_neige",
           "citrouille_halloween",
-          "tas_citrouilles"
+          "tas_citrouilles",
+          "lavoir",
+          "kiosque",
+          "fontaine_village",
+          "four_commun"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
@@ -8814,7 +8902,11 @@ export const RAW_DATA = {
           "abricotier",
           "pecher",
           "mangeoire_grain",
-          "distributeur"
+          "distributeur",
+          "lavoir",
+          "kiosque",
+          "fontaine_village",
+          "four_commun"
         ],
         "EMOJI": {
           "eau": "💧",
@@ -8826,7 +8918,9 @@ export const RAW_DATA = {
           "banc": "☺️",
           "soir": "🌙",
           "apporte": "🍲",
-          "jeu": "🪁"
+          "jeu": "🪁",
+          "fete": "🎉",
+          "chantier": "🔨"
         }
       },
       "CROISE": {
@@ -9004,6 +9098,28 @@ export const RAW_DATA = {
           ["Attention où tu mets les pieds !", "Merci, j'ai failli tomber !"],
           ["On forme une bonne équipe.", "La meilleure de l'île !"],
           ["Encore un peu et on a fini.", "Après, une bonne soupe !"]
+        ],
+        "fete": [
+          ["Quelle belle fête !", "On devrait en faire plus souvent !"],
+          ["Tu as goûté à tout ?", "Deux fois, même ! Chut !"],
+          ["À la santé du village !", "Et à tous ceux qui y vivent !"],
+          ["Regarde, tout le monde est là.", "On est une vraie famille, ici."],
+          ["Tu danses, {prenom} ?", "Si tu me promets de ne pas rire !"],
+          ["Les lampions sont magnifiques.", "On se croirait dans un conte."],
+          ["Tu te souviens de la première fête ?", "On n'était que trois, à l'époque !"],
+          ["Encore un peu de tarte ?", "Juste une petite part, alors."],
+          ["Merci d'être venu, {prenom}.", "Je n'aurais manqué ça pour rien au monde !"],
+          ["On chante quelque chose ?", "Toi d'abord, je te suis !"],
+          ["Il fait bon, ce soir.", "Une soirée comme on les aime."],
+          ["Quelle chance, cette île.", "Et ces voisins, surtout !"]
+        ],
+        "chantier": [
+          ["Tu tiens la planche, {prenom} ?", "Vas-y, je la tiens bien droite !"],
+          ["Ça prend forme, regarde !", "Le village va être fier !"],
+          ["Encore une pierre et on fait une pause.", "Je t'attends à l'ombre, alors !"],
+          ["On le bâtit pour tout le monde.", "C'est ça qui donne du cœur à l'ouvrage."],
+          ["Tu crois qu'on aura fini pour la fête ?", "Si on s'y met tous, sûrement !"],
+          ["Passe-moi le marteau, tu veux ?", "Tiens, et attention aux doigts !"]
         ]
       },
       "JOUEUR": {
@@ -9053,7 +9169,9 @@ export const RAW_DATA = {
         "banc": ["On se repose un peu, côte à côte.", "Un banc, un ami : que demander de plus ?"],
         "soir": ["Je passe la soirée chez un ami.", "Une petite visite avant d'aller dormir."],
         "apporte": ["J'apporte un repas à un ami qui se repose.", "Il faut bien s'entraider !"],
-        "jeu": ["Je joue sur la place !", "On s'amuse bien, ici !"]
+        "jeu": ["Je joue sur la place !", "On s'amuse bien, ici !"],
+        "fete": ["C'est la fête du village !", "Quelle belle fête, tu ne trouves pas ?", "Tout le village est sur la place !"],
+        "chantier": ["Je travaille au chantier du village.", "On bâtit quelque chose de beau, tous ensemble.", "Le chantier avance bien !"]
       }
     },
     "AMITIE": {
@@ -10227,6 +10345,151 @@ export const RAW_DATA = {
     "LANTERNE": {
       "sol": { "rayon": 46, "aplati": 0.7, "teinte": 16761968, "alpha": 0.9, "dx": 0, "dy": -4 },
       "vitre": { "rayon": 11, "teinte": 16769704, "alpha": 0.95, "dx": 0, "dy": -27 }
+    }
+  },
+  "VOCATIONS": {
+    "village": {
+      "nom": "Un village convivial",
+      "icone": "🎉",
+      "texte": "Des fêtes, des projets faits ensemble, des repas partagés et une jolie place rendent le village convivial.",
+      "PALIERS": [
+        {
+          "score": 20,
+          "nom": "Des voisins qui se saluent",
+          "icone": "👋",
+          "debloque": ["plan:banc_pierre", "plan:lanterne_papier", "projet:kiosque"]
+        },
+        {
+          "score": 50,
+          "nom": "Un village en fête",
+          "icone": "🎉",
+          "debloque": ["fete:seconde", "plan:table_rondins", "plan:banc_rondins", "projet:fontaine"]
+        },
+        {
+          "score": 90,
+          "nom": "Un village accueillant",
+          "icone": "🤝",
+          "debloque": ["arrivee:lien", "plan:pergola", "plan:jardiniere_pierre", "projet:four"]
+        },
+        {
+          "score": 140,
+          "nom": "Un village où il fait bon vivre",
+          "icone": "🌟",
+          "debloque": ["enseigne:couleurs", "plan:chaise_peinte", "plan:bassin", "plan:jarre_coquillages"]
+        }
+      ],
+      "CAUSES": {
+        "bonheur": { "nom": "Le bonheur des villageois", "icone": "😊", "BASE": 40, "PAR": 2, "MAX": 25 },
+        "ami": { "nom": "Des amis entre eux", "icone": "🤝", "POINTS": 2, "MAX": 30 },
+        "proche": { "nom": "Des proches", "icone": "💞", "POINTS": 4, "MAX": 30 },
+        "fete": { "nom": "Les fêtes tenues", "icone": "🎉", "POINTS": 6, "MAX": 60 },
+        "projet": { "nom": "Les projets finis", "icone": "🏗️", "POINTS": 10, "MAX": 60 },
+        "repas": { "nom": "Les repas partagés", "icone": "🍽️", "POINTS": 2, "MAX": 20 },
+        "decor": { "nom": "Le décor de la place", "icone": "🌷", "POINTS": 1, "MAX": 25 }
+      },
+      "DECOR": {
+        "RAYON": 7,
+        "CENTRES": ["panneau_village", "puits"],
+        "SORTES": {
+          "banc_": 1,
+          "chaise_": 1,
+          "table_jardin": 1,
+          "table_rondins": 1,
+          "lanterne": 2,
+          "lanterne_papier": 2,
+          "candelabre": 2,
+          "bac_": 1,
+          "massif_": 1,
+          "rosier_": 1,
+          "guirlande_": 1,
+          "pergola": 2,
+          "jardiniere_pierre": 1,
+          "jarre_coquillages": 1,
+          "bassin": 2,
+          "fontaine_": 3,
+          "ornement_": 2,
+          "lavoir": 4,
+          "kiosque": 4,
+          "four_commun": 4
+        }
+      },
+      "ARRIVEE_LIEN": { "PARENT": 0.3, "AMI": 50, "PROCHE": 80 },
+      "ENSEIGNES": [{ "id": "or", "nom": "lettres dorées", "texte": "#e2b04a" }, { "id": "lune", "nom": "lettres de lune", "texte": "#cfd8ff" }],
+      "FETES": {
+        "PAR_MOIS": 1,
+        "JOURS_MAX": 40,
+        "DEBUT": 17,
+        "FIN": 21,
+        "VEILLEE": [19.75, 21],
+        "VEILLEE_MIN": 2,
+        "PLATS": { "PAR": 2, "MIN": 2 },
+        "BONHEUR": 6,
+        "VARIETE": 3,
+        "ANNONCE": 3,
+        "NOMS": {
+          "mois": ["🎉", "La fête du village"],
+          "pleine_lune": ["🌕", "La veillée de pleine lune"],
+          "ouverture": ["🎊", "La fête de l'ouverture"]
+        },
+        "LUMIERES": { "teinte": 16757350, "alpha": 1, "rayon": 60 }
+      },
+      "PROJETS": {
+        "ORDRE": ["place", "jardin", "lavoir", "kiosque", "fontaine", "four"],
+        "SORTES": {
+          "place": {
+            "nom": "Aménager la place",
+            "icone": "🪑",
+            "journees": 2,
+            "texte": "Des bancs, des bacs de fleurs, une table et une lanterne, pour se retrouver le soir sur la place.",
+            "besoin": { "bois": 20, "pierre": 15, "fibre": 10 },
+            "donne": { "banc_jardin": 2, "bac_rond": 2, "table_jardin": 1, "chaise_jardin": 4, "lanterne": 1 }
+          },
+          "jardin": {
+            "nom": "Un jardin partagé",
+            "icone": "🌷",
+            "journees": 2,
+            "texte": "Une pergola, des jardinières et un banc de rondins, que tout le village soigne ensemble.",
+            "besoin": { "bois": 15, "pierre": 10, "fibre": 15 },
+            "donne": { "pergola": 1, "bac_long": 2, "jardiniere_pierre": 1, "banc_rondins": 1 }
+          },
+          "lavoir": {
+            "nom": "Le lavoir",
+            "icone": "🧺",
+            "journees": 4,
+            "bloc": "lavoir",
+            "texte": "Un bassin de pierre sous un toit de bois, où l'on se retrouve pour laver et bavarder.",
+            "besoin": { "pierre": 30, "planche": 12, "bois": 10 }
+          },
+          "kiosque": {
+            "nom": "Le kiosque",
+            "icone": "🎶",
+            "journees": 3,
+            "bloc": "kiosque",
+            "palier": "projet:kiosque",
+            "texte": "Un kiosque de bois sur une estrade de pierre, au cœur de la place : on y danse les soirs de fête.",
+            "besoin": { "planche": 24, "pierre": 12, "lingot_fer": 2 }
+          },
+          "fontaine": {
+            "nom": "La fontaine du village",
+            "icone": "⛲",
+            "journees": 4,
+            "bloc": "fontaine_village",
+            "palier": "projet:fontaine",
+            "texte": "Une grande fontaine à quatre goulots, où l'on vient puiser et causer.",
+            "besoin": { "pierre": 40, "lingot_cuivre": 2, "planche": 4 }
+          },
+          "four": {
+            "nom": "Le four commun",
+            "icone": "🔥",
+            "journees": 5,
+            "bloc": "four_commun",
+            "palier": "projet:four",
+            "texte": "Un four à pain de pierre sous son auvent, que le village allume pour les fêtes.",
+            "besoin": { "pierre": 36, "bois": 20, "planche": 8 }
+          }
+        },
+        "TRAVAIL": { "geste": "hache", "emoji": "🔨" }
+      }
     }
   },
   "CONSERVATION": {

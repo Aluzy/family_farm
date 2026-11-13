@@ -73,6 +73,14 @@ export const GAME_ACTIONS = {
   'chronique-note-ok': 'Écrire une note sur une ligne de la chronique',
   'chronique-note-effacer': 'Effacer sa note sur une ligne de la chronique',
   'noms-ok': 'Nommer l\'île, le village ou une maison',
+  // (fiche I8a : les vocations de l'île, les fêtes et les projets du village, js/ui/vocations.js)
+  'vocation-fete-fixer': 'Fixer la fête du village',
+  'evt-fete': 'Fixer la fête du village (depuis le calendrier)',
+  'vocation-fete-annuler': 'Annuler la fête du village',
+  'vocation-projet-lancer': 'Lancer un projet du village',
+  'vocation-projet-apporter': 'Apporter des matériaux au projet du village',
+  'vocation-projet-envoyer': 'Envoyer un villageois au chantier du village (ou l\'en rappeler)',
+  'vocation-projet-abandonner': 'Abandonner le projet du village',
   'port-acheter': 'Acheter au port (une semence)',
   'port-decharger': 'Décharger sous la halle du port (tout ce qui est chargé se vend)',
   'port-honorer': 'Honorer une commande du bac',
@@ -220,6 +228,8 @@ export const INTERFACE_ACTIONS = new Set([
   'liens-village', 'liens-foyer',
   // (fiche I7g : la chronique, ses notes, nommer)
   'chronique-open', 'chronique-note', 'noms-renommer', 'noms-autre',
+  // (fiche I8a : les onglets de la fenêtre « L'île »)
+  'ile-onglet',
   // (les gemmes : js/ui/gemmes.js)
   'gemmes-ouvrir', 'gemmes-onglet', 'gemmes-pack', 'gemmes-payer', 'gemmes-acheter', 'gemmes-connexion',
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',

@@ -55,6 +55,7 @@ import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
 import { villageActif } from '../engine/village.js';
+import { dessinProjet } from '../engine/projets-village.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
 import {
   activeTab, axeMode, buildMode, coucher, ecranFerme, enLigne, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
@@ -685,7 +686,7 @@ function meubleDe(sorte, tile, etage = false) {
     // panneau du village : le nom du village, sinon celui de l'île, js/engine/noms.js nomAffiche)
     const enseigne = b.enseigne ? { matiere: b.enseigne, nom: familyName(state), texte: texteEnseigne(b, teinte) }
       : b.panneau === 'village' ? { matiere: 'village', nom: nomAffiche(state), texte: texteEnseigne(b, teinte) } : null;
-    return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
+    return { meuble: { dessin: dessinBloc(b, tile, sorte), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
   }
   const sens = b && b.tourne && Number.isInteger(tile) ? (etage ? sensEtage(state, tile) : sensBloc(state, tile)) : 0;
   if (!b || !b.meuble) return sens ? { sens } : {};
@@ -714,10 +715,12 @@ function dessinPont(tile) {
 
 // L'image d'un bloc dessiné comme un meuble : le distributeur selon son blé (assets/
 // meuble_distributeur_<0 à 4>.png : vide à plein), la mangeoire pleine tant qu'il en a.
-function dessinBloc(b, tile) {
+function dessinBloc(b, tile, sorte) {
   if (b.pont) return dessinPont(tile);
   // (I4 : l'étal, garni tant qu'il a quelque chose en vente : assets/meuble_etal_<vide|garni>.png)
   if (b.etal) return etalGarni(state) ? 'etal_garni' : 'etal_vide';
+  // (fiche I8a : un bâtiment d'un projet du village, en chantier tant qu'il n'est pas fini ; js/engine/projets-village.js)
+  if (b.projetVillage) return dessinProjet(state, sorte);
   if (b.bac) return (Number.isInteger(tile) && dessinBac(state, tile)) || `bac_${b.bac}_vide`;
   if (b.distributeur === 'machine') {
     const f = grainDans(state, tile) / DATA.DISTRIBUTEUR.CAPACITE;

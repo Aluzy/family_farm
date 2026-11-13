@@ -14,10 +14,12 @@ import { platsBonheur, varieteBonheur, versCible } from './bonheur.js';
 import { cleDiversite, tirerApparence } from './apparence.js';
 import { ajouterAmitie, amitieDe, goutsTires } from './amitie.js';
 import { validApparence } from './family.js';
-import { bonheurDesLiens, foyerDe } from './liens.js';
+import { bonheurDesLiens, foyerDe, poserAffinite } from './liens.js';
 import { mangerSesProvisions, mangerSonPanier, plaisirDuJour, prendrePart } from './bourse.js';
 import { bonheurDesTraits, traitsTires } from './traits.js';
 import { chroniqueArrivee } from './chronique.js';
+import { bonheurDeLaFete } from './fetes-village.js';
+import { lienArrivee } from './vocation-village.js';
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -258,6 +260,9 @@ export function arriverVillageois(state, o = {}) {
   state.villageois.push(v);
   // (fiche I6a : la famille l'accueille, l'amitié commence à VILLAGE.AMITIE.ACCUEIL points, « poli »)
   if (!amitieDe(state).pnj[v.id]) ajouterAmitie(state, v.id, Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0);
+  // (fiche I8a, vocation-village.js : un village convivial attire des gens qui y ont déjà un ami, un parent)
+  const lien = lienArrivee(state, v, rngDe(`${graineDe(state)}:villageois:${rang}:lien`));
+  if (lien && poserAffinite(state, v.id, lien.id, lien.affinite)) { v.lienArrivee = { id: lien.id, sorte: lien.sorte }; avis(v, `lien_arrivee:${lien.id}`); }
   // (fiche I7g : il s'installe, dans la chronique ; au troisième, le village prend un nom ; au dixième, sa ligne)
   chroniqueArrivee(state, v);
   return { ok: true, villageois: v };
@@ -337,8 +342,8 @@ function nuitDe(state, v, jour) {
   const C = DATA.BONHEUR.CIBLE;
   // (fiche I6b, liens.js : un ami au village, un proche, un repas apporté par un ami)
   // (fiche I4, bourse.js : un achat qui lui a plu aujourd'hui, à l'étal ou par le bac ; I6c, traits.js : la tâche qu'il
-  // aime, celle qu'il boude)
-  const cible = Math.max(0, Math.min(DATA.BONHEUR.MAX, C.BASE + platsBonheur(tout) + varieteBonheur(tout) + meublesMaison(state, v) + bonheurDesLiens(state, v) + plaisirDuJour(v, jour) + bonheurDesTraits(state, v)));
+  // aime, celle qu'il boude ; I8a, fetes-village.js : la fête du village, s'il y était)
+  const cible = Math.max(0, Math.min(DATA.BONHEUR.MAX, C.BASE + platsBonheur(tout) + varieteBonheur(tout) + meublesMaison(state, v) + bonheurDesLiens(state, v) + plaisirDuJour(v, jour) + bonheurDesTraits(state, v) + bonheurDeLaFete(state, v)));
   const avant = Number.isFinite(Number(v.bonheur)) ? Number(v.bonheur) : DATA.BONHEUR.DEPART;
   const faim = Math.max(0, besoin - r.energie);
   // (comme la famille : CIBLE.FAIM s'il a eu faim, ATELIER.BONHEUR_SANS_COUCHAGE sans lit ; 0 tous deux dans le jeu, B-1)
@@ -355,7 +360,10 @@ function nuitDe(state, v, jour) {
   if (reposDuJour) J.repos = true;   // (le tableau, tableau.js : un jour de repos compte son repas et aucun produit)
   // (I3c, taches.js : sa journée de travail, que tachesNuit vient de finir ; le tableau la lit : tableau.js)
   const T = v.travail;
-  if (v.tache || (T && T.jour === jour && T.actions)) Object.assign(J, { tache: v.tache || (T && T.tache) || null, actions: T && T.jour === jour ? T.actions : 0, produit: T && T.jour === jour ? { ...T.produit } : {} });
+  // (fiche I8a, projets-village.js : un jour au chantier du village, à la place de sa tâche : tache « chantier »)
+  const auChantier = !!(T && T.jour === jour && T.chantier);
+  if (v.tache || (T && T.jour === jour && T.actions)) Object.assign(J, { tache: auChantier ? 'chantier' : v.tache || (T && T.tache) || null, actions: T && T.jour === jour ? T.actions : 0, produit: T && T.jour === jour ? { ...T.produit } : {} });
+  if (auChantier) J.chantier = T.chantier;
   // (I3d : ce que son travail a pris au coffre, s'il a pris quelque chose)
   if (T && T.jour === jour && objet(T.utilise) && Object.keys(T.utilise).length) J.utilise = { ...T.utilise };
   if (!Array.isArray(v.journal)) v.journal = [];

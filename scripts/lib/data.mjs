@@ -150,6 +150,11 @@ export function sourcesOf(data, id) {
   const R = data.RECIT || {};
   for (const e of [...(R.SCENES || []), ...(R.REPLIQUES || [])]) if (e && e.effet && e.effet.donner && id in e.effet.donner) out.push(`récit ${e.id}`);
   if (it.rachetable !== false) out.push('Marché');
+  // (le chantier « l'île à bâtir », fiche I8a : un projet du village donne son bâtiment, ou son décor)
+  for (const v of Object.values(data.VOCATIONS || {})) for (const [sid, p] of Object.entries((v.PROJETS && v.PROJETS.SORTES) || {})) {
+    const b = p.bloc && A && A.BLOCS && A.BLOCS[p.bloc];
+    if ((b && b.objet === id) || id in (p.donne || {})) out.push(`projet du village ${sid}`);
+  }
   if (it.retire) out.push('ancienne sauvegarde (retire)');
   return out;
 }

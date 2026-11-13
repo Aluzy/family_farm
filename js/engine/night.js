@@ -44,6 +44,10 @@ import { tachesNuit } from './taches.js';
 import { liensFinDeNuit, liensNuit } from './liens.js';
 import { avancerBac } from './bac.js';
 import { achatsNuit } from './bourse.js';
+import { vocationsNuit } from './vocations.js';
+import './vocation-village.js';   // (la convivialité s'enregistre au socle des vocations)
+import { fetesVillageNuit } from './fetes-village.js';
+import { projetsVillageNuit } from './projets-village.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
@@ -316,6 +320,9 @@ export function runNight(state) {
   // (fiche I4, bourse.js : l'achat à l'étal qu'on n'a pas vu se fait)
   const achats = achatsNuit(state);
   if (achats) state.nuit.achatsEtal = achats;
+  // (I8a, projets-village.js : ceux qui ont travaillé au chantier du village comptent leur journée ; un projet peut finir)
+  const chantier = projetsVillageNuit(state);
+  if (chantier) state.nuit.chantierVillage = chantier;
   // (I6b, liens.js : les liens montent de ce que les villageois ont vécu ensemble aujourd'hui, avant leur nuit)
   const liens = liensNuit(state);
   if (liens) state.nuit.liens = liens;
@@ -324,6 +331,11 @@ export function runNight(state) {
   if (bac && bac.arrivees.length) state.nuit.bac = bac;
   const villageois = villageoisNuit(state);
   if (villageois) state.nuit.villageois = villageois;
+  // (I8a, fetes-village.js : la fête du jour est tenue ; vocations.js : les paliers que les vocations atteignent)
+  const fete = fetesVillageNuit(state);
+  if (fete) state.nuit.feteVillage = fete;
+  const vocations = vocationsNuit(state);
+  if (vocations && vocations.length) state.nuit.vocations = vocations;
   // (I6b : un ami apportera demain un repas à qui se repose ; l'enfant d'un foyer, s'il n'est pas venu par le bac)
   const liensFin = liensFinDeNuit(state);
   if (liensFin) state.nuit.liensFin = liensFin;

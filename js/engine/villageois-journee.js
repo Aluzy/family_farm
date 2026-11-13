@@ -13,6 +13,8 @@ import { manqueDit, postesDe, signatureTaches, tacheDef, travailleAujourdhui } f
 import { entraidesDuJour, foyerDe, liensSignature } from './liens.js';
 import { achatsDuJour, achatsSignature, caseEtal, devantEtal, phraseEtal } from './bourse.js';
 import { brefDesTraits, butsDesTraits, horaireDesTraits, soirDesTraits, traitsDe } from './traits.js';
+import { feteDuJourVillage, presentsALaFete, signatureFetes } from './fetes-village.js';
+import { auChantier, centreDeLaPlace, postesChantier, signatureProjets } from './projets-village.js';
 
 /* ---------- la journée des villageois sur la ferme (le chantier « l'île à bâtir », fiche I3b) ----------
 
@@ -67,7 +69,17 @@ import { brefDesTraits, butsDesTraits, horaireDesTraits, soirDesTraits, traitsDe
    retard ; le matinal se lève et sort avant les autres, le couche-tard s'attarde au souper et se couche tard, le
    gourmand est à table le premier), sa chance de flâner (FLANER), de rester chez lui (CHEZ_LUI), sa plage de travail
    et ses pauses (TRAVAIL), le poids des buts de ses sorties (butsDesTraits) et de la visite du soir (soirDesTraits).
-   Sans trait, la journée est celle d'avant. Les tests : tests/engine/village-traits.test.mjs. */
+   Sans trait, la journée est celle d'avant. Les tests : tests/engine/village-traits.test.mjs.
+
+   I8a (les vocations : la fête et le chantier du village) :
+     - le jour d'une fête du village (fetes-village.js, feteDuJourVillage), de son début à sa fin, tous ceux qui y sont
+       (presentsALaFete) quittent ce qu'ils faisaient et viennent sur la place (planDeFete) : attablés aux tables du
+       dehors (l'état « repas », un siège), assis sur les bancs près de la place (« flaner »), debout dans les cercles
+       de la place ou deux à deux, face à face (« dehors ») ; le but { sorte: 'fete', cle (celle de leur table, de leur
+       banc, de leur groupe), avec, emoji } : ils causent ; un enfant joue sur la place. La pluie ne les chasse pas ;
+     - celui qui est envoyé au chantier du village (projets-village.js, auChantier) y travaille aux heures de travail,
+       comme à une tâche (planDuTravail : la tâche « chantier », les postes autour du bâtiment posé ou de la place,
+       postesChantier ; le but a chantier: la sorte du projet). Les tests : tests/engine/village-vocations.test.mjs. */
 
 const H = () => (DATA.VILLAGE && DATA.VILLAGE.HORAIRE) || {};
 const P = () => (DATA.VILLAGE && DATA.VILLAGE.PHRASES) || {};
@@ -77,7 +89,7 @@ const TABLES_DEHORS = new Set(['table_jardin', 'table_rondins']);
 const TABLES = new Set([...TABLES_DEHORS, 'meuble_table']);
 export const ETATS_VILLAGEOIS = ['lever', 'dehors', 'repas', 'flaner', 'rentrer', 'dormir', 'repos', 'abri', 'recoit', 'travail'];
 // (I3b+ : les buts d'une sortie, SOCIAL.BUTS ; le but d'un segment : seg.but.sorte)
-export const BUTS_VILLAGEOIS = ['visite', 'rdv', 'promenade', 'eau', 'jardin', 'betes', 'ouvrage', 'port', 'banc', 'jeu', 'etal'];
+export const BUTS_VILLAGEOIS = ['visite', 'rdv', 'promenade', 'eau', 'jardin', 'betes', 'ouvrage', 'port', 'banc', 'jeu', 'etal', 'fete'];
 
 const graineDe = (state) => farmSeed(state) || 'ile';
 const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1));
@@ -136,6 +148,8 @@ function calculerLieux(state, pieces, sols) {
   // la table commune : dehors, celle qui a le plus de sièges (à égalité : la première)
   let commune = null;
   for (const tb of tables.values()) if (tb.dehors && TABLES_DEHORS.has(tb.sorte) && tb.sieges.length && (!commune || tb.sieges.length > commune.sieges.length)) commune = tb;
+  // (I8a : les tables du dehors et leurs sièges, pour la fête du village ; la commune d'abord)
+  const tablesDehors = [...tables.values()].filter((tb) => tb.dehors && tb.sieges.length).sort((a, b) => (a === commune ? -1 : b === commune ? 1 : a.table - b.table));
   // les bancs : les sièges dehors qui ne touchent pas de table, d'où l'on s'assoit
   const bancs = Object.keys(B).map(Number).filter((t) => SIEGES.has(B[t]) && !dedans.has(t) && !autourDeTable.has(t) && voisins(t).some(libre)).sort((a, b) => a - b);
   // (I6b : deux bancs côte à côte, sur la même rangée, pour s'asseoir à deux)
@@ -164,7 +178,7 @@ function calculerLieux(state, pieces, sols) {
     || pieces.find((p) => !marquees.has(p) && p.paillasses.length) || null;
   const abri = pAbri ? pAbri.cases.filter((t) => libreDedans(t) && !pAbri.paillasses.includes(t)) : null;
   const sorties = lieuxDesSorties(state, { W, B, couvertes, libre, maisons, puits, place, chemins, terres, centre });
-  return { W, libre, maisons, commune, bancs, duos, place, promenade, chemins, abri: abri && abri.length ? abri : null, F, puits: puits === undefined ? null : puits, ...sorties };
+  return { W, libre, maisons, commune, tablesDehors, bancs, duos, place, promenade, chemins, abri: abri && abri.length ? abri : null, F, puits: puits === undefined ? null : puits, ...sorties };
 }
 
 // I3b+ : les lieux des sorties (SOCIAL.BUTS). Chaque maison de villageois gagne `devant` ({ porte, front (la case
@@ -272,7 +286,9 @@ export function journeeDuVillage(state, jour = jourDe(state)) {
   const avecTache = V.some((v) => v.tache);
   // (I6b : les liens, gardés dans la partie, et les repas apportés)
   const cle = JSON.stringify([graineDe(state), jour, H(), SB(), (DATA.VILLAGE.SOCIAL || {}).CONNAISSANCE, (DATA.VILLAGE || {}).LIENS, liensSignature(state), lp ? [lp.case, lp.chemin] : 0, avecTache ? signatureTaches(state) : 0,
-    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0, v.enfant ? 1 : 0, traitsDe(v).join('+')]), achatsSignature(state, jour), DATA.TRAITS ? 1 : 0]);
+    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0, v.enfant ? 1 : 0, traitsDe(v).join('+'), v.chantier || 0]),
+    // (I4 : les achats du jour ; I6c : les traits ; I8a : la fête du jour, le chantier du village)
+    achatsSignature(state, jour), DATA.TRAITS ? 1 : 0, signatureFetes(state, jour), signatureProjets(state)]);
   const deja = memoJours.get(cle);
   if (deja && deja.L === L) return deja.J;
   const J = calculerJournee(state, jour, V, L);
@@ -349,6 +365,8 @@ function calculerJournee(state, jour, V, L) {
   // (I6b : les repas apportés à midi, les visites du soir)
   const apportes = repasApportes(state, jour, gens, L);
   const soirees = visitesDuSoir(state, jour, gens, L);
+  // (I8a : la fête du village, s'il y en a une aujourd'hui)
+  const fete = planDeFete(state, jour, gens, L);
   // 3. les segments
   const out = new Map(), assis = new Map();
   for (const x of gens) {
@@ -411,7 +429,9 @@ function calculerJournee(state, jour, V, L) {
       pousse(so.a, x.coucher, 'rentrer', x.enMaison());
     } else pousse(x.veillee, x.coucher, 'rentrer', x.enMaison());
     pousse(x.coucher, 24, 'dormir', nuit);
-    out.set(x.v.id, pluie ? sousLaPluie(segs, pluie, x.enMaison) : segs);
+    const f = fete && fete.get(x.v.id);
+    const avecFete = f ? insererFete(segs, f) : segs;
+    out.set(x.v.id, pluie ? sousLaPluie(avecFete, pluie, x.enMaison) : avecFete);
   }
   return out;
 }
@@ -459,13 +479,18 @@ function planDuTravail(state, jour, gens, L, prendre, C) {
   const g = graineDe(state), N = Math.max(1, Number(TT.POSTE) || 2), pauses = Math.max(0, Number(TT.PAUSE) || 0);
   const parTache = new Map();
   for (const x of gens) {
-    if (!x.v.tache || !travailleAujourdhui(state, x.v)) continue;
-    let l = parTache.get(x.v.tache);
-    if (!l) parTache.set(x.v.tache, (l = []));
+    // (I8a : celui qui est au chantier du village y travaille, à la place de sa tâche)
+    const t = auChantier(state, x.v) ? 'chantier' : x.v.tache;
+    if (t !== 'chantier' && (!x.v.tache || !travailleAujourdhui(state, x.v))) continue;
+    let l = parTache.get(t);
+    if (!l) parTache.set(t, (l = []));
     l.push(x);
   }
+  const PT = (((DATA.VOCATIONS || {}).village || {}).PROJETS || {}).TRAVAIL || {};
   for (const [tache, equipe] of parTache) {
-    const def = tacheDef(tache), postes = postesDe(state, tache, equipe[0].v);
+    const chantier = tache === 'chantier' ? equipe[0].v.chantier : null;
+    const def = chantier ? { geste: PT.geste || 'hache', emoji: PT.emoji || '🔨' } : tacheDef(tache);
+    const postes = chantier ? postesChantier(state, L.libre) : postesDe(state, tache, equipe[0].v);
     if (!postes.length) continue;
     // (les créneaux de travail de chacun : k → le rang du poste)
     const travail = equipe.map((x) => {
@@ -495,7 +520,7 @@ function planDuTravail(state, jour, gens, L, prendre, C) {
         let but = buts.get(cle);
         // (le même but et le même lieu sur les créneaux d'un même poste : un seul segment)
         if (!but) {
-          buts.set(cle, (but = { sorte: 'travail', tache, cle: `travail:${tache}:${rang}`, avec: [], geste: def.geste || 'ramasse', emoji: def.emoji || '', poste: p.case }));
+          buts.set(cle, (but = { sorte: 'travail', tache, cle: `travail:${tache}:${rang}`, avec: [], geste: def.geste || 'ramasse', emoji: def.emoji || '', poste: p.case, ...(chantier ? { chantier } : {}) }));
           but.lieu = { genre: 'devant', case: p.case, vers: Number.isInteger(p.vers) ? p.vers : undefined, dedans: !!p.dedans, travail: true };
         }
         x.plan.set(k, { etat: 'travail', lieu: but.lieu, but });
@@ -744,11 +769,92 @@ function visitesDuSoir(state, jour, gens, L) {
   return out;
 }
 
+// I8a : la fête du village du jour (fetes-village.js), pour ceux qui y sont : Map(id → { de, a, etat, lieu, but }), ou
+// null sans fête. Les places, de la plus courue à la moins : les sièges des tables du dehors (la commune d'abord), les
+// bancs près de la place, les cercles de la place (trois autour d'un centre), puis deux à deux sur la place, face à
+// face ; chaque adulte (dans un ordre tiré du jour) prend la première libre ; un enfant joue sur la place. Ceux d'une
+// même table, d'un même banc, d'un même groupe causent ensemble (la même clé). Chacun arrive à son heure (jusqu'à
+// ARRIVEE_FETE h après le début) et reste jusqu'à la fin.
+const ARRIVEE_FETE = 0.4;
+function planDeFete(state, jour, gens, L) {
+  const f = feteDuJourVillage(state, jour);
+  if (!f) return null;
+  const ici = new Set(presentsALaFete(state, jour));
+  const qui = gens.filter((x) => ici.has(x.v.id));
+  if (!qui.length) return null;
+  const g = graineDe(state), W = L.W, centre = centreDeLaPlace(state);
+  const loin = (t) => (centre === null ? 0 : Math.max(Math.abs((t % W) - (centre % W)), Math.abs(Math.floor(t / W) - Math.floor(centre / W))));
+  const R = Math.max(3, Number((((DATA.VOCATIONS || {}).village || {}).DECOR || {}).RAYON) || 7) + 3;
+  const spots = [], pris = new Set();
+  for (const tb of L.tablesDehors || []) {
+    if (centre !== null && loin(tb.table) > R) continue;
+    for (const c of tb.sieges) { spots.push({ etat: 'repas', lieu: { genre: 'siege', case: c, table: tb.table, dehors: true }, groupe: `table:${tb.table}` }); pris.add(c); }
+  }
+  const bancs = (L.bancs || []).filter((t) => centre === null || loin(t) <= R).sort((a, b) => loin(a) - loin(b) || a - b);
+  for (const t of bancs) { spots.push({ etat: 'flaner', lieu: { genre: 'siege', case: t }, groupe: `banc:${Math.floor(t / W)}:${Math.floor((t % W) / 3)}` }); pris.add(t); }
+  for (const c of L.cercles || []) {
+    const places = [c.case - 1, c.case + 1, c.case + W];
+    if (places.some((t) => pris.has(t))) continue;
+    for (const t of places) { spots.push({ etat: 'dehors', lieu: { genre: 'groupe', case: t, vers: c.case }, groupe: `cercle:${c.case}` }); pris.add(t); }
+    pris.add(c.case);
+  }
+  const place = [...(L.place || [])].sort((a, b) => loin(a) - loin(b) || a - b);
+  const surPlace = new Set(place);
+  for (const t of place) {
+    if (pris.has(t) || pris.has(t + 1) || !surPlace.has(t + 1) || Math.floor(t / W) !== Math.floor((t + 1) / W)) continue;
+    spots.push({ etat: 'dehors', lieu: { genre: 'devant', case: t, vers: t + 1 }, groupe: `paire:${t}` });
+    spots.push({ etat: 'dehors', lieu: { genre: 'devant', case: t + 1, vers: t }, groupe: `paire:${t}` });
+    pris.add(t); pris.add(t + 1);
+  }
+  const rnd = rngDe(`${g}:fete:${jour}`);
+  const adultes = qui.filter((x) => !x.v.enfant).map((x) => [rnd(), x]).sort((a, b) => a[0] - b[0]).map((e) => e[1]);
+  const enfants = qui.filter((x) => x.v.enfant);
+  const choix = new Map(), groupes = new Map();
+  adultes.forEach((x, i) => {
+    const s = spots[i];
+    if (!s) return;
+    choix.set(x.v.id, s);
+    if (!groupes.has(s.groupe)) groupes.set(s.groupe, []);
+    groupes.get(s.groupe).push(x.v.id);
+  });
+  // (sans place assez grande : les autres se tiennent sur la place, où il en reste, sinon sur la promenade)
+  const reste = [...place.filter((t) => !pris.has(t)), ...(L.promenade || []).filter((t) => !pris.has(t) && !surPlace.has(t))];
+  for (const x of [...adultes.filter((y) => !choix.has(y.v.id)), ...enfants]) {
+    const t = reste.length ? reste.splice(Math.floor(rnd() * reste.length), 1)[0] : null;
+    if (t === null || t === undefined) continue;
+    choix.set(x.v.id, { etat: 'dehors', lieu: { genre: 'place', case: t }, groupe: null, jeu: !!x.v.enfant });
+  }
+  const E = SB().EMOJI || {}, out = new Map();
+  for (const x of qui) {
+    const s = choix.get(x.v.id);
+    if (!s) continue;
+    const avec = s.groupe ? groupes.get(s.groupe).filter((id) => id !== x.v.id) : [];
+    const but = s.jeu ? { sorte: 'jeu', cle: `jeu:${x.v.id}:fete`, avec: [], emoji: E.jeu || '' }
+      : { sorte: 'fete', cle: `fete:${jour}:${s.groupe || x.v.id}`, avec, emoji: E.fete || '🎉', fete: f.sorte };
+    const de = Math.min(f.fin - 0.25, f.debut + rngDe(`${g}:fete:${x.v.id}:${jour}`)() * ARRIVEE_FETE);
+    out.set(x.v.id, { de, a: Math.max(de + 0.25, Math.min(f.fin, x.coucher - 0.1)), etat: s.etat, lieu: s.lieu, but });
+  }
+  return out;
+}
+
+// Les segments `segs` avec la fête `f` ({ de, a, etat, lieu, but }) à la place de ce qu'il faisait de f.de à f.a.
+function insererFete(segs, f) {
+  const out = [];
+  for (const s of segs) {
+    if (s.a <= f.de || s.de >= f.a) { out.push(s); continue; }
+    if (s.de < f.de) out.push({ ...s, a: f.de });
+    if (s.a > f.a) out.push({ ...s, de: f.a });
+  }
+  out.push({ de: f.de, a: f.a, etat: f.etat, lieu: f.lieu, but: f.but });
+  return out.sort((p, q) => p.de - q.de);
+}
+
 // Sous la pluie (de p[0] à p[1] h) : ce qui se fait dehors (dehors, flâner, un repas à une table du dehors) devient
 // « abri », chez lui ; les segments sont coupés aux heures de l'averse.
 function sousLaPluie(segs, p, enMaison) {
   // (I3c : le travail dehors aussi ; à la cuisine, il reste à son poste)
-  const dehors = (s) => s.etat === 'dehors' || s.etat === 'flaner' || (s.etat === 'repas' && s.lieu && s.lieu.dehors) || (s.etat === 'travail' && !(s.lieu && s.lieu.dedans));
+  // (I8a : la fête du village continue sous la pluie)
+  const dehors = (s) => !(s.but && s.but.sorte === 'fete') && (s.etat === 'dehors' || s.etat === 'flaner' || (s.etat === 'repas' && s.lieu && s.lieu.dehors) || (s.etat === 'travail' && !(s.lieu && s.lieu.dedans)));
   const out = [];
   let abri = null;
   for (const s of segs) {
@@ -793,10 +899,13 @@ export function paroleVillageois(state, id, o = {}) {
   const humeur = humeurVillageois(v);
   // (I3b+ : au but d'une sortie, ce qu'il y fait : SOCIAL.ACTIVITE)
   const A = (DATA.VILLAGE.SOCIAL || {}).ACTIVITE || {};
-  const but = (etat === 'dehors' || (etat === 'flaner' && o.but === 'banc')) && BUTS_VILLAGEOIS.includes(o.but) && A[o.but] ? o.but : null;
+  // (I8a : à la fête du village, assis ou debout, il parle de la fête ; au chantier du village, du chantier)
+  const fete = o.but === 'fete' && ['dehors', 'flaner', 'repas'].includes(etat);
+  const but = fete || ((etat === 'dehors' || (etat === 'flaner' && o.but === 'banc')) && BUTS_VILLAGEOIS.includes(o.but)) ? (A[o.but] ? o.but : null) : null;
+  const chantier = etat === 'travail' && auChantier(state, v);
   // (I3c : au travail, une phrase de sa tâche ; sa tâche attend (un outil, un poste) : il le dit)
-  const def = tacheDef(v.tache), manque = etat !== 'dormir' && etat !== 'repas' ? manqueDit(state, v) : '';
-  const texte = etat === 'travail' && def ? un(def.PHRASES) : manque ? un((P().ACTIVITE || {}).attend).replace('{raison}', manque) : un(but ? A[but] : (P().ACTIVITE || {})[etat]);
+  const def = tacheDef(v.tache), manque = etat !== 'dormir' && etat !== 'repas' && !fete && !chantier ? manqueDit(state, v) : '';
+  const texte = chantier ? un(A.chantier) : etat === 'travail' && def ? un(def.PHRASES) : manque ? un((P().ACTIVITE || {}).attend).replace('{raison}', manque) : un(but ? A[but] : (P().ACTIVITE || {})[etat]);
   return {
     // (I6c : un réservé ne dit ni le salut de l'heure ni son humeur ; les tirages sont faits quand même, le reste ne
     // change pas)

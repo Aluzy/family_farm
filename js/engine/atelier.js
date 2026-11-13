@@ -1,5 +1,6 @@
 import { DATA } from './catalog.js';
 import { villageActif } from './village.js';
+import { debloque, quiDebloque } from './vocations.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
@@ -242,15 +243,20 @@ export function recetteDebloquee(state, id) {
 }
 // Un meuble de collection (le lot 4) : son plan est-il trouvé ? (state.plans.connus, js/engine/plans.js ; lu
 // ici sans l'importer, pour ne pas faire de boucle entre les modules)
+// (fiche I8a : un palier de vocation peut l'offrir, « plan:<id> », vocations.js debloque)
 export function planTrouve(state, id) {
   const P = state && state.plans;
-  return !!(P && P.connus && P.connus[id]);
+  return !!(P && P.connus && P.connus[id]) || debloque(state, `plan:${id}`);
 }
 
 export function craftStatus(state, id) {
   const r = DATA.ATELIER.RECETTES[id];
   if (!r) return { ok: false, raison: 'Recette inconnue.', manque: {} };
-  if (r.plan && !planTrouve(state, id)) return { ok: false, raison: 'Il te faut d\'abord son plan : explore le pays de sa collection, ou attends qu\'un ami de là-bas te l\'offre.', manque: {} };
+  if (r.plan && !planTrouve(state, id)) {
+    // (le chantier de l'île : un palier de vocation l'offre)
+    const q = villageActif(state) ? quiDebloque(`plan:${id}`) : null;
+    return { ok: false, raison: q ? `Il te faut d'abord son plan : ${q.vocation.toLowerCase()} l'offre au palier ${q.rang} (${q.score} points).` : 'Il te faut d\'abord son plan : explore le pays de sa collection, ou attends qu\'un ami de là-bas te l\'offre.', manque: {} };
+  }
   if (!atelierConstruit(state)) return { ok: false, raison: 'Il faut d\'abord construire l\'Atelier.', manque: {} };
   if (r.outil && r.niveau) { const refusN = refusNiveau(state, r); if (refusN) return { ok: false, raison: refusN, manque: {} }; } else if (r.outil && aDejaOutil(state, r.outil)) return { ok: false, raison: 'Tu as déjà cet outil.', manque: {} };
   if (!recetteDebloquee(state, id)) return { ok: false, raison: `Se débloque au niveau ${unlockLevel(r.debloque)}.`, manque: {} };

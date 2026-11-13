@@ -669,7 +669,7 @@
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
       const guirlandes = this.guirlandes && this.guirlandes.size ? [...this.guirlandes.values()] : [];
-      if (!list.length && !lampes.length && !guirlandes.length && !cheminees.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !this.calecheSprite && !luit) return;
+      if (!list.length && !lampes.length && !guirlandes.length && !cheminees.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !(this.feteLumieres && this.feteLumieres()) && !this.calecheSprite && !luit) return;
       if (!this.lanternLights) {
         this.lanternLights = [];
         lueur(this.textures);
@@ -777,6 +777,7 @@
       this.stepFenetres(out, nuit, dt);
       if (this.stepFenetresHameaux) this.stepFenetresHameaux(out, nuit);   // (les fenêtres des hameaux : hameaux.js)
       if (this.stepLumineux) this.stepLumineux(out, nuit, time);         // (les champignons et les cristaux du monde : lumineux.js)
+      if (this.stepFete) this.stepFete(out, nuit, time);                 // (I8a : les lampions de la fête du village : fete.js)
       this.stepEauLumiere(out, nuit, time);
       if (this.lumiereCaleche) this.lumiereCaleche(out, nuit, time);   // (la lanterne de la calèche : caleche.js)
       // (le récit, lot 10 : la pierre de lune posée, les nuits de pleine lune, la ferme luit faiblement : une

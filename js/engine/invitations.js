@@ -10,7 +10,8 @@ import { rassasierFamille, repasJour } from './repas.js';
 import { RECIT } from './recit.js';
 import { ajouterAmitie, amitieDe, cleDe, fiche, goutPour, HAMEAU_VILLAGE, palierAmitie, styleHabitant, trouverPnj } from './amitie.js';
 import { villageActif } from './village.js';
-import { porteVillageois } from './villageois.js';
+import { porteVillageois, trouverVillageois } from './villageois.js';
+import { noterRepasPartage } from './vocation-village.js';
 import { tacheDef } from './taches.js';
 import { admireLeCoin, phraseAdmire, STYLES, tableDuRepas } from './styles.js';
 
@@ -264,6 +265,8 @@ export function servirRepas(state, id, plats = [], terrasse = false) {
   }
   inv.etat = 'servie';
   inv.servi = { plats: choisis, terrasse: !!terrasse };
+  // (fiche I8a : un repas partagé avec des villageois compte pour la convivialité du village)
+  if (inv.invites.some((q) => q.reponse === 'oui' && trouverVillageois(state, q.id))) noterRepasPartage(state);
   return { ok: true, invites: out, plats: choisis, terrasse: !!terrasse };
 }
 

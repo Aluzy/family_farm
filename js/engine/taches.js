@@ -22,6 +22,7 @@ import { trouverVillageois, villageoisDe } from './villageois.js';
 import { journeeDuVillage, lieuxDuVillage } from './villageois-journee.js';
 import { connaissance } from './villageois-liens.js';
 import { liensSignature } from './liens.js';
+import { auChantier } from './projets-village.js';
 
 /* ---------- les tâches attribuées (le chantier « l'île à bâtir », fiche I3c) ----------
 
@@ -363,8 +364,9 @@ export function tacheAttente(state, v) {
 }
 
 // Travaille-t-il aujourd'hui ? (une tâche, rien ne lui manque, pas au repos, il est chez lui sur l'île)
+// (fiche I8a : envoyé au chantier du village, il y travaille à la place de sa tâche, projets-village.js auChantier)
 export function travailleAujourdhui(state, v) {
-  return !!v && !!tacheDef(v.tache) && !v.repos && !v.accueil && !tacheAttente(state, v);
+  return !!v && !!tacheDef(v.tache) && !v.repos && !v.accueil && !tacheAttente(state, v) && !auChantier(state, v);
 }
 
 // Les tâches pour la fiche du villageois `id` : [{ id, nom, icone, outil, donne, manque (null ou la raison), prise
@@ -726,14 +728,16 @@ export function tachesNuit(state) {
 /* ---------- qui fait quoi ---------- */
 
 // La vue d'ensemble : [{ id, prenom, tache (id ou null), nom, icone, outil, etat ('travail', 'attend', 'repos',
-// 'libre'), raison (ce qui manque), actions (faites aujourd'hui), sur (ACTIONS), produit }].
+// 'libre', et (I8a) 'chantier' : il travaille au chantier du village), chantier (la sorte du projet où il est
+// envoyé, ou null), raison (ce qui manque), actions (faites aujourd'hui), sur (ACTIONS), produit }].
 export function quiFaitQuoi(state) {
   return villageoisDe(state).map((v) => {
     const def = tacheDef(v.tache), T = objet(v.travail) && v.travail.jour === jourDe(state) ? v.travail : null;
     const raison = def ? tacheAttente(state, v) : null;
-    const etat = !def ? 'libre' : v.repos ? 'repos' : raison ? 'attend' : 'travail';
+    const chantier = auChantier(state, v);
+    const etat = chantier ? 'chantier' : !def ? 'libre' : v.repos ? 'repos' : raison ? 'attend' : 'travail';
     return {
-      id: v.id, prenom: v.prenom, genre: v.genre, tache: def ? v.tache : null, nom: def ? def.nom : '', icone: def ? def.icone : '',
+      id: v.id, prenom: v.prenom, genre: v.genre, tache: def ? v.tache : null, nom: def ? def.nom : '', icone: def ? def.icone : '', chantier: v.chantier || null,
       outil: v.outil || null, etat, raison, actions: T ? T.actions : 0, sur: def ? actionsDuJour(state, v) : 0, produit: T ? { ...T.produit } : {},
     };
   });

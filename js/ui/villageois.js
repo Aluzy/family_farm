@@ -9,7 +9,8 @@ import {
   accueillirVillageois, arriveeDue, arriverVillageois, ficheVillageois, nombreVillageois, prendreAvis, trouverVillageois,
   verifierMaisons, villageoisDe, villageoisPourLaCarte,
 } from '../engine/villageois.js';
-import { journeesPourLaCarte, lieuxDuVillage, paroleVillageois } from '../engine/villageois-journee.js';
+import { journeeDuVillage, journeesPourLaCarte, lieuxDuVillage, paroleVillageois } from '../engine/villageois-journee.js';
+import { fetePourLaCarte } from '../engine/fetes-village.js';
 import { echangeVillageois, liensPourLaCarte } from '../engine/villageois-liens.js';
 import {
   attribuer, donnerOutil, marquerAVendre, outilsDesTaches, quiFaitQuoi, reprendreOutil, tacheDef, tacheManque, tachesDuPoste, tachesPour,
@@ -148,7 +149,24 @@ export function villageoisHorloge() {
     nuit: nightActive(state), chemins: lieuxDuVillage(state).chemins,
     vitesse: Number(DATA.VILLAGE.HORAIRE.VITESSE) || 1, chemin: Number(DATA.VILLAGE.HORAIRE.CHEMIN) || 1,
     liens: liensPourLaCarte(state), social: { ...((DATA.VILLAGE.SOCIAL || {}).CROISE || {}), CAUSE: (DATA.TACHES || {}).CAUSE || 26 },
+    fete: feteDeLaCarte(),
   };
+}
+
+// Fiche I8a : la fête du village du jour, pour la scène (js/carte/ferme/fete.js) : ses heures, ses lumières, les tables
+// où l'on s'attable (une guirlande de lampions derrière chacune), les groupes (leurs cases : une flaque de lumière le
+// soir) ; null sans fête.
+function feteDeLaCarte() {
+  const f = fetePourLaCarte(state);
+  if (!f) return null;
+  const tables = new Set(), groupes = new Set();
+  for (const segs of journeeDuVillage(state).values()) for (const s of segs) {
+    if (!s.but || s.but.sorte !== 'fete' || !s.lieu) continue;
+    if (Number.isInteger(s.lieu.table)) tables.add(s.lieu.table);
+    else if (s.lieu.genre === 'groupe' && Number.isInteger(s.lieu.vers)) groupes.add(s.lieu.vers);
+    else if (Number.isInteger(s.lieu.case)) groupes.add(s.lieu.case);
+  }
+  return { ...f, tables: [...tables], groupes: [...groupes] };
 }
 
 // Le pont de la carte : `geste` « accueilli » (il a frappé et dit sa ligne : il est chez lui, la notification),
@@ -231,7 +249,7 @@ function depuisTexte(f) {
 
 const icone = (o) => (DATA.OBJETS[o] ? DATA.OBJETS[o].icone : o === 'pieces' ? '💰' : '');
 const produitTexte = (p) => Object.entries(p || {}).filter(([, n]) => n > 0).map(([o, n]) => `${n} ${icone(o)}`).join(' ');
-const ETATS_TACHE = { travail: '🔨 au travail', attend: '⏳ attend', repos: '😴 au repos', libre: '— sans tâche' };
+const ETATS_TACHE = { travail: '🔨 au travail', attend: '⏳ attend', repos: '😴 au repos', libre: '— sans tâche', chantier: '🏗️ au chantier du village' };
 const ilElle = (v) => (v.genre === 'm' ? 'il' : 'elle');
 
 // Ce que dit la fiche de sa tâche : la tâche, où il en est aujourd'hui, ce qui lui manque, son outil.
@@ -240,7 +258,9 @@ function tacheHtml(id) {
   if (!q) return '';
   const v = trouverVillageois(state, id), il = ilElle(v), e = escapeHtml(id);
   const def = tacheDef(q.tache);
-  const etat = !def ? `<span class="muted">Pas de tâche : ${il} vit sa journée sur l'île.</span>`
+  // (I8a : envoyé au chantier du village, il y travaille à la place de sa tâche)
+  const etat = q.etat === 'chantier' ? `${ETATS_TACHE.chantier}${def ? ` <span class="muted">(sa tâche, ${def.icone} ${escapeHtml(def.nom.toLowerCase())}, attend la fin du chantier)</span>` : ''}`
+    : !def ? `<span class="muted">Pas de tâche : ${il} vit sa journée sur l'île.</span>`
     : q.etat === 'repos' ? `${def.icone} ${escapeHtml(def.nom)} · <span class="muted">${il} se repose aujourd'hui.</span>`
     : q.etat === 'attend' ? `${def.icone} ${escapeHtml(def.nom)} · <span class="villageois-manque">⏳ ${escapeHtml(q.raison)}</span>`
     : `${def.icone} ${escapeHtml(def.nom)} · ${q.actions} / ${q.sur} aujourd'hui${produitTexte(q.produit) ? ` : ${produitTexte(q.produit)}` : ''}`;
@@ -401,7 +421,7 @@ export function ouvrirListeVillageois() {
   const V = villageoisDe(state).map((v) => ficheVillageois(state, v.id)).filter(Boolean);
   // (I3c : qui fait quoi, sur chaque ligne)
   const Q = new Map(quiFaitQuoi(state).map((q) => [q.id, q]));
-  const fait = (q) => (!q || !q.tache ? `<span class="villageois-qui muted">${ETATS_TACHE.libre}</span>`
+  const fait = (q) => (q && q.etat === 'chantier' ? `<span class="villageois-qui">${ETATS_TACHE.chantier}</span>` : !q || !q.tache ? `<span class="villageois-qui muted">${ETATS_TACHE.libre}</span>`
     : `<span class="villageois-qui">${q.icone} ${escapeHtml(q.nom)} · ${q.etat === 'travail' ? `${q.actions} / ${q.sur}${produitTexte(q.produit) ? ` : ${produitTexte(q.produit)}` : ''}` : escapeHtml(ETATS_TACHE[q.etat])}</span>`);
   const lignes = V.map((f) => `<li><button type="button" class="villageois-ligne" data-action="villageois-fiche" data-id="${escapeHtml(f.id)}">
       <span class="villageois-portrait">${portrait(f)}</span>

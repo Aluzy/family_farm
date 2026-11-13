@@ -15,6 +15,9 @@ import { projetsFaits } from '../engine/projets.js';
 import { styleDe, styleInfo, styleMaison } from '../engine/styles.js';
 import { listeDesChapitres, paliersSuivis } from '../engine/paliers.js';
 import { notify } from './toasts.js';
+import { villageActif } from '../engine/village.js';
+import { subtabsHtml } from './inventaire.js';
+import { renderVocations } from './vocations.js';
 
 /* ---------- Lot 9 : chapitres ---------- */
 
@@ -126,6 +129,25 @@ function annoncerPaliers() {
   refresh();
 }
 
+// Fiche I8a : la fenêtre « L'île » a deux onglets (le chantier allumé) : les paliers de l'île, puis les vocations
+// (js/ui/vocations.js : chaque vocation, son score, ses paliers, ce qui la fait monter ; les fêtes et les projets du
+// village).
+const ILE_ONGLETS = [
+  { id: 'paliers', icon: '🏝️', label: 'Les paliers' },
+  { id: 'vocations', icon: '🎉', label: 'Vocations' },
+];
+let ileOnglet = 'paliers';
+export function ongletsIle() {
+  return subtabsHtml(ILE_ONGLETS, ileOnglet, 'ile-onglet');
+}
+export function corpsIle() {
+  return villageActif(state) && paliersSuivis(state) && ileOnglet === 'vocations' ? renderVocations() : renderChapterBanner();
+}
+// (une notification qui mène aux vocations : l'onglet s'ouvre)
+export function ouvrirOngletIle(id) {
+  ileOnglet = ILE_ONGLETS.some((t) => t.id === id) ? id : 'paliers';
+}
+
 // Bandeau de chapitre, en haut de la Ferme : titre, objectifs et progression.
 export function renderChapterBanner() {
   if (paliersSuivis(state)) return renderIle();
@@ -194,5 +216,9 @@ export function watchChapters() {
 registerActions({
   'ack-chapter': () => {
     closeModal();
+  },
+  'ile-onglet': (target) => {
+    ouvrirOngletIle(target.dataset.tab);
+    refresh();
   },
 });

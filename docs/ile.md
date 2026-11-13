@@ -84,7 +84,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c à I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
-| 8. Les vocations | I8a, I8b | Le village convivial, la ferme productive |
+| 8. Les vocations | I8a (fait), I8b | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
 ## L'ordre et les dépendances
@@ -1123,6 +1123,87 @@ aussi par les tests). Tout est derrière le réglage : éteint, une partie n'a n
   de l'île choisi au départ.
 - Reste : les commandes du moteur pour nommer et noter (le jeu en ligne, I9) ; le panneau ne s'éclaire pas le soir ;
   pas de ligne pour un commerce fermé ni pour un villageois parti (personne ne part, B-1).
+
+## Les vocations : le village convivial (I8a, fait)
+
+L'île prend une vocation de ce que le joueur y bâtit, sans menu : la première est un village convivial. Le socle sert
+aussi à la vocation productive (I8b) et à une troisième.
+
+- **Le socle** (`js/engine/vocations.js`) : une vocation = une entrée de `VOCATIONS` (`data/village.json` : `nom`,
+  `icone`, `texte`, `PALIERS: [{ score, nom, icone, debloque: [clés] }]`, ses causes et réglages) et un fichier de calcul
+  (`js/engine/vocation-<id>.js`) qui s'enregistre : `enregistrerVocation(id, calcul)`, `calcul(state) → { score, causes:
+  [{ id, nom, valeur }] }` (des entiers). `scoreVocation`, `palierVocation` (`{ palier, suivant, debloque, score, atteint }` :
+  le palier gardé ; `suivant.manque` 0 quand le score l'atteint, il se passe la nuit), `listeVocations`, `vocationsNuit`
+  (dans `runNight`, après la nuit des villageois : le plus haut palier atteint est noté dans `state.vocations.paliers[id]`,
+  jamais perdu), `debloque(state, clé)` (un palier gardé la donne), `quiDebloque`, `nommerDeblocage` / `texteDeblocage`
+  (chaque vocation nomme ses clés pour la page). Deux vocations montent ensemble. Les calculs s'enregistrent dans une
+  déclaration de fonction (prête pendant un cycle d'imports) ; `night.js` charge `vocation-village.js`.
+- **La convivialité** (`js/engine/vocation-village.js`, `VOCATIONS.village.CAUSES`) : le bonheur moyen des villageois
+  adultes (au-dessus de 40, un point par 2 ; 25 au plus), les paires « ami » (2 chacune, 30 au plus) et « proche » (4, 30
+  au plus), les fêtes tenues (6, 60 au plus), les projets finis (10, 60 au plus), les repas partagés avec des villageois
+  (2, 20 au plus : `servirRepas` les compte, `noterRepasPartage`), le décor de la place (25 au plus : les blocs à
+  `DECOR.RAYON` 7 cases du centre de la place — le panneau du village d'I7g s'il est posé (`panneau_village`, à
+  confirmer), sinon le puits, sinon une table de jardin —, chaque sorte ses points : banc, chaise, table 1, lanterne 2,
+  bacs, massifs, rosiers, guirlandes 1, fontaine de jardin 3, kiosque, lavoir, four commun 4…). Au plus 250.
+- **Les paliers** : 20 « Des voisins qui se saluent » (les plans du banc de pierre et de la lanterne de papier, le
+  projet du kiosque) ; 50 « Un village en fête » (une seconde fête par mois, la table et le banc en rondins, la fontaine
+  du village) ; 90 « Un village accueillant » (un nouveau venu a déjà un ami ou un parent au village : `lienArrivee`,
+  son affinité posée à 50 ou 80 ; la pergola, la jardinière de pierre, le four commun) ; 140 « Un village où il fait bon
+  vivre » (deux couleurs d'enseigne pour les commerces, `couleursEnseigne`, que les commerces d'I5a liront ; la chaise
+  peinte, le bassin, la jarre aux coquillages). Un plan débloqué : `planTrouve` (atelier.js) le compte trouvé ; la recette
+  refusée dit le palier. Rien qui produise plus.
+- **Les fêtes du village** (`js/engine/fetes-village.js`, `VOCATIONS.village.FETES`) : la fête que le joueur fixe
+  (`fixerFete` : un jour à venir, 40 jours au plus, une par mois de lune, deux avec le palier 2 ; il faut une place, et un
+  plat cuisiné de l'inventaire par deux villageois, 2 au moins, choisis variés ou donnés ; mis de côté, rendus si on
+  l'annule : `annulerFete`) ; la veillée de pleine lune (d'elle-même, le premier jour de pleine lune du mois, deux
+  villageois au moins, sans plats, de 19 h 45 à 21 h) ; la fête de l'ouverture d'un commerce (`fixerFeteOuverture`, pour
+  I5a : le premier jour libre après l'ouverture). De 17 h à 21 h, tous ceux qui sont là viennent sur la place
+  (`villageois-journee.js` `planDeFete`) : attablés aux tables du dehors (la commune d'abord), assis sur les bancs proches,
+  debout dans les cercles de la place, puis deux à deux face à face ; chaque table, banc ou groupe cause ensemble
+  (`VILLAGE.SOCIAL.REPLIQUES.fete`, douze échanges) ; un enfant joue ; la pluie ne les chasse pas. La nuit
+  (`fetesVillageNuit`) : la fête est tenue ; chaque paire présente gagne `LIENS.GAINS.FETE` (liens.js `presentsALaFete`),
+  chacun vise 6 de bonheur de plus et un par sorte de plat (3 au plus).
+- **Les projets du village** (`js/engine/projets-village.js`, `VOCATIONS.village.PROJETS`) : la place et le jardin
+  partagé (sans bâtiment : leur décor entre dans l'inventaire), le lavoir (3 × 2 cases), le kiosque (3 × 3), la fontaine
+  du village (2 × 2), le four commun (2 × 2). Un à la fois : `lancerProjet` (un bâtiment : son chantier entre dans
+  l'inventaire, à poser avec Construire), `apporterAuProjetVillage`, `envoyerAuChantier` (`v.chantier`) ; tant que tout est
+  là et le chantier posé (sans bâtiment : la place trouvée), ceux qui y sont envoyés y travaillent à la place de leur
+  tâche (`auChantier` : `travailleAujourdhui` faux ; la journée leur donne leurs créneaux de travail autour du chantier,
+  `postesChantier`, le geste de la hache, 🔨 ; les répliques `chantier`) ; la nuit (`projetsVillageNuit`, après les
+  tâches) chacun compte une journée (le kiosque : trois) ; le journal note `tache: 'chantier', chantier: <sorte>` et le
+  tableau le montre à la place de la tâche (`bilanJour.chantier`, `joursChantier`, hors du rendement) ; fini, le bâtiment
+  prend son dessin achevé (`dessinProjet`), les villageois reprennent leur tâche. `abandonnerProjet` (chantier non posé).
+- **Les dessins** (`scripts/batiments/projets_village.py`) : le kiosque, le lavoir, la fontaine du village, le four
+  commun, chacun en chantier et achevé, et la guirlande de lampions de la fête (le jour, allumée) : des volumes simples
+  vus selon la projection de la carte (le dessus et la face avant de tout, l'intérieur des ouvertures), des rampes de
+  160 tons par élément, le biseau, l'occlusion, la braise qui teinte la gueule du four. Couleurs comptées : kiosque 886
+  (chantier 621), lavoir 726 (588), fontaine 419 (417), four 580 (515), lampions 199 et 201.
+- **La scène** (`js/carte/ferme/fete.js`) : pendant la fête, une guirlande de lampions derrière chaque table ; le soir,
+  les lampions s'allument et posent leur lueur dans le voile, une flaque de lumière dorée sur chaque table et chaque
+  groupe ; assis sur un banc à la fête, ils causent aussi (villageois-social.js).
+- **L'interface** : la fenêtre « L'île » a deux onglets, « Les paliers » et « Vocations » (`js/ui/vocations.js`) : pour
+  chaque vocation, son score, son palier, le palier suivant (une jauge, ce qu'il débloque), ses causes (valeur, plafond,
+  ce qui la fait), ses paliers ; pour le village, ses fêtes (celles qui viennent, en fixer une, l'annuler) et ses projets
+  (le projet en cours : les matériaux, « Apporter », les journées, le chantier à poser, qui y va — « Envoyer »,
+  « Rappeler » ; les autres : lancer, fermés jusqu'au palier, finis). Le calendrier marque les fêtes du village ; « Créer
+  un évènement » propose de fixer la fête ce jour-là. Au matin, des notifications : la fête d'hier, le chantier, un palier
+  passé (ce qu'il débloque), les fêtes des trois jours qui viennent ; « X n'arrive pas en inconnu ».
+- **La sauvegarde** : format 97 ; la migration 96 → 97 (`reparerVocations`, state.js) :
+  rien sans vocations ; sinon les paliers bornés (une vocation inconnue s'en va), les fêtes lisibles (une par jour), les
+  projets connus, les matériaux bornés au besoin ; un villageois envoyé à un projet qui n'est plus en cours reprend sa
+  tâche.
+- **Les tests** : `tests/engine/village-vocations.test.mjs` (le socle et une troisième vocation, les paliers jamais
+  perdus ; chaque cause et son plafond ; les déblocages : plan, projet, seconde fête, arrivée liée ; une fête : fixer,
+  refus, plats, annuler, le jour dit — attablés, ils causent —, la nuit — affinité, bonheur, tenue — ; la veillée ; le
+  kiosque en trois journées, le journal et le tableau ; la place et son décor ; la sauvegarde ; éteint). Éteint, le CSV
+  de la simulation est le même octet pour octet ; `fetes.test.mjs` et `projets.test.mjs` restent verts.
+- **Pour la chronique (I7g)** : une fête est tenue dans `fetesVillageNuit` (fetes-village.js, à `v.tenues += 1`) ; un
+  projet est fini dans `projetsVillageNuit` (projets-village.js, à `p.faits.push`) ; un palier dans `vocationsNuit`.
+- Reste : le joueur automatique ne fixe pas de fêtes et ne lance pas de projets ; les mimiques pendant les fêtes (hors
+  périmètre) ; le joueur n'a rien de propre à faire à la fête (y être ne donne pas d'amitié) ; les couleurs d'enseigne
+  attendent les commerces (I5a) ; le panneau du village (I7g) : son id est supposé `panneau_village` ; les bâtiments ne
+  servent qu'au décor et à la convivialité (le four ne cuit pas, le lavoir ne lave pas) ; l'eau des fontaines et du
+  lavoir ne s'anime pas.
 
 ## Les règles qui ne changent pas
 

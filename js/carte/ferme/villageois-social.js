@@ -290,7 +290,8 @@
         // (à table, assis à la même table au même repas : on cause aussi)
         if (m.assis && m.seg && m.seg.etat === 'repas' && m.seg.lieu && Number.isInteger(m.seg.lieu.table) && !m.parle && m.s && m.s.visible) cle = `table:${m.seg.lieu.table}:${Math.floor(m.seg.de)}`;
         // (I6b : assis côte à côte sur deux bancs voisins, deux amis causent aussi)
-        else if (m.assis && but && but.sorte === 'banc' && but.avec && but.avec.length && !m.parle && m.s && m.s.visible) cle = but.cle;
+        // (I8a : à la fête du village, assis sur un banc, ils causent aussi)
+        else if (m.assis && but && (but.sorte === 'banc' || but.sorte === 'fete') && but.avec && but.avec.length && !m.parle && m.s && m.s.visible) cle = but.cle;
         else if (but && but.avec && but.avec.length && m.auBut && dispo(m) && !m.salut && !m.chemin.length && !m.demande && !m.suit) cle = but.cle;
         if (!cle) continue;
         let l = ici.get(cle);
@@ -323,7 +324,8 @@
         const a = l[cs.tour % l.length], b = l[(cs.tour + 1) % l.length];
         // (I6b : la visite du soir, le repas apporté, le banc à deux ont leurs répliques)
         const ba = a.seg.but;
-        const sorte = !ba ? 'repas' : ba.sorte === 'rdv' ? 'groupe' : ba.apporte ? 'apporte' : ba.soir ? 'soiree' : ba.sorte;
+        // (I8a : au chantier du village, les répliques du chantier ; à la fête, celles de la fête)
+        const sorte = !ba ? 'repas' : ba.sorte === 'rdv' ? 'groupe' : ba.apporte ? 'apporte' : ba.soir ? 'soiree' : ba.chantier ? 'chantier' : ba.sorte;
         const r = B.villageois('echange', a.id, { avec: b.id, n: cs.n++, sorte });
         cs.tour++;
         const tour = Math.max(1.2, Number(R.TOUR) || 3.2) * 1000;

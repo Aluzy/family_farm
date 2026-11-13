@@ -52,7 +52,7 @@ import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js
 import { portTabsHtml, renderPort } from './port.js';
 import { chroniqueBouton } from './chronique.js';
 import { villageActif } from '../engine/village.js';
-import { renderChapterBanner } from './chapitres.js';
+import { renderChapterBanner, ongletsIle, corpsIle } from './chapitres.js';
 import { paliersSuivis } from '../engine/paliers.js';
 import { renderBoite } from './boite.js';
 import { renderTonnelets } from './tonnelet.js';
@@ -391,7 +391,10 @@ export const STAGE_WINDOWS = {
   chapitres: {
     get nom() { return paliersSuivis(state) ? 'L\'île' : 'Chapitres'; },
     get icone() { return paliersSuivis(state) ? '🏝️' : '📜'; },
-    ok: () => true, corps: () => renderChapterBanner(),
+    // (fiche I8a : le chantier allumé, deux onglets, les paliers de l'île et les vocations : chapitres.js)
+    get onglets() { return villageActif(state) && paliersSuivis(state) ? ongletsIle : undefined; },
+    get haute() { return villageActif(state) && paliersSuivis(state); },
+    ok: () => true, corps: () => corpsIle(),
   },
   // Le Silo : sur la carte dès qu'il est débloqué (comme le Poulailler) ; on le construit,
   // l'agrandit et on voit son blé dans sa fenêtre.

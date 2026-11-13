@@ -4,6 +4,7 @@ import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.
 import { tacheAttente, tacheDef } from './taches.js';
 import { goutTache } from './traits.js';
 import { toolDef } from './outils.js';
+import { auChantier, defProjet } from './projets-village.js';
 import { validApparence } from './family.js';
 
 /* ---------- le tableau des villageois (le chantier « l'île à bâtir », fiche I3d) ----------
@@ -28,7 +29,16 @@ import { validApparence } from './family.js';
      reposait pas), en % de la moyenne des tâches faites dans le village sur la période (100 : la moyenne) ; null
      sans jour de travail, ou si aucune tâche n'a rien produit.
    Des entiers partout. Les périodes : « hier » (le jour d'avant celui de la partie), « semaine » (les sept derniers
-   jours, glissants : ceux qui finissent hier). Le chantier éteint, rien : villageoisDe est vide. */
+   jours, glissants : ceux qui finissent hier). Le chantier éteint, rien : villageoisDe est vide.
+   Fiche I8a : un jour au chantier d'un projet du village (J.tache « chantier », J.chantier : la sorte du projet) est
+   montré à la place de la tâche (chantier : { sorte, nom, icone }) ; il compte son repas et ne produit rien, et ne
+   compte pas dans le rendement de sa tâche. Le villageois envoyé au chantier aujourd'hui : bilanVillageois.chantier. */
+
+// Le projet du village d'un jour au chantier, ou d'un villageois qui y est envoyé : { sorte, nom, icone } ou null.
+export function chantierDit(sorte) {
+  const S = sorte ? defProjet(sorte) : null;
+  return S ? { sorte, nom: S.nom, icone: S.icone } : null;
+}
 
 // Les périodes du tableau : leur nombre de jours (jusqu'à hier compris).
 export const PERIODES = { hier: 1, semaine: 7 };
@@ -88,7 +98,8 @@ export function bilanJour(J) {
   const tache = tacheDef(J.tache) ? J.tache : null;
   const cout = repas + part + matieres;
   return {
-    jour: J.jour, tache, actions: Math.max(0, entier(J.actions)), sur: tache ? tacheDef(tache).ACTIONS : 0, repos: !!J.repos,
+    jour: J.jour, tache, chantier: J.tache === 'chantier' ? chantierDit(J.chantier) || { sorte: null, nom: 'Un projet du village', icone: '🏗️' } : null,
+    actions: Math.max(0, entier(J.actions)), sur: tache ? tacheDef(tache).ACTIONS : 0, repos: !!J.repos,
     mange, repas, part, utilise, matieres, cout, produit, valeur, ventes, solde: valeur - cout,
   };
 }
@@ -98,6 +109,9 @@ export function manqueCourt(state, v) {
   if (!v) return '';
   if (v.accueil) return 'en route vers sa maison';
   if (v.repos) return v.faim > 0 ? 'en repos : pas assez à manger' : 'en repos : pas de lit';
+  // (I8a : envoyé au chantier du village, mais le chantier attend : des matériaux, d'être posé)
+  if (v.chantier && !auChantier(state, v)) return 'au chantier : il attend les matériaux ou le chantier posé';
+  if (auChantier(state, v)) return '';
   const def = tacheDef(v.tache);
   if (!def) return 'sans tâche';
   if (!tacheAttente(state, v)) return '';
@@ -122,7 +136,7 @@ export function bilanVillageois(state, id, periode = 'semaine') {
   if (!v) return null;
   const jours = entreesPeriode(state, v, periode).map(bilanJour);
   const produit = new Map(), mange = {}, utilise = {}, parTache = {};
-  let cout = 0, repas = 0, part = 0, matieres = 0, valeur = 0, ventes = 0, joursTravail = 0, joursRepos = 0;
+  let cout = 0, repas = 0, part = 0, matieres = 0, valeur = 0, ventes = 0, joursTravail = 0, joursRepos = 0, joursChantier = 0;
   for (const j of jours) {
     cout += j.cout; repas += j.repas; part += j.part; matieres += j.matieres; valeur += j.valeur; ventes += j.ventes;
     for (const [o, n] of Object.entries(j.mange)) mange[o] = (mange[o] || 0) + n;
@@ -133,6 +147,7 @@ export function bilanVillageois(state, id, periode = 'semaine') {
       produit.set(p.objet, q);
     }
     if (j.repos) joursRepos++;
+    else if (j.chantier) joursChantier++;
     else if (j.tache) {
       joursTravail++;
       const t = parTache[j.tache] || (parTache[j.tache] = { jours: 0, valeur: 0 });
@@ -143,10 +158,11 @@ export function bilanVillageois(state, id, periode = 'semaine') {
   return {
     id: v.id, prenom: v.prenom, genre: v.genre, perso: v.perso, apparence: validApparence(v.apparence, false),
     tache: def ? v.tache : null, nom: def ? def.nom : '', icone: def ? def.icone : '',
+    chantier: v.chantier ? chantierDit(v.chantier) : null,
     humeur: humeurVillageois(v), bonheur: entier(v.bonheur), manque: manqueCourt(state, v),
     jours, cout, repas, part, matieres, valeur, ventes, solde: valeur - cout,
     produit: [...produit.values()].sort((a, b) => b.valeur - a.valeur || (a.objet < b.objet ? -1 : 1)),
-    mange, utilise, joursTravail, joursRepos, parTache, rendement: null,
+    mange, utilise, joursTravail, joursRepos, joursChantier, parTache, rendement: null,
     gout: def ? goutTache(v, v.tache, { connus: true }) : null,
   };
 }

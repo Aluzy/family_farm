@@ -145,8 +145,8 @@
         "RECOIT": 0.1,
         "DUREE": 2,
         "PORT_MAX": 40,
-        "OUVRAGES": ["ruche", "bassin", "fontaine_", "ornement_", "massif_", "bloc_silo", "citerne", "compost", "station_robot", "tonnelet", "tas_citrouilles", "citrouille_halloween", "bonhomme_neige", "bac_", "pommier", "poirier", "cerisier", "abricotier", "pecher", "mangeoire_grain", "distributeur"],
-        "EMOJI": { "eau": "💧", "jardin": "🌱", "betes": "🐑", "ouvrage": "👀", "port": "⚓", "promenade": "🌿", "banc": "☺️", "soir": "🌙", "apporte": "🍲", "jeu": "🪁" }
+        "OUVRAGES": ["ruche", "bassin", "fontaine_", "ornement_", "massif_", "bloc_silo", "citerne", "compost", "station_robot", "tonnelet", "tas_citrouilles", "citrouille_halloween", "bonhomme_neige", "bac_", "pommier", "poirier", "cerisier", "abricotier", "pecher", "mangeoire_grain", "distributeur", "lavoir", "kiosque", "fontaine_village", "four_commun"],
+        "EMOJI": { "eau": "💧", "jardin": "🌱", "betes": "🐑", "ouvrage": "👀", "port": "⚓", "promenade": "🌿", "banc": "☺️", "soir": "🌙", "apporte": "🍲", "jeu": "🪁", "fete": "🎉", "chantier": "🔨" }
       },
       "CROISE": { "RAYON": 24, "ATTENTE": 40, "DUREE": [1.6, 2.5], "SIGNE": 0.5, "ENSEMBLE": 0.35, "BOUT": 12, "REGARD": 48, "JOUEUR": 28, "JOUEUR_AMI": 56, "JOUEUR_ATTENTE": 60, "TOUR": 3.2 },
       "EMOJI": { "connaissance": ["👋", "😊"], "ami": ["😄", "❤️", "😊", "👋"], "proche": ["😄", "❤️", "🥰"], "intime": ["❤️", "🥰", "😄"], "retrouvailles": ["😄", "🥰"], "present": ["🎁"], "triste": ["🙂"] },
@@ -303,6 +303,28 @@
           ["Attention où tu mets les pieds !", "Merci, j'ai failli tomber !"],
           ["On forme une bonne équipe.", "La meilleure de l'île !"],
           ["Encore un peu et on a fini.", "Après, une bonne soupe !"]
+        ],
+        "fete": [
+          ["Quelle belle fête !", "On devrait en faire plus souvent !"],
+          ["Tu as goûté à tout ?", "Deux fois, même ! Chut !"],
+          ["À la santé du village !", "Et à tous ceux qui y vivent !"],
+          ["Regarde, tout le monde est là.", "On est une vraie famille, ici."],
+          ["Tu danses, {prenom} ?", "Si tu me promets de ne pas rire !"],
+          ["Les lampions sont magnifiques.", "On se croirait dans un conte."],
+          ["Tu te souviens de la première fête ?", "On n'était que trois, à l'époque !"],
+          ["Encore un peu de tarte ?", "Juste une petite part, alors."],
+          ["Merci d'être venu, {prenom}.", "Je n'aurais manqué ça pour rien au monde !"],
+          ["On chante quelque chose ?", "Toi d'abord, je te suis !"],
+          ["Il fait bon, ce soir.", "Une soirée comme on les aime."],
+          ["Quelle chance, cette île.", "Et ces voisins, surtout !"]
+        ],
+        "chantier": [
+          ["Tu tiens la planche, {prenom} ?", "Vas-y, je la tiens bien droite !"],
+          ["Ça prend forme, regarde !", "Le village va être fier !"],
+          ["Encore une pierre et on fait une pause.", "Je t'attends à l'ombre, alors !"],
+          ["On le bâtit pour tout le monde.", "C'est ça qui donne du cœur à l'ouvrage."],
+          ["Tu crois qu'on aura fini pour la fête ?", "Si on s'y met tous, sûrement !"],
+          ["Passe-moi le marteau, tu veux ?", "Tiens, et attention aux doigts !"]
         ]
       },
       "JOUEUR": {
@@ -326,7 +348,9 @@
         "banc": ["On se repose un peu, côte à côte.", "Un banc, un ami : que demander de plus ?"],
         "soir": ["Je passe la soirée chez un ami.", "Une petite visite avant d'aller dormir."],
         "apporte": ["J'apporte un repas à un ami qui se repose.", "Il faut bien s'entraider !"],
-        "jeu": ["Je joue sur la place !", "On s'amuse bien, ici !"]
+        "jeu": ["Je joue sur la place !", "On s'amuse bien, ici !"],
+        "fete": ["C'est la fête du village !", "Quelle belle fête, tu ne trouves pas ?", "Tout le village est sur la place !"],
+        "chantier": ["Je travaille au chantier du village.", "On bâtit quelque chose de beau, tous ensemble.", "Le chantier avance bien !"]
       }
     },
     "//AMITIE": [
@@ -1314,6 +1338,133 @@
     "LANTERNE": {
       "sol": { "rayon": 46, "aplati": 0.7, "teinte": 16761968, "alpha": 0.9, "dx": 0, "dy": -4 },
       "vitre": { "rayon": 11, "teinte": 16769704, "alpha": 0.95, "dx": 0, "dy": -27 }
+    }
+  },
+  "//VOCATIONS": [
+    "Les vocations de l'île (fiches I8a et I8b ; le socle : js/engine/vocations.js). Une vocation n'est pas un choix dans un",
+    "menu : c'est un score entier, calculé chaque fois de l'état de la partie, qui sort de ce que le joueur bâtit ; deux",
+    "vocations montent ensemble. Chaque entrée (son id : « village », puis « production » avec I8b) a son nom, son icône,",
+    "ses PALIERS (le score à atteindre, ce que le palier débloque : des clés « sorte:quoi » que le jeu lit avec",
+    "debloque(state, clé)) et ses causes et réglages, lus par son fichier de calcul (js/engine/vocation-<id>.js, qui",
+    "l'enregistre : enregistrerVocation). Un palier atteint ne se perd pas (state.vocations.paliers, noté la nuit). Une",
+    "troisième vocation : une entrée ici et un fichier de calcul, sans toucher au socle.",
+    "village (fiche I8a, js/engine/vocation-village.js) : la convivialité. CAUSES : le bonheur moyen des villageois",
+    "(au-dessus de BASE, un point par PAR), les liens « ami » et « proche » entre eux (POINTS par paire), les fêtes tenues,",
+    "les projets du village finis, les repas partagés avec des villageois, le décor de la place (DECOR : les blocs à",
+    "RAYON cases au plus du centre de la place, le panneau du village s'il est posé, sinon le premier de CENTRES, sinon",
+    "la table commune ; chaque sorte ses points, SORTES, un préfixe finit par « _ ») ; chacune plafonnée (MAX), pour",
+    "qu'aucune ne suffise seule. Ce que débloquent les PALIERS : « plan:<recette> » (un meuble de jardin qui se",
+    "fabrique désormais à l'Atelier, comme si son plan était trouvé), « projet:<sorte> » (un projet du village),",
+    "« fete:seconde » (une seconde fête par mois de lune), « arrivee:lien » (un nouveau venu a déjà un lien avec un",
+    "villageois : un ami, un parent ; ARRIVEE_LIEN), « enseigne:couleurs » (des couleurs d'enseigne pour les commerces,",
+    "ENSEIGNES ; lues par les commerces d'I5a). Rien qui produise plus.",
+    "FETES (js/engine/fetes-village.js) : la fête du village, que le joueur fixe au calendrier (PAR_MOIS par mois de",
+    "lune, une de plus avec « fete:seconde » ; d'ici à JOURS_MAX jours, pas aujourd'hui) en fournissant les plats (un",
+    "plat de l'inventaire par PLATS.PAR villageois, PLATS.MIN au moins ; repris s'il l'annule) ; la veillée de pleine",
+    "lune (le premier jour de pleine lune du mois, d'elle-même, sans plats ; deux villageois au moins) ; la fête de",
+    "l'ouverture d'un commerce (I5a la fixera : le lendemain de l'ouverture). De DEBUT à FIN h (la veillée : de",
+    "VEILLEE[0] à VEILLEE[1] h), les villageois viennent sur la place : attablés aux tables du dehors, assis sur les",
+    "bancs, debout en petits groupes ; ils causent (VILLAGE.SOCIAL.REPLIQUES.fete), même sous la pluie. La nuit, chacun",
+    "y était : l'affinité de chaque paire monte (VILLAGE.LIENS.GAINS.FETE), son bonheur vise BONHEUR de plus (et un",
+    "point par sorte de plat, VARIETE au plus). ANNONCE : les jours d'avance où elle s'annonce le matin. LUMIERES : les",
+    "lampions du soir (la scène, js/carte/ferme/fete.js).",
+    "PROJETS (js/engine/projets-village.js) : les projets du village, un à la fois, dans l'ordre que le joueur choisit",
+    "parmi ceux qui sont ouverts (sans « palier », ou débloqués : « projet:<sorte> »). Chacun demande des matériaux",
+    "(besoin, apportés de l'inventaire) et des journées de villageois (JOURNEES) : le joueur en envoie au chantier ; ils",
+    "y travaillent à la place de leur tâche (le tableau le montre), aux heures de travail, autour du bâtiment posé (bloc :",
+    "le joueur reçoit son chantier à poser) ou sur la place (sans bloc). Une journée compte quand tout est là. Fini, le",
+    "bâtiment prend son dessin achevé, ou le décor (donne) entre dans l'inventaire."
+  ],
+  "VOCATIONS": {
+    "village": {
+      "nom": "Un village convivial",
+      "icone": "🎉",
+      "texte": "Des fêtes, des projets faits ensemble, des repas partagés et une jolie place rendent le village convivial.",
+      "PALIERS": [
+        { "score": 20, "nom": "Des voisins qui se saluent", "icone": "👋", "debloque": ["plan:banc_pierre", "plan:lanterne_papier", "projet:kiosque"] },
+        { "score": 50, "nom": "Un village en fête", "icone": "🎉", "debloque": ["fete:seconde", "plan:table_rondins", "plan:banc_rondins", "projet:fontaine"] },
+        { "score": 90, "nom": "Un village accueillant", "icone": "🤝", "debloque": ["arrivee:lien", "plan:pergola", "plan:jardiniere_pierre", "projet:four"] },
+        { "score": 140, "nom": "Un village où il fait bon vivre", "icone": "🌟", "debloque": ["enseigne:couleurs", "plan:chaise_peinte", "plan:bassin", "plan:jarre_coquillages"] }
+      ],
+      "CAUSES": {
+        "bonheur": { "nom": "Le bonheur des villageois", "icone": "😊", "BASE": 40, "PAR": 2, "MAX": 25 },
+        "ami": { "nom": "Des amis entre eux", "icone": "🤝", "POINTS": 2, "MAX": 30 },
+        "proche": { "nom": "Des proches", "icone": "💞", "POINTS": 4, "MAX": 30 },
+        "fete": { "nom": "Les fêtes tenues", "icone": "🎉", "POINTS": 6, "MAX": 60 },
+        "projet": { "nom": "Les projets finis", "icone": "🏗️", "POINTS": 10, "MAX": 60 },
+        "repas": { "nom": "Les repas partagés", "icone": "🍽️", "POINTS": 2, "MAX": 20 },
+        "decor": { "nom": "Le décor de la place", "icone": "🌷", "POINTS": 1, "MAX": 25 }
+      },
+      "DECOR": {
+        "RAYON": 7,
+        "CENTRES": ["panneau_village", "puits"],
+        "SORTES": {
+          "banc_": 1, "chaise_": 1, "table_jardin": 1, "table_rondins": 1, "lanterne": 2, "lanterne_papier": 2, "candelabre": 2,
+          "bac_": 1, "massif_": 1, "rosier_": 1, "guirlande_": 1, "pergola": 2, "jardiniere_pierre": 1, "jarre_coquillages": 1,
+          "bassin": 2, "fontaine_": 3, "ornement_": 2, "lavoir": 4, "kiosque": 4, "four_commun": 4
+        }
+      },
+      "ARRIVEE_LIEN": { "PARENT": 0.3, "AMI": 50, "PROCHE": 80 },
+      "ENSEIGNES": [
+        { "id": "or", "nom": "lettres dorées", "texte": "#e2b04a" },
+        { "id": "lune", "nom": "lettres de lune", "texte": "#cfd8ff" }
+      ],
+      "FETES": {
+        "PAR_MOIS": 1,
+        "JOURS_MAX": 40,
+        "DEBUT": 17,
+        "FIN": 21,
+        "VEILLEE": [19.75, 21],
+        "VEILLEE_MIN": 2,
+        "PLATS": { "PAR": 2, "MIN": 2 },
+        "BONHEUR": 6,
+        "VARIETE": 3,
+        "ANNONCE": 3,
+        "NOMS": {
+          "mois": ["🎉", "La fête du village"],
+          "pleine_lune": ["🌕", "La veillée de pleine lune"],
+          "ouverture": ["🎊", "La fête de l'ouverture"]
+        },
+        "LUMIERES": { "teinte": 16757350, "alpha": 1, "rayon": 60 }
+      },
+      "PROJETS": {
+        "ORDRE": ["place", "jardin", "lavoir", "kiosque", "fontaine", "four"],
+        "SORTES": {
+          "place": {
+            "nom": "Aménager la place", "icone": "🪑", "journees": 2,
+            "texte": "Des bancs, des bacs de fleurs, une table et une lanterne, pour se retrouver le soir sur la place.",
+            "besoin": { "bois": 20, "pierre": 15, "fibre": 10 },
+            "donne": { "banc_jardin": 2, "bac_rond": 2, "table_jardin": 1, "chaise_jardin": 4, "lanterne": 1 }
+          },
+          "jardin": {
+            "nom": "Un jardin partagé", "icone": "🌷", "journees": 2,
+            "texte": "Une pergola, des jardinières et un banc de rondins, que tout le village soigne ensemble.",
+            "besoin": { "bois": 15, "pierre": 10, "fibre": 15 },
+            "donne": { "pergola": 1, "bac_long": 2, "jardiniere_pierre": 1, "banc_rondins": 1 }
+          },
+          "lavoir": {
+            "nom": "Le lavoir", "icone": "🧺", "journees": 4, "bloc": "lavoir",
+            "texte": "Un bassin de pierre sous un toit de bois, où l'on se retrouve pour laver et bavarder.",
+            "besoin": { "pierre": 30, "planche": 12, "bois": 10 }
+          },
+          "kiosque": {
+            "nom": "Le kiosque", "icone": "🎶", "journees": 3, "bloc": "kiosque", "palier": "projet:kiosque",
+            "texte": "Un kiosque de bois sur une estrade de pierre, au cœur de la place : on y danse les soirs de fête.",
+            "besoin": { "planche": 24, "pierre": 12, "lingot_fer": 2 }
+          },
+          "fontaine": {
+            "nom": "La fontaine du village", "icone": "⛲", "journees": 4, "bloc": "fontaine_village", "palier": "projet:fontaine",
+            "texte": "Une grande fontaine à quatre goulots, où l'on vient puiser et causer.",
+            "besoin": { "pierre": 40, "lingot_cuivre": 2, "planche": 4 }
+          },
+          "four": {
+            "nom": "Le four commun", "icone": "🔥", "journees": 5, "bloc": "four_commun", "palier": "projet:four",
+            "texte": "Un four à pain de pierre sous son auvent, que le village allume pour les fêtes.",
+            "besoin": { "pierre": 36, "bois": 20, "planche": 8 }
+          }
+        },
+        "TRAVAIL": { "geste": "hache", "emoji": "🔨" }
+      }
     }
   }
 }

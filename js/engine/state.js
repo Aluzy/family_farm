@@ -40,6 +40,9 @@ import { reparerAmitieVillageois } from './villageois-amitie.js';
 import { reparerLiens } from './liens.js';
 import { reparerBourse, reparerEtal } from './bourse.js';
 import { reparerTraits } from './traits.js';
+import { reparerPaliersVocations } from './vocations.js';
+import { reparerFetes } from './fetes-village.js';
+import { reparerProjetsVillage } from './projets-village.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -979,6 +982,12 @@ export const MIGRATIONS = {
     out.chronique = reparerChronique(out.chronique);
     return out;
   },
+  // v96 → v97 (le chantier « l'île à bâtir », fiche I8a) : les vocations de l'île (js/engine/vocations.js :
+  // state.vocations, les paliers atteints ; state.vocations.village, les fêtes et les projets du village) et le chantier
+  // où un villageois est envoyé (v.chantier). Une partie d'avant n'en a pas : rien n'est ajouté ; ce qui est abîmé est
+  // réparé (un palier d'une vocation inconnue, une fête illisible, un projet inconnu ; un villageois envoyé à un projet
+  // qui n'est plus en cours reprend sa tâche). Sans vocations ni villageois (le réglage éteint), rien.
+  96: (state) => reparerVocations({ ...state, version: 97 }),
 };
 
 // Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.
@@ -986,6 +995,22 @@ function reparerDidacticielIle(d) {
   const n = DATA.VILLAGE.DEPART.ETAPES.length, ids = new Set(DATA.VILLAGE.DEPART.ETAPES.map((e) => e.id));
   if (!d || typeof d !== 'object' || Array.isArray(d) || !Number.isInteger(d.etape) || d.etape < 0) return { etape: n, fini: true, passees: [] };
   return { etape: Math.min(d.etape, n), fini: d.fini === true || d.etape >= n, passees: Array.isArray(d.passees) ? d.passees.filter((x) => ids.has(x)) : [] };
+}
+
+// Les vocations d'une sauvegarde (la migration v96 → v97).
+function reparerVocations(state) {
+  if ('vocations' in state) {
+    const o = state.vocations && typeof state.vocations === 'object' && !Array.isArray(state.vocations) ? state.vocations : {};
+    const v = o.village && typeof o.village === 'object' && !Array.isArray(o.village) ? o.village : null;
+    const village = v ? { ...reparerFetes(v), projets: reparerProjetsVillage(v.projets), ...(Number.isInteger(v.repas) && v.repas >= 0 ? { repas: v.repas } : {}) } : null;
+    state.vocations = { ...reparerPaliersVocations(o), ...(village ? { village } : {}) };
+  }
+  if (Array.isArray(state.villageois)) {
+    const p = state.vocations && state.vocations.village && state.vocations.village.projets;
+    const enCours = p && p.encours ? p.encours.sorte : null;
+    state.villageois = state.villageois.map((x) => (x && typeof x === 'object' && 'chantier' in x && x.chantier !== enCours ? { ...x, chantier: null } : x));
+  }
+  return state;
 }
 
 // Le dehors d'une sauvegarde (la migration v87 → v88) : { troncon, chemins (des segments lisibles) }.

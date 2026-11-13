@@ -115,6 +115,8 @@ export function direAvisLien(v, quoi) {
   else if (sorte === 'foyer') notify(`🏡 ${escapeHtml(v.prenom)} et ${escapeHtml(o.prenom)} s'installent ensemble.`, { kind: 'info' });
   else if (sorte === 'enfant') notify(`👶 ${escapeHtml(o.prenom)} est arrivé${accord(o, 'e', '')} par le bac : ${accord(o, 'elle', 'il')} vit chez ${escapeHtml(v.prenom)}.`, { kind: 'info' });
   else if (sorte === 'entraide') notify(`🍲 ${escapeHtml(o.prenom)} a apporté un repas à ${escapeHtml(v.prenom)}, qui se reposait.`, { kind: 'info' });
+  // (I8a, un village convivial : le nouveau venu y avait déjà un ami, un parent)
+  else if (sorte === 'lien_arrivee') notify(`🤝 ${escapeHtml(v.prenom)} n'arrive pas en inconnu${accord(v, 'e', '')} : ${v.lienArrivee && v.lienArrivee.sorte === 'parent' ? `c'est de la famille de ${escapeHtml(o.prenom)}` : `${escapeHtml(o.prenom)} est un vieil ami`}.`, { kind: 'info' });
   else return false;
   return true;
 }
