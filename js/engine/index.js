@@ -95,4 +95,5 @@ export * from './village.js';
 export * from './paliers.js';
 export * from './villageois.js';
 export * from './villageois-journee.js';
+export * from './villageois-liens.js';
 export * from './port.js';

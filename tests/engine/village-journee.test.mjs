@@ -114,7 +114,7 @@ test('la journée : de 0 à 24 h sans trou, les états de la fiche ; dormir, se 
       assertEqual([a(3).etat, a(3).lieu.genre, a(3).lieu.case], ['dormir', 'lit', v.lit], `${id} : la nuit, dans son lit`);
       assertEqual(a(23.5).etat, 'dormir', `${id} : couché avant minuit`);
       assertEqual(a(H.LEVER + H.DECALE / 2 + 0.26).etat, 'lever', `${id} : levé, chez lui`);
-      assert(['dehors', 'flaner'].includes(a(H.SORTIE + H.DECALE + 0.3).etat), `${id} : dehors le matin`);
+      assert(['dehors', 'flaner', 'recoit'].includes(a(H.SORTIE + H.DECALE + 0.3).etat), `${id} : dehors le matin (ou il attend une visite)`);
       assertEqual(a(H.MIDI + 0.5).etat, 'repas', `${id} : à table à midi`);
       assertEqual(a(H.SOUPER + 0.6).etat, 'repas', `${id} : à table le soir`);
       assertEqual(a(H.VEILLEE + H.DECALE + 0.1).etat, 'rentrer', `${id} : rentré à la veillée`);
@@ -169,7 +169,7 @@ test('les repas : la table de sa maison d\'abord, sinon la table commune ; un si
   });
 });
 
-test('flâner : un banc libre (un par créneau), sinon la place ; dehors : les chemins posés et la place', () => {
+test('flâner : un banc libre (un par créneau), sinon la place ; dehors sans but : les chemins posés et la place', () => {
   avecVillage(() => {
     const { s, P } = ile(6, 5);
     jourOu(s, false);
@@ -180,7 +180,9 @@ test('flâner : un banc libre (un par créneau), sinon la place ; dehors : les c
     let flane = 0, dehors = 0;
     for (const segs of J.values()) for (const x of segs) {
       if (x.etat === 'flaner') { flane++; assert(x.lieu.genre === 'siege' ? L.bancs.includes(x.lieu.case) : place.has(x.lieu.case), 'un banc ou la place'); }
-      if (x.etat === 'dehors') { dehors++; assert(chemins.has(x.lieu.case) || place.has(x.lieu.case), 'un chemin ou la place'); }
+      // (I3b+ : une sortie avec un but va à son lieu, village-social.test.mjs ; sans but, il va et vient)
+      if (x.etat === 'dehors' && !x.but) { dehors++; assert(chemins.has(x.lieu.case) || place.has(x.lieu.case), 'un chemin ou la place'); }
+      if (x.etat === 'dehors' && x.but) dehors++;
     }
     assert(flane > 0 && dehors > 0, `ils flânent (${flane}) et vont et viennent (${dehors})`);
     // (un banc n'a qu'un villageois à la fois)

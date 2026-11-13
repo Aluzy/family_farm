@@ -9,6 +9,7 @@ import {
   verifierMaisons, villageoisDe, villageoisPourLaCarte,
 } from '../engine/villageois.js';
 import { journeesPourLaCarte, lieuxDuVillage, paroleVillageois } from '../engine/villageois-journee.js';
+import { echangeVillageois, liensPourLaCarte } from '../engine/villageois-liens.js';
 import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
 import { plancheAvecChargement } from './apparence.js';
@@ -96,23 +97,27 @@ export function villageoisModele() {
 
 // Fiche I3b : l'heure du jeu pour la scène des villageois : { h (0 à 24, décimales comprises), t (performance.now()
 // du relevé), s (secondes réelles par heure de jeu : la scène avance l'heure entre deux modèles), nuit, chemins
-// (les cases des chemins posés de la ferme : ils les préfèrent), vitesse et chemin (VILLAGE.HORAIRE) } ; null le
-// chantier éteint ou sans villageois.
+// (les cases des chemins posés de la ferme : ils les préfèrent), vitesse et chemin (VILLAGE.HORAIRE), liens (I3b+ :
+// qui se connaît, villageois-liens.js liensPourLaCarte) et social (VILLAGE.SOCIAL.CROISE, les réglages de la scène :
+// js/carte/ferme/villageois-social.js) } ; null le chantier éteint ou sans villageois.
 export function villageoisHorloge() {
   if (!state || !villageActif(state) || !nombreVillageois(state)) return null;
   return {
     h: clockHours(state), t: typeof performance !== 'undefined' ? performance.now() : 0, s: DATA.TEMPS.SECONDES_PAR_HEURE,
     nuit: nightActive(state), chemins: lieuxDuVillage(state).chemins,
     vitesse: Number(DATA.VILLAGE.HORAIRE.VITESSE) || 1, chemin: Number(DATA.VILLAGE.HORAIRE.CHEMIN) || 1,
+    liens: liensPourLaCarte(state), social: (DATA.VILLAGE.SOCIAL || {}).CROISE || null,
   };
 }
 
 // Le pont de la carte : `geste` « accueilli » (il a frappé et dit sa ligne : il est chez lui, la notification),
 // « fiche » (le bouton de sa bulle), « parle » (un appui sur lui, fiche I3b : sa bulle, paroleVillageois ; `o` :
-// { activite (ce que la scène le voit faire), n (le rang de l'appui) }).
+// { activite (ce que la scène le voit faire), n (le rang de l'appui), but (I3b+ : le but de sa sortie) }) ; « echange »
+// (I3b+ : deux villageois se croisent, causent ; `o` : { avec (l'autre, ou 'joueur'), n, sorte } : echangeVillageois).
 export function villageoisDepuisCarte(geste, id, o = {}) {
   if (geste === 'fiche') { ouvrirFicheVillageois(id); return { ok: true }; }
   if (geste === 'parle') return paroleVillageois(state, id, { ...o, heure: clockHours(state) });
+  if (geste === 'echange') return echangeVillageois(state, id, o.avec, { n: o.n, sorte: o.sorte, heure: clockHours(state) });
   if (geste !== 'accueilli') return { ok: false };
   const v = accueillirVillageois(state, id);
   if (!v) return { ok: false };

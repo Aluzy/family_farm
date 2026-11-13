@@ -3,10 +3,12 @@ import { mulberry32 } from './base.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { villageActif } from './village.js';
-import { blocsPoses, casesCouvertes, maisonsMarquees, piecesCloses, solsPoses } from './blocs.js';
+import { blocsPoses, casesCouvertes, estCloture, etatEnclos, maisonsMarquees, piecesCloses, solsPoses } from './blocs.js';
+import { lieuPort } from './port.js';
 import { meteoDuJour } from './meteo.js';
 import { noterObjectif } from './objectifs-compte.js';
 import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.js';
+import { connaissance } from './villageois-liens.js';
 
 /* ---------- la journée des villageois sur la ferme (le chantier « l'île à bâtir », fiche I3b) ----------
 
@@ -33,14 +35,23 @@ import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.
    Une case libre : sur la ferme, de l'herbe ou ses abords (terrain « # » ou « + », pas sous un arbre ni un rocher),
    sans bloc, hors des pièces closes et des parcelles. Un lieu est { genre, case } : genre 'lit' (son couchage),
    'maison' (une case de sa maison ou de l'abri), 'siege' (la case du siège ; table : la case de la table, s'il y en
-   a une), 'place', 'promenade'. Jamais une case de mur (le test : tests/engine/village-journee.test.mjs). */
+   a une), 'place', 'promenade'. Jamais une case de mur (le test : tests/engine/village-journee.test.mjs).
+
+   I3b+ (la vie sociale) : les créneaux dehors ont un but (rendre visite à un ami, le retrouver sur la place ou au
+   puits, se promener à deux, puiser de l'eau, voir le jardin, les bêtes, un ouvrage, descendre au port), tiré pour
+   tout le village à la fois (calculerJournee) d'après qui se connaît (villageois-liens.js, connaissance) ; les lieux
+   de ces buts (lieuxDesSorties) : 'devant' (une case, tournée vers `vers`) et 'groupe' (une case d'un petit cercle,
+   tournée vers son centre `vers`). Les tests : tests/engine/village-social.test.mjs. */
 
 const H = () => (DATA.VILLAGE && DATA.VILLAGE.HORAIRE) || {};
 const P = () => (DATA.VILLAGE && DATA.VILLAGE.PHRASES) || {};
+const SB = () => (DATA.VILLAGE && DATA.VILLAGE.SOCIAL && DATA.VILLAGE.SOCIAL.BUTS) || {};
 const SIEGES = new Set(['chaise_jardin', 'banc_jardin', 'meuble_chaise', 'banc_rondins', 'chaise_peinte', 'banc_pierre']);
 const TABLES_DEHORS = new Set(['table_jardin', 'table_rondins']);
 const TABLES = new Set([...TABLES_DEHORS, 'meuble_table']);
-export const ETATS_VILLAGEOIS = ['lever', 'dehors', 'repas', 'flaner', 'rentrer', 'dormir', 'repos', 'abri'];
+export const ETATS_VILLAGEOIS = ['lever', 'dehors', 'repas', 'flaner', 'rentrer', 'dormir', 'repos', 'abri', 'recoit'];
+// (I3b+ : les buts d'une sortie, SOCIAL.BUTS ; le but d'un segment : seg.but.sorte)
+export const BUTS_VILLAGEOIS = ['visite', 'rdv', 'promenade', 'eau', 'jardin', 'betes', 'ouvrage', 'port'];
 
 const graineDe = (state) => farmSeed(state) || 'ile';
 const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1));
@@ -124,7 +135,82 @@ function calculerLieux(state, pieces, sols) {
   const pAbri = (A && Array.isArray(A.sols) && pieces.find((p) => p.cases.includes(A.sols[0])))
     || pieces.find((p) => !marquees.has(p) && p.paillasses.length) || null;
   const abri = pAbri ? pAbri.cases.filter((t) => libreDedans(t) && !pAbri.paillasses.includes(t)) : null;
-  return { W, libre, maisons, commune, bancs, place, promenade, chemins, abri: abri && abri.length ? abri : null, F };
+  const sorties = lieuxDesSorties(state, { W, B, couvertes, libre, maisons, puits, place, chemins, terres, centre });
+  return { W, libre, maisons, commune, bancs, place, promenade, chemins, abri: abri && abri.length ? abri : null, F, puits: puits === undefined ? null : puits, ...sorties };
+}
+
+// I3b+ : les lieux des sorties (SOCIAL.BUTS). Chaque maison de villageois gagne `devant` ({ porte, front (la case
+// devant sa porte, dehors), cote (une case libre à côté), dedans (une case de sa pièce près de la porte) }, ou
+// null) ; et :
+//   - eau : la case d'où l'on puise (devant le puits, sinon à côté), ou null ;
+//   - cercles : les centres d'un petit cercle de conversation ({ case, puits }) : le centre et ses cases de gauche,
+//     de droite et du bas libres (on s'y tient en se faisant face) ; devant le puits d'abord, puis sur la place
+//     (sinon sur les chemins), espacés ;
+//   - voir : { jardin, betes, ouvrage } : des cases d'où regarder ({ case, vers }) une parcelle, une bête dans son
+//     enclos (par-dessus la barrière), un ouvrage de la famille (SOCIAL.BUTS.OUVRAGES).
+function lieuxDesSorties(state, o) {
+  const { W, B, couvertes, libre, maisons, puits, place, chemins, terres } = o;
+  const autour = (t) => [t + W, t - 1, t + 1, t - W];
+  for (const m of maisons.values()) {
+    m.devant = null;
+    const porte = m.porte;
+    if (!Number.isInteger(porte)) continue;
+    const front = autour(porte).find(libre);
+    if (front === undefined) continue;
+    const cote = [front - 1, front + 1, front + W].find((t) => t !== porte && libre(t));
+    if (cote === undefined) continue;
+    const dedans = autour(porte).find((t) => m.cases.includes(t));
+    m.devant = { porte, front, cote, dedans: dedans === undefined ? (m.cases[0] ?? null) : dedans };
+  }
+  const eau = puits !== undefined ? [puits + W, puits - 1, puits + 1].find(libre) : undefined;
+  const pris = new Set(eau === undefined ? [] : [eau]);
+  const spots = (c) => [c - 1, c + 1, c + W];
+  const cercle = (c) => libre(c) && spots(c).every((t) => libre(t) && !pris.has(t)) && !pris.has(c);
+  const cercles = [];
+  const prendre = (c, puitsAussi) => {
+    if (!cercle(c) || cercles.some((x) => Math.max(Math.abs((x.case % W) - (c % W)), Math.abs(Math.floor(x.case / W) - Math.floor(c / W))) < 3)) return;
+    cercles.push({ case: c, puits: !!puitsAussi });
+    for (const t of [c, ...spots(c)]) pris.add(t);
+  };
+  if (puits !== undefined) prendre(puits + 2 * W, true);
+  // (sur la place, au plus près de son centre (le puits, la table commune), devant lui plutôt que derrière (un puits
+  // cache ce qui est derrière lui) ; sans place, sur les chemins)
+  const c0 = o.centre;
+  const loin = (t) => (c0 === null ? 0 : Math.abs((t % W) - (c0 % W)) + Math.abs(Math.floor(t / W) - Math.floor(c0 / W))
+    + (Math.floor(t / W) < Math.floor(c0 / W) ? 6 : 0));
+  for (const t of (place.length ? [...place] : [...chemins]).sort((a, b) => loin(a) - loin(b) || a - b)) { if (cercles.length >= 3) break; prendre(t, false); }
+  // (au plus `n` lieux d'où regarder, répartis sur la liste)
+  const etale = (l, n) => (l.length <= n ? l : Array.from({ length: n }, (x, k) => l[Math.floor((k * l.length) / n)]));
+  const vus = new Set();
+  const jardin = [];
+  for (const p of [...terres].sort((a, b) => a - b)) {
+    const t = autour(p).find((q) => libre(q) && !vus.has(q));
+    if (t !== undefined) { vus.add(t); jardin.push({ case: t, vers: p }); }
+  }
+  const betes = [];
+  for (const cle of ['nichoir', 'mangeoire']) {
+    let e = null;
+    try { e = etatEnclos(state, cle); } catch (err) { e = null; }
+    const enclos = e && Array.isArray(e.enclos) ? e.enclos : [];
+    for (const x of enclos) {
+      for (const f of autour(x)) {
+        if (!estCloture(B[f])) continue;
+        const t = f + (f - x);
+        if (libre(t) && !vus.has(t)) { vus.add(t); betes.push({ case: t, vers: x }); }
+      }
+    }
+  }
+  const O = Array.isArray(SB().OUVRAGES) ? SB().OUVRAGES : [];
+  const ouvrage = [];
+  for (const k of Object.keys(B).map(Number).sort((a, b) => a - b)) {
+    const s = B[k];
+    if (s === 'puits' || !O.some((x) => (x.endsWith('_') ? s.startsWith(x) : s === x))) continue;
+    const cases = [k, ...[...couvertes].filter(([, q]) => q === k).map(([j]) => j)];
+    let t;
+    for (const c of cases) { t = autour(c).find((q) => libre(q) && !vus.has(q)); if (t !== undefined) break; }
+    if (t !== undefined) { vus.add(t); ouvrage.push({ case: t, vers: k }); }
+  }
+  return { eau: eau === undefined ? null : eau, cercles, voir: { jardin: etale(jardin, 12), betes: etale(betes, 8), ouvrage: etale(ouvrage, 12) } };
 }
 
 // Les abords de la porte `porte` (pour la promenade sans chemin ni place) : les cases libres de 2 à PROMENADE cases.
@@ -145,14 +231,17 @@ function abords(L, porte) {
 const memoJours = new Map();   // (cle → Map(id → segments)) : la dernière journée calculée
 
 // La journée du village le jour `jour` (state.day par défaut) : Map(id → [{ de, a, etat, lieu: { genre, case,
-// table? } }]), les segments de 0 à 24 h, dans l'ordre. Les villageois sont faits dans l'ordre de leur id : un siège
-// pris par l'un (un repas, un créneau) ne l'est pas par un autre. Gardée tant que la partie et le jour ne changent
-// pas (ni l'horaire). Vide le chantier éteint.
+// table?, vers? }, but? }]), les segments de 0 à 24 h, dans l'ordre. Les repas sont faits dans l'ordre des id : un
+// siège pris par l'un ne l'est pas par un autre ; les créneaux dehors, créneau par créneau, pour tout le village à
+// la fois (I3b+ : un ami rendu visite, un rendez-vous, une promenade à deux engagent les deux). Gardée tant que la
+// partie et le jour ne changent pas (ni l'horaire). Vide le chantier éteint.
 export function journeeDuVillage(state, jour = jourDe(state)) {
   const V = villageoisDe(state);
   if (!V.length) return new Map();
   const L = lieuxDuVillage(state);
-  const cle = JSON.stringify([graineDe(state), jour, H(), V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0])]);
+  const lp = lieuPort(state);
+  const cle = JSON.stringify([graineDe(state), jour, H(), SB(), (DATA.VILLAGE.SOCIAL || {}).CONNAISSANCE, lp ? [lp.case, lp.chemin] : 0,
+    V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive])]);
   const deja = memoJours.get(cle);
   if (deja && deja.L === L) return deja.J;
   const J = calculerJournee(state, jour, V, L);
@@ -161,74 +250,249 @@ export function journeeDuVillage(state, jour = jourDe(state)) {
   return J;
 }
 
+/* La journée de chacun : son squelette (lever, sortie, repas, veillée, coucher, tirés de son retard), puis ses
+   créneaux dehors, faits créneau par créneau pour tout le village (planDesCreneaux), puis les segments.
+
+   Un créneau dehors (I3b+) : une fois sur FLANER, il flâne (un banc libre, sinon la place) ; sinon il tire un but au
+   poids (SOCIAL.BUTS.POIDS), parmi ceux qui ont un lieu libre et, pour ceux qu'on fait à plusieurs, un ami libre à ce
+   créneau (connaissance : un ami pour la promenade, une connaissance au moins pour la visite et le rendez-vous) :
+     - visite : il va devant la porte de l'ami (lieu 'devant', tourné vers la porte) ; l'ami, chez lui le temps de
+       RECOIT h (« recoit »), sort à côté de sa porte ; ils causent ;
+     - rdv : avec un ou deux amis, en petit cercle (lieu 'groupe' : une case du cercle, tournée vers son centre),
+       devant le puits ou sur la place ;
+     - promenade : à deux ; le meneur va à un point des chemins ou de la place, l'autre à la case d'à côté ; la scène
+       les fait marcher ensemble ;
+     - eau (devant le puits), jardin, betes, ouvrage (une case d'où regarder) ; port (si son chemin est court) ;
+   à défaut, il va et vient (un point des chemins posés, de la place ou des abords de sa porte : comme en I3b). Une
+   visite, un rendez-vous, une promenade durent DUREE créneaux (le temps d'y aller et d'y rester), si tous y sont
+   libres ; l'ami chez qui l'on va, celui qu'on retrouve, est plutôt un voisin.
+   Le but du segment : { sorte, cle (la même pour tous ceux qui le font ensemble), avec (les ids des autres), role
+   ('visiteur', 'hote', 'meneur', 'suit'), emoji } ; ni but ni lieu inventé loin de la vue : tout vient de l'heure. */
 function calculerJournee(state, jour, V, L) {
   const h = H(), C = Math.max(0.25, Number(h.CRENEAU) || 0.75), g = graineDe(state);
   const meteo = meteoDuJour(state, jour);
   const pluie = meteo.sorte === 'pluie' ? [meteo.debut, meteo.fin] : null;
   const pris = new Map();                 // (créneau ou repas → Set des sièges, cases pris)
   const prendre = (k, t) => { let s = pris.get(k); if (!s) pris.set(k, (s = new Set())); if (s.has(t)) return false; s.add(t); return true; };
-  const out = new Map();
   const tries = [...V].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  // 1. le squelette de chacun
+  const gens = [];
   for (const v of tries) {
-    const rnd = rngDe(`${g}:vie:${v.id}:${jour}`), un = (l) => l[Math.floor(rnd() * l.length)];
+    const rnd = rngDe(`${g}:vie:${v.id}:${jour}`);
     const d = rnd() * (Number(h.DECALE) || 0);
     const maison = v.maison !== null && v.maison !== undefined ? L.maisons.get(v.maison) || null : null;
     const chez = maison && maison.cases.length ? maison.cases : L.abri;
     // (une case de chez lui, tirée ; sans maison ni abri : la place, ou rien)
     const caseChez = (r) => (chez && chez.length ? chez[Math.floor(r * chez.length)] : L.place.length ? L.place[Math.floor(r * L.place.length)] : null);
     const ici = (genre, t) => (t === null || t === undefined ? null : { genre, case: t });
-    const lit = Number.isInteger(v.lit) && maison ? { genre: 'lit', case: v.lit } : null;
     const enMaison = () => ici(maison && maison.cases.length ? 'maison' : 'abri', caseChez(rnd()));
     const promenade = L.promenade.length ? L.promenade : abords(L, maison ? maison.porte : L.abri ? L.abri[0] : null);
+    const x = {
+      v, rnd, maison, enMaison, promenade, ici,
+      lever: h.LEVER + d, sortie: h.SORTIE + d, midi: h.MIDI + d / 2, reprise: h.REPRISE + d / 2,
+      souper: h.SOUPER + d / 2, veillee: h.VEILLEE + d, coucher: Math.min(h.COUCHER + d / 2, DATA.TEMPS.HEURE_NUIT - 0.25),
+      lit: Number.isInteger(v.lit) && maison ? { genre: 'lit', case: v.lit } : null,
+    };
+    const FL = h.FLANER || [];
+    x.matin = bornesCreneaux(x.sortie, x.midi, C, Number(FL[0]) || 0);
+    x.apres = bornesCreneaux(x.reprise, x.souper, C, Number(FL[1]) || 0);
+    x.parK = new Map([...x.matin, ...x.apres].map((p) => [p.k, p]));
+    x.plan = new Map();
+    gens.push(x);
+  }
+  // 2. les créneaux dehors, pour tout le village
+  planDesCreneaux(state, jour, gens, L, prendre);
+  // 3. les segments
+  const out = new Map();
+  for (const x of gens) {
     const segs = [];
-    const pousse = (de, a, etat, lieu) => { if (a > de + 1e-9) segs.push({ de, a, etat, lieu: lieu || enMaison() }); };
-    const lever = h.LEVER + d, sortie = h.SORTIE + d, midi = h.MIDI + d / 2, reprise = h.REPRISE + d / 2;
-    const souper = h.SOUPER + d / 2, veillee = h.VEILLEE + d, coucher = Math.min(h.COUCHER + d / 2, DATA.TEMPS.HEURE_NUIT - 0.25);
-    const nuit = lit || enMaison();
-    pousse(0, lever, 'dormir', nuit);
-    pousse(lever, sortie, 'lever', enMaison());
-    // les créneaux entre deux repas : dehors, flâner, ou se reposer chez lui
-    const creneaux = (de, a, flaner) => {
-      // (les créneaux de la grille commune ; un bout de moins de C / 3 h, au début ou à la fin, va au voisin)
-      const bornes = [];
-      for (let k = Math.floor(de / C); k * C < a; k++) bornes.push([k, Math.max(de, k * C), Math.min(a, (k + 1) * C)]);
-      if (bornes.length > 1 && bornes[0][2] - bornes[0][1] < C / 3) { bornes[1][1] = bornes[0][1]; bornes.shift(); }
-      const z = bornes.length - 1;
-      if (z > 0 && bornes[z][2] - bornes[z][1] < C / 3) { bornes[z - 1][2] = bornes[z][2]; bornes.pop(); }
-      for (const [k, x, y] of bornes) {
-        const r = rnd();
-        if (y <= x) continue;
-        if (v.repos) { pousse(x, y, 'repos', enMaison()); continue; }
-        if (r < flaner) {
-          const banc = L.bancs.length ? L.bancs[Math.floor(rnd() * L.bancs.length)] : null;
-          // (son banc pris : un autre libre, sinon la place)
-          const b = banc !== null ? [banc, ...L.bancs].find((t) => prendre('c' + k, t)) : undefined;
-          if (b !== undefined) { pousse(x, y, 'flaner', ici('siege', b)); continue; }
-          const p = L.place.length ? [un(L.place), ...L.place].find((t) => prendre('c' + k, t)) : undefined;
-          if (p !== undefined) { pousse(x, y, 'flaner', ici('place', p)); continue; }
-        }
-        const q = promenade.length ? [un(promenade), ...promenade].find((t) => prendre('c' + k, t)) : undefined;
-        pousse(x, y, q !== undefined ? 'dehors' : 'repos', q !== undefined ? ici('promenade', q) : enMaison());
+    const pousse = (de, a, etat, lieu, but) => {
+      if (!(a > de + 1e-9)) return;
+      const l = lieu || x.enMaison(), prec = segs[segs.length - 1];
+      // (le même but, au même lieu, sur deux créneaux : un seul segment)
+      if (but && prec && prec.but === but && prec.etat === etat && prec.lieu === l && Math.abs(prec.a - de) < 1e-9) { prec.a = a; return; }
+      segs.push(but ? { de, a, etat, lieu: l, but } : { de, a, etat, lieu: l });
+    };
+    const nuit = x.lit || x.enMaison();
+    pousse(0, x.lever, 'dormir', nuit);
+    pousse(x.lever, x.sortie, 'lever', x.enMaison());
+    const creneaux = (liste) => {
+      for (const p of liste) {
+        const a = x.plan.get(p.k) || { etat: 'repos', lieu: x.enMaison() };
+        if (a.avant) {
+          const fin = Math.min(p.y, p.x + Math.min(a.avant.duree, (p.y - p.x) / 3));
+          pousse(p.x, fin, a.avant.etat, a.avant.lieu);
+          pousse(fin, p.y, a.etat, a.lieu, a.but);
+        } else pousse(p.x, p.y, a.etat, a.lieu, a.but);
       }
     };
     // un repas : un siège de sa table, sinon de la table commune ; sans siège, chez lui
     const repas = (de, a, cle) => {
-      const tables = [maison && maison.table, L.commune].filter(Boolean);
+      const tables = [x.maison && x.maison.table, L.commune].filter(Boolean);
       for (const tb of tables) {
         const s = tb.sieges.find((t) => prendre(cle + ':' + tb.table, t));
         if (s !== undefined) { pousse(de, a, 'repas', { genre: 'siege', case: s, table: tb.table, dehors: tb.dehors }); return; }
       }
-      pousse(de, a, 'repas', enMaison());
+      pousse(de, a, 'repas', x.enMaison());
     };
-    creneaux(sortie, midi, Number((h.FLANER || [])[0]) || 0);
-    repas(midi, reprise, 'midi');
-    creneaux(reprise, souper, Number((h.FLANER || [])[1]) || 0);
-    repas(souper, veillee, 'souper');
-    pousse(veillee, coucher, 'rentrer', enMaison());
-    pousse(coucher, 24, 'dormir', nuit);
-    out.set(v.id, pluie ? sousLaPluie(segs, pluie, enMaison) : segs);
+    creneaux(x.matin);
+    repas(x.midi, x.reprise, 'midi');
+    creneaux(x.apres);
+    repas(x.souper, x.veillee, 'souper');
+    pousse(x.veillee, x.coucher, 'rentrer', x.enMaison());
+    pousse(x.coucher, 24, 'dormir', nuit);
+    out.set(x.v.id, pluie ? sousLaPluie(segs, pluie, x.enMaison) : segs);
   }
   return out;
+}
+
+// Les créneaux de la grille commune entre `de` et `a` h : [{ k (son rang dans la grille), x, y, fl (la chance de
+// flâner) }] ; un bout de moins de C / 3 h, au début ou à la fin, va au voisin.
+function bornesCreneaux(de, a, C, fl) {
+  const b = [];
+  for (let k = Math.floor(de / C); k * C < a; k++) b.push({ k, x: Math.max(de, k * C), y: Math.min(a, (k + 1) * C), fl });
+  if (b.length > 1 && b[0].y - b[0].x < C / 3) { b[1].x = b[0].x; b.shift(); }
+  const z = b.length - 1;
+  if (z > 0 && b[z].y - b[z].x < C / 3) { b[z - 1].y = b[z].y; b.pop(); }
+  return b.filter((p) => p.y > p.x);
+}
+
+// Les créneaux dehors de tout le village (voir calculerJournee) : pour chaque créneau de la grille, dans l'ordre des
+// heures, ceux qui sont dehors choisissent, dans un ordre tiré du créneau ; celui qu'un autre a déjà engagé (une
+// visite, un rendez-vous) ne choisit pas. Remplit x.plan (k → { etat, lieu, but?, avant? }).
+function planDesCreneaux(state, jour, gens, L, prendre) {
+  const g = graineDe(state), B = SB(), poids = B.POIDS || {};
+  const ks = [...new Set(gens.flatMap((x) => [...x.parK.keys()]))].sort((a, b) => a - b);
+  const libreA = (x, k) => x.parK.has(k) && !x.plan.has(k) && !x.v.repos;
+  const occupe = new Map();               // (k → Set des cases prises à ce créneau : les mêmes que `prendre`)
+  const libreCase = (k, t) => Number.isInteger(t) && !(occupe.get(k) || new Set()).has(t);
+  const tenir = (k, t) => { if (!prendre('c' + k, t)) return false; let s = occupe.get(k); if (!s) occupe.set(k, (s = new Set())); s.add(t); return true; };
+  const emoji = (s) => ((B.EMOJI || {})[s]) || '';
+  const lp = lieuPort(state), port = lp && Number.isInteger(lp.case) && Number(lp.chemin) <= (Number(B.PORT_MAX) || 0) ? lp.case : null;
+  // (engager x au créneau k, et aux DUREE - 1 suivants si tous y sont libres, aux mêmes cases : le temps d'y aller
+  // et d'y rester)
+  const engager = (rnd, k, membres) => {
+    for (const [x, a] of membres) x.plan.set(k, a);
+    for (let k2 = k + 1; k2 < k + Math.max(1, Number(B.DUREE) || 1); k2++) {
+      if (!membres.every(([x, a]) => libreA(x, k2) && libreCase(k2, a.lieu.case))) break;
+      for (const [x, a] of membres) { tenir(k2, a.lieu.case); x.plan.set(k2, { etat: a.etat, lieu: a.lieu, but: a.but }); }
+    }
+  };
+  // (la distance de deux maisons, en cases ; sans maison : loin)
+  const ecart = (x, y) => (Number.isInteger(x.v.maison) && Number.isInteger(y.v.maison)
+    ? Math.max(Math.abs((x.v.maison % L.W) - (y.v.maison % L.W)), Math.abs(Math.floor(x.v.maison / L.W) - Math.floor(y.v.maison / L.W))) : 30);
+  for (const k of ks) {
+    const r0 = rngDe(`${g}:creneau:${jour}:${k}`);
+    const ordre = gens.filter((x) => x.parK.has(k)).map((x) => [r0(), x]).sort((a, b) => a[0] - b[0]).map((e) => e[1]);
+    for (const x of ordre) {
+      if (x.plan.has(k)) continue;
+      const v = x.v, p = x.parK.get(k), rnd = rngDe(`${g}:but:${v.id}:${jour}:${k}`);
+      if (v.repos) { x.plan.set(k, { etat: 'repos', lieu: x.enMaison() }); continue; }
+      // flâner : un banc libre (le sien pris : un autre), sinon la place
+      if (rnd() < p.fl) {
+        const banc = L.bancs.length ? L.bancs[Math.floor(rnd() * L.bancs.length)] : null;
+        const b = banc !== null ? [banc, ...L.bancs].find((t) => tenir(k, t)) : undefined;
+        if (b !== undefined) { x.plan.set(k, { etat: 'flaner', lieu: x.ici('siege', b) }); continue; }
+        const q = L.place.length ? [L.place[Math.floor(rnd() * L.place.length)], ...L.place].find((t) => tenir(k, t)) : undefined;
+        if (q !== undefined) { x.plan.set(k, { etat: 'flaner', lieu: x.ici('place', q) }); continue; }
+      }
+      // les amis libres à ce créneau (le degré, le score : connaissance)
+      const amis = gens.filter((y) => y !== x && libreA(y, k)).map((y) => [y, connaissance(state, v.id, y.v.id)]).filter(([, c]) => c && c.degre >= 1);
+      // (au poids du score, et des voisins plutôt que ceux qui habitent loin ; celui qu'il vient de quitter, au
+      // créneau d'avant, beaucoup moins : on varie)
+      const avant = x.plan.get(k - 1), quitte = new Set(avant && avant.but ? avant.but.avec : []);
+      const poidsDe = ([y, c]) => ((c.score + 1) / (1 + ecart(x, y) / 10)) * (quitte.has(y.v.id) ? 0.15 : 1);
+      const tire = (l) => {
+        const tot = l.reduce((s, e) => s + poidsDe(e), 0);
+        let r = rnd() * tot;
+        for (const e of l) { r -= poidsDe(e); if (r <= 0) return e; }
+        return l[l.length - 1];
+      };
+      const essais = {
+        visite: () => {
+          const l = amis.filter(([y]) => y.maison && y.maison.devant && libreCase(k, y.maison.devant.front) && libreCase(k, y.maison.devant.cote));
+          if (!l.length) return false;
+          const [y] = tire(l), D = y.maison.devant;
+          tenir(k, D.front); tenir(k, D.cote);
+          const cle = `visite:${v.id}:${k}`;
+          const dedans = Number.isInteger(D.dedans) ? { genre: 'maison', case: D.dedans } : y.enMaison();
+          engager(rnd, k, [
+            [x, { etat: 'dehors', lieu: { genre: 'devant', case: D.front, vers: D.porte }, but: { sorte: 'visite', cle, avec: [y.v.id], role: 'visiteur' } }],
+            [y, { etat: 'dehors', lieu: { genre: 'devant', case: D.cote, vers: D.front }, but: { sorte: 'visite', cle, avec: [v.id], role: 'hote' }, avant: { etat: 'recoit', lieu: dedans, duree: Number(B.RECOIT) || 0.1 } }],
+          ]);
+          return true;
+        },
+        rdv: () => {
+          const cs = L.cercles.filter((c) => [c.case, c.case - 1, c.case + 1, c.case + L.W].every((t) => libreCase(k, t)));
+          if (!amis.length || !cs.length) return false;
+          const c = cs[Math.floor(rnd() * cs.length)];
+          const l = [...amis], avec = [tire(l)];
+          if (l.length > 1 && rnd() < 0.5) { const reste = l.filter((e) => e !== avec[0]); avec.push(tire(reste)); }
+          const qui = [x, ...avec.map(([y]) => y)], places = [c.case - 1, c.case + 1, c.case + L.W];
+          tenir(k, c.case);
+          const cle = `rdv:${v.id}:${k}`;
+          engager(rnd, k, qui.map((y, i) => {
+            tenir(k, places[i]);
+            return [y, { etat: 'dehors', lieu: { genre: 'groupe', case: places[i], vers: c.case }, but: { sorte: 'rdv', cle, avec: qui.filter((z) => z !== y).map((z) => z.v.id), puits: c.puits } }];
+          }));
+          return true;
+        },
+        promenade: () => {
+          const l = amis.filter(([, c]) => c.degre >= 2);
+          if (!l.length || x.promenade.length < 2) return false;
+          const P = x.promenade, i0 = Math.floor(rnd() * P.length);
+          for (let i = 0; i < P.length; i++) {
+            const t = P[(i0 + i) % P.length];
+            const t2 = [t + 1, t - 1, t + L.W].find((q) => L.libre(q) && libreCase(k, q));
+            if (t2 === undefined || !libreCase(k, t)) continue;
+            const [y] = tire(l);
+            tenir(k, t); tenir(k, t2);
+            const cle = `promenade:${v.id}:${k}`;
+            engager(rnd, k, [
+              [x, { etat: 'dehors', lieu: { genre: 'devant', case: t, vers: t2 }, but: { sorte: 'promenade', cle, avec: [y.v.id], role: 'meneur', emoji: emoji('promenade') } }],
+              [y, { etat: 'dehors', lieu: { genre: 'devant', case: t2, vers: t }, but: { sorte: 'promenade', cle, avec: [v.id], role: 'suit', emoji: emoji('promenade') } }],
+            ]);
+            return true;
+          }
+          return false;
+        },
+        eau: () => {
+          if (L.eau === null || !tenir(k, L.eau)) return false;
+          x.plan.set(k, { etat: 'dehors', lieu: { genre: 'devant', case: L.eau, vers: L.puits }, but: { sorte: 'eau', cle: `eau:${v.id}:${k}`, avec: [], emoji: emoji('eau') } });
+          return true;
+        },
+        voir: () => {
+          const sortes = ['jardin', 'betes', 'ouvrage'].filter((s) => L.voir[s].some((q) => libreCase(k, q.case)));
+          if (!sortes.length) return false;
+          const s = sortes[Math.floor(rnd() * sortes.length)], l = L.voir[s].filter((q) => libreCase(k, q.case));
+          const q = l[Math.floor(rnd() * l.length)];
+          tenir(k, q.case);
+          x.plan.set(k, { etat: 'dehors', lieu: { genre: 'devant', case: q.case, vers: q.vers }, but: { sorte: s, cle: `${s}:${v.id}:${k}`, avec: [], emoji: emoji(s) } });
+          return true;
+        },
+        port: () => {
+          if (port === null) return false;
+          x.plan.set(k, { etat: 'dehors', lieu: { genre: 'devant', case: port }, but: { sorte: 'port', cle: `port:${v.id}:${k}`, avec: [], emoji: emoji('port') } });
+          return true;
+        },
+      };
+      // le tirage au poids ; un but qui ne trouve pas de lieu laisse la place au suivant
+      const choix = Object.keys(essais).map((s) => [s, Math.max(0, Number(poids[s]) || 0)]).filter(([, w]) => w > 0);
+      let fait = false;
+      while (choix.length && !fait) {
+        const tot = choix.reduce((s, [, w]) => s + w, 0);
+        let r = rnd() * tot, i = 0;
+        for (; i < choix.length - 1; i++) { r -= choix[i][1]; if (r <= 0) break; }
+        fait = essais[choix[i][0]]();
+        choix.splice(i, 1);
+      }
+      if (fait) continue;
+      // à défaut : il va et vient (un point des chemins, de la place ou des abords de sa porte), sinon il reste chez lui
+      const P = x.promenade;
+      const q = P.length ? [P[Math.floor(rnd() * P.length)], ...P].find((t) => tenir(k, t)) : undefined;
+      x.plan.set(k, q !== undefined ? { etat: 'dehors', lieu: x.ici('promenade', q) } : { etat: 'repos', lieu: x.enMaison() });
+    }
+  }
 }
 
 // Sous la pluie (de p[0] à p[1] h) : ce qui se fait dehors (dehors, flâner, un repas à une table du dehors) devient
@@ -263,7 +527,8 @@ export function positionVillageois(state, id, heure) {
 
 // Toucher un villageois (le pont de la carte) : sa bulle { prenom, salut, texte (ce qu'il fait), humeur (la clé),
 // humeurTexte }, tirée de la graine, du jour, de son id et du rang de l'appui `n` ; `activite` : ce que la scène
-// le voit faire (un état de ETATS_VILLAGEOIS ; sinon celui de son horaire). L'objectif du jour « parler » compte.
+// le voit faire (un état de ETATS_VILLAGEOIS ; sinon celui de son horaire) ; `but` (I3b+) : le but de sa sortie
+// (BUTS_VILLAGEOIS), dehors. L'objectif du jour « parler » compte.
 // null : pas de tel villageois.
 export function paroleVillageois(state, id, o = {}) {
   const v = trouverVillageois(state, id);
@@ -276,8 +541,11 @@ export function paroleVillageois(state, id, o = {}) {
   const h = heure === null ? 12 : heure, S = DATA.HABITANTS.PHRASES.salut || {};
   const salut = etat === 'dormir' ? '' : un((S[h < 10 ? 'matin' : h < 18 ? 'jour' : h < 22 ? 'soir' : 'nuit'] || []).filter((p) => !/hameau|chez nous|visite/i.test(p)));
   const humeur = humeurVillageois(v);
+  // (I3b+ : au but d'une sortie, ce qu'il y fait : SOCIAL.ACTIVITE)
+  const A = (DATA.VILLAGE.SOCIAL || {}).ACTIVITE || {};
+  const but = etat === 'dehors' && BUTS_VILLAGEOIS.includes(o.but) && A[o.but] ? o.but : null;
   return {
-    id: v.id, prenom: v.prenom, genre: v.genre, etat, salut, texte: un((P().ACTIVITE || {})[etat]),
+    id: v.id, prenom: v.prenom, genre: v.genre, etat, but, salut, texte: un(but ? A[but] : (P().ACTIVITE || {})[etat]),
     humeur, humeurTexte: etat === 'dormir' ? '' : un((P().HUMEUR || {})[humeur]),
   };
 }

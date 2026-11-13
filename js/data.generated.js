@@ -8636,12 +8636,12 @@ export const RAW_DATA = {
       "VEILLEE": 19.5,
       "COUCHER": 21.25,
       "DECALE": 0.5,
-      "CRENEAU": 0.75,
-      "FLANER": [0.35, 0.6],
+      "CRENEAU": 0.5,
+      "FLANER": [0.2, 0.4],
       "PLACE": 3,
       "PROMENADE": 8,
-      "VITESSE": 0.9,
-      "CHEMIN": 2
+      "VITESSE": 1,
+      "CHEMIN": 1.5
     },
     "PHRASES": {
       "ACTIVITE": {
@@ -8652,13 +8652,200 @@ export const RAW_DATA = {
         "rentrer": ["Je rentre à la maison.", "La journée s'achève, je rentre.", "Une veillée au chaud, et au lit."],
         "dormir": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
         "repos": ["Je me repose aujourd'hui.", "Une journée tranquille à la maison.", "Je reprends des forces."],
-        "abri": ["Quelle averse ! Je reste à l'abri.", "J'attends que la pluie passe.", "Il pleut des cordes."]
+        "abri": ["Quelle averse ! Je reste à l'abri.", "J'attends que la pluie passe.", "Il pleut des cordes."],
+        "recoit": ["J'attends une visite.", "Un ami doit passer me voir.", "Je guette la porte : on vient me voir !"]
       },
       "HUMEUR": {
         "heureux": ["On vit bien, sur l'île.", "La vie est douce, ici.", "Je suis bien, dans ma maison."],
         "content": ["Ça va, ça va.", "Tout va bien, merci !", "Encore une belle journée."],
         "triste": ["J'ai eu une petite semaine. Ça ira mieux demain !", "Un peu de soleil me ferait du bien."],
         "faim": ["La boîte à nourriture est un peu légère, ces jours-ci.", "Je mangerais bien une bonne soupe."]
+      }
+    },
+    "SOCIAL": {
+      "CONNAISSANCE": {
+        "PAR_JOUR": 2,
+        "VOISIN": 2,
+        "VOISINE": 14,
+        "TABLE": 1,
+        "AFFINITE": 30,
+        "PALIERS": { "connaissance": 10, "ami": 40 },
+        "FAMILLE_AMI": 4
+      },
+      "BUTS": {
+        "POIDS": { "visite": 2, "rdv": 1.5, "promenade": 2, "eau": 1.5, "voir": 2.5, "port": 1 },
+        "RECOIT": 0.1,
+        "DUREE": 2,
+        "PORT_MAX": 40,
+        "OUVRAGES": [
+          "ruche",
+          "bassin",
+          "fontaine_",
+          "ornement_",
+          "massif_",
+          "bloc_silo",
+          "citerne",
+          "compost",
+          "station_robot",
+          "tonnelet",
+          "tas_citrouilles",
+          "citrouille_halloween",
+          "bonhomme_neige",
+          "bac_",
+          "pommier",
+          "poirier",
+          "cerisier",
+          "abricotier",
+          "pecher",
+          "mangeoire_grain",
+          "distributeur"
+        ],
+        "EMOJI": { "eau": "💧", "jardin": "🌱", "betes": "🐑", "ouvrage": "👀", "port": "⚓", "promenade": "🌿" }
+      },
+      "CROISE": {
+        "RAYON": 24,
+        "ATTENTE": 40,
+        "DUREE": [1.6, 2.5],
+        "SIGNE": 0.5,
+        "ENSEMBLE": 0.35,
+        "BOUT": 12,
+        "REGARD": 48,
+        "JOUEUR": 28,
+        "JOUEUR_ATTENTE": 60,
+        "TOUR": 3.2
+      },
+      "EMOJI": { "connaissance": ["👋", "😊"], "ami": ["😄", "❤️", "😊", "👋"], "triste": ["🙂"] },
+      "REPLIQUES": {
+        "connaissance": [
+          ["Bonjour, {prenom} !", "Bonjour ! Ça va bien ?"],
+          ["Salut {prenom} !", "Salut ! Bonne journée !"],
+          ["Tiens, {prenom} !", "Tiens, bonjour !"],
+          ["Ça va, {prenom} ?", "Très bien, et toi ?"],
+          ["On se croise souvent !", "C'est que l'île n'est pas si grande !"],
+          ["Bien installé{e}, {prenom} ?", "Oui, je commence à m'y faire."],
+          ["Bonne journée, {prenom} !", "Merci, à toi aussi !"],
+          ["Tu vas loin comme ça ?", "Juste un petit tour !"],
+          ["Bonjour, voisin{e} !", "Bonjour ! Tout va bien chez toi ?"],
+          ["Il fait bon vivre ici, non ?", "Ah ça, on ne regrette pas le bac !"],
+          ["Toujours en vadrouille, {prenom} ?", "Il faut bien se dégourdir les jambes !"],
+          ["Bien dormi, {prenom} ?", "Comme un loir !"]
+        ],
+        "ami": [
+          ["{prenom} ! Justement je pensais à toi !", "Ha ! Me voilà !"],
+          ["Coucou {prenom} !", "Coucou ! Quelle bonne surprise !"],
+          ["Tu passes ce soir ?", "Avec plaisir, j'apporte des gâteaux !"],
+          ["Ça me fait plaisir de te voir !", "Moi aussi, {prenom} !"],
+          ["Alors, ces nouvelles ?", "Tout va bien ! Et toi ?"],
+          ["Tu as une mine superbe !", "C'est l'air de l'île !"],
+          ["Je te garde une place à table ?", "Oh oui, à côté de toi !"],
+          ["On fait un bout de chemin ?", "Allez, je t'accompagne !"],
+          ["Tu m'as manqué, toi !", "On s'est vus hier, voyons !"],
+          ["Mon ami{e} {prenom} !", "Toujours là, toujours fidèle !"],
+          ["Tu sais quoi ? J'ai bien dormi !", "Ha ! Une grande nouvelle !"],
+          ["Tu viens voir mes fleurs, un de ces jours ?", "Avec joie !"],
+          ["Quel plaisir, {prenom} !", "Le plaisir est pour moi !"],
+          ["Je t'ai cherché{e} partout !", "J'étais au puits, voyons !"]
+        ],
+        "matin": [
+          ["Déjà debout, {prenom} ?", "Le soleil se lève tôt, moi aussi !"],
+          ["Bien le bonjour !", "Bonjour ! Belle matinée, hein ?"],
+          ["Un petit café ce matin ?", "Déjà bu, mais j'en reprendrais bien !"],
+          ["Tu as vu la rosée ?", "Tout brille, ce matin !"],
+          ["On commence la journée ensemble ?", "Bonne idée !"]
+        ],
+        "jour": [
+          ["Bon appétit pour tout à l'heure !", "Merci ! Ça sent bon de partout."],
+          ["Quelle journée, hein ?", "Une belle journée d'île !"],
+          ["Tu as vu les cultures ?", "Elles poussent à vue d'œil !"],
+          ["Il fait bon, cet après-midi.", "On resterait dehors jusqu'au soir !"],
+          ["Tu as fait quoi, ce matin ?", "Pas grand-chose, et c'était parfait !"]
+        ],
+        "soir": [
+          ["Bonne soirée, {prenom} !", "Bonne soirée ! Dors bien !"],
+          ["Déjà le soir...", "Les journées filent, ici."],
+          ["On rentre ?", "Oui, la soupe m'attend !"],
+          ["À demain, {prenom} !", "À demain !"],
+          ["Quel beau coucher de soleil !", "On ne s'en lasse pas."]
+        ],
+        "pluie": [
+          ["Quelle averse !", "Bon pour les cultures, au moins !"],
+          ["Tu es trempé{e} !", "Toi aussi, regarde-toi !"],
+          ["Ça va se lever, tu crois ?", "Un peu de patience !"],
+          ["Il pleut des cordes, aujourd'hui.", "Une soupe bien chaude, ce soir !"]
+        ],
+        "clair": [
+          ["Quel beau soleil !", "Une vraie journée d'été !"],
+          ["Pas un nuage !", "Le temps idéal pour se promener !"],
+          ["Il fait doux, hein ?", "On est bien, sur l'île."],
+          ["Tu sens ce petit vent ?", "Ça sent la mer !"]
+        ],
+        "triste": [
+          ["Ça n'a pas l'air d'aller ?", "Une petite fatigue. Ça passera !"],
+          ["Tu veux un peu de compagnie ?", "Oh oui, merci, {prenom}."],
+          ["Courage, {prenom} !", "Merci, ça fait du bien !"],
+          ["Tu as bien mangé ?", "Pas assez... Ça ira mieux demain."]
+        ],
+        "visite": [
+          ["Coucou, c'est moi !", "Oh, entre donc ! Enfin, sortons !"],
+          ["Je passais te dire bonjour !", "Quelle bonne idée !"],
+          ["Tu as un moment ?", "Pour toi, toujours !"],
+          ["Je ne te dérange pas ?", "Jamais, voyons !"],
+          ["Il fallait que je te raconte !", "Raconte, raconte !"],
+          ["J'ai vu de la lumière !", "Viens, on prend l'air !"],
+          ["On fait un brin de causette ?", "Avec plaisir !"],
+          ["Je venais prendre de tes nouvelles.", "C'est gentil ! Tout va bien."]
+        ],
+        "groupe": [
+          ["Vous avez vu le bac, ce matin ?", "Oui ! Il y avait du monde !"],
+          ["Et si on faisait une fête ?", "Bonne idée ! On en parle à la famille ?"],
+          ["L'eau du puits est fraîche !", "La meilleure de l'île !"],
+          ["Qui a planté ces fleurs ?", "La famille, je crois. C'est beau !"],
+          ["On est bien, tous ensemble.", "Ça, c'est vrai."],
+          ["Vous savez la nouvelle ?", "Non ! Raconte !"],
+          ["J'ai entendu un drôle d'oiseau.", "Moi aussi ! Il chantait faux !"],
+          ["On devrait se voir plus souvent.", "On se voit tous les jours, voyons !"],
+          ["Il paraît qu'un nouveau va arriver.", "Il faudra bien l'accueillir !"],
+          ["Ça pousse bien, cette année.", "La famille s'y connaît !"],
+          ["Qu'est-ce qu'on mange ce soir ?", "Une bonne soupe, j'espère !"],
+          ["Vous avez bien dormi ?", "Comme des marmottes !"]
+        ],
+        "repas": [
+          ["Tu me passes le pain ?", "Tiens, il est encore tiède !"],
+          ["C'est bon, hein ?", "Un régal, comme toujours !"],
+          ["Encore un peu de soupe ?", "Juste une louche, merci !"],
+          ["À la vôtre !", "À la nôtre, et à l'île !"],
+          ["Qui a cuisiné, ce soir ?", "La famille ! On a de la chance."],
+          ["On mange bien, ici.", "Mieux que sur le bac, ça !"],
+          ["Il reste de la tarte ?", "Je t'en ai gardé une part !"],
+          ["Bon appétit, tout le monde !", "Bon appétit !"]
+        ],
+        "promenade": [
+          ["On va jusqu'au bout du chemin ?", "Allons-y, à petits pas !"],
+          ["Il fait bon marcher avec toi.", "On refait ça demain ?"],
+          ["Regarde comme c'est beau, par là.", "On a de la chance de vivre ici."],
+          ["Tu marches trop vite !", "Pardon, j'avais hâte de voir !"],
+          ["Tu te souviens de ton arrivée ?", "Comme si c'était hier !"]
+        ]
+      },
+      "JOUEUR": {
+        "connaissance": ["Bonjour, {joueur} !", "Salut, {joueur} !", "Belle journée, {joueur} !", "Oh, bonjour !", "Ça va, {joueur} ?"],
+        "ami": [
+          "{joueur} ! Ça fait plaisir !",
+          "Coucou, {joueur} !",
+          "Merci pour tout, {joueur} !",
+          "Te voilà, {joueur} !",
+          "Toujours au travail, {joueur} ?"
+        ]
+      },
+      "ACTIVITE": {
+        "visite": ["Je rends visite à un ami.", "On cause un peu, devant la porte.", "Je passais dire bonjour."],
+        "rdv": ["On se retrouve entre amis.", "On bavarde un peu, ici.", "On refait le monde, sur la place."],
+        "promenade": ["On se promène à deux.", "Un petit tour avec un ami.", "On marche un peu ensemble."],
+        "eau": ["Je viens puiser de l'eau.", "L'eau du puits est bien fraîche."],
+        "jardin": ["Je regarde pousser ton jardin.", "Tes cultures ont belle allure !"],
+        "betes": ["Je viens voir les bêtes.", "Elles ont l'air bien, tes bêtes."],
+        "ouvrage": ["J'admire ce que tu as bâti.", "C'est du beau travail, ça."],
+        "port": ["Je descends voir le port.", "J'aime regarder les bateaux."]
       }
     },
     "PALIERS": [
