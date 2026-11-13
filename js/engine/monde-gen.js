@@ -954,9 +954,10 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
   // La case du port : une case de terre (plage, prairie, lande, forêt) au bord de la mer, d'où le quai avance droit
   // vers le sud (sens 1) ou vers l'est (sens 3) — la mer est au sud et à l'est — sur l'eau libre (dispoPort),
   // la terre derrière pour la halle et ses abords ; loin de la ferme, des hameaux et des autres lieux ; qu'on
-  // joint à pied depuis la sortie de la ferme sans passer la montagne. Parmi elles, la plus loin de la ferme
-  // dont le chemin se trouve (PORT.PLAN.ESSAIS tentés, des plus loin aux moins loin) et coûte PRIX_MAX au plus ;
-  // sinon la plus loin qui a un chemin, à n'importe quel prix ; sinon, la plus loin, sans chemin.
+  // joint à pied depuis la sortie de la ferme sans passer la montagne. Les côtes sont rangées des plus proches
+  // de la ferme aux moins proches (d'abord entre FERME et LOIN cases, puis au-delà) ; parmi les PORT.PLAN.ESSAIS
+  // premières dont le chemin se trouve, celle dont le chemin est le plus court et coûte PRIX_MAX au plus (c'est
+  // lui qu'on marche) ; sinon le plus court à n'importe quel prix ; sinon, la plus proche, sans chemin.
   // → { id, nom, case, sens, quai (ses cases au niveau 5, de la rive vers le large, rangée par rangée de
   // largeur), halle: { x0, y0, l, h }, terre: { x0, y0, x1, y1 } (ses abords), chemin (de la sortie de la
   // ferme à sa case), prix }, ou null (aucune côte ne convient).
@@ -1014,7 +1015,9 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const vx = ux + dx, vy = uy + dy; if (vx >= 0 && vy >= 0 && vx < CW && vy < CH && joint[vy * CW + vx]) return true; }
       return false;
     };
-    cands.sort((a, b) => b.loin - a.loin || a.i - b.i);
+    // (la côte la plus proche de FERME dans la fenêtre FERME..LOIN ; hors d'elle, la plus proche de la fenêtre)
+    const ecart = (c) => (c.loin <= PP.LOIN ? 0 : c.loin - PP.LOIN);
+    cands.sort((a, b) => ecart(a) - ecart(b) || a.loin - b.loin || a.i - b.i);
     const prix = (pas) => pas.reduce((s, j, n) => s + (n ? Math.max(0, cout(j)) : 0), 0);
     let choisi = null, secours = null;
     const essayer = (c) => {
@@ -1031,8 +1034,9 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
       const pas = essayer(c);
       if (!pas) continue;
       const p = prix(pas);
-      if (!secours) secours = { c, pas, p };
-      if (p <= PP.PRIX_MAX) { choisi = { c, pas, p }; break; }
+      // (parmi les ESSAIS côtes les plus proches, celle dont le chemin est le plus court : c'est lui qu'on marche)
+      if (!secours || pas.length < secours.pas.length) secours = { c, pas, p };
+      if (p <= PP.PRIX_MAX && (!choisi || pas.length < choisi.pas.length)) choisi = { c, pas, p };
     }
     const r = choisi || secours;
     evitePort = null;

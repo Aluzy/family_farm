@@ -9356,7 +9356,19 @@ export const RAW_DATA = {
     "PORTEE": 3,
     "HEURES": [6, 21],
     "ELEMENT": { "nom": "Le port", "icone": "⚓", "note": "au comptoir de la halle, au bout du chemin : vends tes récoltes, achète des graines" },
-    "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 70, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
+    "PLAN": {
+      "QUAI": 12,
+      "LARGEUR": 2,
+      "EAU": 3,
+      "HALLE": [6, 4],
+      "FERME": 80,
+      "LOIN": 100,
+      "HAMEAU": 26,
+      "LIEUX": 12,
+      "PRIX_MAX": 2400,
+      "PAS": 2,
+      "ESSAIS": 8
+    },
     "NIVEAUX": [
       { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"] },
       { "quai": 8, "ajoute": ["caisses"] },
