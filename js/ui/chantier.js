@@ -20,7 +20,7 @@ import { setStageWindow, stageWindow } from './stage-windows.js';
 import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, couleursVariante, deplacerStatus, hauteurPile, matiereDessus, mesuresMeuble, nomVariante, rehausseStatus, poseStatus, solAt, tourneBloc, varianteBloc, variantesBloc, varianteSuivante } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
-import { deplacerEtageStatus, dessusEtage, murEtage, ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, fenetresHautes, poseEtageStatus, etageBlocs, poseSolEtageStatus, solsEtage, varianteEtage } from '../engine/etage.js';
+import { deplacerEtageStatus, dessusEtage, empriseNiveau, murEtage, ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, fenetresHautes, poseEtageStatus, etageBlocs, poseSolEtageStatus, solsEtage, varianteEtage } from '../engine/etage.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -42,10 +42,15 @@ import { basculerFavori, estFavori, filtrer, filtres, filtresPossibles, noterRec
 // niveau 0, un appui sur un mur le reprend, comme tout bloc.
 const niveauMax = () => Math.max(etageEmprise(state).size ? 1 : 0, DATA.ATELIER.HAUTEUR_MAX - 1);
 const niveau = () => Math.min(buildLevel, niveauMax());
-// L'étage, s'il y en a un et qu'on y construit : 1, sinon 0.
-export const niveauBati = () => (niveau() === 1 && etageEmprise(state).size ? 1 : 0);
-// Le niveau où l'on rehausse les murs (la carte le montre seul : 1 ou 2), sinon 0.
-export const niveauRang = () => (niveauBati() ? 0 : niveau());
+// Le niveau où l'on bâtit comme au sol (des pièces dont les murs y montent : leur emprise,
+// js/engine/etage.js empriseNiveau ; le créateur, novembre 2026 : chaque niveau, les mêmes
+// mécaniques) : 1 ou 2, sinon 0.
+export const niveauBati = () => { const n = niveau(); return n >= 1 && empriseNiveau(state, n).size ? n : 0; };
+// Le niveau que la carte montre par le rang de ses murs (1 ou 2 ; l'étage, le niveau 1 où l'on bâtit,
+// a sa propre vue : js/carte/ferme/etage.js), sinon 0.
+export const niveauRang = () => (niveauBati() === 1 ? 0 : niveau());
+// Le niveau à donner aux commandes de l'étage (rien au niveau 1, { niveau: 2 } au-dessus).
+const nvBati = () => (niveauBati() > 1 ? { niveau: niveauBati() } : {});
 const MURS = () => Object.keys(DATA.ATELIER.BLOCS).filter((s) => DATA.ATELIER.BLOCS[s].mur);
 // Les sols d'une pièce (pas le chemin, du dehors ; pas un tapis) : au niveau 1 aussi.
 const estSolPiece = (s) => { const b = DATA.ATELIER.BLOCS[s]; return !!(b && b.sol && !b.dehors && !b.meuble); };
@@ -59,13 +64,14 @@ const solEnMain = () => niveau() >= 1 && estSolPiece(buildMode);
 function genreCase(c, lot = null) {
   const L = lot || { sol: solEnMain(), bati: niveauBati(), emprise: null };
   if (L.sol) return 'sol';
-  const dansEtage = () => L.bati && (L.emprise || etageEmprise(state)).has(c);
+  const nb = L.bati || 1;
+  const dansEtage = () => L.bati && (L.emprise || empriseNiveau(state, nb)).has(c);
   // (sur l'étage, un mur rehaussé où l'on accroche un tableau, ou d'où on le reprend : un bloc de l'étage)
-  if (dansEtage() && (dessusEtage(state)[c] || (DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sur === 'mur'))) return 'etage';
+  if (dansEtage() && (dessusEtage(state, nb)[c] || (DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sur === 'mur'))) return 'etage';
   // (sur l'étage, un mur du bas rehaussé jusqu'à l'étage, une fenêtre en main : elle s'y perce ; ou celle qui y est
   // percée, pour la reprendre — et non le mur abaissé)
   const fen = !!(DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].fenetre);
-  if (dansEtage() && hauteurPile(state, c) >= 2 && (fen || fenetresHautes(state)[c])) return 'etage';
+  if (dansEtage() && hauteurPile(state, c) >= nb + 1 && (fen || fenetresHautes(state, nb)[c])) return 'etage';
   if (hauteurPile(state, c) >= 1) return 'rang';
   return dansEtage() ? 'etage' : 'rang';
 }
@@ -78,7 +84,7 @@ function leLotTrace() {
   const cle = commandesJouees() + '|' + buildMode + '|' + buildLevel;
   if (!lotTrace || lotTrace.cle !== cle) {
     const neuf = !lotTrace;
-    lotTrace = { cle, n: niveau(), sol: solEnMain(), bati: niveauBati(), emprise: etageEmprise(state) };
+    lotTrace = { cle, n: niveau(), sol: solEnMain(), bati: niveauBati(), emprise: empriseNiveau(state, niveauBati() || 1) };
     if (!neuf) return lotTrace;
     Promise.resolve().then(() => { lotTrace = null; });
   }
@@ -231,14 +237,14 @@ export function buildChipHtml() {
   // (sa flèche vers la case du groupe : sa colonne dans la barre ; la bulle, sous sa ligne)
   const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.floor(Math.max(0, rangs.indexOf(gb.id)) / LIGNES)};--ligne:${Math.max(0, rangs.indexOf(gb.id)) % LIGNES}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((s) => caseBloc(s)).join('')}</div></div>` : '';
   const dodo = couchages(state).length;
-  const tete = niveauBati() ? '<span title="À l\'étage : on bâtit au-dessus d\'une pièce dont les murs montent à l\'étage ou qui a un escalier ; ailleurs, on rehausse les murs">🪜 Étage</span>'
+  const tete = niveauBati() ? `<span title="${niveauBati() === 1 ? 'À l\'étage' : `Au niveau ${niveauBati()}`} : on bâtit au-dessus d'une pièce dont les murs montent jusque-là${niveauBati() === 1 ? ' ou qui a un escalier' : ''} ; ailleurs, on rehausse les murs">🪜 ${niveauBati() === 1 ? 'Étage' : `Niveau ${niveauBati()}`}</span>`
     : niveau() ? `<span title="Niveau ${niveau()} : touche un mur haut de ${niveau()} bloc${niveau() > 1 ? 's' : ''} pour le rehausser, un mur plus haut pour reprendre son bloc du dessus">🧱 Rehausser</span>`
     : `<span class="num" title="Paillasses dans une pièce close">🛏 ${dodo}</span>`;
   // le niveau de construction : un petit carré au bout de la barre, et la liste des niveaux (le
   // plus haut en haut), qui s'ouvre sous lui
   const max = niveauMax(), lvl = niveau();
   // (chaque niveau : son chiffre et ce qu'on y fait)
-  const quoi = (n) => (!n ? 'Au sol' : n === 1 && etageEmprise(state).size ? 'Étage · murs, sols' : `Murs · ${n + 1} blocs, sols`);
+  const quoi = (n) => (!n ? 'Au sol' : empriseNiveau(state, n).size ? `${n === 1 ? 'Étage' : 'Pièces'} · comme au sol` : `Murs · ${n + 1} blocs, sols`);
   const niveaux = Array.from({ length: max + 1 }, (_, i) => max - i).map((n) => `<button type="button" class="build-level-item${n === lvl ? ' active' : ''}" data-action="build-level" data-niveau="${n}" aria-pressed="${n === lvl}" aria-label="Niveau ${n} : ${quoi(n)}"><span class="build-level-n" aria-hidden="true">${n}</span><span class="build-level-quoi" aria-hidden="true">${quoi(n)}</span></button>`).join('');
   // l'outil pièce : un mur en main, au sol ; allumé, un glissement trace le pourtour d'une pièce
   const murEnMain = !!(buildMode && DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].mur);
@@ -326,13 +332,14 @@ function tapisser(c) {
 
 // A-3 : repeindre le meuble de la case `c` (une de ses cases ; `etage` : à l'étage) de sa couleur suivante.
 function repeindre(c, etage) {
-  const ancre = etage ? (!etageBlocs(state)[c] && etageCouvertes(state).has(c) ? etageCouvertes(state).get(c) : c)
+  const n = niveauBati() || 1;
+  const ancre = etage ? (!etageBlocs(state, n)[c] && etageCouvertes(state, n).has(c) ? etageCouvertes(state, n).get(c) : c)
     : (!blocAt(state, c) && casesCouvertes(state).has(c) ? casesCouvertes(state).get(c) : c);
-  const sorte = etage ? etageBlocs(state)[ancre] : blocAt(state, ancre);
+  const sorte = etage ? etageBlocs(state, n)[ancre] : blocAt(state, ancre);
   if (!sorte) { notify('Touche un meuble posé pour changer sa couleur.'); return; }
-  const actuelle = etage ? varianteEtage(state, ancre) : varianteBloc(state, ancre);
+  const actuelle = etage ? varianteEtage(state, ancre, n) : varianteBloc(state, ancre);
   const v = varianteSuivante(sorte, actuelle);
-  const r = v ? executer(etage ? 'etage.peindre' : 'bloc.peindre', { case: ancre, variante: v }) : { ok: false, error: `${DATA.ATELIER.BLOCS[sorte].nom} : une seule couleur pour l'instant.` };
+  const r = v ? executer(etage ? 'etage.peindre' : 'bloc.peindre', { case: ancre, variante: v, ...(etage ? nvBati() : {}) }) : { ok: false, error: `${DATA.ATELIER.BLOCS[sorte].nom} : une seule couleur pour l'instant.` };
   if (!r.ok) { notify(r.error); return; }
   noter(r.inverses);
   notify(`🎨 ${DATA.ATELIER.BLOCS[sorte].nom} : ${nomVariante(sorte, r.variante)}`, { duree: CONSEIL_MS });
@@ -453,7 +460,7 @@ const meubleEnMain = () => {
   return !!(b && b.meuble && !b.sur && (!niveau() || niveauBati()));
 };
 // Le meuble en main tient-il sur `c`, au niveau où l'on construit ?
-const meubleTient = (c) => (niveauBati() ? poseEtageStatus(state, buildMode, c, sensDe(buildMode)) : poseStatus(state, buildMode, c, sensDe(buildMode))).ok;
+const meubleTient = (c) => (niveauBati() ? poseEtageStatus(state, buildMode, c, sensDe(buildMode), niveauBati()) : poseStatus(state, buildMode, c, sensDe(buildMode))).ok;
 // Pour la carte (modèle.bati.meuble) : la grille, et l'aperçu s'il y en a un
 // ({ case, dessin, largeur, hauteur, ok }).
 export function meubleModele() {
@@ -512,10 +519,10 @@ export function tracePosable(c) {
     return poseSolEtageStatus(state, buildMode, c, n).ok ? 'ok' : false;
   }
   if (g === 'etage') {
-    const e = etageBlocs(state)[c], be = e && DATA.ATELIER.BLOCS[e];
+    const nb = niveauBati() || 1, e = etageBlocs(state, nb)[c], be = e && DATA.ATELIER.BLOCS[e];
     if (be && (b.mur ? be.mur : b.sol && be.sol)) return 'fait';
-    if (fenetresHautes(state)[c] && b.mur) return 'fait';
-    return poseEtageStatus(state, buildMode, c).ok ? 'ok' : false;
+    if (fenetresHautes(state, nb)[c] && b.mur) return 'fait';
+    return poseEtageStatus(state, buildMode, c, 0, nb).ok ? 'ok' : false;
   }
   // aux niveaux 1 et 2 : un mur haut de n blocs (le même mur en main ; au-dessus d'une fenêtre ou
   // d'une porte, un mur plein) se rehausse ; plus haut, c'est fait
@@ -576,7 +583,7 @@ function noter(inverses) {
 export function pipetteSorte(c) {
   if (!buildMode) return null;
   if (niveauBati()) {
-    const e = etageBlocs(state), couvert = etageCouvertes(state).get(c), s = dessusEtage(state)[c] || e[c] || (couvert !== undefined ? e[couvert] : null);
+    const n = niveauBati(), e = etageBlocs(state, n), couvert = etageCouvertes(state, n).get(c), s = dessusEtage(state, n)[c] || e[c] || (couvert !== undefined ? e[couvert] : null);
     return s && SORTES().includes(s) ? s : null;
   }
   if (niveau()) return null;
@@ -591,7 +598,7 @@ export function pipetteSorte(c) {
 export function deplacable(c) {
   if (!buildMode || meubleEnMain()) return null;
   if (niveauBati()) {
-    const e = etageBlocs(state), couvert = etageCouvertes(state).get(c), ancre = couvert !== undefined && !e[c] ? couvert : c;
+    const n = niveauBati(), e = etageBlocs(state, n), couvert = etageCouvertes(state, n).get(c), ancre = couvert !== undefined && !e[c] ? couvert : c;
     const sorte = e[ancre], b = sorte && DATA.ATELIER.BLOCS[sorte];
     if (!b || b.mur || b.sol || b.porte || b.fenetre || b.cloture || sorte === 'escalier') return null;
     return { sorte, ancre };
@@ -604,7 +611,7 @@ export function deplacable(c) {
 }
 // L'aperçu du déplacement : tiendrait-il, ancré sur `vers` ? { ok, cases }.
 export function deplacePossible(de, vers) {
-  const r = niveauBati() ? deplacerEtageStatus(state, de, vers) : deplacerStatus(state, de, vers);
+  const r = niveauBati() ? deplacerEtageStatus(state, de, vers, niveauBati()) : deplacerStatus(state, de, vers);
   return { ok: r.ok, cases: r.cases };
 }
 // Ce qui est sur la case `c` au sol : le bloc du dessus, le bloc, le sol (ce que reprend un appui).
@@ -616,7 +623,7 @@ const surCase = (c) => surCaseMoteur(state, c);
 function poserIci(sorte, c) {
   const g = niveau() ? genreCase(c) : null;
   if (g === 'sol') return executer('solEtage.poser', { sorte, case: c, niveau: niveau() });
-  if (g === 'etage') return executer('etage.poser', { sorte, case: c });
+  if (g === 'etage') return executer('etage.poser', { sorte, case: c, ...nvBati() });
   if (g) return executer('mur.rehausser', { sorte, case: c });
   return executer('bloc.poser', { sorte, case: c });
 }
@@ -625,7 +632,7 @@ function poserIci(sorte, c) {
 function reprendreIci(c) {
   const g = niveau() ? genreCase(c) : null;
   if (g === 'sol') return executer('solEtage.reprendre', { case: c, niveau: niveau() });
-  if (g === 'etage') return executer('etage.reprendre', { case: c });
+  if (g === 'etage') return executer('etage.reprendre', { case: c, ...nvBati() });
   if (niveau()) return executer('mur.abaisser', { case: c, niveau: niveau() });
   return executer('bloc.reprendre', { case: c });
 }
@@ -818,7 +825,7 @@ registerActions({
       if (modePeindre) { repeindre(c, true); return; }
       // (l'outil ↻ allumé : un appui sur un meuble de l'étage le tourne d'un quart de tour, A-1)
       if (modeTourner) {
-        const t = executer('etage.tourner', { case: c });
+        const t = executer('etage.tourner', { case: c, ...nvBati() });
         if (!t.ok) { notify(t.error); return; }
         noter(t.inverses);
         persistState();
@@ -827,12 +834,12 @@ registerActions({
       }
       // (un appui sur un meuble de l'étage, sur n'importe laquelle de ses cases, le reprend ; sur un mur où
       // pend un tableau, le tableau ; un tableau en main, sur un mur nu de l'étage : il s'y accroche)
-      const e = etageBlocs(state)[c], bm = DATA.ATELIER.BLOCS[buildMode];
-      const accroche = !!(bm && bm.sur === 'mur') && murEtage(state, c) && !dessusEtage(state)[c];
-      const reprend = !accroche && (!!dessusEtage(state)[c] || (e && !changeMur(e, buildMode)) || etageCouvertes(state).has(c) || (!e && !!fenetresHautes(state)[c]));
+      const nb = niveauBati() || 1, e = etageBlocs(state, nb)[c], bm = DATA.ATELIER.BLOCS[buildMode];
+      const accroche = !!(bm && bm.sur === 'mur') && murEtage(state, c, nb) && !dessusEtage(state, nb)[c];
+      const reprend = !accroche && (!!dessusEtage(state, nb)[c] || (e && !changeMur(e, buildMode)) || etageCouvertes(state, nb).has(c) || (!e && !!fenetresHautes(state, nb)[c]));
       // (un meuble en main, sur une case libre : son aperçu, pas encore posé)
       if (!reprend && meubleEnMain()) { poseMeuble = { sorte: buildMode, case: c }; refresh(); return; }
-      const r = reprend ? executer('etage.reprendre', { case: c }) : executer('etage.poser', { sorte: buildMode, case: c });
+      const r = reprend ? executer('etage.reprendre', { case: c, ...nvBati() }) : executer('etage.poser', { sorte: buildMode, case: c, ...nvBati() });
       if (!r.ok) { notify(r.error); return; }
       noter(r.inverses);
       persistState();
@@ -920,7 +927,7 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const de = Number(target.dataset.de), vers = Number(target.dataset.vers);
     if (!Number.isInteger(de) || !Number.isInteger(vers) || de === vers) return;
-    const r = executer(niveauBati() ? 'etage.deplacer' : 'bloc.deplacer', { de, vers });
+    const r = executer(niveauBati() ? 'etage.deplacer' : 'bloc.deplacer', { de, vers, ...nvBati() });
     if (!r.ok) { notify(r.error); refresh(); return; }
     noter(r.inverses);
     persistState();
@@ -1027,7 +1034,7 @@ registerActions({
     if (!poseMeuble || !meubleEnMain()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const v = varianteDe(poseMeuble.sorte), teinte = v ? { variante: v } : {};
-    const r = niveauBati() ? executer('etage.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte), ...teinte }) : executer('bloc.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte), ...teinte });
+    const r = niveauBati() ? executer('etage.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte), ...teinte, ...nvBati() }) : executer('bloc.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte), ...teinte });
     if (!r.ok) { notify(r.error); return; }
     noter(r.inverses);
     poseMeuble = null;

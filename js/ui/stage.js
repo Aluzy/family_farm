@@ -83,7 +83,7 @@ import { caseDepart, ramassables } from '../engine/atelier.js';
 import { papiersVisibles } from '../engine/papiers.js';
 import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, enLot, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses, couleursVariante, varianteBloc } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable, vueMeuble } from './chantier.js';
-import { dessusEtage, escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, fenetresHautes, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
+import { dessusEtage, empriseNiveau, escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, fenetresHautes, niveauxEtage, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.js';
@@ -384,7 +384,7 @@ export function stageModel() {
   batiments.zone.visible = false;
   // le Moulin ne tourne que quand il moud (du blé en cours)
   batiments.moulin.enMarche = !!(state.stations && state.stations.moulin && state.stations.moulin.tache);
-  const hauteurs = hauteursPosees(state), fenetres = fenetresPosees(state), rehausses = rehaussesPosees(state), hautes = fenetresHautes(state);
+  const hauteurs = hauteursPosees(state), fenetres = fenetresPosees(state), rehausses = rehaussesPosees(state), hautes = niveauxEtage().map((n) => fenetresHautes(state, n));
   const tour = etatMoulin(state);
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
@@ -566,7 +566,7 @@ export function stageModel() {
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
     // (un mur rehaussé, version 1.25 : sa hauteur en blocs)
     // (une fenêtre percée dans un mur : la matière de ce mur)
-    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(sorte === 'compost' ? { niveau: etatCompost(state, Number(c)).niveau } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}), ...(hautes[c] && hauteurs[c] > 1 ? { fenetreHaute: hautes[c] } : {}) })),
+    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(sorte === 'compost' ? { niveau: etatCompost(state, Number(c)).niveau } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}), ...(hauteurs[c] > 1 && hautes.some((H) => H[c]) ? { fenetresHautes: hautes.map((H) => H[c] || null) } : {}) })),
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)
@@ -626,6 +626,8 @@ export function stageModel() {
 // jardin, un bloc de la planche : son sens seulement (js/carte/ferme/chantier.js, BLOCS_CARTE.sens).
 function meubleDe(sorte, tile, etage = false) {
   const b = DATA.ATELIER.BLOCS[sorte];
+  // (`etage` : true ou 1, l'étage ; 2, le niveau 2 ; false, en bas)
+  const niv = etage === true ? 1 : etage || 0;
   if (b && b.dessin) {
     // (un bac à fleurs : ce qui y pousse, sa peinture ; js/engine/bacs.js)
     const teinte = b.peinture && Number.isInteger(tile) && !etage ? varianteBloc(state, tile) : null;
@@ -634,11 +636,11 @@ function meubleDe(sorte, tile, etage = false) {
     const enseigne = b.enseigne ? { matiere: b.enseigne, nom: familyName(state), texte: texteEnseigne(b, teinte) } : null;
     return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: false, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
   }
-  const sens = b && b.tourne && Number.isInteger(tile) ? (etage ? sensEtage(state, tile) : sensBloc(state, tile)) : 0;
+  const sens = b && b.tourne && Number.isInteger(tile) ? (niv ? sensEtage(state, tile, niv) : sensBloc(state, tile)) : 0;
   if (!b || !b.meuble) return sens ? { sens } : {};
   const mes = mesuresMeuble(sorte, sens), v = vueMeuble(sorte, sens);
   // (A-3 : sa variante de couleur, et les couleurs que la carte remplace dans ses images)
-  const teinte = Number.isInteger(tile) ? (etage ? varianteEtage(state, tile) : varianteBloc(state, tile)) : null;
+  const teinte = Number.isInteger(tile) ? (niv ? varianteEtage(state, tile, niv) : varianteBloc(state, tile)) : null;
   const couleurs = teinte ? couleursVariante(sorte, teinte) : null;
   return { meuble: { dessin: b.meuble, largeur: mes.largeur, hauteur: mes.hauteur, bloque: !!b.bloque, plat: !!b.plat, lit: !!b.lit, ...(sens ? { sens, vue: v.vue, miroir: v.miroir } : {}), ...(couleurs ? { variante: teinte, couleurs } : {}) } };
 }
@@ -712,6 +714,16 @@ function sprinklerSpots() {
   return list;
 }
 
+// Les blocs et les tableaux du niveau `n` (≥ 2) pour la carte, ou null s'il n'y a rien.
+function niveauModel(n) {
+  const B = etageBlocs(state, n), D = dessusEtage(state, n), F = fenetresEtage(state, n);
+  if (!Object.keys(B).length && !Object.keys(D).length) return null;
+  return {
+    blocs: Object.entries(B).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c), n), ...(F[c] ? { mur: F[c] } : {}) })),
+    tableaux: Object.entries(D).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
+  };
+}
+
 // L'étage pour la carte : { etage: { emprise, blocs, escaliers, hauts } ou null, niveau, vueNiveau }.
 // hauts : les cases de l'emprise où un mur du bas monte à l'étage (il en est le mur).
 // vueNiveau : en mode Construire, le niveau où l'on construit (la vue le montre), sinon null.
@@ -729,9 +741,12 @@ function etageModel() {
   return {
     etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c), true), ...(fenetresEtage(state)[c] ? { mur: fenetresEtage(state)[c] } : {}) })), escaliers: escaliers(state), hauts: [...emprise].filter((t) => hauteurPile(state, t) >= 2).sort((a, b) => a - b), etage2,
       // (les tableaux accrochés aux murs de l'étage)
-      tableaux: Object.entries(dessusEtage(state)).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })) },
+      tableaux: Object.entries(dessusEtage(state)).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
+      // (le niveau 2 : ses blocs et ses tableaux, posés avec ou sans escalier ; js/carte/ferme/etage.js)
+      n2: niveauModel(2) },
     niveau: etageVue,
-    vueNiveau: buildMode && !stageInterior ? niveauBati() : null,
+    // (au niveau 2, la carte le montre par son rang : chantier.js syncRang)
+    vueNiveau: buildMode && !stageInterior ? (niveauBati() === 1 ? 1 : 0) : null,
   };
 }
 

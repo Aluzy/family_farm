@@ -66,12 +66,15 @@
       const n = on ? Math.min(niveau || 0, etage.etage2 ? 2 : 1) : 0;
       const solsHaut = (this.ctx.lastModel && this.ctx.lastModel.solsEtage) || [];
       const sols2 = ((this.ctx.lastModel && this.ctx.lastModel.solsHauts) || []).filter((q) => q.niveau === 2);
+      // (une image pas encore chargée au dernier dessin : on le refait dès qu'elle est là)
+      if (this.etageManque && this.etageManque.length && this.etageManque.every((k) => this.textures.exists(k))) this.etageCle = null;
       const cle = on ? JSON.stringify(etage) + JSON.stringify(solsHaut) + JSON.stringify(sols2) : '';
       if (cle === this.etageCle && n === (this.niveau || 0)) return;
       const change = n !== (this.niveau || 0), avant = this.niveau || 0;
       this.niveau = n;
       if (cle !== this.etageCle) {
         this.etageCle = cle;
+        this.etageManque = [];
         if (this.etageObjs) this.etageObjs.forEach((o) => o.destroy());
         this.etageObjs = [];
         this.etageMurs = new Map();
@@ -85,6 +88,8 @@
         // le niveau 2 (par l'escalier de l'étage) : ses objets, son emprise, ce qui y arrête
         if (this.etage2Objs) this.etage2Objs.forEach((o) => o.destroy());
         this.etage2Objs = [];
+        if (this.etageN2Objs) this.etageN2Objs.forEach((o) => o.destroy());
+        this.etageN2Objs = [];
         const e2 = on && etage.etage2;
         this.etage2Emprise = e2 ? new Set(e2.emprise) : null;
         this.etage2Bloque = new Set(e2 ? e2.hauts : []);
@@ -130,24 +135,28 @@
             const p = pos(t);
             add(this.add.image(p.x, p.y - dy, BLOCS_CARTE.key, E.haut).setOrigin(0.5, 1).setDepth(p.y + 0.6));
           }
-          // les blocs de l'étage (les murs raccordés entre eux, hauts comme en bas)
-          const at = new Map(etage.blocs.map((b) => [b.case, b.sorte]));
+          // les blocs d'un niveau (1 : l'étage ; 2 : au-dessus ; les mêmes dessins, ETAGE.dy plus haut par
+          // niveau) : les murs raccordés entre eux, hauts comme en bas ; les meubles ; les tableaux. Seuls
+          // ceux de l'étage s'allument, se couchent (etageLits, etageLumieres…)
+          const dessine = (blocs, tableaux, niv, add, bloque) => {
+          const dy = E.dy * niv, un = niv === 1;
+          const at = new Map(blocs.map((b) => [b.case, b.sorte]));
           // deux lits adulte côte à côte (la même rangée) : un lit deux places, comme en bas
           // (chantier.js syncLitsDoubles) ; celui de gauche le dessine, l'autre ne se dessine pas
           // (deux lits de face seulement : un lit tourné garde son dessin, A-1)
-          const LD = BLOCS_CARTE.litDouble, seul = (c) => { const b = etage.blocs.find((q) => q.case === c); return !!(b && b.meuble && b.meuble.dessin === LD.seul && !b.meuble.sens); };
+          const LD = BLOCS_CARTE.litDouble, seul = (c) => { const b = blocs.find((q) => q.case === c); return !!(b && b.meuble && b.meuble.dessin === LD.seul && !b.meuble.sens); };
           // (A-3 : deux lits de la même couleur)
-          const teinteDe = (c) => { const b = etage.blocs.find((q) => q.case === c); return (b && b.meuble && b.meuble.variante) || null; };
+          const teinteDe = (c) => { const b = blocs.find((q) => q.case === c); return (b && b.meuble && b.meuble.variante) || null; };
           const paire = new Map();
           if (this.textures.exists('meuble_' + LD.double)) {
-            for (const b of etage.blocs.slice().sort((p1, p2) => p1.case - p2.case)) {
+            for (const b of blocs.slice().sort((p1, p2) => p1.case - p2.case)) {
               const c = b.case;
               if (!seul(c) || paire.has(c) || c % cols === cols - 1 || !seul(c + 1) || paire.has(c + 1) || teinteDe(c) !== teinteDe(c + 1)) continue;
               paire.set(c, { gauche: true, autre: c + 1 });
               paire.set(c + 1, { gauche: false, autre: c });
             }
           }
-          for (const b of etage.blocs) {
+          for (const b of blocs) {
             // un meuble (modèle : b.meuble, comme en bas : syncMeuble) : son dessin, au milieu des
             // cases qu'il couvre, qui arrêtent le passage s'il bloque
             if (b.meuble) {
@@ -156,12 +165,12 @@
               const vu = 'meuble_' + M.dessin + (M.vue || '');
               // (A-3 : dans sa couleur, js/carte/ferme/chantier.js imageTeinte)
               const k = this.imageTeinte(pr ? 'meuble_' + LD.double : this.textures.exists(vu) ? vu : 'meuble_' + M.dessin, M.variante, M.couleurs);
-              if (!this.textures.exists(k)) continue;
+              if (!this.textures.exists(k)) { this.etageManque.push(k); continue; }
               const x0 = Math.round(((b.case % cols) + M.largeur / 2) * T), x = pr ? x0 + T / 2 : x0;
               // (la moitié droite d'un lit deux places : rien à dessiner, sa place seulement)
               if (pr && !pr.gauche) {
                 const g = pos(pr.autre);
-                this.etageLits.set(b.case, { img: null, gauche: pr.autre, x: x0, y: g.y - dy - 1, haut: this.textures.getFrame(k).height, dessin: LD.double, double: true });
+                if (un) this.etageLits.set(b.case, { img: null, gauche: pr.autre, x: x0, y: g.y - dy - 1, haut: this.textures.getFrame(k).height, dessin: LD.double, double: true });
                 continue;
               }
               // (un meuble qui bloque : devant le personnage de sa rangée, derrière ses murs ; un
@@ -170,11 +179,11 @@
               if (M.bloque || M.hauteur < 2) {
                 const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setDepth(p.y + (M.bloque ? 0.9 : M.lit ? 0.75 : 0.6)).setFlipX(!!M.miroir));
                 // (une table de chevet : sa lampe s'allume le soir, comme en bas)
-                if (BLOCS_CARTE.lampeChevet.dessins.includes(M.dessin)) this.etageLampes.push({ img, x, y: p.y - dy - 1, dessin: M.dessin });
+                if (un && BLOCS_CARTE.lampeChevet.dessins.includes(M.dessin)) this.etageLampes.push({ img, x, y: p.y - dy - 1, dessin: M.dessin });
                 // (une cheminée : son feu s'allume le soir, comme en bas)
-                if (String(M.dessin).startsWith('cheminee_')) this.etageCheminees.push({ img, x, y: p.y - dy - 1 });
+                if (un && String(M.dessin).startsWith('cheminee_')) this.etageCheminees.push({ img, x, y: p.y - dy - 1 });
                 // (un lit de profil, sur une rangée : on y dort aussi)
-                if (M.lit) this.etageLits.set(b.case, { img, x, y: p.y - dy - 1, haut: this.textures.getFrame(k).height, dessin: M.dessin, sens: M.sens || 0, variante: M.variante || null, couleurs: M.couleurs || null });
+                if (un && M.lit) this.etageLits.set(b.case, { img, x, y: p.y - dy - 1, haut: this.textures.getFrame(k).height, dessin: M.dessin, sens: M.sens || 0, variante: M.variante || null, couleurs: M.couleurs || null });
               } else {
                 const H = this.textures.getFrame(k).height;
                 let bas = null;
@@ -183,9 +192,9 @@
                   const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setCrop(0, y0, 9999, y1 - y0).setDepth(p.y - j * T + (M.lit ? 0.75 : 0.6)).setFlipX(!!M.miroir));
                   if (!j) bas = img;
                 }
-                if (M.lit) this.etageLits.set(b.case, pr ? { img: bas, x: x0, xd: x, y: p.y - dy - 1, haut: H, dessin: LD.double, double: true, variante: M.variante || null, couleurs: M.couleurs || null } : { img: bas, x, y: p.y - dy - 1, haut: H, dessin: M.dessin, sens: M.sens || 0, variante: M.variante || null, couleurs: M.couleurs || null });
+                if (un && M.lit) this.etageLits.set(b.case, pr ? { img: bas, x: x0, xd: x, y: p.y - dy - 1, haut: H, dessin: LD.double, double: true, variante: M.variante || null, couleurs: M.couleurs || null } : { img: bas, x, y: p.y - dy - 1, haut: H, dessin: M.dessin, sens: M.sens || 0, variante: M.variante || null, couleurs: M.couleurs || null });
               }
-              if (M.bloque) for (let j = 0; j < M.hauteur; j++) for (let i = 0; i < M.largeur; i++) this.etageBloque.add(b.case - j * cols + i);
+              if (M.bloque) for (let j = 0; j < M.hauteur; j++) for (let i = 0; i < M.largeur; i++) bloque.add(b.case - j * cols + i);
               continue;
             }
             let [key, f] = this.blocImage(b, at, cols);
@@ -195,20 +204,28 @@
             if (S) f = S.images[b.sens || 0];
             const plat = BLOCS_CARTE.plats.includes(b.sorte);
             const img = add(this.add.image(p.x, p.y - dy - F.piedBloc(b.sorte), key, f).setOrigin(0.5, 1).setDepth(p.y + (plat ? 0.7 : 1)).setFlipX(miroir));
-            if (b.sorte === 'paillasse') this.etageLits.set(b.case, { img, x: p.x, y: p.y - dy, paillasse: true });
+            if (un && b.sorte === 'paillasse') this.etageLits.set(b.case, { img, x: p.x, y: p.y - dy, paillasse: true });
             // (une lanterne, un réverbère : ils s'allument la nuit comme en bas, à la hauteur de l'étage)
-            if (b.sorte === 'lanterne' || b.sorte === 'candelabre') this.etageLumieres.push({ case: b.case, sorte: b.sorte, img, x: p.x, y: p.y - dy });
-            if (BLOCS_CARTE.bloquent.includes(b.sorte)) this.etageBloque.add(b.case);
-            if (key === BLOCS_CARTE.hauts.key) this.etageMurs.set(b.case, { img, x: p.x, sorte: b.sorte });
+            if (un && (b.sorte === 'lanterne' || b.sorte === 'candelabre')) this.etageLumieres.push({ case: b.case, sorte: b.sorte, img, x: p.x, y: p.y - dy });
+            if (BLOCS_CARTE.bloquent.includes(b.sorte)) bloque.add(b.case);
+            if (un && key === BLOCS_CARTE.hauts.key) this.etageMurs.set(b.case, { img, x: p.x, sorte: b.sorte });
           }
           // les tableaux accrochés aux murs de l'étage (modèle : etage.tableaux), sur la face du mur, comme en
           // bas (js/carte/ferme/chantier.js syncTableaux), juste devant lui
-          for (const t of etage.tableaux || []) {
+          for (const t of tableaux || []) {
             const key = 'meuble_' + t.dessin;
-            if (!this.textures.exists(key)) continue;
+            if (!this.textures.exists(key)) { this.etageManque.push(key); continue; }
             const p = pos(t.case);
             add(this.add.image(p.x, p.y - dy - BLOCS_CARTE.tableau.dy, key).setOrigin(0.5, 1).setDepth(p.y + 1.05));
           }
+          };
+          dessine(etage.blocs, etage.tableaux, 1, add, this.etageBloque);
+          // le niveau 2 (modèle : etage.n2 ; on y bâtit avec ou sans escalier) : ses blocs, montrés quand on y
+          // est (vue « haut2 ») ou qu'on y construit (le rang 2 : syncRang) ; stepEtage
+          if (this.etageN2Objs) this.etageN2Objs.forEach((o) => o.destroy());
+          this.etageN2Objs = [];
+          if (!this.etage2Bloque) this.etage2Bloque = new Set();
+          if (etage.n2) dessine(etage.n2.blocs, etage.n2.tableaux, 2, (o) => { this.etageN2Objs.push(o); return o; }, this.etage2Bloque);
         }
         // le voile de l'étage (montré quand on y est : stepEtage)
         if (on) this.etageObjs.push(this.etageVoile = this.add.rectangle(0, 0, this.world.w, this.world.h, E.voile, E.alpha).setOrigin(0).setDepth(this.etageVoileZ()).setVisible(false));
@@ -242,10 +259,18 @@
       // (couché dans un lit de l'étage : on le voit là-haut)
       const litHaut = this.fermier && this.fermier.lit && this.fermier.lit();
       const vue = this.vueNiveau != null ? (this.vueNiveau ? 'haut' : 'bas') : this.niveau >= 2 ? 'haut2' : this.niveau || (litHaut && litHaut.via) ? 'haut' : dedans ? 'bas' : 'dehors';
-      if (vue !== this.etageVue || this.etageBlocsN !== this.blocsN) {
+      if (vue !== this.etageVue || this.etageBlocsN !== this.blocsN || (this.rang || 0) !== this.etageRangVu) {
         this.etageVue = vue;
         this.etageBlocsN = this.blocsN;
+        this.etageRangVu = this.rang || 0;
         const n2 = vue === 'haut2', z = vue === 'haut' || n2;
+        // (les blocs du niveau 2 : là-haut, devant le second voile ; en mode Construire au niveau 2 (le rang
+        // 2, chantier.js syncRang), devant son voile ; sinon cachés, sous le toit)
+        const r2 = this.etageRangVu === 2;
+        for (const o of this.etageN2Objs || []) {
+          if (o.etageZ === undefined) o.etageZ = o.depth;
+          o.setVisible(n2 || r2).setDepth(n2 ? this.etage2Z(o.etageZ) : r2 ? this.etageZ(o.etageZ + 0.02) : o.etageZ);
+        }
         const haut = vue === 'bas' ? (this.vueNiveau != null ? E.transparent : E.dedans) : 1;
         // (le niveau 2 : seulement quand on y est, devant son voile, qui couvre l'étage)
         for (const o of this.etage2Objs || []) {
@@ -380,9 +405,10 @@
     // son image) : la fenêtre de sa station (BLOCS_CARTE.fenetres), ou null.
     stationEtageAt(wx, wy) {
       const e = this.ctx.lastModel && this.ctx.lastModel.etage;
-      if (!e || (this.niveau || 0) !== 1) return null;
+      const n = this.niveau || 0, liste = !e ? null : n === 1 ? e.blocs : n === 2 && e.n2 ? e.n2.blocs : null;
+      if (!liste) return null;
       const q = this.etagePoint(wx, wy), c = this.tileAtPoint(q.x, q.y), cols = this.grid.cols;
-      for (const b of e.blocs) {
+      for (const b of liste) {
         const win = BLOCS_CARTE.fenetres[b.sorte];
         if (win && (b.case === c || b.case === c + cols)) return win;
       }
