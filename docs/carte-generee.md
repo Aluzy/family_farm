@@ -699,8 +699,12 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
   - en mode Construire, à l'étage (niveau 1), le menu ne propose que les blocs de l'étage (`ETAGE_BLOCS` :
     murs, fenêtres, portes, paillasse, lanterne, réverbère, barrière, escalier, les meubles, les tableaux et la
     décoration du jardin, `DECOR_ETAGE`) ; ils n'ont pas d'autre effet que d'être là et d'arrêter le passage
-    (`state.etage`). Ce qui fait quelque chose reste au sol : le four, la cuisinière, le réfrigérateur, la
-    boîte à nourriture, la meule (le message le dit), et ce qui sert dehors. Un tableau s'accroche sur un mur
+    (`state.etage`). Les stations s'y posent aussi et y servent comme en bas (`STATIONS_ETAGE` : le four,
+    la cuisinière, le mortier, le réfrigérateur, la boîte à nourriture, la meule ; novembre 2026) ; seul ce
+    qui sert dehors reste au sol (le message le dit). L'étage est au-dessus de toute pièce close qui a un
+    escalier, ou dont tout le pourtour monte au niveau 1 (`piecesNiveau`) : on y bâtit avant de poser
+    l'escalier, qui vient à la fin sans rien bloquer (ce qui était posé au-dessus de sa case revient dans
+    l'inventaire, `rangerEtage`). Un tableau s'accroche sur un mur
     plein de l'étage, posé à l'étage ou rehaussé depuis le bas (`murEtage`, `state.dessusEtage`) : un appui
     le reprend avant le mur ; son mur ôté, il revient dans l'inventaire (`rangerEtage`) ;
   - la vie à l'étage : ses lanternes et ses réverbères s'allument la nuit comme en bas (`etageLumieres`,

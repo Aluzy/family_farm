@@ -14,7 +14,7 @@ import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
-import { couchagesEtage, etageEmprise, etageHorsEmprise, rangerEtage } from './etage.js';
+import { couchagesEtage, etageEmprise, etageHorsEmprise, rangerEtage, sortePosee } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
 import { tonneletPose, tonneletRepris } from './tonnelets.js';
 import { compostPose, compostRepris } from './compost.js';
@@ -934,7 +934,7 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   // (un mur qui couperait la pièce de l'escalier : l'étage perdrait ce qui est posé au-dessus. Seul un
   // bloc posé dans cette pièce peut la couper : ailleurs, la question ne se pose pas, et les pièces ne
   // sont pas recalculées pour chaque case que le mode Construire teste)
-  if (s.ferme && etageEmprise(state).has(tile) && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce de l'escalier, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
+  if (s.ferme && etageEmprise(state).has(tile) && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce sous l'étage, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
   // un bloc de silo au sol : à côté des colonnes déjà posées (un seul silo)
   if (s.silo) {
     const refus = refusSilo(state, tile);
@@ -1165,12 +1165,12 @@ export function reprendreBloc(state, tile, opts) {
   // (un bloc d'une chaîne de production : une chaîne défaite rend ce qu'elle avait reçu, js/engine/chaines.js)
   if (s && (s.chaine || s.botteleuse)) chainesReprise(state);
   // (la boîte à nourriture, le réfrigérateur : ce qu'ils contiennent revient dans l'inventaire)
-  if (s && s.boite) viderBoite(state);
-  if (s && s.frigo) closeFridge(state);
+  if (s && s.boite && !sortePosee(state, sorte)) viderBoite(state);
+  if (s && s.frigo && !sortePosee(state, sorte)) closeFridge(state);
   if (s && s.batiment && state[s.batiment] && !['poulailler', 'paturage'].includes(s.batiment)) state[s.batiment].construit = false;
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)
-  if (s && s.station && s.station !== 'moulin' && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
+  if (s && s.station && s.station !== 'moulin' && state.stations[s.station] && !sortePosee(state, sorte)) state.stations[s.station].construit = false;
   majPoulailler(state);
   rangerEtage(state);   // (l'escalier repris, la pièce ouverte : l'étage s'en va)
   return { ok: true, sorte, case: tile, ...(sens ? { sens } : {}), ...(variante ? { variante } : {}), ...(plante ? { plante } : {}) };
