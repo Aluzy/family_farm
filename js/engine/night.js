@@ -25,6 +25,7 @@ import { regrowGrass, respawnBushes, respawnRocks, respawnTrees } from './outils
 import { repousseMonde } from './monde-recolte.js';
 import { habitantsNuit } from './habitants.js';
 import { bienvenueNuit } from './bienvenue.js';
+import { majDidacticielIle } from './didacticiel-ile.js';
 import { recitNuit } from './recit.js';
 import { remplirRuches } from './ruches.js';
 import { affinerTonnelets } from './tonnelets.js';
@@ -370,6 +371,7 @@ export function runNight(state) {
   const demandeIle = villageoisDe(state).length ? demandesVillageoisNuit(state, villageoisDe(state)) : null;
   if (demandeIle) state.nuit.demandeVillageois = demandeIle;
   refreshUnlocks(state);
+  majDidacticielIle(state); // (fiche I7b : le didacticiel de l'île suit aussi ce qui s'est fait sans la page)
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil
   noteTutorialSleep(state); // Lot 11 : la bulle « Dormir » se ferme à la première nuit
   state.report = buildMorningReport(state);

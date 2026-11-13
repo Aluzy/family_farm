@@ -17,6 +17,13 @@ export function nouveauDehors() {
   return { troncon: 'a_poser', chemins: [] };
 }
 
+// La ferme de la partie est-elle une terre vierge (fiche I7b) ? Le chantier allumé, une partie commencée par le nouveau
+// départ (depart-ile.js commencerNouveauDepart pose state.dehors.ferme : 'vierge' ; une partie d'essai d'avant garde le
+// chemin peint de sa ferme).
+export function fermeVierge(state) {
+  return villageActif(state) && !!(state && state.dehors && state.dehors.ferme === 'vierge');
+}
+
 // Le port d'une partie neuve du chantier (fiche I1c, js/engine/bac.js : state.port) : son niveau de départ, le dernier
 // bac d'avant le jour `jour` compté pour passé (une partie ne rattrape pas les bacs d'avant elle).
 export function nouveauPort(jour = 1) {

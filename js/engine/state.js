@@ -950,7 +950,38 @@ export const MIGRATIONS = {
   // partie et de son rang (deux villageois n'ont pas la même liste) ; aucun n'est encore connu ; ce qui est abîmé est
   // réparé. Un enfant n'en a pas. Sans villageois (le réglage éteint), rien.
   93: (state) => reparerTraits({ ...state, version: 94 }),
+  // v94 → v95 (le chantier « l'île à bâtir », fiche I7b) : le nouveau départ. Une partie neuve du chantier a le nom de
+  // son île (state.noms.ile, borné comme le nom de famille), une terre vierge (state.dehors.ferme : 'vierge') et le
+  // didacticiel de l'île (state.didacticielIle : { etape, fini, passees }). Une partie d'avant n'en a pas et reste
+  // telle quelle (son chemin peint, ses objectifs du jour) ; ce qui est là et abîmé est réparé (un nom illisible s'en
+  // va, un didacticiel illisible est fini).
+  94: (state) => {
+    const out = { ...state, version: 95 };
+    if ('noms' in state) out.noms = reparerNoms(state.noms);
+    if ('didacticielIle' in state) out.didacticielIle = reparerDidacticielIle(state.didacticielIle);
+    if (state.dehors && typeof state.dehors === 'object' && 'ferme' in state.dehors && state.dehors.ferme !== 'vierge') {
+      const { ferme: _f, ...dehors } = state.dehors;
+      out.dehors = dehors;
+    }
+    return out;
+  },
 };
+
+// Les noms d'une sauvegarde (la migration v92 → v93) : { ile } s'il est lisible (DEPART.NOM_MIN à NOM_MAX signes).
+function reparerNoms(n) {
+  const o = n && typeof n === 'object' && !Array.isArray(n) ? n : {}, out = {};
+  const ile = typeof o.ile === 'string' ? o.ile.trim().replace(/\s+/g, ' ') : '';
+  if (ile.length >= DATA.DEPART.NOM_MIN && ile.length <= DATA.DEPART.NOM_MAX) out.ile = ile;
+  for (const [k, v] of Object.entries(o)) if (k !== 'ile' && typeof v === 'string') out[k] = v;
+  return out;
+}
+
+// Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.
+function reparerDidacticielIle(d) {
+  const n = DATA.VILLAGE.DEPART.ETAPES.length, ids = new Set(DATA.VILLAGE.DEPART.ETAPES.map((e) => e.id));
+  if (!d || typeof d !== 'object' || Array.isArray(d) || !Number.isInteger(d.etape) || d.etape < 0) return { etape: n, fini: true, passees: [] };
+  return { etape: Math.min(d.etape, n), fini: d.fini === true || d.etape >= n, passees: Array.isArray(d.passees) ? d.passees.filter((x) => ids.has(x)) : [] };
+}
 
 // Le dehors d'une sauvegarde (la migration v87 → v88) : { troncon, chemins (des segments lisibles) }.
 function reparerDehors(d) {

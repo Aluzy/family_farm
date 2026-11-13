@@ -39,7 +39,7 @@ import { villageActif } from './village.js';
 import { fail, marcheFerme, marcheOuvert } from './devices.js';
 import { clockHours } from './clock.js';
 import { buyItem, buyPrice, buyQuote, isBuyable, sellableCount } from './market.js';
-import { isUnlocked } from './campaign.js';
+import { bumpCounter, isUnlocked } from './campaign.js';
 import { seedItem } from './crops.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { planDuMonde } from './monde.js';
@@ -206,5 +206,7 @@ export function acheterAuPort(state, item, qty = 1, ou = null, o = {}) {
   if (!ici.ok) return fail(ici.raison);
   if (objetImporte(item)) return fail(`${def.nom} vient par le bac : commande-le au port (l'onglet Import), il arrive au passage suivant.`);
   if (!enVenteAuPort(state, item)) return fail(isBuyable(item) ? `${def.nom} : pas encore en vente (ton niveau ne l'a pas débloqué).` : `${def.nom} ne s'achète pas au port : seulement des semences.`);
-  return buyItem(state, item, qty, 'Port');
+  const r = buyItem(state, item, qty, 'Port');
+  if (r.ok) bumpCounter(state, 'achatsPort', r.bought);   // (fiche I7b : le didacticiel de l'île, acheter des graines)
+  return r;
 }

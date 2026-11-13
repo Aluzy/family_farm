@@ -95,6 +95,7 @@ import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.
 import { allerAuPuits, puiserFromStage } from './cruche.js';
 import { surbrillanceDidacticiel } from './didacticiel.js';
 import { surbrillanceObjectifs } from './objectifs.js';
+import { surbrillanceIle } from './didacticiel-ile.js';
 import { etapeDidacticiel, horsDeLaFerme } from '../engine/didacticiel.js';
 import { alerteFaim, alerteSortie, coiffeCarte, vitessePied } from '../engine/equipement.js';
 import { plantationModele } from './plantation.js';
@@ -616,7 +617,7 @@ export function stageModel() {
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)
-    surbrillance: surbrillanceDidacticiel() || surbrillanceObjectifs(),
+    surbrillance: surbrillanceDidacticiel() || surbrillanceIle() || surbrillanceObjectifs(),
     // planter un arbre depuis l'Inventaire (js/ui/plantation.js) : les cases possibles
     plantation: stageInterior ? null : plantationModele(),
     moulinTour: tour && tour.ok ? { ...tour.bornes, enMarche: batiments.moulin.enMarche } : null,

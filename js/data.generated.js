@@ -9570,6 +9570,57 @@ export const RAW_DATA = {
         "Je me fais plaisir : {objet}.",
         "Ça, je le prends : {objet}. Voilà les pièces."
       ]
+    },
+    "DEPART": {
+      "PHRASE": "Une île, un abri, un port. Tout est à bâtir.",
+      "NOMS_ILE": [
+        "Île aux Mouettes",
+        "Île de Brume",
+        "Île Verte",
+        "Île des Saules",
+        "Île aux Lucioles",
+        "Île de la Lune",
+        "Île Fleurie",
+        "Île aux Hérons",
+        "Île du Phare",
+        "Île des Genêts",
+        "Île aux Fougères",
+        "Île Douce",
+        "Île des Pins",
+        "Île Ronde",
+        "Île des Vents",
+        "Île Bleue",
+        "Île aux Oiseaux",
+        "Île de Clairval",
+        "Île aux Lavandes",
+        "Île des Brumes",
+        "Île Belle-Rive",
+        "Île aux Galets",
+        "Île des Mûres",
+        "Île Sauvage"
+      ],
+      "PIECES": 450,
+      "LARGEUR": 2,
+      "SORTIE": 6,
+      "HORS_COULOIR": 4,
+      "PORT": 12,
+      "ETAPES": [
+        { "id": "ramasser", "icone": "🪨", "ligne": "Ramasse 3 pierres et 3 morceaux de bois." },
+        { "id": "atelier", "icone": "🔨", "ligne": "Bâtis l'Atelier." },
+        { "id": "houe", "icone": "🛠️", "ligne": "Fabrique la houe à l'Atelier." },
+        { "id": "labour", "icone": "🟫", "ligne": "Laboure 3 cases d'herbe." },
+        { "id": "semis", "icone": "🌱", "ligne": "Sème une graine." },
+        { "id": "cruche", "icone": "💧", "ligne": "Fabrique le puits et la cruche, pose le puits." },
+        { "id": "arroser", "icone": "💦", "ligne": "Remplis la cruche au puits, arrose." },
+        { "id": "recolte", "icone": "🥕", "ligne": "Récolte ta première plante mûre." },
+        { "id": "charger", "icone": "🧺", "ligne": "Charge ta récolte : la fenêtre du port, onglet Porter." },
+        { "id": "port", "icone": "🧭", "ligne": "Suis le chemin jusqu'au port." },
+        { "id": "vendre", "icone": "⚓", "ligne": "Vends une récolte au comptoir, sous la halle." },
+        { "id": "graines", "icone": "🌾", "ligne": "Achète des graines au comptoir." },
+        { "id": "maison", "icone": "🏠", "ligne": "Bâtis une maison libre : un lit, une boîte aux lettres." },
+        { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, au passage du bac." },
+        { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." }
+      ]
     }
   },
   "TACHES": {

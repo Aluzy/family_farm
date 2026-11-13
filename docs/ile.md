@@ -83,7 +83,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a, I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
-| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
+| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c à I7g | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a, I8b | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
@@ -992,6 +992,69 @@ réglages : `TRAITS` (`data/village.json`). Aucun code n'est propre à un trait 
 - Reste : le joueur automatique ne regarde pas les goûts des villageois pour leur confier une tâche ; les traits en
   ligne (I9d) ; un trait ne change pas encore les répliques à table ni au travail ; la fiche ne dit pas les accords entre
   deux villageois.
+
+## Le nouveau départ (I7b, fait)
+
+Ce qui est posé (I7b ; les réglages : `VILLAGE.DEPART`, data/village.json ; le moteur : `js/engine/depart-ile.js`,
+`js/engine/didacticiel-ile.js` ; l'écran : `js/ui/depart.js` ; la bulle : `js/ui/didacticiel-ile.js`) :
+
+- **L'écran de départ** : une phrase, « Une île, un abri, un port. Tout est à bâtir. », et deux boutons. « 🧍 Seul » :
+  un adulte tiré de la graine (`familleSeule` : un genre, un personnage et un prénom des villageois, le nom de famille
+  proposé), sans compagnon ni enfant ni animal. « 👪 En famille » : les écrans d'avant (1 à 6 membres, jusqu'à 3
+  chiens ou chats), le compagnon devient facultatif (« Quelqu'un partage sa vie ? » ; il se retire au récapitulatif).
+  Puis le nom de l'île : un nom de `NOMS_ILE` proposé (tiré de la graine), modifiable, borné comme le nom de famille
+  (`DEPART.NOM_MIN` à `NOM_MAX`), écrit dans `state.noms = { ile }` (`nommerIle` ; I7g fera le module des noms autour).
+  Une partie « seul » commence en trois appuis : Nouvelle partie, Seul, Commencer.
+- **La terre vierge** : la ferme n'a plus de chemin intérieur. `genererMonde(graine, port, vierge)` (monde.js) donne
+  le même monde (arbres, rochers, étangs, plan, sol du dehors : rien ne bouge) sans le chemin peint de la ferme : ses
+  coins (`SOMMETS`) n'ont plus de chemin, la couche `ground` met de l'herbe à sa place (dessinée comme l'herbe de
+  `genererFerme`), et les lignes du moteur (`LIGNES`, refaites par `terrainOfMap`) rendent ces cases labourables et
+  bâtissables. Le seul chemin part de la case devant la porte de l'abri et va à la sortie de la ferme, où commence le
+  tronçon du port (I2) : des blocs de chemin du joueur (`state.sols`, `tronconAbri`), tracés le long de l'ancien
+  couloir (un pas hors de lui coûte `HORS_COULOIR`), `LARGEUR` cases de large, trois sur les `SORTIE` dernières
+  colonnes. 160 à 215 cases selon la graine ; elles pèsent 3,3 à 4,2 Ko dans la sauvegarde (une partie neuve : 6,3 Ko
+  avant, 9,2 à 10,2 Ko après). La partie le dit par `state.dehors.ferme = 'vierge'` (`fermeVierge`), posé quand elle
+  commence (après l'abri, placé comme avant) : une partie d'essai d'avant garde son chemin peint. L'abri ne change pas.
+- **Seul** : rien ne supposait un second adulte dans le moteur. Avec le joueur automatique, une partie seule mange
+  toutes les nuits (couverture 100 %), garde son bonheur (60), loge son premier villageois vers la nuit 13 et en a quatre
+  à la nuit 40 ; personne d'autre ne mange à la boîte, le compagnon absent n'aide pas (`aidant` nul).
+- **Le premier jour sans visite** : la visite de bienvenue est notée faite (`state.bienvenue.etat`), la scène de
+  l'arrivée du récit (Fernand) notée dite : l'horloge ne s'arrête plus. Le plat qu'elle offrait (`BIENVENUE.PLATS`,
+  un gratin de patates) attend dans une boîte à nourriture posée dans l'abri (la rangée du bas, au fond à droite : le
+  four et la cuisinière gardent leur place, le passage derrière la porte reste libre).
+- **Le didacticiel de l'île** (`state.didacticielIle = { etape, fini, passees }`) : 15 étapes (`DEPART.ETAPES`) —
+  ramasser pierres et bois, bâtir l'Atelier, la houe, labourer, semer, le puits et la cruche, arroser, la première
+  récolte, **la charger** (le portage d'I2 : sans charge, rien ne se vend ; une étape de plus que la fiche), suivre le
+  chemin jusqu'au port (la boussole y mène dès l'étape), vendre au comptoir, acheter des graines, bâtir une maison
+  libre, accueillir le premier villageois, lui donner une tâche. Une bulle d'une ligne en bas de l'écran (l'icône, ce
+  qu'il faut faire selon ce que fait le joueur, le rang, un compteur s'il y en a, « Passer › » et ✕), une flèche dorée
+  au-dessus de ce qu'il faut toucher, la lueur du didacticiel, et sur la carte ce qui brille. Une étape dont le but est
+  atteint (maintenant ou avant : des états et des compteurs qui ne redescendent pas) passe d'elle-même, à chaque rendu
+  et à chaque nuit ; chacune se passe, le tout aussi : rien ne bloque. Pendant ce temps, le carnet des objectifs du jour
+  se tait (ses jours se font et donnent leur récompense, sans pastille ni mot) : un seul guide à la fois. L'achat au
+  port compte maintenant `achatsPort` (port.js).
+- **Les pièces de départ** : `DEPART.PIECES` (450) remplace `DEPART.PIECES_SAUVAGE` (300, inchangé pour le jeu publié)
+  sur l'île. Mesuré (joueur appliqué, 40 nuits, graines 1 et 2) : la première vente au port tombe la nuit 4 comme à la
+  calèche, mais elle rapporte 40 pièces (12 volumes portés à la main) au lieu de 446 ; à 300, la caisse passe sous 50
+  pièces trois nuits sur les vingt premières (13 à 25 au plus bas) ; à 450, jamais (163 à 175 au plus bas) ; à 600,
+  rien de plus pour la progression. Les paliers ne bougent pas (2 à la nuit 5, 3 à la nuit 12, 4 à la nuit 23-24).
+  `node scripts/simulate.mjs --village` (80 nuits, graine 1, joueur appliqué), avant → après I7b : paliers 2@5 3@12 4@22
+  5@33 6@69 → 2@5 3@12 4@25 5@32 6@46 ; aucune nuit sans repas ; la caisse ne passe plus sous 175 pièces après la
+  nuit 4 (22 avant) ; en caisse à la nuit 80, 1 842 → 363 pièces (5 000 dépensées sur les nuits 61 à 80 : le port
+  agrandi plus tôt) ; la vérification de l'argent qui s'empile passe toujours. Le joueur simulé garde sa famille de
+  départ (quatre membres) : il ne joue pas « seul ».
+- **La sauvegarde** : format 95 ; la migration v94 → v95 n'ajoute rien à une partie d'avant, répare `noms` et
+  `didacticielIle` s'ils sont là.
+- **Les tests** : `tests/engine/village-depart.test.mjs` (seul, le nom de l'île, la terre vierge et son chemin d'un
+  seul tenant, la visite et le plat, le didacticiel qui passe et se passe, une partie seule et une partie à six jouées
+  par le joueur automatique jusqu'au premier villageois à sa tâche — nuit 12 à 14 —, la migration, éteint).
+- **Vérifié dans Chromium** (`jeu.html?village=1`, téléphone 412 × 915 et ordinateur) : l'écran de départ, « seul » en
+  trois appuis, « en famille » sans compagnon (trois paillasses), le nom de l'île, la terre vierge et son chemin, les
+  étapes jusqu'au port (la flèche sur la boussole), l'arrivée sous la halle, « Tout décharger », la maison, le
+  villageois et sa tâche. Aucune erreur dans la console.
+- Reste : le test avec un joueur qui ne connaît pas le jeu (`docs/test-utilisateur.md`) n'est pas fait ; sous une
+  fenêtre par-dessus (la liste des villageois), la bulle passe sous son voile ; le panneau « Ville » au bout de
+  l'ancien chemin reste ; retirer `bienvenue.js` et l'ancien didacticiel (I7c, I7d).
 
 ## Les règles qui ne changent pas
 

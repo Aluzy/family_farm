@@ -15,6 +15,7 @@ import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
 import { carnetDuJour, changerObjectif, majObjectifs, objectifsActifs, semaineDe, tacheAFaire } from '../engine/objectifs.js';
 import { villageActif } from '../engine/village.js';
+import { didacticielIleMontre } from './didacticiel-ile.js';
 import { distanceAuComptoir, heuresPort, PORT, portDansSesHeures } from '../engine/port.js';
 import { marcheFerme, marcheOuvert } from '../engine/devices.js';
 import { applyResult } from './game-actions.js';
@@ -153,13 +154,16 @@ export function renderObjectifs() {
   if (!root) return;
   if (state && objectifsActifs(state)) {
     const ev = majObjectifs(state);
-    if (ev) {
+    // (le didacticiel de l'île, fiche I7b : les jours se font et leurs récompenses se donnent, sans un mot)
+    if (ev && didacticielIleMontre()) persistState();
+    else if (ev) {
       persistState();
       if (ev.recompense) { notify(`📜 Jour ${ev.jour} fait : ${ev.titre} ! ${recompenseTexte(ev.recompense)}. La suite demain matin.`, { kind: 'succes' }); guide = false; }
       else if (ev.nouveau !== undefined) { const c = carnetDuJour(state); if (c) notify(`📜 Jour ${c.jour} : ${c.titre}. Touche le carnet pour voir tes objectifs.`, { kind: 'info' }); }
     }
   }
-  const c = state && affichable() ? carnetDuJour(state) : null;
+  // (pendant le didacticiel de l'île, fiche I7b, le carnet se tait : un seul guide à la fois)
+  const c = state && affichable() && !didacticielIleMontre() ? carnetDuJour(state) : null;
   // (le septième jour, le hameau voisin : il est montré sur la carte du monde, comme le cocher en a parlé ; le
   // chantier « l'île à bâtir » allumé, la semaine n'a pas de hameau, fiche I7a)
   if (c && !villageActif(state) && c.jour === semaineDe(state).length && !c.attente && montrerHameauVoisin()) persistState();

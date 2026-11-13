@@ -5,6 +5,8 @@ import {
 } from '../engine/depart.js';
 import { cleanFirstName, validFirstName } from '../engine/family.js';
 import { commencerObjectifs } from '../engine/objectifs.js';
+import { villageActif } from '../engine/village.js';
+import { familleSeule, nomIlePropose, nommerIle } from '../engine/depart-ile.js';
 import { levelBlock } from '../engine/levels.js';
 import { escapeHtml } from '../engine/format.js';
 import { state } from './store.js';
@@ -85,6 +87,10 @@ export function renderStarterCards() {
 // un animal, ＋ pour en ajouter. « Valider et commencer » installe la famille (composeFamily) sur une
 // ferme générée d'après une graine au hasard. Les prénoms tapés restent dans `accueil` (et
 // passent par escapeHtml()) : jamais dans un attribut data-* ni dans tel().
+//
+// Le chantier « l'île à bâtir » allumé (fiche I7b) : le premier écran dit DEPART.PHRASE (data/village.json) et propose
+// « Seul » (un adulte tiré de la graine, js/engine/depart-ile.js familleSeule : un appui) ou « En famille » (les écrans
+// d'avant, le compagnon facultatif) ; le dernier écran nomme l'île (un nom proposé, modifiable), puis « Commencer ».
 const accueil = {
   etape: 'bienvenue', perso: 0, prenom: '', nom: '',
   apparence: null,                 // l'apparence à lui (chantier « couches »), ou null : son personnage
@@ -100,7 +106,12 @@ const accueil = {
   // y revient. modif : null, ou { ajout: 'enfant' | 'animal' | null } ; animalI : l'animal qu'on nomme.
   modif: null,
   animalI: -1,
+  seul: false,                     // (le chantier allumé) « Seul » : un adulte tiré de la graine
+  ile: '',                         // (le chantier allumé) le nom de l'île, tel qu'il est saisi
 };
+
+// Le chantier « l'île à bâtir » est-il allumé pour la partie qu'on commence ?
+const surIle = () => !!(state && villageActif(state));
 
 const ORDINAUX = ['premier', 'deuxième', 'troisième', 'quatrième', 'cinquième', 'sixième'];
 
@@ -145,7 +156,7 @@ function familleChoisie() {
   const boutons = (qui, i, retirer, nom) => `<span class="accueil-recap-boutons"><button type="button" class="btn accueil-crayon" data-action="accueil-modifier" data-qui="${qui}" data-i="${i}" aria-label="Modifier ${nom}" title="Modifier">✏️</button>${retirer ? `<button type="button" class="btn accueil-crayon" data-action="accueil-retirer" data-qui="${qui}" data-i="${i}" aria-label="Retirer ${nom}" title="Retirer">🗑️</button>` : ''}</span>`;
   const un = (qui, enfant, role, cle, i, retirer) => `<li>${visage(qui, enfant)}<span class="accueil-recap-qui"><strong>${escapeHtml(qui.prenom)}${cle === 'joueur' ? ` ${escapeHtml(A.nom)}` : ''}</strong><small>${role}</small></span>${boutons(cle, i, retirer, escapeHtml(qui.prenom))}</li>`;
   const gens = [un(A, false, 'Toi', 'joueur', 0, false)];
-  if (A.compagnon) gens.push(un(A.compagnon, false, 'Compagnon', 'compagnon', 0, false));
+  if (A.compagnon) gens.push(un(A.compagnon, false, 'Compagnon', 'compagnon', 0, surIle()));
   A.enfants.forEach((e, i) => gens.push(un(e, true, 'Enfant', 'enfant', i, true)));
   const betes = A.animaux.map((a, i) => `<li><span class="accueil-animal-icone" aria-hidden="true">${(E[a.espece] || {}).icone || ''}</span><span class="accueil-recap-qui"><strong>${escapeHtml(a.nom)}</strong><small>${escapeHtml((E[a.espece] || {}).nom || '')}</small></span>${boutons('animal', i, true, escapeHtml(a.nom))}</li>`);
   const plus = [
@@ -160,7 +171,14 @@ function ecranAccueil() {
   const A = accueil, P = DATA.FAMILLE.PROFIL, D = DATA.DEPART;
   switch (A.etape) {
     case 'bienvenue':
+      if (surIle()) return [escapeHtml(DATA.VILLAGE.DEPART.PHRASE), '<div class="accueil-choix accueil-depart"><button type="button" class="btn primary" data-action="accueil-seul">🧍 Seul</button><button type="button" class="btn" data-action="accueil-famille">👪 En famille</button></div>'];
       return ['Bienvenue dans Moon Bloom Village ! Ici tu peux construire ta ferme, élever des animaux, produire des ressources et fabriquer des objets, cuisiner des recettes et plein d\'autres super activités !', fleche()];
+    case 'ile': {
+      const seul = A.seul ? familleSeule(state) : null;
+      return ['Le nom de ton île ?', `${seul ? portrait({ perso: seul.perso, apparence: null }) : ''}${champ(A.ile, D.NOM_MAX, 'Nom de l\'île')}<div class="accueil-choix"><button type="button" class="btn primary accueil-valider" data-action="setup-start">🏝️ Commencer</button></div>`];
+    }
+    case 'compagnon':
+      return ['Quelqu\'un partage sa vie ?', ouiNon() + retour()];
     case 'perso':
       return ['Pour commencer, choisis un personnage :', grille(A.perso) + retour() + fleche(A.perso > 0)];
     case 'apparence':
@@ -174,6 +192,7 @@ function ecranAccueil() {
     case 'confirme':
       return [`OK, donc c'est ${escapeHtml(A.prenom)} ${escapeHtml(A.nom)}, c'est bien ça ?`, `${portrait(A)}<div class="accueil-choix"><button type="button" class="pose-meuble-ok" data-action="accueil-oui" aria-label="Oui, c'est bien ça" title="Oui">✔️</button><button type="button" class="pose-meuble-non" data-action="accueil-non" aria-label="Non, changer" title="Changer">❌</button></div>${retour()}`];
     case 'compagnon-perso':
+      if (surIle()) return ['Choisis le personnage du compagnon :', grille(A.compagnon.perso) + retour() + fleche(A.compagnon.perso > 0)];
       return ['Qui partage sa vie ? Choisis le personnage du compagnon (il gardera la ferme quand tu partiras explorer) :', grille(A.compagnon.perso) + retour() + fleche(A.compagnon.perso > 0)];
     case 'compagnon-prenom':
       return ['Quel est son prénom ?', portrait(A.compagnon) + champ(A.compagnon.prenom, P.PRENOM_MAX, 'Prénom du compagnon')];
@@ -195,6 +214,7 @@ function ecranAccueil() {
     case 'animal-autre':
       return ['Un autre ?', ouiNon() + retour()];
     default:
+      if (surIle()) return ['Voici ta famille ! Touche ✏️ pour changer quelqu\'un, puis valide.', `${familleChoisie()}<div class="accueil-choix"><button type="button" class="btn primary accueil-valider" data-action="accueil-vers-ile">✔️ Valider</button></div>${retour()}`];
       return ['Voici ta famille ! Touche ✏️ pour changer quelqu\'un, puis valide.', `${familleChoisie()}<div class="accueil-choix"><button type="button" class="btn primary accueil-valider" data-action="setup-start">✔️ Valider et commencer</button></div>${retour()}`];
   }
 }
@@ -262,6 +282,7 @@ function retourAccueil() {
     else if (A.etape === 'compagnon-prenom') A.compagnon.prenom = cleanFirstName(v);
     else if (A.etape === 'enfant-prenom') enfantK().prenom = cleanFirstName(v);
     else if (A.etape === 'animal-nom') A.animal.nom = cleanFirstName(v);
+    else if (A.etape === 'ile') A.ile = v.trim().replace(/\s+/g, ' ');
   }
   const d = A.pile.pop();
   if (!d) return;
@@ -284,6 +305,7 @@ function suiteAccueil() {
   const prenom = (t) => (validFirstName(t) ? '' : `Un prénom de 1 à ${P.PRENOM_MAX} signes.`);
   switch (A.etape) {
     case 'bienvenue': return allerA('perso');
+    case 'ile': return commencer();
     case 'perso': return A.perso ? allerA('apparence') : refus('Choisis un personnage.');
     case 'apparence': return allerA('prenom');
     case 'compagnon-apparence': return allerA('compagnon-prenom');
@@ -343,6 +365,12 @@ function reponseAccueil(oui) {
     // quand le joueur explore ; plus de question, on le choisit tout de suite)
     case 'confirme':
       if (!oui) return allerA('perso');
+      // (l'île à bâtir, fiche I7b : le compagnon est facultatif, on le demande)
+      if (surIle()) return allerA('compagnon');
+      if (!A.compagnon) A.compagnon = { perso: 0, prenom: '', apparence: null };
+      return allerA('compagnon-perso');
+    case 'compagnon':
+      if (!oui) { A.compagnon = null; return allerA('enfants'); }
       if (!A.compagnon) A.compagnon = { perso: 0, prenom: '', apparence: null };
       return allerA('compagnon-perso');
     case 'enfants':
@@ -392,6 +420,7 @@ registerActions({
   'accueil-retirer': (target) => {
     const A = accueil, i = Number(target.dataset.i) || 0;
     if (target.dataset.qui === 'enfant') { A.enfants.splice(i, 1); A.nbEnfants = Math.max(1, A.enfants.length); }
+    else if (target.dataset.qui === 'compagnon' && surIle()) A.compagnon = null;
     else if (target.dataset.qui === 'animal') A.animaux.splice(i, 1);
     A.pile = [];
     openSetupModal();
@@ -457,22 +486,36 @@ registerActions({
     accueil.animal.nom = valeurChamp();
     openSetupModal();
   },
-  'setup-start': () => {
-    const A = accueil;
-    // les enfants : le personnage et le prénom choisis pour chacun (fiche 18 ; ils se changent
-    // encore dans la Famille)
-    const r = composeFamily(state, {
-      perso: A.perso, prenom: A.prenom, nom: A.nom, apparence: A.apparence, compagnon: A.compagnon,
-      enfants: A.enfants.map((e) => ({ prenom: e.prenom, perso: e.perso, apparence: e.apparence })),
-      animaux: A.animaux,
-    });
-    const f = r.ok ? finishSetup(state) : r;
-    if (!f.ok) return refus(f.error);
-    // la partie est sur sa terre sauvage depuis sa création (js/ui/storage.js) ; elle commence dans son abri,
-    // avec les objectifs du jour (js/engine/objectifs.js ; le didacticiel d'avant reste aux parties commencées)
-    commencerObjectifs(state);
-    persistState();
-    location.reload();
-    return undefined;
-  },
+  'setup-start': () => commencer(),
+  // (l'île à bâtir, fiche I7b) « Seul » : un appui, puis le nom de l'île ; « En famille » : les écrans d'avant ; le
+  // récapitulatif validé : le nom de l'île
+  'accueil-seul': () => { accueil.seul = true; if (!accueil.ile) accueil.ile = nomIlePropose(state); allerA('ile'); },
+  'accueil-famille': () => { accueil.seul = false; allerA('perso'); },
+  'accueil-vers-ile': () => { if (!accueil.ile) accueil.ile = nomIlePropose(state); allerA('ile'); },
 });
+
+// « Valider et commencer » (sur l'île : « Commencer », après le nom de l'île) : la famille installée, la partie commence.
+function commencer() {
+  const A = accueil;
+  if (surIle()) {
+    if (A.etape === 'ile' && document.getElementById('accueil-champ')) A.ile = valeurChamp().trim().replace(/\s+/g, ' ');
+    const n = nommerIle(state, A.ile);
+    if (!n.ok) return refus(n.error);
+  }
+  // les enfants : le personnage et le prénom choisis pour chacun (fiche 18 ; ils se changent
+  // encore dans la Famille) ; seul (l'île à bâtir) : l'adulte tiré de la graine
+  const r = composeFamily(state, surIle() && A.seul ? familleSeule(state) : {
+    perso: A.perso, prenom: A.prenom, nom: A.nom, apparence: A.apparence, compagnon: A.compagnon,
+    enfants: A.enfants.map((e) => ({ prenom: e.prenom, perso: e.perso, apparence: e.apparence })),
+    animaux: A.animaux,
+  });
+  const f = r.ok ? finishSetup(state) : r;
+  if (!f.ok) return refus(f.error);
+  // la partie est sur sa terre sauvage depuis sa création (js/ui/storage.js) ; elle commence dans son abri,
+  // avec les objectifs du jour (js/engine/objectifs.js ; le didacticiel d'avant reste aux parties commencées ; sur
+  // l'île, le nouveau départ et son didacticiel : js/engine/depart-ile.js)
+  commencerObjectifs(state);
+  persistState();
+  location.reload();
+  return undefined;
+}

@@ -1,5 +1,7 @@
-import { genererFerme, teinteHerbe } from './ferme-generee.js';
+import { genererFerme, hache, teinteHerbe } from './ferme-generee.js';
 import { fairePlan } from './monde-gen.js';
+import { blocGid } from './planche.js';
+import { terrainOfMap } from './terrain-carte.js';
 
 /* ---------- le grand monde (docs/grand-monde.md) ---------- */
 
@@ -67,20 +69,26 @@ export function casesDeRegion(cle, largeur = MONDE.LARGEUR, hauteur = MONDE.HAUT
 }
 
 // (les derniers mondes faits, MONDES_GARDES au plus : un monde pèse quelques dizaines de Mo, et
-// une partie n'en a qu'un)
+// une partie n'en a qu'un ; celui d'un port, d'une ferme vierge, ne fait que reprendre le sien : une partie du
+// chantier en garde trois ou quatre, le monde de la graine compris)
 const mondes = new Map();
-const MONDES_GARDES = 3;
+const MONDES_GARDES = 5;
 
 // `port` (le chantier « l'île à bâtir », fiche I1a) : le niveau du port de la partie (1 à 5), ou 0 : pas de
 // port (le jeu publié, VILLAGE.ACTIF faux : le monde d'avant, le même objet). Le monde d'un port est celui de
 // la graine, sa carte et son terrain les mêmes, seul son cadre porte PORT (le plan y place le port : monde-gen.js,
 // elementsDuMonde) et MONDE.cle le distingue (les sols gardés par monde : monde-sol.js solDirect,
 // js/ui/monde-sol.js).
-export function genererMonde(graine, port = 0) {
-  const g = String(graine), n = Number.isInteger(port) && port > 0 ? port : 0, cle = n ? g + '|port' + n : g;
+//
+// `vierge` (le chantier, fiche I7b : une partie neuve du nouveau départ, dehors.js fermeVierge) : la ferme n'a pas de
+// chemin intérieur (village.js fermeVierge). Le même monde (ses arbres, ses rochers, ses étangs, son plan : rien ne bouge), sans le chemin peint
+// de la ferme : ses coins (SOMMETS) n'ont plus de chemin et son sol (la couche « ground ») est de l'herbe là où il
+// passait. Le chemin de l'abri à la sortie est posé par le joueur (des blocs de chemin à lui, depart-ile.js).
+export function genererMonde(graine, port = 0, vierge = false) {
+  const g = String(graine), n = Number.isInteger(port) && port > 0 ? port : 0, cle = (n ? g + '|port' + n : g) + (vierge ? '|vierge' : '');
   let m = mondes.get(cle);
   if (m) mondes.delete(cle);
-  else m = n ? avecPort(genererMonde(g), n) : fabriquer(g);
+  else m = vierge ? sansCheminFerme(genererMonde(g, n), g) : n ? avecPort(genererMonde(g), n) : fabriquer(g);
   mondes.set(cle, m);
   while (mondes.size > MONDES_GARDES) mondes.delete(mondes.keys().next().value);
   return m;
@@ -100,6 +108,70 @@ function avecPort(m, n) {
   Object.defineProperty(terrain, 'MONDE', { value: { ...M, cadre, cle: M.graine + '|port' + n } });
   let planFait = null;
   return { get carte() { return m.carte; }, terrain, get plan() { return planFait || (planFait = fairePlan(M.graine, cadre)); } };
+}
+
+// Le monde `m` sans le chemin peint de la ferme (fiche I7b) : son terrain (les mêmes propriétés, sauf SOMMETS : les
+// coins de chemin deviennent de l'herbe), sa carte (la couche « ground » : l'herbe à la place du chemin, dessinée comme
+// l'herbe de genererFerme, étape 5), son plan et son cadre les mêmes (le sol du monde autour de la ferme ne change pas).
+function sansCheminFerme(m, graine) {
+  const T = m.terrain, [OX, OY] = FERME_DANS_MONDE;
+  const { SOMMETS: _s, LIGNES: _l, ...props } = Object.getOwnPropertyDescriptors(T);
+  const terrain = Object.defineProperties({}, props);
+  // les cases de la ferme où passait le chemin : leur herbe ([case de la ferme, tuile]), à la première demande
+  let herbe = null;
+  const herbeDuChemin = () => {
+    if (herbe) return herbe;
+    const { carte: f, terrain: tf } = genererFerme(graine), fw = f.width, fh = f.height, fv = fw + 1, S = tf.SOMMETS, Te = tf.TEINTES;
+    herbe = [];
+    for (let r = 0; r < fh; r++) {
+      for (let x = 0; x < fw; x++) {
+        const coins = [r * fv + x, r * fv + x + 1, (r + 1) * fv + x, (r + 1) * fv + x + 1];
+        const k = coins.map((i) => S[i]);
+        if (!k.includes(1) || k.includes(2)) continue;
+        const te = coins.map((i) => Te[i]), h = Math.min(...te);
+        const masque = (te[0] > h ? 8 : 0) | (te[1] > h ? 4 : 0) | (te[2] > h ? 2 : 0) | (te[3] > h ? 1 : 0);
+        herbe.push([r * fw + x, blocGid('herbe_chemin', masque ? (13 + h) * 16 + masque : h * 16 + (hache('vierge:' + (r * fw + x)) % 16))]);
+      }
+    }
+    return herbe;
+  };
+  let sommets = null;
+  Object.defineProperty(terrain, 'SOMMETS', { get: () => sommets || (sommets = Uint8Array.from(T.SOMMETS, (k) => (k === 1 ? 0 : k))), enumerable: true });
+  // (les lignes du moteur : celles de la ferme refaites sur son sol d'herbe, terrain-carte.js ; seules les cases du
+  // chemin changent, celles de la malle de la calèche restent réservées)
+  let lignes = null;
+  Object.defineProperty(terrain, 'LIGNES', {
+    enumerable: true,
+    get: () => {
+      if (lignes) return lignes;
+      const { carte: f } = genererFerme(graine), fw = f.width, ground = f.layers.find((l) => l.name === 'ground').data.slice();
+      for (const [i, g] of herbeDuChemin()) ground[i] = g;
+      const L = terrainOfMap({ ...f, layers: f.layers.map((l) => (l.name === 'ground' ? { ...l, data: ground } : l)) }).LIGNES;
+      const malle = new Set((T.MALLE && T.MALLE.cases) || []);
+      lignes = T.LIGNES.slice();
+      const parRang = new Map();
+      for (const [i] of herbeDuChemin()) { const r = Math.floor(i / fw); if (!parRang.has(r)) parRang.set(r, []); parRang.get(r).push(i % fw); }
+      for (const [r, cs] of parRang) {
+        const ch = lignes[r + OY].split('');
+        for (const c of cs) if (!malle.has((r + OY) * MONDE.LARGEUR + c + OX)) ch[c + OX] = L[r][c];
+        lignes[r + OY] = ch.join('');
+      }
+      return lignes;
+    },
+  });
+  let carteFaite = null;
+  const carte = () => {
+    if (carteFaite) return carteFaite;
+    const c = m.carte, fw = genererFerme(graine).carte.width;
+    const layers = c.layers.map((l) => {
+      if (l.name !== 'ground' || l.type !== 'tilelayer') return l;
+      const data = l.data.slice();
+      for (const [i, g] of herbeDuChemin()) data[(Math.floor(i / fw) + OY) * MONDE.LARGEUR + (i % fw) + OX] = g;
+      return { ...l, data };
+    });
+    return (carteFaite = { ...c, layers });
+  };
+  return { get carte() { return carte(); }, terrain, get plan() { return m.plan; } };
 }
 
 // Une case de la ferme (rangée × largeur de la ferme + colonne) → la même case du monde.
