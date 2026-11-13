@@ -319,80 +319,89 @@ export const COMMANDES = {
       return { ...r, inverses: [cmd('mur.rehausser', { sorte: r.sorte, case: c })] };
     },
   },
+  // (le niveau : 1, l'étage, par défaut ; 2 au-dessus ; chaque niveau, les mêmes commandes. Ses inverses le
+  // gardent : `nv`)
   'etage.poser': {
-    args: { sorte: 'sorte', case: 'case', sens: 'sens?', variante: 'variante?' },
-    executer(state, { sorte, case: c, sens, variante }) {
-      const avant = etageBlocs(state)[c];
-      const r = poserEtage(state, sorte, c, sens || 0, variante || null);
+    args: { sorte: 'sorte', case: 'case', sens: 'sens?', variante: 'variante?', niveau: 'niveau?' },
+    executer(state, { sorte, case: c, sens, variante, niveau }) {
+      const n = niveau || 1, nv = n > 1 ? { niveau: n } : {};
+      const avant = etageBlocs(state, n)[c];
+      const r = poserEtage(state, sorte, c, sens || 0, variante || null, n);
       if (!r.ok) return r;
       // (un tableau accroché sur un mur : seulement lui à reprendre)
-      if (r.dessus) return { ...r, inverses: [cmd('etage.reprendre', { case: c, attendu: sorte })] };
-      return { ...r, inverses: [avant && avant !== sorte ? cmd('etage.remettre', { case: c, avant, apres: sorte }) : cmd('etage.reprendre', { case: c, attendu: sorte })] };
+      if (r.dessus) return { ...r, inverses: [cmd('etage.reprendre', { case: c, attendu: sorte, ...nv })] };
+      return { ...r, inverses: [avant && avant !== sorte ? cmd('etage.remettre', { case: c, avant, apres: sorte, ...nv }) : cmd('etage.reprendre', { case: c, attendu: sorte, ...nv })] };
     },
   },
   'etage.reprendre': {
-    args: { case: 'case', attendu: 'sorte?' },
-    executer(state, { case: c, attendu }) {
-      // (ce que reprend un appui : le tableau accroché, sinon le bloc)
-      const avant = dessusEtage(state)[c] || etageBlocs(state)[c] || fenetresHautes(state)[c];
+    args: { case: 'case', attendu: 'sorte?', niveau: 'niveau?' },
+    executer(state, { case: c, attendu, niveau }) {
+      const n = niveau || 1, nv = n > 1 ? { niveau: n } : {};
+      // (ce que reprend un appui : le tableau accroché, sinon le bloc, sinon la fenêtre haute)
+      const avant = dessusEtage(state, n)[c] || etageBlocs(state, n)[c] || fenetresHautes(state, n)[c];
       if (attendu && avant !== attendu) return fail(CHANGE);
-      const r = reprendreEtage(state, c);
+      const r = reprendreEtage(state, c, n);
       if (!r.ok) return r;
       // (un meuble repris sur l'une de ses cases : reposé sur sa case d'ancrage, dans son sens)
-      return { ...r, inverses: [cmd('etage.poser', { sorte: r.sorte || avant, case: r.case !== undefined ? r.case : c, ...(r.sens ? { sens: r.sens } : {}), ...(r.variante ? { variante: r.variante } : {}) })] };
+      return { ...r, inverses: [cmd('etage.poser', { sorte: r.sorte || avant, case: r.case !== undefined ? r.case : c, ...(r.sens ? { sens: r.sens } : {}), ...(r.variante ? { variante: r.variante } : {}), ...nv })] };
     },
   },
   'etage.remettre': {
-    args: { case: 'case', avant: 'sorte', apres: 'sorte' },
-    executer(state, { case: c, avant, apres }) {
-      if (etageBlocs(state)[c] !== apres) return fail(CHANGE);
-      const r = reprendreEtage(state, c);
+    args: { case: 'case', avant: 'sorte', apres: 'sorte', niveau: 'niveau?' },
+    executer(state, { case: c, avant, apres, niveau }) {
+      const n = niveau || 1, nv = n > 1 ? { niveau: n } : {};
+      if (etageBlocs(state, n)[c] !== apres) return fail(CHANGE);
+      const r = reprendreEtage(state, c, n);
       if (!r.ok) return r;
-      if (etageBlocs(state)[c] !== avant) {
-        const p = poserEtage(state, avant, c);
-        if (!p.ok) { poserEtage(state, apres, c); return p; }
+      if (etageBlocs(state, n)[c] !== avant) {
+        const p = poserEtage(state, avant, c, 0, null, n);
+        if (!p.ok) { poserEtage(state, apres, c, 0, null, n); return p; }
       }
-      return { ok: true, sorte: avant, case: c, etage: true, inverses: [cmd('etage.poser', { sorte: apres, case: c })] };
+      return { ok: true, sorte: avant, case: c, etage: true, ...nv, inverses: [cmd('etage.poser', { sorte: apres, case: c, ...nv })] };
     },
   },
   'etage.deplacer': {
-    args: { de: 'case', vers: 'case', attendu: 'sorte?' },
-    executer(state, { de, vers, attendu }) {
-      const ancre = !etageBlocs(state)[de] && etageCouvertes(state).has(de) ? etageCouvertes(state).get(de) : de;
-      if (attendu && etageBlocs(state)[ancre] !== attendu) return fail(CHANGE);
+    args: { de: 'case', vers: 'case', attendu: 'sorte?', niveau: 'niveau?' },
+    executer(state, { de, vers, attendu, niveau }) {
+      const n = niveau || 1, nv = n > 1 ? { niveau: n } : {};
+      const ancre = !etageBlocs(state, n)[de] && etageCouvertes(state, n).has(de) ? etageCouvertes(state, n).get(de) : de;
+      if (attendu && etageBlocs(state, n)[ancre] !== attendu) return fail(CHANGE);
       if (ancre === vers) return fail('Il est déjà là.');
-      const r = deplacerEtage(state, de, vers);
+      const r = deplacerEtage(state, de, vers, n);
       if (!r.ok) return r;
-      return { ...r, inverses: [cmd('etage.deplacer', { de: vers, vers: r.de, attendu: r.sorte })] };
+      return { ...r, inverses: [cmd('etage.deplacer', { de: vers, vers: r.de, attendu: r.sorte, ...nv })] };
     },
   },
   'etage.tourner': {
-    args: { case: 'case' },
-    executer(state, { case: c }) {
-      const ancre = !etageBlocs(state)[c] && etageCouvertes(state).has(c) ? etageCouvertes(state).get(c) : c;
-      const sensAvant = sensEtage(state, ancre);
-      const r = tournerEtage(state, c);
+    args: { case: 'case', niveau: 'niveau?' },
+    executer(state, { case: c, niveau }) {
+      const n = niveau || 1, nv = n > 1 ? { niveau: n } : {};
+      const ancre = !etageBlocs(state, n)[c] && etageCouvertes(state, n).has(c) ? etageCouvertes(state, n).get(c) : c;
+      const sensAvant = sensEtage(state, ancre, n);
+      const r = tournerEtage(state, c, 1, n);
       if (!r.ok) return r;
-      return { ...r, inverses: [cmd('etage.orienter', { case: r.case, sorte: r.sorte, sens: sensAvant })] };
+      return { ...r, inverses: [cmd('etage.orienter', { case: r.case, sorte: r.sorte, sens: sensAvant, ...nv })] };
     },
   },
   // (tournerEtage saute un sens où le meuble ne tient pas : au plus trois quarts de tour)
   'etage.orienter': {
-    args: { case: 'case', sorte: 'sorte', sens: 'sens' },
-    executer(state, { case: c, sorte, sens }) {
-      if (etageBlocs(state)[c] !== sorte) return fail(CHANGE);
-      const avant = sensEtage(state, c);
-      for (let k = 0; k < 3 && sensEtage(state, c) !== sens; k++) if (!tournerEtage(state, c).ok) break;
-      if (sensEtage(state, c) !== sens) return fail(`${DATA.ATELIER.BLOCS[sorte].nom} : pas la place de le tourner ici.`);
-      return { ok: true, sorte, case: c, sens, etage: true, inverses: [cmd('etage.orienter', { case: c, sorte, sens: avant })] };
+    args: { case: 'case', sorte: 'sorte', sens: 'sens', niveau: 'niveau?' },
+    executer(state, { case: c, sorte, sens, niveau }) {
+      const n = niveau || 1, nv = n > 1 ? { niveau: n } : {};
+      if (etageBlocs(state, n)[c] !== sorte) return fail(CHANGE);
+      const avant = sensEtage(state, c, n);
+      for (let k = 0; k < 3 && sensEtage(state, c, n) !== sens; k++) if (!tournerEtage(state, c, 1, n).ok) break;
+      if (sensEtage(state, c, n) !== sens) return fail(`${DATA.ATELIER.BLOCS[sorte].nom} : pas la place de le tourner ici.`);
+      return { ok: true, sorte, case: c, sens, etage: true, ...nv, inverses: [cmd('etage.orienter', { case: c, sorte, sens: avant, ...nv })] };
     },
   },
   'etage.peindre': {
-    args: { case: 'case', variante: 'variante' },
-    executer(state, { case: c, variante }) {
-      const r = peindreEtage(state, c, variante);
+    args: { case: 'case', variante: 'variante', niveau: 'niveau?' },
+    executer(state, { case: c, variante, niveau }) {
+      const n = niveau || 1, nv = n > 1 ? { niveau: n } : {};
+      const r = peindreEtage(state, c, variante, n);
       if (!r.ok) return r;
-      return { ...r, inverses: [cmd('etage.peindre', { case: r.case, variante: r.avant })] };
+      return { ...r, inverses: [cmd('etage.peindre', { case: r.case, variante: r.avant, ...nv })] };
     },
   },
   'solEtage.poser': {

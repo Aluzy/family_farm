@@ -14,7 +14,7 @@ import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
-import { couchagesEtage, etageEmprise, etageHorsEmprise, rangerEtage, sortePosee } from './etage.js';
+import { couchagesEtage, etageBlocs, etageEmprise, etageHorsEmprise, fenetresHautes, niveauxEtage, rangerEtage, sortePosee } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
 import { tonneletPose, tonneletRepris } from './tonnelets.js';
 import { compostPose, compostRepris } from './compost.js';
@@ -383,7 +383,7 @@ export function rehausseStatus(state, sorte, tile) {
   if (!s || !s.mur) return { ok: false, raison: 'Un mur seulement se pose au-dessus d\'un autre.' };
   if (!h) return { ok: false, raison: 'Touche un mur, une fenêtre ou une porte pour le rehausser.' };
   if (h >= DATA.ATELIER.HAUTEUR_MAX) return { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
-  if (h === 1 && state.etage && state.etage[tile]) return { ok: false, raison: 'Un bloc de l\'étage est posé au-dessus : reprends-le d\'abord.' };
+  if (etageBlocs(state, h)[tile]) return { ok: false, raison: `Un bloc ${h === 1 ? 'de l\'étage' : `du niveau ${h}`} est posé au-dessus : reprends-le d'abord.` };
   const m = matiereDessus(state, tile);
   if (m ? m !== sorte : !murPlein(sorte)) {
     return { ok: false, raison: m ? `Ce mur se rehausse en ${sorteDe(m).nom.toLowerCase()} : prends-en en main.` : 'Au-dessus d\'une fenêtre ou d\'une porte : un mur plein.' };
@@ -533,9 +533,10 @@ function melangeSansMur(state, tile) {
 // Changer les blocs du bas (`blocs`, les blocs posés après le changement) ferait-il perdre des
 // blocs posés à l'étage (la pièce de l'escalier ouverte ou coupée : son emprise rétrécit) ?
 function etageEnPeril(state, blocs) {
-  if (!Object.keys(state.etage || {}).length) return false;
-  const avant = etageHorsEmprise(state).length;
-  const perdus = etageHorsEmprise({ ...state, blocs }).length;
+  if (!niveauxEtage().some((n) => Object.keys(etageBlocs(state, n)).length)) return false;
+  const hors = (st) => niveauxEtage().reduce((t, n) => t + etageHorsEmprise(st, n).length, 0);
+  const avant = hors(state);
+  const perdus = hors({ ...state, blocs });
   piecesCloses(state);   // (le cache revient sur la vraie partie)
   return perdus > avant;
 }
@@ -1106,7 +1107,8 @@ export function reprendreBloc(state, tile, opts) {
   // (au-dessus d'une fenêtre ou d'une porte : un bloc de la matière posée au-dessus)
   if (!dessus && bloc && hauteurEmpilee(state, tile) > 1) {
     // (une fenêtre de l'étage percée dans ce haut : elle d'abord, à l'étage — etage.js fenetresHautes)
-    if (hauteurEmpilee(state, tile) === 2 && state.fenetresHautes && state.fenetresHautes[tile]) return fail('Une fenêtre de l\'étage est percée dans le haut de ce mur : reprends-la d\'abord, à l\'étage.');
+    const hh = hauteurEmpilee(state, tile);
+    if (hh >= 2 && fenetresHautes(state, hh - 1)[tile]) return fail(`Une fenêtre ${hh === 2 ? 'de l\'étage' : `du niveau ${hh - 1}`} est percée dans le haut de ce mur : reprends-la d'abord, à ce niveau.`);
     const haut = rehaussesPosees(state)[tile] || bloc;
     setHauteur(state, tile, hauteurEmpilee(state, tile) - 1);
     addItem(state, sorteDe(haut).objet, 1);

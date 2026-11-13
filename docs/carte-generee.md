@@ -704,7 +704,13 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
     qui sert dehors reste au sol (le message le dit). L'étage est au-dessus de toute pièce close qui a un
     escalier, ou dont tout le pourtour monte au niveau 1 (`piecesNiveau`) : on y bâtit avant de poser
     l'escalier, qui vient à la fin sans rien bloquer (ce qui était posé au-dessus de sa case revient dans
-    l'inventaire, `rangerEtage`). Un tableau s'accroche sur un mur
+    l'inventaire, `rangerEtage`). Le niveau 2 a les mêmes mécaniques (novembre 2026) : on y bâtit au-dessus
+    de toute pièce dont le pourtour monte au niveau 2 (`empriseNiveau(state, 2)`), avec ou sans escalier ;
+    ses blocs sont rangés dans `state.niveauxHauts[2]` (`blocs`, `sens`, `teintes`, `fenetres`, `dessus`,
+    `hautes`), et les fonctions de l'étage prennent le niveau en dernier argument (`poserEtage`,
+    `reprendreEtage`, `deplacerEtage`, `tournerEtage`, `peindreEtage`…, les commandes `etage.*` avec
+    `niveau: 2`). La carte les dessine 2 × `ETAGE.dy` plus haut (`etage.n2`), au niveau 2 ou en le
+    construisant. Un tableau s'accroche sur un mur
     plein de l'étage, posé à l'étage ou rehaussé depuis le bas (`murEtage`, `state.dessusEtage`) : un appui
     le reprend avant le mur ; son mur ôté, il revient dans l'inventaire (`rangerEtage`) ;
   - la vie à l'étage : ses lanternes et ses réverbères s'allument la nuit comme en bas (`etageLumieres`,

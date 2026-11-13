@@ -140,9 +140,9 @@
           }
           return repli;
         };
-        // (une fenêtre de l'étage percée dans le haut du mur, modèle.blocs : b.fenetreHaute : l'image du
-        // bloc du niveau 1, la fenêtre dans la matière du haut de ce mur)
-        const fenHaute = (b) => (b.fenetreHaute ? this.blocImage({ case: b.case, sorte: b.fenetreHaute, mur: b.dessus || b.sorte }, at, cols) : null);
+        // (les fenêtres des niveaux percées dans le haut du mur, modèle.blocs : b.fenetresHautes, une par
+        // niveau, 1 puis 2 : l'image du bloc de ce niveau, la fenêtre dans la matière du haut de ce mur)
+        const fenHaute = (b) => (b.fenetresHautes ? b.fenetresHautes.map((f) => (f ? this.blocImage({ case: b.case, sorte: f, mur: b.dessus || b.sorte }, at, cols) : null)) : null);
         const linteau = (b) => {
           // (au-dessus d'une fenêtre ou d'une porte, des blocs posés : leur mur, raccordé aux voisins)
           if (b.dessus) return { h: b.hauteur || 1, frame: this.blocImage({ case: b.case, sorte: b.dessus }, at, cols) };
@@ -373,11 +373,12 @@
     // Les blocs du dessus d'un mur rehaussé (`h` blocs de haut ; 0 : tous ôtés) : son image,
     // BLOCS_CARTE.etage.dy px plus haut par bloc, devant celle du dessous (`image` : [clé, image]
     // à la place de la sienne : le mur posé au-dessus d'une fenêtre ou d'une porte). Renvoie vrai s'ils ont changé.
-    syncHauts(e, h, image, bas) {
+    syncHauts(e, h, image, parRang) {
       const L = e.hauts || [], dy = BLOCS_CARTE.etage.dy, want = Math.max(0, h - 1);
       const [key, f] = image || [e.img.texture.key, e.img.frame.name];
-      // (`bas` : l'image du bloc du niveau 1, s'il diffère des autres : une fenêtre de l'étage)
-      const de = (k) => (k === 0 && bas ? bas : [key, f]);
+      // (`parRang` : l'image du bloc de chaque niveau (0 : le niveau 1), quand elle diffère des autres : une
+      // fenêtre de ce niveau)
+      const de = (k) => (parRang && parRang[k] ? parRang[k] : [key, f]);
       let changed = false;
       while (L.length > want) { L.pop().destroy(); changed = true; }
       while (L.length < want) {

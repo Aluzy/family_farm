@@ -7,8 +7,8 @@
    ========================================================================== */
 
 import {
-  addItem, blocsPoses, buildAtelier, countItem, DATA, etageBlocs, etageEmprise, executerCommande, farmTerrain, poserBloc,
-  poseEtageStatus, poserEtage, rehausser, reprendreEtage, testFarmMap,
+  addItem, blocsPoses, buildAtelier, countItem, DATA, empriseNiveau, etageBlocs, etageEmprise, executerCommande, farmTerrain, fenetresHautes,
+  hauteurPile, poserBloc, poseEtageStatus, poserEtage, rehausser, reprendreBloc, reprendreEtage, testFarmMap,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, garden, setInv, test, tireless } from './aide.mjs';
 
@@ -34,7 +34,7 @@ function terrainLibre(s, w, h) {
 }
 // Une pièce close de w × h cases (murs compris), la porte au milieu du bas ; `haut` : tout son
 // pourtour rehaussé d'un bloc (la porte aussi : un mur plein au-dessus).
-function piece(s, w, h, haut = true) {
+function piece(s, w, h, haut = true, rangs = 1) {
   const { c, r, W } = terrainLibre(s, w, h), bord = [];
   for (let dr = 0; dr < h; dr++) for (let dc = 0; dc < w; dc++) if (dr === 0 || dc === 0 || dr === h - 1 || dc === w - 1) bord.push((r + dr) * W + c + dc);
   const porte = (r + h - 1) * W + c + Math.floor(w / 2);
@@ -42,7 +42,8 @@ function piece(s, w, h, haut = true) {
   addItem(s, obj('porte'), 1);
   for (const t of bord) assert(poserBloc(s, 'mur_pierre', t).ok);
   assert(poserBloc(s, 'porte', porte).ok);
-  if (haut) for (const t of bord) assert(rehausser(s, 'mur_pierre', t).ok, `rehausser ${t}`);
+  addItem(s, obj('mur_pierre'), bord.length * rangs);
+  if (haut) for (let k = 0; k < rangs; k++) for (const t of bord) assert(rehausser(s, 'mur_pierre', t).ok, `rehausser ${t}`);
   const dedans = [];
   for (let dr = 1; dr < h - 1; dr++) for (let dc = 1; dc < w - 1; dc++) dedans.push((r + dr) * W + c + dc);
   return { bord, porte, dedans, W };
@@ -95,4 +96,40 @@ test('étage sans escalier : l\'escalier posé à la fin ne bloque rien (ce qui 
   assertEqual(blocsPoses(s)[a], 'escalier');
   assertEqual([etageBlocs(s)[a], etageBlocs(s)[b], countItem(s, obj('lanterne'))], [undefined, 'lanterne', 1], 'la lanterne au-dessus de l\'escalier revient ; l\'autre reste');
   assert(p.dedans.every((t) => etageEmprise(s).has(t)));
+});
+
+test('niveau 2 : les mêmes mécaniques qu\'à l\'étage, avec ou sans escalier', () => {
+  const s = chantier('niveau2');
+  const p = piece(s, 7, 6, true, 2);
+  assert(p.dedans.every((t) => empriseNiveau(s, 2).has(t)), 'les murs montent au niveau 2 : on y bâtit');
+  for (const k of ['lanterne', 'cuisiniere', 'mur_fenetre', 'meuble_tableau_1', 'escalier']) addItem(s, obj(k), 2);
+  // un bloc, une station (qui fonctionne), une fenêtre dans le haut d'un mur, un tableau
+  const [a, b] = p.dedans;
+  let r = executerCommande(s, { type: 'etage.poser', args: { sorte: 'lanterne', case: a, niveau: 2 } });
+  assert(r.ok, r.error);
+  assertEqual([etageBlocs(s, 2)[a], etageBlocs(s, 1)[a]], ['lanterne', undefined], 'rangée au niveau 2, pas à l\'étage');
+  s.stations.cuisine.construit = false;
+  const c = p.dedans.slice().reverse().find((k) => poseEtageStatus(s, 'cuisiniere', k, 0, 2).ok);
+  assert(poserEtage(s, 'cuisiniere', c, 0, null, 2).ok);
+  assert(s.stations.cuisine.construit, 'la cuisinière du niveau 2 sert');
+  const m = p.bord.find((t) => t !== p.porte);
+  assertEqual(hauteurPile(s, m), 3);
+  assert(poserEtage(s, 'mur_fenetre', m, 0, null, 2).ok, 'une fenêtre dans le haut d\'un mur de 3 blocs');
+  assertEqual([fenetresHautes(s, 2)[m], fenetresHautes(s, 1)[m], hauteurPile(s, m)], ['mur_fenetre', undefined, 3]);
+  assert(!reprendreBloc(s, m).ok, 'le mur ne s\'abaisse pas sous la fenêtre');
+  const m2 = p.bord.find((t) => t !== p.porte && t !== m);
+  assert(poserEtage(s, 'meuble_tableau_1', m2, 0, null, 2).ok, 'un tableau sur un mur du niveau 2');
+  // Annuler : la lanterne revient dans l'inventaire
+  for (const inv of r.inverses) assert(executerCommande(s, inv).ok);
+  assertEqual([etageBlocs(s, 2)[a], countItem(s, obj('lanterne'))], [undefined, 2]);
+  // l'escalier vient à la fin : en bas puis à l'étage ; ce qui était au-dessus revient
+  assert(poserEtage(s, 'lanterne', b, 0, null, 2).ok);
+  assert(poserBloc(s, 'escalier', a).ok, 'l\'escalier du bas');
+  const e1 = p.dedans.find((k) => k !== a && poseEtageStatus(s, 'escalier', k).ok);
+  assert(e1 !== undefined, poseEtageStatus(s, 'escalier', b).raison);
+  r = executerCommande(s, { type: 'etage.poser', args: { sorte: 'escalier', case: b } });
+  assert(r.ok, r.error);
+  assertEqual([etageBlocs(s, 2)[b], countItem(s, obj('lanterne'))], [undefined, 2], 'la lanterne au-dessus de l\'escalier de l\'étage revient');
+  // pas d'escalier au dernier niveau
+  assert(!poseEtageStatus(s, 'escalier', p.dedans[3], 0, 2).ok);
 });
