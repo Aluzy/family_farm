@@ -457,7 +457,7 @@
       "passe sur un pont de planches. VITESSE : sur un chemin (un chemin posé, sur la ferme ou dehors, le chemin de la",
       "ferme), le personnage va VITESSE % plus vite, à pied comme à cheval (js/ui/stage.js : la vitesse de sa case)."
     ],
-    "CHEMIN": { "VITESSE": 50, "PINCEAU": 2, "PRES_FERME": 8 },
+    "CHEMIN": { "VITESSE": 100, "PINCEAU": 2, "PRES_FERME": 8 },
     "//PORTAGE": [
       "Le portage (fiche I2, js/engine/portage.js ; la fenêtre du port, js/ui/port.js) : ce qu'on vend au port, on l'y",
       "porte. Sur la ferme, on charge (de l'inventaire et du réfrigérateur, avec leur fraîcheur) ; sous la halle, on",

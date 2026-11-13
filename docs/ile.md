@@ -243,7 +243,7 @@ Ce qui est posé (I2 ; les réglages : `VILLAGE.DEHORS`, `VILLAGE.CHEMIN`, `VILL
   devant le personnage à pied, la charrette à la place du cheval sellé (il s'assied sur son banc), quand quelque chose
   est chargé (`modèle.portage`).
 - **Le joueur automatique** : avant sa sortie, il fabrique une brouette s'il le peut, note ce qu'il vendrait et en charge
-  le plus cher au volume d'abord ; sa marche va 50 % plus vite (le chemin), `CHEVAL.VITESSE` fois avec un cheval ; au
+  le plus cher au volume d'abord ; sa marche va deux fois plus vite (le chemin, +100 %), `CHEVAL.VITESSE` fois avec un cheval ; au
   port, il décharge. Avec `--village`, ses gains de fin de partie tombent d'environ 430 à 185 pièces par jour (la
   brouette porte 40 volumes) : l'argent ne s'empile plus (la vérification passe).
 - **La sauvegarde** : format 88 ; la migration v87 → v88 répare `dehors` et `portage` s'ils sont là et n'ajoute rien à

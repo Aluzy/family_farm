@@ -9195,7 +9195,7 @@ export const RAW_DATA = {
       "banc_rondins",
       "banc_pierre"
     ],
-    "CHEMIN": { "VITESSE": 50, "PINCEAU": 2, "PRES_FERME": 8 },
+    "CHEMIN": { "VITESSE": 100, "PINCEAU": 2, "PRES_FERME": 8 },
     "PORTAGE": {
       "MAINS": 12,
       "BROUETTE": 40,
