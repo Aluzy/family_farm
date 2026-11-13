@@ -258,7 +258,7 @@ export const ENCYCLOPEDIE_ILE = {
     {
      "id": "commerces",
      "terme": "Les commerces",
-     "description": "Un villageois assez proche de toi peut avoir envie d'ouvrir un commerce d'artisan ; c'est toi qui le décides. Un commerce reste artisanal : un établi, un artisan, peu de pièces par jour, ce qu'il sait mieux faire que l'Atelier. Le premier commerce ouvert franchit un palier de l'île, a son nom, et sa fête d'ouverture.",
+     "description": "Un villageois assez proche de toi peut avoir envie d'ouvrir un commerce d'artisan ; c'est toi qui le décides. Il faut qu'il ait pratiqué 10 jours la tâche de sa filière, son amitié, et un local que tu bâtis : une pièce close avec l'établi et le comptoir, l'enseigne près de la porte. Un commerce reste artisanal : 3 lots par jour, un de plus avec l'ancienneté. L'artisan achète sa matière à ton coffre avec sa bourse, et vend au comptoir : à toi, aux villageois, le surplus au bac ; tu peux lui commander une pièce, ou la faire à façon. La forge fond le minerai en lingots et fait des clous, des charnières et des lames. Le premier commerce ouvert franchit un palier de l'île, a son nom, et sa fête d'ouverture.",
      "liens": [
       "villageois",
       "amitie_villageois",
