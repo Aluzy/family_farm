@@ -67,6 +67,16 @@
           const p = this.placesAutour(e.case)[0];
           if (p) return { ...p, geste: 'cuisiner' };
         }
+        // (une cuisinière à l'étage ou au niveau 2 : il va au pied de l'escalier le plus proche, y monte le
+        // temps de cuisiner (on ne le voit plus), puis redescend ; comme le personnage qui va à son lit
+        // de l'étage : js/carte/ferme/etage.js etageBedSpot, via)
+        const E = this.ctx.lastModel && this.ctx.lastModel.etage;
+        const haut = E && [...E.blocs, ...((E.n2 && E.n2.blocs) || [])].find((b) => b.sorte === 'cuisiniere');
+        if (haut && E.escaliers.length) {
+          const d = (t) => Math.abs((t % cols) - (haut.case % cols)) + Math.abs(Math.floor(t / cols) - Math.floor(haut.case / cols));
+          const esc = E.escaliers.slice().sort((a, b) => d(a) - d(b))[0];
+          return { x: (esc % cols) * T + T / 2, y: (Math.floor(esc / cols) + 1) * T - 2, face: 'haut', flip: false, geste: 'cuisiner', monte: true };
+        }
         return null;
       }
       if (sorte === 'recolter') {
