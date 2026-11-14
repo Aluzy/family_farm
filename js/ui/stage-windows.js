@@ -55,6 +55,7 @@ import { villageActif } from '../engine/village.js';
 import { renderChapterBanner, ongletsIle, corpsIle } from './chapitres.js';
 import { paliersSuivis } from '../engine/paliers.js';
 import { renderBoite } from './boite.js';
+import { carteCuisineVillage, carteGardeManger } from './garde-manger.js';
 import { renderTonnelets } from './tonnelet.js';
 import { renderEtal } from './etal.js';
 import { commerceFenetreOk, renderCommerce, renderCommerceOnglets } from './commerce.js';
@@ -298,8 +299,9 @@ export const STAGE_WINDOWS = {
   },
   // La boîte à nourriture posée dans le foyer : ce qu'elle contient, la remplir.
   boite: {
-    nom: 'Boîte à nourriture', icone: '🧺', ok: () => boitePosee(state) && !state.frigo.construit, bois: true,
-    corps: () => renderBoite(),
+    // (fiche I3e : sur l'île, la boîte rendue commune au village sert encore, le réfrigérateur acheté ; sa carte en tête)
+    nom: 'Boîte à nourriture', icone: '🧺', ok: () => boitePosee(state) && (!state.frigo.construit || villageActif(state)), bois: true,
+    corps: () => renderBoite(carteGardeManger('boite')),
   },
   // Les tonnelets posés dehors (un appui sur l'un d'eux) : ce qui s'y affine, y mettre une tomme ou un moût.
   tonnelet: {
@@ -328,11 +330,12 @@ export const STAGE_WINDOWS = {
   four: {
     nom: 'Four', icone: '🔥', ok: () => isUnlocked(state, 'four') || state.stations.four.construit, bois: true,
     onglets: () => subtabsHtml(FOUR_TABS, fourTab, 'four-tab'),
-    corps: () => renderStationFenetre('four', fourTab === 'objets'),
+    // (fiche I3e : la cuisine du village, une carte en tête)
+    corps: () => `${carteCuisineVillage('four') ? `<div class="cards">${carteCuisineVillage('four')}</div>` : ''}${renderStationFenetre('four', fourTab === 'objets')}`,
   },
   cuisine: {
     nom: 'Cuisine', icone: '🍳', ok: () => isUnlocked(state, 'cuisine') || state.stations.cuisine.construit, bois: true,
-    corps: () => renderStationFenetre('cuisine'),
+    corps: () => `${carteCuisineVillage('cuisine') ? `<div class="cards">${carteCuisineVillage('cuisine')}</div>` : ''}${renderStationFenetre('cuisine')}`,
   },
   // Le mortier et son pilon (posé dans la maison) : les fleurs (et les épinards) broyées en colorants.
   mortier: {
@@ -342,7 +345,8 @@ export const STAGE_WINDOWS = {
   frigo: {
     nom: 'Réfrigérateur', icone: '🧊', ok: () => isUnlocked(state, 'frigo') || state.frigo.construit, bois: true,
     // (ranger depuis la fenêtre : l'urgent, la case « + » et son tiroir, js/ui/frigo.js)
-    corps: () => renderFrigoFenetre(renderFridgeCard()),
+    // (fiche I3e : le garde-manger commun, sa carte avec celle du réfrigérateur)
+    corps: () => renderFrigoFenetre(carteGardeManger('frigo') + renderFridgeCard()),
   },
   // Installations (menu latéral ; la maison aussi tant qu'elle est à réparer et la ferme à
   // équiper) : la maison, les appareils à acheter, les ateliers, le frigo, le Silo.

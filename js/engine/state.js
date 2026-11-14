@@ -38,6 +38,7 @@ import { recitDAvant, recitPour } from './recit-aiguillage.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
 import { reparerLiens } from './liens.js';
 import { reparerBourse, reparerEtal } from './bourse.js';
+import { reparerGardeManger } from './garde-manger.js';
 import { reparerTraits } from './traits.js';
 import { reparerPaliersVocations } from './vocations.js';
 import { reparerFetes } from './fetes-village.js';
@@ -1042,6 +1043,20 @@ export const MIGRATIONS = {
   // d'avant sur l'île (migrate, plus bas : le réglage allumé ; js/ui/storage.js : une partie d'essai), quel que soit
   // le format d'où elle vient. Une partie d'avant ouverte le réglage éteint n'est pas touchée.
   101: (state) => reparerMigrationIle({ ...state, version: 102 }),
+  // v102 → v103 (le chantier « l'île à bâtir », fiche I3e) : le garde-manger commun et la cuisine du village
+  // (js/engine/garde-manger.js : state.gardeManger, commun ou non, la réserve visée, les cases de la cuisine du village,
+  // le journal de ce qu'on y a déposé, cuisiné, mangé). Une partie d'avant n'en a pas et reste telle quelle ; ce qui est
+  // abîmé est réparé (une réserve hors de 0 à 10, une case illisible, une entrée du journal sans jour), ce qui est
+  // illisible s'en va.
+  102: (state) => {
+    const out = { ...state, version: 103 };
+    if ('gardeManger' in state) {
+      const g = reparerGardeManger(state.gardeManger);
+      if (g) out.gardeManger = g;
+      else delete out.gardeManger;
+    }
+    return out;
+  },
 };
 
 // Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.

@@ -97,6 +97,7 @@ export * from './villageois-journee.js';
 export * from './villageois-liens.js';
 export * from './villageois-amitie.js';
 export * from './liens.js';
+export * from './garde-manger.js';
 export * from './traits.js';
 export * from './noms.js';
 export * from './chronique.js';

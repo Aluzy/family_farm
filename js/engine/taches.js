@@ -30,6 +30,7 @@ import { contratsAcceptes, livrerDepuisLaFerme } from './contrats.js';
 import { quaiDeChargement } from './production.js';
 import { chevalPossede } from './cheval.js';
 import { commerceDuVillageois, estTacheCommerce, lotCommerce, lotsDuJour, postesCommerce, secondDe, tacheCommerce } from './artisans.js';
+import { cuisineDuVillage, cuisinesDuVillage, deposerDuTravail, platDuVillage, signatureGardeManger } from './garde-manger.js';
 
 /* ---------- les tâches attribuées (le chantier « l'île à bâtir », fiche I3c) ----------
 
@@ -224,7 +225,7 @@ export function signatureTaches(state) {
   return [jourDe(state), n(O.arbres), n(O.rochers), n(O.herbes), state.cueillette && state.cueillette.jour === state.day ? state.cueillette.pris.length : 0,
     ((state.verger && state.verger.arbres) || []).length, n(state.blocs), !!(S.cuisine && S.cuisine.construit), !!(S.four && S.four.construit),
     P ? P.poules : 0, E ? (E.moutons || []).length + (E.vaches || []).length : 0, foretArbres(state).length, lieuPort(state) ? 1 : 0,
-    ((state.potager && state.potager.parcelles) || []).length, !!(S.moulin && S.moulin.construit)].join(':');
+    ((state.potager && state.potager.parcelles) || []).length, !!(S.moulin && S.moulin.construit), signatureGardeManger(state)].join(':');
 }
 
 // (gardés tant que le jour, les lieux, sa maison et ce qui change les cibles (les arbres abattus, les rochers cassés,
@@ -318,16 +319,18 @@ function calculerPostes(state, id, v, def, L) {
     }
     case 'cuisine': {
       const B = state.blocs || {}, S = state.stations || {};
+      // (fiche I3e : la cuisine du village, ses seuls blocs, deux postes chacun : on y cuisine à deux)
+      const village = cuisineDuVillage(state), siens = village ? new Set(cuisinesDuVillage(state).map((c) => c.case)) : null;
       const sortes = [S.cuisine && S.cuisine.construit ? 'cuisiniere' : null, S.four && S.four.construit ? 'four' : null].filter(Boolean);
       const couvertes = casesCouvertes(state), l = [];
       for (const p of piecesCloses(state)) {
         const dedans = new Set(p.cases);
         for (const t of p.cases) {
-          if (!sortes.includes(B[t])) continue;
+          if (!sortes.includes(B[t]) || (siens && !siens.has(t))) continue;
           const cases = [t, ...[...couvertes].filter(([, a]) => a === t).map(([j]) => j)];
           const libre = (q) => dedans.has(q) && B[q] === undefined && !couvertes.has(q) && !p.paillasses.includes(q);
-          const q = cases.map((c) => c + W).concat(cases.map((c) => c - 1), cases.map((c) => c + 1)).find(libre);
-          if (q !== undefined) l.push({ case: q, vers: t, dedans: true });
+          const qs = cases.map((c) => c + W).concat(cases.map((c) => c - 1), cases.map((c) => c + 1)).filter(libre);
+          for (const q of [...new Set(qs)].slice(0, siens ? 2 : 1)) l.push({ case: q, vers: t, dedans: true });
         }
       }
       return proche(l);
@@ -446,8 +449,10 @@ export function tachesPour(state, id) {
   const V = villageoisDe(state);
   return listeTaches().map((t) => {
     const d = tacheDef(t);
+    // (fiche I3e : la cuisine du village a son nom et ce qu'elle donne)
+    const village = t === 'cuisine' && cuisineDuVillage(state), CU = ((DATA.VILLAGE.GARDE_MANGER || {}).CUISINE) || {};
     return {
-      id: t, nom: d.nom, icone: d.icone, outil: d.outil || null, donne: d.donne || '', actions: d.ACTIONS,
+      id: t, nom: village ? CU.NOM || d.nom : d.nom, icone: d.icone, outil: d.outil || null, donne: village ? 'des plats pour le garde-manger commun, avec ce qu\'il contient' : d.donne || '', actions: village ? Math.max(1, Number(CU.ACTIONS) || d.ACTIONS) : d.ACTIONS,
       manque: tacheManque(state, v, t), choisie: v.tache === t, prise: V.filter((x) => x !== v && x.tache === t).map((x) => x.prenom),
     };
   });
@@ -693,6 +698,8 @@ function uneAction(state, v, pres) {
       return commeLeJoueur(state, outil, () => castLine(state, ordre[0]));
     }
     case 'cuisine': {
+      // (fiche I3e : la cuisine du village — un plat du garde-manger commun, rangé au garde-manger)
+      if (cuisineDuVillage(state)) return platDuVillage(state);
       const r0 = (def.RECETTES || []).find((rec) => DATA.RECETTES[rec] && recipeStatus(state, rec).ok);
       if (!r0) return fail('Il n\'y a pas de quoi cuisiner.');
       const r = commeLeJoueur(state, null, () => startRecipe(state, r0));
@@ -790,7 +797,9 @@ export function actionsDuJour(state, v) {
   if (!def) return 0;
   // (fiche I5a : un artisan fait ses lots, pas plus : ni à deux ni avec une machine)
   if (def.commerce) { const c = commerceDuVillageois(state, v.id); return c ? lotsDuJour(c) : 0; }
-  return def.ACTIONS + (villageActif(state) ? travailADeux(state).get(v.id) || 0 : 0);
+  // (fiche I3e : la cuisine du village fait GARDE_MANGER.CUISINE.ACTIONS plats par jour)
+  const base = v.tache === 'cuisine' && cuisineDuVillage(state) ? Math.max(1, Number(((DATA.VILLAGE.GARDE_MANGER || {}).CUISINE || {}).ACTIONS) || def.ACTIONS) : def.ACTIONS;
+  return base + (villageActif(state) ? travailADeux(state).get(v.id) || 0 : 0);
 }
 
 // Combien d'actions il devrait avoir faites à l'heure `h` : ses actions du jour, à parts égales sur ses heures de
@@ -834,6 +843,9 @@ function travailler(state, v, dues, nuit = false) {
     const r = uneAction(state, v, pres);
     if (!r || !r.ok) { T.essai = maintenant + Math.max(0.1, Number(TA().ESSAI) || 0.5); break; }
     noterAction(v, T, r);
+    // (fiche I3e : ce qui se mange va au garde-manger commun, jusqu'à sa réserve ; le plat de la cuisine du village y est déjà ;
+    // un artisan vend ce qu'il fait à son comptoir, rien n'en vient au coffre)
+    if (!r.garde && !(tacheDef(v.tache) || {}).commerce) deposerDuTravail(state, r.produit);
     n++;
   }
   return n;
@@ -888,6 +900,15 @@ export function quiFaitQuoi(state) {
       outil: v.outil || null, etat, raison, actions: T ? T.actions : 0, sur: def ? actionsDuJour(state, v) : 0, produit: T ? { ...T.produit } : {},
     };
   });
+}
+
+// Fiche I3e : la cuisine du village fume-t-elle ? Un cuisinier y travaille à cette heure (un créneau de travail de sa
+// journée), le jour : la vapeur de la cuisinière (la scène : modèle.cuisineAllumee, js/ui/stage.js).
+export function cuisineVillageAllumee(state) {
+  if (!villageActif(state) || nightActive(state) || !cuisineDuVillage(state)) return false;
+  const h = clockHours(state), J = journeeDuVillage(state);
+  return villageoisDe(state).some((v) => v.tache === 'cuisine' && travailleAujourdhui(state, v)
+    && (J.get(v.id) || []).some((x) => x.etat === 'travail' && h >= x.de && h < x.a));
 }
 
 // Pour la scène : { [id]: { tache, actions, emoji, geste } } (ce qu'il a fait aujourd'hui : la bulle à chaque action

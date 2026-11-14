@@ -5697,7 +5697,8 @@ export const RAW_DATA = {
       "COMMERCES": [
         { "PALIER": 4, "SORTE": "forge", "MATIERES": { "minerai_fer": 12, "bois": 8 } },
         { "PALIER": 6, "SORTE": "mercerie", "MATIERES": {}, "GARDER": { "laine": 12 }, "AVANCE": 60 }
-      ]
+      ],
+      "GARDE_MANGER": { "CUISINIERS": { "3": 1, "6": 2 }, "GARDE": 6 }
     },
     "VOCATIONS": {
       "village": { "nom": "Vocation village", "eveilS": 60 },
@@ -10541,6 +10542,42 @@ export const RAW_DATA = {
         "Je me fais plaisir : {objet}.",
         "Ça, je le prends : {objet}. Voilà les pièces."
       ]
+    },
+    "GARDE_MANGER": {
+      "RESERVE": 3,
+      "RESERVES": [0, 1, 2, 3, 5],
+      "ENERGIE_MIN": 12,
+      "PLACES_PLATS": { "boite": 1, "frigo": 4 },
+      "JOURNAL": 7,
+      "CUISINE": {
+        "MAX": 2,
+        "ACTIONS": 4,
+        "RECETTES": [
+          "soupe_legumes",
+          "ratatouille",
+          "omelette",
+          "omelette_champignons",
+          "mayonnaise",
+          "poisson_grille",
+          "salade_tomates",
+          "riz_au_lait",
+          "gratin_patates",
+          "quiche_epinards",
+          "tarte_pommes",
+          "tarte_fraises",
+          "tarte_myrtilles",
+          "pain_ail",
+          "pain"
+        ],
+        "NOM": "La cuisine du village",
+        "SANS": "Le garde-manger commun n'a pas de quoi faire un plat du menu.",
+        "PHRASES": [
+          "Je cuisine pour tout le village.",
+          "Ce soir, on mange ensemble !",
+          "Ça sent bon jusqu'à la place.",
+          "Encore un plat pour le garde-manger."
+        ]
+      }
     },
     "DEPART": {
       "PHRASE": "Une île, un abri, un port. Tout est à bâtir.",

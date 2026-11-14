@@ -79,7 +79,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
 | 1. Le port | I1a (fait), I1b (fait), I1c (fait) | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
 | 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
-| 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d (fait) | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
+| 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d (fait), I3e (fait) | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau, le garde-manger commun et la cuisine du village |
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a (fait), I5b (fait), I5c (fait) | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
@@ -93,7 +93,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 I0a ─┬─ I0b
      ├─ I1a ── I1b ── I1c
      │           └──── I2
-     ├─ I3a ── I3b ── I3c ── I3d ── I4 ─┬─ I6a ── I6b ── I6c
+     ├─ I3a ── I3b ── I3c ── I3d ── I4 ─┬─ I6a ── I6b ── I6c   (I3e : après I3d, I4, I5c, I6b)
      │                                  ├─ I5a (après I6a) ── I5b ── I5c
      │                                  └─ I8a, I8b
      └─ I7a ── I7b
@@ -607,6 +607,134 @@ Ce que chaque villageois a coûté et produit, hier et sur les sept derniers jou
 - Reste : ~~les prix et la part (I4 : `J.part` attend d'être versée)~~ (fait : I4 la verse, plus bas) ; ~~les ventes des commerces (lot 5)~~ (I5a : une ligne par commerce) ; ce que les
   champs d'un villageois récoltent est compté à lui seul, même quand le joueur l'aurait récolté (le premier passé
   prend) ; l'eau d'arrosage et l'énergie ne sont pas comptées ; le tableau ne garde que sept jours.
+
+## Les villageois : le garde-manger commun et la cuisine du village (I3e, fait)
+
+À la demande de l'utilisateur : « un ou plusieurs villageois peuvent être assignés à une cuisine collective ou une boîte
+à nourriture ou un frigo collectif permet aux habitants de se nourrir ». Et l'équilibrage alimentaire du village qui va
+avec : dans `node scripts/simulate.mjs --village`, le village restait bloqué à trois villageois. Le moteur :
+`js/engine/garde-manger.js` ; les réglages : `VILLAGE.GARDE_MANGER` (`data/village.json`) et
+`SIMULATION.VILLAGEOIS.GARDE_MANGER` ; la page : `js/ui/garde-manger.js` ; la fiche :
+[`docs/fiches/ile/I3e-cuisine-collective.md`](fiches/ile/I3e-cuisine-collective.md).
+
+- **Le constat, avant** (graine 1, 80 nuits) : la boîte à nourriture tient 6 aliments × 10 ; le réfrigérateur, qui la
+  remplace dès son achat (nuit 49 chez le joueur appliqué), 25 unités au niveau 1. Remplis de légumes crus (une carotte :
+  8 d'énergie, le besoin d'un adulte : 50), ils ne tiennent qu'un jour de repas du village : le réfrigérateur arrivé, il
+  se vide chaque nuit, les villageois mal nourris se reposent (53 jours de repos sur 180 jours-villageois, 29 %), et le
+  quatrième ne vient jamais (il faut deux jours de repas de quatre bouches au rangement : 400, plus que le réfrigérateur
+  ne tient de crus). Un plat, lui, nourrit plus que ses ingrédients (la soupe 43 pour 33, le gratin 150 pour 70) et
+  tient en une unité. Le joueur simulé ne moulait presque plus : à la nuit 60, 349 blés au Silo, le Moulin à l'arrêt, pas
+  de farine (appelé avant les champs, il moud de nouveau).
+- **Le garde-manger commun** (`gardeManger`, `designerGardeManger`) : un appui sur la boîte à nourriture ou le
+  réfrigérateur ouvre sa fenêtre ; « Le rendre commun ». La famille et les villageois y mangent, le joueur y dépose comme
+  avant (la fenêtre de la boîte, du réfrigérateur). La boîte et le réfrigérateur sont uniques ; nouveauté : **la boîte
+  rendue commune reste au village quand le réfrigérateur est acheté** (`repas.js rangerBoite` ne la reprend plus ; elle
+  peut aussi se poser après lui, le chantier allumé) : la famille mange au réfrigérateur, les villageois à la boîte
+  (`sourceVillage`). Rendre l'un commun reprend l'autre (un seul garde-manger, `state.gardeManger.sorte`). Ce qui périt
+  garde sa fraîcheur au réfrigérateur alimenté, pas dans la boîte (les règles d'avant : `spoil`, `fridgeNight` ; B-1 coupe
+  la péremption dans le jeu d'aujourd'hui, le test la rétablit pour le vérifier).
+- **Les dépôts du travail, automatiques jusqu'à une réserve réglable** (`deposerDuTravail`, à chaque action de
+  `taches.js`) : ce qu'une action produit qui se mange va au garde-manger tant qu'il contient moins de `RESERVE` (3) jours
+  de repas du village (le besoin de chaque villageois, adulte ou enfant) ; le reste va au coffre, comme avant. Le joueur la
+  règle dans la fenêtre (`RESERVES` : rien, 1, 2, 3, 5 jours ; la commande `village.reserve`). Pourquoi pas une part fixe :
+  une part prise sur chaque récolte remplirait la boîte même pleine et viderait le coffre qu'on vend ; une réserve visée
+  dit ce que le joueur veut (de quoi tenir N jours) et s'arrête d'elle-même. La cuisine du village tournant, ce qu'elle
+  n'attend pas (ni un plat, ni ce qui nourrit bien — `ENERGIE_MIN` 12 : les œufs, le lait, les patates, le poisson —, ni
+  l'ingrédient d'un plat qu'elle peut faire, `utileAuGardeManger`) laisse aux plats `PLACES_PLATS` places (une sorte de la
+  boîte, 4 unités du réfrigérateur) ; un plat ou un ingrédient attendu qui ne trouve pas de sorte libre dans la boîte y
+  fait de la place : l'aliment qu'on n'attend pas qui nourrit le moins retourne au coffre (`faireDeLaPlace`).
+- **La cuisine du village** (`cuisineDuVillage`, `platDuVillage`) : un appui sur une cuisinière ou un four posés dans une
+  maison ouvre sa fenêtre ; « Cuisine du village » désigne **ce bloc-là** (la carte passe la case touchée à la fenêtre :
+  `chantier.js stationAt`, `farm-stage.js`, `choisirBloc` ; `CUISINE.MAX` 2 blocs). On peut garder la cuisinière du foyer
+  à la famille et en poser une autre près de la table commune.
+- **La tâche `cuisine` devient la cuisine du village** (le choix) : avec un garde-manger commun et un bloc du village, le
+  villageois à qui l'on confie la cuisine se tient devant ce bloc (deux postes par bloc : on y cuisine à deux) et fait
+  `CUISINE.ACTIONS` (4) plats par jour, au lieu de lancer 2 préparations dans la file de la cuisinière du joueur. Ses
+  ingrédients qui se mangent viennent du garde-manger ; ceux qui ne s'y rangent pas (la farine, l'huile, le sucre), du
+  coffre ; l'eau, du réservoir ; le plat va au garde-manger, sans passer par la station du joueur (sa file reste libre ;
+  le plat compte pour les paliers comme le sien : `noteRecipeDone`). Le menu, `CUISINE.RECETTES` (15 plats de la
+  cuisinière et du four, débloqués) ; le plat choisi est celui qui manque le plus au garde-manger (la variété), puis
+  celui qui nourrit le mieux. Pourquoi ne pas ajouter une tâche : la cuisine d'I3c prenait au coffre ce que les autres
+  auraient mangé et y remettait un plat que personne n'allait chercher (I3d l'a mesuré : un solde voisin de zéro, plus de
+  jours de repos) ; la même tâche, branchée sur le garde-manger, nourrit le village, et sans cuisine du village elle reste
+  celle d'I3c. Plusieurs cuisiniers font plus de plats (chacun ses 4 ; deux amis, une action de plus, I6b). La fiche du
+  villageois dit « La cuisine du village », ses phrases sont les siennes (`CUISINE.PHRASES`), le tableau compte ses
+  ingrédients dans son coût.
+- **La tablée** (`villageois.js tablee`, `servirLaTable`) : la cuisine du village tournant, le soir, chacun mange d'abord
+  ses provisions, puis on sert la table au garde-manger pour ce qui reste du besoin de tous (les plats d'abord, un de
+  chaque sorte avant un second) ; chacun y prend jusqu'à son besoin, dans l'ordre des id, et **une part entamée passe au
+  suivant** (un gratin nourrit trois villageois ; avant, le premier le mangeait seul) ; ce qui n'est pas entamé retourne
+  au garde-manger. Chacun goûte à tous les plats de la table : leur bonheur et celui de la variété comptent pour tous. Le
+  plat ouvert est compté à qui l'entame (le coût du tableau). Le jour, la journée met la table commune d'abord
+  (`villageois-journee.js` : même celui qui a sa table chez lui vient manger avec les autres).
+- **Ce qu'on voit** : la cuisinière du village fume tant qu'un cuisinier y travaille (`cuisineVillageAllumee`, la vapeur
+  existante de `vapeur.js`) ; les cuisiniers remuent la marmite à deux (le geste de la cuisine) et causent ; la tablée à
+  la table commune, à midi et le soir. **Aucun dessin nouveau** : la cuisinière, le four, la boîte, le réfrigérateur, la
+  table de jardin et ses chaises.
+- **L'interface** : en tête de la fenêtre de la boîte (et de celle du réfrigérateur), la carte du garde-manger commun :
+  « Le rendre commun » ou « Ne plus le partager », combien de jours de repas il contient (son énergie pour le besoin d'un
+  jour du village), la réserve visée (cinq boutons), ce que le travail y a déposé et ce que la cuisine y a fait
+  aujourd'hui, ce qui a été mangé hier soir, ce que la cuisine du village peut faire et ce qui lui manque surtout ; en
+  tête de la fenêtre de la Cuisine et du Four, la carte de la cuisine du village : « Cuisine du village » ou « Rendre à
+  la famille », qui cuisine (au travail, ses plats du jour), ce que le menu peut faire. Le tableau des villageois (I3d) a
+  sa ligne « 🏘️ Le garde-manger commun » (`ligneGardeManger` : qui cuisine, les plats faits, ce qui a été déposé, cuisiné,
+  mangé, en pièces au prix du port, la réserve en jours). L'aide de l'île (deux lignes) et le livre de l'île (l'entrée
+  « Le garde-manger commun et la cuisine du village »).
+- **La sauvegarde** : format 103 (`state.gardeManger = { commun, sorte, reserve, cuisines, journal }` : le journal garde
+  `JOURNAL` jours de ce qui a été déposé, cuisiné, mangé) ; la migration 102 → 103 (`reparerGardeManger`) répare ce qui est
+  abîmé et retire ce qui est illisible ; une partie d'avant n'est pas touchée. (I7f avance en parallèle : renuméroter à
+  l'intégration.) Les commandes `village.commun`, `village.reserve`, `village.cuisine`.
+- **Le joueur automatique** (`botGardeManger`, `botGarnir`) : dès le premier villageois, il rend commune la boîte (elle le
+  reste, le réfrigérateur acheté) ; sa cuisinière et son four deviennent la cuisine du village ; un cuisinier dès 3
+  villageois adultes, deux dès 6 (`CUISINIERS`), pris parmi les derniers arrivés qui ne font ni les champs ni un
+  commerce ; la cuisine ne se retire pas (le tableau ne la lui reprend plus) ; il garnit le garde-manger (les plats, ce
+  que la cuisine peut cuisiner et ce qui nourrit bien, puis le reste, en gardant `GARDE` 6 de chaque aliment pour sa
+  propre cuisine) au lieu d'y verser tout ; il moud la farine de la cuisine du village avant d'aller aux champs et ne la
+  prend pas pour lui.
+- **La simulation** (`node scripts/simulate.mjs --village`, graine 1, 80 nuits ; « palier 7 dès » : le palier 6 franchi) :
+
+  | | appliqué, avant | appliqué, après | minimal, avant | minimal, après |
+  |---|---|---|---|---|
+  | villageois aux nuits 40 / 60 / 80 | 3 / 3 / 3 | 4 / 4 / 6 | 4 / 4 / 4 | 2 / 4 / 5 |
+  | le 4ᵉ, le 5ᵉ, le 6ᵉ villageois | jamais | nuits 36, 69, 72 | nuit 39, jamais | nuits 51, 78, — |
+  | jours de repos (mal nourris) | 53 sur 180 (29 %) | 10 sur 249 (4 %) | 75 sur 222 (34 %) | 5 sur 204 (2 %) |
+  | commerces (le 2ᵉ) | 1 (jamais) | 2 (nuit 51) | 2 (nuit 58) | 2 (nuit 63) |
+  | paliers 5 / 6 / 7 dès | 32 / 37 / 69 | 31 / 34 / 68 | 34 / 50 / jamais | 36 / 46 / 75 |
+  | pièces à la nuit 80 | 156 | 433 | 4 802 | 259 (le port au niveau 3, payé) |
+
+  La réserve du garde-manger ne tombe plus à zéro après la nuit 50 (492 et 596 d'énergie à la nuit 80, deux à trois jours
+  de repas). Le palier 7 (dix villageois, deux commerces, trois proches, trois styles) reste en cours : deux commerces,
+  mais 6 villageois sur 10, 2 proches sur 3, 2 styles sur 3.
+- **Le verrou qui reste : le plafond du port** (`VILLAGE.ARRIVEE.PLAFOND`, pas changé). Au niveau 3 du port (payé vers la
+  nuit 68), il laisse venir 6 villageois ; le niveau 4 en laisse 9, **moins que les dix du palier 7** : le palier 7 demande
+  aujourd'hui le port au niveau 5 (24 000 pièces), hors de portée de la simulation même en 130 nuits (le joueur appliqué reste à 6 villageois de la
+  nuit 72 à la nuit 130, le port au niveau 3 ; le minimal y arrive à la nuit 81). Réglage proposé, à faire choisir : `PLAFOND` `{ "1": 2, "2": 5, "3": 10,
+  "4": 12, "5": 14 }` (mesuré en mémoire, pas écrit : le joueur appliqué a son 5ᵉ villageois à la nuit 51, son 7ᵉ à la nuit
+  78 ; le minimal son 5ᵉ à la nuit 54, son 6ᵉ à la nuit 78 ; le palier 7 toujours en cours à la nuit 80), ou au moins `"4": 10` pour que le niveau 4
+  suffise au palier 7. Le plafond des commerces (`ARTISANS.PLAFOND`, 4 villageois et le port 2 pour un second) n'est plus
+  le verrou : le second commerce ouvre aux nuits 51 et 63. Les proches et les styles du palier 7, le joueur automatique ne
+  les vise pas (I6b, I7a : à faire).
+- Éteint, le CSV de la simulation est le même octet pour octet que celui de 3201581.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, quatre villageois, la place et sa table commune, une petite maison où
+  l'on pose une cuisinière pour le village, celle du foyer restant à la famille) : la fenêtre de la boîte, « Le rendre
+  commun » (1,5 jour de repas) ; un appui sur la cuisinière, « Cuisine du village » ; la tâche donnée par la fiche ; à 10 h,
+  les deux cuisiniers devant la cuisinière, qui fume, causent (« Tu as l'œil, Marius ! ») ; la villageoise des champs
+  dépose ses patates au garde-manger ; à 17 h, 3 jours de repas (9 patates, 2 omelettes, 1 mayonnaise, 6 soupes) ; à midi,
+  les quatre attablés à la table commune ; la nuit, le village mange (2 omelettes, la mayonnaise, une soupe, une patate,
+  personne au repos) : au matin, 1,8 jour ; le tableau, sa ligne (« Eugène, Douce : 6 🍲 2 🍳 1 ; déposé 36, cuisiné 130,
+  mangé 74 ; 2 j »). L'appui réel sur la cuisinière ouvre sa fenêtre ; celui sur la boîte (au fond du foyer, derrière la
+  famille) a été remplacé par l'action de la page. Aucune erreur dans la console.
+- **Les tests** : `tests/engine/village-garde-manger.test.mjs` (18 : les réglages ; commun, ses refus, la réserve ; les dépôts
+  jusqu'à la réserve, le reste au coffre, rien à 0 ; les champs qui déposent ; le réfrigérateur acheté, la boîte qui reste
+  au village ; la fraîcheur, la péremption rétablie ; la cuisine du village, ses postes, sa tâche ; un cuisinier, ses plats,
+  la file libre ; deux cuisiniers ; la variété, la boîte pleine de sortes ; la tablée ; sans cuisine, comme avant ; le
+  tableau ; la journée à la table commune et la vapeur ; la sauvegarde ; les commandes ; le joueur automatique ; éteint).
+  `village-mercerie` lit le format courant.
+- Reste : le plafond du port et les objectifs du palier 7 (le réglage proposé) ; le joueur automatique et les proches,
+  les styles ; une part entamée qu'aucun villageois ne finit est perdue (ce qui reste d'un gratin) ; la boîte commune ne
+  tient que six sortes (c'est elle qui limite le village avant le réfrigérateur) ; la tablée n'a pas d'objet posé sur la
+  table (pas de nouveau dessin) ; les cuisiniers ne portent pas les plats à la table ; la famille ne s'attable pas avec le
+  village ; un repas apporté (I6b) ne prend toujours rien au garde-manger.
 
 ## Les villageois : l'amitié (I6a, fait)
 

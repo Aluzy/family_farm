@@ -30,6 +30,7 @@ export const SOMMEIL_PERMISES = new Set([
   'chronique-epingler', 'chronique-note-ok', 'chronique-note-effacer', 'noms-ok', // (I7g : la chronique et les noms : rien ne bouge sur la ferme)
   'vocation-projet-envoyer', 'vocation-projet-abandonner', // (I8a : envoyer au chantier du village, ou l'en rappeler ; abandonner un projet)
   'commerce-onglet', 'commerce-nom-autre', 'commerce-nommer', // (I5a : la fenêtre du commerce, passer de l'un à l'autre ; le nommer)
+  'garde-manger-commun', 'garde-manger-reserve', 'cuisine-village', // (I3e : un réglage du village, comme une tâche confiée : il vaut au matin)
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'portail',

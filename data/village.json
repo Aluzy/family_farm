@@ -866,6 +866,39 @@
         "Ça, je le prends : {objet}. Voilà les pièces."
       ]
     },
+    "//GARDE_MANGER": [
+      "Le garde-manger commun et la cuisine du village (fiche I3e ; le moteur : js/engine/garde-manger.js ; la fenêtre : js/ui/garde-manger.js).",
+      "Le garde-manger : la boîte à nourriture ou le réfrigérateur de la ferme (ils sont uniques, le réfrigérateur remplace la boîte),",
+      "rendu commun au village d'un appui (sa fenêtre). Commun, la famille et les villageois y mangent comme avant, et le travail des",
+      "villageois y dépose ce qu'il produit qui se mange tant qu'il a moins",
+      "de RESERVE jours de repas du village (le joueur la règle parmi RESERVES ; 0 : rien n'y va), le reste au coffre. Ce qui périt",
+      "garde sa fraîcheur au réfrigérateur alimenté, pas dans la boîte. La cuisine du village tournant, ce qu'elle n'attend pas",
+      "(ni un plat, ni ce qui a ENERGIE_MIN d'énergie au moins, ni l'ingrédient d'un plat du menu qu'elle peut faire avec lui) laisse",
+      "aux plats PLACES_PLATS places (des aliments différents de la boîte, qui n'en a que six ; des unités du réfrigérateur). JOURNAL : les jours que le garde-manger garde de ce qu'on y a",
+      "déposé, cuisiné, mangé (le tableau des villageois, sa fenêtre).",
+      "CUISINE : la cuisine du village, une cuisinière ou un four posés dans une pièce close, désignés « du village » (MAX blocs au",
+      "plus). Avec un garde-manger commun, la tâche « cuisine » est la sienne : le cuisinier fait ACTIONS plats par jour, tirés de",
+      "RECETTES (débloquées, de la station d'un bloc du village) : le plat qui manque le plus au garde-manger, puis celui qui nourrit",
+      "le mieux ; ce qui se mange est pris au garde-manger, la farine, l'huile, le sucre au coffre, l'eau au réservoir ; le plat va",
+      "au garde-manger. Il ne prend pas la file de la station du joueur. Le soir, le village mange ensemble à la table commune : les",
+      "plats sont partagés et chacun goûte à tous ceux de la table (le bonheur des plats et de leur variété). NOM, SANS, PHRASES : ce",
+      "que disent la tâche et le cuisinier."
+    ],
+    "GARDE_MANGER": {
+      "RESERVE": 3,
+      "RESERVES": [0, 1, 2, 3, 5],
+      "ENERGIE_MIN": 12,
+      "PLACES_PLATS": { "boite": 1, "frigo": 4 },
+      "JOURNAL": 7,
+      "CUISINE": {
+        "MAX": 2,
+        "ACTIONS": 4,
+        "RECETTES": ["soupe_legumes", "ratatouille", "omelette", "omelette_champignons", "mayonnaise", "poisson_grille", "salade_tomates", "riz_au_lait", "gratin_patates", "quiche_epinards", "tarte_pommes", "tarte_fraises", "tarte_myrtilles", "pain_ail", "pain"],
+        "NOM": "La cuisine du village",
+        "SANS": "Le garde-manger commun n'a pas de quoi faire un plat du menu.",
+        "PHRASES": ["Je cuisine pour tout le village.", "Ce soir, on mange ensemble !", "Ça sent bon jusqu'à la place.", "Encore un plat pour le garde-manger."]
+      }
+    },
     "//DEPART": [
       "Le nouveau départ (fiche I7b ; le moteur : js/engine/depart-ile.js et js/engine/didacticiel-ile.js ; l'écran : js/ui/depart.js,",
       "le didacticiel : js/ui/didacticiel-ile.js). L'écran de départ dit PHRASE, puis « Seul » (un adulte tiré de la graine,",

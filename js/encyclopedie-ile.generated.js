@@ -147,14 +147,15 @@ export const ENCYCLOPEDIE_ILE = {
     {
      "id": "villageois",
      "terme": "Les villageois",
-     "description": "Ils débarquent du bac, un par passage, marchent jusqu'à leur maison et frappent. Chacun a son prénom, son visage, ses goûts et ses traits. Ils se lèvent, travaillent à leur tâche, mangent à midi et le soir, sortent, se saluent, causent entre eux, rentrent dormir. La nuit, chacun mange à la boîte commune et dort dans son lit ; mal nourri ou sans lit, il se repose le lendemain. Personne ne part. La carte du joueur compte les villageois : un appui, leur liste, puis la fiche de chacun.",
+     "description": "Ils débarquent du bac, un par passage, marchent jusqu'à leur maison et frappent. Chacun a son prénom, son visage, ses goûts et ses traits. Ils se lèvent, travaillent à leur tâche, mangent à midi et le soir, sortent, se saluent, causent entre eux, rentrent dormir. La nuit, chacun mange à la boîte à nourriture (ou au réfrigérateur, ou au garde-manger commun) et dort dans son lit ; mal nourri ou sans lit, il se repose le lendemain. Personne ne part. La carte du joueur compte les villageois : un appui, leur liste, puis la fiche de chacun.",
      "liens": [
       "maison_libre",
       "taches",
       "tableau_villageois",
       "amitie_villageois",
       "liens_villageois",
-      "traits"
+      "traits",
+      "garde_manger"
      ],
      "decouverte": [
       "villageois"
@@ -163,12 +164,13 @@ export const ENCYCLOPEDIE_ILE = {
     {
      "id": "taches",
      "terme": "Les tâches",
-     "description": "C'est toi qui donnes une tâche à chaque villageois, sur sa fiche : les champs (récolter, arroser, ressemer), les bêtes, le verger et les ruches, le bois (une hache), la pierre et le minerai (une pioche), la pêche (une canne), la cueillette, le fauchage et la paille (une faux), la cuisine, les machines, la tournée du port (il y vend ce que tu marques « à vendre »). Il la fait chaque jour à son poste, à ses heures de travail ; ce qu'il produit va au coffre de la ferme. L'outil de sa tâche, tu le fabriques et tu le lui donnes : sans lui, ou sans rien à faire, la tâche attend et il le dit.",
+     "description": "C'est toi qui donnes une tâche à chaque villageois, sur sa fiche : les champs (récolter, arroser, ressemer), les bêtes, le verger et les ruches, le bois (une hache), la pierre et le minerai (une pioche), la pêche (une canne), la cueillette, le fauchage et la paille (une faux), la cuisine (celle du village, s'il y en a une), les machines, la tournée du port (il y vend ce que tu marques « à vendre »). Il la fait chaque jour à son poste, à ses heures de travail ; ce qu'il produit va au coffre de la ferme. L'outil de sa tâche, tu le fabriques et tu le lui donnes : sans lui, ou sans rien à faire, la tâche attend et il le dit.",
      "liens": [
       "villageois",
       "tableau_villageois",
       "part",
-      "outils"
+      "outils",
+      "garde_manger"
      ],
      "decouverte": [
       "villageois"
@@ -182,6 +184,20 @@ export const ENCYCLOPEDIE_ILE = {
       "taches",
       "part",
       "villageois"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "garde_manger",
+     "terme": "Le garde-manger commun et la cuisine du village",
+     "description": "La boîte à nourriture ou le réfrigérateur, rendus communs au village d'un appui (« Le rendre commun ») : les villageois y mangent, et ce que leur travail produit qui se mange y va de lui-même, jusqu'à 3 jours de repas du village (un réglage de sa fenêtre) ; le reste va au coffre. Tu y déposes ce que tu veux. Au réfrigérateur, ce qui périt garde sa fraîcheur ; dans la boîte, il vieillit. Une cuisinière ou un four posés dans une maison deviennent la cuisine du village (« Cuisine du village ») : les villageois à qui tu confies la cuisine y font chacun 4 plats par jour avec le garde-manger (la farine et l'huile au coffre), et les y rangent ; un plat nourrit mieux que ses légumes. Le soir, on mange ensemble à la table commune : les plats se partagent, chacun goûte à tous. Le tableau des villageois a sa ligne.",
+     "liens": [
+      "villageois",
+      "taches",
+      "tableau_villageois",
+      "part"
      ],
      "decouverte": [
       "villageois"

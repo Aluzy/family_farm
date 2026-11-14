@@ -132,6 +132,11 @@
    L'étal du joueur (l'île à bâtir, fiche I4 ; js/engine/bourse.js, l'inverse l'un de l'autre) :
      etal.mettre      { objet, quantite }       mettre en vente à l'étal (de l'inventaire, puis du réfrigérateur)
      etal.reprendre   { objet, quantite }       reprendre de l'étal (à l'inventaire)
+   Le garde-manger commun et la cuisine du village (l'île à bâtir, fiche I3e ; js/engine/garde-manger.js, sans
+   inverse : la même commande, oui à faux, reprend ce qu'elle a donné) :
+     village.commun   { oui, sorte? }           rendre la boîte à nourriture (« boite ») ou le réfrigérateur (« frigo ») commun au village, ou non
+     village.reserve  { jours }                 les jours de repas du village que le travail y dépose au plus (0 : rien)
+     village.cuisine  { case, oui }             la cuisinière ou le four de la case : de la cuisine du village, ou non
    Les commerces d'artisans (l'île à bâtir, fiche I5a ; js/engine/artisans.js, sans inverse) :
      commerce.ouvrir    { id, sorte }                   le villageois `id` ouvre le commerce `sorte` (forge…) : la décision du joueur
      commerce.acheter   { commerce, objet, quantite }   acheter au comptoir du commerce (au prix de vente : à l'artisan)
@@ -179,6 +184,7 @@ import { accepterContrat, livrerContrat } from './contrats.js';
 import { chargerPortage, choisirVehicule, dechargerPortage } from './portage.js';
 import { attribuer, donnerOutil, marquerAVendre, reprendreOutil } from './taches.js';
 import { accueillirEnfant, formerFoyer } from './liens.js';
+import { designerCuisine, designerGardeManger, reglerReserve } from './garde-manger.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -653,6 +659,18 @@ export const COMMANDES = {
   'villageois.enfant': {
     args: { foyer: 'texte' },
     executer: (state, { foyer }) => accueillirEnfant(state, foyer),
+  },
+  'village.commun': {
+    args: { oui: 'drapeau', sorte: 'texte?' },
+    executer: (state, { oui, sorte = null }) => designerGardeManger(state, oui, sorte === 'boite' || sorte === 'frigo' ? sorte : null),
+  },
+  'village.reserve': {
+    args: { jours: 'quantite' },
+    executer: (state, { jours }) => reglerReserve(state, jours),
+  },
+  'village.cuisine': {
+    args: { case: 'case', oui: 'drapeau' },
+    executer: (state, { case: c, oui }) => designerCuisine(state, c, oui),
   },
   'etal.mettre': {
     args: { objet: 'objet', quantite: 'quantite' },

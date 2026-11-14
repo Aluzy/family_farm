@@ -55,6 +55,8 @@ import { garantiDuHameau, HABITANTS, habitantsPourLaCarte } from '../engine/habi
 import { visiteDepuisCarte } from './bienvenue.js';
 import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
 import { villageActif } from '../engine/village.js';
+import { cuisineVillageAllumee } from '../engine/taches.js';
+import { choisirBloc } from './garde-manger.js';
 import { dessinProjet } from '../engine/projets-village.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
 import {
@@ -647,7 +649,8 @@ export function stageModel() {
     // le four (son bloc) cuit-il ? ses flammes bougent (js/carte/ferme/chantier.js, stepFires)
     fourAllume: !!(state.stations.four && state.stations.four.construit && state.stations.four.tache),
     // la cuisinière (son bloc) cuit-elle ? son feu bouge, la vapeur monte de la marmite (chantier.js stepFires, vapeur.js)
-    cuisineAllumee: !!(state.stations.cuisine && state.stations.cuisine.construit && state.stations.cuisine.tache),
+    // (fiche I3e : la cuisine du village fume aussi quand un cuisinier y travaille, taches.js cuisineVillageAllumee)
+    cuisineAllumee: !!(state.stations.cuisine && state.stations.cuisine.construit && state.stations.cuisine.tache) || cuisineVillageAllumee(state),
     // le Moulin moud-il ? sa meule (son bloc) tourne (js/carte/ferme/chantier.js, stepFires)
     meuleTourne: batiments.moulin.enMarche,
     // (les conseils : le mur qui manque, l'enceinte sans porte, ce qu'est chaque pièce ; au sol,
@@ -1513,6 +1516,8 @@ registerActions({
       allerAuPuits();
       return;
     }
+    // (fiche I3e : le bloc touché sur la carte — quelle cuisinière, quel four —, pour la cuisine du village)
+    choisirBloc(target.dataset.bloc !== undefined ? Number(target.dataset.bloc) : null);
     openStageWindow(target.dataset.window);
   },
   'aller': (target) => {
