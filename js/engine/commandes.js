@@ -111,6 +111,11 @@
      nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
      nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
                                                 (le monde en ligne la joue, quand tous sont couchés)
+     temps.sommeil    { oui }                   I9a2 : un monde de l'île, tous les joueurs connectés couchés (ou
+                                                plus) : la nuit y défile dix fois plus vite (js/engine/temps-monde.js ;
+                                                le monde seul la joue, comme nuit.partagee)
+   I9a2 : dans un monde de l'île (l'horloge vivante), executerCommande(state, c, { acteur }) joue la commande avec
+   l'énergie de son acteur (state.energies, posée dans state.energie le temps de la commande : temps-monde.js).
    Le commerce au port (l'île à bâtir, fiche I1b ; js/engine/port.js, sans inverse : une vente, un achat ne se
    défont pas) — `case` : celle du personnage, à PORT.PORTEE cases du comptoir :
      port.vendre      { objet, quantite, case } vendre au comptoir (au prix de vente : market.js)
@@ -178,6 +183,7 @@ import { harvestTree } from './orchard.js';
 import { buyTech } from './techtree.js';
 import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
+import { avecActeur, poserSommeil } from './temps-monde.js';
 import { acheterAuPort, dechargerAuPort, vendreAuPort } from './port.js';
 import { agrandirPort, apporterAuChantier, commanderImport, honorerCommande } from './bac.js';
 import { accepterContrat, livrerContrat } from './contrats.js';
@@ -590,6 +596,10 @@ export const COMMANDES = {
     args: {},
     executer: (state) => nuitPartagee(state),
   },
+  'temps.sommeil': {
+    args: { oui: 'drapeau' },
+    executer: (state, { oui }) => poserSommeil(state, oui),
+  },
   'port.vendre': {
     args: { objet: 'objet', quantite: 'quantite', case: 'case' },
     executer: (state, { objet, quantite, case: c }) => vendreAuPort(state, objet, Math.max(1, Math.floor(quantite)), c),
@@ -718,13 +728,14 @@ export function commandeInvalide(c) {
   return null;
 }
 
-// Joue la commande sur la partie (voir l'en-tête). Une commande mal formée ne touche à rien.
-export function executerCommande(state, c) {
+// Joue la commande sur la partie (voir l'en-tête). Une commande mal formée ne touche à rien. `o.acteur` (I9a2) :
+// le compte qui la joue, dans un monde de l'île (son énergie : avecActeur) ; ailleurs, sans effet.
+export function executerCommande(state, c, o = {}) {
   const err = commandeInvalide(c);
   const id = c && typeof c === 'object' ? c.id : undefined;
   if (err) return { ...fail(err), id };
   const args = Object.fromEntries(Object.entries(c.args).filter(([, v]) => v !== undefined && v !== null));
-  const r = COMMANDES[c.type].executer(state, args);
+  const r = o && o.acteur ? avecActeur(state, o.acteur, () => COMMANDES[c.type].executer(state, args)) : COMMANDES[c.type].executer(state, args);
   if (r.ok) objectifsARevoir(state);   // (piste 5 : les objectifs du chapitre revus au pas suivant)
   return r.ok ? { ...r, id, inverses: r.inverses || [] } : { ...r, id };
 }

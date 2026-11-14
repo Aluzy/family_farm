@@ -112,7 +112,8 @@ export function distanceAuComptoir(state, ou) {
   const c = comptoirDuPort(state);
   if (!c || !Number.isInteger(ou) || ou < 0) return Infinity;
   const x = ou % c.W, y = Math.floor(ou / c.W);
-  return Math.min(...c.cases.map((i) => Math.hypot((i % c.W) - x, Math.floor(i / c.W) - y)));
+  // (I9a2 : la racine carrée, exacte partout, et non Math.hypot : un geste au port se rejoue au serveur et chez chacun)
+  return Math.min(...c.cases.map((i) => { const dx = (i % c.W) - x, dy = Math.floor(i / c.W) - y; return Math.sqrt(dx * dx + dy * dy); }));
 }
 
 // « 6 h », « 21 h 30 »

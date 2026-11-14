@@ -34,6 +34,7 @@ import { pousserMassifs } from './massifs.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 import { distribuerGrain } from './distributeur.js';
 import { chainesDeLaJournee } from './chaines.js';
+import { horlogeVivante } from './temps-monde.js';
 import { demandesNuit, demandesVillageoisNuit } from './demandes.js';
 import { voisinsNuit } from './voisins.js';
 import { enExpedition, tentePortee } from './equipement.js';
@@ -177,9 +178,12 @@ export function sleep(state) {
 export function nuitPartagee(state) {
   state.nuitEnCours = null;
   // (E-13 : l'horloge figée, le jour n'a pas fait tourner les machines : le distributeur de grain nourrit
-  // les poules, les chaînes de production font leur journée, avant la nuit)
-  distribuerGrain(state, false);
-  chainesDeLaJournee(state);
+  // les poules, les chaînes de production font leur journée, avant la nuit. I9a2 : un monde de l'île a une
+  // horloge vivante, ses machines ont tourné dans les pas : les refaire ici doublerait leur production)
+  if (!horlogeVivante(state)) {
+    distribuerGrain(state, false);
+    chainesDeLaJournee(state);
+  }
   const report = nuitEntiere(state);
   return { ok: true, jour: state.day, pretes: report.pretes };
 }

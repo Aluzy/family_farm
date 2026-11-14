@@ -1057,6 +1057,25 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v103 → v104 (le chantier « l'île à bâtir », fiche I9a2) : l'horloge commune d'un monde en ligne de l'île
+  // (js/engine/temps-monde.js). La partie d'un monde (mondePartage) reçoit son horloge (state.horloge : le numéro du
+  // dernier pas joué, le sommeil de tous, le compte des réveils ; un monde d'avant repart au pas 0) et l'énergie de
+  // chaque joueur (state.energies, par compte : ce qui est lisible est gardé ; un compte absent a l'énergie pleine,
+  // celle du propriétaire est posée à la mise en ligne). Une partie solo n'en a pas et reste telle quelle.
+  103: (state) => {
+    const out = { ...state, version: 104 };
+    if (state.mondePartage === true) {
+      const h = state.horloge && typeof state.horloge === 'object' && !Array.isArray(state.horloge) ? state.horloge : {};
+      out.horloge = {
+        pas: Number.isInteger(h.pas) && h.pas >= 0 ? h.pas : 0,
+        sommeil: h.sommeil === true,
+        reveils: Number.isInteger(h.reveils) && h.reveils >= 0 ? h.reveils : 0,
+      };
+      const e = state.energies && typeof state.energies === 'object' && !Array.isArray(state.energies) ? state.energies : {};
+      out.energies = Object.fromEntries(Object.entries(e).filter(([k, v]) => k && Number.isFinite(v) && v >= 0).map(([k, v]) => [k, Math.round(v)]));
+    }
+    return out;
+  },
 };
 
 // Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.
