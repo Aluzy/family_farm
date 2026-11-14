@@ -56,7 +56,7 @@ import { visiteDepuisCarte } from './bienvenue.js';
 import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
 import { villageActif } from '../engine/village.js';
 import { caseDansLaFerme, ilePartagee } from '../engine/frontiere.js';
-import { noterBrouillard, noterDehors } from './en-ligne.js';
+import { fractionDuPas, noterBrouillard, noterDehors } from './en-ligne.js';
 import { cuisineVillageAllumee } from '../engine/taches.js';
 import { choisirBloc } from './garde-manger.js';
 import { dessinProjet } from '../engine/projets-village.js';
@@ -179,7 +179,10 @@ export function stageActive() {
 // Heure du jour, de 0 à 24 (fractionnaire) : la journée commence à HEURE_REVEIL au réveil,
 // puis une heure passe toutes les SECONDES_PAR_HEURE secondes d'éveil (30 s).
 export function heureDuJour() {
-  return clockHours(state); // version 1.19 : la nuit défile aussi (22 h → 6 h)
+  // (version 1.19 : la nuit défile aussi, 22 h → 6 h ; I9a2 : sur une île en ligne, l'heure entre deux pas du monde,
+  // la part du pas en cours écoulée : la lumière glisse sans à-coups)
+  const h = clockHours(state) + (fractionDuPas() * DATA.VILLAGE.EN_LIGNE.PAS_MS) / (DATA.TEMPS.SECONDES_PAR_HEURE * 1000);
+  return h >= 24 ? h - 24 : h;
 }
 
 // Lieux de la carte qui portent une étiquette (et une fenêtre du même nom).

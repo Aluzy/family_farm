@@ -35,6 +35,11 @@
 //      celle du monde) ; un mur posé dehors est refusé avant d'être envoyé.
 //      PORT=1 (long) : A marche jusqu'au port, B le suit ; au port, chacun voit l'autre.
 //      (CAPTURES=<dossier> : les captures de l'hôte et de l'invité dehors, et au port avec PORT=1.)
+//   9. I9a2 : l'horloge commune. A met en ligne une île à 21 h, y invite B : l'heure avance chez les deux et reste la
+//      même (celle du monde) ; B lance une omelette : elle est prête chez les deux à son heure (deux pas plus tard) ; la
+//      nuit tombe seule à 22 h ; A se couche, B non : la nuit garde son pas ; B se couche : elle file, le matin vient
+//      chez les deux en moins d'une minute ; les parties confirmées sont celle du monde, au même pas.
+//      (CAPTURES=<dossier> : le soir, la nuit où tous dorment, le matin, chez l'hôte et chez l'invité.)
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
 import { createServer } from 'node:http';
@@ -43,7 +48,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { addItem, caseDansLaFerme, caseMarchable, caseVue, contexteSol, elementsSol, createNewGame, DATA, empreintePartie, farmTerrain, testFarmMap, testFermeConstruite } from '../js/engine/index.js';
+import { addItem, avancerJusqua, caseDansLaFerme, caseMarchable, caseVue, contexteSol, elementsSol, createNewGame, DATA, empreintePartie, farmTerrain, pasDe, testBatir, testFarmMap, testFermeConstruite, testSetLevel } from '../js/engine/index.js';
 import { avecVillage, garden, plantRipe, reglagesDuJeu } from './engine/aide.mjs';
 import W from '../worker/src/index.js';
 import { Comptes } from '../worker/src/comptes.mjs';
@@ -152,6 +157,17 @@ const action = (p, nom, data = {}) => p.evaluate(([nom, data]) => { const x = do
 // (une navigation pendant la vérification, le lien d'invitation par exemple : on réessaie)
 const attendre = async (p, f, arg, ms = 20000) => { const t0 = Date.now(); for (;;) { let ok = false; try { ok = await p.evaluate(f, arg); } catch (e) { ok = false; } if (ok) return Date.now() - t0; if (Date.now() - t0 > ms) return null; await p.waitForTimeout(25); } };
 const echecs = [];
+// (I9a2 : la partie confirmée d'un joueur et celle du monde, au même pas : le monde avance jusqu'à l'heure, la confirmée
+// du joueur jusqu'au pas du monde — ou le monde, s'il est derrière, jusqu'au sien)
+const memePas = async (p, reg) => {
+  reg.avancer();
+  const srv = reg.charger(), pas = pasDe(srv);
+  const c = await p.evaluate(async (n) => { const E = await import('/js/engine/index.js'); const L = await import('/js/ui/en-ligne.js'); const S = L._lien().synchro; if (S.vivante && n >= E.pasDe(S.confirmee)) S.avancerConfirmee(n); return { pas: E.pasDe(S.confirmee), em: E.empreintePartie(S.confirmee) }; }, pas);
+  if (c.pas === pas) return c.em === empreintePartie(srv);
+  const copie = JSON.parse(JSON.stringify(srv));
+  avancerJusqua(copie, c.pas);
+  return c.em === empreintePartie(copie);
+};
 const verifie = (ok, texte) => { console.log(`${ok ? '✓' : '✗'} ${texte}`); if (!ok) echecs.push(texte); };
 
 try {
@@ -390,9 +406,10 @@ try {
   const dehorsB = !caseDansLaFerme(ile, cb);
   const vueSuit = vueB.x + vueB.l > (Fi.X + Fi.LARGEUR + 6) * 16 && (cb % Wi) * 16 >= vueB.x && (cb % Wi) * 16 <= vueB.x + vueB.l;
   const bandeauB = await attendre(pb, () => /rien d'autre n'est encore synchronisé/.test(document.getElementById('en-ligne-bandeau').innerText), null, 5000);
-  const brouillardB = await pb.evaluate(async (o) => { const E = await import('/js/engine/index.js'); const L = await import('/js/ui/en-ligne.js'); return { ici: E.caseVue(FF.state, o.c), garde: (localStorage.getItem('ferme-brouillard-' + o.id) || '').length, confirmee: E.caseVue(L._lien().synchro.confirmee, o.c), em: E.empreintePartie(L._lien().synchro.confirmee) }; }, { c: cb, id: idIle });
-  verifie(dehorsB && vueSuit && bandeauB !== null && brouillardB.ici && brouillardB.garde > 0 && !brouillardB.confirmee && brouillardB.em === empreintePartie(regIle.charger()),
-    `8b. B est sorti de la ferme (case ${cb % Wi},${Math.floor(cb / Wi)} ; la ferme finit à la colonne ${Fi.X + Fi.LARGEUR - 1}) : la vue le suit, le bandeau dit que rien d'autre n'est synchronisé, son brouillard se lève chez lui seul (${JSON.stringify({ vueSuit, bandeau: bandeauB !== null, ...brouillardB, em: brouillardB.em === empreintePartie(regIle.charger()) })})`);
+  const brouillardB = await pb.evaluate(async (o) => { const E = await import('/js/engine/index.js'); const L = await import('/js/ui/en-ligne.js'); return { ici: E.caseVue(FF.state, o.c), garde: (localStorage.getItem('ferme-brouillard-' + o.id) || '').length, confirmee: E.caseVue(L._lien().synchro.confirmee, o.c) }; }, { c: cb, id: idIle });
+  brouillardB.em = await memePas(pb, regIle);
+  verifie(dehorsB && vueSuit && bandeauB !== null && brouillardB.ici && brouillardB.garde > 0 && !brouillardB.confirmee && brouillardB.em,
+    `8b. B est sorti de la ferme (case ${cb % Wi},${Math.floor(cb / Wi)} ; la ferme finit à la colonne ${Fi.X + Fi.LARGEUR - 1}) : la vue le suit, le bandeau dit que rien d'autre n'est synchronisé, son brouillard se lève chez lui seul (${JSON.stringify({ vueSuit, bandeau: bandeauB !== null, ...brouillardB })})`);
   const ca = await allerA(pa, buts[1]);
   const piedsDe = (p) => p.evaluate(() => { const v = FarmStage.scene().fermier.vu(); return v && { x: v.x, y: v.y - v.h }; });
   const voitLAutre = (p, id, pieds) => attendre(p, (c) => { const e = (FarmStage.scene().presences || new Map()).get(c.id); return !!e && Math.hypot(e.img.x - c.x, e.img.y - c.y) < 6; }, { id, ...pieds }, 6000);
@@ -435,6 +452,87 @@ try {
       for (const p of [pa, pb]) { await pourCapture(p); await p.waitForTimeout(800); }
       await pb.screenshot({ path: process.env.CAPTURES + '/i9a-invite-port.png' });
       await pa.screenshot({ path: process.env.CAPTURES + '/i9a-hote-port.png' });
+    }
+  }
+  // 9. I9a2 : l'horloge commune d'une île
+  {
+    const ile2 = avecVillage(() => createNewGame('31', { nom: 'Île' }));
+    ile2.essais = { ...(ile2.essais || {}), village: true };
+    testSetLevel(ile2, 5);
+    for (const st of ['foyer', 'cuisine']) testBatir(ile2, st);
+    for (const ing of DATA.RECETTES.omelette.ingredients) addItem(ile2, ing.item, ing.qte * 10);
+    ile2.awakeMs = (21 - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;   // (21 h)
+    const cree2 = await appel(A, '/mondes', { partie: { v: ile2.version, t: Date.now(), s: ile2 }, titre: 'L\'île du soir' });
+    const inv2 = cree2.ok ? await appel(A, `/mondes/${cree2.monde}/invitations`, { role: 'batisseur' }) : {};
+    const entre2 = inv2.ok ? await appel(B, '/rejoindre', { code: inv2.code }) : {};
+    const id2 = cree2.monde, reg2 = id2 && mondes.get(id2).registre;
+    for (const p of [pa, pb]) await p.goto(`${BASE}/jeu.html?monde=${id2}`);
+    const dedans2 = (await attendre(pa, pret, null, 30000)) !== null && (await attendre(pb, pret, null, 30000)) !== null;
+    const heure = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); return { pas: E.pasDe(FF.state), h: E.clockHours(FF.state), jour: FF.state.day, nuit: E.nightActive(FF.state) }; });
+    const h0 = [await heure(pa), await heure(pb)];
+    await pa.waitForTimeout(6000);
+    const h1 = [await heure(pa), await heure(pb)];
+    reg2.avancer();
+    const pasMonde = pasDe(reg2.charger());
+    verifie(cree2.ok && entre2.ok && dedans2 && h1[0].pas > h0[0].pas && h1[1].pas > h0[1].pas && Math.abs(h1[0].pas - h1[1].pas) <= 1 && Math.abs(h1[0].pas - pasMonde) <= 1,
+      `9a. l'île du soir en ligne (${id2}) : l'heure avance chez les deux et reste celle du monde (A ${h0[0].h.toFixed(2)} → ${h1[0].h.toFixed(2)} h, B ${h0[1].h.toFixed(2)} → ${h1[1].h.toFixed(2)} h ; pas ${h1[0].pas} / ${h1[1].pas}, le monde ${pasMonde})`);
+    if (process.env.CAPTURES) {
+      for (const p of [pa, pb]) { await pourCapture(p); await p.waitForTimeout(500); }
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9a2-hote-soir.png' });
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9a2-invite-soir.png' });
+    }
+    // 9b. une omelette lancée par B : prête chez les deux à son heure (le pas où la cuisine se libère, noté par chacun)
+    const guetter = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); window.__prete = null; const voir = () => { const st = FF.state.stations.cuisine; if (st && !st.tache) { window.__prete = { pas: E.pasDe(FF.state), h: E.clockHours(FF.state) }; return; } requestAnimationFrame(voir); }; requestAnimationFrame(voir); });
+    const lance = await pb.evaluate(async () => { const E = await import('/js/engine/index.js'); const C = await import('/js/ui/commandes.js'); const r = C.executer('cuisine.lancer', { recette: 'omelette' }); return { ok: r.ok, erreur: r.error || '', pas: E.pasDe(FF.state), h: E.clockHours(FF.state) }; });
+    await attendre(pa, () => !!(FF.state.stations.cuisine && FF.state.stations.cuisine.tache), null, 5000);
+    for (const p of [pa, pb]) await guetter(p);
+    const prA = await attendre(pa, () => !!window.__prete, null, 20000), prB = await attendre(pb, () => !!window.__prete, null, 20000);
+    const [pretA, pretB] = [await pa.evaluate(() => window.__prete), await pb.evaluate(() => window.__prete)];
+    const om = [...reg2.tous('SELECT cmd FROM journal')].map((e) => JSON.parse(e.cmd)).find((c) => c.type === 'cuisine.lancer');
+    const attendu = om ? om.pas + Math.ceil((DATA.RECETTES.omelette.temps * 1000) / DATA.VILLAGE.EN_LIGNE.PAS_MS) : null;
+    verifie(lance.ok && prA !== null && prB !== null && pretA.pas === attendu && pretB.pas === attendu && pretA.h === pretB.h,
+      `9b. B a lancé une omelette à ${lance.h.toFixed(2)} h (le monde l'a jouée au pas ${om && om.pas}) : prête chez A et chez B au pas ${attendu}, à ${pretA && pretA.h.toFixed(2)} h (${JSON.stringify({ lance, pretA, pretB })})`);
+    if (process.env.CAPTURES) {
+      // (le mot « prêt ! » de chacun : les messages, cette fois, montrés)
+      for (const p of [pa, pb]) await p.evaluate(() => { const st = document.getElementById('capture-style'); if (st) st.remove(); const t = document.getElementById('tuto-root'); if (t) t.style.display = 'none'; });
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9a2-hote-plat.png' });
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9a2-invite-plat.png' });
+    }
+    // 9c. la nuit tombe seule à 22 h, chez les deux
+    const nuitA = await attendre(pa, async () => { const E = await import('/js/engine/index.js'); return E.nightActive(FF.state); }, null, 45000);
+    const nuitB = await attendre(pb, async () => { const E = await import('/js/engine/index.js'); return E.nightActive(FF.state); }, null, 10000);
+    verifie(nuitA !== null && nuitB !== null, '9c. la nuit tombe seule à 22 h, chez les deux');
+    // 9d. A se couche, B non : la nuit garde son pas
+    const jour2 = (await heure(pa)).jour;
+    await action(pa, 'monde-coucher');
+    await attendre(pb, () => /1\/2/.test(document.getElementById('en-ligne-bandeau').innerText), null, 5000);
+    const n0 = await heure(pa);
+    await pa.waitForTimeout(5200);
+    const n1 = await heure(pa);
+    const unSeul = !reg2.charger().horloge.sommeil && n1.pas - n0.pas <= 2 && n1.jour === n0.jour;
+    verifie(unSeul && /1\/2/.test(await pb.evaluate(() => document.getElementById('en-ligne-bandeau').innerText)), `9d. A couché, B debout (1/2) : la nuit garde son pas (${n1.pas - n0.pas} pas en 5 s)`);
+    // 9e. B se couche : la nuit file, le matin vient chez les deux
+    const t0 = Date.now();
+    await action(pb, 'monde-coucher');
+    await attendre(pa, () => /Couché 2\/2/.test(document.getElementById('en-ligne-bandeau').innerText), null, 5000);
+    if (process.env.CAPTURES) {
+      await pa.waitForTimeout(2500);
+      for (const p of [pa, pb]) await pourCapture(p);
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9a2-hote-nuit.png' });
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9a2-invite-nuit.png' });
+    }
+    const matinA = await attendre(pa, (j) => FF.state.day === j + 1 && !FF.state.nuitEnCours, jour2, 70000);
+    const matinB = await attendre(pb, (j) => FF.state.day === j + 1 && !FF.state.nuitEnCours, jour2, 10000);
+    const duree = (Date.now() - t0) / 1000;
+    await pa.waitForTimeout(1500);
+    reg2.avancer();
+    const leve = !/Couché/.test(await pa.evaluate(() => document.getElementById('en-ligne-bandeau').innerText)) && !reg2.charger().horloge.sommeil;
+    const memes = (await memePas(pa, reg2)) && (await memePas(pb, reg2));
+    verifie(matinA !== null && matinB !== null && duree < 60 && leve && memes, `9e. B couché aussi : la nuit file, le jour ${jour2 + 1} se lève chez les deux en ${duree.toFixed(0)} s (8 h de nuit) ; chacun est levé ; les parties confirmées sont celle du monde, au même pas`);
+    if (process.env.CAPTURES) {
+      for (const p of [pa, pb]) { await pourCapture(p); await p.waitForTimeout(500); }
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9a2-hote-matin.png' });
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9a2-invite-matin.png' });
     }
   }
 } finally {

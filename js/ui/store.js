@@ -58,6 +58,12 @@ export let enLigne = null;
 export function setEnLigne(value) {
   enLigne = value;
 }
+// I9a2 : l'horloge d'une île en ligne, à chaque image (js/ui/en-ligne.js horlogeEnLigne ; posée par elle, sans
+// que la boucle n'ait à l'importer) : { pas, evts } ou null.
+export let pasEnLigne = () => null;
+export function setPasEnLigne(f) {
+  pasEnLigne = f;
+}
 
 export let state = null;
 export function setState(value) {
