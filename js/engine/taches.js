@@ -472,9 +472,11 @@ export function attribuer(state, id, tache) {
   const sien = commerceDuVillageois(state, v.id);
   if (sien && tache !== sien.sorte) return fail(`${v.prenom} tient son commerce : c'est sa tâche.`);
   if (!sien && estTacheCommerce(tache)) return fail('On ne la confie pas : elle vient avec l\'ouverture du commerce, sur sa fiche.');
+  const avant = v.tache || null;
   v.tache = tache || null;
   if (!Array.isArray(v.vendre)) v.vendre = [];
-  return { ok: true, tache: v.tache, manque: v.tache ? tacheManque(state, v, v.tache) : null };
+  // (I9e : la tâche d'avant et le prénom, pour le journal du monde : qui a changé quoi)
+  return { ok: true, tache: v.tache, avant, prenom: v.prenom, manque: v.tache ? tacheManque(state, v, v.tache) : null };
 }
 
 // La navette : ce que le joueur marque « à vendre » (des objets de l'inventaire qui se vendent). → { ok, vendre }.

@@ -32,9 +32,15 @@
 // - I9c, le port et la caisse : au port, chacun vend ce qu'il a porté (sa charge, la sienne : synchro.js), la caisse
 //   est commune ; ce qu'un autre vend, achète, livre ou bâtit au port se dit (le bilan de l'événement : commerceEnMots),
 //   et le journal du monde le garde, avec son auteur.
+// - I9e, les rôles en ligne : le monde est l'île d'un propriétaire, ses amis viennent l'aider à faire progresser son
+//   village (js/engine/roles.js, la grille d'une île). Les gestes de gestion du village sont des commandes du monde,
+//   refusées ici (gestePermis, jouerEnLigne) comme le monde les refuserait ; le propriétaire délègue l'attribution des
+//   tâches aux bâtisseurs par un réglage du monde (👥 ; lien.reglages). Ce qu'un autre fait au village se dit (l'ordre
+//   d'une tâche, un commerce ouvert ou suggéré, un nom : gesteEnMots avec le bilan de l'événement). Chacun s'appelle du
+//   prénom de son personnage (hello : prenom).
 
-import { clockHours, DATA, empreintePartie, executerCommande, GAME_VERSION, ICONES_ROLES, ilePartagee, memberPerso, NOMS_ROLES, pasDe, refusDuRole, refusFrontiere, unirVu, validApparence } from '../engine/index.js';
-import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, quandConnecte } from './compte.js';
+import { clockHours, DATA, empreintePartie, executerCommande, GAME_VERSION, ICONES_ROLES, ilePartagee, memberPerso, NOMS_ROLES, pasDe, refusDuRole, refusFrontiere, reglagesMonde, unirVu, validApparence } from '../engine/index.js';
+import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, prenomPersonnage, quandConnecte } from './compte.js';
 import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';
 import { setEnLigne, setPasEnLigne, setState } from './store.js';
@@ -88,7 +94,8 @@ function connecter() {
   ws.addEventListener('open', () => {
     lien.helloT = Date.now();
     // (I9a2 : le pas de sa partie confirmée : trop en retard, le monde envoie la partie entière)
-    ws.send(JSON.stringify({ t: 'hello', version: GAME_VERSION, ...(lien.synchro ? { depuis: lien.synchro.rev, pas: pasDe(lien.synchro.confirmee) } : {}) }));
+    // (I9e : le prénom de son personnage, le nom que les autres voient)
+    ws.send(JSON.stringify({ t: 'hello', version: GAME_VERSION, prenom: prenomPersonnage(), ...(lien.synchro ? { depuis: lien.synchro.rev, pas: pasDe(lien.synchro.confirmee) } : {}) }));
   });
   ws.addEventListener('message', (e) => recevoir(ws, e.data));
   ws.addEventListener('close', (e) => {
@@ -150,6 +157,8 @@ function recevoir(ws, data) {
     lien.membres = m.membres || [];
     lien.role = m.role;
     lien.moi = m.moi;
+    lien.proprietaire = m.proprietaire || null;
+    lien.reglages = reglagesMonde(m.reglages);
     lien.essais = 0;
     lien.couche = false;   // (une nouvelle connexion : levé)
     lien.couches = [];
@@ -207,6 +216,15 @@ function recevoir(ws, data) {
     if (document.getElementById('membres-titre')) ouvrirMembres();
     return;
   }
+  // I9e : les réglages du monde (la délégation des tâches) ont changé
+  if (m.t === 'reglages') {
+    const avant = lien.reglages || reglagesMonde(null);
+    lien.reglages = reglagesMonde(m.reglages);
+    if (avant.taches !== lien.reglages.taches && lien.role === 'batisseur') notify(lien.reglages.taches ? '🌐 Le propriétaire te confie l\'attribution des tâches des villageois.' : '🌐 Le propriétaire reprend l\'attribution des tâches des villageois.', { duree: 6000 });
+    if (document.getElementById('membres-titre')) ouvrirMembres();
+    refresh();
+    return;
+  }
   // E-12 : le propriétaire a restauré une sauvegarde (la partie est arrivée juste avant : instantane)
   if (m.t === 'restaure') {
     notify(`🌐 Le propriétaire a restauré une sauvegarde du monde : jour ${m.jour}.`, { duree: 7000 });
@@ -246,8 +264,10 @@ function recevoir(ws, data) {
     if (!lien.synchro.evenement(m)) toutRedemander();
     // (I9c : ce qu'un autre a fait au port, dit à chacun ; la caisse est commune)
     if (m.bilan && m.acteur !== lien.moi && m.cmd) {
-      const qui = (lien.membres.find((x) => x.compte === m.acteur) || {}).nom || 'Un joueur';
-      notify(`${qui} ${commerceEnMots(m.cmd.type, m.bilan, true)}`, { kind: 'info', duree: 6000 });
+      const qui = nomDuMembre(m.acteur) || 'Un joueur';
+      // (I9e : un invité suggère un commerce : au propriétaire, de décider)
+      const decide = m.cmd.type === 'commerce.suggerer' && lien.role === 'proprietaire' ? ' À toi de décider (sa fiche).' : '';
+      notify(`${echapper(qui)} ${gesteEnMots(m.cmd.type, m.bilan, true)}${decide ? `.${decide}` : ''}`, { kind: 'info', duree: decide ? 10000 : 6000 });
     }
     if (m.cmd && m.cmd.type === 'nuit.partagee') matin();
     bandeau();
@@ -361,8 +381,9 @@ function partieRefaite(locale) {
 // executer (commandes.js), en ligne : la commande jouée sur la partie locale, puis envoyée (si la
 // connexion est coupée, elle attend : renvoyée à la reconnexion).
 export function jouerEnLigne(cmd) {
-  // (E-11 : son rôle dans le monde ne le permet pas : refusé ici, sans attendre le monde, qui le vérifie aussi)
-  const refus = lien.role ? refusDuRole(lien.role, lien.synchro.locale, cmd) : null;
+  // (E-11 : son rôle dans le monde ne le permet pas : refusé ici, sans attendre le monde, qui le vérifie aussi ; I9e : avec
+  // les réglages du monde)
+  const refus = lien.role ? refusDuRole(lien.role, lien.synchro.locale, cmd, lien.reglages) : null;
   if (refus) return { ok: false, error: `🌐 ${refus}` };
   // (I9a, I9b : l'île partagée ; hors de la ferme, seuls les gestes du dehors passent : un autre est refusé ici,
   // comme le monde le refuserait. Le chantier éteint, le monde seul le refuse, comme avant.)
@@ -375,6 +396,18 @@ export function jouerEnLigne(cmd) {
 }
 
 brancherEnLigne(jouerEnLigne);
+
+// I9e : le joueur peut-il faire le geste `type` (ses arguments `args`) dans ce monde ? Son rôle et les réglages du monde
+// (la page n'en montre le bouton qu'à qui le peut) ; en solo, toujours.
+export function gestePermis(type, args = {}) {
+  if (!lien || !lien.role || !lien.synchro) return true;
+  return !refusDuRole(lien.role, lien.synchro.locale, { type, args }, lien.reglages);
+}
+// I9e : le prénom d'un membre du monde (son compte), ou '' (en solo, inconnu).
+export function nomDuMembre(compte) {
+  const m = lien && Array.isArray(lien.membres) ? lien.membres.find((x) => x.compte === compte) : null;
+  return m ? String(m.nom || '') : '';
+}
 
 /* ---------- I9a : l'île partagée ---------- */
 
@@ -472,11 +505,18 @@ const CONSTRUIRE = new Set(['bloc', 'bloc-many', 'build-toggle', 'build-pick', '
 // (E-5 : le potager ; E-6 : les bêtes ; E-7 : la cuisine, le Moulin, le frigo, la boîte, manger ; E-9 : les outils, le verger ; E-10 : la progression, l'Atelier, les appareils, planter un arbre)
 const FERME = new Set(['sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre', 'buy-tech', 'atelier-fabriquer', 'bloc-fabriquer', 'build-station', 'toggle', 'upgrade', 'upgrade-tank', 'robot-autonomie', 'maintain', 'repair', 'arbre-planter', 'arbre-case', 'arbre-oui', 'semis-set', 'silo-agrandir', 'tool-use', 'axe-toggle', 'pick-toggle', 'scythe-toggle', 'rod-toggle', 'harvest-tree', 'start-recipe', 'cancel-queued', 'stop-recipe', 'mill-start', 'mill-cancel', 'eat', 'sac-manger', 'fridge-in', 'fridge-out', 'fridge-in-all', 'fridge-in-urgent', 'frigo-ranger', 'build-fridge', 'upgrade-fridge', 'boite-deposer', 'boite-reprendre', 'feed-hen', 'feed-all', 'shear', 'cow-herbs', 'buy-pasture', 'upgrade-poulailler', 'plant', 'plant-many', 'plant-all', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'hoe', 'hoe-many', 'hoe-toggle', 'hoe-take', 'cruche-remplir', 'tonnelet-remplir', 'compost-jeter', 'engrais-many', 'engrais-toggle']);
 const JAMAIS = /^(test-|do-import|do-new-game|ask-new-game|demarrer|accueil-)/;
+// (I9e : les commerces et l'étal d'une île en ligne : des commandes du monde, js/ui/commerce.js, js/ui/etal.js)
+const PAS_ENCORE_ILE = new Set(['vocation-projet-envoyer', 'vocation-projet-abandonner']);
+const ILE_EN_LIGNE = new Set(['commerce-ouvrir', 'commerce-acheter', 'commerce-commander', 'commerce-lettres', 'commerce-rejoindre', 'etal-mettre', 'etal-reprendre']);
 export function actionPermise(action, bloquees) {
   if (JAMAIS.test(action)) return 'Pas dans un monde en ligne : reviens à ta ferme solo (🌐 › Ma ferme solo).';
   if (action === 'sleep') return 'En ligne, on se couche par le bandeau (🛏 Se coucher) : la nuit passe quand tout le monde dort.';
   // (I9d : sur une île, offrir un cadeau à un villageois : villageois.offrir, avec son amitié à soi)
   if (action === 'ami-offrir' && ileEnLigne()) return null;
+  // (I9e : sur une île, les commerces et l'étal passent par le monde : leurs commandes, avec les rôles ; le chantier d'un
+  // projet du village n'a pas encore de commande : refusé plutôt que joué sur la seule page)
+  if (ILE_EN_LIGNE.has(action) && ileEnLigne()) return null;
+  if (PAS_ENCORE_ILE.has(action) && ileEnLigne()) return 'En ligne, ce geste ne se fait pas encore : il viendra bientôt.';
   if (bloquees.has(action) && !CONSTRUIRE.has(action) && !FERME.has(action)) return 'En ligne, ce geste ne se fait pas encore : il viendra bientôt.';
   return null;
 }
@@ -517,6 +557,13 @@ const ROLES_TEXTE = {
   jardinier: 'cultive, s\'occupe des bêtes, cuisine, se sert des outils ; ne construit pas',
   visiteur: 'regarde, se promène, dort avec vous ; ne change rien',
 };
+// (I9e : sur une île, ce que chacun fait pour aider ton village ; le reste est à toi)
+const ROLES_TEXTE_ILE = {
+  batisseur: 'en plus : construit (sur l\'île aussi), achète au port et aux commerces ; attribue les tâches si tu le lui confies',
+  jardinier: 'récolte, cultive, cuisine, vend au port, se lie aux villageois, leur confie un outil, fabrique, annote la chronique ; ne construit pas',
+  visiteur: 'regarde, se promène, parle aux villageois, dort avec vous ; ne change rien',
+};
+const texteRole = (r) => (ileEnLigne() ? ROLES_TEXTE_ILE : ROLES_TEXTE)[r];
 const roleTexte = (r) => `${ICONES_ROLES[r] || ''} ${NOMS_ROLES[r] || r}`;
 function ouvrirMembres() {
   if (!lien) return;
@@ -524,7 +571,7 @@ function ouvrirMembres() {
   const lignes = lien.membres.map((m) => {
     const nom = `${echapper(m.nom)}${m.compte === lien.moi ? ' (toi)' : ''}`;
     if (!proprio || m.role === 'proprietaire') return `<div class="row"><span>${roleTexte(m.role)} · ${nom}</span></div>`;
-    const choix = ROLES_CHOIX.map((r) => `<button class="btn${m.role === r ? ' primary' : ''}" type="button" data-action="monde-role" data-compte="${echapper(m.compte)}" data-role="${r}" aria-pressed="${m.role === r}" title="${NOMS_ROLES[r]} : ${ROLES_TEXTE[r]}">${ICONES_ROLES[r]}</button>`).join('');
+    const choix = ROLES_CHOIX.map((r) => `<button class="btn${m.role === r ? ' primary' : ''}" type="button" data-action="monde-role" data-compte="${echapper(m.compte)}" data-role="${r}" aria-pressed="${m.role === r}" title="${NOMS_ROLES[r]} : ${texteRole(r)}">${ICONES_ROLES[r]}</button>`).join('');
     const retrait = aRetirer === m.compte ? `<button class="btn danger" type="button" data-action="monde-retirer-oui" data-compte="${echapper(m.compte)}">Oui, le retirer</button><button class="btn" type="button" data-action="monde-retirer-non">Non</button>` : `<button class="btn" type="button" data-action="monde-retirer" data-compte="${echapper(m.compte)}">Retirer</button>`;
     return `<div class="row"><span>${roleTexte(m.role)} · ${nom}</span>${choix}${retrait}</div>`;
   }).join('');
@@ -533,14 +580,23 @@ function ouvrirMembres() {
       <textarea id="invitation-lien" rows="3" readonly>${echapper(invitation.lien)}</textarea>
       <div class="row"><button class="btn" type="button" data-action="monde-copier">Copier</button>${typeof navigator !== 'undefined' && navigator.share ? '<button class="btn" type="button" data-action="monde-partager">Partager</button>' : ''}</div>`
       : `<p class="muted">Inviter un ami : un lien à lui envoyer. Choisis son rôle (tu pourras le changer ensuite).</p>
-      <div class="stack">${ROLES_CHOIX.map((r) => `<button class="btn${r === 'batisseur' ? ' primary' : ''}" type="button" data-action="monde-inviter" data-role="${r}">${roleTexte(r)} <span class="muted">· ${ROLES_TEXTE[r]}</span></button>`).join('')}</div>`;
+      <div class="stack">${ROLES_CHOIX.map((r) => `<button class="btn${r === 'batisseur' ? ' primary' : ''}" type="button" data-action="monde-inviter" data-role="${r}">${roleTexte(r)} <span class="muted">· ${texteRole(r)}</span></button>`).join('')}</div>`;
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="membres-titre">👥 Les membres</h2>
     <div class="stack">${lignes}</div>
     <div class="stack">${inv}</div>
     ${ileEnLigne() ? `<p class="muted">${TEMPS_DU_MONDE}</p>` : ''}
+    ${ileEnLigne() ? reglagesHtml(proprio) : ''}
     ${proprio ? '<div class="row"><button class="btn" type="button" data-action="monde-journal">📜 Le journal du monde</button><button class="btn" type="button" data-action="monde-sauvegardes">💾 Les sauvegardes</button></div>' : ''}`, { labelledBy: 'membres-titre' });
+}
+
+// I9e : sur une île, ce qui reste au propriétaire, et la délégation des tâches aux bâtisseurs (un réglage du monde).
+function reglagesHtml(proprio) {
+  const oui = !!(lien.reglages && lien.reglages.taches);
+  const garde = '<p class="muted">🏡 Ton île, ton village : tes amis t\'aident à le faire grandir. Toi seul attribues les tâches, décides qu\'un villageois ouvre un commerce, formes un foyer, nommes, agrandis le port et retires la maison d\'un villageois.</p>';
+  if (!proprio) return `<p class="muted">🏡 Tu aides le propriétaire à faire grandir son village. Les tâches des villageois : ${oui ? 'il les confie aussi aux bâtisseurs' : 'c\'est lui qui les attribue'}.</p>`;
+  return `${garde}<div class="row"><button class="btn${oui ? ' primary' : ''}" type="button" data-action="monde-deleguer" aria-pressed="${oui}" id="monde-deleguer">🧺 ${oui ? 'Les bâtisseurs attribuent aussi les tâches' : 'Confier l\'attribution des tâches aux bâtisseurs'}</button></div>`;
 }
 
 // E-11 : ce qu'un geste du journal a fait, en mots.
@@ -566,10 +622,19 @@ const GESTES = {
   'nuit.partagee': 'tout le monde a dormi : la nuit est passée',
   'temps.sommeil': 'tous couchés (la nuit file), ou l\'un s\'est levé',
   'monde.restaurer': 'a restauré une sauvegarde',
+  // (I9e : les gestes du village)
+  'villageois.attribuer': 'a confié une tâche', 'villageois.outil': 'a confié un outil', 'villageois.vendre': 'a choisi ce qu\'un villageois porte au port',
+  'villageois.foyer': 'a proposé un foyer', 'villageois.enfant': 'a proposé un enfant', 'villageois.parler': 'a parlé à un villageois',
+  'villageois.offrir': 'a offert un cadeau', 'villageois.accueillir': 'a accueilli un nouveau venu',
+  'commerce.ouvrir': 'a ouvert un commerce', 'commerce.rejoindre': 'a fait rejoindre un commerce', 'commerce.suggerer': 'a suggéré un commerce',
+  'commerce.acheter': 'a acheté à un commerce', 'commerce.commander': 'a commandé à un commerce', 'commerce.lettres': 'a changé une enseigne',
+  'etal.mettre': 'a mis à l\'étal', 'etal.reprendre': 'a repris de l\'étal', 'nom.donner': 'a donné un nom',
+  'chronique.epingler': 'a épinglé une ligne de la chronique', 'chronique.noter': 'a écrit dans la chronique',
+  'village.commun': 'a réglé le garde-manger du village', 'village.reserve': 'a réglé la réserve du village', 'village.cuisine': 'a réglé la cuisine du village',
 };
 const FAMILLES_GESTES = { mur: 'a bâti un mur', etage: 'a bâti à l\'étage', solEtage: 'a posé un sol à l\'étage' };
-export function gesteEnMots(type, bilan = null) {
-  if (bilan && typeof bilan === 'object') return commerceEnMots(type, bilan);
+export function gesteEnMots(type, bilan = null, caisse = false) {
+  if (bilan && typeof bilan === 'object') return villageEnMots(type, bilan) || commerceEnMots(type, bilan, caisse);
   return GESTES[type] || FAMILLES_GESTES[String(type).split('.')[0]] || 'a fait un geste';
 }
 // I9c : un geste du commerce et son bilan (worker/src/monde.mjs bilanCommerce), en mots : « a vendu 12 🥕 Carotte au
@@ -590,6 +655,25 @@ export function commerceEnMots(type, b, caisse = false) {
     case 'port.apporter': return `a apporté au chantier du port : ${liste(b.apporte)}`;
     case 'port.agrandir': return `a agrandi le port : niveau ${b.niveau}`;
     default: return GESTES[type] || 'a fait un geste';
+  }
+}
+// I9e : un geste du village et son bilan (worker/src/monde.mjs bilanGeste), en mots : « a confié à Léa : 🪓 bûcheron
+// (avant : sans tâche) » ; null pour un autre geste.
+const nomTache = (t) => { const d = t && DATA.TACHES && DATA.TACHES.LISTE && DATA.TACHES.LISTE[t]; return d ? `${d.icone || ''} ${String(d.nom || t).toLowerCase()}`.trim() : 'sans tâche'; };
+const nomSorte = (s) => { const d = DATA.ARTISANS && DATA.ARTISANS.COMMERCES && DATA.ARTISANS.COMMERCES[s]; return d ? `${d.icone || ''} ${(d.un || d.nom || s)}`.trim() : String(s || '?'); };
+const quiV = (b) => echapper(b && b.prenom ? b.prenom : 'un villageois');
+function villageEnMots(type, b) {
+  switch (type) {
+    case 'villageois.attribuer': return `a confié à ${quiV(b)} : ${nomTache(b.apres)} (avant : ${nomTache(b.avant)})`;
+    case 'villageois.outil': return b.repris ? `a repris son outil à ${quiV(b)}` : `a confié un outil à ${quiV(b)}`;
+    case 'villageois.vendre': return `a choisi ce que ${quiV(b)} porte au port (${Number(b.n) || 0})`;
+    case 'villageois.foyer': return `a proposé un foyer à ${echapper(b.a || '?')} et ${echapper(b.b || '?')}`;
+    case 'villageois.enfant': return 'a proposé à un foyer d\'accueillir un enfant';
+    case 'commerce.ouvrir': return `a décidé : ${quiV(b)} ouvre ${echapper(b.nom || nomSorte(b.sorte))}`;
+    case 'commerce.rejoindre': return `a décidé : ${quiV(b)} rejoint un commerce`;
+    case 'commerce.suggerer': return `suggère que ${quiV(b)} ouvre ${echapper(nomSorte(b.sorte))}`;
+    case 'nom.donner': return `a nommé ${{ ile: 'l\'île', village: 'le village', maison: 'une maison', commerce: 'un commerce' }[b.quoi] || 'quelque chose'} : ${echapper(b.nom || '—')}`;
+    default: return null;
   }
 }
 function ilYa(ts) {
@@ -712,6 +796,8 @@ registerActions({
   'monde-restaurer-non': () => { aRestaurer = null; ouvrirSauvegardes(false); },
   'monde-restaurer-oui': (target) => { restaurer(target.dataset.cle); },
   'monde-journal-suite': () => { ouvrirJournal(true); },
+  // (I9e : le propriétaire délègue — ou reprend — l'attribution des tâches aux bâtisseurs)
+  'monde-deleguer': () => { if (lien && lien.role === 'proprietaire') envoyer({ t: 'reglages', taches: !(lien.reglages && lien.reglages.taches) }); },
   'monde-copier': () => {
     const z = document.getElementById('invitation-lien');
     if (!z) return;

@@ -207,6 +207,25 @@ Les rôles de la stratégie (§ 4.4), dans `js/engine/roles.js`. Le monde les v�
 - **Routes** : `POST /mondes/<id>/invitations { role }`, `POST /mondes/<id>/role { compte, role }` et `GET /mondes/<id>/journal?avant=`.
 - **Une base d'avant** prend la colonne `role` des invitations à son réveil.
 
+**I9e, la grille d'une île** (`GRILLE_ILE`, `js/engine/roles.js` ; le détail : `docs/ile.md`, « Les rôles en ligne »).
+Le monde en ligne d'une île est **l'île d'un propriétaire, que ses amis viennent aider** à faire progresser son village.
+L'ami aidant doit être vraiment utile, le propriétaire garde ce qui est structurant. Une ferme d'avant garde la grille
+ci-dessus.
+
+| Rôle | Sur une île, en plus |
+|---|---|
+| 👀 Visiteur | Il parle aux villageois (sa page seule, rien n'est envoyé). Il ne change toujours rien. |
+| 🌱 Ami jardinier | Récolter sur l'île, vendre au port et à l'étal, porter ; parler, offrir, accueillir ; fabriquer à l'Atelier ; confier ou reprendre un outil à un villageois, la navette ; suggérer un commerce au propriétaire ; épingler et annoter la chronique (signé). |
+| 🔨 Bâtisseur | Construire dehors ; acheter (le port, l'import, les contrats, les commerces), apporter au chantier du port ; régler la cuisine et le garde-manger du village ; attribuer les tâches **si le propriétaire le lui délègue**. |
+| 🏡 Propriétaire | Attribuer les tâches ; décider qu'un villageois ouvre ou rejoint un commerce, son enseigne ; former un foyer, accueillir un enfant ; nommer l'île, le village, une maison, un commerce ; agrandir le port ; retirer la maison d'un villageois ; les réglages du monde. |
+
+- **La délégation des tâches** est un réglage du monde (`meta.reglages`, éteint par défaut) : 👥 › « 🧺 Confier
+  l'attribution des tâches aux bâtisseurs » ; le propriétaire seul le change, chacun en est prévenu.
+- **Le monde vérifie la grille à chaque commande**, avec ses réglages ; la page aussi, et n'en montre les boutons qu'à
+  qui a le droit (`gestePermis`). Un jeu modifié qui enverrait un ordre est refusé par le monde.
+- **Le journal** porte le bilan des gestes du village (un ordre de tâche : le villageois, la tâche d'avant et d'après ;
+  un outil, un foyer, un commerce ouvert ou suggéré, un nom), et le prénom de chacun (envoyé par sa page avec `hello`).
+
 ## 11. E-12 : les sauvegardes du monde
 
 - **Où.** Dans le bucket R2 que le Worker a déjà (`SESSIONS`), sous `mondes/<id du Durable Object>/`. Rien de plus à configurer. Le rapport quotidien ne lit que `sessions/` et `players/`.
@@ -412,6 +431,23 @@ heure.
   envoyer ; il ne change rien.
 - **La sauvegarde** passe au format 107, après les charges d'I9c (`amities` dans la partie d'un monde ; une partie
   solo n'y gagne rien).
+
+### Ce que fait I9e (les tâches, les commerces et les rôles)
+
+Le détail : `docs/ile.md`, « Les rôles en ligne » ; la grille : § 10.
+
+- **Les gestes de gestion du village sont des commandes du monde** : la fiche d'un villageois (`villageois.attribuer`,
+  `villageois.outil`, `villageois.vendre`), ses liens (`villageois.foyer`, `villageois.enfant`), les noms (`nom.donner`),
+  la chronique (`chronique.epingler`, `chronique.noter`, signées : `par`) ; les commerces et l'étal passent sur une île.
+  En solo, rien ne change.
+- **Le propriétaire décide, les amis aident** : il attribue les tâches (ou le délègue aux bâtisseurs), ouvre les
+  commerces, forme les foyers, nomme, agrandit le port, retire une maison habitée. Un invité très ami d'un villageois qui a
+  l'envie d'un commerce peut la **suggérer** au propriétaire (`commerce.suggerer` : rien ne change, l'avis et le journal).
+- **Les noms** : chaque page envoie le prénom de son personnage avec `hello` ; le journal et les avis le disent.
+- **Les traits connus d'un villageois sont communs au monde** (à confirmer) ; **les chemins posés dehors ne sont pas
+  protégés** (un bâtisseur est un ami de confiance, le journal et les sauvegardes suffisent) ; **un visiteur compte**
+  pour l'horloge et pour les lits.
+- **La sauvegarde** passe au format 108 (`par` sur une ligne de la chronique d'un monde ; une partie solo n'y gagne rien).
 
 ### Le poids, et le plafond
 

@@ -11,7 +11,7 @@ import {
 import { nomRefus, proposerNom, renommer } from '../engine/noms.js';
 import { commerceEnPhrase } from '../engine/noms.js';
 import { couleursEnseigne } from '../engine/vocation-village.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -21,6 +21,7 @@ import { registerActions } from './actions.js';
 import { openStageWindow } from './stage-windows.js';
 import { closeModal } from './modal.js';
 import { avisNeufs } from './avis-en-ligne.js';
+import { gestePermis } from './en-ligne.js';
 
 /* ---------- les commerces d'artisans, côté page (le chantier « l'île à bâtir », fiche I5a) ----------
    Le moteur : js/engine/artisans.js. Ici :
@@ -115,11 +116,11 @@ export function renderCommerce() {
         <span class="card-title"><span>${E.def.icone} ${escapeHtml(nom)}</span></span>
         <span class="muted">${v ? `${escapeHtml(v.prenom)} y est ${v.genre === 'm' ? 'artisan' : 'artisane'} depuis ${formatDay(c.depuis)} (${jours} jour${jours > 1 ? 's' : ''} de travail${prochain}).${s2 ? ` ${escapeHtml(s2.prenom)} y travaille aussi : ${escapeHtml(roles(E))}.` : ''} Un commerce reste artisanal : quelques lots par jour, ${escapeHtml(E.def.ou || 'à l\'établi')}, sans machine.` : ''}</span>
         ${local}
-        <div class="row commerce-nom"><label for="commerce-nom-champ" class="sr-only">Le nom du commerce</label>
+        ${gestePermis('nom.donner', { quoi: 'commerce', texte: nom, id: c.id }) ? `<div class="row commerce-nom"><label for="commerce-nom-champ" class="sr-only">Le nom du commerce</label>
           <input type="text" id="commerce-nom-champ" class="member-input" maxlength="${DATA.DEPART.NOM_MAX}" autocomplete="off" spellcheck="false" value="${escapeHtml(nom)}">
           <button type="button" class="btn small" data-action="commerce-nom-autre" data-commerce="${e}">🎲</button>
-          <button type="button" class="btn small" data-action="commerce-nommer" data-commerce="${e}">✏️ Nommer</button></div>
-        ${lettresHtml(c)}
+          <button type="button" class="btn small" data-action="commerce-nommer" data-commerce="${e}">✏️ Nommer</button></div>` : ''}
+        ${gestePermis('commerce.lettres', { commerce: c.id }) ? lettresHtml(c) : ''}
         <h3>Aujourd'hui</h3>${aujourdhui}
         ${v ? `<span class="muted">👛 Sa bourse : <span class="num">${formatCoins(Math.max(0, Math.round(v.bourse || 0)))}</span> 💰 : ${il} y prend de quoi acheter ses matières${(v.bourse || 0) <= 0 ? ' ; vide, il ne travaille plus qu\'à façon' : ''}.</span>` : ''}
         ${semaine}
@@ -173,15 +174,24 @@ export function commerceFicheHtml(id) {
       const ou = commerceEnPhrase(nomCommerce(state, x.rejoindre.commerce), x.sorte);
       return `<dt>💭 Envie</dt><dd class="commerce-envie"><strong>${il === 'il' ? 'Il' : 'Elle'} aimerait travailler à ${escapeHtml(ou)}.</strong>
         <ul class="commerce-conditions">${['village', 'envie', 'amitie', 'poste'].map(p).join('')}</ul>
-        <button type="button" class="btn small primary" data-action="commerce-rejoindre" data-id="${e}" data-commerce="${cid}"${R.ok ? '' : ' disabled'} id="commerce-rejoindre">${x.icone} Rejoindre ${escapeHtml(ou)}</button>
+        ${gestePermis('commerce.rejoindre', { id, commerce: x.rejoindre.commerce.id }) ? `<button type="button" class="btn small primary" data-action="commerce-rejoindre" data-id="${e}" data-commerce="${cid}"${R.ok ? '' : ' disabled'} id="commerce-rejoindre">${x.icone} Rejoindre ${escapeHtml(ou)}</button>` : '<span class="muted">🔒 Le propriétaire de l\'île en décide.</span>'}
         <span class="muted">À deux, ils font deux fois plus de lots, sans machine : l'un file et tisse, l'autre coud.</span></dd>`;
     }
     const C = x.conditions, puce = (k) => `<li>${C[k].ok ? '✅' : '⏳'} ${escapeHtml(C[k].texte)}</li>`;
     return `<dt>💭 Envie</dt><dd class="commerce-envie"><strong>${il === 'il' ? 'Il' : 'Elle'} aimerait ouvrir ${escapeHtml((defCommerce(x.sorte) || {}).un || x.nom.toLowerCase())}.</strong>
         <ul class="commerce-conditions">${['envie', 'amitie', 'local', 'plafond'].filter((k) => C[k]).map(puce).join('')}</ul>
-        <button type="button" class="btn small primary" data-action="commerce-ouvrir" data-id="${e}" data-sorte="${escapeHtml(x.sorte)}"${C.ok ? '' : ' disabled'} id="commerce-ouvrir">${x.icone} Ouvrir ${escapeHtml(x.nom.toLowerCase())}</button>
+        ${gestePermis('commerce.ouvrir', { id, sorte: x.sorte }) ? `<button type="button" class="btn small primary" data-action="commerce-ouvrir" data-id="${e}" data-sorte="${escapeHtml(x.sorte)}"${C.ok ? '' : ' disabled'} id="commerce-ouvrir">${x.icone} Ouvrir ${escapeHtml(x.nom.toLowerCase())}</button>`
+    : suggestionHtml(e, x, C)}
         <span class="muted">Rien ne presse : son envie ne s'éteint pas. Ouverte, ${il} y deviendra ${il === 'il' ? 'artisan' : 'artisane'}, à la place de sa tâche.</span></dd>`;
   }).join('');
+}
+
+// I9e, en ligne : seul le propriétaire de l'île décide ; un invité très ami du villageois peut le lui suggérer (la commande
+// commerce.suggerer : rien ne change, le propriétaire est prévenu et le journal du monde le garde).
+function suggestionHtml(e, x, C) {
+  const peut = gestePermis('commerce.suggerer', { id: e, sorte: x.sorte });
+  const ami = C.envie.ok && C.amitie.ok;
+  return `<span class="muted">🔒 Le propriétaire de l'île décide.</span>${peut ? ` <button type="button" class="btn small" data-action="commerce-suggerer" data-id="${e}" data-sorte="${escapeHtml(x.sorte)}"${ami ? '' : ' disabled'} id="commerce-suggerer">💡 Le lui suggérer</button>` : ''}`;
 }
 
 /* -- au fil du jeu -- */
@@ -223,6 +233,12 @@ export function watchCommerces() {
 
 registerActions({
   'commerce-onglet': (target) => { ongletCommerce = target.dataset.commerce; rangNom = 0; refresh(); },
+  // (I9e : un invité suggère au propriétaire de l'île que ce villageois ouvre ce commerce)
+  'commerce-suggerer': (target) => {
+    const id = target.dataset.id, sorte = target.dataset.sorte;
+    const r = applyResult(executer('commerce.suggerer', { id, sorte }));
+    if (r.ok) notify(`💡 C'est dit au propriétaire de l'île : ${r.prenom} aimerait ouvrir ${(defCommerce(sorte) || {}).un || r.nom}. Il décidera.`, { kind: 'info' });
+  },
   'commerce-ouvrir': (target) => {
     const id = target.dataset.id, sorte = target.dataset.sorte, v = trouverVillageois(state, id);
     const r = applyResult(executer('commerce.ouvrir', { id, sorte }));
@@ -268,7 +284,8 @@ registerActions({
     if (!c || !champ) return;
     const refus = nomRefus(champ.value);
     if (refus) { notify(refus, { kind: 'alerte' }); return; }
-    const r = renommer(state, 'commerce', champ.value, c.id);
+    // (I9e : en ligne, une commande du monde : nom.donner, au propriétaire)
+    const r = enLigne ? executer('nom.donner', { quoi: 'commerce', texte: champ.value, id: c.id }) : renommer(state, 'commerce', champ.value, c.id);
     if (!r.ok) { notify(r.error, { kind: 'alerte' }); return; }
     persistState();
     notify(`✏️ Le commerce s'appelle ${r.nom} : son enseigne le dit.`, { kind: 'info' });

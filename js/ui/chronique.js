@@ -12,6 +12,8 @@ import { modalOpen } from './calme.js';
 import { registerActions } from './actions.js';
 import { escapeHtml } from '../engine/format.js';
 import { ouvrirFicheVillageois } from './villageois.js';
+import { executer } from './commandes.js';
+import { gestePermis, nomDuMembre } from './en-ligne.js';
 
 /* ---------- la chronique et les noms, côté page (le chantier « l'île à bâtir », fiche I7g) ----------
 
@@ -23,13 +25,20 @@ import { ouvrirFicheVillageois } from './villageois.js';
      - la veille (watchChronique, à chaque tour de la boucle, au plus une fois par seconde) : la ligne de l'arrivée une
        fois la famille configurée ; le baptême du village (le troisième villageois : le nom proposé, à garder ou à
        changer), dès qu'aucune fenêtre n'est ouverte.
-   Le chantier éteint, rien ne se montre. Tant que le récit est là (fiche I7c), le carnet reste à côté. */
+   Le chantier éteint, rien ne se montre. Tant que le récit est là (fiche I7c), le carnet reste à côté.
+   I9e, en ligne : la chronique est celle du monde. Nommer (nom.donner : le propriétaire de l'île), épingler et annoter
+   (chronique.epingler, chronique.noter : l'ami jardinier, signé) sont des commandes du monde ; les boutons ne paraissent
+   qu'à qui a le droit, et une ligne épinglée ou annotée dit par qui. Le baptême du village n'est proposé qu'au
+   propriétaire, une fois par page (la partie locale refaite le rendrait). */
 
 const VEILLE_MS = 1000;
 let veille = -Infinity;
+let baptemePropose = false;
 
+// (I9e : ce que le joueur peut faire, en ligne, et le prénom de qui a signé)
+export const droitsChronique = () => ({ nommer: gestePermis('nom.donner', { quoi: 'ile', texte: 'x' }), noter: gestePermis('chronique.noter', { n: 0 }), signature: nomDuMembre });
 export function ouvrirChronique() {
-  openModal(chroniqueHtml(state), { labelledBy: 'chronique-titre', id: 'chronique-modal', className: 'modal bois chronique-modal', focus: '#chronique-fermer', preventScroll: true });
+  openModal(chroniqueHtml(state, droitsChronique()), { labelledBy: 'chronique-titre', id: 'chronique-modal', className: 'modal bois chronique-modal', focus: '#chronique-fermer', preventScroll: true });
 }
 
 function ouvrirRenommer(quoi, rang = 0, o = {}) {
@@ -47,8 +56,10 @@ export function watchChronique() {
   // (I9a2 : sur une île en ligne, l'arrivée est notée dans le pas du monde)
   if (!(enLigne && enLigne.vivante) && assurerArrivee(state)) persistState();
   const n = state.noms;
-  if (n && Array.isArray(n.avis) && n.avis.includes('village') && !modalOpen()) {
-    n.avis = n.avis.filter((a) => a !== 'village');
+  if (n && Array.isArray(n.avis) && n.avis.includes('village') && !modalOpen() && !(enLigne && (baptemePropose || !gestePermis('nom.donner', { quoi: 'village', texte: 'x' })))) {
+    // (I9e : en ligne, l'avis est dans la partie du monde : il s'efface quand le propriétaire nomme le village)
+    if (enLigne) baptemePropose = true;
+    else n.avis = n.avis.filter((a) => a !== 'village');
     persistState();
     notify(`🏘️ L'île a maintenant un village : ${escapeHtml(nomDe(state, 'village') || '')}.`, { kind: 'info' });
     ouvrirRenommer('village', 0, { bapteme: true, valeur: nomDe(state, 'village') || '' });
@@ -70,7 +81,7 @@ registerActions({
   'chronique-open': () => ouvrirChronique(),
   'chronique-epingler': (target) => {
     const n = Number(target.dataset.n), l = (state.chronique && state.chronique.lignes || []).find((x) => x.n === n);
-    const r = epinglerLigne(state, n, !(l && l.epingle));
+    const r = enLigne ? executer('chronique.epingler', { n, oui: !(l && l.epingle) }) : epinglerLigne(state, n, !(l && l.epingle));
     if (!r.ok) { notify(escapeHtml(r.error), { kind: 'alerte' }); return; }
     persistState();
     ouvrirChronique();
@@ -79,13 +90,14 @@ registerActions({
     openModal(noteHtml(state, target.dataset.n), { labelledBy: 'note-titre', className: 'modal bois chronique-modal', focus: '#note-champ', preventScroll: true });
   },
   'chronique-note-ok': (target) => {
-    const r = noterLigne(state, Number(target.dataset.n), champ('note-champ'));
+    const r = enLigne ? executer('chronique.noter', { n: Number(target.dataset.n), texte: champ('note-champ').slice(0, 400) }) : noterLigne(state, Number(target.dataset.n), champ('note-champ'));
     if (!r.ok) { erreur('note-erreur', r.error); return; }
     persistState();
     ouvrirChronique();
   },
   'chronique-note-effacer': (target) => {
-    noterLigne(state, Number(target.dataset.n), '');
+    if (enLigne) executer('chronique.noter', { n: Number(target.dataset.n) });
+    else noterLigne(state, Number(target.dataset.n), '');
     persistState();
     ouvrirChronique();
   },
@@ -95,8 +107,9 @@ registerActions({
     const quoi = quoiDe(target), o = optionsDe(target), texte = champ('noms-champ');
     const refus = nomRefus(texte);
     if (refus) { erreur('noms-erreur', refus); return; }
-    nomsDe(state);
-    const r = renommerEtNoter(state, quoi, texte, quoi === 'maison' ? o.id : null);
+    // (I9e : en ligne, une commande du monde : nom.donner, au propriétaire de l'île)
+    if (!enLigne) nomsDe(state);
+    const r = enLigne ? executer('nom.donner', { quoi, texte: texte.slice(0, 400), ...(quoi === 'maison' && Number.isInteger(o.id) ? { id: String(o.id) } : {}) }) : renommerEtNoter(state, quoi, texte, quoi === 'maison' ? o.id : null);
     if (!r.ok) { erreur('noms-erreur', r.error); return; }
     persistState();
     refresh();

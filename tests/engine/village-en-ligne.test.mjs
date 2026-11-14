@@ -208,12 +208,12 @@ test('I9d : un villageois et un joueur sur le même arbre : le premier joué l\'
 });
 
 test('I9d : la sauvegarde passe au format 107, après les charges d\'I9c (l\'amitié de chacun dans la partie d\'un monde ; une partie solo n\'y gagne rien)', () => {
-  assertEqual(STATE_VERSION, 107);
+  assert(STATE_VERSION >= 107);   // (I9e : puis 108, la chronique signée)
   const s = ile(1);
   const v106 = { ...cloner(s), version: 106, amities: { [A]: { pnj: { 'vg-1': { pts: 500, gouts: { pomme: 'adore', licorne: 'aime' } }, x: 3 } }, [B]: 'abîmé' } };
   delete v106.amities[A].visites;
   const m = migrate({ v: 106, t: 0, s: v106 });
-  assertEqual([m.version, Object.keys(m.amities), m.amities[A].pnj['vg-1'].pts, m.amities[A].pnj['vg-1'].gouts, 'x' in m.amities[A].pnj], [107, [A], DATA.AMITIE.ECHELLE.MAX, { pomme: 'adore' }, false]);
+  assertEqual([m.version, Object.keys(m.amities), m.amities[A].pnj['vg-1'].pts, m.amities[A].pnj['vg-1'].gouts, 'x' in m.amities[A].pnj], [STATE_VERSION, [A], DATA.AMITIE.ECHELLE.MAX, { pomme: 'adore' }, false]);
   const ancien = { ...cloner(s), version: 106 };
   delete ancien.amities;
   assertEqual(migrate({ v: 106, t: 0, s: ancien }).amities, {}, 'un monde d\'avant : chacun commence à l\'accueil');

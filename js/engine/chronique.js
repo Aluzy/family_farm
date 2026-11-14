@@ -19,7 +19,8 @@
    state.chronique = {
      seq (le numéro de la dernière ligne),
      lignes: [{ n (son numéro), jour, type, cle (ou absente), d: { les données, les noms figés }, epingle (true, ou
-       absent), note (le texte du joueur, ou absent) }], dans l'ordre des jours,
+       absent), note (le texte du joueur, ou absent), par (I9e, dans un monde de l'île : le compte du joueur qui l'a
+       épinglée ou y a écrit sa note ; la page montre son prénom) }], dans l'ordre des jours,
      faits: [les clés des lignes qui ont été résumées : elles ne se réécrivent pas] }.
    Il ne naît qu'avec le chantier allumé (une partie neuve, une partie d'essai ou le premier moment noté) ; éteint, rien
    ne s'écrit. La page : js/ui/chronique.js ; les villageois s'en souviennent (villageois-amitie.js, souvenir_<type>). Les
@@ -29,6 +30,7 @@ import { DATA } from './catalog.js';
 import { villageActif } from './village.js';
 import { monthIndex, yearNumber } from './lune.js';
 import { commerceEnPhrase, ileEnPhrase, nettoyerNom, nomAffiche, nomDe, nommerCommerce, nommerVillageSiBesoin, renommer } from './noms.js';
+import { acteurEnCours } from './temps-monde.js';
 
 const C_ = () => (DATA.VILLAGE && DATA.VILLAGE.CHRONIQUE) || {};
 const TYPES = () => C_().TYPES || {};
@@ -292,7 +294,7 @@ export function texteLigne(l) {
   return { texte: majuscule(remplirChronique(T.texte, { ...(l.d || {}), lIle: ileEnPhrase(l.d && l.d.ile), jour: l.jour })), icone: (l.d && l.d.icone) || T.icone || '·' };
 }
 
-const vue = (l) => ({ n: l.n, jour: l.jour, type: l.type, ...texteLigne(l), epingle: !!l.epingle, note: typeof l.note === 'string' ? l.note : '', resume: l.type === 'mois' });
+const vue = (l) => ({ n: l.n, jour: l.jour, type: l.type, ...texteLigne(l), epingle: !!l.epingle, note: typeof l.note === 'string' ? l.note : '', resume: l.type === 'mois', ...(typeof l.par === 'string' ? { par: l.par } : {}) });
 
 // La chronique pour la fenêtre : les mois de lune, du plus récent au plus ancien, et dans chacun les lignes du plus
 // récent au plus ancien : [{ mois, titre (« Solaria, an 1 »), lignes: [{ n, jour, type, texte, icone, epingle, note,
@@ -332,8 +334,10 @@ export function epinglerLigne(state, n, oui = true) {
     const max = Math.max(1, Number(C_().EPINGLES) || 24);
     if (chroniqueDe(state).lignes.filter((x) => x && x.epingle).length >= max) return { ok: false, error: `${max} lignes épinglées au plus : détaches-en une d'abord.` };
     l.epingle = true;
+    signer(l);
   } else if (!oui) {
     delete l.epingle;
+    delete l.par;
     bornerChronique(state);
   }
   return { ok: true, epingle: !!l.epingle };
@@ -357,7 +361,16 @@ export function noterLigne(state, n, texte) {
     if (!r.ok) return r;
   }
   l.note = note;
+  signer(l);
   return { ok: true, note };
+}
+
+// I9e : dans un monde de l'île, la ligne épinglée ou annotée porte le compte de qui l'a fait (la commande en cours :
+// temps-monde.js acteurEnCours) ; en solo, rien.
+const PAR_RE = /^[A-Za-z0-9_:.-]{1,64}$/;
+function signer(l) {
+  const a = acteurEnCours();
+  if (a && PAR_RE.test(a)) l.par = a;
 }
 
 /* ---------- les souvenirs des villageois ---------- */
@@ -396,6 +409,8 @@ export function reparerChronique(c) {
     if (typeof l.cle === 'string' && l.cle) r.cle = l.cle.slice(0, 80);
     if (l.epingle === true && l.type !== 'mois') r.epingle = true;
     if (typeof l.note === 'string' && l.type !== 'mois') { const note = nettoyerNote(l.note); if (note) r.note = note; }
+    // (I9e : la signature d'une ligne épinglée ou annotée, dans un monde de l'île)
+    if ((r.epingle || r.note) && typeof l.par === 'string' && PAR_RE.test(l.par)) r.par = l.par;
     out.lignes.push(r);
   }
   out.lignes.sort((x, y) => x.jour - y.jour || x.n - y.n);

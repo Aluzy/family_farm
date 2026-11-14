@@ -1105,6 +1105,15 @@ export const MIGRATIONS = {
     if (state.mondePartage === true) out.amities = reparerAmities(state.amities);
     return out;
   },
+  // v107 → v108 (le chantier « l'île à bâtir », fiche I9e) : dans un monde de l'île, une ligne épinglée ou annotée de la
+  // chronique porte le compte de qui l'a fait (par : chronique.js, la commande chronique.noter). La chronique de la partie
+  // d'un monde (mondePartage) est relue (une signature illisible s'en va) ; une partie solo n'en a pas et reste telle
+  // quelle.
+  107: (state) => {
+    const out = { ...state, version: 108 };
+    if (state.mondePartage === true && state.chronique && typeof state.chronique === 'object') out.chronique = reparerChronique(state.chronique);
+    return out;
+  },
 };
 
 // Les charges de chacun d'une sauvegarde (la migration v105 → v106) : { compte: { vehicule, charge } }.

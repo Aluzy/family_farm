@@ -165,6 +165,12 @@ export function energieDe(state, compte) {
 // à provisions aussi (state.sacs, posé dans state.equipement.sac le temps de la commande : poserSacDe). I9c : sa charge
 // au port (state.charges, posée dans state.portage : poserChargeDe). I9d : son amitié avec les villageois
 // (state.amities, posée dans state.amitie : poserAmitieDe).
+// I9e : le compte qui joue la commande en cours (acteurEnCours : une note de la chronique est signée de lui) ; null hors
+// d'une commande d'un joueur dans un monde de l'île (le solo, le pas du monde).
+let acteurCourant = null;
+export function acteurEnCours() {
+  return acteurCourant;
+}
 export function avecActeur(state, compte, fn) {
   if (!compte || compte === ACTEUR_DU_MONDE || !horlogeVivante(state)) return fn();
   const E = energiesDe(state), avant = state.energie, e0 = energieDe(state, compte);
@@ -172,9 +178,12 @@ export function avecActeur(state, compte, fn) {
   const rendreSac = poserSacDe(state, compte);
   const rendreCharge = poserChargeDe(state, compte);
   const rendreAmitie = poserAmitieDe(state, compte);
+  const acteurAvant = acteurCourant;
+  acteurCourant = String(compte);
   try {
     return fn();
   } finally {
+    acteurCourant = acteurAvant;
     // (I9c : un compte qui n'a encore rien dépensé n'est noté que si son énergie change : un geste refusé ne touche pas
     // la partie — le monde le jouait et le refusait, sa partie gagnait l'énergie pleine du compte, pas celle des joueurs)
     const e = Math.max(0, Math.round(Number(state.energie) || 0));

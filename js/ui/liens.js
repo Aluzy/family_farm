@@ -8,7 +8,9 @@ import { persoHtml } from './famille.js';
 import { plancheAvecChargement } from './apparence.js';
 import { openModal } from './modal.js';
 import { registerActions } from './actions.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
+import { executer } from './commandes.js';
+import { gestePermis } from './en-ligne.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -24,7 +26,9 @@ import { ouvrirFicheVillageois } from './villageois.js';
      - la vue d'ensemble (ouvrirLiensDuVillage, le bouton « 🤝 Les liens » de la liste des villageois) : les foyers,
        puis qui est lié à qui (proches, amis, camarades), une liste ;
      - les avis de la nuit (direAvisLien, appelé par villageois.js direAvis) : deux villageois devenus amis ou proches,
-       un foyer, un enfant arrivé, un repas apporté. */
+       un foyer, un enfant arrivé, un repas apporté.
+   I9e, en ligne : un foyer et un enfant sont des commandes du monde (villageois.foyer, villageois.enfant), au propriétaire
+   de l'île ; leurs boutons ne paraissent qu'à lui (gestePermis). */
 
 const portrait = (v) => persoHtml(v.perso, !!v.enfant, '', '', v.apparence ? plancheAvecChargement(validApparence(v.apparence, !!v.enfant), !!v.enfant) : null);
 const ICONES = { connaissance: '👋', camarade: '🙂', ami: '😊', proche: '💞' };
@@ -44,7 +48,7 @@ export function liensFicheHtml(id) {
   const connus = L.filter((l) => l.palier >= 1);
   const ligne = (l) => {
     const refus = l.palier >= 4 && !f && !v.enfant && !l.enfant ? foyerRefus(state, id, l.id, { maison: false }) : 'non';
-    const foyer = refus === null ? ` <button type="button" class="btn small" data-action="liens-foyer" data-a="${e}" data-b="${escapeHtml(l.id)}">🏡 Leur proposer un foyer</button>` : '';
+    const foyer = refus === null && gestePermis('villageois.foyer', { a: id, b: l.id }) ? ` <button type="button" class="btn small" data-action="liens-foyer" data-a="${e}" data-b="${escapeHtml(l.id)}">🏡 Leur proposer un foyer</button>` : '';
     return `<li class="lien-ligne"><button type="button" class="lien-qui" data-action="villageois-fiche" data-id="${escapeHtml(l.id)}"><span class="villageois-portrait lien-portrait">${portrait(l)}</span> <strong>${escapeHtml(l.prenom)}</strong></button>
       <span class="lien-etat">${jaugeLien(l)}${l.foyer ? ' <span class="muted">· sous le même toit</span>' : ''}</span>${foyer}</li>`;
   };
@@ -59,7 +63,7 @@ export function liensFicheHtml(id) {
     const refus = v.enfant || enfant || f.attend ? 'non' : enfantRefus(state, f.id);
     const gestes = enfant && !v.enfant ? ` · 👶 ${escapeHtml(enfant.prenom)}, leur enfant`
       : f.attend ? ' · 👶 un enfant viendra par le prochain bac'
-      : refus === null ? ` <button type="button" class="btn small" data-action="liens-enfant" data-foyer="${escapeHtml(f.id)}" data-id="${e}">👶 Accueillir un enfant</button>`
+      : refus === null && gestePermis('villageois.enfant', { foyer: f.id }) ? ` <button type="button" class="btn small" data-action="liens-enfant" data-foyer="${escapeHtml(f.id)}" data-id="${e}">👶 Accueillir un enfant</button>`
       : !v.enfant && /lit d'enfant/.test(refus || '') ? ` <span class="muted">· avec un lit d'enfant chez eux, ils pourraient accueillir un enfant</span>` : '';
     foyer = `<dt>🏡 Foyer</dt><dd>${qui}${gestes}</dd>`;
   }
@@ -125,17 +129,19 @@ registerActions({
   'liens-village': () => ouvrirLiensDuVillage(),
   'liens-foyer': (target) => ouvrirFoyer(target.dataset.a, target.dataset.b),
   'liens-foyer-ok': (target) => {
-    const { a, b } = target.dataset, r = formerFoyer(state, a, b, Number(target.dataset.maison));
+    const { a, b } = target.dataset, maison = Number(target.dataset.maison);
+    // (I9e : en ligne, une commande du monde, au propriétaire)
+    const r = enLigne ? executer('villageois.foyer', { a, b, maison }) : formerFoyer(state, a, b, maison);
     if (!r.ok) { notify(r.error, { kind: 'alerte' }); return; }
     const va = trouverVillageois(state, a), vb = trouverVillageois(state, b);
     notify(`🏡 ${escapeHtml(va.prenom)} et ${escapeHtml(vb.prenom)} s'installent ensemble.`, { kind: 'info' });
-    if (Array.isArray(va.avis)) va.avis = va.avis.filter((x) => !x.startsWith('foyer:'));
+    if (!enLigne && Array.isArray(va.avis)) va.avis = va.avis.filter((x) => !x.startsWith('foyer:'));
     persistState();
     refresh();
     ouvrirFicheVillageois(a);
   },
   'liens-enfant': (target) => {
-    const r = accueillirEnfant(state, target.dataset.foyer);
+    const r = enLigne ? executer('villageois.enfant', { foyer: target.dataset.foyer }) : accueillirEnfant(state, target.dataset.foyer);
     if (!r.ok) { notify(r.error, { kind: 'alerte' }); return; }
     notify('👶 C\'est entendu : un enfant viendra par le prochain bac.', { kind: 'info' });
     persistState();

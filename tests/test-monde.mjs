@@ -1424,3 +1424,83 @@ test('I9d : les villageois en ligne : l\'amitié du propriétaire vient de sa pa
   const w2 = r.charger();
   eq([Object.keys(w2.amities), w2.amities[A].pnj[v.id].pts, !!(w2.port && w2.port.lieu)], [[A], w2.amitie.pnj[v.id].pts, true], 'l\'amitié du propriétaire, le lieu du port');
 });
+
+// I9e : les rôles en ligne (js/engine/roles.js, la grille d'une île ; docs/monde-partage.md § 10 et § 13)
+test('I9e : les gestes de gestion du village par le monde, selon le rôle ; refusés par le monde même si le jeu est modifié ; la délégation des tâches ; le journal signé et nommé', () => {
+  const ile = ileAuVillage();
+  const [v, w] = villageoisDe(ile);
+  v.envies = { forge: ile.day };   // (l'envie d'un commerce : l'invité la suggère)
+  const h = { t: 1_700_000_000_000 }, sql = baseSql();
+  const r = new MondeRegistre(sql, () => h.t);
+  assert(r.creer({ proprietaire: A, nom: 'Voisin', partie: { v: ile.version, t: 0, s: JSON.parse(JSON.stringify(ile)) } }).ok);
+  r.ajouterMembre(B, 'Voisin', 'jardinier');
+  r.ajouterMembre('c-bat', 'Voisin', 'batisseur');
+  r.ajouterMembre('c-vis', 'Voisin', 'visiteur');
+  // (l'ami est très ami du villageois : son amitié à lui, dans la partie du monde, gardée par un instantané)
+  r.charger().amities[B] = { pnj: { [v.id]: { pts: DATA.AMITIE.ECHELLE.MAX } } };
+  r.instantane();
+  // (les noms : chaque page envoie le prénom de son personnage avec hello ; le monde le nettoie et le redit à tous)
+  const tous = [];
+  for (const [qui, prenom] of [[A, 'Alex'], [B, ' Sam <b>'], ['c-bat', 'Lou'], ['c-vis', '']]) traiterMessage(r, qui, JSON.stringify({ t: 'hello', version: GAME_VERSION, prenom }), () => {}, (m) => tous.push(m));
+  eq(r.membres().map((m) => [m.compte, m.nom]).sort(), [[A, 'Alex'], [B, 'Sam b'], ['c-bat', 'Lou'], ['c-vis', 'Voisin']].sort(), 'les vrais prénoms ; sans prénom, le nom d\'avant');
+  eq(tous.filter((m) => m.t === 'membres').length, 3, 'la liste des membres rediffusée à chaque nom changé');
+  const jouer = (qui, type, args) => r.commande(qui, { id: id(), type, args });
+  h.t += 6 * 5000;
+  // la tâche : au propriétaire ; refusée à l'ami (même si son jeu envoyait la commande), au bâtisseur sans la délégation
+  let x = jouer(B, 'villageois.attribuer', { id: v.id, tache: 'pierre' });
+  eq([x.ok, /attribue les tâches/.test(x.erreur)], [false, true], `l'ami jardinier (${x.erreur})`);
+  x = jouer('c-bat', 'villageois.attribuer', { id: v.id, tache: 'pierre' });
+  eq(x.ok, false, 'le bâtisseur, sans la délégation');
+  // (la délégation : un réglage du monde, que le propriétaire seul change ; à tous)
+  const a = [], d = [];
+  traiterMessage(r, B, JSON.stringify({ t: 'reglages', taches: true }), (m) => a.push(m), (m) => d.push(m));
+  eq([a[0].t, d.length, r.reglages().taches], ['erreur', 0, false], 'pas l\'ami');
+  traiterMessage(r, A, JSON.stringify({ t: 'reglages', taches: true }), (m) => a.push(m), (m) => d.push(m));
+  eq([d[0], r.reglages()], [{ t: 'reglages', reglages: { taches: true } }, { taches: true }]);
+  const acc = [];
+  traiterMessage(r, 'c-bat', JSON.stringify({ t: 'hello', version: GAME_VERSION }), (m) => acc.push(m), () => {});
+  eq(acc[0].reglages, { taches: true }, 'l\'accueil dit les réglages');
+  x = jouer('c-bat', 'villageois.attribuer', { id: v.id, tache: 'pierre' });
+  assert(x.ok, `le bâtisseur, avec la délégation (${x.erreur})`);
+  x = jouer(B, 'villageois.attribuer', { id: v.id, tache: 'bois' });
+  eq(x.ok, false, 'l\'ami, toujours pas');
+  traiterMessage(r, A, JSON.stringify({ t: 'reglages', taches: false }), () => {}, () => {});
+  x = jouer(A, 'villageois.attribuer', { id: v.id, tache: 'bois' });
+  assert(x.ok, x.erreur);
+  eq(x.evt.bilan, { id: v.id, prenom: v.prenom, avant: 'pierre', apres: 'bois' }, 'le bilan de l\'ordre : le villageois, avant, après');
+  // l'outil, la navette : l'ami jardinier ; le visiteur, rien
+  x = jouer(B, 'villageois.outil', { id: w.id, outil: 'reprendre' });
+  assert(x.ok, x.erreur);
+  eq(jouer('c-vis', 'villageois.outil', { id: w.id, outil: 'pioche' }).ok, false, 'le visiteur');
+  assert(jouer(B, 'villageois.vendre', { id: w.id, objets: ['bois'] }).ok);
+  // le nom : au propriétaire
+  eq(jouer('c-bat', 'nom.donner', { quoi: 'village', texte: 'Bourg' }).ok, false);
+  x = jouer(A, 'nom.donner', { quoi: 'village', texte: 'Bourg-Lune' });
+  eq([x.ok, x.evt.bilan.nom], [true, 'Bourg-Lune']);
+  // le commerce : l'ami très ami le suggère, le propriétaire décide ; le bâtisseur, pas plus que l'ami, ne l'ouvre
+  x = jouer(B, 'commerce.suggerer', { id: v.id, sorte: 'forge' });
+  assert(x.ok, x.erreur);
+  eq([x.evt.bilan.prenom, x.evt.bilan.sorte], [v.prenom, 'forge'], 'l\'avis au propriétaire');
+  x = jouer('c-bat', 'commerce.ouvrir', { id: v.id, sorte: 'forge' });
+  eq([x.ok, /suggère-le-lui/.test(x.erreur)], [false, true]);
+  // la maison d'un villageois : le propriétaire seul la retire
+  x = jouer('c-bat', 'bloc.reprendre', { case: v.maison });
+  eq([x.ok, /maison d'un villageois/.test(x.erreur)], [false, true], x.erreur);
+  // le journal : chaque ordre et son auteur, nommé du prénom de son personnage ; le monde réveillé à froid refait tout
+  const jr = r.journal(A).evts;
+  const ordres = jr.filter((e) => e.type === 'villageois.attribuer').map((e) => [e.nom, e.bilan.apres]);
+  eq(ordres, [['Alex', 'bois'], ['Lou', 'pierre']], 'qui a donné quel ordre');
+  eq(jr.find((e) => e.type === 'commerce.suggerer').nom, 'Sam b');
+  h.t += 30 * 5000;
+  r.avancer();
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.avancer();
+  eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal se rejoue');
+});
+
+test('I9e : une ferme d\'avant garde la grille d\'E-11 (fabriquer : le bâtisseur) ; une île la sienne (fabriquer : l\'ami jardinier)', () => {
+  const { r } = monde();
+  eq(roleDemande(r.charger(), { type: 'atelier.fabriquer', args: { recette: 'x' } }), 'batisseur', 'une ferme d\'avant');
+  const ile = ileAuVillage(1);
+  eq(roleDemande(ile, { type: 'atelier.fabriquer', args: { recette: 'x' } }), 'jardinier', 'une île');
+});
