@@ -40,6 +40,7 @@ son île et son village ; une chronique note ce qui s'y passe.
 | D13 | En ligne, l'horloge est commune et vivante. | Le serveur fait avancer le temps tant qu'un joueur est connecté (I9a2) ; F.2 est levée. |
 | D14 | En ligne, la caisse est commune. | I9c. |
 | D15 | C'est le joueur qui attribue les tâches. Un villageois ouvre un commerce quand il a une affinité suffisante avec le joueur, qu'il en manifeste l'envie et que le joueur le décide. | I5a ; en ligne, « le joueur » est lu comme le propriétaire de l'île (I9e, à confirmer). |
+| D16 | La pierre de lune n'a plus d'effet magique : rien ne pousse plus vite. | Sur l'île, c'est déjà le cas depuis I7c (`recit-muet.js`, `facteurPousse` vaut 1) ; une partie d'avant la perd à la migration (I7f). À la bascule (I9h), le fil de la lune et l'objet sortent avec le récit. Les effets de la lune sur les cultures (`LUNE`, `lune.js`) restent : c'est une règle, pas de la magie. |
 
 ## Ce qui reste à trancher (dans les fiches qui le portent)
 

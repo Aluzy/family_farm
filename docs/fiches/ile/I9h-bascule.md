@@ -17,6 +17,10 @@ documentation.
 
 ## À faire
 
+> Décision D16 (docs/ile.md) : la pierre de lune n'a plus d'effet magique. En retirant le récit, retirer aussi
+> l'objet `pierre_lune`, `facteurPousse` (crops.js) et la lueur de la ferme qui l'accompagne (stage.js) ; garder
+> les effets de la lune sur les cultures (`LUNE`, lune.js).
+
 1. **Une répétition**, d'abord : sur une branche, allumer le réglage, construire le site, et faire
    passer les parties de `anciennes-parties.json` et trois parties réelles récentes (exportées par
    le mainteneur) de bout en bout. Rendre compte avant d'aller plus loin.

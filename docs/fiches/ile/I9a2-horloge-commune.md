@@ -1,5 +1,18 @@
 # Fiche I9a2 — L'horloge commune
 
+> **La note de conception** : `I9a2-note-horloge.md`, **validée par l'utilisateur le 14 novembre 2026** (les dix
+> réponses proposées au § 9, telles quelles). En résumé :
+> - les pas (5 s d'horloge, 10 minutes de jeu) **se déduisent de l'heure du serveur et ne sont pas des révisions** :
+>   avant chaque geste, le serveur rejoue les pas dus, pas à pas ; le geste porte son numéro de pas ; chaque client
+>   fait de même. Par heure en ligne : 720 pas, ≈ 3 s de calcul, 0,4 Mo écrits (1,3 Mo au plafond), 6 alarmes,
+>   presque rien de diffusé ; un pas joué comme une révision écrirait 2,9 Mo (9,3 Mo), réveillerait le serveur
+>   720 fois et ramènerait le rattrapage à 42 minutes ;
+> - un pas de 60 s ne donne pas le même état que 12 pas de 5 s (énergie, Moulin, villageois) ; les mêmes pas de 5 s,
+>   eux, donnent la même partie au serveur et à chaque client : le pas est une constante du protocole ;
+> - la nuit vient seule à 22 h ; tous couchés, elle défile ×10 ; l'énergie devient celle de chaque joueur (par
+>   compte, dans la partie du monde) ; sans joueur, le monde dort, sans rattrapage au retour ;
+> - dix questions à trancher, avec une réponse proposée pour chacune (§ 9 de la note).
+
 ## Objectif
 
 Faire vivre le temps dans un monde partagé : une seule horloge, tenue par le serveur, qui tourne
