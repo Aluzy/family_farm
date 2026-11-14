@@ -79,6 +79,21 @@ tous les joueurs, qui les voient aux mêmes endroits faire les mêmes choses.
 - **Le prix d'un pas** compte double chez chaque joueur (sa partie et la confirmée) : un geste dehors n'y ajoute
   presque rien (0,3 à 0,5 ms au serveur).
 
+## Revu par I9c (le port et la caisse)
+
+- **Le lieu du port est dans la partie d'un monde de l'île** (`state.port.lieu`, posé à la mise en ligne :
+  `poserLieuDuPort`) ; `lieuPort` le lit d'abord. Le pas du monde le lit donc aussi, chez le serveur et chez chacun : la
+  tournée d'un villageois vers le port (`villageois-journee.js`, `taches.js`), éteinte en ligne jusqu'ici faute de lieu,
+  peut s'y jouer, la même partout. À vérifier avec la journée du village dans les pas.
+- **La caisse est commune** : ce que la navette (`villageois.vendre`) ou la tournée vend va à la même caisse que les
+  ventes des joueurs ; `bilanCommerce` (`worker/src/monde.mjs`) ne couvre que les gestes des joueurs (les ventes d'un
+  villageois se jouent dans le pas, sans événement).
+- **`avecActeur` (`js/engine/temps-monde.js`) pose trois choses à chacun** le temps d'une commande : son énergie, son
+  sac, sa charge (`state.charges`). Un compte qui n'a encore rien dépensé n'est plus noté par un geste refusé (le monde
+  gagnait l'énergie pleine du compte dans sa partie, pas les joueurs : une divergence). L'amitié par joueur, si elle
+  passe par le même chemin, y trouvera sa place.
+- **Le format** : I9c passe à 106 (`charges`) ; à renuméroter à l'intégration si I9d ajoute aussi des données.
+
 ## Hors périmètre
 
 - Attribuer des tâches et décider d'un commerce à plusieurs (I9e).

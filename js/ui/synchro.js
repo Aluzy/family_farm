@@ -24,7 +24,8 @@
 //     pas, puis les pas jusqu'à l'heure ; une commande confirmée au pas où la locale l'avait jouée ne la refait pas.
 // `moi` : son compte (ses gestes se jouent avec son énergie ; la locale montre la sienne dans state.energie).
 
-import { avancerJusqua, dureeDuPas, energieDe, horlogeVivante, pasDe, sacDe, sacsDe } from '../engine/temps-monde.js';
+import { avancerJusqua, chargeDuCompte, dureeDuPas, energieDe, horlogeVivante, pasDe, sacDe, sacsDe } from '../engine/temps-monde.js';
+import { chargesDe } from '../engine/portage.js';
 
 const cloner = (v) => JSON.parse(JSON.stringify(v));
 export const MARGE = 2;   // pas : la confirmée suit la locale d'aussi loin
@@ -171,6 +172,8 @@ export class Synchro {
   // le moteur la lit et l'écrit : le rapport du matin la note) est gardée à côté, et remise avant chaque pas ou geste
   // joué sur la locale (cacher) : la locale reste la confirmée, plus ses gestes en attente.
   // I9b : son sac à provisions de même (state.sacs, montré dans state.equipement.sac ; celui de la partie, à côté).
+  // I9c : sa charge aussi (state.charges, montrée dans state.portage : ce que lisent la fenêtre du port et la scène ; la
+  // page ne la change pas, ses gestes passent par les commandes ; les règles des véhicules la reconnaissent ainsi).
   montrer(locale) {
     if (!this.vivante || !this.moi) return;
     this.energieDuMonde = locale.energie;
@@ -181,9 +184,19 @@ export class Synchro {
       locale.equipement.sac = sacDe(locale, this.moi);
       this.sacPose = true;
     }
+    this.chargePosee = false;
+    if (chargesDe(locale)) {
+      this.portageDuMonde = 'portage' in locale ? locale.portage : undefined;
+      locale.portage = chargeDuCompte(locale, this.moi) || { vehicule: 'mains', charge: {} };
+      this.chargePosee = true;
+    }
   }
   cacher(locale) {
     if (this.vivante && this.moi && this.energieDuMonde !== null) locale.energie = this.energieDuMonde;
     if (this.sacPose && locale.equipement) { locale.equipement.sac = this.sacDuMonde; this.sacPose = false; }
+    if (this.chargePosee) {
+      if (this.portageDuMonde === undefined) delete locale.portage; else locale.portage = this.portageDuMonde;
+      this.chargePosee = false;
+    }
   }
 }

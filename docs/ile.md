@@ -38,7 +38,7 @@ son île et son village ; une chronique note ce qui s'y passe.
 | D11 | La vente au port n'est pas bornée : le bac emporte tout ce qu'on lui donne, il n'y a pas d'entrepôt. | La dépense longue repose sur les niveaux du port, les imports et la part des villageois (I1c). |
 | D12 | Le villageois garde une part de ce qu'il produit ; une tâche demande son outil, que le joueur fabrique et lui donne ; deux villageois assez proches peuvent former un foyer si on leur bâtit une maison ; chaque biome a ses plants sauvages. | I4, I3c, I6b, I7e. |
 | D13 | En ligne, l'horloge est commune et vivante. | Le serveur fait avancer le temps tant qu'un joueur est connecté (I9a2) ; F.2 est levée. |
-| D14 | En ligne, la caisse est commune. | I9c. |
+| D14 | En ligne, la caisse est commune. | I9c (fait) : les pièces de la partie du monde, à tous ; chacun porte sa charge. |
 | D15 | C'est le joueur qui attribue les tâches. Un villageois ouvre un commerce quand il a une affinité suffisante avec le joueur, qu'il en manifeste l'envie et que le joueur le décide. | I5a ; en ligne, « le joueur » est lu comme le propriétaire de l'île (I9e, à confirmer). |
 | D16 | La pierre de lune n'a plus d'effet magique : rien ne pousse plus vite. | Sur l'île, c'est déjà le cas depuis I7c (`recit-muet.js`, `facteurPousse` vaut 1) ; une partie d'avant la perd à la migration (I7f). À la bascule (I9h), le fil de la lune et l'objet sortent avec le récit. Les effets de la lune sur les cultures (`LUNE`, `lune.js`) restent : c'est une règle, pas de la magie. |
 
@@ -273,7 +273,7 @@ Ce qui est posé (I1c ; les réglages : `PORT.BAC`, `PORT.COMMANDES`, `PORT.IMPO
   commandes tirées, honorées, manquées ; le catalogue, l'import payé d'avance et livré au passage suivant, la bête
   sans place, le plan ; le rattrapage après une absence, la nuit ; les niveaux ; la sauvegarde ; éteint, rien).
 - Reste : ~~la part des villageois et les prix (I4)~~ (fait, plus bas) ; ~~les plants sauvages à cultiver (I7e)~~ (fait : ils
-  s'inscrivent à leur première récolte, js/engine/sauvages.js, plus bas) ; les contrats d'export en volume (I8b) ; le port en ligne (I9c) ; montrer le chantier du port
+  s'inscrivent à leur première récolte, js/engine/sauvages.js, plus bas) ; les contrats d'export en volume (I8b) ; ~~le port en ligne (I9c)~~ (fait, plus bas) ; montrer le chantier du port
   sur la carte (des matériaux empilés) ; que la tournée d'un villageois honore les commandes.
 
 ## Le chemin du port, modifiable, et le portage (I2, fait)
@@ -2405,6 +2405,124 @@ la même région) et le sol tiré en direct chez un joueur (≈ 0,5 s une fois, 
 - **Le premier chemin posé loin de soi par un autre** coûte à la page 0,5 s (le sol tiré en direct, une fois).
 - **La sacoche du cheval, la tente** restent celles de la partie (à personne) en ligne.
 - Une île déjà en ligne avant I9b garde le sac de sa partie à personne ; chacun commence sans.
+
+## Le port et la caisse en ligne (I9c, fait)
+
+L'économie se joue à plusieurs sur une île en ligne : le port, le bac, ses commandes, l'import et les niveaux du port
+passent par le monde, avec une caisse et un coffre communs, et chacun voit ce que l'autre vend
+(`docs/monde-partage.md` § 13).
+
+### Les choix
+
+**1. La caisse est la caisse de la partie du monde** (D14). Les pièces de la partie d'un monde sont déjà à tous, comme
+son inventaire (F.1) : il n'y avait rien à « mettre en commun », seulement à ouvrir le port à la frontière, à faire
+porter chacun pour soi et à dire ce que font les autres. Une vente de n'importe quel joueur alimente la caisse, un
+achat y puise ; le bandeau du comptoir, en ligne, dit « La caisse est commune : … 💰 ».
+
+**2. La charge est à chacun, les véhicules à la ferme.** Ce qu'un joueur charge sort du coffre commun et entre dans
+*sa* charge (`state.charges`, par compte, posée dans `state.portage` le temps de ses commandes, comme son énergie et son
+sac : `avecActeur`). Les brouettes et la charrette sont des objets du coffre, donc à tous : une brouette ne sert qu'un
+joueur à la fois (autant de joueurs que de brouettes), la charrette est attelée par un seul. Pour que personne ne la
+bloque en partant : chargée, elle est à celui qui la tient ; vide, elle passe au premier qui la demande (l'autre revient
+à la main). Une file d'attente ou un « rendre » explicite auraient demandé un geste de plus à chacun pour un cas rare.
+
+**3. Une commande du bac s'honore à plusieurs.** En solo, il faut toute la quantité d'un coup. En ligne, chacun ne
+porte que sa charge (12 volumes à la main) : une commande de 30 choux serait hors de portée d'un joueur sans brouette,
+et deux joueurs qui ont chacun la moitié ne pourraient rien. Chacun livre donc ce qu'il a porté (`livre`, dans la
+commande), payé tout de suite au prix de vente ; la prime et l'expérience viennent avec la dernière livraison. Deux
+livraisons qui se croisent : le monde les joue l'une après l'autre, la seconde ne prend que ce qui reste. Le jeu solo
+ne change pas (la règle ne vaut qu'avec `state.charges`).
+
+**4. Le lieu du port est écrit dans la partie.** Le comptoir se trouvait par la page (le Web Worker du sol tire les
+lieux, `watchPort` les pose) ; en ligne, la page n'écrit plus dans la partie (I9a2), si bien que ni le monde ni le jeu
+ne connaissaient le comptoir : tout commerce était refusé. Le monde le calcule à la mise en ligne d'après le plan de la
+graine (`poserLieuDuPort`, `portDuMonde`, ≈ 0,7 s une fois) et l'écrit dans `state.port.lieu` ; `lieuPort` le lit
+d'abord, chez le monde comme chez chacun. Le refaire chez chaque joueur aurait coûté la même chose à chaque entrée, et
+une partie dont le pas lit `lieuPort` (la tournée d'un villageois) doit le lire pareil partout.
+
+**5. La case du geste est contrôlée par la dernière position relayée.** La case d'un geste du port vient de la page
+(I9b l'avait noté) : une vente « au comptoir » depuis l'autre bout de l'île passerait avec un jeu trafiqué. Le monde
+connaît, sans rien de plus, la dernière position que chaque joueur a relayée (E-4, l'intérêt par région) : un geste du
+port ou du portage dont la case est à plus de `ECART_CASES` (12) cases de là est refusé (« Ton personnage n'est pas là
+où ce geste se fait »). Sans position connue, rien n'est comparé. C'est un garde-fou contre l'erreur et la triche
+paresseuse, pas une preuve : un jeu trafiqué peut aussi mentir sur sa position.
+
+### Ce qui est posé
+
+- **La frontière** (`js/engine/frontiere.js`) : `COMMANDES_DU_PORT` (`port.vendre`, `port.acheter`, `port.decharger`,
+  `port.honorer`, `port.importer`, `port.contrat`, `port.livrer`, `port.apporter`, `port.agrandir`, `portage.charger`,
+  `portage.reprendre`, `portage.vehicule`) entre dans `COMMANDES_DEHORS` ; le moteur vérifie la distance au comptoir
+  (`PORT.PORTEE`) ou la ferme (on charge sur la ferme). Une ferme d'avant n'a pas de port et garde E-8. (La fiche
+  nommait `port.commander` et `port.niveau` : ce sont `port.importer`, `port.apporter` et `port.agrandir`.)
+- **La charge de chacun** (`js/engine/portage.js`, `temps-monde.js`) : `state.charges = { compte: { vehicule, charge } }`
+  dans la partie d'un monde de l'île ; `chargeDuCompte`, `chargeVide`, `vehiculesTenus` ; une charge vide, à la main,
+  ne se garde pas ; le propriétaire reçoit le portage de sa partie à la mise en ligne. La page montre la sienne dans
+  `state.portage` (`js/ui/synchro.js`, comme le sac) : la fenêtre du port et la scène la lisent sans changer.
+- **Les commandes du bac à plusieurs** (`js/engine/bac.js`, `livrerCommande`) : `livre` dans la commande ; la fenêtre
+  dit « livré : 6 / 10 · porté par toi : 4 » et « Livrer 4 ».
+- **Le lieu du port** (`js/engine/port.js`) : `lieuPort` lit `state.port.lieu` ; `poserLieuDuPort` ; `reparerPort` le
+  garde.
+- **Les rôles** (`js/engine/roles.js`, la grille d'I9e pour le port) : vendre, décharger, honorer, livrer un contrat et
+  porter, l'ami jardinier ; acheter, importer, accepter un contrat, apporter au chantier du port, le bâtisseur ;
+  agrandir le port, le propriétaire. Le visiteur ne vend ni n'achète.
+- **Le journal du monde** (`worker/src/monde.mjs`) : `bilanCommerce(c, r)` (une vente : `{ objet, n, gain }` ; un
+  déchargement : `{ vendus, gain }` ; un achat : `{ objet, n, cout }` ; une livraison : `{ objet, n, gain, reste? }` ;
+  le port agrandi : `{ niveau }` …) est écrit au journal (la colonne `bilan`, ajoutée une fois à une base d'avant) et
+  joint à l'événement (`evt.bilan`, jamais rejoué). Le journal du propriétaire le dit (« Sam a tout vendu au port :
+  10 🪵 bois (+…) ») ; chaque joueur lit sur le moment ce que les autres font au port (« Alex a vendu 12 🥕 carotte au
+  port (+… à la caisse commune) », `commerceEnMots`, `js/ui/en-ligne.js`).
+- **Le contrôle de la case** (`MondeRegistre.refusDeLaCase`, `MONDE.ECART_CASES` = 12).
+- **Un geste refusé ne touche plus la partie du monde** : `avecActeur` notait l'énergie d'un compte qui n'avait encore
+  rien dépensé même quand le geste était refusé ; le monde gagnait cette ligne, pas les joueurs (l'empreinte de contrôle
+  l'aurait vu, et tout redemandé). Elle n'est notée que si l'énergie change, ou si le compte y est déjà.
+- **La sauvegarde** passe au format 106 (`charges` dans la partie d'un monde, réparées ; une partie solo n'y gagne
+  rien) ; `reparerPort` garde `lieu` et `livre`.
+- **Le jeu solo est le même** : le CSV de `node scripts/simulate.mjs` est identique octet pour octet à celui d'I9b.
+
+### Les mesures
+
+Mesuré (le Durable Object sur `node:sqlite`, des îles neuves des graines 1, 17 et 29 ; 40 allers chargés-vendus par
+deux joueurs) :
+
+| | Graine 1 | Graine 17 | Graine 29 |
+|---|---|---|---|
+| La mise en ligne (dont le lieu du port, d'après le plan : ≈ 0,7 s) | 661 ms | 789 ms | 538 ms |
+| Un geste du port au serveur (charger ou vendre ; moyenne, le plus lent) | 0,28 ms (2,0) | 0,12 ms (0,32) | 0,10 ms (0,29) |
+| Une vente diffusée (l'événement ; sans son bilan) | 207 octets (163) | 208 (164) | 208 (164) |
+| La charge de deux joueurs dans la partie (chacun sa brouette) | 81 octets | 81 | 81 |
+
+Le bilan coûte ≈ 44 octets par geste du commerce ; la charge de chacun, quelques dizaines d'octets par joueur qui
+porte (rien pour qui ne porte rien). Dans Chromium (deux pages en local, `tests/deux-joueurs.mjs` 11d), la caisse monte
+chez l'autre en quelques dizaines de millisecondes.
+
+### Les tests
+
+- `tests/test-monde.mjs` : la mise en ligne (le lieu du port dans la partie, la charge du propriétaire, la frontière
+  ouverte au port, une vente loin du comptoir refusée, la caisse commune de la somme juste, le journal, le Durable Object
+  réveillé à froid) ; deux ventes du même lot en même temps (un seul le charge, un seul est payé) ; une commande honorée
+  à deux (la prime une fois, avec la dernière livraison) ; la charrette attelée par un seul, la brouette une par
+  exemplaire, libre elle passe ; les rôles (visiteur, jardinier, bâtisseur, propriétaire) ; la case comparée à la
+  dernière position ; le format 106.
+- `tests/test-synchro.mjs` : deux ventes du même lot chez chacun (les deux chargent chez eux, le monde garde le premier,
+  la partie de l'autre se refait ; la caisse la même chez les deux et au monde) ; le bac vu par les deux au même pas
+  (A, B et le monde), à quai à 9 h, avec les mêmes commandes.
+- `tests/deux-joueurs.mjs` (Chromium, 11a à 11d) : la charrette attelée par A, refusée à B, qui prend la brouette ; les
+  deux au port ; le bac à quai vu par les deux ; A vend ses carottes, B son bois : la caisse commune monte de la somme
+  juste chez l'autre, le journal dit qui a vendu quoi.
+
+### Ce qui reste
+
+- **La charrette des autres ne se voit pas** : la scène montre la charge du joueur (sa brouette, sa charrette en
+  selle) ; un autre joueur est un avatar relayé (E-4), sans son véhicule. Le cheval est celui de la ferme : « en selle »
+  (`cheval.monte`) reste celui de la partie, à personne.
+- **Une île mise en ligne avant I9c n'a pas de lieu de port** dans sa partie : son comptoir reste fermé en ligne
+  jusqu'à sa migration (I9f) ; son portage reste celui de la partie, à personne.
+- **La case contrôlée n'est pas une preuve** (le choix 5).
+- **Les avis du port** (l'étal, les commerces) peuvent encore se redire après une partie refaite (I9a2, I9d).
+- **Le chargement ne vieillit pas la nuit** (I2) : la charge de chacun non plus.
+- **Les noms au journal et dans les avis** sont ceux que chaque page donne (le prénom du personnage de la partie qu'elle
+  joue) : sur une île en ligne, deux joueurs peuvent s'y appeler tous deux « Voisin » (vu dans Chromium). Le journal
+  garde le compte de chacun ; le nom montré est à revoir (I9e).
 
 ## Les règles qui ne changent pas
 

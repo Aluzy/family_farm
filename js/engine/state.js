@@ -1085,7 +1085,30 @@ export const MIGRATIONS = {
     if (state.mondePartage === true) out.sacs = reparerSacs(state.sacs);
     return out;
   },
+  // v105 → v106 (le chantier « l'île à bâtir », fiche I9c) : la charge de chacun dans un monde de l'île (ce qu'il porte au
+  // port : js/engine/portage.js, temps-monde.js avecActeur). La partie d'un monde (mondePartage) reçoit state.charges (par
+  // compte : les charges lisibles sont gardées, réparées comme le portage ; une charge vide, à la main, s'en va ; un monde
+  // d'avant n'en a aucune, le portage de sa partie reste là, à personne). Le port d'un monde peut porter son lieu
+  // (state.port.lieu, posé à la mise en ligne : la migration v89 → v90 et reparerPort le gardent s'il se lit) et, pour
+  // chaque commande du bac, ce qui en est déjà livré (livre). Une partie solo n'en a pas et reste telle quelle.
+  105: (state) => {
+    const out = { ...state, version: 106 };
+    if (state.mondePartage === true) out.charges = reparerCharges(state.charges);
+    return out;
+  },
 };
+
+// Les charges de chacun d'une sauvegarde (la migration v105 → v106) : { compte: { vehicule, charge } }.
+function reparerCharges(charges) {
+  const o = charges && typeof charges === 'object' && !Array.isArray(charges) ? charges : {};
+  const out = {};
+  for (const [k, p] of Object.entries(o)) {
+    if (!k || !p || typeof p !== 'object' || Array.isArray(p)) continue;
+    const r = reparerPortage(p);
+    if (r.vehicule !== 'mains' || Object.keys(r.charge).length) out[k] = r;
+  }
+  return out;
+}
 
 // Les sacs de chacun d'une sauvegarde (la migration v104 → v105) : { compte: { objet (un sac du jeu), items } }.
 function reparerSacs(sacs) {

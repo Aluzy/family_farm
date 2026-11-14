@@ -61,8 +61,8 @@ import { gainXp } from './levels.js';
 import { noterObjectif } from './objectifs-compte.js';
 import { accueillirAnimal, animalRefus, cowCount, sheepCount } from './animals.js';
 import { offrirPlan, planConnu } from './plans.js';
-import { niveauPort, portOuvert } from './port.js';
-import { chargeDe, portageDe, volumeDe } from './portage.js';
+import { lieuLisible, niveauPort, portOuvert } from './port.js';
+import { chargeDe, chargesDe, portageDe, volumeDe } from './portage.js';
 import { vendrePaniers } from './bourse.js';
 import { commercesAuBac } from './artisans.js';
 import { chroniqueVente, noterChronique } from './chronique.js';
@@ -135,6 +135,8 @@ export function reparerPort(p, jour = 1) {
     commandes: Array.isArray(o.commandes) ? o.commandes.filter(lisible).map((c) => ({
       id: typeof c.id === 'string' ? c.id : `c${entier(c.jour)}-${c.objet}`, objet: c.objet, quantite: c.quantite,
       prime: Number.isInteger(c.prime) ? c.prime : 0, jour: entier(c.jour),
+      // (I9c : en ligne, ce qui en est déjà livré, par plusieurs joueurs)
+      ...(Number.isInteger(c.livre) && c.livre > 0 && c.livre < c.quantite ? { livre: c.livre } : {}),
     })) : [],
     honorees: Number.isInteger(o.honorees) && o.honorees >= 0 ? o.honorees : 0,
     imports: Array.isArray(o.imports) ? o.imports.filter((x) => objet(x) && typeof x.cle === 'string' && articleDe(x.cle)
@@ -145,6 +147,8 @@ export function reparerPort(p, jour = 1) {
     chantier: nombres(o.chantier),
     sauvages: Array.isArray(o.sauvages) ? o.sauvages.filter((k) => typeof k === 'string' && DATA.OBJETS[k]) : [],
     avis: [],
+    // (I9c : le lieu du port, dans la partie d'un monde de l'île : port.js poserLieuDuPort)
+    ...(lieuLisible(o.lieu) ? { lieu: { case: o.lieu.case, sens: o.lieu.sens, chemin: o.lieu.chemin } } : {}),
   };
 }
 
@@ -297,8 +301,12 @@ export function commandesDuBac(state) {
   const p = portDe(state);
   if (!p) return [];
   avancerBac(state);
-  const c = chargeDe(state);
-  return p.commandes.map((x) => ({ ...x, charge: c[x.objet] || 0, paiement: paiementCommande(x), prete: (c[x.objet] || 0) >= x.quantite, jusqua: p.passe + periode() }));
+  const c = chargeDe(state), aPlusieurs = !!chargesDe(state);
+  // (I9c : en ligne, chacun livre ce qu'il a porté : `livre`, déjà livré par tous ; `reste`, à livrer)
+  return p.commandes.map((x) => {
+    const livre = x.livre || 0, reste = x.quantite - livre, porte = c[x.objet] || 0;
+    return { ...x, livre, reste, aPlusieurs, charge: porte, paiement: paiementCommande(x), prete: aPlusieurs ? porte > 0 : porte >= x.quantite, jusqua: p.passe + periode() };
+  });
 }
 
 // Le joueur (sur la case `ou`) honore la commande `id` au comptoir, avec ce qu'il a porté : le prix de vente, la
@@ -312,6 +320,9 @@ export function honorerCommande(state, id, ou = null, o = {}) {
   const c = p.commandes.find((x) => x.id === id);
   if (!c) return fail('Cette commande n\'est plus valable : le bac en a apporté d\'autres.');
   const def = DATA.OBJETS[c.objet], lots = portageDe(state).charge[c.objet];
+  // (I9c : en ligne, une commande s'honore à plusieurs : chacun livre ce qu'il a porté, payé au prix de vente ; la prime
+  // et l'XP viennent avec la dernière livraison)
+  if (chargesDe(state)) return livrerCommande(state, p, c, lots);
   if (nLots(lots) < c.quantite) return fail(`Il faut ${c.quantite} ${def.nom.toLowerCase()} portés au port (tu en as ${nLots(lots)}) : charge-les à la ferme (l'onglet Porter).`);
   pullLots(lots, c.quantite);
   keepLots(portageDe(state).charge, c.objet, lots);
@@ -326,6 +337,28 @@ export function honorerCommande(state, id, ou = null, o = {}) {
   p.commandes = p.commandes.filter((x) => x !== c);
   p.honorees += 1;
   return { ok: true, commande: c, gain: gain + pay.prime, prime: pay.prime, xp: pay.xp };
+}
+
+// I9c : une livraison à la commande `c` (en ligne : chacun la sienne). → { ok, commande, n (livré cette fois), livre
+// (en tout), complet, gain, prime, xp } ou le refus.
+function livrerCommande(state, p, c, lots) {
+  const def = DATA.OBJETS[c.objet], deja = c.livre || 0, n = Math.min(c.quantite - deja, nLots(lots));
+  if (n <= 0) return fail(`Porte au port des ${def.nom.toLowerCase()} (l'onglet Porter, sur la ferme) : il en reste ${c.quantite - deja} à livrer pour cette commande.`);
+  pullLots(lots, n);
+  keepLots(portageDe(state).charge, c.objet, lots);
+  const gain = encaisserVente(state, c.objet, n, 'Bac');
+  bumpCounter(state, 'ventesPort', gain);
+  noterVenteBac(state, c.objet, n);
+  chroniqueVente(state, c.objet);
+  c.livre = deja + n;
+  if (c.livre < c.quantite) return { ok: true, commande: c, n, livre: c.livre, complet: false, gain, prime: 0, xp: 0 };
+  const pay = paiementCommande(c);
+  if (pay.prime > 0) earn(state, pay.prime, `Prime du bac : ${def.nom}`);
+  gainXp(state, pay.xp);
+  noterObjectif(state, 'commande_bac', 1);
+  p.commandes = p.commandes.filter((x) => x !== c);
+  p.honorees += 1;
+  return { ok: true, commande: c, n, livre: c.livre, complet: true, gain: gain + pay.prime, prime: pay.prime, xp: pay.xp };
 }
 
 /* ---------- le catalogue d'import ---------- */

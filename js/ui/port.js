@@ -93,7 +93,9 @@ function surLaFerme() {
 // Où en est le personnage : { ici (on commerce), texte, boussole (on peut y mener la boussole) }.
 function presence() {
   const r = portOuvert(state, ouPerso());
-  if (r.ok) return { ici: true, texte: `Te voilà au comptoir du port, sous la halle : vends ce que tu as en trop, achète tes graines. Le bac emporte tout. Ouvert ${heuresPort()}.` };
+  // (I9c : en ligne, la caisse est commune : ce que chacun vend l'alimente, ce qu'il achète y puise)
+  const caisse = enLigne ? ` La caisse est commune : ${formatCoins(state.pieces)} 💰.` : '';
+  if (r.ok) return { ici: true, texte: `Te voilà au comptoir du port, sous la halle : vends ce que tu as en trop, achète tes graines. Le bac emporte tout. Ouvert ${heuresPort()}.${caisse}` };
   if (!lieuPort(state)) return { ici: false, texte: `${ouEstLePort()} (La carte du monde se prépare.)` };
   const b = state.monde && state.monde.but;
   return { ici: false, texte: r.raison, boussole: r.dist > PORT.PORTEE && !(b && b.sorte === 'port') };
@@ -177,6 +179,15 @@ function commandesHtml(p) {
   const L = commandesDuBac(state);
   const lignes = L.map((c) => {
     const it = DATA.OBJETS[c.objet], ok = p.ici && c.prete;
+    // (I9c : en ligne, une commande s'honore à plusieurs : chacun livre ce qu'il a porté ; la prime vient avec la dernière
+    // livraison)
+    if (c.aPlusieurs) {
+      const n = Math.min(c.charge, c.reste);
+      const titre = ok ? 'Livrer ce que tu as porté' : !p.ici ? 'Au comptoir du port' : `Porte des ${it.nom.toLowerCase()} (l'onglet Porter)`;
+      return `<li class="bac-commande${c.prete && n >= c.reste ? ' prete' : ''}"><span class="bac-ico" aria-hidden="true">${it.icone}</span>
+      <span class="bac-texte"><strong>${it.nom} × ${c.quantite}</strong><span class="muted">livré : ${formatQty(c.livre)} / ${c.quantite} · porté par toi : ${formatQty(c.charge)} · prime +${c.prime} % (${formatCoins(c.paiement.prime)} 💰, à la dernière livraison)</span></span>
+      <button type="button" class="btn small${ok ? ' primary' : ''}" data-action="port-honorer" data-commande="${c.id}"${ok ? '' : ' disabled'} title="${titre}">Livrer ${formatQty(n)}</button></li>`;
+    }
     const titre = ok ? 'Honorer la commande' : !p.ici ? 'Au comptoir du port' : `Porte ${c.quantite} ${it.nom.toLowerCase()} (l'onglet Porter)`;
     return `<li class="bac-commande${c.prete ? ' prete' : ''}"><span class="bac-ico" aria-hidden="true">${it.icone}</span>
       <span class="bac-texte"><strong>${it.nom} × ${c.quantite}</strong><span class="muted">porté : ${formatQty(Math.min(c.charge, c.quantite))} / ${c.quantite} · prime +${c.prime} %</span></span>
@@ -476,7 +487,8 @@ registerActions({
   },
   'port-honorer': (target) => {
     const r = applyResult(executer('port.honorer', { commande: target.dataset.commande, case: Math.max(0, ouPerso()) }));
-    if (r.ok) notify(`📦 Commande honorée : ${DATA.OBJETS[r.commande.objet].icone} × ${r.commande.quantite} (+${formatCoins(r.gain)} 💰, dont ${formatCoins(r.prime)} de prime ; +${r.xp} XP).`, { kind: 'info' });
+    if (r.ok && r.complet === false) notify(`📦 Livré à la commande : ${DATA.OBJETS[r.commande.objet].icone} × ${r.n} (+${formatCoins(r.gain)} 💰) ; il en reste ${r.commande.quantite - r.livre} à livrer, par toi ou un autre.`, { kind: 'info' });
+    else if (r.ok) notify(`📦 Commande honorée : ${DATA.OBJETS[r.commande.objet].icone} × ${r.commande.quantite} (+${formatCoins(r.gain)} 💰, dont ${formatCoins(r.prime)} de prime ; +${r.xp} XP).`, { kind: 'info' });
   },
   'port-contrat': (target) => {
     const r = applyResult(executer('port.contrat', { contrat: target.dataset.contrat, case: Math.max(0, ouPerso()) }));

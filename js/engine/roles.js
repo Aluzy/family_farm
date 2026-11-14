@@ -6,6 +6,8 @@
      visiteur     : il visite, regarde, dort avec les autres ; il ne change rien à la ferme ;
      jardinier    : en plus, le potager, les bêtes, la cuisine, les outils, le verger ;
      batisseur    : en plus, Construire, l'Atelier, la progression, les appareils, les agrandissements ;
+                    I9c : le port, vendre et porter pour le jardinier, acheter pour le bâtisseur, l'agrandir pour le
+                    propriétaire ;
      proprietaire : tout, dont retirer une structure sensible (un atelier, un bâtiment, un appareil, un
                     bloc unique, le silo : SENSIBLE) ; et lui seul invite, retire, change les rôles.
 
@@ -34,6 +36,13 @@ const PAR_TYPE = {
   'etable.tondre': 'jardinier', 'etable.herbes': 'jardinier', 'etable.place': 'batisseur',
   'frigo.ranger': 'jardinier', 'frigo.sortir': 'jardinier', 'frigo.toutRanger': 'jardinier', 'frigo.urgent': 'jardinier',
   'frigo.acheter': 'batisseur', 'frigo.agrandir': 'batisseur',
+  // I9c, le port (la grille d'I9e pour lui) : vendre ce qu'on a porté (vendre, décharger, honorer une commande, livrer un
+  // contrat) et porter, l'ami jardinier ; acheter (les semences, l'import), s'engager (un contrat), apporter au chantier
+  // du port, le bâtisseur ; agrandir le port, le propriétaire. Le visiteur ne vend ni n'achète.
+  'port.vendre': 'jardinier', 'port.decharger': 'jardinier', 'port.honorer': 'jardinier', 'port.livrer': 'jardinier',
+  'portage.charger': 'jardinier', 'portage.reprendre': 'jardinier', 'portage.vehicule': 'jardinier',
+  'port.acheter': 'batisseur', 'port.importer': 'batisseur', 'port.contrat': 'batisseur', 'port.apporter': 'batisseur',
+  'port.agrandir': 'proprietaire',
 };
 
 // Un bloc dont le retrait est réservé au propriétaire.
@@ -67,6 +76,6 @@ export function roleDemande(state, c) {
 export function refusDuRole(role, state, c) {
   const besoin = roleDemande(state, c);
   if ((RANG[role] ?? -1) >= RANG[besoin]) return null;
-  if (besoin === 'proprietaire') return 'Seul le propriétaire de la ferme retire un atelier, un bâtiment ou un appareil.';
+  if (besoin === 'proprietaire') return String(c && c.type) === 'port.agrandir' ? 'Seul le propriétaire de l\'île agrandit le port.' : 'Seul le propriétaire de la ferme retire un atelier, un bâtiment ou un appareil.';
   return `Ton rôle dans ce monde (${NOMS_ROLES[role] || role}) ne permet pas ce geste : il faut être ${NOMS_ROLES[besoin].toLowerCase()}. Le propriétaire peut changer ton rôle (👥).`;
 }

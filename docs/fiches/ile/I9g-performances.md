@@ -59,6 +59,15 @@ téléphone, avec un village complet toujours à l'écran, et corriger ce qui ne
 - **La mesure** : `node scripts/cout-ile.mjs` (les octets par minute à 2 et 4 joueurs, le contrôle d'un geste, une
   île très exploitée).
 
+## Revu par I9c (le port et la caisse)
+
+- **Un geste du port pèse ≈ 210 octets diffusés** (dont ≈ 44 pour son bilan) et coûte au serveur 0,1 à 0,3 ms : le
+  commerce ne pèse rien à côté des positions.
+- **La mise en ligne d'une île** calcule le plan de sa graine pour le lieu du port (≈ 0,7 s, une fois) : à ajouter au
+  coût de la création (I9f).
+- **Le contrôle de la case** d'un geste du port lit la dernière position relayée (`dernieresPos`) : si l'intérêt par
+  région change la façon dont les positions sont gardées, le garder.
+
 ## Hors périmètre
 
 - Toute règle de jeu ; de nouveaux dessins.

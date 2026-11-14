@@ -60,6 +60,19 @@ lient avec les villageois.
 - **Un bloc du dehors posé par un autre** (un chemin, un pont) se reprend avec `bloc.reprendre` : le propriétaire
   voudra peut-être protéger les chemins (comme une structure sensible).
 
+## Revu par I9c (le port et la caisse)
+
+- **Le port a déjà sa grille** (`js/engine/roles.js`, `PAR_TYPE`), celle de cette fiche : vendre, décharger, honorer
+  une commande, livrer un contrat et porter (`portage.*`), l'ami jardinier ; acheter, importer, accepter un contrat,
+  apporter au chantier du port, le bâtisseur ; agrandir le port, le propriétaire (« Seul le propriétaire de l'île
+  agrandit le port. »). Le visiteur ne vend ni n'achète. À reprendre dans le tableau de cas.
+- **Le journal du monde porte le bilan des gestes du commerce** (la colonne `bilan` : qui a vendu quoi, pour combien ;
+  les achats ; le niveau du port) ; l'ordre d'une tâche pourrait y avoir le sien (le villageois, la tâche d'avant et
+  d'après) par le même chemin (`bilanCommerce`, à généraliser).
+- **La charrette et les brouettes** sont à la ferme, donc à tous : une brouette par joueur à la fois, la charrette à un
+  seul ; vide, elle passe à qui la demande. Un réglage du propriétaire (« la charrette est à moi ») serait de cette
+  fiche, s'il manque.
+
 ## Hors périmètre
 
 - De nouveaux rôles ; la modération entre joueurs (le propriétaire peut déjà retirer un membre).

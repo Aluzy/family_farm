@@ -46,6 +46,11 @@
 //      seul coup gagne, le bois une fois ; B pose un chemin dehors, A le voit ; plus de bandeau « rien d'autre n'est
 //      encore synchronisé » ; le brouillard reste à chacun. (CAPTURES : l'arbre qui tombe chez B, le chemin, les deux
 //      dehors.)
+//  11. I9c : le port et la caisse en ligne (une île de 29, le jour 3, à 7 h 30) : sur la ferme, A attelle la charrette
+//      et y charge ses carottes, B ne peut pas l'atteler et prend la brouette pour son bois ; les deux au port, devant le
+//      comptoir ; le bac accoste à 9 h, vu par les deux au même pas ; A vend ses carottes, B son bois : la caisse commune
+//      monte de la somme juste chez l'autre, qui le lit (« … a tout vendu au port : 12 🥕 carotte ») ; le journal dit qui a vendu quoi.
+//      (CAPTURES : le refus de la charrette, les deux au port, le bac à quai, la caisse chez B, le journal.)
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
 import { createServer } from 'node:http';
@@ -54,7 +59,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { addItem, avancerJusqua, caseDansLaFerme, caseMarchable, caseVue, cheminDehorsSur, contexteSol, countItem, elementsSol, createNewGame, DATA, empreintePartie, farmTerrain, pasDe, testBatir, testFarmMap, testFermeConstruite, testSetLevel } from '../js/engine/index.js';
+import { addItem, avancerJusqua, caseDansLaFerme, caseMarchable, caseVue, cheminDehorsSur, comptoirDuPort, etatBac, contexteSol, countItem, elementsSol, createNewGame, DATA, empreintePartie, farmTerrain, pasDe, testBatir, testFarmMap, testFermeConstruite, testSetLevel } from '../js/engine/index.js';
 import { avecVillage, garden, plantRipe, reglagesDuJeu } from './engine/aide.mjs';
 import W from '../worker/src/index.js';
 import { Comptes } from '../worker/src/comptes.mjs';
@@ -518,6 +523,100 @@ try {
       await pa.screenshot({ path: process.env.CAPTURES + '/i9b-hote-dehors.png' });
       await pb.screenshot({ path: process.env.CAPTURES + '/i9b-invite-dehors.png' });
     }
+  }
+  // 11. I9c : le port et la caisse en ligne (une île de 29, le jour 3 : un jour de bac ; à 7 h 30, il accoste à 9 h)
+  {
+    const ile3 = avecVillage(() => createNewGame('29', { nom: 'Île' }));
+    ile3.essais = { ...(ile3.essais || {}), village: true };
+    testSetLevel(ile3, 5);   // (le commerce du port s'ouvre au niveau 3)
+    ile3.day = 3;
+    ile3.awakeMs = Math.round((7.5 - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000);
+    addItem(ile3, 'carotte', 12);
+    addItem(ile3, 'bois', 10);
+    addItem(ile3, 'brouette', 1);
+    addItem(ile3, 'charrette', 1);
+    ile3.cheval = { monte: false, nourri: true, attache: null };
+    const cree3 = await appel(A, '/mondes', { partie: { v: ile3.version, t: Date.now(), s: ile3 }, titre: 'L\'île du port' });
+    const inv3 = cree3.ok ? await appel(A, `/mondes/${cree3.monde}/invitations`, { role: 'batisseur' }) : {};
+    const entre3 = inv3.ok ? await appel(B, '/rejoindre', { code: inv3.code }) : {};
+    const reg3 = cree3.ok && mondes.get(cree3.monde).registre;
+    const comptoir = reg3 && comptoirDuPort(reg3.charger());
+    // (un geste joué par la page, à la case du personnage, comme un bouton de la fenêtre du port)
+    const jouerIci = (p, type, args = {}) => p.evaluate(async ([type, args]) => { const C = await import('/js/ui/commandes.js'); const r = C.executer(type, { ...args, case: Math.max(0, FarmStage.persoCase()) }); return { ok: !!r.ok, erreur: r.error || '', n: r.n, gain: r.gain }; }, [type, args]);
+    const attendreMonde = async (f, ms = 8000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (f()) return Date.now() - t0; await pa.waitForTimeout(25); } return null; };
+    const sansAide = (p) => p.evaluate(() => { if (document.getElementById('capture-style2')) return; const st = document.createElement('style'); st.id = 'capture-style2'; st.textContent = '#tuto-root, #consent-banner { display: none !important; }'; document.head.appendChild(st); });
+    // 11a. sur la ferme : A attelle la charrette et y charge les carottes ; B ne peut pas l'atteler, il prend la brouette, y charge le bois
+    for (const [p, dx] of [[pa, 0], [pb, -2]]) await p.evaluate((v) => localStorage.setItem('ferme-position', JSON.stringify(v)), pres(dx));
+    for (const p of [pa, pb]) await p.goto(`${BASE}/jeu.html?monde=${cree3.monde}`);
+    const dedans3 = await attendre(pa, pret, null, 30000) !== null && await attendre(pb, pret, null, 30000) !== null;
+    const attelle = await jouerIci(pa, 'portage.vehicule', { vehicule: 'charrette' });
+    const chargeA = await jouerIci(pa, 'portage.charger', { objet: 'carotte', quantite: 12 });
+    await attendreMonde(() => { const c = reg3.charger().charges[A.id]; return !!c && !!c.charge.carotte; });
+    await attendre(pb, (id) => { const c = FF.state.charges && FF.state.charges[id]; return !!c && !!c.charge && !!c.charge.carotte; }, A.id, 5000);
+    const refusB = await jouerIci(pb, 'portage.vehicule', { vehicule: 'charrette' });
+    const brouette = await jouerIci(pb, 'portage.vehicule', { vehicule: 'brouette' });
+    const chargeB = await jouerIci(pb, 'portage.charger', { objet: 'bois', quantite: 10 });
+    await attendreMonde(() => { const c = reg3.charger().charges[B.id]; return !!c && !!c.charge.bois; });
+    const w3 = reg3.charger();
+    const vueA = await pa.evaluate(async () => { const S = FarmStage.scene(); const P = await import('/js/engine/index.js'); return { vehicule: P.vehiculePortage(FF.state), volume: P.volumeCharge(FF.state) }; });
+    verifie(cree3.ok && entre3.ok && dedans3 && !!comptoir && attelle.ok && chargeA.ok && chargeA.n === 12 && !refusB.ok && /attelée par un autre joueur/.test(refusB.erreur) && brouette.ok && chargeB.ok
+      && w3.charges[A.id].vehicule === 'charrette' && w3.charges[B.id].vehicule === 'brouette' && vueA.vehicule === 'charrette' && countItem(w3, 'carotte') === 0,
+      `11a. la charrette : A l'attelle et y charge 12 carottes ; B ne peut pas (« ${refusB.erreur} ») ; il prend la brouette et y charge le bois ; chacun sa charge, le coffre commun vidé`);
+    if (process.env.CAPTURES) {
+      await sansAide(pb); await pb.waitForTimeout(300);
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9c-invite-charrette-refusee.png' });
+    }
+    // 11b. les deux au port, devant le comptoir (chacun repart là où sa page l'a vu en dernier : on l'y pose)
+    const auPort = (k) => ({ graine: '29', x: ((comptoir.devant % Wi) + k) * 16 + 8, y: (Math.floor(comptoir.devant / Wi) + 1) * 16 + 15 });
+    for (const [p, k] of [[pa, 0], [pb, 1]]) await p.evaluate((v) => localStorage.setItem('ferme-position', JSON.stringify(v)), auPort(k));
+    for (const p of [pa, pb]) await p.goto(`${BASE}/jeu.html?monde=${cree3.monde}`);
+    const auPort3 = await attendre(pa, pret, null, 30000) !== null && await attendre(pb, pret, null, 30000) !== null;
+    const ouvert = (p) => p.evaluate(async () => { const P = await import('/js/engine/index.js'); return { ok: P.portOuvert(FF.state, FarmStage.persoCase()).ok, aQuai: !!(P.etatBac(FF.state) || {}).aQuai, pas: P.pasDe(FF.state) }; });
+    const [oa, ob] = [await ouvert(pa), await ouvert(pb)];
+    const aVoit3 = await voitLAutre(pa, B.id, await piedsDe(pb)), bVoit3 = await voitLAutre(pb, A.id, await piedsDe(pa));
+    verifie(auPort3 && oa.ok && ob.ok && aVoit3 !== null && bVoit3 !== null, `11b. les deux joueurs au port, au comptoir (ouvert chez chacun), chacun voit l'autre ; le bac ${oa.aQuai ? 'est déjà à quai' : 'n\'est pas encore là'} (pas ${oa.pas})`);
+    if (process.env.CAPTURES) {
+      for (const p of [pa, pb]) { await pourCapture(p); await p.waitForTimeout(600); }
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9c-hote-port.png' });
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9c-invite-port.png' });
+    }
+    // 11c. le bac accoste à 9 h : chacun le voit arriver au même pas, à quai chez les deux
+    const accoste = {};
+    for (const t0 = Date.now(); Date.now() - t0 < 90000 && !(accoste.A && accoste.B);) {
+      for (const [q, p] of [['A', pa], ['B', pb]]) { if (accoste[q]) continue; const o = await ouvert(p); if (o.aQuai) accoste[q] = o; }
+      await pa.waitForTimeout(100);
+    }
+    const quaiMonde = reg3.avancer() && !!etatBac(reg3.charger()).aQuai;
+    verifie(!!accoste.A && !!accoste.B && (oa.aQuai || accoste.A.pas === accoste.B.pas) && quaiMonde, `11c. le bac à quai, vu par les deux ${oa.aQuai ? '' : `au même pas (A : ${accoste.A && accoste.A.pas}, B : ${accoste.B && accoste.B.pas})`} et par le monde`);
+    if (process.env.CAPTURES) {
+      for (const p of [pa, pb]) { await pourCapture(p); await p.waitForTimeout(8000 / 2); }
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9c-hote-bac.png' });
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9c-invite-bac.png' });
+    }
+    // 11d. A vend ses carottes, B son bois : la caisse commune monte de la somme juste, chez l'autre aussi ; le journal dit qui a vendu quoi
+    for (const p of [pa, pb]) await p.evaluate(() => { const st = document.getElementById('capture-style'); if (st) st.remove(); });
+    await sansAide(pb);
+    await pb.evaluate(async () => { const W = await import('/js/ui/stage-windows.js'); W.openStageWindow('comptoir'); });
+    const p0 = reg3.charger().pieces;
+    const venteA = await jouerIci(pa, 'port.decharger');
+    const msCaisseB = await attendre(pb, (v) => FF.state.pieces === v && /a tout vendu au port : 12/.test(document.body.innerText), p0 + (venteA.gain || 0), 5000);
+    if (process.env.CAPTURES) { await pb.waitForTimeout(400); await pb.screenshot({ path: process.env.CAPTURES + '/i9c-invite-caisse.png' }); }
+    const venteB = await jouerIci(pb, 'port.decharger');
+    const msCaisseA = await attendre(pa, (v) => FF.state.pieces === v, p0 + (venteA.gain || 0) + (venteB.gain || 0), 5000);
+    await attendreMonde(() => reg3.charger().pieces === p0 + (venteA.gain || 0) + (venteB.gain || 0));
+    const caisses = [reg3.charger().pieces, await pa.evaluate(() => FF.state.pieces), await pb.evaluate(() => FF.state.pieces)];
+    await action(pa, 'monde-journal');
+    const journal3 = await attendre(pa, () => /a tout vendu au port : 10/.test(document.body.innerText) && /a tout vendu au port : 12/.test(document.body.innerText), null, 5000);
+    // (qui : le journal du monde, par compte — les noms montrés sont ceux des personnages)
+    const qui3 = reg3.journal(A.id).evts.filter((e) => e.type === 'port.decharger').map((e) => [e.acteur === A.id ? 'A' : e.acteur === B.id ? 'B' : '?', Object.keys(e.bilan.vendus).join()]);
+    const texteJournal = await pa.evaluate(() => (document.querySelector('.journal-monde') || {}).innerText || '');
+    verifie(venteA.ok && venteB.ok && venteA.gain > 0 && venteB.gain > 0 && msCaisseB !== null && msCaisseA !== null && caisses.every((x) => x === p0 + venteA.gain + venteB.gain) && journal3 !== null && JSON.stringify(qui3) === JSON.stringify([['B', 'bois'], ['A', 'carotte']]) && /carotte/.test(texteJournal) && /bois/.test(texteJournal) && (await memePas(pa, reg3)) && (await memePas(pb, reg3)),
+      `11d. A vend ses carottes (+${venteA.gain}), B son bois (+${venteB.gain}) : la caisse commune monte de la somme juste (${p0} → ${caisses[0]}) chez l'autre en ${msCaisseB} ms et ${msCaisseA} ms ; le journal dit qui a vendu quoi`);
+    if (process.env.CAPTURES) {
+      await sansAide(pa); await pa.waitForTimeout(300);
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9c-journal.png' });
+    }
+    await action(pa, 'close-modal');
   }
   // 8e. (PORT=1, long : ≈ 2 min) A marche jusqu'au port par son chemin, B le suit ; au port, chacun voit l'autre
   if (process.env.PORT) {

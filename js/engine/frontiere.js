@@ -14,7 +14,11 @@ import { villageActif } from './village.js';
    I9b (les changements du monde) : sur une île, les gestes du dehors passent (COMMANDES_DEHORS : récolter une
    pièce du monde, pêcher dans ses eaux, poser, reprendre, déplacer, tourner un bloc du dehors) ; les autres
    gestes qui visent une case hors de la ferme (un arbre de la ferme, un labour, un mur…) n'ont pas de sens
-   dehors : refusés, avec leur mot. Le chantier éteint, tout est comme avant (E-8). */
+   dehors : refusés, avec leur mot. Le chantier éteint, tout est comme avant (E-8).
+
+   I9c (le port et la caisse en ligne) : les commandes du port (port.*) et du portage (portage.*) passent aussi ; elles
+   portent la case du personnage (`case`, que la page donne), et le moteur vérifie ensuite la distance au comptoir
+   (port.js portOuvert : PORT.PORTEE) ou la ferme (portage.js : on charge sur la ferme). */
 
 // La case `c` est-elle dans le rectangle de la ferme ? (Un terrain sans ferme : oui.)
 export function caseDansLaFerme(state, c) {
@@ -52,18 +56,25 @@ export function ilePartagee(state) {
   return villageActif(state);
 }
 
+// I9c : les commandes du port et du portage (commandes.js ; elles portent toutes `case`).
+export const COMMANDES_DU_PORT = Object.freeze([
+  'port.vendre', 'port.acheter', 'port.honorer', 'port.importer', 'port.contrat', 'port.livrer', 'port.apporter', 'port.agrandir', 'port.decharger',
+  'portage.charger', 'portage.reprendre', 'portage.vehicule',
+]);
 // I9b : les commandes qui se jouent hors de la ferme, sur une île partagée : prendre une pièce du monde (couper,
 // casser, faucher, cueillir, ramasser : js/engine/monde-recolte.js), pêcher dans ses eaux, et les blocs du dehors
 // (fiche I2 : un chemin, un pont, une barrière, un banc, une lumière ; blocs.js les vérifie, dehors.js
-// poseDehorsStatus).
+// poseDehorsStatus) ; I9c, le port et le portage.
 export const COMMANDES_DEHORS = new Set([
   'monde.recolter', 'outil.pecher',
   'bloc.poser', 'bloc.reprendre', 'bloc.remettre', 'bloc.deplacer', 'bloc.tourner', 'bloc.orienter', 'bloc.peindre', 'portail.basculer',
+  // (I9c : le port, au comptoir ; le portage, sur la ferme)
+  ...COMMANDES_DU_PORT,
 ]);
 
 // Le mot d'un refus à la frontière (la commande vise hors de la ferme).
 export const HORS_FERME = 'Hors de la ferme : en ligne, le monde partagé, c\'est la ferme.';
-export const HORS_FERME_ILE = 'Hors de la ferme, ce geste ne se fait pas : dehors, on récolte, on pêche et l\'on pose des chemins, des ponts, des barrières, des bancs et des lumières.';
+export const HORS_FERME_ILE = 'Hors de la ferme, ce geste ne se fait pas : dehors, on récolte, on pêche, on commerce au port et l\'on pose des chemins, des ponts, des barrières, des bancs et des lumières.';
 // `type` (I9b) : celui de la commande ; sur une île, une commande du dehors passe (le moteur la vérifie ensuite).
 export function refusFrontiere(state, args, type = null) {
   if (!commandeHorsDeLaFerme(state, args)) return null;

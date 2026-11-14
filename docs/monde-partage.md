@@ -253,7 +253,7 @@ F.2 (l'horloge figée) pour les mondes du chantier ; le jeu publié les garde ta
 | L'île : son relief, sa nature, ses lieux (tirés de la graine chez chacun) | Son personnage (son allure, sa place) |
 | Les changements de l'île : ce qu'on y a pris et quand cela revient, les chemins et les blocs posés dehors, les quotas du jour | Son énergie |
 | La ferme, comme aujourd'hui (le bâti, le potager, les bêtes, la cuisine, les appareils) | Son brouillard : ce que SON personnage a vu de l'île |
-| Le coffre commun (F.1) et **la caisse** (D14) | Son sac (les provisions d'une sortie) et ce qu'il porte (I9c : sa charge) |
+| Le coffre commun (F.1) et **la caisse** (D14, I9c) | Son sac (les provisions d'une sortie) et ce qu'il porte (I9c : sa charge) |
 | Le port, le bac, les commandes, le catalogue d'import | **Son amitié** avec chaque villageois (I9d) |
 | Les villageois, leurs tâches, leurs liens, les commerces, les vocations, les fêtes et les projets | Ses réglages (affichage, son, aide) |
 | La chronique et les noms | L'outil qu'il a en main (E-9) |
@@ -352,6 +352,32 @@ synchronisé » d'I9a est retiré : hors de la ferme, ce qu'un joueur change est
 - **Le sac de chacun** : `state.sacs`, par compte, dans la partie d'un monde de l'île (le propriétaire reçoit celui de
   sa partie ; un invité arrive sans) ; chacun le remplit, le vide, en mange dehors. La sauvegarde passe au format 105.
 - **Le brouillard reste à chacun** (I9a).
+
+### Ce que fait I9c (le port et la caisse)
+
+Le détail et les mesures : `docs/ile.md`, « Le port et la caisse en ligne ».
+
+- **La caisse est commune** (D14), comme le coffre (F.1) : les pièces de la partie du monde sont à tous ses membres.
+  Une vente de n'importe quel joueur l'alimente, un achat y puise ; chacun la voit monter quand l'autre vend.
+- **Les commandes du port passent** : `port.vendre`, `port.acheter`, `port.decharger`, `port.honorer`,
+  `port.importer`, `port.contrat`, `port.livrer`, `port.apporter`, `port.agrandir`, et le portage (`portage.*`), dans
+  `COMMANDES_DU_PORT` (`js/engine/frontiere.js`). Jouées par le monde, payées tout de suite.
+- **Le comptoir est le même pour tous** : le lieu du port est écrit dans la partie à la mise en ligne
+  (`state.port.lieu`, d'après le plan de la graine) ; le monde et chaque joueur le lisent sans rien demander à la page.
+- **La charge de chacun** (`state.charges`, par compte, comme le sac) : ce qu'il a chargé sur la ferme (sorti du
+  coffre commun), à la main, à la brouette ou à la charrette. Une brouette sert un joueur à la fois (autant que de
+  brouettes au coffre) ; la charrette est attelée par un seul ; chargée, elle est à lui ; vide, elle passe au premier
+  qui la demande. Le propriétaire reçoit le portage de sa partie.
+- **Une commande du bac s'honore à plusieurs** : chacun livre ce qu'il a porté, payé au prix de vente ; la prime et
+  l'expérience viennent avec la dernière livraison. Deux joueurs sur le même lot : le premier arrivé l'a.
+- **Le bac** est dans le pas du monde (I9a2) : chacun le voit accoster au même pas, avec les mêmes commandes.
+- **Les rôles** : vendre et porter, l'ami jardinier ; acheter, le bâtisseur ; agrandir le port, le propriétaire ; le
+  visiteur ne vend ni n'achète (la grille complète : I9e).
+- **Le journal du monde** garde le bilan de chaque geste du commerce (qui a vendu quoi, pour combien ; les achats ; le
+  niveau du port) ; l'événement le porte aussi, et chaque joueur lit ce que les autres font au port.
+- **La case d'un geste du port vient de la page** : le monde la compare à la dernière position relayée du joueur (12
+  cases au plus). Un jeu trafiqué pourrait encore mentir sur sa position : c'est un garde-fou, pas une preuve.
+- **La sauvegarde** passe au format 106 (`charges` dans la partie d'un monde ; une partie solo n'y gagne rien).
 
 ### Le poids, et le plafond
 

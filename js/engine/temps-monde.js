@@ -12,6 +12,7 @@ import { assurerArrivee } from './chronique.js';
 import { energyMax } from './stamina.js';
 import { penalite } from './inventory.js';
 import { ilePartagee } from './frontiere.js';
+import { chargesDe } from './portage.js';
 
 /* ---------- I9a2 : l'horloge commune d'un monde de l'île (docs/fiches/ile/I9a2-note-horloge.md) ----------
 
@@ -156,16 +157,51 @@ export function energieDe(state, compte) {
 // à provisions aussi (state.sacs, posé dans state.equipement.sac le temps de la commande : poserSacDe).
 export function avecActeur(state, compte, fn) {
   if (!compte || compte === ACTEUR_DU_MONDE || !horlogeVivante(state)) return fn();
-  const E = energiesDe(state), avant = state.energie;
-  state.energie = energieDe(state, compte);
+  const E = energiesDe(state), avant = state.energie, e0 = energieDe(state, compte);
+  state.energie = e0;
   const rendreSac = poserSacDe(state, compte);
+  const rendreCharge = poserChargeDe(state, compte);
   try {
     return fn();
   } finally {
-    E[compte] = Math.max(0, Math.round(Number(state.energie) || 0));
+    // (I9c : un compte qui n'a encore rien dépensé n'est noté que si son énergie change : un geste refusé ne touche pas
+    // la partie — le monde le jouait et le refusait, sa partie gagnait l'énergie pleine du compte, pas celle des joueurs)
+    const e = Math.max(0, Math.round(Number(state.energie) || 0));
+    if (compte in E || e !== e0) E[compte] = e;
     state.energie = avant;
     rendreSac();
+    rendreCharge();
   }
+}
+
+/* -- I9c : la charge de chacun (docs/monde-partage.md § 13 : ce qu'il porte au port, ses mains, sa brouette) --
+
+   state.charges = { <compte>: { vehicule, charge } } (portage.js : le véhicule choisi, les lots chargés) : la charge de
+   chaque joueur d'un monde de l'île. Un compte qui n'y est pas porte à la main, rien. Le propriétaire reçoit celle de
+   sa partie à la mise en ligne (worker/src/monde.mjs). Le moteur la lit dans state.portage : une commande y pose celle
+   de son acteur le temps de se jouer, puis la range (avecActeur) ; une charge vide, à la main, n'est pas gardée. Une
+   partie sans state.charges (solo, une ferme d'avant, une île mise en ligne avant I9c) ne change pas. */
+
+// La charge de `compte` (null : il ne porte rien, à la main).
+export function chargeDuCompte(state, compte) {
+  const C = chargesDe(state);
+  return C && C[compte] && typeof C[compte] === 'object' ? C[compte] : null;
+}
+// Une charge vide, à la main (rien à garder).
+export function chargeVide(p) {
+  return !p || typeof p !== 'object' || ((p.vehicule || 'mains') === 'mains' && !Object.values(p.charge || {}).some((l) => Array.isArray(l) && l.some((x) => x && x.qty > 0)));
+}
+// La charge de `compte` posée dans state.portage ; rend la fonction qui la range et remet celle de la partie.
+function poserChargeDe(state, compte) {
+  const C = chargesDe(state);
+  if (!C) return () => {};
+  const avant = 'portage' in state ? state.portage : undefined;
+  state.portage = chargeDuCompte(state, compte) || { vehicule: 'mains', charge: {} };
+  return () => {
+    const p = state.portage;
+    if (chargeVide(p)) delete C[compte]; else C[compte] = p;
+    if (avant === undefined) delete state.portage; else state.portage = avant;
+  };
 }
 
 /* -- I9b : le sac de chacun (docs/monde-partage.md § 13 : ses provisions de sortie) --

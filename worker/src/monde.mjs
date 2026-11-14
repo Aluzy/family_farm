@@ -2,7 +2,8 @@
 // joue les commandes des joueurs avec le même moteur que le jeu (js/engine/, F0-3 : executerCommande),
 // les numérote (la révision), les écrit dans un journal et les diffuse aux joueurs connectés, qui les
 // rejouent chez eux (le moteur est déterministe : F0-4). Décisions du créateur :
-//   F.1 : un coffre commun (l'inventaire de la partie du monde est à tous ses membres) ;
+//   F.1 : un coffre commun (l'inventaire de la partie du monde est à tous ses membres) ; D14 (I9c) : la caisse aussi
+//         (ses pièces) : une vente de n'importe quel joueur l'alimente, un achat y puise ; chacun porte sa charge ;
 //   F.2 : le temps du monde est figé quand personne n'y joue (rien ne tourne sans joueur) ; les
 //         commandes ne font pas avancer l'horloge ; E-5 : la nuit est partagée : quand tous les joueurs
 //         connectés sont couchés, le monde joue lui-même la nuit (nuit.partagee, acteur « monde ») ;
@@ -24,8 +25,9 @@
 //   instantane(rev, json)             : la partie complète à la révision `rev` (refait toutes les
 //                                       INSTANTANE_TOUS révisions ; I9a2, un monde de l'île : toutes les
 //                                       INSTANTANE_PAS pas ou INSTANTANE_GESTES gestes, et au départ du dernier) ;
-//   journal(rev, id, acteur, cmd, ts) : chaque commande acceptée, dans l'ordre (id unique : un doublon
-//                                       n'est jamais rejoué) ; I9a2 : cmd.pas, le pas où elle s'est jouée ;
+//   journal(rev, id, acteur, cmd, ts, bilan) : chaque commande acceptée, dans l'ordre (id unique : un doublon
+//                                       n'est jamais rejoué) ; I9a2 : cmd.pas, le pas où elle s'est jouée ; I9c : bilan,
+//                                       ce qu'a fait un geste du commerce (vendu, acheté, le niveau du port), jamais rejoué ;
 //   membres(compte, nom, role, revoque).
 // La partie en mémoire se refait au réveil du Durable Object : le dernier instantané, puis le journal (I9a2 :
 // chaque commande à son pas, les pas entre deux rejoués un à un).
@@ -41,7 +43,8 @@
 //                                                   ← { t: 'refus', raison } (version, membre)
 //   → { t: 'cmd', id, type, args }                ← { t: 'ack', id, ok, rev?, erreur? }
 //                                                   ← à tous : { t: 'evt', rev, acteur, cmd: { id, type, args, pas? }, reel? }
-//                                                   (I9a2 : le pas de la commande, l'heure réelle de ce pas)
+//                                                   (I9a2 : le pas de la commande, l'heure réelle de ce pas ;
+//                                                   I9c : bilan, ce qu'a fait un geste du commerce : bilanCommerce)
 //   → { t: 'pos', x, y }                          ← aux autres : { t: 'pos', acteur, nom, x, y } (E-4 : où regarde
 //                                                   chaque joueur ; relayé, jamais écrit ; POS_MS au plus souvent)
 //                                                   ← aux autres, à son départ : { t: 'parti', acteur }
@@ -60,6 +63,7 @@
 import {
   avancerJusqua, caseDansLaFerme, commandeHorsDeLaFerme, COMMANDES, DATA, farmTerrain, dureeDuPas, empreintePartie, energiesDe, executerCommande, GAME_VERSION, horlogeDe, horlogeVivante,
   ilePartagee, limiterSolDirect, migrate, pasDe, pasDuMonde, pickUpAll, ramasserMorceau, refusDuRole, refusFrontiere,
+  chargeVide, COMMANDES_DU_PORT, poserLieuDuPort,
 } from '../../js/engine/index.js';
 
 export const MONDE = {
@@ -82,6 +86,9 @@ export const MONDE = {
   REGIONS_SOL: 12,          // les régions du sol gardées en mémoire (un bloc posé dehors les lit : dehors.js) ; les plus
                             // anciennes s'en vont (une région ≈ 45 Ko, refaite en ≈ 12 ms)
   POS_LOIN_MS: 2000,        // une position relayée au plus toutes les POS_LOIN_MS ms à qui joue loin (hors des régions voisines)
+  // I9c (le port en ligne) :
+  ECART_CASES: 12,          // un geste du port dont la case est à plus de 12 cases de la dernière position relayée du
+                            // joueur est refusé (la page donne la case ; PORT.PORTEE = 3, plus le chemin entre deux positions)
 };
 // (I9b : le sol d'une île, tiré de la graine pour un bloc posé dehors : ses dernières régions seulement)
 limiterSolDirect(MONDE.REGIONS_SOL);
@@ -123,6 +130,28 @@ export function creerTablesMonde(sql) {
   // (E-11 : le rôle que donne une invitation ; une base d'avant l'a sans cette colonne)
   // (ajoutée une fois : sur une base qui l'a déjà, SQLite refuse, et c'est bien)
   try { lignes(sql.exec('ALTER TABLE invitations ADD COLUMN role TEXT')); } catch (e) { /* (déjà là) */ }
+  // (I9c : le bilan d'un geste du commerce au journal : qui a vendu quoi, pour combien ; une base d'avant l'a sans)
+  try { lignes(sql.exec('ALTER TABLE journal ADD COLUMN bilan TEXT')); } catch (e) { /* (déjà là) */ }
+}
+
+// I9c : les gestes du port et du portage (leur case est vérifiée : refusDeLaCase).
+const PORT_ET_PORTAGE = new Set(COMMANDES_DU_PORT);
+// I9c : le bilan d'un geste du commerce (`c`, la commande ; `r`, son résultat), pour le journal du monde et pour les
+// autres joueurs : { objet?, n?, gain?, cout?, niveau?, vendus? } ; null pour un autre geste.
+export function bilanCommerce(c, r) {
+  const a = (c && c.args) || {};
+  switch (c && c.type) {
+    case 'port.vendre': return { objet: a.objet, n: r.sold, gain: r.gain };
+    case 'port.decharger': return { vendus: r.vendus || {}, gain: r.gain };
+    case 'port.acheter': return { objet: a.objet, n: r.bought, cout: r.cost };
+    case 'port.honorer': return { objet: r.commande && r.commande.objet, n: Number.isInteger(r.n) ? r.n : r.commande && r.commande.quantite, gain: r.gain, ...(r.complet === false ? { reste: r.commande.quantite - r.livre } : {}) };
+    case 'port.livrer': return { objet: r.contrat && r.contrat.objet, n: r.n, gain: (r.gain || 0) + (r.prime || 0) };
+    case 'port.importer': return { article: a.article, cout: r.cout };
+    case 'port.contrat': return { objet: r.contrat && r.contrat.objet, n: r.contrat && r.contrat.quantite };
+    case 'port.apporter': return { apporte: r.apporte || {} };
+    case 'port.agrandir': return { niveau: r.niveau };
+    default: return null;
+  }
 }
 
 // E-3 : un secret d'invitation au hasard (24 octets : 192 bits, en base64url) et son empreinte.
@@ -261,6 +290,12 @@ export class MondeRegistre {
       // (I9b : le sac de chacun ; celui du propriétaire est le sac de sa partie, les autres arrivent sans)
       s.sacs = {};
       if (s.equipement && s.equipement.sac) { s.sacs[proprietaire] = s.equipement.sac; s.equipement.sac = null; }
+      // (I9c : la charge de chacun ; celle du propriétaire est le portage de sa partie, les autres arrivent les mains
+      // vides ; le lieu du port, écrit dans la partie : le comptoir est le même pour le monde et pour chacun)
+      s.charges = {};
+      if (s.portage && !chargeVide(s.portage)) s.charges[proprietaire] = s.portage;
+      delete s.portage;
+      poserLieuDuPort(s);
       this.poserMeta('horloge', JSON.stringify({ pas: pasDe(s), reel: this.maintenant(), actif: false, depart: null }));
     }
     this.faire('INSERT INTO instantane (rev, json) VALUES (?, ?)', 0, JSON.stringify(s));
@@ -473,7 +508,23 @@ export class MondeRegistre {
     // un bloc du dehors avec ce sol, comme en solo)
     const frontiere = refusFrontiere(this.charger(), c.args, c.type);
     if (frontiere) return { ok: false, erreur: frontiere };
+    // (I9c : la case d'un geste du port vient de la page ; le monde la compare à la dernière position relayée du joueur)
+    const loin = this.refusDeLaCase(compte, c);
+    if (loin) return { ok: false, erreur: loin };
     return this.jouer(compte, { id: c.id, type: c.type, args: c.args }, t);
+  }
+
+  // I9c : un geste du port ou du portage (sa case : celle du personnage, que la page donne) loin de la dernière position
+  // que le joueur a relayée (E-4 : ses pieds, en px) est refusé : plus de MONDE.ECART_CASES cases (le chemin parcouru
+  // entre deux positions, l'arrondi). Sans position connue (il n'a pas encore bougé, une ferme d'avant), rien à comparer.
+  refusDeLaCase(compte, c) {
+    if (!c || !PORT_ET_PORTAGE.has(c.type) || !c.args || !Number.isInteger(c.args.case)) return null;
+    const pos = this.dernieresPos.get(compte), s = this.charger();
+    if (!pos || !ilePartagee(s)) return null;
+    const W = farmTerrain(s).LARGEUR, x = Math.floor(pos.x / 16), y = Math.floor((pos.y - 1) / 16);
+    const dx = (c.args.case % W) - x, dy = Math.floor(c.args.case / W) - y;
+    if (dx * dx + dy * dy <= MONDE.ECART_CASES * MONDE.ECART_CASES) return null;
+    return 'Ton personnage n\'est pas là où ce geste se fait (le monde l\'a vu ailleurs) : approche-toi.';
   }
 
   // E-5 : la nuit partagée (tous les joueurs connectés sont couchés), jouée par le monde lui-même.
@@ -492,12 +543,14 @@ export class MondeRegistre {
     const r = executerCommande(s, c, vivante && acteur !== ACTEUR_MONDE ? { acteur } : {});
     if (!r.ok) return { ok: false, erreur: r.error || 'Refusé.' };
     this.rev += 1;
-    this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, c.id, acteur, JSON.stringify(c), t);
+    // (I9c : ce qu'a fait un geste du commerce, en peu de mots : au journal, et à tous avec l'événement)
+    const bilan = bilanCommerce(c, r);
+    this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts, bilan) VALUES (?, ?, ?, ?, ?, ?)', this.rev, c.id, acteur, JSON.stringify(c), t, bilan ? JSON.stringify(bilan) : null);
     if (vivante) {
       this.gestes += 1;
       if (this.gestes >= MONDE.INSTANTANE_GESTES) this.instantane();
     } else if (this.rev % MONDE.INSTANTANE_TOUS === 0) this.instantane();
-    return { ok: true, rev: this.rev, evt: { t: 'evt', rev: this.rev, acteur, cmd: c, ...(vivante ? { reel: this.reel } : {}) } };
+    return { ok: true, rev: this.rev, evt: { t: 'evt', rev: this.rev, acteur, cmd: c, ...(vivante ? { reel: this.reel } : {}), ...(bilan ? { bilan } : {}) } };
   }
 
   // Un instantané de la partie à la révision courante ; le journal plus ancien que JOURNAL_GARDE
@@ -604,8 +657,8 @@ export class MondeRegistre {
     this.partie = s;
     this.rev += 1;
     const t = this.maintenant();
-    // (I9a2 : une île repart du pas de sa sauvegarde, à l'heure de la restauration)
-    if (horlogeVivante(s)) { horlogeDe(s); this.reel = t; }
+    // (I9a2 : une île repart du pas de sa sauvegarde, à l'heure de la restauration ; I9c : avec le lieu de son port)
+    if (horlogeVivante(s)) { horlogeDe(s); poserLieuDuPort(s); this.reel = t; }
     const marque = { id: `restaure-${this.rev}-${t.toString(36)}`, type: RESTAURER, args: { rev: save.rev, jour: save.jour } };
     this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, marque.id, par, JSON.stringify(marque), t);
     this.instantane();
@@ -629,10 +682,12 @@ export class MondeRegistre {
     if (par !== this.meta('proprietaire')) return { ok: false, statut: 403, erreur: 'Seul le propriétaire du monde lit son journal.' };
     const a = Number(avant), borne = Number.isInteger(a) && a > 0 ? a : Number.MAX_SAFE_INTEGER;
     const noms = Object.fromEntries(this.tous('SELECT compte, nom FROM membres').map((m) => [m.compte, m.nom]));
-    const evts = this.tous('SELECT rev, acteur, cmd, ts FROM journal WHERE rev < ? ORDER BY rev DESC LIMIT ?', borne, JOURNAL_PAGE).map((e) => {
+    const evts = this.tous('SELECT rev, acteur, cmd, ts, bilan FROM journal WHERE rev < ? ORDER BY rev DESC LIMIT ?', borne, JOURNAL_PAGE).map((e) => {
       let type = '';
       try { type = JSON.parse(e.cmd).type || ''; } catch (x) { type = ''; }
-      return { rev: e.rev, acteur: e.acteur, nom: e.acteur === ACTEUR_MONDE ? 'Le monde' : noms[e.acteur] || 'Un ancien membre', type, ts: e.ts };
+      let bilan = null;
+      try { bilan = e.bilan ? JSON.parse(e.bilan) : null; } catch (x) { bilan = null; }
+      return { rev: e.rev, acteur: e.acteur, nom: e.acteur === ACTEUR_MONDE ? 'Le monde' : noms[e.acteur] || 'Un ancien membre', type, ts: e.ts, ...(bilan ? { bilan } : {}) };
     });
     return { ok: true, evts };
   }

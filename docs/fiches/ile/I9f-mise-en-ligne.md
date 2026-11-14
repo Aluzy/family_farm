@@ -71,6 +71,15 @@ jeu, comme I7f l'a fait pour les parties solo.
 - **Le plafond** : une île très exploitée pèse 17 à 38 Ko d'écarts (`node scripts/cout-ile.mjs`) ; l'île hors de la
   ferme reste sous ses 64 Ko.
 
+## Revu par I9c (le port et la caisse)
+
+- **La mise en ligne d'une île écrit le lieu du port dans la partie** (`state.port.lieu`, d'après le plan de sa graine :
+  ≈ 0,7 s, une fois ; `MondeRegistre.creer` et `restaurer`) et fait du portage de la partie la charge du propriétaire
+  (`state.charges`). Une île mise en ligne avant I9c n'a pas de lieu : son comptoir reste fermé en ligne (« la carte
+  du monde se prépare »). La migration des mondes existants doit le poser (une commande du monde, ou une reprise de
+  l'instantané diffusée à tous).
+- **Le format 106** (`charges`) : la migration d'un monde le répare.
+
 ## Hors périmètre
 
 - Fusionner une île solo et son île en ligne ; un monde à plus de joueurs qu'aujourd'hui.
