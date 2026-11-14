@@ -132,9 +132,12 @@ def planche_ton(p, s):
 def quai(v):
     """Une case du quai, variante v : vers le sud (planches en travers, horizontales), 0 la moitié gauche, 1 la
     droite, 2 et 3 leur bout (la face, les pieux) ; vers l'est (planches verticales), 4 la rangée du haut, 5 celle
-    du bas (sa face, ses pieux tout du long), 6 et 7 leur bout à l'est. 16 × 16, le pied au bas de la case."""
+    du bas (sa face, ses pieux tout du long), 6 et 7 leur bout à l'est ; la culée, la première travée posée sur
+    la terre (la case de la rive) : 8 et 9 vers le sud, 10 et 11 vers l'est (culee()). 16 × 16, le pied au bas de
+    la case."""
     t = Toile(16, 16)
-    sud, j, bout = v < 4, v & 1, bool(v & 2)
+    culee = v >= 8
+    sud, j, bout = v < 4 or v in (8, 9), v & 1, not culee and bool(v & 2)
     face = (sud and bout) or (not sud and j == 1)
     y_fin = FACE[0] if face else 16
     for y in range(y_fin):
@@ -228,23 +231,103 @@ def quai(v):
             t.put(x, by + 4, ton(BOIS_MER[0], 0.18))             # son ombre sur les planches
         t.put(bx - 1, by, OUT)
         t.put(bx + 4, by, OUT)
+    if culee:
+        culee_pierre(t, sud, j)
     return t.im, (8, 16)
+
+
+SEUIL = 4                              # la culée : son seuil de pierre, côté terre (4 px : la largeur d'une planche)
+
+
+def culee_pierre(t, sud, j):
+    """La culée : sur la case de la rive, les planches du quai reposent sur un massif de pierre posé dans le sable.
+    Côté terre (le haut vers le sud, la gauche vers l'est), son seuil : une bordure de pierres taillées vue de haut
+    (leur dessus clair, biseauté, chacune sa nuance), l'ombre que les planches y laissent ; vers l'est, la rangée du
+    bas montre la face du massif (des moellons, sous la poutre de rive) au lieu des pieux dans l'eau. Les planches
+    commencent ainsi sur la terre, sans eau entre le sable et le quai."""
+    # le seuil : (a le long du quai, de la terre vers le large ; b en travers) → (x, y)
+    xy = (lambda a, b: (b, a)) if sud else (lambda a, b: (a, b))
+    lg = 16 if sud else (10 if j == 1 else 16)               # vers l'est, en bas : la face commence à la rangée 10
+    for b in range(lg):
+        bb = b + 16 * j                                        # (les pierres suivent d'une moitié à l'autre)
+        pierre = (bb + 1) // 6
+        R = PIERRE[(pierre * 5 + (1 if sud else 2)) % len(PIERRE)]
+        base = 0.66 + 0.07 * bruit(pierre, 11, 50 + (0 if sud else 7))
+        eb = (bb + 1) % 6
+        for a in range(SEUIL):
+            x, y = xy(a, b)
+            if a == 0:
+                c = OUT                                        # le contour, côté terre
+            elif eb == 0:
+                c = ton(R, 0.20 + 0.05 * bruit(x, y, 51))      # le joint entre deux pierres
+            elif a == SEUIL - 1:
+                # la face du seuil, où les planches s'y appuient : dans l'ombre, plus froide au fond
+                c = ton(R, 0.30 - 0.05 * (eb == 5) + 0.03 * bruit(x, y, 52))
+            else:
+                g = base + (0.12 if a == 1 else 0) + (0.07 if eb == 1 else -0.08 if eb == 5 else 0)
+                g += 0.03 * bruit(x, y, 53)
+                c = ton(R, g)
+            t.put(x, y, c)
+    # l'ombre du seuil sur la première planche (l'occlusion au pied de la bordure)
+    for b in range(lg):
+        x, y = xy(SEUIL, b)
+        p = t.get(x, y)
+        if p[3] and p[:3] != OUT:
+            t.put(x, y, tuple(round(p[k] * 0.78 + (18, 26, 40)[k] * 0.22) for k in range(3)))
+    # les bords (vers le sud) : la gauche éclairée, la droite à l'ombre, un contour, le long du seuil
+    if sud:
+        xb, xi = (0, 1) if j == 0 else (15, 14)
+        for y in range(1, SEUIL):
+            t.put(xb, y, OUT)
+            p = t.get(xi, y)
+            k = 1.18 if j == 0 else 0.72
+            t.put(xi, y, tuple(min(255, round(p[n] * k)) for n in range(3)))
+    elif j == 0:
+        for x in range(1, SEUIL):
+            p = t.get(x, 1)
+            t.put(x, 0, OUT)
+            t.put(x, 1, tuple(min(255, round(p[n] * 1.12)) for n in range(3)))
+    if not sud and j == 1:
+        # la face du massif : sous la poutre de rive (rangées 10 à 12), des moellons jusqu'au sol, et la face du
+        # seuil tout du long ; plus sombre et plus froide vers le bas (l'occlusion au pied)
+        for x in range(16):
+            haut = FACE[0] if x < SEUIL else FACE[1] + 1
+            for y in range(haut, 16):
+                if x == 0 or y == 15:
+                    t.put(x, y, OUT)
+                    continue
+                rang = (y - FACE[0]) // 3
+                col = (x + (3 if rang % 2 else 0)) // 5
+                R = PIERRE[(rang * 3 + col) % len(PIERRE)]
+                ey, ex = (y - FACE[0]) % 3, (x + (3 if rang % 2 else 0)) % 5
+                f = (y - FACE[0]) / 5
+                if ey == 2 or ex == 0:
+                    c = ton(MOUILLE if y >= 14 else R, 0.14 + 0.04 * bruit(x, y, 54))
+                else:
+                    g = 0.44 - 0.16 * f + (0.06 if ey == 0 else 0) + (0.04 if ex == 1 else -0.04 if ex == 4 else 0)
+                    g += 0.04 * bruit(rang * 7 + col, 3, 55) + 0.025 * bruit(x, y, 56)
+                    c = ton(R, g)
+                t.put(x, y, c)
 
 
 # ---------- la cale ----------
 
+TETE = 16                              # la tête de la cale : sa première case, posée sur la terre de la rive
+
+
 def cale(v):
-    """La cale : une rampe de pierres qui descend dans l'eau, vue de haut à 45°. v 0 : vers le sud (16 × 32, de
-    la rive en haut au large en bas) ; v 1 : vers l'est (32 × 16, sa bordure du bas montre sa face)."""
+    """La cale : une rampe de pierres qui descend dans l'eau, vue de haut à 45°, et sa tête, à plat sur la case de
+    la rive (TETE px : on y descend de la terre sans se mouiller). v 0 : vers le sud (16 × 48, de la rive en haut au
+    large en bas) ; v 1 : vers l'est (48 × 16, sa bordure du bas montre sa face)."""
     sud = v == 0
-    w, h = (16, 32) if sud else (32, 16)
+    w, h = (16, 32 + TETE) if sud else (32 + TETE, 16)
     t = Toile(w, h)
-    L = h if sud else w                                       # la longueur de la rampe
+    L = (h if sud else w) - TETE                              # la longueur de la rampe
     for y in range(h):
         for x in range(w):
-            a = y if sud else x                               # la place le long de la rampe (0 : la rive)
+            a = y if sud else x                               # la place le long de la cale (0 : la terre)
             bcote = x if sud else y                           # en travers
-            f = a / (L - 1)                                   # de la rive (0) au large (1)
+            f = max(0, a - TETE) / (L - 1)                    # de la rive (0, la tête comprise) au large (1)
             # les pierres : un appareil en rangs de 4 px le long de la rampe, décalés d'un rang à l'autre
             rang = a // 4
             col = (bcote + (2 if rang % 2 else 0)) // 5
@@ -269,22 +352,28 @@ def cale(v):
             # vers l'est : la face de la bordure du bas (3 rangées)
             if not sud and y >= h - 4:
                 c = ton(PIERRE[2], 0.36 - 0.08 * (y - (h - 4)) - 0.2 * f + 0.03 * bruit(x, y, 44))
+            if a == TETE + 1 and eb != 0 and 1 < bcote < (w - 2 if sud else h - 4):
+                c = ton(R, base + 0.16 + 0.03 * bruit(x, y, 45))  # l'arête où la rampe commence à descendre
             alpha = 255
             if f > 0.78:                                      # l'eau qui la recouvre au bout
                 e = (f - 0.78) / 0.22
                 c = tuple(round(c[k] * (1 - 0.6 * e) + ton(EAU, 0.45)[k] * 0.6 * e) for k in range(3))
                 alpha = int(255 - 150 * e)
             t.put(x, y, c, alpha)
-    # le contour, sur les côtés seulement (le bout se fond dans l'eau ; la rive : la terre)
+    # le contour : sur les côtés, et au bout de la tête, côté terre (le bout de la rampe se fond dans l'eau)
     if sud:
         for y in range(h):
             t.put(0, y, OUT, 255 if y < h * 0.8 else 120)
             t.put(15, y, OUT, 255 if y < h * 0.8 else 120)
+        for x in range(w):
+            t.put(x, 0, OUT)
     else:
         for x in range(w):
             t.put(x, 0, OUT, 255 if x < w * 0.8 else 120)
             t.put(x, 15, OUT, 255 if x < w * 0.8 else 120)
-    return t.im, ((8, 32) if sud else (16, 16))
+        for y in range(h):
+            t.put(0, y, OUT)
+    return t.im, ((8, h) if sud else (TETE + 16, 16))
 
 
 # ---------- la halle ----------
@@ -646,7 +735,7 @@ def images(hauts=None, ch=None):
     reverbere = 1337                                          # BLOCS_CARTE.hauts.candelabre (éteint), puis allumé
     haut = lambda n: hauts.crop(((n % ch) * 16, (n // ch) * 40, (n % ch + 1) * 16, (n // ch + 1) * 40))  # noqa: E731
     return {
-        'quai': [quai(v) for v in range(8)],
+        'quai': [quai(v) for v in range(12)],
         'cale_port': [cale(0), cale(1)],
         'poteau_halle': [poteau_halle()],
         'comptoir': [comptoir()],

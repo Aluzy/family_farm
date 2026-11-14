@@ -711,8 +711,10 @@ export function planBatisse(m, l) {
    (js/engine/port.js, contenuPort ; data/village.json PORT.NIVEAUX) avec les pièces des hameaux et les siennes
    (PORT.SORTES), à la place que lui donne dispositionPort (monde-gen.js) :
      - le quai : des planches sur la mer, deux cases de large, de la rive vers le large (sa longueur : celle du
-       niveau) ; ses cases s'ouvrent à la marche (ouvre) ; son bout montre sa face et ses pieux ;
-     - la cale : deux cases de pierre qui descendent dans l'eau, à côté du pied du quai (on y marche aussi) ;
+       niveau) ; ses cases s'ouvrent à la marche (ouvre) ; son bout montre sa face et ses pieux ; sa culée, une
+       première travée sur la terre de la rive, le relie au sable par-dessus le ressac ;
+     - la cale : deux cases de pierre qui descendent dans l'eau, à côté du pied du quai (on y marche aussi), sa
+       tête à plat sur la terre de la rive ;
      - la halle : un plancher, un toit (la scène : js/carte/ferme/hameaux.js, comme celui d'une maison, qui
        s'efface quand on y entre : sa « maison », toutes ses cases dedans) sur quatre poteaux, un comptoir et une
        balance ;
@@ -741,8 +743,14 @@ export function planPort(m, port, niveau) {
     pose('quai', i % W, Math.floor(i / W), (sud ? 0 : 4) + j + (k === Q ? 2 : 0));
     ouvre.add(i);
   });
+  // la culée : la première travée, posée sur la terre, sur la case du port et sa voisine (au pied du quai) ; ses
+  // planches commencent sur le sable et couvrent le ressac du rivage : on monte sur le quai à pied sec (variantes :
+  // vers le sud, la gauche 8 et la droite 9 ; vers l'est, le haut 10 et le bas 11). Des cases de terre, où l'on
+  // marche déjà ; le quai lui-même (plan.quai, le bac le long de ses quatre dernières cases) n'en change pas.
+  (sud ? [[X, Y], [X + 1, Y]] : [[X, Y], [X, Y + 1]]).forEach(([cx, cy], j) => pose('quai', cx, cy, (sud ? 8 : 10) + j));
   // la cale : une image de deux cases (vers le sud : de haut en bas, son pied au bas de la seconde ; vers l'est :
-  // de gauche à droite, son pied au milieu du bas des deux)
+  // de gauche à droite, son pied au milieu du bas des deux), et sa tête, qui déborde d'une case sur la terre de la
+  // rive (scripts/carte/port.py : on y descend sans se mouiller)
   if (C.ajoute.has('cale')) {
     const [[ax, ay], [bx, by]] = D.cale;
     if (sud) pieces.push(SORTE_HAMEAU.cale_port, ax * T + T / 2, (by + 1) * T, 0);

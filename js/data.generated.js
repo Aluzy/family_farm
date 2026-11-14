@@ -11341,7 +11341,7 @@ export const RAW_DATA = {
       "SAUVAGES": { "RANG": 5, "MARGE": 300, "LOT": 3 }
     },
     "SORTES": [
-      { "nom": "quai", "genre": "ponton", "variantes": 8 },
+      { "nom": "quai", "genre": "ponton", "variantes": 12 },
       { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
       { "nom": "poteau_halle", "genre": "objet", "variantes": 1 },
       { "nom": "comptoir", "genre": "meuble", "variantes": 1, "largeur": 3 },
