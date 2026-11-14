@@ -1,8 +1,7 @@
 # I9a2 — Note de conception : l'horloge commune
 
-> Statut : **à valider par toi avant d'écrire le code** (fiche I9a2, point 1). Rien n'est codé ; les chiffres
-> viennent de prototypes jetables, sur le moteur réel et le Durable Object simulé (`node:sqlite`, comme
-> `tests/test-monde.mjs`). Base : `chantier/ile` avec I9a (e47e900).
+> Statut : **validée par l'utilisateur le 14 novembre 2026** : les dix réponses proposées au § 9, telles quelles.
+> Les chiffres viennent de prototypes jetables, sur le moteur réel et le Durable Object simulé (`node:sqlite`, comme `tests/test-monde.mjs`). Base : `chantier/ile` avec I9a (e47e900).
 
 ## La recommandation, en bref
 

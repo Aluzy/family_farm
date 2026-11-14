@@ -13,8 +13,8 @@ hameaux et leurs habitants, des gisements et des cristaux qui luisent la nuit, d
 au fil des rencontres ([`docs/recit/`](docs/recit/README.md)). Les anciennes autres cartes (la
 ville, le chemin de transition, la montagne, la plage, le train, l'école, l'infra-monde) ont
 été retirées pour faire place au grand monde ; le jeu d'avant est gardé tel quel sur la branche
-`archive/jeu-avant-grand-monde`. Le jeu d'avant l'île à bâtir (ci-dessous) le sera sur la branche
-`archive/jeu-avant-ile`.
+`archive/jeu-avant-grand-monde`. Le jeu d'avant l'île à bâtir (ci-dessous) est gardé tel quel sur la branche
+`archive/jeu-avant-ile` (créée le 14 novembre 2026 depuis `main`, 01f8e5c).
 
 - **Chantier en cours** : « l'île à bâtir » ([`docs/ile.md`](docs/ile.md), fiches dans
   [`docs/fiches/ile/`](docs/fiches/ile/README.md)) : une île vierge, un port, des villageois. Il avance

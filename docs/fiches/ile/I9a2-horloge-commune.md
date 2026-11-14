@@ -1,6 +1,7 @@
 # Fiche I9a2 — L'horloge commune
 
-> **La note de conception** : `I9a2-note-horloge.md` (**à valider** avant le code). En résumé :
+> **La note de conception** : `I9a2-note-horloge.md`, **validée par l'utilisateur le 14 novembre 2026** (les dix
+> réponses proposées au § 9, telles quelles). En résumé :
 > - les pas (5 s d'horloge, 10 minutes de jeu) **se déduisent de l'heure du serveur et ne sont pas des révisions** :
 >   avant chaque geste, le serveur rejoue les pas dus, pas à pas ; le geste porte son numéro de pas ; chaque client
 >   fait de même. Par heure en ligne : 720 pas, ≈ 3 s de calcul, 0,4 Mo écrits (1,3 Mo au plafond), 6 alarmes,
