@@ -17,17 +17,22 @@
 //   reconnecte, demande ce qu'il a manqué depuis sa révision et renvoie ses commandes en attente (le
 //   monde ne joue pas deux fois la même : leur id).
 // - Le bandeau « 🌐 » dit où l'on est, si l'on est à jour, et permet de revenir à sa ferme solo.
+// - I9a2, l'horloge commune d'une île (D13 : horlogeVivante, js/engine/temps-monde.js ; la note :
+//   docs/fiches/ile/I9a2-note-horloge.md) : F.2 ne vaut plus pour elle. Le temps passe par pas de 5 s d'horloge, que
+//   chacun joue chez lui à l'heure du serveur (horlogeEnLigne, à chaque image : js/ui/loop.js ; la synchro :
+//   js/ui/synchro.js) ; la nuit vient seule à 22 h ; tous couchés, elle file dix fois plus vite ; sans joueur, le
+//   monde dort, et le dit au retour. Chacun a son énergie (la partie du monde la range par compte).
 // - I9a, l'île partagée (le chantier allumé pour la partie du monde : ilePartagee, js/engine/frontiere.js) : le
 //   personnage sort de la ferme et la vue le suit (js/ui/stage.js) ; chacun voit le relief de l'île, tiré chez
 //   lui de la graine ; son brouillard est à lui (gardé dans son navigateur, par monde : brouillard) ; hors de
 //   la ferme, rien d'autre n'est encore synchronisé (le bandeau le dit, et le geste est refusé ici, avant
 //   d'être envoyé, comme le monde le refuserait).
 
-import { executerCommande, GAME_VERSION, ICONES_ROLES, ilePartagee, memberPerso, NOMS_ROLES, refusDuRole, refusFrontiere, unirVu, validApparence } from '../engine/index.js';
+import { clockHours, DATA, empreintePartie, executerCommande, GAME_VERSION, ICONES_ROLES, ilePartagee, memberPerso, NOMS_ROLES, pasDe, refusDuRole, refusFrontiere, unirVu, validApparence } from '../engine/index.js';
 import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, quandConnecte } from './compte.js';
 import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';
-import { setEnLigne, setState } from './store.js';
+import { setEnLigne, setPasEnLigne, setState } from './store.js';
 import { notify } from './toasts.js';
 import { sonMatin } from './son.js';
 import { refresh } from './render.js';
@@ -76,7 +81,9 @@ function connecter() {
   lien.etat = lien.synchro ? 'reconnexion' : 'connexion';
   bandeau();
   ws.addEventListener('open', () => {
-    ws.send(JSON.stringify({ t: 'hello', version: GAME_VERSION, ...(lien.synchro ? { depuis: lien.synchro.rev } : {}) }));
+    lien.helloT = Date.now();
+    // (I9a2 : le pas de sa partie confirmée : trop en retard, le monde envoie la partie entière)
+    ws.send(JSON.stringify({ t: 'hello', version: GAME_VERSION, ...(lien.synchro ? { depuis: lien.synchro.rev, pas: pasDe(lien.synchro.confirmee) } : {}) }));
   });
   ws.addEventListener('message', (e) => recevoir(ws, e.data));
   ws.addEventListener('close', (e) => {
@@ -142,6 +149,13 @@ function recevoir(ws, data) {
     lien.couche = false;   // (une nouvelle connexion : levé)
     lien.couches = [];
     derniere = null;
+    // (I9a2 : l'horloge du monde, et l'heure du serveur : son avance sur la nôtre, la moitié de l'aller-retour comprise)
+    lien.horloge = m.horloge || null;
+    if (m.horloge && Number.isFinite(m.horloge.maintenant)) {
+      const now = Date.now(), rtt = Math.max(0, now - (lien.helloT || now));
+      lien.decalage = m.horloge.maintenant + rtt / 2 - now;
+    }
+    lien.dormait = m.horloge && m.horloge.dormait > 0 ? m.horloge.dormait : null;
     return;
   }
   // E-5 : qui est couché (et combien sont là)
@@ -189,8 +203,10 @@ function recevoir(ws, data) {
     return;
   }
   if (m.t === 'instantane') {
+    lien.rattrapage = false;
+    const horloge = m.horloge || lien.horloge;
     if (!lien.synchro) {
-      lien.synchro = new Synchro({ partie: m.partie, rev: m.rev, executerCommande, quandRefaite: partieRefaite });
+      lien.synchro = new Synchro({ partie: m.partie, rev: m.rev, executerCommande, quandRefaite: partieRefaite, moi: lien.moi, horloge });
       poserBrouillard(lien.synchro.locale);
       setEnLigne(lien.synchro);
       lien.etat = 'ok';
@@ -198,17 +214,21 @@ function recevoir(ws, data) {
       lien.premiere = null;
       p && p(lien.synchro.locale);
     } else {
-      lien.synchro.instantane(m);
+      lien.synchro.instantane({ ...m, horloge });
       lien.etat = 'ok';
     }
     renvoyer();
+    reveilDuMonde();
     bandeau();
     return;
   }
   if (m.t === 'rattrape') {
     for (const e of m.evts || []) if (!lien.synchro.evenement(e)) { toutRedemander(); return; }
+    // (I9a2 : puis la confirmée jusqu'au pas du monde)
+    if (lien.horloge) lien.synchro.ancrer(lien.horloge);
     lien.etat = 'ok';
     renvoyer();
+    reveilDuMonde();
     bandeau();
     return;
   }
@@ -216,6 +236,14 @@ function recevoir(ws, data) {
     if (!lien.synchro.evenement(m)) toutRedemander();
     if (m.cmd && m.cmd.type === 'nuit.partagee') matin();
     bandeau();
+    return;
+  }
+  // I9a2 : l'instantané au temps du monde : l'empreinte de sa partie à ce pas ; la nôtre diffère, tout est redemandé
+  if (m.t === 'controle') {
+    const S = lien.synchro;
+    if (!S || !S.vivante || !Number.isInteger(m.pas) || pasDe(S.confirmee) > m.pas) return;
+    S.avancerConfirmee(m.pas);
+    if (empreintePartie(S.confirmee) !== m.empreinte) { lien.ecarts = (lien.ecarts || 0) + 1; toutRedemander(); }
     return;
   }
   if (m.t === 'ack' && !m.ok) {
@@ -239,9 +267,60 @@ function coucher() {
   const oui = !lien.couche;
   if (!envoyer({ t: 'coucher', oui })) return;
   lien.couche = oui;
-  if (oui && lien.connectes > 1) notify('🛏 Tu es couché. La nuit passera quand tous les joueurs connectés le seront.');
+  // (I9a2 : sur une île, la nuit vient à son heure ; tous couchés, elle file)
+  if (oui && ileEnLigne()) notify(lien.connectes > 1 ? '🛏 Tu es couché. Quand tous les joueurs connectés le seront, la nuit filera (dès 22 h).' : '🛏 Tu es couché : la nuit filera dès 22 h.');
+  else if (oui && lien.connectes > 1) notify('🛏 Tu es couché. La nuit passera quand tous les joueurs connectés le seront.');
   bandeau();
 }
+
+/* ---------- I9a2 : l'horloge commune d'une île ---------- */
+
+// L'heure du serveur, estimée (la nôtre, plus son avance mesurée à l'accueil).
+export function heureServeur() {
+  return Date.now() + (lien && Number.isFinite(lien.decalage) ? lien.decalage : 0);
+}
+
+// À chaque image (js/ui/loop.js) : la partie locale avance à l'heure du serveur, pas à pas. Trop de retard (un onglet
+// resté caché) : la partie entière redemandée plutôt que tous ces pas. Rend { pas, evts } (rien : null).
+export function horlogeEnLigne() {
+  if (!lien || !lien.synchro || !lien.synchro.vivante || lien.etat !== 'ok' || lien.rattrapage) return null;
+  const S = lien.synchro, t = heureServeur();
+  if (S.retard(t) > DATA.VILLAGE.EN_LIGNE.RETARD_PAS) { lien.rattrapage = true; toutRedemander(); return null; }
+  const r = S.avancer(t);
+  for (const ev of r.evts) {
+    if (ev.reveil) matinIle();
+    if (ev.nuit) notify('🌙 22 h : la nuit tombe sur l\'île. Couchez-vous tous (🛏) : elle filera.', { duree: 5000 });
+  }
+  if (r.evts.some((ev) => ev.nuit || ev.reveil)) bandeau();
+  return r;
+}
+setPasEnLigne(horlogeEnLigne);
+
+// La part du pas en cours déjà écoulée (l'heure affichée entre deux pas : js/ui/stage.js) ; 0 hors d'une île.
+export function fractionDuPas() {
+  return lien && lien.synchro && lien.synchro.vivante && lien.etat === 'ok' ? lien.synchro.fraction(heureServeur()) : 0;
+}
+
+// Le réveil d'une île (le pas de 6 h) : chacun se lève.
+function matinIle() {
+  lien.couche = false;
+  lien.couches = [];
+  try { sonMatin(); } catch (e) { /* (le son ne doit rien empêcher) */ }
+  const s = lien.synchro && lien.synchro.locale;
+  notify(`🌅 Le jour ${s ? s.day : ''} se lève sur l'île.`, { duree: 5000 });
+}
+
+// Le monde dormait (sans joueur) : le dire, une fois, à l'arrivée.
+function reveilDuMonde() {
+  if (!lien || !lien.dormait || !lien.synchro) return;
+  const s = lien.synchro.locale, ms = lien.dormait;
+  lien.dormait = null;
+  const min = Math.round(ms / 60000), duree = min < 60 ? `${Math.max(1, min)} min` : min < 48 * 60 ? `${Math.round(min / 60)} h` : `${Math.round(min / 1440)} jours`;
+  const h = clockHours(s), heure = `${Math.floor(h)} h${Math.floor((h % 1) * 60) ? ` ${String(Math.floor((h % 1) * 60)).padStart(2, '0')}` : ''}`;
+  notify(`🌙 Le monde dormait depuis ${duree} : il reprend où il s'était arrêté (jour ${s.day}, ${heure}).`, { duree: 8000 });
+}
+
+export const TEMPS_DU_MONDE = '🕰️ Le temps de ce monde passe quand au moins un joueur y est. Sans personne, il dort.';
 
 // Un trou dans les événements : la partie entière redemandée (un hello sans révision).
 function toutRedemander() {
@@ -440,6 +519,7 @@ function ouvrirMembres() {
     <h2 id="membres-titre">👥 Les membres</h2>
     <div class="stack">${lignes}</div>
     <div class="stack">${inv}</div>
+    ${ileEnLigne() ? `<p class="muted">${TEMPS_DU_MONDE}</p>` : ''}
     ${proprio ? '<div class="row"><button class="btn" type="button" data-action="monde-journal">📜 Le journal du monde</button><button class="btn" type="button" data-action="monde-sauvegardes">💾 Les sauvegardes</button></div>' : ''}`, { labelledBy: 'membres-titre' });
 }
 
@@ -459,6 +539,7 @@ const GESTES = {
   'appareil.basculer': 'a allumé ou éteint un appareil', 'appareil.ameliorer': 'a amélioré un appareil', 'appareil.entretenir': 'a entretenu un appareil', 'appareil.reparer': 'a réparé un appareil',
   'reservoir.agrandir': 'a agrandi le réservoir', 'robot.batterie': 'a agrandi la batterie du robot', 'arbre.planter': 'a planté un arbre', 'massif.cueillir': 'a cueilli des fleurs',
   'nuit.partagee': 'tout le monde a dormi : la nuit est passée',
+  'temps.sommeil': 'tous couchés (la nuit file), ou l\'un s\'est levé',
   'monde.restaurer': 'a restauré une sauvegarde',
 };
 const FAMILLES_GESTES = { mur: 'a bâti un mur', etage: 'a bâti à l\'étage', solEtage: 'a posé un sol à l\'étage' };
@@ -492,7 +573,7 @@ async function ouvrirJournal(suite = false) {
 
 // E-12 : les sauvegardes du monde (le propriétaire) : une après chaque nuit, d'autres à la demande ; en
 // restaurer une remplace la partie du monde pour tous (la partie d'avant est sauvée d'abord).
-const RAISONS = { nuit: '🌙 après la nuit', main: '💾 à la main', 'avant-restauration': '↩️ avant une restauration' };
+const RAISONS = { nuit: '🌙 après la nuit', main: '💾 à la main', 'avant-restauration': '↩️ avant une restauration', heure: '🕰️ une heure de jeu', depart: '👋 au départ du dernier joueur' };
 let sauvegardesVues = [], aRestaurer = null;
 async function ouvrirSauvegardes(relire = true) {
   if (!lien) return;

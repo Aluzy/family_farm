@@ -10,7 +10,7 @@ import { registerActions } from './actions.js';
 import { morph } from './render.js';
 import { notify } from './toasts.js';
 import { exportSaveJson } from './storage.js';
-import { SAVE_KEY } from './store.js';
+import { enLigne, SAVE_KEY } from './store.js';
 
 const CLE = 'ferme-compte';
 
@@ -112,6 +112,7 @@ function mondesHtml() {
   const enLigneIci = typeof location !== 'undefined' && /[?&]monde=/.test(location.search);
   return `<div class="stack">
         ${mondes === null ? '<p class="muted">Tes mondes en ligne…</p>' : liste || '<p class="muted">Pas encore de monde en ligne.</p>'}
+        ${enLigne && enLigne.vivante ? '<p class="muted">🕰️ Le temps de ce monde passe quand au moins un joueur y est. Sans personne, il dort.</p>' : ''}
         ${enLigneIci ? '' : `<div class="row"><button class="btn primary" type="button" data-action="monde-creer"${miseEnLigne ? ' disabled' : ''}>${miseEnLigne ? 'Mise en ligne…' : '🌐 Mettre ma ferme en ligne'}</button></div>
         <p class="muted">Une copie de ta ferme part en ligne, pour y construire à plusieurs ; ta partie solo reste sur cet appareil, telle quelle.</p>`}
       </div>`;

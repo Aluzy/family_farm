@@ -10680,7 +10680,7 @@ export const RAW_DATA = {
         "*": "sur l'île"
       }
     },
-    "EN_LIGNE": { "PARTIE_KO": 256, "DEHORS_KO": 64 }
+    "EN_LIGNE": { "PARTIE_KO": 256, "DEHORS_KO": 64, "PAS_MS": 5000, "RETARD_PAS": 60 }
   },
   "TACHES": {
     "TRAVAIL": [[8, 11.5], [13.5, 16.5]],

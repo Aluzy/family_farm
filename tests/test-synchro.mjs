@@ -5,7 +5,7 @@
 
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
-import { addItem, blocAt, caseVue, createNewGame, DATA, empreintePartie, executerCommande, farmTerrain, GAME_VERSION, HORS_FERME_ILE, ilePartagee, poseStatus, refusFrontiere, unirVu, voirAutour } from '../js/engine/index.js';
+import { addItem, blocAt, caseVue, createNewGame, DATA, empreintePartie, executerCommande, farmTerrain, GAME_VERSION, HORS_FERME_ILE, ilePartagee, poseStatus, refusFrontiere, testBatir, testSetLevel, unirVu, voirAutour } from '../js/engine/index.js';
 import { avecVillage, partie } from './engine/aide.mjs';
 import { MondeRegistre } from '../worker/src/monde.mjs';
 import { Synchro } from '../js/ui/synchro.js';
@@ -135,4 +135,119 @@ test('I9a : l\'île partagée : chacun garde son brouillard sur sa partie locale
   // hors de la ferme : refusé avant d'être envoyé (en-ligne.js, jouerEnLigne), comme le monde le refuse
   const F = T.FERME, dehors = (F.Y + 3) * T.LARGEUR + F.X - 4, c = mur(dehors);
   eq([refusFrontiere(b.locale, c.args), r.commande('B', c).erreur], [HORS_FERME_ILE, HORS_FERME_ILE]);
+});
+
+/* ---------- I9a2 : l'horloge commune d'une île ---------- */
+
+// Une île du chantier en ligne (une partie d'essai), la Cuisine bâtie, des murs et de quoi faire des omelettes ; le
+// monde a son horloge (h.t, en ms), un joueur aussi (son décalage : `avance` ms d'avance sur le serveur).
+function ileEnLigne() {
+  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  ile.essais = { ...(ile.essais || {}), village: true };
+  testSetLevel(ile, 5);
+  for (const st of ['foyer', 'cuisine']) if (!testBatir(ile, st).ok) throw new Error(st);
+  for (const ing of DATA.RECETTES.omelette.ingredients) addItem(ile, ing.item, ing.qte * 40);
+  addItem(ile, DATA.ATELIER.BLOCS.mur_pierre.objet, 80);
+  const db = new DatabaseSync(':memory:'), h = { t: 1_700_000_000_000 };
+  const r = new MondeRegistre({ exec(q, ...v) { const x = db.prepare(q).all(...v); return { toArray: () => x }; } }, () => h.t);
+  r.creer({ proprietaire: 'A', partie: ile });
+  r.ajouterMembre('B', 'Sam');
+  r.ajouterMembre('C', 'Cam');
+  const cases = [];
+  for (let t = 0; t < 644 * 400 && cases.length < 200; t += 7) if (poseStatus(r.charger(), 'mur_pierre', t).ok) cases.push(t);
+  return { r, h, cases };
+}
+function joueurIle(r, compte, o = {}) {
+  const a = r.accueil(compte, { version: GAME_VERSION });
+  return new Synchro({ partie: a.partie, rev: a.rev, executerCommande, moi: compte, horloge: a.horloge, ...o });
+}
+// (la partie locale montre l'énergie du joueur : pour la comparer à celle du monde, celle de la partie)
+const commeLeMonde = (locale, monde_) => empreintePartie({ ...locale, energie: monde_.energie });
+
+test('I9a2 : deux joueurs et le monde ont la même partie après une heure de pas (720), des gestes de chacun entre deux ; chacun a son énergie', () => {
+  const { r, h, cases } = ileEnLigne();
+  const a = joueurIle(r, 'A'), b = joueurIle(r, 'B');
+  let k = 0, n = 0;
+  const debut = h.t;
+  while (h.t < debut + 3600 * 1000) {
+    h.t += 1000;
+    a.avancer(h.t); b.avancer(h.t + 300);   // (B a 300 ms d'avance : son horloge n'est pas tout à fait la nôtre)
+    if (++k % 37) continue;
+    // un geste, de A ou de B : joué chez lui, envoyé, joué par le monde, diffusé à tous
+    const qui = n % 2 ? b : a, compte = n % 2 ? 'B' : 'A';
+    const c = n % 3 === 2 ? { id: `c-om-${n}`, type: 'cuisine.lancer', args: { recette: 'omelette' } } : mur(cases[n]);
+    n += 1;
+    qui.jouer(c);
+    const rep = r.commande(compte, c);
+    if (rep.ok) { assert(a.evenement(rep.evt) && b.evenement(rep.evt), 'reçu dans l\'ordre'); } else qui.refusee(c.id);
+  }
+  r.avancer(h.t);
+  a.avancer(h.t); b.avancer(h.t);
+  const w = r.charger();
+  eq([w.horloge.pas >= 719, a.locale.horloge.pas, b.locale.horloge.pas, w.day > 4], [true, w.horloge.pas, w.horloge.pas, true], 'les mêmes pas, cinq journées');
+  a.avancerConfirmee(w.horloge.pas); b.avancerConfirmee(w.horloge.pas);
+  const em = empreintePartie(w);
+  eq([empreintePartie(a.confirmee), empreintePartie(b.confirmee), commeLeMonde(a.locale, w), commeLeMonde(b.locale, w)], [em, em, em, em], 'la même partie partout');
+  eq([a.enAttente.length, b.enAttente.length], [0, 0]);
+  assert(w.energies.A !== undefined && w.energies.B !== undefined && a.locale.energie === w.energies.A && b.locale.energie === w.energies.B, `chacun voit la sienne : ${JSON.stringify(w.energies)}`);
+});
+
+test('I9a2 : un joueur en retard (déconnecté une minute) rattrape sans écart ; un joueur en avance (son horloge avance de 7 s) se refait sans écart', () => {
+  const { r, h, cases } = ileEnLigne();
+  const a = joueurIle(r, 'A'), b = joueurIle(r, 'B');
+  let n = 0;
+  const geste = (s, compte) => { const c = mur(cases[n++]); s.jouer(c); const rep = r.commande(compte, c); return rep.evt; };
+  h.t += 20000; a.avancer(h.t); b.avancer(h.t);
+  const e1 = geste(a, 'A');
+  a.evenement(e1); b.evenement(e1);
+  // B se coupe : il ne reçoit plus rien, son horloge ne tourne plus ; A joue
+  for (let i = 0; i < 6; i++) { h.t += 10000; a.avancer(h.t); a.evenement(geste(a, 'A')); }
+  // B revient : le monde lui donne ce qui lui manque depuis sa révision et son pas, puis son horloge
+  h.t += 2000;
+  const acc = r.accueil('B', { version: GAME_VERSION, depuis: b.rev, pas: b.confirmee.horloge.pas });
+  assert(acc.evts && acc.evts.length === 6, 'le journal (moins de 60 pas de retard)');
+  for (const e of acc.evts) assert(b.evenement(e));
+  b.ancrer(acc.horloge);
+  b.avancer(h.t); a.avancer(h.t);
+  const w = r.charger();
+  eq([b.locale.horloge.pas, empreintePartie(b.confirmee), commeLeMonde(b.locale, w), commeLeMonde(a.locale, w)], [w.horloge.pas, empreintePartie(w), empreintePartie(w), empreintePartie(w)], 'B a rattrapé sans écart');
+  // C a une horloge qui avance de 7 s : sa partie locale va plus loin que le monde ; un geste de A, au pas du monde,
+  // la refait (la confirmée suit de MARGE pas en arrière : toujours derrière le monde)
+  const c = joueurIle(r, 'C');
+  let refaites = 0;
+  c.quandRefaite = () => { refaites += 1; };
+  for (let i = 0; i < 4; i++) {
+    h.t += 4000;
+    a.avancer(h.t); c.avancer(h.t + 7000);
+    assert(c.locale.horloge.pas > r.charger().horloge.pas || i === 0, 'C est en avance');
+    const e = geste(a, 'A');
+    assert(c.evenement(e) && a.evenement(e), `l'événement au pas ${e.cmd.pas}, la confirmée de C au pas ${c.confirmee.horloge.pas}`);
+    c.avancer(h.t + 7000);
+  }
+  assert(refaites >= 3, `refaite à chaque geste de l'autre (${refaites})`);
+  r.avancer(h.t + 7000);
+  const w2 = r.charger();
+  c.avancerConfirmee(w2.horloge.pas);
+  eq([empreintePartie(c.confirmee), commeLeMonde(c.locale, w2), c.locale.horloge.pas], [empreintePartie(w2), empreintePartie(w2), w2.horloge.pas], 'C, à l\'heure du monde, a la même partie');
+});
+
+test('I9a2 : mon geste confirmé à un autre pas que celui où je l\'ai joué refait ma partie (au bon pas) ; au même pas, non ; l\'heure entre deux pas', () => {
+  const { r, h, cases } = ileEnLigne();
+  const a = joueurIle(r, 'A');
+  let refaites = 0;
+  a.quandRefaite = () => { refaites += 1; };
+  h.t += 6000;
+  a.avancer(h.t);
+  eq([a.fraction(h.t), a.fraction(h.t + 2500)], [0.2, 0.7], 'la part du pas écoulée');
+  const c1 = mur(cases[0]);
+  a.jouer(c1);
+  a.evenement(r.commande('A', c1).evt);
+  eq(refaites, 0, 'au même pas : rien à refaire');
+  const c2 = mur(cases[1]);
+  a.jouer(c2);
+  h.t += 5000;   // (le geste arrive au monde un pas plus tard)
+  a.evenement(r.commande('A', c2).evt);
+  eq(refaites, 1, 'un pas plus tard : la partie refaite');
+  a.avancer(h.t);
+  eq(commeLeMonde(a.locale, r.charger()), empreintePartie(r.charger()));
 });

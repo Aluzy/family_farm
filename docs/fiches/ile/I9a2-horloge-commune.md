@@ -13,6 +13,9 @@
 >   compte, dans la partie du monde) ; sans joueur, le monde dort, sans rattrapage au retour ;
 > - dix questions à trancher, avec une réponse proposée pour chacune (§ 9 de la note).
 
+> **Fait** (voie b) : `js/engine/temps-monde.js`, `worker/src/monde.mjs`, `js/ui/synchro.js`, `js/ui/en-ligne.js` ; les
+> mesures sur le code (`node scripts/cout-horloge.mjs`) et ce qui reste : `docs/ile.md`, « L'horloge commune ».
+
 ## Objectif
 
 Faire vivre le temps dans un monde partagé : une seule horloge, tenue par le serveur, qui tourne

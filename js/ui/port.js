@@ -24,7 +24,7 @@ import { formatCoins, formatDay, formatQty } from '../engine/format.js';
 import { solDuMonde } from './monde-sol.js';
 import { openStageWindow } from './stage-windows.js';
 import { persistState } from './storage.js';
-import { comptoirTab, state } from './store.js';
+import { comptoirTab, enLigne, state } from './store.js';
 import { executer } from './commandes.js';
 import { applyResult } from './game-actions.js';
 import { pxText } from './pixel-art.js';
@@ -349,7 +349,8 @@ export function watchPort() {
   if (!villageActif(state)) return;
   watchBac();
   watchSauvages();
-  if (lieuPort(state)) return;
+  // (I9a2 : en ligne, le lieu du port est posé à la mise en ligne, I9f : la page n'écrit pas dans la partie du monde)
+  if (lieuPort(state) || enLigne) return;
   const T = farmTerrain(state), sol = T && T.MONDE ? solDuMonde(T) : null, L = sol && sol.lieux ? sol.lieux() : null;
   if (L && L.port) poserPort(farmSeed(state), L.port);
 }
@@ -372,11 +373,14 @@ function watchSauvages() {
 // cloche et un mot à son arrivée (ses commandes, les imports livrés).
 function watchBac() {
   if (!state || setupPending(state)) return;
-  const r = avancerBac(state);
+  // (I9a2 : sur une île en ligne, le bac et les contrats avancent dans le pas du monde, chez chacun : la page n'en dit
+  // que les avis, une fois chacun — la partie locale refaite les rend)
+  const vivant = !!(enLigne && enLigne.vivante);
+  const r = vivant ? { depart: false, arrivees: [] } : avancerBac(state);
   if (!r) return;
   // (fiche I8b : les contrats d'export suivent le bac ; un contrat honoré, manqué, de nouveaux proposés)
-  avancerContrats(state);
-  const avisC = prendreAvisContrats(state);
+  if (!vivant) avancerContrats(state);
+  const avisC = prendreAvisContrats(state).filter((a) => !vivant || nouvelAvis(a));
   for (const a of avisC) {
     const it = a.objet && DATA.OBJETS[a.objet];
     if (a.quoi === 'honore') notify(`📜 Contrat d'export honoré : ${it.icone} ${it.nom} × ${formatQty(a.quantite)} (+${formatCoins(a.prime)} 💰 de prime).`, { kind: 'info', cible: { fenetre: 'comptoir' } });
@@ -384,7 +388,7 @@ function watchBac() {
     else if (a.quoi === 'proposes' && a.n) notify(`📜 Le bac propose ${a.n} contrat${a.n > 1 ? 's' : ''} d'export au comptoir.`, { kind: 'info', cible: { fenetre: 'comptoir' } });
   }
   if (avisC.length) { persistState(); refresh(); }
-  const avis = prendreAvisBac(state);
+  const avis = prendreAvisBac(state).filter((a) => !vivant || nouvelAvis(a));
   for (const a of avis.slice(-1)) {
     const livres = a.livres.map((x) => { const ar = articleDe(x.cle, state); const n = ar ? x.quantite * (ar.lot || 1) : 0; return ar ? `${nomArticle(ar)[1]} ${nomArticle(ar)[0]}${n > 1 ? ` × ${n}` : ''}` : ''; }).filter(Boolean);
     const morceaux = [a.commandes ? `${a.commandes} commande${a.commandes > 1 ? 's' : ''} t'attend${a.commandes > 1 ? 'ent' : ''} au comptoir` : null, livres.length ? `livré à la ferme : ${livres.join(', ')}` : null].filter(Boolean);
@@ -393,6 +397,15 @@ function watchBac() {
     son('cloche');
   }
   if (avis.length || r.depart || r.arrivees.length) { persistState(); refresh(); }
+}
+
+// (I9a2 : les avis déjà dits en ligne, par leur texte)
+const avisDits = new Set();
+function nouvelAvis(a) {
+  const k = JSON.stringify(a);
+  if (avisDits.has(k)) return false;
+  avisDits.add(k);
+  return true;
 }
 
 // Le bac pour la scène (js/carte/ferme/bac.js) : { aQuai, caisses, jour, heures } ; null le chantier éteint.

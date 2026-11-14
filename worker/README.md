@@ -130,6 +130,14 @@ rejouent chez eux : le moteur est déterministe (F0-4). Décisions du créateur 
   **E-5 : la nuit est partagée.** Quand tous les joueurs connectés sont couchés, le monde joue lui-même
   `nuit.partagee` (acteur `monde`) : toute la nuit d'un coup, le jour suivant. Un joueur ne peut pas
   l'envoyer, et `nuit.dormir` (la nuit qui défile, en solo) est refusé en ligne.
+- **D13 (I9a2) : un monde de l'île a une horloge vivante**, qui remplace F.2 et E-5 pour lui (`horlogeVivante`,
+  `js/engine/temps-monde.js` ; la note : `docs/fiches/ile/I9a2-note-horloge.md`). Le temps y passe tant qu'un joueur
+  est connecté, par pas de 5 s d'horloge (`VILLAGE.EN_LIGNE.PAS_MS`) que le monde déduit de son heure : ils ne sont
+  pas des révisions. Avant chaque geste, il rejoue les pas dus, un à un ; le geste prend le pas où il est
+  (`cmd.pas`). La nuit vient seule à 22 h ; tous couchés, le monde joue `temps.sommeil { oui }` (acteur `monde`) et
+  la nuit file dix fois plus vite ; un joueur debout (ou qui arrive) la ramène à son pas. L'énergie est celle de
+  chaque compte (`state.energies`). Le dernier qui part endort le monde (un instantané, une sauvegarde
+  « depart ») ; le premier qui revient le réveille là où il s'était arrêté, sans rattrapage.
 - **F.3 : un membre est un compte** (les comptes ci-dessus).
 - **F.4 : un monde naît de la copie volontaire d'une partie locale**, qui reste intacte.
 
@@ -138,10 +146,16 @@ Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=
 - `GET /mondes` : ses mondes ;
 - `GET /mondes/<id>/fiche` : titre, révision, membres (membres seulement) ;
 - `GET /mondes/<id>/ws` : la connexion d'un joueur (une WebSocket en hibernation). Messages :
-  - `hello { version, depuis? }` → `bienvenue`, puis `rattrape { evts }` (ce qui manque depuis
+  - `hello { version, depuis?, pas? }` → `bienvenue`, puis `rattrape { evts }` (ce qui manque depuis
     `depuis`) ou `instantane { partie }` ; `refus` si le jeu n'a pas la version du monde ou si
-    l'on n'est pas membre ;
-  - `cmd { id, type, args }` → `ack { id, ok, rev | erreur }` ; à tous, `evt { rev, acteur, cmd }`.
+    l'on n'est pas membre. I9a2, une île : `bienvenue.horloge = { pas, reel, sommeil, maintenant, dormait? }`
+    (le pas du monde, l'heure réelle de ce pas, l'heure du serveur, depuis combien de ms il dormait) ; `pas`, celui
+    de sa partie confirmée : plus de `RETARD_PAS` (60) pas de retard, ou un retard inconnu, et c'est la partie
+    entière ;
+  - `cmd { id, type, args }` → `ack { id, ok, rev | erreur }` ; à tous, `evt { rev, acteur, cmd }` (I9a2 :
+    `cmd.pas`, et `reel`, l'heure réelle de ce pas) ;
+  - I9a2, une île : à tous, à chaque instantané au temps, `controle { pas, empreinte, reel, maintenant }` (la partie
+    du monde à ce pas ; un joueur qui ne la retrouve pas redemande tout) ;
   - `pos { x, y }` (le centre de sa vue) : relayé aux autres membres, `pos { acteur, nom, x, y }`,
     5 fois par seconde au plus, jamais écrit ; `parti { acteur }` quand son dernier onglet se ferme ;
   - `coucher { oui }` : se coucher, ou se relever. À tous : `couches { comptes, connectes }`. C'est
@@ -150,12 +164,15 @@ Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=
     la nuit.
 
 Stockage SQLite du Durable Object :
-- `meta` ;
-- `instantane` : la partie entière, toutes les 20 révisions ;
-- `journal` : chaque commande acceptée, son `id` unique ;
+- `meta` (I9a2 : `horloge`, l'ancre `{ pas, reel, actif, depart }` de l'instantané ; `sauvegarde`, l'heure de la
+  dernière sauvegarde à l'heure) ;
+- `instantane` : la partie entière, toutes les 20 révisions (I9a2, une île : tous les 120 pas ou 200 gestes, et au
+  départ du dernier joueur ; une alarme toutes les 10 minutes tant qu'un joueur est là) ;
+- `journal` : chaque commande acceptée, son `id` unique (I9a2 : son pas) ;
 - `membres` : rôles `proprietaire` et `batisseur`, `revoque`.
 
-Au réveil, la partie se refait : le dernier instantané, puis le journal. Un doublon (le même `id`)
+Au réveil, la partie se refait : le dernier instantané, puis le journal (I9a2 : chaque commande à son pas, les pas
+d'entre deux rejoués un à un, puis les pas dus jusqu'à l'heure, 240 au plus). Un doublon (le même `id`)
 rend le même accusé sans être rejoué. Un membre révoqué est refusé et sa connexion fermée. Les
 commandes sont limitées à 120 par minute et par membre.
 
@@ -221,7 +238,8 @@ propriétaire ; la liste des membres est diffusée), `GET /mondes/<id>/journal?a
 les 50 dernières commandes, avec les noms).
 
 E-12 : les sauvegardes du monde, dans le bucket `SESSIONS` (déjà lié), sous `mondes/<id du Durable
-Object>/` : une après chaque nuit partagée, une à la demande, une avant chaque restauration ; les 14
+Object>/` : une après chaque nuit partagée (I9a2, une île : une par heure de jeu en ligne, et au départ du dernier
+joueur), une à la demande, une avant chaque restauration ; les 14
 dernières gardées (≈ 100 Ko chacune). `GET` et `POST /mondes/<id>/sauvegardes`, `POST
 /mondes/<id>/restaurer { cle }` (le propriétaire). Une restauration écrit un instantané et une marque
 `monde.restaurer` au journal ; la partie entière est diffusée.

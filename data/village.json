@@ -1032,9 +1032,14 @@
       "JSON : ce que reçoit un joueur qui entre, chaque instantané (toutes les 20 révisions) et chaque sauvegarde du monde",
       "(14 gardées). DEHORS_KO : dans elle, ce que pèse l'île hors de la ferme (ce qui y a été pris et le jour où cela revient,",
       "les chemins et les blocs posés dehors). Ce qui se recalcule de la graine (le relief, les arbres, les rochers, les lieux,",
-      "la carte) ne s'envoie jamais, et le brouillard de chacun reste dans son navigateur."
+      "la carte) ne s'envoie jamais, et le brouillard de chacun reste dans son navigateur.",
+      "I9a2 (l'horloge commune, docs/fiches/ile/I9a2-note-horloge.md ; le moteur : js/engine/temps-monde.js) : PAS_MS, le pas",
+      "du temps d'un monde de l'île, en ms d'horloge (5 s : 10 minutes de jeu), une constante du protocole, la même pour le",
+      "serveur et chaque joueur (un intervalle se rejoue toujours pas à pas : un pas de 60 s ne donne pas le même état que 12",
+      "pas de 5 s). RETARD_PAS : au-delà de ce retard (en pas), un joueur qui revient reçoit la partie entière plutôt que le",
+      "journal et les pas à rejouer."
     ],
-    "EN_LIGNE": { "PARTIE_KO": 256, "DEHORS_KO": 64 }
+    "EN_LIGNE": { "PARTIE_KO": 256, "DEHORS_KO": 64, "PAS_MS": 5000, "RETARD_PAS": 60 }
   },
   "//TACHES": [
     "Les tâches attribuées (fiche I3c ; le moteur : js/engine/taches.js ; la journée : js/engine/villageois-journee.js ;",

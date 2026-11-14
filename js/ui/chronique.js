@@ -3,7 +3,7 @@ import { villageActif } from '../engine/village.js';
 import { assurerArrivee, epinglerLigne, noterLigne, renommerEtNoter } from '../engine/chronique.js';
 import { nomDe, nomRefus, nomsDe, proposerNom } from '../engine/noms.js';
 import { chroniqueHtml, noteHtml, renommerHtml } from './chronique-html.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -44,7 +44,8 @@ export function watchChronique() {
   const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
   if (now - veille < VEILLE_MS) return;
   veille = now;
-  if (assurerArrivee(state)) persistState();
+  // (I9a2 : sur une île en ligne, l'arrivée est notée dans le pas du monde)
+  if (!(enLigne && enLigne.vivante) && assurerArrivee(state)) persistState();
   const n = state.noms;
   if (n && Array.isArray(n.avis) && n.avis.includes('village') && !modalOpen()) {
     n.avis = n.avis.filter((a) => a !== 'village');

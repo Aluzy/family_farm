@@ -48,6 +48,18 @@ jeu, comme I7f l'a fait pour les parties solo.
   automatique pèse 75 Ko ; 14 sauvegardes au plafond font 3,5 Mo par monde : on peut en garder 14.
 - **La mesure** : `node scripts/poids-ile.mjs` (trois moments d'une partie, ce qui se recalcule de la graine).
 
+## Revu par I9a2 (l'horloge commune)
+
+- **La partie mise en ligne reçoit son horloge et les énergies** : `state.horloge` (`{ pas: 0, sommeil, reveils }`) et
+  `state.energies` (celle du propriétaire : l'énergie de sa partie) ; le format 104 les ajoute à la partie d'un monde
+  (`mondePartage`) qui ne les a pas. Une île mise en ligne garde sa nuit en cours (une ferme d'avant naît de jour).
+- **Un monde d'avant migré passe de F.2 à l'horloge vivante** : son jour et son heure gardés, son pas à 0, ses
+  joueurs à l'énergie pleine (la partie n'a qu'une énergie, celle du coffre : on pourrait la donner au propriétaire).
+  Un journal d'avant n'a pas de pas : il se rejoue sans pas (au pas 0), c'est-à-dire tel quel.
+- **Les instantanés et les sauvegardes** : un instantané tous les 120 pas ou 200 gestes, et au départ du dernier ; une
+  sauvegarde par heure de jeu en ligne et au départ du dernier (14 gardées) ; plus de sauvegarde « après la nuit »
+  pour une île (cinq nuits par heure).
+
 ## Hors périmètre
 
 - Fusionner une île solo et son île en ligne ; un monde à plus de joueurs qu'aujourd'hui.

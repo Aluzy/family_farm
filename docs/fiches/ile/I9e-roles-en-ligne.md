@@ -43,6 +43,14 @@ lient avec les villageois.
 6. **Les tests** : chaque commande et son rôle minimal (un tableau de cas) ; la délégation ; la
    suggestion d'un invité ; les refus côté serveur même si le client est modifié.
 
+## Revu par I9a2 (l'horloge commune)
+
+- **Un visiteur compte pour la présence et pour les lits** : une connexion ouverte fait tourner le monde (D13, sans
+  détection d'inactivité en v1), et un visiteur debout retient la nuit (elle garde son pas tant que tous les joueurs
+  connectés ne sont pas couchés : `worker/src/monde.mjs`, `lits`). C'est ce que fait le code aujourd'hui ; à confirmer ici.
+- **Le journal du monde** compte une commande de plus, celle du monde : `temps.sommeil` (« tous couchés, la nuit file,
+  ou l'un s'est levé »), acteur « monde ».
+
 ## Hors périmètre
 
 - De nouveaux rôles ; la modération entre joueurs (le propriétaire peut déjà retirer un membre).

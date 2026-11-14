@@ -34,6 +34,16 @@ jouent en ligne, avec une caisse et un coffre communs, et chacun voit ce que l'a
    une commande honorée à deux ; le bac vu par les deux à la même heure ; la charrette ; les refus
    de rôle.
 
+## Revu par I9a2 (l'horloge commune)
+
+- **Le bac et les contrats sont dans le pas du monde** (`pasDuMonde` : `avancerBac`, puis `avancerContrats` quand il
+  passe) : chacun voit le bac accoster au même pas, calculé chez lui ; plus besoin de diffuser son arrivée. En ligne, le
+  veilleur de la page (`js/ui/port.js` `watchBac`) ne fait plus avancer le bac : il ne dit que ses avis, une fois chacun.
+- **Les heures du port** sont celles du pas de la commande (le monde la joue au pas où il est).
+- **Le lieu du port** est posé à la mise en ligne (I9f) : en ligne, la page ne l'écrit plus (`watchPort`).
+- **Les avis tirés de la partie locale** (bac, contrats) se redisaient après chaque partie refaite : ils sont gardés
+  une fois dits (par leur texte). Les autres avis du port (l'étal, les commerces) restent à faire de même.
+
 ## Hors périmètre
 
 - Les villageois et la navette en ligne (I9d) ; les contrats d'export (ils suivent, sans fiche

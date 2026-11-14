@@ -27,7 +27,7 @@ import { persoHtml } from './famille.js';
 import { plancheAvecChargement } from './apparence.js';
 import { openModal } from './modal.js';
 import { registerActions } from './actions.js';
-import { buildMode, state } from './store.js';
+import { buildMode, enLigne, state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -75,8 +75,15 @@ let derniereVeille = -Infinity;
 const accord = (v, f, m) => (v && v.genre === 'm' ? m : f);
 
 // Ce que le moteur a à dire au joueur : une notification chacun (la fiche : la carte du joueur, ou un appui sur lui).
+// (I9a2 : en ligne, sur une île, les avis déjà dits — la partie locale refaite les rend)
+const avisDits = new Set();
 function direAvis() {
   for (const { id, quoi } of prendreAvis(state)) {
+    if (enLigne && enLigne.vivante) {
+      const k = `${state.day}:${id}:${quoi}`;
+      if (avisDits.has(k)) continue;
+      avisDits.add(k);
+    }
     const v = trouverVillageois(state, id);
     if (!v) continue;
     if (quoi === 'arrive') notify(`🏝️ ${v.prenom} est arrivé${accord(v, 'e', '')} par le bac et s'installe dans sa maison.`, { kind: 'info' });
@@ -97,16 +104,19 @@ export function watchVillageois() {
   if (now - derniereVeille < WATCH_MS) return;
   derniereVeille = now;
   let change = false;
-  if (!buildMode) {
+  // (I9a2 : sur une île en ligne, les maisons et les arrivées sont dans le pas du monde, chez chacun : la page n'écrit
+  // pas dans la partie)
+  const vivant = !!(enLigne && enLigne.vivante);
+  if (!buildMode && !vivant) {
     const r = verifierMaisons(state);
     change = r.perdues.length > 0 || r.installes.length > 0;
   }
-  if (arriveeDue(state) && arriverVillageois(state).ok) change = true;
+  if (vivant) { /* (le pas du monde) */ } else if (arriveeDue(state) && arriverVillageois(state).ok) change = true;
   // (I6b : sinon, l'enfant qu'un foyer attend débarque de ce bac)
   else if (!nightActive(state) && arriveeEnfantRefus(state) === null && arriverEnfant(state).ok) change = true;
   // (en route depuis le matin, sans que la carte l'ait vu arriver — elle était fermée, le personnage ailleurs — : à
   // la fin de l'heure d'arrivée, il est chez lui)
-  if (hourOfDay(state) >= DATA.PORT.BAC.HEURES[1]) for (const v of villageoisDe(state)) if (v.accueil === 'en_route' && accueillirVillageois(state, v.id)) change = true;
+  if (!vivant && hourOfDay(state) >= DATA.PORT.BAC.HEURES[1]) for (const v of villageoisDe(state)) if (v.accueil === 'en_route' && accueillirVillageois(state, v.id)) change = true;
   const avis = villageoisDe(state).some((v) => Array.isArray(v.avis) && v.avis.length);
   if (avis) direAvis();
   // (I4 : un achat à l'étal, une notification)

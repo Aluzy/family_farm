@@ -46,7 +46,7 @@ son île et son village ; une chronique note ce qui s'y passe.
 
 | Question | Fiche | Proposition par défaut |
 |---|---|---|
-| Comment le serveur fait avancer l'horloge commune, et à quel coût ? | I9a2 | Par pas de 5 s de jeu, tant qu'un joueur est connecté ; le monde dort sans joueur. |
+| Comment le serveur fait avancer l'horloge commune, et à quel coût ? | I9a2 (fait) | Par pas de 5 s d'horloge déduits de l'heure du serveur (pas des révisions), tant qu'un joueur est connecté ; le monde dort sans joueur. Par heure : 720 pas, ≈ 3,5 s de calcul, 0,5 Mo écrits, 6 alarmes. |
 | En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs. |
 | L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | I1c : non, sur 80 nuits de simulation (le port en prend 6 800 pièces, 814 en caisse à la nuit 80). I4 : le joueur minimal finit à 242 pièces (le port au niveau 3), l'appliqué à 2 727 pour une borne de 1 412 : il a payé le niveau 2 tôt et n'atteint pas le niveau 3 avant la nuit 80 (ses matériaux, pas ses pièces : à 3 500 pièces, il ne le prend pas davantage). À revoir quand le joueur simulé ira plus loin que le palier 6. |
 | La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | I4 : fixe, `VILLAGE.PART` = 30 % (à 20 %, le villageois des champs rapporte 2,5 fois son coût, au bord de la fourchette ; à 40 %, la partie simulée s'appauvrit). |
@@ -86,7 +86,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f (fait), I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
-| 9. L'île en ligne et la bascule | I9a (fait), I9a2 à I9h | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
+| 9. L'île en ligne et la bascule | I9a, I9a2 (faits), I9b à I9h | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
 ## L'ordre et les dépendances
 
@@ -2183,6 +2183,72 @@ Le plan du lot, d'après les mesures : I9c et I9e sont confirmées telles quelle
 objet, avec une section « Revu par I9a » chacune : l'instantané au temps et non au nombre de pas (I9a2) ; le coût du
 contrôle des gestes dehors par le serveur, le brouillard déjà fait, le sac de chacun (I9b) ; `voisins` que l'élagage
 retire (I9d) ; l'élagage et le plafond à la mise en ligne (I9f).
+
+## L'horloge commune (I9a2, fait)
+
+La note de conception, validée telle quelle : `docs/fiches/ile/I9a2-note-horloge.md` (la voie b). D13 remplace F.2
+pour les mondes de l'île : le temps y passe tant qu'un joueur au moins est connecté, pour tous en même temps.
+
+Ce qui est posé :
+
+- **Le pas du monde** (`js/engine/temps-monde.js`) : 5 s d'horloge, 10 minutes de jeu (`VILLAGE.EN_LIGNE.PAS_MS`, une
+  constante du protocole), joué toujours un après l'autre (`avancerJusqua`). Il fait ce que fait `tick`, plus ce que
+  les veilleurs de la page font en solo : la nuit à 22 h, minuit, le réveil, le bac et les contrats, l'arrivée d'un
+  villageois ou d'un enfant, l'accueil à la fin de l'heure d'arrivée, l'arrivée notée dans la chronique, et les maisons
+  (une fois toutes les six pas). `state.horloge = { pas, sommeil, reveils }`. Un pas de 60 s ne donne pas la même
+  partie que 12 pas de 5 s (un test le garde écrit) ; les mêmes pas de 5 s, si.
+- **L'énergie de chacun** : `state.energies` (par compte, dans la partie du monde) ; `executerCommande(state, c,
+  { acteur })` pose celle de l'acteur dans `state.energie` le temps de la commande ; la nuit la rend à tous les
+  membres, présents ou non ; un compte nouveau a l'énergie pleine, le propriétaire celle de sa partie.
+- **La nuit d'une île** vient seule ; tous couchés, `temps.sommeil` (la commande du monde) fait filer la nuit dix fois
+  plus vite ; `nuitPartagee` ne refait plus la journée des machines pour une île (`chainesDeLaJournee`,
+  `distribuerGrain(state, false)` : elles ont tourné dans les pas).
+- **Le serveur** (`worker/src/monde.mjs`) : les pas déduits de son heure, rejoués avant chaque geste, le pas sur chaque
+  événement et au journal ; une ancre `{ pas, reel }` gardée avec l'instantané ; un instantané tous les 120 pas ou
+  200 gestes, et au départ du dernier, avec l'empreinte diffusée à tous (`controle`) ; une alarme toutes les
+  10 minutes ; une sauvegarde par heure de jeu et au départ du dernier ; le premier joueur réveille le monde là où il
+  s'était arrêté, le dernier l'endort ; au-delà de 60 pas de retard, la partie entière.
+- **Le jeu** (`js/ui/synchro.js`, `en-ligne.js`, `loop.js`, `stage.js`) : la locale avance à l'heure du serveur, la
+  confirmée la suit de deux pas en arrière ; l'heure affichée glisse entre deux pas ; Construire ne fige plus l'heure ;
+  les veilleurs qui écrivaient dans la partie se taisent en ligne ; « le monde dormait » dit au retour, et dans 👥 et
+  ⚙️ › Jeu en ligne : « Le temps de ce monde passe quand au moins un joueur y est. Sans personne, il dort. »
+- **`Math.hypot`** (la tournée du robot, la distance au comptoir) est devenu une racine carrée exacte, la même d'un
+  navigateur à l'autre. Le CSV de `node scripts/simulate.mjs` est le même octet pour octet.
+- **La sauvegarde** : format 104 (`horloge` et `energies` dans la partie d'un monde ; une partie solo n'y gagne rien).
+- **Les tests** : `tests/engine/village-temps-monde.test.mjs` (le même état deux fois, par JSON au milieu ; 60 s ≠
+  12 × 5 s ; la nuit à 22 h, minuit, le réveil ; une omelette prête à son heure, celle de 21 h 55 à minuit ; l'énergie
+  de deux joueurs ; le bac à 9 h ; le format 104), `tests/test-monde.mjs` (l'horloge s'arrête sans joueur et reprend
+  sans rattrapage ; le pas de chaque geste et le réveil à froid ; la préparation à son heure ; la nuit qui file quand
+  tous dorment et garde son pas quand un seul dort ; les instantanés, les sauvegardes ; le retard de 60 pas ; F.2 pour
+  les mondes d'avant), `tests/test-synchro.mjs` (deux joueurs et le monde au même état après une heure de pas ; un
+  joueur en retard, un en avance), `tests/deux-joueurs.mjs` (9a à 9e, dans Chromium).
+
+Les mesures (`node scripts/cout-horloge.mjs`, le vrai Durable Object sur `node:sqlite` ; l'île avancée, graine 1,
+80 nuits : 78,9 Ko pour la copie du monde ; `--plafond` : la même lestée à 253 Ko ; une heure réelle en ligne) :
+
+| Cas | Pas | Révisions | Écrit (79 Ko / 253 Ko) | Instantanés | Diffusé (à tous) | Alarmes | Calcul du serveur | Le journal couvre |
+|---|---|---|---|---|---|---|---|---|
+| Le temps seul, 1 joueur | 720 | 0 | 471 Ko / 1,5 Mo | 6 | 0,8 Ko | 6 | 3,3 à 3,8 s (le plus gros : 0,8 à 1,1 s, une alarme de 120 pas) | — |
+| Le temps seul, 4 joueurs | 720 | 0 | 471 Ko / 1,5 Mo | 6 | 3,3 Ko | 6 | 3,3 à 3,4 s | — |
+| 4 gestes par minute, 1 joueur | 720 | 240 | 498 Ko / 1,5 Mo | 6 | 48 Ko | 6 | 3,4 à 3,6 s (le plus gros : 36 à 128 ms) | 60 min |
+| 4 gestes par minute, 4 joueurs | 720 | 959 | 581 Ko / 1,6 Mo | 6 | 613 Ko | 6 | 3,8 à 4,2 s (le plus gros : 22 ms) | 31 min (500 gestes) |
+| Tous couchés chaque nuit, 1 joueur | 1 021 | 247 | 655 Ko | 8 | 49 Ko | 6 | 4,2 s | 60 min |
+| Tous couchés chaque nuit, 4 joueurs | 1 014 | 966 | 738 Ko | 8 | 624 Ko | 6 | 4,7 s | 32 min |
+
+Le prix d'un pas (ce que paie aussi chaque joueur, deux fois : sa partie et la confirmée) : de jour 6,7 à 7,2 ms en
+moyenne (p99 16 à 22 ms), de nuit 0,8 ms, à minuit 18 ms ; presque tout est dans `farmStep` (les tâches des villageois,
+I3c). Les maisons revues à chaque pas en coûtaient 5 de plus : elles le sont toutes les six pas. Le calcul du serveur
+reste ≈ 0,1 % du temps ; l'écrit vient surtout des instantanés au temps (six par heure), plus des gestes à quatre ; ce
+qui est diffusé est fait des gestes (le temps seul : l'empreinte de contrôle, six fois par heure).
+
+Ce que les fiches suivantes en reçoivent : une section « Revu par I9a2 » dans I9b à I9g.
+
+Ce qui reste : le geste « accueilli » d'un villageois (la carte) écrit encore dans la partie locale (I9d) ; les avis de
+l'étal et des commerces peuvent se redire après une partie refaite (I9c, I9d) ; la botteleuse sort toujours sa botte au
+versement en ligne (E-13 : sa sortie suit la carte, pas l'horloge) ; une alarme qui rejoue 120 pas d'un coup coûte
+≈ 1 s au serveur (à suivre au premier déploiement) ; aucun battement d'heure n'est diffusé : l'heure du serveur se
+mesure à l'accueil seulement (l'aller-retour compris) ; une île déjà en ligne avant I9a2 repart au pas 0, ses joueurs à
+l'énergie pleine.
 
 ## Les règles qui ne changent pas
 

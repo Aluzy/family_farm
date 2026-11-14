@@ -10,7 +10,7 @@ import { PRESSE_RENDU } from '../engine/state.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
 import { formatCoins, formatDay, formatNumber } from '../engine/format.js';
-import { enLigne, MAX_FRAME_MS, RENDER_THROTTLE_MS, state, tabAvailable, TICK_MS } from './store.js';
+import { enLigne, MAX_FRAME_MS, pasEnLigne, RENDER_THROTTLE_MS, state, tabAvailable, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
 import { consentBannerDue, consentBannerPending, consentBannerShown, modalRoot, storyOpen, uiCalm } from './calme.js';
@@ -252,10 +252,10 @@ function watchDay() {
 let midnightSeen = false;
 
 // G-1 : une averse commence (js/engine/meteo.js) : une annonce, une fois par jour (pas dans un monde en ligne, où
-// l'horloge est figée et la pluie n'arrose pas).
+// l'horloge est figée et la pluie n'arrose pas ; I9a2 : sur une île en ligne, l'horloge vit, la pluie arrose).
 let averseAnnoncee = null;
 function watchMeteo() {
-  if (enLigne || averseAnnoncee === state.day || nightActive(state) || !pleut(state)) return;
+  if ((enLigne && !enLigne.vivante) || averseAnnoncee === state.day || nightActive(state) || !pleut(state)) return;
   averseAnnoncee = state.day;
   notify('🌧️ Une averse ! La pluie arrose les cultures de la ferme (pas la Serre, qui est couverte).', { kind: 'info' });
 }
@@ -313,8 +313,15 @@ export function frame(now) {
   const horlogeArretee = setupPending(state) || storyOpen();
   // le mode Construire fige le monde : ni l'heure, ni les plantes, ni la famille ne bougent
   if (document.body.classList.contains('construction')) accumulatorMs = 0;
-  // E-2 (F.2) : un monde en ligne est figé : son horloge ne tourne pas chez le joueur
-  if (enLigne) accumulatorMs = 0;
+  // E-2 (F.2) : un monde en ligne est figé : son horloge ne tourne pas chez le joueur. I9a2 : une île en ligne a
+  // l'horloge du monde, ses pas à l'heure du serveur (js/ui/en-ligne.js), et Construire ne la fige pas
+  if (enLigne) {
+    accumulatorMs = 0;
+    if (enLigne.vivante) {
+      const r = mesurer('moteur : pas du monde', () => pasEnLigne());
+      if (r && r.pas) { ticked = true; scheduleRender(); }
+    }
+  }
   while (accumulatorMs >= TICK_MS) {
     mesurer('moteur : tick', () => tick(state, TICK_MS / 1000, horlogeArretee));
     accumulatorMs -= TICK_MS;
