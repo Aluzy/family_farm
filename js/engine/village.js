@@ -4,8 +4,9 @@
    - DATA.VILLAGE.ACTIF (data/village.json) : false tant que le chantier dure, le
      jeu publié ne change pas ; la fiche I9h le passe à true ;
    - state.essais.village : une partie d'essai (jeu.html?village=1, js/ui/village.js)
-     l'allume pour elle seule ; le jeu publié ne le pose jamais, et une partie
-     d'avant n'est pas touchée.
+     l'allume pour elle seule ; le jeu publié ne le pose jamais. Une partie d'avant
+     ouverte avec jeu.html?village=1 le devient, et passe sur l'île (fiche I7f :
+     js/engine/migration-ile.js, js/ui/storage.js).
    ========================================================================== */
 
 import { DATA } from './catalog.js';

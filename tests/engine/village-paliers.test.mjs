@@ -95,8 +95,11 @@ test('une partie neuve suit les paliers : state.palier, la forme de state.campag
   // rechargée, la partie garde son palier (pas de nouveau format : le champ n'existe que dans une partie neuve)
   const relue = migrate(JSON.parse(JSON.stringify(s)));
   assertEqual([relue.palier, paliersSuivis(relue)], [1, true]);
-  const vieille = migrate(JSON.parse(JSON.stringify(avant)));
+  const vieille = avecVillage(() => migrate(JSON.parse(JSON.stringify(avant))), false);
   assertEqual('palier' in vieille, false, 'la réparation n\'ajoute pas de palier à une partie d\'avant');
+  // (rechargée le réglage allumé, elle passe sur l'île : son chapitre devient son palier, fiche I7f, migration-ile.js)
+  const passee = migrate(JSON.parse(JSON.stringify(avant)));
+  assertEqual([passee.palier, paliersSuivis(passee)], [avant.campagne.chapitre, true], 'une partie d\'avant passée sur l\'île');
   assertEqual(allumerEssaiVillage(avant).palier, 1, '(une partie neuve rendue d\'essai, elle, les suit)');
 });
 

@@ -245,14 +245,14 @@ test('l\'Atelier : sans mercerie, le joueur tisse et coud lui-même ; une mercer
 /* ---------- la sauvegarde, le joueur automatique, éteint ---------- */
 
 test('la sauvegarde : v100 → v101 ; le second et les teintes gardés, réparés ; une partie d\'avant laissée telle quelle', () => {
-  assertEqual(STATE_VERSION, 101, 'le format 101');
+  assertEqual(STATE_VERSION >= 101, true, 'le format 101 (ou après)');
   const { s, V, c } = mercerie(3);
   c.second = V[1].id;
   V[1].tache = 'mercerie'; V[1].commerce = c.id;
   c.stock = { manteau_chaud: 2 };
   c.teintes = { manteau_chaud: { rouge: 1, licorne: 4 } };
   const m = migrate({ ...copie(s), version: 100 });
-  assertEqual(m.version, 101);
+  assertEqual(m.version, STATE_VERSION);
   const mc = m.commerces[0];
   assertEqual([mc.second, mc.teintes], [V[1].id, { manteau_chaud: { rouge: 1 } }], 'gardé, la couleur inconnue ôtée');
   const abime = copie(s);

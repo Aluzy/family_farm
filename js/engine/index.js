@@ -100,6 +100,7 @@ export * from './liens.js';
 export * from './traits.js';
 export * from './noms.js';
 export * from './chronique.js';
+export * from './migration-ile.js';
 export * from './taches.js';
 export * from './tableau.js';
 export * from './bourse.js';

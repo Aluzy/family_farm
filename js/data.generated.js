@@ -10604,6 +10604,44 @@ export const RAW_DATA = {
         "ail_ours_sauvage": { "biome": "foret", "sols": ["feuilles", "mousse"], "part": 0.004, "culture": "ail_ours" },
         "salicorne_sauvage": { "biome": "plage", "sols": ["sable"], "part": 0.015, "eau": [1, 3], "culture": "salicorne" }
       }
+    },
+    "MIGRATION": {
+      "AMI": 2,
+      "CADEAU": { "pieces": 300, "objets": { "boite_aux_lettres": 1, "planche": 30, "pierre": 20 } },
+      "RETOUR": {
+        "TITRE": "Bienvenue sur l'île à bâtir",
+        "INTRO": "Ta ferme est intacte. Autour d'elle, l'île a changé :",
+        "PORT": "Le port t'attend au bout du chemin de la ferme : on y vend tout, on y achète les graines, et le bac y passe tous les {periode} jours.",
+        "VILLAGEOIS": "Des villageois débarquent du bac dès qu'une maison libre les attend : une pièce close, un lit, une boîte aux lettres contre sa porte.",
+        "AMIS": "Tes amis d'avant viendront les premiers : {amis}.",
+        "SANS_AMIS": "Tes voisins d'avant sont partis ; d'autres viendront par le bac.",
+        "RENDU": "Tes commandes en cours et ce qui attendait d'être livré te sont rendus : {rendu}.",
+        "SANS_RENDU": "Tu n'avais aucune commande en cours : rien n'est perdu.",
+        "PRIX": "Les prix ont changé : ce qu'on fabrique se vend de {de} à {a} % plus cher que ses matières, et les villageois gardent {part} % de ce qu'ils produisent.",
+        "CADEAU": "Un cadeau de bienvenue : {cadeau}.",
+        "BOUTON": "Merci, au travail !"
+      },
+      "CHRONIQUE": {
+        "DEBUT": "La famille {famille} s'installe sur sa terre.",
+        "VENTE": "Première vente de la ferme : le début des affaires.",
+        "VOISINS": "Tu rencontres des voisins {lieu}.",
+        "AMI": "Tu te lies d'amitié avec un voisin {lieu}.",
+        "AMIS": "Tu te lies d'amitié avec {n} voisins {lieu}.",
+        "BILAN": "Avant l'île : {chapitres}, le niveau {niveau} atteint.",
+        "CHAPITRE": "un chapitre de la ferme franchi",
+        "CHAPITRES": "{n} chapitres de la ferme franchis",
+        "SANS_CHAPITRE": "le premier chapitre de la ferme en cours",
+        "ILE": "Le port ouvre au bout du chemin : l'île est à bâtir."
+      },
+      "LIEUX": {
+        "lande": "dans la lande",
+        "prairie": "dans la prairie",
+        "cote": "sur la côte",
+        "foret": "dans la forêt",
+        "montagne": "dans la montagne",
+        "marais": "dans le marais",
+        "*": "sur l'île"
+      }
     }
   },
   "TACHES": {

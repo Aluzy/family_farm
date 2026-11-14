@@ -134,6 +134,13 @@ export function noterChronique(state, type, donnees = {}) {
   return ecrire(state, type, donnees, jourDe(state));
 }
 
+// Fiche I7f (la migration d'une partie d'avant : migration-ile.js) : une ligne datée du jour `jour` (pas après
+// aujourd'hui), sans écrire l'arrivée de la famille sur l'île (une partie d'avant n'a pas débarqué). → la ligne, ou null.
+export function noterChroniqueLe(state, type, donnees, jour) {
+  if (!state || !villageActif(state) || !TYPES()[type]) return null;
+  return ecrire(state, type, donnees, Math.max(1, Math.min(jourDe(state), Math.floor(Number(jour) || 1))));
+}
+
 /* ---------- les moments branchés ici (les fichiers du jeu appellent ces aides) ---------- */
 
 // La première récolte (campaign.js, noteCropHarvested).

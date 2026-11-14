@@ -38,6 +38,7 @@ import { pleut } from '../engine/meteo.js';
 import { watchInvitations } from './invitations.js';
 import { watchVocations } from './vocations.js';
 import { watchPlans } from './plans.js';
+import { watchRetourIle } from './retour-ile.js';
 import {
   ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, watchAlerts,
 } from './toasts.js';
@@ -353,6 +354,7 @@ function veiller(ticked) {
   watchPreparations();
   watchUnlocks();
   if (ticked) watchAlerts();
+  watchRetourIle(); // fiche I7f : une partie d'avant passée sur l'île, la fenêtre du retour (avant celle de l'absence)
   watchAbsence();
   watchChapters();
   watchLevels(); // version 1.7 : après l'écran de fin de chapitre

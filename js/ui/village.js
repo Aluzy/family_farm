@@ -1,9 +1,10 @@
 /* ==========================================================================
    L'essai du chantier « l'île à bâtir » (docs/ile.md, fiche I0a).
    jeu.html?village=1 allume le chantier (js/engine/village.js, villageActif) pour
-   une nouvelle partie faite dans cette page : une partie déjà enregistrée n'est
-   pas touchée. Tant que la partie est une partie d'essai, un bandeau discret le
-   dit, en bas à gauche.
+   une nouvelle partie faite dans cette page ; une partie d'avant déjà enregistrée,
+   ouverte ainsi, passe sur l'île et devient une partie d'essai (fiche I7f :
+   js/ui/storage.js, js/engine/migration-ile.js). Tant que la partie est une partie
+   d'essai, un bandeau discret le dit, en bas à gauche.
    ========================================================================== */
 
 import { allumerEssaiVillage, essaiVillage } from '../engine/village.js';

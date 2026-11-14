@@ -83,7 +83,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a (fait), I5b (fait), I5c (fait) | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
-| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
+| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f (fait), I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
@@ -120,7 +120,8 @@ Ce qui est posé (I0a) :
   elle rend `DATA.VILLAGE.ACTIF`, ou `true` pour une partie d'essai (`state.essais.village`).
 - L'essai (`js/ui/village.js`) : avec `jeu.html?village=1`, l'écran d'accueil s'affiche et une nouvelle
   partie faite dans la page (l'accueil, « Recommencer à zéro », la première partie de l'appareil) devient
-  une partie d'essai, qui le reste en se rechargeant ; une partie déjà enregistrée n'est pas touchée. Un
+  une partie d'essai, qui le reste en se rechargeant ; une partie d'avant déjà enregistrée, ouverte ainsi, passe sur l'île
+  et devient une partie d'essai (I7f, plus bas). Un
   bandeau discret, en bas à gauche, le dit (« 🏝️ Essai : l'île à bâtir »).
 - Les tests : `tests/engine/village-*.test.mjs` forment leur propre suite, jouée en dernier, réglage
   forcé à `true` ; ailleurs, `avecVillage(fn)` (`tests/engine/aide.mjs`) l'allume le temps d'un test.
@@ -141,7 +142,8 @@ Ce qui est posé (I7a) :
   plans et le décor du chapitre, et les graines de la serre que le courrier offrait).
 - La partie : `state.palier` (1 à 7, la forme de `state.campagne.chapitre`, que `poserChapitre` tient
   égal) n'existe que dans une partie neuve faite le réglage allumé (ou rendue d'essai) : pas de nouveau
-  format. Une partie d'avant garde ses chapitres même le réglage allumé, jusqu'à I7f. Les compteurs
+  format. Une partie d'avant garde ses chapitres tant qu'elle n'est pas passée sur l'île ; sa migration (I7f) lui donne le
+  palier de son chapitre. Les compteurs
   restent dans `state.campagne.compteurs`.
 - Le réglage allumé : plus de courrier (ni lettres ni cartes postales) ; la semaine des objectifs du
   jour est celle de `VILLAGE.OBJECTIFS.SEMAINE` (sans phrase d'ambiance, ni hameau ni calèche) et les
@@ -337,7 +339,7 @@ Ce qui est posé (I2 ; les réglages : `VILLAGE.DEHORS`, `VILLAGE.CHEMIN`, `VILL
   scène tourne au ralenti : 32 px/s à pied au lieu de 58), le rapport mesuré chemin/herbe est de 1,3 à pied et 1,5 à
   cheval ; l'aller à cheval avec la charrette, sur 426 cases, y a pris 143 s.
 - **Les tests** : `tests/engine/village-chemin.test.mjs` ; `village-commerce` charge avant de vendre.
-- Reste : ~~retirer les boucles vers les hameaux (I7e)~~ (fait : le monde de l'île n'a plus que le tronçon) ; convertir le tronçon des parties d'avant (I7f) ; le chargement
+- Reste : ~~retirer les boucles vers les hameaux (I7e)~~ (fait : le monde de l'île n'a plus que le tronçon) ; ~~convertir le tronçon des parties d'avant (I7f)~~ (fait : la migration le remet « à poser ») ; le chargement
   ne vieillit pas la nuit (il garde sa fraîcheur) ; un chemin repris du tronçon rend un bloc (1 pièce au port).
 
 ## Les villageois : l'arrivée (I3a, fait)
@@ -1684,7 +1686,8 @@ simulation octet pour octet ; `monde-plan`, `hameaux`, `caleche` verts).
   son habitant) ; un ail des ours en fleurs dans un sous-bois, ramassé (son plant), une salicorne sur une plage,
   repiqués à la ferme, récoltés : l'annonce, puis le catalogue d'import du port (rang 5) ; le texte de la page cherché à
   chaque étape : aucun nom du récit, ni calèche, ni cocher, ni hameau ; aucune erreur de console.
-- Reste : (I7f) une partie d'avant passée sur l'île : ses hameaux vus et ses habitants restent dans l'état
+- Reste : ~~(I7f) une partie d'avant passée sur l'île~~ (fait, plus bas : ils sont retirés, les amis deviennent candidats, le
+  tronçon est remis « à poser ») : ses hameaux vus et ses habitants restaient dans l'état
   (`state.monde.hameaux`, `state.monde.habitants`, et les projets, les demandes, les liens qui les citent), muets
   (`habitantsDe` rend `{}`) : les retirer, ou les garder pour la chronique ; son tronçon généré (`genere`) suit encore
   les boucles là où le plan les rejoignait : le convertir ; (I9h) les fichiers (`monde-hameaux.js` hors du port et des
@@ -1760,6 +1763,98 @@ aussi par les tests). Tout est derrière le réglage : éteint, une partie n'a n
   de l'île choisi au départ.
 - Reste : les commandes du moteur pour nommer et noter (le jeu en ligne, I9) ; le panneau ne s'éclaire pas le soir ;
   pas de ligne pour un commerce fermé ni pour un villageois parti (personne ne part, B-1).
+
+## La migration des parties en cours (I7f, fait)
+
+Une partie d'avant le chantier passe sur l'île sans rien perdre de ce que le joueur a bâti, gagné ou noué. Le moteur :
+`js/engine/migration-ile.js` ; les réglages et les textes : `VILLAGE.MIGRATION` (`data/village.json`) ; la page :
+`js/ui/storage.js` (la copie de sûreté, l'essai), `js/ui/retour-ile.js` (la fenêtre du retour), ⚙️ Options. Éteint, le
+jeu est le même (le CSV de la simulation octet pour octet ; une partie d'avant ouverte éteinte n'est pas touchée).
+
+- **Quand** : une partie d'avant (`partieDAvant` : elle n'a pas de `state.port`, que toute partie de l'île a dès sa
+  naissance) passe sur l'île à son ouverture sur l'île, une fois, quel que soit le format d'où elle vient :
+  - le réglage allumé (`VILLAGE.ACTIF` ; après la bascule I9h : toujours) : `migrate` le fait, après les migrations de
+    format et `reparerPartie` (`migrationIleDue`, puis `migrerVersLIle` sur une copie : une partie qui ne passe pas reste
+    telle quelle, jamais à moitié, jamais d'exception) ;
+  - pendant le chantier, `jeu.html?village=1` : la partie d'avant enregistrée (ou importée, depuis ⚙️ Options ou l'écran
+    d'accueil) devient une partie d'essai (`state.essais.village`) et passe sur l'île (`essayerSurLIle`,
+    `js/ui/storage.js`). Ouverte sans `?village=1`, une partie d'avant reste celle d'avant.
+- **La copie de sûreté** : à la première ouverture, la sauvegarde d'avant (le texte tel qu'il était sur l'appareil, ou le
+  texte importé) est gardée à part (`ferme-save-avant-ile`), puis la partie est enregistrée ; ⚙️ Options › Sauvegarde
+  propose alors « ⬇️ Télécharger la partie d'avant (.json) », qui se réimporte comme une autre (`state.retourIle.copie`
+  dit au moteur que c'est fait).
+- **L'inventaire de la sauvegarde** (chaque champ touché, ce qu'il devient) :
+
+| Champ | Devient | Pourquoi |
+|---|---|---|
+| la ferme (`blocs`, `sols`, `hauteurs`, `fenetres`, `blocsDessus`, `meubles`, `potager`, ses chemins peints), l'inventaire, `pieces`, `progression`, `technologies`, `pointsTech`, les bêtes, `famille`, `equipement`, `plans`, les styles, `encyclopedie`, `outils`, `monde.vues`, `monde.vu`, `monde.pris`, les objectifs du jour | gardé | ce que le joueur a bâti ou gagné ; le brouillard levé reste levé ; pas de terre vierge (`dehors.ferme` absent) |
+| `port` | neuf (`nouveauPort` : les bacs d'avant comptés passés) | le port paraît, connu d'emblée (la carte du monde, la boussole : I1a) |
+| `dehors` | `{ troncon: 'a_poser', chemins: [] }` | le tronçon devient des blocs du joueur (I2) : la page le pose d'après le Web Worker, `assurerTroncon` dans Node ; grâce aux fantômes d'I7e, c'est celui d'une partie neuve de la même terre (vérifié) |
+| `campagne.chapitre` → `palier` | le même rang ; `recompenses` gardé ; `annonces` vidé | les récompenses reçues ne sont pas redonnées ; les écrans de fin pas encore vus étaient déjà récompensés |
+| `noms`, `chronique` | neufs : l'île nommée à la graine ; les lignes « avant » | la chronique ne note pas l'arrivée de la famille sur l'île (elle était là) |
+| `monde.hameaux`, `monde.habitants`, `voisins`, `projets`, `amitie.visites` | retirés (vidés) | muets sur l'île depuis I7e (`habitantsDe` rend `{}`) ; leur trace passe à la chronique et aux candidats |
+| `amitie.pnj` | seuls les villageois (`vg-…`) restent | les amis deviennent des candidats, avec leurs points |
+| `candidats` (nouveau) | les voisins (ni personnage écrit, ni enfant) au palier `MIGRATION.AMI` (2, « cordial ») ou plus | ils arriveront les premiers ; les autres sont oubliés sans bruit |
+| `demandes`, `invitations` | celles du village seulement | celles des voisins n'ont plus personne |
+| `caleche` (coffre, malle, commandes) | neuve (vide), la malle vidée d'abord | les commandes payées sont remboursées en pièces (`annulerCommande` : « Commande annulée » aux Comptes) ; ce qui était déposé, repris ; ce qui était livré, pris ; le coffre était au marchand |
+| les commandes aux ateliers des voisins (`habitants[].commandes`) | livrées (ce qu'elles devaient rendre) | payées, pas reçues |
+| `projets[].recu` | rendu dans l'inventaire | un projet inachevé : tout ce qu'il a reçu est rendu (on ne sait pas ce qui venait du joueur : il reçoit aussi la part des familles, jamais moins) |
+| `amitie.porte` | ramassé | des présents laissés devant la porte |
+| `courrier` | vidé ; les pièces d'une lettre jamais ouverte, versées (« Lettre jamais ouverte ») | plus de courrier sur l'île (I7a) ; aucune lettre ne porte plus de pièces aujourd'hui : la règle est là pour les données |
+| `enveloppe_maurice` (pas ouverte) | ouverte : ses 15 000 pièces (« Enveloppe ouverte ») | elle ne s'ouvre plus sur l'île (I7d) |
+| `cloche_maurice`, `pierre_lune` | retirées de l'inventaire | des souvenirs du récit, sans valeur ni usage sur l'île. **La pierre posée** (le fait « pierre.posee ») : son effet (tout pousse plus vite) ne joue plus sur l'île depuis I7c — une perte décidée par I7c (« la pierre de lune : rien »), à confirmer |
+| `recit`, `bienvenue` | ceux d'une partie de l'île (vides, la visite faite) | le récit ne se garde que résumé dans la chronique |
+| `monde.but` | effacé s'il visait un voisinage | le lieu n'existe plus |
+| `retourIle` (nouveau) | la fenêtre du retour, effacée quand on la ferme | voir plus bas |
+
+- **Les amis** (`candidatsDAvant`) : du plus ami au moins ami ; chacun garde son prénom, son personnage, son apparence,
+  ses goûts (ceux de son métier, `goutsDe`, et ceux qu'on avait découverts) et ses points d'amitié. Un prénom du récit
+  (Odile, Basile… : un habitant pouvait le porter) est changé pour un prénom de l'île, tiré de son id (`prenomsDuJeu`). Au
+  bac, quand une maison libre l'attend (les règles d'I3a : la réserve de nourriture, le plafond du port), le premier
+  candidat débarque avant tout villageois tiré (`arriverVillageois` prend `state.candidats`) : `v.ancienAmi`, ses traits
+  tirés de son rang (il n'en avait pas), sa ligne dans la chronique comme un autre.
+- **La chronique d'avant** (`MIGRATION.CHRONIQUE`, le type « avant », qui ne se résume jamais ; sans nom propre) : la
+  famille s'installe (jour 1), la première vente (le fait du récit, s'il est noté), chaque voisinage rencontré (le jour de
+  sa découverte, son lieu d'après son style : « Tu rencontres des voisins dans la lande. »), les amis qu'on s'y est faits,
+  le bilan (« Avant l'île : 6 chapitres de la ferme franchis, le niveau 8 atteint. ») et l'ouverture du port, le jour de
+  la migration. Les jours des chapitres ne se gardaient pas (les écrans vus s'effacent) : ils vont au bilan. Aucun nom du
+  récit, ni « hameau » ni « calèche » (le contrôle des textes de l'île lit `VILLAGE.MIGRATION`).
+- **La fenêtre du retour** (« 🏝️ Bienvenue sur l'île à bâtir », une page, dès que la page est calme, avant celle de
+  l'absence) : cinq lignes (le port et le bac ; les villageois et leur maison ; les amis d'avant qui viendront, ou qu'ils
+  sont partis ; ce qui est rendu ; les prix : ce qu'on fabrique se vend de 30 à 60 % plus cher que ses matières,
+  `VILLAGE.PRIX.FOURCHETTE`, et les villageois gardent 30 %, `VILLAGE.PART` — I4 n'a rien à migrer), puis le cadeau de
+  bienvenue (`MIGRATION.CADEAU` : 300 pièces, une boîte aux lettres, 30 planches, 20 pierres : de quoi marquer une
+  première maison), donné quand on la ferme (le bouton, la croix ou le fond ; une fois).
+- **La sauvegarde** : format 102. La migration 101 → 102 répare `candidats` et `retourIle` d'une partie de l'île (un
+  candidat illisible s'en va) ; elle n'ajoute rien à une partie d'avant. Le passage sur l'île, lui, ne dépend pas du format.
+- **Les tests** : `tests/engine/village-migration.test.mjs` (9 tests) : les neuf parties d'avant (les deux d'avant la
+  ferme générée et deux récentes de `anciennes-parties.json`, les cinq époques de `temoins.json`) passent sur l'île, une
+  seule fois, leur ferme identique (l'empreinte des blocs, des sols, des hauteurs, des fenêtres, des meubles, des
+  parcelles) à celle de la même partie migrée éteinte, leurs pièces jamais en baisse, puis jouent 10 nuits du joueur
+  automatique ; les amis candidats et leur arrivée ; les remboursements (la malle, l'atelier, le projet, la lettre,
+  l'enveloppe, les Comptes) ; le palier ; la chronique ; la fenêtre et le cadeau ; le tronçon d'une partie neuve ; éteint ;
+  l'essai ; le format 102. `anciennes-parties.json` gagne deux parties récentes, jouées le réglage éteint par le joueur
+  automatique (graine 1) : `recente_debut` (6 nuits, le chapitre 2) et `recente_avancee` (45 nuits, le chapitre 7, sept
+  voisinages vus, sept amis, puis une commande de semences et un dépôt dans la malle, une commande au métier à tisser, un
+  apport au projet d'un voisinage). `village-bac`, `village-paliers`, `village-mercerie` revus (une partie d'avant
+  ouverte allumée passe sur l'île).
+- **La simulation** : éteint, le CSV est le même octet pour octet ; `--village` aussi (une partie neuve).
+- **Vérifié dans Chromium** (le site construit) : une partie d'avant faite dans la page, le réglage éteint (graine 424242,
+  45 nuits du joueur automatique : le chapitre 7, sept voisinages, trois amis, la calèche), une commande de semences et un
+  dépôt dans la malle ; ouverte telle quelle (sa carte du monde : ses voisinages et la calèche), puis avec `?village=1` :
+  la fenêtre du retour (les trois amis, les graines et le bois rendus), le cadeau reçu, la ferme intacte, la chronique et
+  ses lignes « avant », la carte du monde sans voisinage, avec le port, le port lui-même, la copie dans ⚙️ Options ; une
+  maison, le jour du bac : Aimé, un ami d'avant, débarque (« Aimé est arrivé par le bac et s'installe dans sa maison »,
+  cordial) ; aucune erreur de console.
+- **Ce que le lot 9 et I9h auront à faire** : I9h retire la branche `?village=1` de `js/ui/storage.js` (allumé, `migrate`
+  suffit) ; `partieDAvant` reste (une sauvegarde exportée se réimporte des années plus tard) ; ce que la migration lit
+  encore du jeu d'avant (`caleche.js` pour la malle, `DATA.ILE.ATELIERS`, `DATA.RECIT.ENVELOPPE`, `DATA.COURRIER`,
+  `state.monde.habitants`) est à garder pour elle, ou à recopier dans `VILLAGE.MIGRATION`, avant de retirer ces fichiers.
+  I9f : un monde en ligne d'avant (E-2) n'est pas migré ici (son état vient du serveur, pas de `migrate`) : sa migration
+  s'écrit avec la sienne, avec les mêmes fonctions.
+- Reste : la pierre posée (son effet perdu) à confirmer ; les objectifs du jour d'une partie d'avant en pleine semaine
+  continuent dans la semaine de l'île au même rang ; le joueur automatique ne ferme pas la fenêtre du retour (le cadeau
+  ne vient qu'en la fermant).
 
 ## Les vocations : le village convivial (I8a, fait)
 

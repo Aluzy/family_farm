@@ -243,6 +243,32 @@ export function tirerVillageois(state, rang = villageoisDe(state).length + 1) {
   return { prenom, genre, perso, apparence, gouts, traits };
 }
 
+// Fiche I7f (migration-ile.js) : le premier ami d'une partie d'avant qui attend une maison (state.candidats), pris
+// de la liste. Il garde son prénom, son personnage, son apparence, ses goûts et son amitié ; ses traits sont tirés de
+// son rang, comme ceux d'un autre (il n'en avait pas). → { villageois (comme tirerVillageois, et ancienAmi : true),
+// pts, connus } ou null.
+function prendreCandidat(state, rang) {
+  if (!Array.isArray(state.candidats)) return null;
+  while (state.candidats.length) {
+    const c = state.candidats.shift();
+    if (!objet(c) || typeof c.prenom !== 'string' || !c.prenom) continue;
+    if (!state.candidats.length) delete state.candidats;
+    const t = tirerVillageois(state, rang), genre = c.genre === 'm' ? 'm' : 'f';
+    const gouts = objet(c.gouts) && Object.keys(c.gouts).length ? { ...c.gouts } : t.gouts;
+    return {
+      villageois: {
+        prenom: c.prenom, genre, perso: Number.isInteger(c.perso) ? c.perso : t.perso,
+        apparence: objet(c.apparence) ? validApparence(c.apparence, false) || t.apparence : t.genre === genre ? t.apparence : tirerApparence(rngDe(`${graineDe(state)}:villageois:apparence:${rang}:ancien`), { enfant: false, genre }),
+        gouts, traits: t.traits, ancienAmi: true,
+      },
+      pts: Math.max(0, Math.min(DATA.AMITIE.ECHELLE.MAX, Math.round(Number(c.pts) || 0))),
+      connus: objet(c.connus) ? c.connus : {},
+    };
+  }
+  delete state.candidats;
+  return null;
+}
+
 // Un nouveau venu débarque et s'installe dans la première maison libre (sans vérifier le jour : arriveeRefus le
 // fait). `o.direct` : il y est d'un coup (la nuit, loin de la vue) ; sinon il marche du port à sa maison
 // (accueil « en_route » : la scène le montre, puis accueillirVillageois). → { ok, villageois } ou un refus.
@@ -252,7 +278,9 @@ export function arriverVillageois(state, o = {}) {
   if (!libre) return fail('Pas de maison libre.');
   if (!Array.isArray(state.villageois)) state.villageois = [];
   const rang = state.villageois.length + 1;
-  const t = tirerVillageois(state, rang);
+  // (fiche I7f, migration-ile.js : un ami d'une partie d'avant, candidat, passe avant tout villageois tiré)
+  const ancien = prendreCandidat(state, rang);
+  const t = ancien ? ancien.villageois : tirerVillageois(state, rang);
   const v = {
     id: `vg-${rang}`, ...t, maison: libre.boite, lit: libre.lits[0], bourse: Number(ARRIVEE.BOURSE) || 0,
     bonheur: DATA.BONHEUR.DEPART, faim: 0, arrive: jourDe(state), repos: false,
@@ -261,7 +289,8 @@ export function arriverVillageois(state, o = {}) {
   };
   state.villageois.push(v);
   // (fiche I6a : la famille l'accueille, l'amitié commence à VILLAGE.AMITIE.ACCUEIL points, « poli »)
-  if (!amitieDe(state).pnj[v.id]) ajouterAmitie(state, v.id, Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0);
+  if (!amitieDe(state).pnj[v.id]) ajouterAmitie(state, v.id, ancien ? ancien.pts : Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0);
+  if (ancien) amitieDe(state).pnj[v.id].gouts = { ...ancien.connus };
   // (fiche I8a, vocation-village.js : un village convivial attire des gens qui y ont déjà un ami, un parent)
   const lien = lienArrivee(state, v, rngDe(`${graineDe(state)}:villageois:${rang}:lien`));
   if (lien && poserAffinite(state, v.id, lien.id, lien.affinite)) { v.lienArrivee = { id: lien.id, sorte: lien.sorte }; avis(v, `lien_arrivee:${lien.id}`); }
