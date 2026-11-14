@@ -258,12 +258,27 @@ export const ENCYCLOPEDIE_ILE = {
     {
      "id": "commerces",
      "terme": "Les commerces",
-     "description": "Un villageois assez proche de toi peut avoir envie d'ouvrir un commerce d'artisan ; c'est toi qui le décides. Il faut qu'il ait pratiqué 10 jours la tâche de sa filière, son amitié, et un local que tu bâtis : une pièce close avec l'établi et le comptoir, l'enseigne près de la porte. Un commerce reste artisanal : 3 lots par jour, un de plus avec l'ancienneté. L'artisan achète sa matière à ton coffre avec sa bourse, et vend au comptoir : à toi, aux villageois, le surplus au bac ; tu peux lui commander une pièce, ou la faire à façon. La forge fond le minerai en lingots et fait des clous, des charnières et des lames. Le premier commerce ouvert franchit un palier de l'île, a son nom, et sa fête d'ouverture.",
+     "description": "Un villageois assez proche de toi peut avoir envie d'ouvrir un commerce d'artisan ; c'est toi qui le décides. Il faut qu'il ait pratiqué 10 jours la tâche de sa filière, son amitié, et un local que tu bâtis : une pièce close avec l'établi et le comptoir, l'enseigne près de la porte. Un commerce reste artisanal : 3 lots par jour, un de plus avec l'ancienneté. L'artisan achète sa matière à ton coffre avec sa bourse, et vend au comptoir : à toi, aux villageois, le surplus au bac ; tu peux lui commander une pièce, ou la faire à façon. La forge fond le minerai en lingots et fait des clous, des charnières et des lames ; la mercerie file, tisse et coud la laine. La scierie scie des planches et fait les meubles de la maison : sur ta commande (ils entrent dans ta maison) ou pour les maisons des villageois. La boulangerie cuit le pain et les tartes au four à bois : un villageois qui n'a plus de provisions vient y chercher son pain, qu'il mange à son repas. La fromagerie caille le lait en faisselles et met des tommes à s'affiner en cave, quelques nuits. Un commerce ne te retire rien : tu peux toujours scier, cuire et cailler toi-même ; il fait mieux ou autre chose, en petite quantité. Le village tient d'autant plus de commerces qu'il a de villageois et que son port est grand. Le premier commerce ouvert franchit un palier de l'île, a son nom, et sa fête d'ouverture.",
      "liens": [
+      "mercerie",
       "villageois",
       "amitie_villageois",
       "noms",
-      "fetes_village"
+      "fetes_village",
+      "meubles"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "mercerie",
+     "terme": "La mercerie",
+     "description": "Le commerce de la laine. Un villageois qui s'occupe des bêtes 10 jours rêve d'une mercerie : son établi, le rouet et le métier à tisser, avec le comptoir et l'enseigne près de la porte. La laine de la tonte, qu'il t'achète, devient du fil au rouet, le fil du tissu au métier, le tissu des gants, un manteau chaud, une salopette, un tablier, ou un tapis ; chaque étape vaut plus que la précédente, 3 lots par jour en tout. Avec un colorant du mortier, il teint le vêtement : rouge, orange, jaune, vert, bleu ou violet ; les villageois l'achètent et le portent, et habillés d'un manteau chaud, ils travaillent sous la pluie. Sans mercerie, tu tisses et tu couds toi-même à l'Atelier. Quand le village a grandi (6 villageois), un second villageois qui en a l'envie peut la rejoindre : l'un file et tisse, l'autre coud, et ils font deux fois plus de lots, sans machine.",
+     "liens": [
+      "commerces",
+      "villageois",
+      "etal"
      ],
      "decouverte": [
       "villageois"
@@ -1029,10 +1044,11 @@ export const ENCYCLOPEDIE_ILE = {
     {
      "id": "meubles",
      "terme": "Meubles",
-     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils se posent dans la maison, et un villageois peut en acheter un pour la sienne à l'étal. Chacun élève pour de bon le bonheur que vise la famille (voir « Bonheur »). Une grille aide à les placer ; les tableaux s'accrochent à un mur. Presque tous se tournent (en mode Construire, le bouton ↻) : de face, de dos ou de profil ; de profil, un meuble long (la table, le canapé, l'armoire) prend sa longueur vers le haut. Les lits, les tableaux et le réfrigérateur restent de face.",
+     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : sur l'île, le menuisier les fait (la scierie, un commerce) : commandés, ils entrent dans ta maison ; ils se posent dans la maison, et un villageois peut en acheter un pour la sienne, à l'étal ou au comptoir du menuisier. Chacun élève pour de bon le bonheur que vise la famille (voir « Bonheur »). Une grille aide à les placer ; les tableaux s'accrochent à un mur. Presque tous se tournent (en mode Construire, le bouton ↻) : de face, de dos ou de profil ; de profil, un meuble long (la table, le canapé, l'armoire) prend sa longueur vers le haut. Les lits, les tableaux et le réfrigérateur restent de face.",
      "liens": [
       "maison",
-      "etal"
+      "etal",
+      "commerces"
      ],
      "decouverte": [
       "objet:meuble_chaise",

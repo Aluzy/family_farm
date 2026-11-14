@@ -8,7 +8,7 @@
      récit sans passer par l'aiguillage ; aucun fichier de la page (js/ui, js/carte, js/*.js) n'importe un module du
      récit : elle passe par l'aiguillage (recitPage pour ce que la page d'avant lit encore, null sur l'île) ;
    - le moteur allumé, le récit vidé (DATA.RECIT, et les secrets, les ateliers, le courrier) : 30 nuits du joueur
-     automatique, les hameaux du récit peuplés, sans erreur ; ni personnage écrit, ni fait, ni relation, ni
+     automatique, sans erreur, et les hameaux du récit n'y naissent pas (fiche I7e) ; ni personnage écrit, ni fait, ni relation, ni
      confiance, ni courrier, ni carnet ; aucune scène, aucun lieu ni secret qui parle, aucun atelier ;
    - éteint, l'aiguillage rend le récit d'avant.
    Lancer seul : node tests/run-tests.mjs village-sans-recit
@@ -147,8 +147,9 @@ function sansRecit(fn) {
   }
 }
 
-// Une partie neuve de l'île (seul), commencée comme à l'accueil, et ses hameaux du récit peuplés (les garantis,
-// et un autre).
+// Une partie neuve de l'île (seul), commencée comme à l'accueil. Les hameaux du récit (ceux du monde d'avant : les
+// garantis, et un autre) n'y naissent pas (fiche I7e : l'île n'a pas de hameau ; peuplerHameau refuse, habitantsDe
+// ne rend rien).
 function partie(graine = 4) {
   const s = createNewGame(graine);
   assert(composeFamily(s, familleSeule(s)).ok, 'la famille');
@@ -158,26 +159,21 @@ function partie(graine = 4) {
   elementsSol(sol.ctx);
   const plans = sol.ctx.hameaux.plans.filter((p) => !p.batisse);
   const peuples = [...plans.filter((p) => p.garanti), plans.find((p) => !p.garanti)].filter(Boolean);
-  for (const p of peuples) assert(peuplerHameau(s, p), `${p.nom} est peuplé`);
+  assert(peuples.length > 0, 'le monde d\'avant a ses hameaux du récit');
+  for (const p of peuples) assertEqual(peuplerHameau(s, p), null, `${p.nom} ne naît pas sur l'île`);
+  assertEqual(habitantsDe(s), {}, 'aucun habitant de hameau');
   return { s, peuples, lieux: sol.ctx.lieux || null };
 }
 
 const RECIT_VIDE = { faits: {}, relations: {}, confiance: {}, dites: {}, carnet: [], promesses: {} };
 
-test('allumé, le récit vidé : 30 nuits du joueur automatique, les hameaux du récit peuplés, sans rien du récit', () => {
+test('allumé, le récit vidé : 30 nuits du joueur automatique, aucun hameau, sans rien du récit', () => {
   sansRecit(() => {
     const { s, peuples } = partie();
     assert(recitPour(s) === RECIT_MUET, 'l\'île prend le récit muet');
     assertEqual(s.bienvenue.etat, 'faite', 'pas de visite de bienvenue');
-    // (ni personnage écrit dans les hameaux garantis : Odile, Basile, Garance… n'y sont pas installés)
-    const membres = peuples.flatMap((p) => habitantsDe(s)[p.id].foyers.flatMap((f) => f.membres));
-    assert(membres.length > 0, 'des habitants');
-    assertEqual(membres.filter((m) => m.recit), [], 'aucun personnage écrit');
-    // (on parle à un habitant : sa phrase de tous les jours, l'amitié monte comme pour les autres)
-    const adulte = membres.find((m) => !m.enfant);
-    const p = peuples.find((x) => habitantsDe(s)[x.id].foyers.some((f) => f.membres.includes(adulte)));
-    const b = paroleHameau(s, p.id, adulte.id, { heure: 10, n: 0 });
-    assert(b && typeof b.texte === 'string' && b.texte.length > 0 && !b.recit, 'une phrase, pas une réplique du récit');
+    // (ni personnage écrit, ni habitant : aucun hameau ; une parole d'un hameau ne se dit pas)
+    for (const x of peuples) assertEqual(paroleHameau(s, x.id, 'personne', { heure: 10, n: 0 }), null, 'pas de parole d\'un hameau');
     for (const x of peuples) for (const g of [x.garanti, x.id]) for (const lieu of ['ferme', 'monde', g]) {
       assertEqual(scenesPossibles(s, { lieu, hameau: x.id }), [], `aucune scène (${lieu})`);
     }
@@ -199,8 +195,11 @@ test('allumé, le récit vidé : 30 nuits du joueur automatique, les hameaux du 
     assertEqual([geodeLuit(s), fermeLuit(s)], [false, false], 'ni la pierre ni l\'amas ne luisent');
     assertEqual(heuresPousse(s), DATA.TEMPS.POUSSE_HEURES, 'la pousse de toujours (pas de pierre de lune)');
     assert(s.day >= 31 && s.palier >= 3, `la partie avance (jour ${s.day}, palier ${s.palier})`);
-    // (l'amitié a son échelle à elle : data/amitie.json ECHELLE)
-    assert(DATA.AMITIE.ECHELLE.NOMS.includes(palierAmitieNom(s, adulte.id)) && pointsAmitie(s, adulte.id) <= DATA.AMITIE.ECHELLE.MAX, 'le palier d\'amitié d\'un habitant');
+    // (l'amitié a son échelle à elle : data/amitie.json ECHELLE ; les villageois seuls, aucun habitant de hameau)
+    assertEqual(habitantsDe(s), {}, 'toujours aucun habitant de hameau');
+    const v = (s.villageois || [])[0];
+    if (v) assert(DATA.AMITIE.ECHELLE.NOMS.includes(palierAmitieNom(s, v.id)) && pointsAmitie(s, v.id) <= DATA.AMITIE.ECHELLE.MAX, 'le palier d\'amitié d\'un villageois');
+    assert(relationsInvitables(s).every((r) => r.villageois), 'on n\'invite que des villageois');
     assert(relationsInvitables(s).every((r) => DATA.AMITIE.ECHELLE.NOMS.includes(r.nomPalier)), 'les noms des paliers d\'amitié');
   });
 });

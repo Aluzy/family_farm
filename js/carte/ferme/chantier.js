@@ -579,6 +579,12 @@
     // Moulin moud (modèle.meuleTourne, BLOCS_CARTE.meule) : elle tourne, ou s'arrête. Et la cuisinière qui cuit
     // (modèle.cuisineAllumee, BLOCS_CARTE.cuisine) : son feu et les flammes sous la marmite bougent (la vapeur :
     // vapeur.js) ; « animations réduites » : le feu pris, immobile.
+    // (fiches I5a, I5b : les images des établis des commerces ouverts, BLOCS_CARTE.commerces : image → son réglage)
+    etablisAnimes() {
+      if (!this.animesCommerces) this.animesCommerces = new Map(Object.values(BLOCS_CARTE.commerces || {}).flatMap((A) => A.images.map((k) => [k, A])));
+      return this.animesCommerces;
+    },
+
     stepFires(time) {
       if (!this.blocks) return;
       const Fe = BLOCS_CARTE.feu, M = BLOCS_CARTE.meule, Cu = BLOCS_CARTE.cuisine;
@@ -587,14 +593,20 @@
       const cuisine = this.cuisineOn ? (F.reducedMotion() ? Cu.frames[0] : image(Cu, true)) : BLOCS_CARTE.frames[Cu.sorte];
       // (le four redessiné, dessiné comme un meuble : son image éteinte, ou celle de son feu)
       const four = this.fireOn ? Fe.images[Math.floor(time * Fe.fps / 1000) % Fe.images.length] : Fe.eteint;
-      // (fiche I5a : la forge d'un commerce ouvert, ses braises qui rougeoient : ses deux images alternent au hasard)
-      const Fo = BLOCS_CARTE.forge, calmeF = F.reducedMotion();
+      // (fiches I5a, I5b, I5c : l'établi d'un commerce ouvert, BLOCS_CARTE.commerces : les braises de la forge rougeoient, ses
+      // images alternent au hasard ; le feu du four du boulanger danse et le rouet de la mercerie tourne, les leurs défilent
+      // dans l'ordre)
+      const calmeF = F.reducedMotion(), animes = this.etablisAnimes();
       // (et ceux des niveaux du dessus, js/carte/ferme/etage.js : etageStations)
       for (const e of [...this.blocks.values(), ...(this.etageStations || [])]) {
         if (!e.img || !e.img.active) continue;
-        if (Fo && e.dessin && Fo.images.includes(e.dessin)) {
-          if (!calmeF && (!e.braiseT || time >= e.braiseT)) { e.braiseT = time + (0.5 + Math.random()) * 1000 / Fo.fps; e.braiseF = Math.random() < 0.5 ? 0 : 1; }
-          const k = 'meuble_' + Fo.images[calmeF ? 0 : e.braiseF || 0];
+        const Ac = e.dessin && animes.get(e.dessin);
+        if (Ac) {
+          if (!calmeF && (!e.animT || time >= e.animT)) {
+            e.animT = time + (Ac.suite ? 1 : 0.5 + Math.random()) * 1000 / Ac.fps;
+            e.animF = Ac.suite ? ((e.animF || 0) + 1) % Ac.images.length : Math.floor(Math.random() * Ac.images.length);
+          }
+          const k = 'meuble_' + Ac.images[calmeF ? 0 : e.animF || 0];
           if (e.img.texture.key !== k && this.textures.exists(k)) e.img.setTexture(k);
           continue;
         }
@@ -690,9 +702,10 @@
       const LC = BLOCS_CARTE.lampeChevet, lampes = [];
       for (const e of (this.blocks || new Map()).values()) if (LC.dessins.includes(e.dessin) && e.img) lampes.push({ img: e.img, x: e.x, y: e.y - 1, e });
       for (const e of this.etageLampes || []) if (vu(e)) lampes.push({ img: e.img, x: e.x, y: e.y, e });
-      // (fiche I5a : les forges allumées des commerces : BLOCS_CARTE.forge)
-      const forges = [];
-      for (const e of (this.blocks || new Map()).values()) if (e.img && BLOCS_CARTE.forge.images.includes(e.dessin)) forges.push(e);
+      // (fiches I5a, I5b, I5c : les établis des commerces ouverts qui luisent le soir, la forge, le four du boulanger :
+      // BLOCS_CARTE.commerces, lueur)
+      const forges = [], animes = this.etablisAnimes();
+      for (const e of (this.blocks || new Map()).values()) { const Ac = e.img && animes.get(e.dessin); if (Ac && Ac.lueur) forges.push(e); }
       // (les cheminées, en bas et à l'étage : BLOCS_CARTE.cheminee)
       const cheminees = [];
       for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('cheminee_')) cheminees.push({ img: e.img, x: e.x, y: e.y - 1, e });
@@ -795,10 +808,11 @@
           if (e.haloFeu) e.haloFeu.setVisible(true).setPosition(c.x + F.dx, c.y + F.dy).setAlpha(k);
         }
       }
-      // les forges des commerces (fiche I5a) : le soir, la lueur de leurs braises dans le voile, qui vacille ; un halo (WebGL)
+      // les établis des commerces qui luisent (fiches I5a, I5c : la forge, le four du boulanger) : le soir, la lueur de leur feu dans le voile, qui
+      // vacille ; un halo (WebGL)
       {
-        const Fo = BLOCS_CARTE.forge, allumee = nuit > Fo.allume;
         for (const e of forges) {
+          const Fo = animes.get(e.dessin).lueur, allumee = nuit > Fo.allume;
           if (!allumee || !e.img.active) { if (e.haloForge) e.haloForge.setVisible(false); continue; }
           if (!calme && (!e.forgeT || time >= e.forgeT)) { e.forgeT = time + 120 + Math.random() * 160; e.forgeK = 1 - Fo.vacille + Math.random() * Fo.vacille * 2; }
           const k = (calme ? 1 : e.forgeK || 1) * Math.min(1, nuit / 0.4) * e.img.alpha, S = Fo.sol, Fy = Fo.foyer;
@@ -1356,9 +1370,10 @@
     stationAt(wx, wy) {
       for (const e of (this.blocks || new Map()).values()) {
         // (I4 : l'étal du joueur, deux cases de large et son auvent)
-        // (I5a : l'établi, le comptoir et l'enseigne d'un commerce, deux cases de large ; l'enseigne, haute)
-        const large = e.sorte === 'etal' || e.sorte === 'enclume_foyer' || e.sorte === 'comptoir' || e.sorte === 'enseigne_forge';
-        const win = BLOCS_CARTE.fenetres[e.sorte], h = e.sorte === 'refrigerateur' ? 34 : e.sorte === 'etal' ? 30 : e.sorte === 'enseigne_forge' ? 40 : 24, demi = large ? T + 2 : T / 2 + 2;
+        // (I5a, I5b, I5c : l'établi, le comptoir et l'enseigne d'un commerce — ceux qui ouvrent sa fenêtre —, deux cases de
+        // large ; l'établi et l'enseigne, hauts)
+        const win = BLOCS_CARTE.fenetres[e.sorte], commerce = win === 'commerce', large = e.sorte === 'etal' || commerce;
+        const h = e.sorte === 'refrigerateur' ? 34 : e.sorte === 'etal' ? 30 : commerce && e.sorte !== 'comptoir' ? 40 : 24, demi = large ? T + 2 : T / 2 + 2;
         if (win && Math.abs(wx - e.x) <= demi && wy <= e.y + 2 && wy >= e.y - h) return win;
       }
       return null;

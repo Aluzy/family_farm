@@ -155,6 +155,12 @@ export function sourcesOf(data, id) {
     const b = p.bloc && A && A.BLOCS && A.BLOCS[p.bloc];
     if ((b && b.objet === id) || id in (p.donne || {})) out.push(`projet du village ${sid}`);
   }
+  // (le chantier « l'île à bâtir », fiches I5a, I5b, I5c : ce que fait un commerce d'artisan, ses recettes et celles de
+  // VILLAGE.PRIX.ARTISANS qui portent sa sorte)
+  for (const [sorte, c] of Object.entries((data.ARTISANS && data.ARTISANS.COMMERCES) || {})) {
+    for (const r of Object.values((c && c.RECETTES) || {})) if (r && id in (r.sortie || {})) out.push(`commerce ${sorte}`);
+  }
+  for (const r of Object.values((data.VILLAGE && data.VILLAGE.PRIX && data.VILLAGE.PRIX.ARTISANS) || {})) if (r && r.commerce && id in (r.sortie || {})) out.push(`commerce ${r.commerce}`);
   if (it.retire) out.push('ancienne sauvegarde (retire)');
   return out;
 }
@@ -1205,7 +1211,22 @@ export function validateData(data) {
         for (const [o, n] of Object.entries(r.sortie)) { needItem(`${where}.sortie`, o); if (!(isInt(n) && n > 0)) err(`${where}.sortie.${o}`, 'une quantité entière positive'); }
         if (r.coefPrix == null) err(where, 'il lui faut son coefPrix');
         borne(where, id, r.coefPrix);
+        // (I5c : une recette d'un commerce : sa sorte existe, son palier et ses nuits de cave sont des entiers)
+        if (r.commerce !== undefined && !(data.ARTISANS && data.ARTISANS.COMMERCES && data.ARTISANS.COMMERCES[r.commerce])) err(where, `commerce « ${r.commerce} » : une sorte de ARTISANS.COMMERCES`);
+        for (const k of ['palier', 'stock', 'cave']) if (r[k] !== undefined && !(isInt(r[k]) && r[k] >= 0)) err(`${where}.${k}`, 'un entier positif ou nul');
       }
+    }
+  }
+  // (fiches I5a, I5c : chaque sorte de commerce a son établi et son enseigne, des blocs du chantier qui la disent, et une
+  // tâche de filière qui existe)
+  for (const [sorte, c] of Object.entries((data.ARTISANS && data.ARTISANS.COMMERCES) || {})) {
+    if (sorte.startsWith('//')) continue;
+    const where = `ARTISANS.COMMERCES.${sorte}`, B = (data.ATELIER && data.ATELIER.BLOCS) || {};
+    if (!B[c.etabli] || B[c.etabli].commerce !== sorte) err(where, `etabli « ${c.etabli} » : un bloc de l'Atelier qui porte commerce: « ${sorte} »`);
+    if (!B[c.enseigne] || B[c.enseigne].enseigneCommerce !== sorte) err(where, `enseigne « ${c.enseigne} » : un bloc de l'Atelier qui porte enseigneCommerce: « ${sorte} »`);
+    if (!(data.TACHES && data.TACHES.LISTE && data.TACHES.LISTE[c.tache])) err(where, `tache « ${c.tache} » : une tâche de TACHES.LISTE`);
+    for (const [id, r] of Object.entries(c.RECETTES || {})) {
+      for (const o of [...Object.keys(r.entrees || {}), ...Object.keys(r.sortie || {})]) needItem(`${where}.RECETTES.${id}`, o);
     }
   }
 

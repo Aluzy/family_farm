@@ -335,7 +335,7 @@ function aideTexte(tab) {
   if (tab === 'vendre') return `${base} Le port t'achète tout ce que tu y portes (l'onglet Porter : charge-le sur la ferme), à prix fixe : le bac emporte tout, sans limite. Sous la halle, « Tout décharger » vend ton chargement d'un coup. Chaque unité vendue baisse de ${DATA.MARCHE.PAS} points le cours d'achat de l'objet, sans passer sous son plancher.`;
   if (tab === 'commandes') return `${base} À chaque passage (tous les ${DATA.PORT.BAC.PERIODE} jours, ${heuresBac()}), le bac apporte des commandes, tirées de ce que tu sais produire. Porte ce qu'elles demandent (l'onglet Porter, sur la ferme) et honore-les au comptoir : le prix de vente, plus la prime, plus de l'expérience. Elles valent jusqu'au passage suivant ; une commande manquée ne coûte rien. Le bac emporte aussi tout ce que tu vends : tes caisses attendent sur le quai et partent avec lui.`;
   if (tab === 'contrats') return `${base} À partir du port de niveau ${DATA.PRODUCTION.CONTRATS.NIVEAU}, le bac propose à chaque passage des contrats d'export : de grosses commandes (cent pains, trente fromages…) à livrer sur ${DATA.PRODUCTION.CONTRATS.PASSAGES} passages, avec une prime. Accepte-les au comptoir ; livre-les en autant de fois que tu veux, avec ce que tu as porté ou par la tournée du port d'un villageois (elle les livre d'abord). Chaque livraison est payée au prix de vente ; le contrat complet, sa prime. Manqué, il s'efface sans rien coûter. Plus le port est grand, plus les contrats sont gros. Le quai de chargement (l'Atelier) regroupe les envois de la tournée.`;
-  if (tab === 'import') return `${base} Le bac importe ce que l'île n'a pas : des jeunes arbres, des plants de vigne, les espèces de la serre, des bêtes, des plans. Une commande se paie d'avance et arrive à la ferme au passage suivant. Chaque niveau du port ouvre un rang du catalogue ; ce que ton niveau débloquait le reste.`;
+  if (tab === 'import') return `${base} Le bac importe ce que l'île n'a pas : des jeunes arbres, des plants de vigne, les espèces de la serre, des bêtes, des plans, et les plants sauvages de l'île que tu as rapportés et cultivés. Une commande se paie d'avance et arrive à la ferme au passage suivant. Chaque niveau du port ouvre un rang du catalogue ; ce que ton niveau débloquait le reste.`;
   if (tab === 'niveau') return `${base} Agrandir le port allonge son quai, ouvre un rang du catalogue d'import, fait venir plus de commandes à chaque passage et accueillir plus de villageois. Chaque niveau demande des matériaux, que tu portes au chantier (en une ou plusieurs fois), et des pièces.`;
   if (tab === 'porter') return `Ce que tu vends au port, tu l'y portes. Chaque objet a un volume (un, plus pour le bois, la pierre, les minerais et les lingots). À la main : ${capaciteDe('mains')} volumes ; la brouette (l'Atelier) : ${capaciteDe('brouette')} ; la charrette attelée au cheval (l'Atelier, avec un cheval) : ${capaciteDe('charrette')}. Charge sur la ferme : ce qui ne tient pas reste ici, rien ne se perd. Sur un chemin, tu vas plus vite, à pied comme à cheval.`;
   return `${base} Le port vend les semences que ton niveau a débloquées (et l'engrais) ; leur prix monte un peu à chaque achat : produire les tiennes reste plus rentable. Les outils et les animaux se fabriquent à l'Atelier.`;
@@ -348,9 +348,24 @@ function aideTexte(tab) {
 export function watchPort() {
   if (!villageActif(state)) return;
   watchBac();
+  watchSauvages();
   if (lieuPort(state)) return;
   const T = farmTerrain(state), sol = T && T.MONDE ? solDuMonde(T) : null, L = sol && sol.lieux ? sol.lieux() : null;
   if (L && L.port) poserPort(farmSeed(state), L.port);
+}
+
+// Les plants sauvages (fiche I7e, js/engine/sauvages.js) : un plant récolté la première fois s'inscrit au catalogue
+// d'import du port ; la page le dit (une fois : ceux qu'elle a déjà vus ne s'annoncent plus, ni au chargement).
+let sauvagesVus = null;
+function watchSauvages() {
+  const L = state.port && Array.isArray(state.port.sauvages) ? state.port.sauvages : [];
+  if (sauvagesVus === null || sauvagesVus.partie !== state) { sauvagesVus = { partie: state, ids: new Set(L) }; return; }
+  for (const id of L) {
+    if (sauvagesVus.ids.has(id)) continue;
+    sauvagesVus.ids.add(id);
+    const it = DATA.OBJETS[id];
+    if (it) notify(`${it.icone} ${it.nom} : rapporté de l'île et cultivé, il entre au catalogue d'import du port (au niveau ${DATA.PORT.IMPORT.SAUVAGES.RANG}).`, { kind: 'succes', duree: 9000 });
+  }
 }
 
 // Le bac (fiche I1c) : ses passages (bac.js avancerBac : son arrivée, son départ), et ce qu'ils disent au joueur : la

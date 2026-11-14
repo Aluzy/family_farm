@@ -34,6 +34,11 @@ import { BIOME, BIOMES } from './monde-gen.js';
 
 export const VEGETATION = DATA.VEGETATION;
 const V = VEGETATION;
+// Les plants sauvages de l'île (le chantier « l'île à bâtir », fiche I7e : data/village.json VILLAGE.SAUVAGES) : dans le
+// monde d'un port seulement (ctx.cadre.PORT : l'île), des petites plantes de plus, sur les cases où aucune autre n'a
+// poussé, à SAUVAGES.LOIN cases au moins de la ferme ; un tirage à elles, d'après la case, après les autres : rien
+// d'autre ne bouge, et le monde d'avant n'en a pas. (Lus à chaque région : un test peut les retirer.)
+const reglageSauvages = () => (DATA.VILLAGE && DATA.VILLAGE.SAUVAGES) || null;
 export const SORTES = V.SORTES;
 // le code de chaque sorte (SORTE.feuillu : 0…)
 export const SORTE = Object.fromEntries(SORTES.map((s, k) => [s.nom, k]));
@@ -60,6 +65,8 @@ function tables(codes) {
       for (const [nom, p] of Object.entries(parts)) (EN_IMAGE[SORTE[nom]] ? t.images : t.basses).push([SORTE[nom], p]);
       // (REMPLACE : une part des images d'une sorte de ce sol en devient une autre, le châtaignier)
       t.remplace = (V.REMPLACE || []).filter((r) => r.biome === b && r.sols.includes(sol)).map((r) => ({ de: SORTE[r.de], vers: SORTE[r.vers], part: r.part }));
+      // (le biome et le sol de la table : les plants sauvages de l'île, fiche I7e, s'y cherchent)
+      t.biome = b; t.sol = sol;
       if (sol === 'clairiere') { if (b === 'foret') clairiere = t; continue; }
       parBiome[BIOME[b]].set(codes[sol], t);
     }
@@ -156,6 +163,19 @@ export function vegetationDeRegion(ctx, g) {
   };
   const eauOk = (s, X, Y) => !s.eau || ((d) => d >= s.eau[0] && d <= s.eau[1])(distEau(X, Y));
   const reserve = ctx.reserves;
+  // (l'île, fiche I7e : les plants sauvages de la table d'une case, [[sorte, part, eau]…] ; la distance d'une case au
+  // rectangle de la ferme)
+  const SV = reglageSauvages(), ile = !!(SV && cadre.PORT), listes = new Map();
+  const sauvagesDe = (t) => {
+    let l = listes.get(t);
+    if (!l) {
+      l = Object.entries(SV.PLANTS || {}).filter(([nom, d]) => d.biome === t.biome && d.sols.includes(t.sol) && SORTE[nom] !== undefined)
+        .map(([nom, d]) => [SORTE[nom], d.part, d.eau || null]);
+      listes.set(t, l);
+    }
+    return l;
+  };
+  const loinFerme = (X, Y) => Math.hypot(Math.max(0, F.X - X, X - (F.X + F.LARGEUR - 1)), Math.max(0, F.Y - Y, Y - (F.Y + F.HAUTEUR - 1)));
   const libre = (X, Y) => {
     if (X < 0 || Y < 0 || X >= W || Y >= H) return false;
     if (X >= F.X - FM && Y >= F.Y - FM && X < F.X + F.LARGEUR + FM && Y < F.Y + F.HAUTEUR + FM) return false;
@@ -248,21 +268,38 @@ export function vegetationDeRegion(ctx, g) {
       // les petites : le rectangle peint, et une case de plus autour
       if (image[o] || !table[o] || (pris && pris(X, Y)) || X < g.x0 - 1 || Y < g.y0 - 1 || X > g.x0 + g.l || Y > g.y0 + g.h) continue;
       const t = table[o];
-      if (!t.basses.length) continue;
-      const h = hasard(ctx.gv ^ 0x165667b1, Y * W + X);
-      const f = TO.MIN + (TO.MAX - TO.MIN) * ctx.touffes(X, Y);
-      let u = (h & 0xffff) / 0x10000, cumul = 0;
-      for (const [k, p] of t.basses) {
-        cumul += p * f;
-        if (u < cumul) {
-          const so = SORTES[k];
-          if (!eauOk(so, X, Y)) break;
-          let v = (h >>> 20) % so.variantes;
-          if (so.teinte) {
-            const kk = (Y - ky0) * cw + X - kx0, te = Math.min(3, cTe[kk], cTe[kk + 1], cTe[kk + cw], cTe[kk + cw + 1]);
-            v = te * (so.variantes >> 2) + (v % (so.variantes >> 2));
+      let posee = false;
+      if (t.basses.length) {
+        const h = hasard(ctx.gv ^ 0x165667b1, Y * W + X);
+        const f = TO.MIN + (TO.MAX - TO.MIN) * ctx.touffes(X, Y);
+        let u = (h & 0xffff) / 0x10000, cumul = 0;
+        for (const [k, p] of t.basses) {
+          cumul += p * f;
+          if (u < cumul) {
+            const so = SORTES[k];
+            if (!eauOk(so, X, Y)) break;
+            let v = (h >>> 20) % so.variantes;
+            if (so.teinte) {
+              const kk = (Y - ky0) * cw + X - kx0, te = Math.min(3, cTe[kk], cTe[kk + 1], cTe[kk + cw], cTe[kk + cw + 1]);
+              v = te * (so.variantes >> 2) + (v % (so.variantes >> 2));
+            }
+            basses.push(k, X * T + 8 + ((h >>> 16) % 9) - 4, Y * T + 11 + ((h >>> 26) % 5), v);
+            posee = true;
+            break;
           }
-          basses.push(k, X * T + 8 + ((h >>> 16) % 9) - 4, Y * T + 11 + ((h >>> 26) % 5), v);
+        }
+      }
+      // (l'île : un plant sauvage, sur une case où rien d'autre n'a poussé, loin de la ferme)
+      if (posee || !ile || loinFerme(X, Y) < SV.LOIN) continue;
+      const sv = sauvagesDe(t);
+      if (!sv.length) continue;
+      const hs = hasard(ctx.gv ^ 0x3c6ef372, Y * W + X);
+      let us = (hs & 0xffff) / 0x10000, cs = 0;
+      for (const [k, p, eau] of sv) {
+        cs += p;
+        if (us < cs) {
+          if (eau && !((d) => d >= eau[0] && d <= eau[1])(distEau(X, Y))) break;
+          basses.push(k, X * T + 8 + ((hs >>> 16) % 9) - 4, Y * T + 11 + ((hs >>> 26) % 5), (hs >>> 20) % SORTES[k].variantes);
           break;
         }
       }

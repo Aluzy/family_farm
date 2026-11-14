@@ -763,32 +763,59 @@
       "(coefPrix, en %) et le prix de sa sortie s'en déduit au chargement, comme celui des plats. Les recettes de",
       "l'Atelier et les transformations des stations ont le leur dans data/recipes.json (une entrée : 135, deux : 145,",
       "trois ou plus : 150) ; la cuisine garde ses coefficients (CUISINE.COEF_PLAT, les recettes de luxe). ARTISANS :",
-      "les recettes des commerces que le lot 5 ouvrira (le tissage, la couture, la menuiserie) ; elles ne se fabriquent",
-      "pas encore, mais elles donnent dès maintenant le prix de l'île du tissu, des vêtements et des meubles. Le jeu",
+      "les recettes des commerces du lot 5 (le filage et le tissage, la couture de la mercerie, I5b ; la menuiserie, la",
+      "fromagerie) : elles donnent le prix de l'île du fil, du tissu, des vêtements, des meubles et des fromages ; celles qui",
+      "portent commerce (la sorte, ARTISANS.COMMERCES) sont aussi des recettes de ce commerce (I5c : les 36 meubles au",
+      "menuisier, avec leur palier ; la faisselle, la tomme de cave au fromager ; la mercerie a les siennes, ARTISANS). Le jeu",
       "d'avant (le réglage éteint) garde ses prix écrits. EXCEPTIONS : ce que la règle ne couvre pas, et pourquoi",
       "(tests/test-data.mjs refuse une recette hors de la fourchette qui n'y est pas notée)."
     ],
     "PRIX": {
       "FOURCHETTE": [130, 160],
       "ARTISANS": {
-        "tissu": { "entrees": { "laine": 2 }, "sortie": { "tissu": 1 }, "coefPrix": 135 },
+        "fil": { "entrees": { "laine": 1 }, "sortie": { "fil": 1 }, "coefPrix": 130 },
+        "tissu": { "entrees": { "fil": 2 }, "sortie": { "tissu": 1 }, "coefPrix": 135 },
         "gants_travail": { "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "coefPrix": 140 },
         "manteau_chaud": { "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "coefPrix": 145 },
         "salopette": { "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "coefPrix": 145 },
-        "meuble_chaise": { "entrees": { "planche": 2 }, "sortie": { "meuble_chaise": 1 }, "coefPrix": 140 },
-        "meuble_chevet": { "entrees": { "planche": 2 }, "sortie": { "meuble_chevet": 1 }, "coefPrix": 140 },
-        "meuble_table_basse": { "entrees": { "planche": 3 }, "sortie": { "meuble_table_basse": 1 }, "coefPrix": 140 },
-        "meuble_table": { "entrees": { "planche": 4 }, "sortie": { "meuble_table": 1 }, "coefPrix": 140 },
-        "meuble_commode": { "entrees": { "planche": 5 }, "sortie": { "meuble_commode": 1 }, "coefPrix": 145 },
-        "meuble_bibliotheque": { "entrees": { "planche": 6 }, "sortie": { "meuble_bibliotheque": 1 }, "coefPrix": 145 },
-        "meuble_armoire_chene": { "entrees": { "planche": 8 }, "sortie": { "meuble_armoire_chene": 1 }, "coefPrix": 150 },
-        "meuble_buffet": { "entrees": { "planche": 6, "pierre": 2 }, "sortie": { "meuble_buffet": 1 }, "coefPrix": 150 },
-        "meuble_lit_enfant": { "entrees": { "planche": 4, "tissu": 1 }, "sortie": { "meuble_lit_enfant": 1 }, "coefPrix": 145 },
-        "meuble_lit_adulte": { "entrees": { "planche": 6, "tissu": 2 }, "sortie": { "meuble_lit_adulte": 1 }, "coefPrix": 145 },
-        "meuble_canape": { "entrees": { "planche": 4, "tissu": 3 }, "sortie": { "meuble_canape": 1 }, "coefPrix": 150 },
-        "meuble_tapis_1": { "entrees": { "fibre": 6 }, "sortie": { "meuble_tapis_1": 1 }, "coefPrix": 135 },
-        "meuble_tapis_2": { "entrees": { "tissu": 2, "colorant_rouge": 1 }, "sortie": { "meuble_tapis_2": 1 }, "coefPrix": 145 },
-        "meuble_tapis_3": { "entrees": { "tissu": 2, "colorant_bleu": 1 }, "sortie": { "meuble_tapis_3": 1 }, "coefPrix": 145 }
+        "meuble_chaise": { "entrees": { "planche": 2 }, "sortie": { "meuble_chaise": 1 }, "coefPrix": 140, "commerce": "scierie", "palier": 2, "stock": 1 },
+        "meuble_chevet": { "entrees": { "planche": 2 }, "sortie": { "meuble_chevet": 1 }, "coefPrix": 140, "commerce": "scierie", "palier": 2, "stock": 1 },
+        "meuble_table_basse": { "entrees": { "planche": 3 }, "sortie": { "meuble_table_basse": 1 }, "coefPrix": 140, "commerce": "scierie", "palier": 2, "stock": 1 },
+        "meuble_table": { "entrees": { "planche": 4 }, "sortie": { "meuble_table": 1 }, "coefPrix": 140, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_commode": { "entrees": { "planche": 5 }, "sortie": { "meuble_commode": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "stock": 1 },
+        "meuble_bibliotheque": { "entrees": { "planche": 6 }, "sortie": { "meuble_bibliotheque": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "stock": 1 },
+        "meuble_armoire_chene": { "entrees": { "planche": 8 }, "sortie": { "meuble_armoire_chene": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_buffet": { "entrees": { "planche": 6, "pierre": 2 }, "sortie": { "meuble_buffet": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_lit_enfant": { "entrees": { "planche": 4, "tissu": 1 }, "sortie": { "meuble_lit_enfant": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_lit_adulte": { "entrees": { "planche": 6, "tissu": 2 }, "sortie": { "meuble_lit_adulte": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_canape": { "entrees": { "planche": 4, "tissu": 3 }, "sortie": { "meuble_canape": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_tapis_1": { "entrees": { "fibre": 6 }, "sortie": { "meuble_tapis_1": 1 }, "coefPrix": 135, "commerce": "scierie", "palier": 2, "stock": 1 },
+        "meuble_tapis_2": { "entrees": { "tissu": 2, "colorant_rouge": 1 }, "sortie": { "meuble_tapis_2": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "stock": 1 },
+        "meuble_tapis_3": { "entrees": { "tissu": 2, "colorant_bleu": 1 }, "sortie": { "meuble_tapis_3": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "stock": 1 },
+        "meuble_tableau_1": { "entrees": { "planche": 1, "colorant_vert": 1 }, "sortie": { "meuble_tableau_1": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_tableau_2": { "entrees": { "planche": 1, "colorant_rouge": 1 }, "sortie": { "meuble_tableau_2": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_tableau_3": { "entrees": { "planche": 1, "colorant_bleu": 2 }, "sortie": { "meuble_tableau_3": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_armoire_peinte": { "entrees": { "planche": 8, "colorant_bleu": 2 }, "sortie": { "meuble_armoire_peinte": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_armoire_glace": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "meuble_armoire_glace": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_cuisine_porte": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "meuble_cuisine_porte": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_cuisine_tiroirs": { "entrees": { "planche": 4 }, "sortie": { "meuble_cuisine_tiroirs": 1 }, "coefPrix": 140, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_cuisine_sauge": { "entrees": { "planche": 3, "colorant_vert": 1 }, "sortie": { "meuble_cuisine_sauge": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_poubelle": { "entrees": { "planche": 1 }, "sortie": { "meuble_poubelle": 1 }, "coefPrix": 135, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_bibliotheque_vitree": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "meuble_bibliotheque_vitree": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_lampadaire": { "entrees": { "planche": 1, "lingot_fer": 1, "fibre": 2 }, "sortie": { "meuble_lampadaire": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_coffre_jouets": { "entrees": { "planche": 4, "colorant_rouge": 1 }, "sortie": { "meuble_coffre_jouets": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_plante_ficus": { "entrees": { "planche": 1, "engrais": 1 }, "sortie": { "meuble_plante_ficus": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_plante_monstera": { "entrees": { "planche": 1, "engrais": 2 }, "sortie": { "meuble_plante_monstera": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_plante_sansevieria": { "entrees": { "planche": 1, "engrais": 1 }, "sortie": { "meuble_plante_sansevieria": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_plante_cactus": { "entrees": { "pierre": 1, "engrais": 1 }, "sortie": { "meuble_plante_cactus": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_plante_fougere": { "entrees": { "planche": 1, "engrais": 1, "fibre": 1 }, "sortie": { "meuble_plante_fougere": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_plante_palmier": { "entrees": { "planche": 2, "engrais": 2 }, "sortie": { "meuble_plante_palmier": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_plante_citronnier": { "entrees": { "planche": 2, "engrais": 3 }, "sortie": { "meuble_plante_citronnier": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_plante_orchidee": { "entrees": { "pierre": 1, "engrais": 2 }, "sortie": { "meuble_plante_orchidee": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_plante_aloe": { "entrees": { "pierre": 1, "engrais": 1 }, "sortie": { "meuble_plante_aloe": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_plante_bonsai": { "entrees": { "pierre": 2, "engrais": 2 }, "sortie": { "meuble_plante_bonsai": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 4, "commande": true },
+        "faisselle": { "entrees": { "lait": 2 }, "sortie": { "faisselle": 1 }, "coefPrix": 140, "commerce": "fromagerie", "palier": 2 },
+        "tomme_cave": { "entrees": { "faisselle": 2 }, "sortie": { "tomme_cave": 1 }, "coefPrix": 150, "commerce": "fromagerie", "palier": 2, "cave": 4, "stock": 2 }
       },
       "EXCEPTIONS": {
         "paille": "La botteleuse (une machine, pas une recette) rend une paille par fibre : à une pièce l'unité, un prix ne descend pas sous une pièce."
@@ -899,6 +926,24 @@
           "9": "",
           "10": "Le plus haut niveau. Sur l'île, la veillée de pleine lune se tient d'elle-même, sans niveau : deux villageois et une place (le panneau du village, un puits ou une table de jardin) suffisent"
         }
+      }
+    },
+    "//SAUVAGES": [
+      "Les plants sauvages de l'île (fiche I7e, docs/ile.md « Une raison d'explorer ») : l'île n'a plus de hameau à",
+      "découvrir ; chaque biome a ses plantes, qu'on rapporte et qu'on cultive. PLANTS : la sorte de la végétation du monde",
+      "(data/monde.json VEGETATION.SORTES, une petite plante ; ce qu'on y ramasse : RECOLTE.SORTES), son biome et les sols",
+      "où elle pousse (ceux de js/engine/monde-sol.js), sa part (des cases libres de ce sol où rien d'autre n'a poussé :",
+      "un tirage à lui, d'après la case, après les autres : rien d'autre ne bouge), eau ([au moins, au plus] cases de",
+      "l'eau ; absent : partout), et sa culture (data/crops.json : le plant ramassé s'y repique). LOIN : à moins de tant",
+      "de cases de la ferme, rien : il faut aller les chercher. Seul le monde de l'île (celui d'un port, monde.js) les",
+      "porte ; le jeu d'avant n'en a pas. La première récolte d'une culture sauvage l'inscrit au catalogue d'import du",
+      "port (PORT.IMPORT.SAUVAGES : son rang, sa marge, son lot)."
+    ],
+    "SAUVAGES": {
+      "LOIN": 40,
+      "PLANTS": {
+        "ail_ours_sauvage": { "biome": "foret", "sols": ["feuilles", "mousse"], "part": 0.004, "culture": "ail_ours" },
+        "salicorne_sauvage": { "biome": "plage", "sols": ["sable"], "part": 0.015, "eau": [1, 3], "culture": "salicorne" }
       }
     }
   },
@@ -1052,8 +1097,29 @@
     "son icône, son métier (métier : pour sa fiche), la tâche de la filière, l'établi et l'enseigne (des blocs de",
     "data/recipes.json), ce que la tâche du commerce dit et montre, ENVIE (ce qu'il dit de son envie), SANS (ce que la fiche",
     "dit quand le local n'est plus complet), un (la sorte dans une phrase : « une forge »), LOCAL (l'établi et l'enseigne dans une phrase, ce que la fiche dit qu'il manque), RECETTES ({ entrees, sortie, palier }) et CLIENTS ({ objet: 'outil' } : qui en",
-    "a besoin). La mercerie (I5b), la scierie, la boulangerie et la fromagerie (I5c) n'ajoutent qu'une sorte ici, leurs",
-    "blocs et leurs dessins."
+    "a besoin ; un vêtement ou un meuble qui lui manque, VILLAGE.BOURSE.BESOINS, l'est aussi au comptoir), PHRASES_COMPTOIR (les",
+    "siennes, sinon celles de tous). La mercerie (I5b), la scierie, la boulangerie et la fromagerie (I5c) n'ajoutent qu'une",
+    "sorte ici, leurs blocs et leurs dessins.",
+    "I5c, la règle commune : un commerce ne retire rien au joueur (il peut toujours scier, cuire, cailler lui-même) ; il",
+    "fait mieux ou autre chose, en petite quantité. Une recette d'un commerce peut aussi venir de VILLAGE.PRIX.ARTISANS",
+    "(celles qui y portent commerce : la sorte ; leur prix de l'île s'en déduit : les meubles du menuisier, les fromages ;",
+    "une recette de RECETTES l'emporte sur celle des prix qui a le même id).",
+    "Une recette peut porter : commande (true : il ne la fait que sur commande, pas pour garnir son comptoir), stock (ce",
+    "qu'il en garde au comptoir, à la place de STOCK), cave (des nuits d'affinage : le lot va à la cave, CAVE meules au",
+    "plus ; chaque nuit, ce qui a fini de s'affiner passe au comptoir, ou au joueur pour une commande), etape (I5b : filer,",
+    "tisser, coudre…) et teinte (I5b : TEINTURE). CLIENTS : « outil »",
+    "(une lame tous les ENTRETIEN jours pour qui tient un outil), « repas » (ce qu'il mangera, s'il n'a plus de provisions :",
+    "ce qu'il achète au boulanger ou au fromager compte dans ses repas et son bonheur), « maison » (un meuble dont sa",
+    "maison a besoin, VILLAGE.BOURSE.BESOINS). Le meuble que le joueur achète ou commande au menuisier entre dans sa maison",
+    "comme un meuble acheté (js/engine/meubles.js ajouterMeuble). ou : où il travaille, dans une phrase (« à l'enclume »).",
+    "PLAFOND : le nombre de commerces ouverts suit le village : le k-ième commerce attend VILLAGEOIS[k-1] villageois et le",
+    "port au niveau PORT[k-1] (au-delà des listes : plus de commerce) ; la fiche dit ce qui manque.",
+    "I5b : ce que le commerce fait",
+    "pour lui-même (une sortie qui est l'entrée d'une autre de ses recettes : le fil, le tissu) reste au comptoir pour son",
+    "travail : le bac ne l'emporte pas. DEUX (une sorte qui le permet) : quand le village a VILLAGEOIS villageois ou plus, un",
+    "second villageois qui a l'envie de ce commerce et l'amitié du joueur peut le rejoindre (le joueur le décide) ; chacun",
+    "fait ses lots (le double, sans machine), le titulaire les étapes TITULAIRE, le second les étapes SECOND (seul, le",
+    "titulaire les fait toutes) ; une bourse, celle du titulaire : la caisse du commerce."
   ],
   "ARTISANS": {
     "AMITIE": 2,
@@ -1071,6 +1137,8 @@
     "ENSEIGNE": 2,
     "ENTRETIEN": 7,
     "COMPTOIR": "comptoir",
+    "CAVE": 6,
+    "PLAFOND": { "VILLAGEOIS": [1, 4, 6, 8, 10, 12], "PORT": [1, 2, 3, 3, 4, 5] },
     "EMOJI": "🏪",
     "PHRASES_COMPTOIR": [
       "Pour moi : {objet}, s'il te plaît.",
@@ -1082,7 +1150,7 @@
         "nom": "La forge", "un": "une forge", "icone": "⚒️", "metier": "forgeron", "tache": "pierre",
         "etabli": "enclume_foyer", "enseigne": "enseigne_forge",
         "LOCAL": { "etabli": "l'enclume et son foyer", "enseigne": "l'enseigne du forgeron" },
-        "geste": "forge", "emoji": "🔨",
+        "geste": "forge", "emoji": "🔨", "ou": "à l'enclume",
         "donne": "un lot à l'enclume : il fond un lingot, ou forge des clous, des charnières, une lame",
         "SANS": "Le local de la forge n'est plus complet : l'enclume et le foyer, le comptoir dans la pièce, l'enseigne dehors.",
         "ENVIE": [
@@ -1100,8 +1168,122 @@
           "lingot_or": { "entrees": { "minerai_or": 4, "bois": 4 }, "sortie": { "lingot_or": 1 }, "palier": 4 }
         },
         "CLIENTS": { "lame": "outil" }
+      },
+      "scierie": {
+        "nom": "La scierie", "un": "une scierie", "icone": "🪚", "metier": "menuisier", "tache": "bois",
+        "etabli": "scie_long", "enseigne": "enseigne_scierie",
+        "LOCAL": { "etabli": "la scie de long et l'établi", "enseigne": "l'enseigne du menuisier" },
+        "geste": "scie", "emoji": "🪚", "ou": "à l'établi",
+        "donne": "un lot à l'établi : il scie des planches, ou fait un meuble (pour le comptoir, ou commandé)",
+        "SANS": "Le local de la scierie n'est plus complet : la scie de long et l'établi, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Tout ce bois… j'en ferais bien des planches, et des meubles, dans une scierie.",
+          "Une scierie à moi, avec un établi : une chaise, une table, un lit…",
+          "J'aimerais tant ouvrir une scierie : le bois, je le connais."
+        ],
+        "PHRASES": ["Une planche droite, une !", "Ce chêne fera une belle table.", "Ça sent bon la sciure, ici."],
+        "RECETTES": {
+          "planches": { "entrees": { "bois": 4 }, "sortie": { "planche": 2 }, "palier": 2 }
+        },
+        "CLIENTS": {
+          "meuble_chaise": "maison", "meuble_chevet": "maison", "meuble_table_basse": "maison", "meuble_tapis_1": "maison",
+          "meuble_tapis_2": "maison", "meuble_tapis_3": "maison", "meuble_commode": "maison", "meuble_bibliotheque": "maison"
+        }
+      },
+      "boulangerie": {
+        "nom": "La boulangerie", "un": "une boulangerie", "icone": "🥖", "metier": "boulanger", "tache": "champs",
+        "etabli": "four_boulanger", "enseigne": "enseigne_boulangerie",
+        "LOCAL": { "etabli": "le four à bois et l'étal à pains", "enseigne": "l'enseigne du boulanger" },
+        "geste": "cuisine", "emoji": "🍞", "ou": "au four à bois",
+        "donne": "une fournée au four à bois : deux pains, une tarte, un pain d'épices",
+        "SANS": "Le local de la boulangerie n'est plus complet : le four à bois, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Tout ce blé… j'en ferais bien du pain, dans un four à bois.",
+          "Une boulangerie à moi : l'odeur du pain chaud dès le matin !",
+          "J'aimerais ouvrir une boulangerie, pour nourrir tout le village."
+        ],
+        "PHRASES": ["Le four est chaud : la fournée arrive !", "Du bon pain pour tout le village.", "Encore une tarte, et je souffle un peu."],
+        "RECETTES": {
+          "pain": { "entrees": { "farine": 5 }, "sortie": { "pain": 2 }, "palier": 2, "stock": 6 },
+          "tarte_pommes": { "entrees": { "farine": 2, "pomme": 3, "oeuf": 1 }, "sortie": { "tarte_pommes": 1 }, "palier": 2, "stock": 2 },
+          "tarte_myrtilles": { "entrees": { "farine": 2, "myrtille": 4, "sucre": 1 }, "sortie": { "tarte_myrtilles": 1 }, "palier": 3, "stock": 2 },
+          "tarte_fraises": { "entrees": { "farine": 2, "fraise": 3, "oeuf": 1 }, "sortie": { "tarte_fraises": 1 }, "palier": 3, "stock": 2 },
+          "pain_epices": { "entrees": { "farine": 2, "miel": 1, "epices": 1 }, "sortie": { "pain_epices": 1 }, "palier": 4, "stock": 2 }
+        },
+        "CLIENTS": { "pain": "repas" }
+      },
+      "fromagerie": {
+        "nom": "La fromagerie", "un": "une fromagerie", "icone": "🧀", "metier": "fromager", "tache": "betes",
+        "etabli": "cave_affinage", "enseigne": "enseigne_fromagerie",
+        "LOCAL": { "etabli": "la cave d'affinage", "enseigne": "l'enseigne du fromager" },
+        "geste": "ramasse", "emoji": "🧀", "ou": "à la cave",
+        "donne": "un lot au chaudron : il caille du lait en faisselles, ou met une tomme en cave",
+        "SANS": "Le local de la fromagerie n'est plus complet : la cave d'affinage, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Tout ce lait… j'en ferais bien des fromages, dans une cave à moi.",
+          "Une fromagerie, avec ses meules qui s'affinent en cave : j'y pense souvent.",
+          "J'aimerais ouvrir une fromagerie : le lait, je le connais."
+        ],
+        "PHRASES": ["Une tomme de plus en cave !", "Il faut les retourner chaque jour, mes meules.", "Le caillé prend bien ce matin."],
+        "RECETTES": {},
+        "CLIENTS": { "faisselle": "repas" }
+      },
+      "mercerie": {
+        "nom": "La mercerie", "un": "une mercerie", "icone": "🧶", "metier": "mercier", "tache": "betes",
+        "etabli": "rouet_metier", "enseigne": "enseigne_mercerie",
+        "LOCAL": { "etabli": "le rouet et le métier à tisser", "enseigne": "l'enseigne de la mercerie" },
+        "geste": "filer", "emoji": "🧶", "ou": "au rouet et au métier",
+        "donne": "un lot au rouet ou au métier : il file la laine, tisse le fil, coud un vêtement (teint s'il a un colorant) ou un tapis",
+        "SANS": "Le local de la mercerie n'est plus complet : le rouet et le métier à tisser, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Toute cette laine… j'aimerais la filer moi-même, dans une mercerie.",
+          "Un rouet, un métier à tisser, un comptoir : une mercerie à moi, j'y pense souvent.",
+          "Je tonds les moutons ; je voudrais aussi coudre les manteaux du village."
+        ],
+        "PHRASES": ["Le rouet tourne, le fil vient tout seul.", "Encore une pièce de tissu, et je couds un manteau.", "Une belle laine, bien filée !"],
+        "PHRASES_COMPTOIR": [
+          "Pour moi : {objet}, s'il te plaît.",
+          "{objet} ! Voilà les pièces.",
+          "Pour l'hiver : {objet}, s'il te plaît."
+        ],
+        "RECETTES": {
+          "manteau_chaud": { "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "palier": 2, "etape": "coudre", "teinte": true },
+          "salopette": { "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "palier": 3, "etape": "coudre", "teinte": true },
+          "tissu": { "entrees": { "fil": 2 }, "sortie": { "tissu": 1 }, "palier": 2, "etape": "tisser" },
+          "fil": { "entrees": { "laine": 2 }, "sortie": { "fil": 2 }, "palier": 2, "etape": "filer" },
+          "gants_travail": { "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "palier": 2, "etape": "coudre", "teinte": true },
+          "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 }, "palier": 2, "etape": "coudre", "teinte": true },
+          "meuble_tapis_2": { "entrees": { "tissu": 2, "colorant_rouge": 1 }, "sortie": { "meuble_tapis_2": 1 }, "palier": 3, "etape": "coudre" },
+          "meuble_tapis_3": { "entrees": { "tissu": 2, "colorant_bleu": 1 }, "sortie": { "meuble_tapis_3": 1 }, "palier": 3, "etape": "coudre" }
+        },
+        "DEUX": { "VILLAGEOIS": 6, "TITULAIRE": ["filer", "tisser"], "SECOND": ["coudre"] }
       }
-    }
+    },
+    "//TEINTURE": [
+      "La teinture (fiche I5b ; js/engine/artisans.js) : une recette marquée teinte (un vêtement de la mercerie) prend un colorant",
+      "de plus quand l'artisan en a un (son stock, sinon le coffre de la ferme au-delà de GARDE, acheté de sa bourse comme le",
+      "reste) : celui qu'il a le plus, à égalité dans l'ordre de COULEURS. Aucune matière nouvelle : les six colorants du",
+      "mortier. La pièce teinte se garde au comptoir avec sa couleur (c.teintes) et vaut son prix plus COEF % de celui du",
+      "colorant. Le joueur achète les pièces sans teinte (la famille n'a pas de vêtements de couleur) ; un villageois qui",
+      "achète un vêtement de corps teint (le manteau, la salopette, le tablier) le porte : le haut de sa tenue prend le tissu",
+      "`tissu` (les couleurs des tenues, data/general.json FAMILLE.PROFIL.APPARENCE.TISSU, aux tons exacts des personnages).",
+      "`palette` : la rampe de data/meubles.json PALETTES qui peint l'écheveau de cette couleur sur le métier (null : celles",
+      "des colorants sans rampe de tissu, dessinées à part) ; `point` : la pastille de la couleur dans la fenêtre du commerce."
+    ],
+    "TEINTURE": {
+      "COEF": 145,
+      "CORPS": ["manteau_chaud", "salopette", "tablier"],
+      "COULEURS": {
+        "rouge": { "colorant": "colorant_rouge", "nom": "rouge", "tissu": "rouge", "palette": "tissu_rouge", "point": "#c0564e" },
+        "orange": { "colorant": "colorant_orange", "nom": "orange", "tissu": "orange", "palette": null, "point": "#e8862e" },
+        "jaune": { "colorant": "colorant_jaune", "nom": "jaune", "tissu": "jaune", "palette": "tissu_moutarde", "point": "#dcb850" },
+        "vert": { "colorant": "colorant_vert", "nom": "vert", "tissu": "vert", "palette": "tissu_vert", "point": "#70a86e" },
+        "bleu": { "colorant": "colorant_bleu", "nom": "bleu", "tissu": "ciel", "palette": "tissu_bleu", "point": "#6a8ec4" },
+        "violet": { "colorant": "colorant_violet", "nom": "violet", "tissu": "lilas", "palette": null, "point": "#9c6ed6" }
+      }
+    },
+    "//CHAUD": "Un villageois qui a un manteau chaud (CHAUD, dans ses affaires : acheté à l'étal ou au comptoir) ne s'abrite pas sous la pluie : il reste à son poste dehors (js/engine/villageois-journee.js sousLaPluie).",
+    "CHAUD": ["manteau_chaud"]
   },
   "//TRAITS": [
     "Les traits de personnalité (fiche I6c ; le moteur : js/engine/traits.js ; la journée : js/engine/villageois-journee.js ;",

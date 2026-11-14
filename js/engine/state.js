@@ -1014,6 +1014,26 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v99 → v100 (le chantier « l'île à bâtir », fiche I5c : la scierie, la boulangerie, la fromagerie) : la cave d'un
+  // commerce (c.cave : ce qui s'affine chez le fromager, ses nuits, et pour qui). Une partie d'avant n'a pas de commerce
+  // et reste telle quelle ; les commerces d'une partie de l'île sont relus (une cave abîmée est réparée).
+  99: (state) => {
+    const out = { ...state, version: 100 };
+    if (Array.isArray(state.commerces)) out.commerces = reparerCommerces(state.commerces, state.villageois);
+    return out;
+  },
+  // v100 → v101 (le chantier « l'île à bâtir », fiche I5b) : la mercerie ; sur un commerce, son second artisan
+  // (c.second) et les pièces teintes de son comptoir (c.teintes = { objet: { couleur: n } }). Une partie d'avant n'en a
+  // pas et reste telle quelle ; ce qui est abîmé est réparé (un second absent, ou d'une sorte qui se tient seule, s'en
+  // va ; des teintes au-delà du stock sont bornées ; un second sans commerce reprend « sans tâche »).
+  100: (state) => {
+    const out = { ...state, version: 101 };
+    if (Array.isArray(state.commerces) && state.commerces.some((c) => c && typeof c === 'object' && ('second' in c || 'teintes' in c))) {
+      out.commerces = reparerCommerces(state.commerces, state.villageois);
+      if (Array.isArray(state.villageois)) out.villageois = state.villageois.map((v) => reparerArtisan(v, out.commerces));
+    }
+    return out;
+  },
 };
 
 // Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.

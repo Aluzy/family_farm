@@ -93,8 +93,10 @@ export function poserTournee(graine, tour) {
   return tour;
 }
 
-// La tournée de la partie, ou null (pas encore là).
+// La tournée de la partie, ou null (pas encore là ; le chantier « l'île à bâtir » allumé, fiche I7e : jamais, l'île
+// n'a ni hameau, ni boucle, ni calèche).
 export function tourneeDe(state) {
+  if (villageActif(state)) return null;
   const g = farmSeed(state);
   return g === null ? null : tournees.get(g) || null;
 }

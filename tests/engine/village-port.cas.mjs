@@ -97,8 +97,13 @@ test('le port ne déplace rien d\'autre dans le plan', () => {
   assertEqual(sans.lieux.port, undefined, 'sans le cadre PORT, pas de port');
   const { port, ...lieux } = avec.lieux;
   assert(port, 'un port');
-  assertEqual(lieux, sans.lieux, 'les autres lieux ne bougent pas');
-  assertEqual(avec.chemins, sans.chemins, 'les chemins non plus (celui du port est à part : la calèche ne le suit pas)');
+  // (fiche I7e : le monde d'un port est l'île, sans hameau ni boucle de chemins ; le reste ne bouge pas)
+  const { hameaux, ...autres } = lieux, { hameaux: hameauxAvant, ...autresAvant } = sans.lieux;
+  assertEqual(hameaux, [], 'l\'île n\'a pas de hameau');
+  assert(hameauxAvant.length > 0, 'le monde d\'avant en a');
+  assertEqual(autres, autresAvant, 'les autres lieux ne bougent pas');
+  assertEqual(avec.chemins, [], 'ni boucle de chemins (celui du port est à part)');
+  assert(sans.chemins.length > 0, 'le monde d\'avant a ses boucles');
   assertEqual(avec.rivieres, sans.rivieres, 'ni les rivières');
   assertEqual([...avec.eaux], [...sans.eaux], 'ni les eaux');
 });

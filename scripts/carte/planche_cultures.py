@@ -62,6 +62,8 @@ SOURCE = {
     'vanille': (21, 32, [10, 11, 12, 13, 14]),
     'cafe': (21, 32, [5, 6, 7, 8, 9]),
     'vigne': (14, 32, [0, 2, 4, 6]),          # (dessinée par scripts/carte/vigne.py)
+    'ail_ours': (8, 32, [0, 2, 4, 6]),        # (les plants sauvages de l'île, dessinés par scripts/carte/sauvages.py)
+    'salicorne': (8, 32, [8, 10, 12, 14]),
 }
 HAUT = 5        # les rangées du haut d'une case, où tombent les buttes des dessins du dessus
 BUTTE = 5       # ce que la butte d'un dessin descend au plus sous sa case

@@ -224,7 +224,9 @@
       { "nom": "pierre", "genre": "basse", "variantes": 1 },
       { "nom": "champignon_blanc", "genre": "basse", "variantes": 1 },
       { "nom": "champignon_jaune", "genre": "basse", "variantes": 1 },
-      { "nom": "champignon_bleu", "genre": "basse", "variantes": 1 }
+      { "nom": "champignon_bleu", "genre": "basse", "variantes": 1 },
+      { "nom": "ail_ours_sauvage", "genre": "basse", "variantes": 2, "penche": true },
+      { "nom": "salicorne_sauvage", "genre": "basse", "variantes": 2, "penche": true }
     ],
     "REMPLACE": [
       { "biome": "foret", "sols": ["feuilles", "mousse"], "de": "feuillu", "vers": "chataignier", "part": 0.0625 }
@@ -453,7 +455,9 @@
       "pierres_moussues": { "geste": "ramasser", "fin": { "pierre": [1, 1] }, "retour": [4, 6] },
       "coquillages": { "geste": "ramasser", "fin": { "coquille": [1, 1] }, "chance": { "bulot": 30 }, "retour": [2, 4] },
       "etoile_mer": { "geste": "ramasser", "fin": { "etoile_mer": [1, 1] }, "retour": [3, 5] },
-      "algues": { "geste": "ramasser", "fin": { "algues": [1, 2] }, "retour": [2, 4] }
+      "algues": { "geste": "ramasser", "fin": { "algues": [1, 2] }, "retour": [2, 4] },
+      "ail_ours_sauvage": { "geste": "ramasser", "fin": { "plant_ail_ours": [1, 2] }, "retour": [8, 12] },
+      "salicorne_sauvage": { "geste": "ramasser", "fin": { "plant_salicorne": [1, 2] }, "retour": [8, 12] }
     }
   },
   "//LIEUX": [

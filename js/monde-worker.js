@@ -7,7 +7,8 @@
  *     { type: 'apercu', apercu } (les biomes, en gros : le sol provisoire), puis tire les éléments
  *     du monde (rivières, lacs, chemins : une fois) et répond { type: 'pret', ms, lieux, hameaux, tournee }
  *     (les lieux du plan : hameaux, entrées de grotte, coins de pêche ; monde-gen.js ; le plan des
- *     hameaux bâtis : monde-hameaux.js ; la tournée de la calèche : caleche-tournee.js) ;
+ *     hameaux bâtis : monde-hameaux.js ; la tournée de la calèche : caleche-tournee.js ; l'île, fiche I7e : ni
+ *     hameau ni tournée, les plans bâtis sont ceux du port et des bâtisses du récit) ;
  *   - { type: 'region', rx, ry } : il répond { type: 'region', region } (ses tableaux transférés,
  *     pas copiés), ou { type: 'erreur', cle, message } ;
  *   - { type: 'carte' } : l'image de la carte du monde (js/engine/monde-carte.js, fiche 8 : un pixel par
@@ -77,8 +78,9 @@ self.onmessage = (ev) => {
       if (c !== ctx) return;
       try {
         elementsSol(c);
-        // (la tournée de la calèche : les chemins du plan, ses arrêts, son horaire : fiche 7c)
-        const cd = c.cadre, tournee = tourneeDuPlan({ W: cd.LARGEUR, chemins: c.elements.chemins, hameaux: c.elements.lieux.hameaux, sortie: cd.SORTIE, ferme: cd.FERME });
+        // (la tournée de la calèche : les chemins du plan, ses arrêts, son horaire : fiche 7c ; le monde d'un port,
+        // l'île, fiche I7e : ni hameau, ni boucle, pas de calèche)
+        const cd = c.cadre, tournee = cd.PORT ? null : tourneeDuPlan({ W: cd.LARGEUR, chemins: c.elements.chemins, hameaux: c.elements.lieux.hameaux, sortie: cd.SORTIE, ferme: cd.FERME });
         self.postMessage({ type: 'pret', graine: c.graine, ms: c.mesures.elements, lieux: c.elements.lieux, hameaux: c.hameaux.plans, tournee, troncon: c.tronconPose || null });
         if (carteVoulue) envoieCarte(c);
       } catch (e) {

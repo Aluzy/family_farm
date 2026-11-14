@@ -297,7 +297,7 @@ test('le tableau : une ligne par commerce ; l\'artisan rapporte ce qu\'il paie �
 });
 
 test('la sauvegarde : v98 → v99 ; les commerces et les artisans gardés, réparés ; une partie d\'avant laissée telle quelle', () => {
-  assertEqual(STATE_VERSION, 99, 'le format 99');
+  assert(STATE_VERSION >= 99, 'le format 99 au moins (I5c : 100, I5b : 101)');
   const { s, v, c } = forge();
   c.stock = { lingot_fer: 2 };
   c.commandes = [{ n: 1, recette: 'clous', facon: true, prix: 7, jour: 2 }];
@@ -340,7 +340,7 @@ test('les commandes du moteur : commerce.ouvrir, commerce.acheter, commerce.comm
 
 test('le joueur automatique : un mineur, une conversation par jour, le local, la décision ; puis il garde du minerai au coffre', () => {
   const { s, V } = ile(3);
-  s.palier = DATA.SIMULATION.VILLAGEOIS.COMMERCE.PALIER;
+  s.palier = DATA.SIMULATION.VILLAGEOIS.COMMERCES[0].PALIER;
   botCommerce(s);
   const v = V.find((x) => x.tache === 'pierre');
   assert(v, 'un villageois à la pierre');
@@ -350,7 +350,7 @@ test('le joueur automatique : un mineur, une conversation par jour, le local, la
   const id = botCommerce(s);
   assert(id && commercesDe(s)[0].qui === v.id, `ouvert : ${id}`);
   botCommerce(s);
-  assert(countItem(s, 'minerai_fer') >= DATA.SIMULATION.VILLAGEOIS.COMMERCE.MATIERES.minerai_fer, 'du minerai au coffre');
+  assert(countItem(s, 'minerai_fer') >= DATA.SIMULATION.VILLAGEOIS.COMMERCES[0].MATIERES.minerai_fer, 'du minerai au coffre');
 });
 
 test('éteint : ni envie, ni commerce, ni lot ; la nuit ne change rien', () => {

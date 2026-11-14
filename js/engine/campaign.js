@@ -124,8 +124,9 @@ export function cropUnlocked(state, culture) {
 
 // Cultures qu'on peut planter dans ce lieu avec les chapitres atteints. Comme
 // pour les bâtiments, c'est un masquage : plant() lui-même reste libre.
+// (les plants sauvages de l'île, fiche I7e : seulement sur l'île ; le jeu d'avant ne les montre pas)
 export function plantableCropsFor(state, lieu) {
-  return plantableCrops(lieu).filter((c) => cropUnlocked(state, c));
+  return plantableCrops(lieu).filter((c) => cropUnlocked(state, c) && (!DATA.CULTURES[c].sauvage || villageActif(state)));
 }
 
 // Version 1.12 : une culture récoltée (objectif « cultures différentes »).

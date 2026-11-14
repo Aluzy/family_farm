@@ -10,7 +10,8 @@
  *   - arrivé à son poste, il fait le geste de sa tâche en boucle (les gestes des habitants des hameaux, les mêmes cases
  *     des planches de personnages : la hache, la pioche, la faux, la canne, l'arrosoir, se baisser, remuer la marmite ;
  *     CarteKit.GESTES_HABITANTS, habitants.js), tourné vers ce qu'il travaille (de profil pour la hache, la pioche et la
- *     faux), une courte pause entre deux ;
+ *     faux), une courte pause entre deux ; un geste assis (I5b : « filer », au rouet de la mercerie) le garde assis
+ *     entre deux gestes et quand il cause ;
  *   - chaque action que le moteur compte pendant qu'on le regarde fait monter l'emoji de ce qu'elle donne (🪵 🪨 🐟…) :
  *     rien n'est compté ici (la règle de la fiche 7b : ce qui se passe sous les yeux du joueur compte une fois) ;
  *   - deux camarades au même poste (la même clé) causent de temps en temps (villageois-social.js, les causeries : une
@@ -27,7 +28,8 @@
   const { T } = F.C;
   const { reducedMotion } = F;
   const PAUSE = [0.4, 1.6];                     // s entre deux gestes
-  const DE_PROFIL = new Set(['hache', 'pioche', 'faux', 'forge']);
+  const DE_PROFIL = new Set(['hache', 'pioche', 'faux', 'forge', 'scie']);
+  const ASSIS = new Set(['filer']);              // (I5b : les gestes qu'on fait assis : au rouet)
   const EMOJI_MS = 1600;
 
   F.partie({
@@ -52,13 +54,15 @@
     villageoisGesteImage(m, dt) {
       const w = m.travail, G = K.GESTES_HABITANTS;
       if (!w || !G || m.marchait || m.assis || m.couche) return null;
+      // (I5b : un geste assis, au rouet : il reste assis entre deux, et quand il cause)
+      const assis = ASSIS.has(w.geste) ? `assis_${w.face === 'cote' ? 'cote' : w.face}_0` : null;
       // (il cause : outil posé, tourné vers l'autre)
-      if (m.bulle || m.parle || m.salut) { w.seq = null; return null; }
+      if (m.bulle || m.parle || m.salut) { w.seq = null; return assis; }
       m.face = w.face; m.flip = w.flip;
-      if (reducedMotion()) return null;
+      if (reducedMotion()) return assis;
       if (!w.seq) {
         w.pause -= dt;
-        if (w.pause > 0) return null;
+        if (w.pause > 0) return assis;
         const vue = w.face === 'cote' ? 'cote' : w.face;
         const f = G[w.geste] || G.ramasse;
         w.seq = f(vue);
@@ -69,7 +73,7 @@
       if (w.t >= pas[1]) {
         w.t = 0;
         w.k += 1;
-        if (w.k >= w.seq.length) { w.seq = null; w.pause = PAUSE[0] + m.h() * (PAUSE[1] - PAUSE[0]); return w.geste === 'peche' ? `peche_${w.face === 'cote' ? 'cote' : w.face}_0` : null; }
+        if (w.k >= w.seq.length) { w.seq = null; w.pause = PAUSE[0] + m.h() * (PAUSE[1] - PAUSE[0]); return w.geste === 'peche' ? `peche_${w.face === 'cote' ? 'cote' : w.face}_0` : assis; }
       }
       return w.seq[w.k][0];
     },

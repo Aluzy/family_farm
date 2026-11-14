@@ -128,7 +128,7 @@ function client(T, M) {
       if (!direct.ctx.elements) {
         elementsSol(direct.ctx); mesures.elements = direct.ctx.mesures.elements; lieux = direct.ctx.elements.lieux; hameaux = direct.ctx.hameaux.plans;
         const cd = direct.ctx.cadre;
-        tournee = tourneeDuPlan({ W: cd.LARGEUR, chemins: direct.ctx.elements.chemins, hameaux: lieux.hameaux, sortie: cd.SORTIE, ferme: cd.FERME });
+        tournee = cd.PORT ? null : tourneeDuPlan({ W: cd.LARGEUR, chemins: direct.ctx.elements.chemins, hameaux: lieux.hameaux, sortie: cd.SORTIE, ferme: cd.FERME });
         if (direct.ctx.tronconPose && chemins) chemins.troncon(direct.ctx.tronconPose);
       }
       const cle = direct.file.shift();
@@ -161,6 +161,8 @@ function client(T, M) {
     worker.postMessage({ type: 'init', graine: M.graine, cadre: M.cadre, ferme: M.ferme, taille: M.taille, chemins: cheminsEtat() });
   } else enDirect();
   const sol = {
+    // (l'île, fiche I7e : le monde d'un port n'a ni hameau, ni boucle, ni calèche ; la scène n'en charge rien)
+    ile: !!M.cadre.PORT,
     ferme: M.cadre.FERME, tuiles: SOLS_MONDE, taille: M.taille, biomes: BIOMES, sortes: SORTES, roches: SORTES_ROCHES,
     regles: RECOLTE.SORTES, idObjet: idObjetMonde, ouvertes: null,
     lieux: () => lieux, lieuxSortes: SORTES_LIEUX, coins: (DATA.CANNE.COINS && DATA.CANNE.COINS.RAYON) || 0,

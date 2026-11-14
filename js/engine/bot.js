@@ -40,8 +40,11 @@ import { sleep } from './night.js';
 import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
 import { createNewGame, houseRepaired, starterBlock } from './depart.js';
 import { poserEtalLibre, testBatir, testLabourerSerre, testLocalCommerce, testMaisonVillageois } from './testmode.js';
-import { commerceOuvertDeSorte, commercesOuverts, conditionsCommerce, defCommerce, localLibre, locaux, ouvrirCommerce } from './artisans.js';
-import { maisonsLibres, plafondVillageois, villageoisDe } from './villageois.js';
+import {
+  acheterAuCommerce, commanderAuCommerce, commerceDuVillageois, commerceOuvertDeSorte, commercesOuverts, conditionsCommerce, defCommerce, enVenteAuCommerce,
+  localLibre, locaux, ouvrirCommerce, recettesDe,
+} from './artisans.js';
+import { maisonsLibres, plafondVillageois, trouverVillageois, villageoisDe } from './villageois.js';
 import { attribuer, donnerOutil, marquerAVendre, postesDe, reprendreOutil, tacheDef, tacheManque } from './taches.js';
 import { soldeLePlusBas } from './tableau.js';
 import { paliersSuivis } from './paliers.js';
@@ -53,7 +56,7 @@ import { hameauxVus, voirHameau } from './monde-hameaux.js';
 import { peuplerHameau } from './habitants.js';
 import { caseVue, voirAutour } from './monde-vu.js';
 import { castLine } from './outils.js';
-import { atelierConstruit, buildAtelier, craft, craftStatus, ramassables, ramasser } from './atelier.js';
+import { atelierConstruit, buildAtelier, commerceQuiLeFait, craft, craftStatus, ramassables, ramasser } from './atelier.js';
 import { commencerObjectifs, majObjectifs } from './objectifs.js';
 import { majCaleche } from './caleche.js';
 import { goutPour, HAMEAU_VILLAGE, offrable, offrir, parlerAmitie, visiterHameau } from './amitie.js';
@@ -218,32 +221,90 @@ export function botVillageois(state) {
   botCommerce(state, V);
 }
 
-// Fiche I5a (artisans.js) : la forge (SIMULATION.VILLAGEOIS.COMMERCE). Dès le palier PALIER, sans commerce de la sorte
-// SORTE, il choisit un candidat (celui qui fait déjà la tâche de la filière, sinon le dernier arrivé qui ne fait pas une
-// tâche de GARDER) et lui confie cette tâche (son outil fabriqué et donné) ; le tableau ne la lui reprend pas
-// (botReattribuer). Il lui parle chaque jour (l'amitié : +2 par jour, AMITIE.PAROLE). Dès que son envie est née, il
-// bâtit le local (l'établi, le comptoir, l'enseigne fabriqués à l'Atelier, posés comme le joueur ; les murs d'un coup :
-// testLocalCommerce), puis il décide l'ouverture quand tout y est. Ouvert, il garde au coffre MATIERES (le minerai, le bois) de la
-// filière (les matériaux bruts qu'il va chercher plus loin : SIMULATION.BRUTS, comptés par materiauxFournis), que
-// l'artisan lui achète. → l'id du commerce ouvert aujourd'hui, ou null.
-const candidatsCommerce = new WeakMap();   // la partie → { id (le candidat), jour (sa dernière conversation) }
+// Fiches I5a, I5b (artisans.js) : les commerces (SIMULATION.VILLAGEOIS.COMMERCES, dans l'ordre : la forge, puis la
+// mercerie). Il en prépare un à la fois : le premier qui n'est pas ouvert (botUnCommerce) ; ceux qui le sont, il les
+// entretient (leurs MATIERES au coffre, une conversation par jour avec l'artisan). → l'id du commerce ouvert
+// aujourd'hui, ou null.
+const candidatsCommerce = new WeakMap();   // la partie → { [sorte]: { id (le candidat), jour (sa dernière conversation) } }
+const reglagesCommerces = () => {
+  const S = DATA.SIMULATION.VILLAGEOIS || {};
+  return (Array.isArray(S.COMMERCES) ? S.COMMERCES : S.COMMERCE ? [S.COMMERCE] : []).filter((x) => x && defCommerce(x.SORTE));
+};
+const candidatDe = (state, sorte) => {
+  const M = candidatsCommerce.get(state) || {};
+  candidatsCommerce.set(state, M);
+  return M[sorte] || (M[sorte] = {});
+};
 export function botCommerce(state, V = villageoisDe(state)) {
-  const S = DATA.SIMULATION.VILLAGEOIS && DATA.SIMULATION.VILLAGEOIS.COMMERCE;
-  if (!S || !villageActif(state) || !defCommerce(S.SORTE)) return null;
-  const d = defCommerce(S.SORTE), palier = paliersSuivis(state) ? state.palier : Infinity;
-  if (commerceOuvertDeSorte(state, S.SORTE)) {
-    for (const [o, n] of Object.entries(S.MATIERES || {})) fournir(state, o, Math.max(0, n - Math.floor(countItem(state, o))));
-    // (il parle chaque jour à l'artisan : l'amitié lui apprend de nouvelles pièces)
-    const c = commercesOuverts(state).find((x) => x.sorte === S.SORTE), m = candidatsCommerce.get(state) || {};
-    candidatsCommerce.set(state, m);
-    if (c && m.jour !== state.day) { m.jour = state.day; parlerAmitie(state, HAMEAU_VILLAGE, c.qui); }
-    return null;
+  if (!villageActif(state)) return null;
+  for (const S of reglagesCommerces()) {
+    if (commerceOuvertDeSorte(state, S.SORTE)) { botEntretenirCommerce(state, S); continue; }
+    return botUnCommerce(state, V, S);
   }
+  return null;
+}
+
+// (I5a : un commerce ouvert ; ses MATIERES de la filière au coffre — les matériaux bruts qu'il va chercher plus loin :
+// SIMULATION.BRUTS, comptés par materiauxFournis — que l'artisan lui achète ; il parle chaque jour à l'artisan : l'amitié
+// lui apprend de nouvelles pièces)
+// (I5b : une caisse sous AVANCE pièces — une artisane qui n'a pas de quoi acheter sa laine — : il lui commande, payées
+// d'avance, des pièces de la première recette dont le coffre a la matière ; ses pièces vont à sa bourse, elle achète la
+// matière au joueur, la pièce revient au joueur)
+function botEntretenirCommerce(state, S) {
+  for (const [o, n] of Object.entries(S.MATIERES || {})) fournir(state, o, Math.max(0, n - Math.floor(countItem(state, o))));
+  const c = commercesOuverts(state).find((x) => x.sorte === S.SORTE), m = candidatDe(state, S.SORTE);
+  if (c && m.jour !== state.day) {
+    m.jour = state.day;
+    parlerAmitie(state, HAMEAU_VILLAGE, c.qui);
+    const v = trouverVillageois(state, c.qui), garde = Math.max(0, Number((DATA.ARTISANS || {}).GARDE) || 0);
+    if (v && S.AVANCE > 0 && (v.bourse || 0) < S.AVANCE) {
+      const r = recettesDe(c.sorte).find((x) => (c.connues || []).includes(x.id) && Object.entries(x.entrees).every(([o, n]) => countItem(state, o) - garde >= n * 3));
+      for (let k = (c.commandes || []).length; r && k < Math.max(1, Number((DATA.ARTISANS || {}).COMMANDES) || 1); k++) if (!commanderAuCommerce(state, c.id, r.id).ok) break;
+    }
+  }
+}
+
+// I5b : ce qu'il garde au coffre de `o` pour les commerces ouverts (SIMULATION.VILLAGEOIS.COMMERCES[].GARDER : la laine
+// de la mercerie, qu'il ne vend plus au port) ; 0 sans commerce (le chantier éteint : rien ne change).
+function gardePourCommerces(state, o) {
+  if (!villageActif(state)) return 0;
+  return reglagesCommerces().filter((S) => commerceOuvertDeSorte(state, S.SORTE)).reduce((t, S) => t + Math.max(0, Number((S.GARDER || {})[o]) || 0), 0);
+}
+
+// Un candidat est-il gardé pour un commerce qui n'est pas encore ouvert (le tableau ne lui reprend pas sa tâche) ?
+function candidatGarde(state, v) {
+  const M = candidatsCommerce.get(state) || {};
+  return Object.entries(M).some(([sorte, m]) => m && m.id === v.id && !commerceOuvertDeSorte(state, sorte));
+}
+
+// Une pièce qu'un commerce fait désormais (l'Atelier la refuse) : il l'achète à son comptoir, ce qu'il y a ; il en
+// manque, il la lui commande (payée d'avance) et attend. → vrai : il en a `n`.
+function botPiecesDuCommerce(state, o, n) {
+  for (const c of commercesOuverts(state)) {
+    const manque = n - Math.floor(countItem(state, o));
+    if (manque <= 0) return true;
+    const dispo = (enVenteAuCommerce(state, c).find((x) => x.objet === o && !x.teinte) || {}).n || 0;
+    if (dispo > 0) acheterAuCommerce(state, c.id, o, Math.min(dispo, manque));
+    const reste = n - Math.floor(countItem(state, o));
+    const r = recettesDe(c.sorte).find((x) => x.sortie === o);
+    if (reste > 0 && r && !(c.commandes || []).some((k) => k.recette === r.id)) commanderAuCommerce(state, c.id, r.id);
+  }
+  return Math.floor(countItem(state, o)) >= n;
+}
+
+// Fiche I5a : un commerce de la sorte SORTE (SIMULATION.VILLAGEOIS.COMMERCES[]). Dès le palier PALIER, il choisit un
+// candidat (celui qui a déjà l'envie, sinon celui qui fait déjà la tâche de la filière, sinon le dernier arrivé qui ne
+// fait pas une tâche de GARDER ; jamais un artisan) et lui confie cette tâche (son outil fabriqué et donné) ; le tableau
+// ne la lui reprend pas (botReattribuer). Il lui parle chaque jour (l'amitié : +2 par jour, AMITIE.PAROLE). Dès que son
+// envie est née, il bâtit le local (l'établi, le comptoir, l'enseigne fabriqués à l'Atelier, posés comme le joueur ; les
+// murs d'un coup : testLocalCommerce ; les clous et charnières qu'une forge fait désormais, achetés à son comptoir),
+// puis il décide l'ouverture quand tout y est. → l'id du commerce ouvert aujourd'hui, ou null.
+function botUnCommerce(state, V, S) {
+  const d = defCommerce(S.SORTE), palier = paliersSuivis(state) ? state.palier : Infinity;
   if (palier < (S.PALIER || 1)) return null;
-  const adultes = V.filter((v) => !v.enfant && !v.accueil);
+  const adultes = V.filter((v) => !v.enfant && !v.accueil && !commerceDuVillageois(state, v.id));
   if (!adultes.length) return null;
-  const m = candidatsCommerce.get(state) || {};
-  candidatsCommerce.set(state, m);
+  const m = candidatDe(state, S.SORTE);
   let v = adultes.find((x) => x.id === m.id) || adultes.find((x) => x.envies && Number.isInteger(x.envies[S.SORTE])) || adultes.find((x) => x.tache === d.tache);
   const garder = new Set(((DATA.SIMULATION.VILLAGEOIS.REATTRIBUER || {}).GARDER) || []);
   // (le dernier arrivé qui ne fait pas une tâche de GARDER ; et dont l'outil, s'il en a un, peut revenir au joueur)
@@ -272,7 +333,10 @@ export function botCommerce(state, V = villageoisDe(state)) {
       for (const [o, n] of Object.entries((R[b] && R[b].entrees) || {})) {
         const manque = n - Math.floor(countItem(state, o));
         const sous = manque > 0 && Object.keys(R).find((k) => R[k].sortie && R[k].sortie[o] && R[k].commerce);
-        if (sous && !botFabriquer(state, sous, Math.ceil(manque / R[sous].sortie[o]))) return false;
+        if (!sous) continue;
+        // (I5b : la forge ouverte fait désormais les clous et les charnières : il les lui achète)
+        if (commerceQuiLeFait(state, R[sous].commerce, sous)) { if (!botPiecesDuCommerce(state, o, n)) return false; continue; }
+        if (!botFabriquer(state, sous, Math.ceil(manque / R[sous].sortie[o]))) return false;
       }
       return botFabriquer(state, b);
     };
@@ -321,8 +385,7 @@ export function botReattribuer(state, V = villageoisDe(state)) {
   if (memo.jour === state.day) return null;
   memo.jour = state.day;
   // (fiche I5a : un artisan tient son commerce, on ne le déplace pas)
-  const cand = candidatsCommerce.get(state);
-  const avecTache = V.filter((v) => tacheDef(v.tache) && !tacheDef(v.tache).commerce && !v.accueil && !(cand && cand.id === v.id && !commercesOuverts(state).length));
+  const avecTache = V.filter((v) => tacheDef(v.tache) && !tacheDef(v.tache).commerce && !v.accueil && !candidatGarde(state, v));
   if (!avecTache.length) return null;
   const bas = soldeLePlusBas(state, R.JOURS, avecTache.map((v) => v.id));
   if (!bas || !bas.complet) return null;
@@ -1040,7 +1103,7 @@ const sortiesPort = new WeakMap();   // la partie → le jour de sa dernière so
 // Ce que botSell vendrait au port, en pièces (à peu près : la laine, le blé et les vivres en trop).
 function botValeurAVendre(state) {
   const S = DATA.SIMULATION, semences = botSemences(state);
-  let v = countItem(state, 'laine') * sellPrice('laine', state);
+  let v = Math.max(0, Math.floor(countItem(state, 'laine') - gardePourCommerces(state, 'laine'))) * sellPrice('laine', state);
   v += Math.max(0, Math.floor(countItem(state, DATA.SILO.ITEM) - S.BLE_MAX)) * sellPrice(DATA.SILO.ITEM, state);
   for (const item of Object.keys(inventoryCounts(state))) {
     const def = DATA.OBJETS[item];
@@ -1221,8 +1284,9 @@ export function botSell(state) {
       if (spare >= 1) sellItem(state, item, Math.floor(spare));
     }
   }
-  const laine = countItem(state, 'laine');
-  if (laine >= 1) sellItem(state, 'laine', laine);
+  // (I5b : la laine qu'une mercerie ouverte file, GARDER, reste au coffre)
+  const laine = countItem(state, 'laine') - gardePourCommerces(state, 'laine');
+  if (laine >= 1) sellItem(state, 'laine', Math.floor(laine));
   const ble = countItem(state, DATA.SILO.ITEM) - S.BLE_MAX;
   if (ble >= 1) sellItem(state, DATA.SILO.ITEM, ble);
   // la paille en trop (sans animaux, toute la paille), et la farine en trop
@@ -1299,7 +1363,7 @@ function mondeDuBot(state) {
   if (!T.MONDE || g === null) return null;
   if (!mondes.has(g)) {
     const sol = solDirect(T), el = elementsSol(sol.ctx), cadre = sol.ctx.cadre;
-    const tour = poserTournee(g, tourneeDuPlan({ W: cadre.LARGEUR, chemins: el.chemins, hameaux: el.lieux.hameaux, sortie: cadre.SORTIE, ferme: cadre.FERME }));
+    const tour = cadre.PORT ? null : poserTournee(g, tourneeDuPlan({ W: cadre.LARGEUR, chemins: el.chemins, hameaux: el.lieux.hameaux, sortie: cadre.SORTIE, ferme: cadre.FERME }));
     const plans = new Map(sol.ctx.hameaux.plans.map((p) => [p.id, p]));
     mondes.set(g, { W: cadre.LARGEUR, tour, plans, lieux: el.lieux, sortie: cadre.SORTIE });
     while (mondes.size > 3) mondes.delete(mondes.keys().next().value);
