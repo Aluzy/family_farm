@@ -14,8 +14,10 @@ import { commerceEnPhrase, nomDe } from './noms.js';
 import { fixerFeteOuverture } from './fetes-village.js';
 import { couleursEnseigne } from './vocation-village.js';
 import { journeeDuVillage } from './villageois-journee.js';
-import { plaisirAchat } from './bourse.js';
+import { besoinDe, plaisirAchat } from './bourse.js';
 import { clockHours, nightActive } from './clock.js';
+import { ajouterMeuble, furnitureCount, furnitureMax, meubleRefus } from './meubles.js';
+import { niveauPort } from './port.js';
 
 /* ---------- les commerces d'artisans (le chantier « l'île à bâtir », fiche I5a) ----------
 
@@ -53,8 +55,22 @@ import { clockHours, nightActive } from './clock.js';
    - Ce que la forge fait, l'Atelier du joueur ne le fait plus une fois une forge ouverte qui le sait (les recettes de
      l'Atelier marquées commerce, atelier.js recetteDebloquee, lit c.connues) : sans forge, le joueur reste autonome.
 
-   Ce que la partie garde (format 99) : state.commerces ([{ id, sorte, qui, ouvert, depuis, jours, etabli, stock,
-   commandes, seq, connues, journal, avis, lettres (I8a : la couleur des lettres de l'enseigne, couleursEnseigne) }] ; les paliers de l'île, paliers.js, le comptent), et sur chaque villageois :
+   I5c (la scierie, la boulangerie, la fromagerie) : la règle commune, un commerce ne retire rien au joueur ; il fait
+   mieux ou autre chose, en petite quantité. Ce que le socle y gagne, par petites fonctions :
+   - des recettes venues des prix de l'île (recettesDesPrix : VILLAGE.PRIX.ARTISANS, celles qui portent la sorte : les
+     36 meubles du menuisier, les fromages), et sur chaque recette : commande (il ne la fait que commandée), stock (ce
+     qu'il en garde au comptoir), cave (des nuits d'affinage : la cave du fromager, affinerCaves, la nuit) ;
+   - ce qui revient au joueur passe par donnerAuJoueur (un meuble entre dans sa maison : meubles.js ajouterMeuble ;
+     refusMeubleJoueur, avant de le vendre ou de le commander) ;
+   - les clients : « repas » (il n'a plus de provisions : ce qu'il achète compte dans ses repas, bourse.js
+     mangerSesProvisions), « maison » (un meuble dont sa maison a besoin, bourse.js besoinDe) ; ce qu'il achète va à
+     ses provisions ou à ses affaires (rangerAchat), comme à l'étal ;
+   - le plafond (plafondCommerces, ARTISANS.PLAFOND) : le nombre de commerces suit les villageois et le port, une
+     quatrième condition d'ouverture.
+
+   Ce que la partie garde (format 100) : state.commerces ([{ id, sorte, qui, ouvert, depuis, jours, etabli, stock,
+   commandes, seq, connues, journal, avis, lettres (I8a : la couleur des lettres de l'enseigne, couleursEnseigne), cave
+   (I5c : [{ objet, n, nuits, recette, pour ('joueur' : une commande, ou null) }]) }] ; les paliers de l'île, paliers.js, le comptent), et sur chaque villageois :
    v.pratique ({ tâche: jours }), v.envies ({ sorte: jour }), v.commerce (l'id de son commerce), v.achatCommerce ({ jour,
    objet, commerce }), v.entretien (le jour de sa dernière lame). Des entiers partout. Le chantier éteint
    (villageActif), rien ne se lit ni ne s'écrit. Les tests : tests/engine/village-artisans.test.mjs. */
@@ -116,13 +132,32 @@ function valeurPort(o) {
   return d && !d.invendable ? Math.max(0, entier(prixIle(o))) : 0;
 }
 
-// Les recettes de la sorte : [{ id, entrees, sortie (l'objet), qte, palier }], dans l'ordre des données.
+// I5c : les recettes de la sorte venues des prix de l'île (VILLAGE.PRIX.ARTISANS, celles qui portent `commerce: sorte` :
+// les meubles du menuisier, les fromages ; leur prix de l'île s'en déduit, catalog.js prixDeLIle). → [[id, recette]].
+function recettesDesPrix(sorte) {
+  const A = (DATA.VILLAGE && DATA.VILLAGE.PRIX && DATA.VILLAGE.PRIX.ARTISANS) || {};
+  return Object.entries(A).filter(([k, r]) => !k.startsWith('//') && objet(r) && r.commerce === sorte);
+}
+
+// Les recettes de la sorte : [{ id, entrees, sortie (l'objet), qte, palier, commande (il ne la fait que commandée), stock
+// (ce qu'il en garde au comptoir, ou null : STOCK), cave (ses nuits d'affinage, 0 : aucune) }], dans l'ordre des données :
+// les siennes (RECETTES), puis celles des prix de l'île.
+const recettesMemo = new Map();
 export function recettesDe(sorte) {
   const d = defCommerce(sorte);
-  return Object.entries((d && d.RECETTES) || {}).filter(([k, r]) => !k.startsWith('//') && objet(r) && objet(r.sortie)).map(([id, r]) => {
+  if (!d) return [];
+  const A = DATA.VILLAGE && DATA.VILLAGE.PRIX && DATA.VILLAGE.PRIX.ARTISANS;
+  const m = recettesMemo.get(sorte);
+  if (m && m.d === d && m.A === A && m.R === d.RECETTES) return m.l.map((r) => ({ ...r, entrees: { ...r.entrees } }));
+  const l = [...Object.entries(d.RECETTES || {}), ...recettesDesPrix(sorte)].filter(([k, r]) => !k.startsWith('//') && objet(r) && objet(r.sortie)).map(([id, r]) => {
     const [sortie, qte] = Object.entries(r.sortie)[0];
-    return { id, entrees: { ...(r.entrees || {}) }, sortie, qte: Math.max(1, entier(qte)), palier: Math.max(0, entier(r.palier)) };
+    return {
+      id, entrees: { ...(r.entrees || {}) }, sortie, qte: Math.max(1, entier(qte)), palier: Math.max(0, entier(r.palier)),
+      commande: r.commande === true, stock: Number.isInteger(r.stock) ? Math.max(0, r.stock) : null, cave: Math.max(0, entier(r.cave)),
+    };
   });
+  recettesMemo.set(sorte, { d, A, R: d.RECETTES, l });
+  return l.map((r) => ({ ...r, entrees: { ...r.entrees } }));
 }
 
 const recetteDe = (sorte, id) => recettesDe(sorte).find((r) => r.id === id) || null;
@@ -266,8 +301,37 @@ function unCommerce(sorte) {
   return (d && d.un) || 'un commerce';
 }
 
+/* ---------- le plafond (I5c) ---------- */
+
+// Le plafond des commerces (ARTISANS.PLAFOND) : le k-ième commerce ouvert attend VILLAGEOIS[k-1] villageois (les adultes)
+// et le port au niveau PORT[k-1] ; au-delà des listes, plus de commerce. Sans PLAFOND, aucune limite. → { ouverts, max
+// (ce que le village tient aujourd'hui), villageois, port, prochain: { rang, villageois, port } ou null }.
+export function plafondCommerces(state) {
+  const P = AR().PLAFOND, ouverts = commercesOuverts(state).length;
+  const n = villageoisDe(state).filter((v) => !v.enfant).length, port = niveauPort(state);
+  if (!objet(P)) return { ouverts, max: Infinity, villageois: n, port, prochain: null };
+  const VV = Array.isArray(P.VILLAGEOIS) ? P.VILLAGEOIS : [], PP = Array.isArray(P.PORT) ? P.PORT : [];
+  const rangs = Math.max(VV.length, PP.length);
+  const besoin = (k) => ({ rang: k + 1, villageois: Math.max(0, entier(VV[Math.min(k, VV.length - 1)])), port: Math.max(0, entier(PP[Math.min(k, PP.length - 1)])) });
+  let max = 0;
+  while (max < rangs && n >= besoin(max).villageois && port >= besoin(max).port) max++;
+  return { ouverts, max, villageois: n, port, prochain: ouverts < rangs ? besoin(ouverts) : null };
+}
+
+// La condition du plafond, pour la fiche : { ok, texte }.
+function conditionPlafond(state) {
+  const P = plafondCommerces(state), s = (k) => (k > 1 ? 's' : '');
+  if (P.ouverts < P.max) return { ok: true, texte: P.max === Infinity ? 'Le village peut tenir un commerce de plus.' : `Le village peut tenir ${P.max} commerce${s(P.max)} (${P.ouverts} ouvert${s(P.ouverts)}).` };
+  if (!P.prochain) return { ok: false, texte: `Le village tient déjà tous ses commerces (${P.ouverts}).` };
+  const manque = [];
+  if (P.villageois < P.prochain.villageois) manque.push(`${P.prochain.villageois} villageois (${P.villageois} aujourd'hui)`);
+  if (P.port < P.prochain.port) manque.push(`le port au niveau ${P.prochain.port} (${P.port} aujourd'hui)`);
+  return { ok: false, texte: `Un ${P.prochain.rang === 1 ? 'premier' : `${P.prochain.rang}e`} commerce attend ${manque.join(' et ')}.` };
+}
+
 // Les conditions d'ouverture du commerce `sorte` par le villageois `vid` : { ok, envie: { ok, texte }, amitie: { ok,
-// texte, manque (points) }, local: { ok, texte }, deja (son commerce ouvert, ou null) } ; null inconnu.
+// texte, manque (points) }, local: { ok, texte }, plafond: { ok, texte } (I5c), deja (son commerce ouvert, ou null) } ;
+// null inconnu.
 export function conditionsCommerce(state, vid, sorte) {
   const v = trouverVillageois(state, vid), d = defCommerce(sorte);
   if (!v || !d || !villageActif(state)) return null;
@@ -282,9 +346,10 @@ export function conditionsCommerce(state, vid, sorte) {
     envie: { ok: envie, texte: envie ? `${Il} en a envie (depuis le jour ${v.envies[sorte]}).` : `${Il} en aura envie après ${J} jours à « ${T.nom || d.tache} » (${Math.min(fait, J)} / ${J}).` },
     amitie: { ok: p >= voulu, texte: p >= voulu ? `Votre amitié est « ${nomPalier(p)} ».` : `Il faut être « ${nomPalier(voulu)} » avec ${lui} (encore ${pts} point${pts > 1 ? 's' : ''} d'amitié).`, manque: p >= voulu ? 0 : pts },
     local: { ok: !manque, texte: manque ? `Il manque ${manque}.` : 'Le local est bâti.' },
+    plafond: conditionPlafond(state),
     deja,
   };
-  out.ok = out.envie.ok && out.amitie.ok && out.local.ok && !v.enfant && !deja;
+  out.ok = out.envie.ok && out.amitie.ok && out.local.ok && out.plafond.ok && !v.enfant && !deja;
   return out;
 }
 
@@ -323,7 +388,7 @@ export function ouvrirCommerce(state, vid, sorte) {
   if (v.enfant) return fail('Les enfants ne tiennent pas de commerce.');
   const C = conditionsCommerce(state, vid, sorte);
   if (C.deja) return fail(`${v.prenom} tient déjà ${commerceEnPhrase(nomCommerce(state, C.deja), C.deja.sorte)}.`);
-  for (const k of ['envie', 'amitie', 'local']) if (!C[k].ok) return fail(C[k].texte);
+  for (const k of ['envie', 'amitie', 'local', 'plafond']) if (!C[k].ok) return fail(C[k].texte);
   const l = localLibre(state, sorte);
   if (!Array.isArray(state.commerces)) state.commerces = [];
   const n = state.commerces.filter((c) => objet(c) && c.sorte === sorte).length + 1;
@@ -409,6 +474,75 @@ function prendreMatieres(state, c, v, D, J) {
   }
 }
 
+/* ---------- I5c : ce qui revient au joueur, la cave ---------- */
+
+// Le meuble de la maison que l'objet `o` est (meuble_<id>, DATA.MEUBLES), ou null.
+function meubleDe(o) {
+  const id = typeof o === 'string' && o.startsWith('meuble_') ? o.slice(7) : null;
+  return id && DATA.MEUBLES && DATA.MEUBLES[id] ? id : null;
+}
+
+// `n` unités de `o` pour le joueur : dans son inventaire ; un meuble entre dans sa maison comme un meuble acheté
+// (meubles.js ajouterMeuble : compté pour le bonheur de la famille, l'objet à poser) ; s'il en a déjà assez, l'objet
+// seul (rien ne se perd).
+export function donnerAuJoueur(state, o, n = 1) {
+  const id = meubleDe(o);
+  for (let k = 0; k < Math.max(0, entier(n)); k++) if (!id || !ajouterMeuble(state, id).ok) addItem(state, o, 1);
+}
+
+// Pourquoi le joueur ne peut pas avoir un meuble `o` de plus (sa maison n'est pas prête, il en a assez, commandes en
+// attente comprises), ou null.
+export function refusMeubleJoueur(state, o, n = 1) {
+  const id = meubleDe(o);
+  if (!id) return null;
+  const refus = meubleRefus(state, id);
+  if (refus) return refus;
+  let attente = 0;
+  for (const c of commercesOuverts(state)) {
+    for (const k of c.commandes || []) { const r = recetteDe(c.sorte, k.recette); if (r && r.sortie === o) attente += r.qte; }
+    for (const x of Array.isArray(c.cave) ? c.cave : []) if (x.pour === 'joueur' && x.objet === o) attente += entier(x.n);
+  }
+  const max = furnitureMax(state, id);
+  return furnitureCount(state, id) + attente + Math.max(1, entier(n)) > max ? `Tu en auras assez pour la maison (${max}), commandes en attente comprises.` : null;
+}
+
+// La cave du commerce : [{ objet, n, nuits, recette, pour }] (I5c, la fromagerie : ce qui s'affine).
+function caveDe(c) {
+  if (!Array.isArray(c.cave)) c.cave = [];
+  return c.cave;
+}
+
+// Combien de `o` il a au comptoir et en cave (ce qu'il compte pour garnir son comptoir).
+function enStock(c, o) {
+  const cave = Array.isArray(c.cave) ? c.cave.filter((x) => x.objet === o && x.pour !== 'joueur').reduce((t, x) => t + entier(x.n), 0) : 0;
+  return Math.max(0, entier((c.stock || {})[o])) + cave;
+}
+
+// Y a-t-il de la place en cave (ARTISANS.CAVE meules au plus) ?
+function placeEnCave(c) {
+  return caveDe(c).reduce((t, x) => t + entier(x.n), 0) < Math.max(1, Math.floor(reglage('CAVE', 6)));
+}
+
+// La nuit : ce qui s'affine en cave prend une nuit ; ce qui a fini (les nuits de sa recette) passe au comptoir, ou au
+// joueur pour une commande (un avis). → [{ commerce, objet, n, pour }] : ce qui est sorti de cave.
+export function affinerCaves(state) {
+  const out = [];
+  for (const c of commercesOuverts(state)) {
+    if (!Array.isArray(c.cave) || !c.cave.length) continue;
+    const reste = [];
+    for (const x of c.cave) {
+      const r = recetteDe(c.sorte, x.recette), nuits = Math.max(1, r ? r.cave : 1);
+      x.nuits = Math.max(0, entier(x.nuits)) + 1;
+      if (x.nuits < nuits || !DATA.OBJETS[x.objet]) { reste.push(x); continue; }
+      if (x.pour === 'joueur') { donnerAuJoueur(state, x.objet, x.n); avis(c, { sorte: 'commande', objet: x.objet, n: x.n, facon: !!x.facon, cave: true }); }
+      else { if (!objet(c.stock)) c.stock = {}; c.stock[x.objet] = Math.max(0, entier(c.stock[x.objet])) + entier(x.n); }
+      out.push({ commerce: c.id, objet: x.objet, n: entier(x.n), pour: x.pour || null });
+    }
+    c.cave = reste;
+  }
+  return out;
+}
+
 // Un lot à l'établi (taches.js : une action de la tâche du commerce). → { ok, produit, lot: { recette, sortie, n,
 // commande } } ou un refus (rien à faire : le comptoir est garni, il manque des matières ou de quoi les payer).
 export function lotCommerce(state, v) {
@@ -427,10 +561,12 @@ export function lotCommerce(state, v) {
     J.fait[r.sortie] = (J.fait[r.sortie] || 0) + r.qte;
     return { ok: true, produit: cout > 0 ? { pieces: cout } : {}, lot: { recette: r.id, sortie: r.sortie, n: r.qte, commande: commande || null } };
   };
-  // (1. une commande du joueur : à façon, la matière est là ; payée, il achète la matière comme pour lui)
+  // (1. une commande du joueur : à façon, la matière est là ; payée, il achète la matière comme pour lui ; I5c : ce qui
+  // s'affine va d'abord en cave, il le reçoit à sa sortie)
   for (let i = 0; i < c.commandes.length; i++) {
     const k = c.commandes[i], r = recetteDe(c.sorte, k.recette);
     if (!r) { c.commandes.splice(i--, 1); continue; }
+    if (r.cave && !placeEnCave(c)) continue;
     let cout = 0;
     if (!k.facon) {
       const D = devisMatieres(state, c, r.entrees);
@@ -439,21 +575,26 @@ export function lotCommerce(state, v) {
       cout = D.cout;
     }
     c.commandes.splice(i, 1);
-    addItem(state, r.sortie, r.qte);
-    avis(c, { sorte: 'commande', objet: r.sortie, n: r.qte, facon: !!k.facon });
+    if (r.cave) caveDe(c).push({ objet: r.sortie, n: r.qte, nuits: 0, recette: r.id, pour: 'joueur', ...(k.facon ? { facon: true } : {}) });
+    else {
+      donnerAuJoueur(state, r.sortie, r.qte);
+      avis(c, { sorte: 'commande', objet: r.sortie, n: r.qte, facon: !!k.facon });
+    }
     return fini(r, k, cout);
   }
   // (2. garnir son comptoir : la première recette connue (dans l'ordre des données : il fond d'abord) dont il a moins de
-  // STOCK, dont il a la matière et de quoi la payer)
+  // STOCK (I5c : ou le stock de la recette ; ce qui est en cave compte), dont il a la matière et de quoi la payer ; pas
+  // celles qu'il ne fait que commandées)
   const S = Math.max(1, Math.floor(reglage('STOCK', 4)));
-  const L = recettesConnues(state, c).map((r, i) => ({ r, i, n: Math.max(0, entier(c.stock[r.sortie])) }))
-    .filter((x) => x.n < S)
+  const L = recettesConnues(state, c).filter((r) => !r.commande).map((r, i) => ({ r, i, n: enStock(c, r.sortie) }))
+    .filter((x) => x.n < (x.r.stock === null ? S : x.r.stock) && (!x.r.cave || placeEnCave(c)))
     .sort((a, b) => a.i - b.i);
   for (const { r } of L) {
     const D = devisMatieres(state, c, r.entrees);
     if (!D.ok || D.cout > entier(v.bourse)) continue;
     prendreMatieres(state, c, v, D, J);
-    c.stock[r.sortie] = Math.max(0, entier(c.stock[r.sortie])) + r.qte;
+    if (r.cave) caveDe(c).push({ objet: r.sortie, n: r.qte, nuits: 0, recette: r.id, pour: null });
+    else c.stock[r.sortie] = Math.max(0, entier(c.stock[r.sortie])) + r.qte;
     return fini(r, null, D.cout);
   }
   return fail(L.length ? 'Il manque des matières au coffre, ou de quoi les payer.' : 'Le comptoir est garni.');
@@ -478,11 +619,13 @@ export function acheterAuCommerce(state, id, o, n = 1) {
   if (!c || c.ouvert === false || !v) return fail('Ce commerce n\'est pas ouvert.');
   const q = Math.max(0, Math.floor(Number(n) || 0)), dispo = Math.max(0, entier((c.stock || {})[o]));
   if (q <= 0 || dispo < q) return fail(dispo ? `Il n'en a que ${dispo}.` : `Plus de ${minuscule(nom(o))} en vente.`);
+  const refus = refusMeubleJoueur(state, o, q);
+  if (refus) return fail(refus);
   const prix = q * prixArtisan(o);
   if (!pay(state, prix, `${nomCommerce(state, c)} : ${q} ${minuscule(nom(o))}`)) return fail(NO_COINS);
   c.stock[o] = dispo - q;
   if (c.stock[o] <= 0) delete c.stock[o];
-  addItem(state, o, q);
+  donnerAuJoueur(state, o, q);
   v.bourse = Math.max(0, entier(v.bourse)) + prix;
   journalDuJour(c, jourDe(state)).ventes.joueur += prix;
   return { ok: true, objet: o, n: q, prix };
@@ -507,6 +650,8 @@ export function commanderAuCommerce(state, id, recette, o = {}) {
   const max = Math.max(1, Math.floor(reglage('COMMANDES', 3)));
   if (c.commandes.length >= max) return fail(`Déjà ${max} commandes en attente.`);
   const facon = !!o.facon, prix = prixCommandeArtisan(r, facon);
+  const refus = refusMeubleJoueur(state, r.sortie, r.qte);
+  if (refus) return fail(refus);
   if (facon) {
     const manque = Object.entries(r.entrees).filter(([x, n]) => countItem(state, x) + 1e-9 < n);
     if (manque.length) return fail(`À façon, tu apportes la matière : il te manque ${manque.map(([x, n]) => `${n} ${minuscule(nom(x))}`).join(', ')}.`);
@@ -527,18 +672,42 @@ export function commanderAuCommerce(state, id, recette, o = {}) {
 
 const RANG = { adore: 3, besoin: 2, aime: 1 };
 
-// Ce que `o` est pour le villageois `v` au comptoir de la sorte `sorte` : 'adore', 'besoin' (CLIENTS : une lame, s'il
-// tient un outil et n'en a pas eu depuis ENTRETIEN jours), 'aime', ou null.
+// I5c : a-t-il encore des provisions (ce qu'il s'est acheté à manger, v.provisions) ?
+function aDesProvisions(v) {
+  return objet(v.provisions) && Object.entries(v.provisions).some(([o, n]) => n > 0 && DATA.OBJETS[o] && DATA.OBJETS[o].energie > 0);
+}
+
+// Le besoin de `o` pour le villageois `v` au comptoir de la sorte `sorte` (CLIENTS) : 'outil' (une lame, s'il tient un
+// outil et n'en a pas eu depuis ENTRETIEN jours), 'repas' (I5c : il n'a plus de provisions), 'maison' (I5c : un meuble
+// dont sa maison a besoin, bourse.js besoinDe), ou null.
+export function besoinAuComptoir(v, o, sorte, jour) {
+  const cl = ((defCommerce(sorte) || {}).CLIENTS || {})[o];
+  if (cl === 'outil' && v.outil) {
+    const E = Math.max(1, Math.floor(reglage('ENTRETIEN', 7)));
+    if (!Number.isInteger(v.entretien) || jour - v.entretien >= E) return 'outil';
+  }
+  if (cl === 'repas' && !aDesProvisions(v)) return 'repas';
+  if (cl === 'maison' && besoinDe(v, o)) return 'maison';
+  return null;
+}
+
+// Ce que `o` est pour le villageois `v` au comptoir de la sorte `sorte` : 'adore', 'besoin' (CLIENTS : besoinAuComptoir),
+// 'aime', ou null.
 export function envieAuComptoir(v, o, sorte, jour) {
   const g = goutPour(v, o);
   if (g === 'deteste') return null;
   if (g === 'adore') return 'adore';
-  const cl = ((defCommerce(sorte) || {}).CLIENTS || {})[o];
-  if (cl === 'outil' && v.outil) {
-    const E = Math.max(1, Math.floor(reglage('ENTRETIEN', 7)));
-    if (!Number.isInteger(v.entretien) || jour - v.entretien >= E) return 'besoin';
-  }
+  if (besoinAuComptoir(v, o, sorte, jour)) return 'besoin';
   return g === 'aime' ? 'aime' : null;
+}
+
+// I5c : ce qu'il a acheté, il le range comme à l'étal : ce qui se mange, ses provisions (il le mange à son prochain repas :
+// villageois.js nuitDe, bourse.js mangerSesProvisions) ; un meuble ou un vêtement dont il avait besoin, ses affaires.
+function rangerAchat(v, o, pour) {
+  const sac = DATA.OBJETS[o] && DATA.OBJETS[o].energie > 0 ? 'provisions' : pour === 'maison' ? 'affaires' : null;
+  if (!sac) return;
+  if (!objet(v[sac])) v[sac] = {};
+  v[sac][o] = (v[sac][o] || 0) + 1;
 }
 
 let memoCle = null, memoAchats = null;
@@ -552,7 +721,7 @@ export function achatsCommercesDuJour(state, jour = jourDe(state)) {
   if (!C.length) return out;
   const V = [...villageoisDe(state)].sort((a, b) => (a.id < b.id ? -1 : 1));
   const stock = new Map(C.map((c) => [c.id, { ...(c.stock || {}) }]));
-  const cle = JSON.stringify([jour, C.map((c) => [c.id, c.stock, c.qui]), V.map((v) => [v.id, entier(v.bourse), !!v.enfant, !!v.repos, v.accueil || 0, v.outil || 0, v.entretien || 0, v.achatCommerce || 0, v.gouts || 0])]);
+  const cle = JSON.stringify([jour, C.map((c) => [c.id, c.stock, c.qui]), V.map((v) => [v.id, entier(v.bourse), !!v.enfant, !!v.repos, v.accueil || 0, v.outil || 0, v.entretien || 0, v.achatCommerce || 0, v.gouts || 0, v.provisions || 0, v.affaires || 0, v.maison ?? null])]);
   if (memoCle === cle && memoAchats && memoAchats.s === state) return memoAchats.m;
   for (const v of V) {
     if (objet(v.achatCommerce) && v.achatCommerce.jour === jour) { out.set(v.id, { commerce: v.achatCommerce.commerce, objet: v.achatCommerce.objet, fait: true }); continue; }
@@ -601,7 +770,7 @@ export function acheterAuComptoir(state, vid, cid, o) {
   const jour = jourDe(state);
   if (objet(v.achatCommerce) && v.achatCommerce.jour === jour) return fail('Déjà un achat au comptoir aujourd\'hui.');
   if (!(entier((c.stock || {})[o]) > 0)) return fail('Plus en vente.');
-  const envie = envieAuComptoir(v, o, c.sorte, jour), prix = prixArtisan(o);
+  const envie = envieAuComptoir(v, o, c.sorte, jour), prix = prixArtisan(o), pour = besoinAuComptoir(v, o, c.sorte, jour);
   if (!envie) return fail('Il n\'en veut pas.');
   if (entier(v.bourse) < prix) return fail('Pas assez dans sa bourse.');
   c.stock[o] -= 1;
@@ -609,11 +778,12 @@ export function acheterAuComptoir(state, vid, cid, o) {
   v.bourse = entier(v.bourse) - prix;
   a.bourse = Math.max(0, entier(a.bourse)) + prix;
   v.achatCommerce = { jour, objet: o, commerce: c.id };
-  if (envie === 'besoin') v.entretien = jour;
+  if (envie === 'besoin' && pour === 'outil') v.entretien = jour;
+  rangerAchat(v, o, envie === 'besoin' ? pour : null);
   plaisirAchat(v, jour, envie, { objet: o, prix, ou: 'commerce' });
   journalDuJour(c, jour).ventes.villageois += prix;
-  avis(c, { sorte: 'vente', id: v.id, objet: o, prix, envie });
-  return { ok: true, objet: o, prix, envie };
+  avis(c, { sorte: 'vente', id: v.id, objet: o, prix, envie, ...(envie === 'besoin' && pour ? { pour } : {}) });
+  return { ok: true, objet: o, prix, envie, ...(pour ? { pour } : {}) };
 }
 
 // Le créneau du comptoir de `id` aujourd'hui (sa journée) : { de, a } ou null.
@@ -664,14 +834,17 @@ export function commercesAuBac(state, jour, vendu = null) {
 }
 
 // La nuit (runNight, après les tâches, avant la nuit des villageois) : les jours de pratique de chacun, l'envie qui
-// naît, l'ancienneté de l'artisan, les recettes que l'amitié lui a apprises ; l'achat au comptoir qu'on n'a pas vu. →
-// { envies: [{ id, sorte }], appris: [{ commerce, recettes }], achats } ou null (rien).
+// naît, l'ancienneté de l'artisan, les recettes que l'amitié lui a apprises ; l'achat au comptoir qu'on n'a pas vu ; I5c :
+// une nuit de plus en cave (affinerCaves). → { envies: [{ id, sorte }], appris: [{ commerce, recettes }], achats, caves
+// (ce qui est sorti de cave) } ou null (rien).
 export function artisansNuit(state) {
   if (!villageActif(state) || !Array.isArray(state.villageois)) return null;
   const jour = jourDe(state), J = Math.max(1, Math.floor(reglage('JOURS', 10)));
-  const out = { envies: [], appris: [], achats: 0 };
+  const out = { envies: [], appris: [], achats: 0, caves: [] };
   // (l'achat au comptoir qu'on n'a pas vu : la page fermée)
   for (const [id, a] of achatsCommercesDuJour(state)) if (!a.fait && creneauComptoir(state, id) && acheterAuComptoir(state, id, a.commerce, a.objet).ok) out.achats++;
+  // (I5c : la cave du fromager)
+  out.caves = affinerCaves(state);
   for (const v of villageoisDe(state)) {
     const T = v.travail;
     const fait = objet(T) && T.jour === jour && T.tache && entier(T.actions) > 0 && !v.repos;
@@ -699,7 +872,7 @@ export function artisansNuit(state) {
     const neuves = c.connues.filter((r) => !avant.has(r));
     if (neuves.length && avant.size) out.appris.push({ commerce: c.id, recettes: neuves });
   }
-  return out.envies.length || out.appris.length || out.achats ? out : null;
+  return out.envies.length || out.appris.length || out.achats || out.caves.length ? out : null;
 }
 
 /* ---------- l'enseigne : ses lettres ---------- */
@@ -760,7 +933,9 @@ export function bilanCommerce(state, c, jours = 7) {
 }
 
 // Pour la fenêtre du commerce : { commerce, nom, sorte, def, artisan, local, lots (aujourd'hui : faits / du jour),
-// aujourdhui (l'entrée du journal du jour), enVente, recettes ([{ …recette, connue, prix, facon }]), commandes, bilan }.
+// aujourdhui (l'entrée du journal du jour), enVente, recettes ([{ …recette, connue, prix, facon, refus (I5c : pourquoi le
+// joueur ne peut pas en avoir un de plus, un meuble) }]), commandes, bilan, cave (I5c : [{ objet, n, nuits, reste, pour }]),
+// caveMax }.
 export function etatCommerce(state, id) {
   const c = commerceDe(state, id);
   if (!c) return null;
@@ -771,8 +946,10 @@ export function etatCommerce(state, id) {
   return {
     commerce: c, nom: nomCommerce(state, c), sorte: c.sorte, def: d, artisan: v, local: localDe(state, c),
     lots: { faits: T ? entier(T.actions) : 0, du: lotsDuJour(c) }, aujourdhui: J, enVente: enVenteAuCommerce(state, c),
-    recettes: recettesDe(c.sorte).map((r) => ({ ...r, connue: connues.has(r.id), prix: prixCommandeArtisan(r, false), facon: prixCommandeArtisan(r, true), palierNom: nomPalier(r.palier) })),
+    recettes: recettesDe(c.sorte).map((r) => ({ ...r, connue: connues.has(r.id), prix: prixCommandeArtisan(r, false), facon: prixCommandeArtisan(r, true), palierNom: nomPalier(r.palier), refus: refusMeubleJoueur(state, r.sortie, r.qte) })),
     commandes: (c.commandes || []).map((k) => ({ ...k })), bilan: bilanCommerce(state, c),
+    cave: (Array.isArray(c.cave) ? c.cave : []).map((x) => { const r = recetteDe(c.sorte, x.recette); return { objet: x.objet, n: x.n, nuits: x.nuits, reste: Math.max(0, (r ? r.cave : 0) - entier(x.nuits)), pour: x.pour || null }; }),
+    caveMax: recettesDe(c.sorte).some((r) => r.cave) ? Math.max(1, Math.floor(reglage('CAVE', 6))) : 0,
   };
 }
 
@@ -797,6 +974,7 @@ export function reparerCommerces(L, villageois = []) {
         .map((k) => ({ n: Math.max(0, entier(k.n)), recette: k.recette, facon: !!k.facon, prix: Math.max(0, entier(k.prix)), jour: Number.isInteger(k.jour) ? k.jour : 1 })),
       seq: Math.max(0, entier(c.seq)), connues: (Array.isArray(c.connues) ? c.connues : []).filter((r) => rs.has(r)),
       ...(typeof c.lettres === 'string' && /^[a-z_]{1,20}$/.test(c.lettres) ? { lettres: c.lettres } : {}),
+      ...(Array.isArray(c.cave) ? { cave: reparerCave(c.cave, c.sorte) } : {}),
       journal: (Array.isArray(c.journal) ? c.journal : []).filter((J) => objet(J) && Number.isInteger(J.jour)).slice(-Math.max(1, Math.floor(reglage('JOURNAL', 7)))).map((J) => ({
         jour: J.jour, lots: Math.max(0, entier(J.lots)), fait: comptes(J.fait), achete: comptes(J.achete), paye: Math.max(0, entier(J.paye)),
         ventes: { joueur: Math.max(0, entier((J.ventes || {}).joueur)), villageois: Math.max(0, entier((J.ventes || {}).villageois)), bac: Math.max(0, entier((J.ventes || {}).bac)) },
@@ -804,6 +982,22 @@ export function reparerCommerces(L, villageois = []) {
       })),
       avis: [],
     });
+  }
+  return out;
+}
+
+// I5c : la cave d'un commerce d'une sauvegarde (la migration 99 → 100) : ce qui s'affine d'une recette à cave de sa sorte,
+// des entiers, CAVE meules au plus.
+function reparerCave(L, sorte) {
+  const caves = new Map(recettesDe(sorte).filter((r) => r.cave).map((r) => [r.id, r]));
+  const out = [];
+  let n = 0;
+  for (const x of L) {
+    const r = objet(x) && caves.get(x.recette);
+    const k = r ? Math.max(0, entier(x.n)) : 0;
+    if (!r || k <= 0 || x.objet !== r.sortie || n + k > Math.max(1, Math.floor(reglage('CAVE', 6)))) continue;
+    n += k;
+    out.push({ objet: r.sortie, n: k, nuits: Math.max(0, entier(x.nuits)), recette: r.id, pour: x.pour === 'joueur' ? 'joueur' : null, ...(x.facon === true ? { facon: true } : {}) });
   }
   return out;
 }

@@ -38,6 +38,11 @@
   const { T, BLOCS_CARTE, BETES } = F.C;
   // (fiche 32, le troupeau : stepBeasts, troupeauEcart)
   const TROUPEAU = { rayon: { vache: 16, mouton: 12, poule: 7, defaut: 10 }, force: 30, joueur: 18, forceJoueur: 60, attire: 64, autour: 20 };
+  // (fiches I5a, I5c : l'établi à feu d'un commerce ouvert, d'après l'une de ses images allumées : son réglage de
+  // BLOCS_CARTE.foyers, ou null)
+  const FOYERS = new Map();
+  for (const Fo of Object.values(BLOCS_CARTE.foyers || {})) for (const im of Fo.images) FOYERS.set(im, Fo);
+  const foyerDe = (dessin) => (dessin && FOYERS.get(dessin)) || null;
   // (une porte : celle de planches, ou un de ses modèles, BLOCS_CARTE.hauts.modelesPortes)
   const estPorte = (s) => s === 'porte' || BLOCS_CARTE.hauts.modelesPortes[s] !== undefined;
 
@@ -587,13 +592,19 @@
       const cuisine = this.cuisineOn ? (F.reducedMotion() ? Cu.frames[0] : image(Cu, true)) : BLOCS_CARTE.frames[Cu.sorte];
       // (le four redessiné, dessiné comme un meuble : son image éteinte, ou celle de son feu)
       const four = this.fireOn ? Fe.images[Math.floor(time * Fe.fps / 1000) % Fe.images.length] : Fe.eteint;
-      // (fiche I5a : la forge d'un commerce ouvert, ses braises qui rougeoient : ses deux images alternent au hasard)
-      const Fo = BLOCS_CARTE.forge, calmeF = F.reducedMotion();
+      // (fiches I5a, I5c : l'établi à feu d'un commerce ouvert, BLOCS_CARTE.foyers : les braises de la forge alternent au
+      // hasard, le feu du four du boulanger danse, une image après l'autre)
+      const calmeF = F.reducedMotion();
       // (et ceux des niveaux du dessus, js/carte/ferme/etage.js : etageStations)
       for (const e of [...this.blocks.values(), ...(this.etageStations || [])]) {
         if (!e.img || !e.img.active) continue;
-        if (Fo && e.dessin && Fo.images.includes(e.dessin)) {
-          if (!calmeF && (!e.braiseT || time >= e.braiseT)) { e.braiseT = time + (0.5 + Math.random()) * 1000 / Fo.fps; e.braiseF = Math.random() < 0.5 ? 0 : 1; }
+        const Fo = foyerDe(e.dessin);
+        if (Fo) {
+          const n = Fo.images.length;
+          if (!calmeF && (!e.braiseT || time >= e.braiseT)) {
+            e.braiseT = time + (Fo.hasard ? (0.5 + Math.random()) : 1) * 1000 / Fo.fps;
+            e.braiseF = Fo.hasard ? Math.floor(Math.random() * n) : ((e.braiseF || 0) + 1) % n;
+          }
           const k = 'meuble_' + Fo.images[calmeF ? 0 : e.braiseF || 0];
           if (e.img.texture.key !== k && this.textures.exists(k)) e.img.setTexture(k);
           continue;
@@ -690,9 +701,9 @@
       const LC = BLOCS_CARTE.lampeChevet, lampes = [];
       for (const e of (this.blocks || new Map()).values()) if (LC.dessins.includes(e.dessin) && e.img) lampes.push({ img: e.img, x: e.x, y: e.y - 1, e });
       for (const e of this.etageLampes || []) if (vu(e)) lampes.push({ img: e.img, x: e.x, y: e.y, e });
-      // (fiche I5a : les forges allumées des commerces : BLOCS_CARTE.forge)
+      // (fiches I5a, I5c : les établis allumés des commerces, la forge, le four du boulanger : BLOCS_CARTE.foyers)
       const forges = [];
-      for (const e of (this.blocks || new Map()).values()) if (e.img && BLOCS_CARTE.forge.images.includes(e.dessin)) forges.push(e);
+      for (const e of (this.blocks || new Map()).values()) if (e.img && foyerDe(e.dessin)) forges.push(e);
       // (les cheminées, en bas et à l'étage : BLOCS_CARTE.cheminee)
       const cheminees = [];
       for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('cheminee_')) cheminees.push({ img: e.img, x: e.x, y: e.y - 1, e });
@@ -795,10 +806,11 @@
           if (e.haloFeu) e.haloFeu.setVisible(true).setPosition(c.x + F.dx, c.y + F.dy).setAlpha(k);
         }
       }
-      // les forges des commerces (fiche I5a) : le soir, la lueur de leurs braises dans le voile, qui vacille ; un halo (WebGL)
+      // les établis à feu des commerces (fiches I5a, I5c : la forge, le four du boulanger) : le soir, la lueur de leur feu
+      // dans le voile, qui vacille ; un halo (WebGL)
       {
-        const Fo = BLOCS_CARTE.forge, allumee = nuit > Fo.allume;
         for (const e of forges) {
+          const Fo = foyerDe(e.dessin), allumee = nuit > Fo.allume;
           if (!allumee || !e.img.active) { if (e.haloForge) e.haloForge.setVisible(false); continue; }
           if (!calme && (!e.forgeT || time >= e.forgeT)) { e.forgeT = time + 120 + Math.random() * 160; e.forgeK = 1 - Fo.vacille + Math.random() * Fo.vacille * 2; }
           const k = (calme ? 1 : e.forgeK || 1) * Math.min(1, nuit / 0.4) * e.img.alpha, S = Fo.sol, Fy = Fo.foyer;
@@ -1356,9 +1368,9 @@
     stationAt(wx, wy) {
       for (const e of (this.blocks || new Map()).values()) {
         // (I4 : l'étal du joueur, deux cases de large et son auvent)
-        // (I5a : l'établi, le comptoir et l'enseigne d'un commerce, deux cases de large ; l'enseigne, haute)
-        const large = e.sorte === 'etal' || e.sorte === 'enclume_foyer' || e.sorte === 'comptoir' || e.sorte === 'enseigne_forge';
-        const win = BLOCS_CARTE.fenetres[e.sorte], h = e.sorte === 'refrigerateur' ? 34 : e.sorte === 'etal' ? 30 : e.sorte === 'enseigne_forge' ? 40 : 24, demi = large ? T + 2 : T / 2 + 2;
+        // (I5a, I5c : l'établi, le comptoir et l'enseigne d'un commerce, deux cases de large ; l'établi et l'enseigne, hauts)
+        const win = BLOCS_CARTE.fenetres[e.sorte], commerce = win === 'commerce', large = e.sorte === 'etal' || commerce;
+        const h = e.sorte === 'refrigerateur' ? 34 : e.sorte === 'etal' ? 30 : commerce && e.sorte !== 'comptoir' ? 40 : 24, demi = large ? T + 2 : T / 2 + 2;
         if (win && Math.abs(wx - e.x) <= demi && wy <= e.y + 2 && wy >= e.y - h) return win;
       }
       return null;

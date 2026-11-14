@@ -81,7 +81,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
 | 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d (fait) | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
-| 5. Les artisans | I5a (fait), I5b, I5c | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
+| 5. Les artisans | I5a (fait), I5b, I5c (fait) | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e, I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
@@ -987,7 +987,7 @@ la page : `js/ui/commerce.js` (la fenêtre du commerce, la fiche, les notificati
   forgé et son enclume découpée, la planche pendue, son dessus raccourci, une enclume peinte sous le nom). **Couleurs
   comptées** : enclume et foyer 497 (allumé 566 et 567), comptoir 313, enseigne 296 (un dessin en aplats des mêmes
   aurait 20 à 30 couleurs). La scène (`chantier.js`) : la forge d'un commerce ouvert rougeoie (ses braises alternent,
-  `BLOCS_CARTE.forge`), et le soir sa lueur passe dans le voile, dedans et à travers le toit. **Le geste « forger »**
+  `BLOCS_CARTE.forge`, devenu `BLOCS_CARTE.foyers` avec I5c), et le soir sa lueur passe dans le voile, dedans et à travers le toit. **Le geste « forger »**
   (`habitants.js`, `forge`) : les cases de la pioche, trois coups courts, de profil, devant l'enclume ; pas de planche
   nouvelle.
 - **La sauvegarde** : format 99 (`state.commerces` ; `v.pratique`, `v.envies`, `v.commerce`, `v.achatCommerce`,
@@ -1029,6 +1029,96 @@ la page : `js/ui/commerce.js` (la fenêtre du commerce, la fiche, les notificati
   choisit pas ce qu'il lui laisse, au-delà de `GARDE`) ; l'enseigne n'a qu'un dessin (pas de variante de bois) ; la
   fumée de la cheminée de la forge ; un villageois à la pierre trouve vite les rochers de la ferme épuisés (sans
   rochers, pas de jour de pratique : l'envie tarde).
+
+## La scierie, la boulangerie, la fromagerie (I5c, fait)
+
+Trois commerces de plus sur le socle d'I5a, presque sans code neuf : trois entrées de `ARTISANS.COMMERCES`
+(`data/village.json`), leurs six blocs (`data/recipes.json`), leurs dessins (`scripts/batiments/commerces.py`), leurs noms
+(`NOMS.COMMERCES` les avait déjà). Le moteur reste `js/engine/artisans.js` ; la page, `js/ui/commerce.js`.
+
+- **La règle commune** : **un commerce ne retire rien au joueur** : il peut toujours scier (l'Atelier : 2 bois → 1
+  planche), cuire (son four) et cailler (les chaînes, la vocation productive) lui-même ; un commerce fait **mieux ou
+  autre chose, en petite quantité** (ses lots du jour, D5). Aucune recette de l'Atelier n'est retirée par ces trois
+  commerces (`commerce:` n'est posé sur aucune). La forge d'I5a reste l'exception notée : ses clous, ses charnières, ses
+  lames quittent l'Atelier quand une forge ouverte les sait (des pièces nées avec elle).
+- **La scierie-menuiserie** (`scierie`, la filière du bois ; le menuisier, à l'établi) : des planches (4 bois → 2
+  planches, 150 % : la fourchette d'I4 ne permet pas un meilleur rendement que l'Atelier, il « fait mieux » en sciant à la
+  place du joueur), puis **les 36 meubles** de `MEUBLES` : leurs recettes sont celles de `VILLAGE.PRIX.ARTISANS`, qui
+  portent maintenant `commerce: "scierie"` et leur palier d'amitié (`recettesDesPrix` : une recette de commerce peut
+  venir des prix de l'île ; les 19 meubles qui n'en avaient pas en ont reçu une : les tableaux, les armoires, les bas de
+  cuisine, la poubelle, le lampadaire, le coffre, les dix plantes en pot — une planche ou une pierre pour le pot,
+  l'engrais du compost). Le vendeur « hameau » n'est plus lu sur l'île (`ateliersDuHameau` y rend déjà rien) : le
+  menuisier est la seule source de meubles. Un meuble marqué `commande` ne se fait que **sur commande du joueur** ; huit
+  (la chaise, le chevet, la table basse, la commode, la bibliothèque, les trois tapis : ceux de `BOURSE.BESOINS`) ont
+  `stock: 1` et garnissent son comptoir **pour les maisons des villageois** (le client « maison » : un villageois dont
+  la maison en a besoin l'achète, il va à ses affaires). Commandé ou acheté par le joueur, un meuble **entre dans sa
+  maison** comme un meuble acheté (`donnerAuJoueur` → `meubles.js ajouterMeuble` : compté pour le bonheur de la
+  famille, l'objet à poser) ; la commande est refusée si la maison en a déjà assez, commandes en attente comprises
+  (`refusMeubleJoueur`, la fenêtre le dit). Les styles (`styles.js`) ne changent pas. Le geste « scie » (les cases de la
+  hache, des allers-retours).
+- **La boulangerie** (`boulangerie`, la filière des champs ; le boulanger, au four à bois) : le pain (5 farines → 2 pains,
+  147 %), les tartes aux pommes (palier 2), aux myrtilles et aux fraises (3), le pain d'épices (4) — les plats du four,
+  au même prix de l'île que ceux du joueur. **Le boulanger nourrit le village** : le client « repas » (un villageois qui
+  n'a plus de provisions) vient chercher son pain après le travail ; il va à ses provisions (`rangerAchat`, comme à
+  l'étal) et il le mange à son repas de la nuit (`bourse.js mangerSesProvisions`, avant la boîte commune) : un plat du
+  four, qui compte dans ses plats et son bonheur (`bonheur.js platsBonheur`, `villageois.js nuitDe`) ; la notification
+  dit « (pour son repas) ».
+- **La fromagerie** (`fromagerie`, la filière des bêtes ; le fromager, à la cave) : la **faisselle** (2 laits → 1, 140 %)
+  et la **tomme de cave** (2 faisselles → 1, 150 %), deux objets neufs du chantier (`village: true`, leurs prix de l'île
+  par `VILLAGE.PRIX.ARTISANS`) ; le fromage frais et le fromage d'alpage des chaînes restent à la vocation productive.
+  **L'affinage** : une recette `cave: 4` met son lot en cave (`c.cave`, `CAVE` 6 meules au plus) ; chaque nuit
+  (`affinerCaves`, dans `artisansNuit`, comme les nuits du tonnelet) une nuit de plus ; affinée, la tomme passe au
+  comptoir, ou au joueur s'il l'a commandée (« sortie de cave »). Ce qui est en cave compte pour garnir le comptoir.
+  La fenêtre dit la cave (« prête dans 3 nuits, pour toi »).
+- **Le socle, ce qu'il gagne** (de petites fonctions, rien de remanié) : `recettesDesPrix` et les champs d'une recette
+  (`commande`, `stock`, `cave`) ; `donnerAuJoueur`, `refusMeubleJoueur` ; `besoinAuComptoir` (les clients « outil »,
+  « repas », « maison ») et `rangerAchat` ; `affinerCaves` ; `plafondCommerces` (une quatrième condition, `plafond`) ;
+  `reparerCave`. Le texte de la fenêtre lit `ou` (« à l'enclume », « au four à bois »).
+- **Le plafond** (`ARTISANS.PLAFOND`) : le k-ième commerce ouvert attend `VILLAGEOIS[k-1]` villageois adultes et le port
+  au niveau `PORT[k-1]` : `{ VILLAGEOIS: [1, 4, 6, 8, 10, 12], PORT: [1, 2, 3, 3, 4, 5] }` (un commerce dès le premier
+  villageois — la forge du joueur automatique ne bouge pas —, deux à quatre villageois et le port 2, trois à six et le
+  port 3, quatre à huit ; huit villageois, c'est le port au niveau 4 : quatre commerces). La fiche le dit avec les trois
+  autres conditions (« Un 2e commerce attend 4 villageois (3 aujourd'hui) et le port au niveau 2 (1 aujourd'hui). »).
+- **La lueur** : le four du boulanger s'allume comme la forge, de façon générale : un établi porte `allume` (la forge
+  `braise`, le four `feu`) ; `stage.js` donne au commerce ouvert l'image `<dessin>_<allume>_0` ; `BLOCS_CARTE.foyers`
+  (`config.js`, un réglage par dessin : ses images, au hasard ou à la suite, sa lueur du soir, son halo) remplace
+  `BLOCS_CARTE.forge` ; `chantier.js` (`foyerDe`) anime l'un et l'autre, et pose leur lueur dans le voile le soir.
+- **Les dessins** (`scripts/batiments/commerces.py`, vus de haut à 45°, la lumière en haut à gauche, un contour d'un
+  pixel, sans ombre portée ; la toile, la maçonnerie, les matières et l'enseigne de `forge.py`, la houle des flammes de
+  `four.py`) : la scie de long et l'établi (32 × 40 : le plateau de quatre planches vu d'en haut, la ceinture, les pieds,
+  la tablette du bas et ses planches empilées, l'ombre dessous ; la presse, le rabot, les copeaux ; la scie à cadre
+  penchée dans la coupe, sa corde tordue, sa lame ; la sciure) ; le four à bois et l'étal à pains (32 × 46 : le dôme de
+  briques modelé comme une sphère, sa cheminée, le socle et le tablier dont on voit le dessus, la gueule avec sa sole
+  plus claire vers l'avant, la paroi gauche éclairée et la droite dans l'ombre ; les bûches ; l'étal, ses deux tablettes,
+  les miches grignées, les baguettes, le panier ; éteint, et quatre images de feu dont la lumière teinte le tablier, le
+  dôme, les pains) ; la cave d'affinage (32 × 46 : la niche voûtée, le mur du fond dans l'ombre fraîche, les parois, le
+  sol de la cave plus clair vers l'avant, trois tablettes et leurs meules — dessus, flanc, une entamée —, le seau de
+  caillé) ; trois enseignes (l'enseigne de la forge, `enseigne(coiffe, embleme, peinture)` : une scie et un rabot, un
+  croissant et une miche, une meule et une part). **Couleurs comptées** : scie de long 415, four 522 (allumé 578 à 582),
+  cave 718, enseignes 292, 306, 307 (en aplats : 20 à 30). La forge redessinée par la même fonction : ses images
+  identiques octet pour octet.
+- **La sauvegarde** : format 100 (`c.cave`) ; la migration 99 → 100 relit les commerces (`reparerCommerces`, la cave
+  réparée : une recette à cave de la sorte, des entiers, `CAVE` au plus) ; une partie d'avant n'est pas touchée.
+- **Le joueur automatique** : inchangé (la forge seule ; I5b ajoutera plusieurs sortes). Mesure (`node scripts/simulate.mjs
+  --village`) : le même CSV qu'avant, octet pour octet : le palier 6 franchi à la nuit 68, le palier 7 en cours dès la
+  nuit 69 (il attend dix villageois et deux commerces : le joueur automatique n'en ouvre qu'un). Éteint, le CSV est le
+  même octet pour octet.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, huit villageois, le port au niveau 4) : la fiche du futur menuisier
+  (les quatre conditions, le plafond compris) et l'ouverture ; les trois commerces ouverts (leurs locaux, dedans et
+  dehors) ; le four du boulanger le soir (sa lueur sur le toit ; dedans, le feu) ; une table commandée au menuisier (« Ta
+  commande est prête : table, dans ton inventaire (à poser dans la maison). ») ; un villageois au comptoir du boulanger
+  (« Pain 🍞 ! Voilà les pièces. », « … a acheté pain à la boulangerie du Pont (pour son repas) »), qui le mange à son
+  repas de la nuit ; la cave du fromager (deux tommes, « prête dans 3 nuits ») ; le tableau, trois lignes « commerce ».
+  Aucune erreur dans la console.
+- **Les tests** : `tests/engine/village-commerces.test.mjs` (les trois sortes et leurs blocs ; les recettes des quatre
+  commerces dans la fourchette ; la scierie, ses planches, ses meubles au comptoir ou commandés ; un meuble commandé dans
+  la maison du joueur, jamais de trop ; un villageois qui achète un meuble pour sa maison ; le pain du boulanger acheté
+  et mangé ; la faisselle, la tomme en cave, ses nuits, la commande qui sort de cave ; le plafond ; trois commerces dans
+  un village de huit, trois lignes au tableau ; la sauvegarde 99 → 100 ; éteint).
+- Reste : le joueur automatique n'ouvre que la forge (le palier 7 attend I5b) ; un meuble acheté par un villageois va à
+  ses affaires, pas encore dans sa maison (I4) ; la scierie ne rend pas plus de planches que l'Atelier (la fourchette) ;
+  les plantes vertes chez le menuisier (la fiche voulait les 36 meubles) ; le boulanger cuit sans bois (son four n'en
+  prend pas) ; une seule forme d'enseigne par sorte ; les icônes de la faisselle et de la tomme sont des emoji simples.
 
 ## Les villageois : les traits de personnalité (I6c, fait)
 

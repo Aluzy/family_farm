@@ -443,7 +443,36 @@ NW, NH = 32, 46
 PANNEAU = (5, 29, 16, 28)    # la face de la planche : x 5 à 29, y 16 à 28 (le nom, y 17 à 23 ; l'enclume peinte dessous)
 
 
-def enseigne():
+def coiffe_enclume(t):
+    """L'enclume découpée qui coiffe la potence (au milieu) : le dessus clair, la face sombre, la bigorne."""
+    ax = 18
+    for y in range(1, 7):
+        for x in range(ax - 6, ax + 6):
+            dessus = y <= 2
+            corps = 3 <= y <= 4 and ax - 3 <= x <= ax + 5
+            pied = y >= 5 and ax - 1 <= x <= ax + 3 + (y - 5)
+            bigorne = y in (1, 2) and x < ax - 3 and x >= ax - 6 + (2 - y) * 0
+            haut = y in (1, 2) and ax - 3 <= x <= ax + 5
+            if not (haut or corps or pied or bigorne):
+                continue
+            u = (x - (ax - 6)) / 11
+            lum = (0.80 if dessus else 0.40) - 0.24 * u + 0.04 * bruit(x, y, 69)
+            t.put(x, y, ton(ACIER, lum))
+
+
+def embleme_enclume(t):
+    """Sous le nom (écrit au-dessus, y 17 à 23) : une enclume peinte en noir, sa bigorne vers la gauche."""
+    for (y, xa, xb) in ((25, 13, 21), (26, 15, 20), (27, 16, 19)):
+        for x in range(xa, xb + 1):
+            t.put(x, y, ton(NOIR, 0.55 - 0.3 * (x - xa) / max(1, xb - xa) + 0.05 * bruit(x, y, 75)))
+    t.put(12, 25, ton(NOIR, 0.4)); t.put(15, 27, ton(NOIR, 0.3)); t.put(20, 27, ton(NOIR, 0.3))
+
+
+def enseigne(coiffe=coiffe_enclume, embleme=embleme_enclume, peinture=None):
+    """L'enseigne d'un commerce (le poteau, la potence, la planche où s'écrit le nom) : `coiffe` dessine ce qui coiffe
+    la potence, `embleme` ce qui est peint sous le nom, `peinture` la rampe du fond de la planche (I5c :
+    scripts/batiments/commerces.py, la scierie, la boulangerie, la fromagerie)."""
+    peinture = peinture or PEINTURE
     t = Toile(NW, NH)
     # le socle de pierre (son dessus, sa face), au pied
     for y in range(39, NH):
@@ -474,20 +503,8 @@ def enseigne():
         t.put(x, 8, ton(FONTE, 0.34 - 0.14 * x / 31))
     for (x, y, l) in ((7, 9, 0.6), (8, 10, 0.5), (9, 11, 0.4), (10, 11, 0.32), (11, 10, 0.4), (11, 9, 0.5)):
         t.put(x, y, ton(FONTE, l))                                   # la volute sous l'équerre
-    # l'enclume découpée qui coiffe la potence (au milieu) : le dessus clair, la face sombre, la bigorne
-    ax = 18
-    for y in range(1, 7):
-        for x in range(ax - 6, ax + 6):
-            dessus = y <= 2
-            corps = 3 <= y <= 4 and ax - 3 <= x <= ax + 5
-            pied = y >= 5 and ax - 1 <= x <= ax + 3 + (y - 5)
-            bigorne = y in (1, 2) and x < ax - 3 and x >= ax - 6 + (2 - y) * 0
-            haut = y in (1, 2) and ax - 3 <= x <= ax + 5
-            if not (haut or corps or pied or bigorne):
-                continue
-            u = (x - (ax - 6)) / 11
-            lum = (0.80 if dessus else 0.40) - 0.24 * u + 0.04 * bruit(x, y, 69)
-            t.put(x, y, ton(ACIER, lum))
+    # ce qui coiffe la potence (la forge : l'enclume découpée)
+    coiffe(t)
     # les chaînes (deux), de la potence à la planche
     for cx in (9, 25):
         for y in range(9, 15):
@@ -509,15 +526,12 @@ def enseigne():
             else:
                 planche = (y - y0) // 4
                 lum = 0.84 - 0.20 * u - 0.10 * g + 0.04 * bruit(x // 2, y, 73 + planche) - (0.10 if (y - y0) % 4 == 0 else 0)
-                t.put(x, y, ton(PEINTURE, lum))
+                t.put(x, y, ton(peinture, lum))
     # la tranche du bas de la planche, dans l'ombre
     for x in range(x0, x1 + 1):
         t.put(x, y1 + 1, ton(CHENE[0], 0.24 - 0.1 * (x - x0) / (x1 - x0)))
-    # sous le nom (écrit au-dessus, y 17 à 23) : une enclume peinte en noir, sa bigorne vers la gauche
-    for (y, xa, xb) in ((25, 13, 21), (26, 15, 20), (27, 16, 19)):
-        for x in range(xa, xb + 1):
-            t.put(x, y, ton(NOIR, 0.55 - 0.3 * (x - xa) / max(1, xb - xa) + 0.05 * bruit(x, y, 75)))
-    t.put(12, 25, ton(NOIR, 0.4)); t.put(15, 27, ton(NOIR, 0.3)); t.put(20, 27, ton(NOIR, 0.3))
+    # sous le nom (écrit au-dessus, y 17 à 23) : l'emblème peint (la forge : une enclume)
+    embleme(t)
     return contour(t.im, OUT)
 
 

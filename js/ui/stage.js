@@ -740,8 +740,9 @@ function dessinBloc(b, tile, sorte) {
   if (b.pont) return dessinPont(tile);
   // (I4 : l'étal, garni tant qu'il a quelque chose en vente : assets/meuble_etal_<vide|garni>.png)
   if (b.etal) return etalGarni(state) ? 'etal_garni' : 'etal_vide';
-  // (fiche I5a : l'établi d'un commerce ouvert, sa forge allumée ; ses braises rougeoient, chantier.js stepFires)
-  if (b.commerce && Number.isInteger(tile) && villageActif(state) && commercesOuverts(state).some((c) => c.etabli === tile)) return `${b.dessin}_braise_0`;
+  // (fiches I5a, I5c : l'établi d'un commerce ouvert qui a un feu (allume : les braises de la forge, le feu du four du
+  // boulanger), allumé ; chantier.js stepFires anime ses images, BLOCS_CARTE.foyers)
+  if (b.commerce && b.allume && Number.isInteger(tile) && villageActif(state) && commercesOuverts(state).some((c) => c.etabli === tile)) return `${b.dessin}_${b.allume}_0`;
   // (fiche I8a : un bâtiment d'un projet du village, en chantier tant qu'il n'est pas fini ; js/engine/projets-village.js)
   if (b.projetVillage) return dessinProjet(state, sorte);
   if (b.bac) return (Number.isInteger(tile) && dessinBac(state, tile)) || `bac_${b.bac}_vide`;

@@ -297,7 +297,7 @@ test('le tableau : une ligne par commerce ; l\'artisan rapporte ce qu\'il paie �
 });
 
 test('la sauvegarde : v98 → v99 ; les commerces et les artisans gardés, réparés ; une partie d\'avant laissée telle quelle', () => {
-  assertEqual(STATE_VERSION, 99, 'le format 99');
+  assert(STATE_VERSION >= 99, 'le format 99 (au moins : I5c passe au 100)');
   const { s, v, c } = forge();
   c.stock = { lingot_fer: 2 };
   c.commandes = [{ n: 1, recette: 'clous', facon: true, prix: 7, jour: 2 }];

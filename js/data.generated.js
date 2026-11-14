@@ -1638,6 +1638,82 @@ export const RAW_DATA = {
       "rachetable": false,
       "village": true
     },
+    "scie_long": {
+      "nom": "Scie de long et établi",
+      "icone": "🪚",
+      "prix": 50,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "four_boulanger": {
+      "nom": "Four à bois et étal à pains",
+      "icone": "🥖",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "cave_affinage": {
+      "nom": "Cave d'affinage",
+      "icone": "🧀",
+      "prix": 50,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "enseigne_scierie": {
+      "nom": "Enseigne du menuisier",
+      "icone": "🪧",
+      "prix": 20,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "enseigne_boulangerie": {
+      "nom": "Enseigne du boulanger",
+      "icone": "🪧",
+      "prix": 20,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "enseigne_fromagerie": {
+      "nom": "Enseigne du fromager",
+      "icone": "🪧",
+      "prix": 20,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "faisselle": {
+      "nom": "Faisselle",
+      "icone": "🫙",
+      "energie": 40,
+      "prix": 22,
+      "mangeable": true,
+      "categorie": "produit",
+      "bonheur": 3,
+      "rachetable": false,
+      "village": true
+    },
+    "tomme_cave": {
+      "nom": "Tomme de cave",
+      "icone": "🧀",
+      "energie": 90,
+      "prix": 66,
+      "mangeable": true,
+      "categorie": "produit",
+      "bonheur": 5,
+      "rachetable": false,
+      "village": true
+    },
     "clous": { "nom": "Clous", "icone": "📌", "prix": 5, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "charniere": { "nom": "Charnière", "icone": "🔗", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "lame": { "nom": "Lame d'outil", "icone": "🔪", "prix": 22, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
@@ -2259,6 +2335,27 @@ export const RAW_DATA = {
         "village": true,
         "coefPrix": 150
       },
+      "scie_long": { "entrees": { "planche": 6, "lame": 1, "clous": 2 }, "sortie": { "scie_long": 1 }, "village": true, "coefPrix": 150 },
+      "four_boulanger": { "entrees": { "pierre": 10, "planche": 2, "bois": 4 }, "sortie": { "four_boulanger": 1 }, "village": true, "coefPrix": 150 },
+      "cave_affinage": { "entrees": { "planche": 6, "pierre": 6, "clous": 2 }, "sortie": { "cave_affinage": 1 }, "village": true, "coefPrix": 150 },
+      "enseigne_scierie": {
+        "entrees": { "planche": 2, "charniere": 2, "clous": 2 },
+        "sortie": { "enseigne_scierie": 1 },
+        "village": true,
+        "coefPrix": 150
+      },
+      "enseigne_boulangerie": {
+        "entrees": { "planche": 2, "charniere": 2, "clous": 2 },
+        "sortie": { "enseigne_boulangerie": 1 },
+        "village": true,
+        "coefPrix": 150
+      },
+      "enseigne_fromagerie": {
+        "entrees": { "planche": 2, "charniere": 2, "clous": 2 },
+        "sortie": { "enseigne_fromagerie": 1 },
+        "village": true,
+        "coefPrix": 150
+      },
       "clous": { "entrees": { "lingot_fer": 1 }, "sortie": { "clous": 4 }, "village": true, "commerce": "forge", "coefPrix": 135 },
       "charniere": { "entrees": { "lingot_fer": 1 }, "sortie": { "charniere": 2 }, "village": true, "commerce": "forge", "coefPrix": 135 },
       "lame": { "entrees": { "lingot_fer": 1, "bois": 1 }, "sortie": { "lame": 1 }, "village": true, "commerce": "forge", "coefPrix": 145 },
@@ -2451,6 +2548,38 @@ export const RAW_DATA = {
         "dessin": "enclume_foyer",
         "largeur": 2,
         "commerce": "forge",
+        "allume": "braise",
+        "village": true
+      },
+      "scie_long": {
+        "nom": "Scie de long et établi",
+        "objet": "scie_long",
+        "dedans": true,
+        "bloque": true,
+        "dessin": "scie_long",
+        "largeur": 2,
+        "commerce": "scierie",
+        "village": true
+      },
+      "four_boulanger": {
+        "nom": "Four à bois et étal à pains",
+        "objet": "four_boulanger",
+        "dedans": true,
+        "bloque": true,
+        "dessin": "four_boulanger",
+        "largeur": 2,
+        "commerce": "boulangerie",
+        "allume": "feu",
+        "village": true
+      },
+      "cave_affinage": {
+        "nom": "Cave d'affinage",
+        "objet": "cave_affinage",
+        "dedans": true,
+        "bloque": true,
+        "dessin": "cave_affinage",
+        "largeur": 2,
+        "commerce": "fromagerie",
         "village": true
       },
       "comptoir": {
@@ -2471,6 +2600,39 @@ export const RAW_DATA = {
         "dessin": "enseigne_forge",
         "largeur": 2,
         "enseigneCommerce": "forge",
+        "texte": "#2b1a0e",
+        "village": true
+      },
+      "enseigne_scierie": {
+        "nom": "Enseigne du menuisier",
+        "objet": "enseigne_scierie",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "enseigne_scierie",
+        "largeur": 2,
+        "enseigneCommerce": "scierie",
+        "texte": "#2b1a0e",
+        "village": true
+      },
+      "enseigne_boulangerie": {
+        "nom": "Enseigne du boulanger",
+        "objet": "enseigne_boulangerie",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "enseigne_boulangerie",
+        "largeur": 2,
+        "enseigneCommerce": "boulangerie",
+        "texte": "#2b1a0e",
+        "village": true
+      },
+      "enseigne_fromagerie": {
+        "nom": "Enseigne du fromager",
+        "objet": "enseigne_fromagerie",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "enseigne_fromagerie",
+        "largeur": 2,
+        "enseigneCommerce": "fromagerie",
         "texte": "#2b1a0e",
         "village": true
       },
@@ -3441,7 +3603,21 @@ export const RAW_DATA = {
           "quai_chargement"
         ]
       },
-      "commerces": { "nom": "Commerces", "icone": "🏪", "blocs": ["enclume_foyer", "comptoir", "enseigne_forge"] }
+      "commerces": {
+        "nom": "Commerces",
+        "icone": "🏪",
+        "blocs": [
+          "enclume_foyer",
+          "scie_long",
+          "four_boulanger",
+          "cave_affinage",
+          "comptoir",
+          "enseigne_forge",
+          "enseigne_scierie",
+          "enseigne_boulangerie",
+          "enseigne_fromagerie"
+        ]
+      }
     },
     "SILO": { "LARGEUR": 2, "HAUTEUR": 3, "HAUTEUR_MAX": 6, "BLES_PAR_BLOC": 10 },
     "ARBRE_ECART": 3,
@@ -9947,20 +10123,304 @@ export const RAW_DATA = {
         "gants_travail": { "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "coefPrix": 140 },
         "manteau_chaud": { "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "coefPrix": 145 },
         "salopette": { "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "coefPrix": 145 },
-        "meuble_chaise": { "entrees": { "planche": 2 }, "sortie": { "meuble_chaise": 1 }, "coefPrix": 140 },
-        "meuble_chevet": { "entrees": { "planche": 2 }, "sortie": { "meuble_chevet": 1 }, "coefPrix": 140 },
-        "meuble_table_basse": { "entrees": { "planche": 3 }, "sortie": { "meuble_table_basse": 1 }, "coefPrix": 140 },
-        "meuble_table": { "entrees": { "planche": 4 }, "sortie": { "meuble_table": 1 }, "coefPrix": 140 },
-        "meuble_commode": { "entrees": { "planche": 5 }, "sortie": { "meuble_commode": 1 }, "coefPrix": 145 },
-        "meuble_bibliotheque": { "entrees": { "planche": 6 }, "sortie": { "meuble_bibliotheque": 1 }, "coefPrix": 145 },
-        "meuble_armoire_chene": { "entrees": { "planche": 8 }, "sortie": { "meuble_armoire_chene": 1 }, "coefPrix": 150 },
-        "meuble_buffet": { "entrees": { "planche": 6, "pierre": 2 }, "sortie": { "meuble_buffet": 1 }, "coefPrix": 150 },
-        "meuble_lit_enfant": { "entrees": { "planche": 4, "tissu": 1 }, "sortie": { "meuble_lit_enfant": 1 }, "coefPrix": 145 },
-        "meuble_lit_adulte": { "entrees": { "planche": 6, "tissu": 2 }, "sortie": { "meuble_lit_adulte": 1 }, "coefPrix": 145 },
-        "meuble_canape": { "entrees": { "planche": 4, "tissu": 3 }, "sortie": { "meuble_canape": 1 }, "coefPrix": 150 },
-        "meuble_tapis_1": { "entrees": { "fibre": 6 }, "sortie": { "meuble_tapis_1": 1 }, "coefPrix": 135 },
-        "meuble_tapis_2": { "entrees": { "tissu": 2, "colorant_rouge": 1 }, "sortie": { "meuble_tapis_2": 1 }, "coefPrix": 145 },
-        "meuble_tapis_3": { "entrees": { "tissu": 2, "colorant_bleu": 1 }, "sortie": { "meuble_tapis_3": 1 }, "coefPrix": 145 }
+        "meuble_chaise": {
+          "entrees": { "planche": 2 },
+          "sortie": { "meuble_chaise": 1 },
+          "coefPrix": 140,
+          "commerce": "scierie",
+          "palier": 2,
+          "stock": 1
+        },
+        "meuble_chevet": {
+          "entrees": { "planche": 2 },
+          "sortie": { "meuble_chevet": 1 },
+          "coefPrix": 140,
+          "commerce": "scierie",
+          "palier": 2,
+          "stock": 1
+        },
+        "meuble_table_basse": {
+          "entrees": { "planche": 3 },
+          "sortie": { "meuble_table_basse": 1 },
+          "coefPrix": 140,
+          "commerce": "scierie",
+          "palier": 2,
+          "stock": 1
+        },
+        "meuble_table": {
+          "entrees": { "planche": 4 },
+          "sortie": { "meuble_table": 1 },
+          "coefPrix": 140,
+          "commerce": "scierie",
+          "palier": 2,
+          "commande": true
+        },
+        "meuble_commode": {
+          "entrees": { "planche": 5 },
+          "sortie": { "meuble_commode": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "stock": 1
+        },
+        "meuble_bibliotheque": {
+          "entrees": { "planche": 6 },
+          "sortie": { "meuble_bibliotheque": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "stock": 1
+        },
+        "meuble_armoire_chene": {
+          "entrees": { "planche": 8 },
+          "sortie": { "meuble_armoire_chene": 1 },
+          "coefPrix": 150,
+          "commerce": "scierie",
+          "palier": 4,
+          "commande": true
+        },
+        "meuble_buffet": {
+          "entrees": { "planche": 6, "pierre": 2 },
+          "sortie": { "meuble_buffet": 1 },
+          "coefPrix": 150,
+          "commerce": "scierie",
+          "palier": 4,
+          "commande": true
+        },
+        "meuble_lit_enfant": {
+          "entrees": { "planche": 4, "tissu": 1 },
+          "sortie": { "meuble_lit_enfant": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_lit_adulte": {
+          "entrees": { "planche": 6, "tissu": 2 },
+          "sortie": { "meuble_lit_adulte": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 4,
+          "commande": true
+        },
+        "meuble_canape": {
+          "entrees": { "planche": 4, "tissu": 3 },
+          "sortie": { "meuble_canape": 1 },
+          "coefPrix": 150,
+          "commerce": "scierie",
+          "palier": 4,
+          "commande": true
+        },
+        "meuble_tapis_1": {
+          "entrees": { "fibre": 6 },
+          "sortie": { "meuble_tapis_1": 1 },
+          "coefPrix": 135,
+          "commerce": "scierie",
+          "palier": 2,
+          "stock": 1
+        },
+        "meuble_tapis_2": {
+          "entrees": { "tissu": 2, "colorant_rouge": 1 },
+          "sortie": { "meuble_tapis_2": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "stock": 1
+        },
+        "meuble_tapis_3": {
+          "entrees": { "tissu": 2, "colorant_bleu": 1 },
+          "sortie": { "meuble_tapis_3": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "stock": 1
+        },
+        "meuble_tableau_1": {
+          "entrees": { "planche": 1, "colorant_vert": 1 },
+          "sortie": { "meuble_tableau_1": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_tableau_2": {
+          "entrees": { "planche": 1, "colorant_rouge": 1 },
+          "sortie": { "meuble_tableau_2": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_tableau_3": {
+          "entrees": { "planche": 1, "colorant_bleu": 2 },
+          "sortie": { "meuble_tableau_3": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_armoire_peinte": {
+          "entrees": { "planche": 8, "colorant_bleu": 2 },
+          "sortie": { "meuble_armoire_peinte": 1 },
+          "coefPrix": 150,
+          "commerce": "scierie",
+          "palier": 4,
+          "commande": true
+        },
+        "meuble_armoire_glace": {
+          "entrees": { "planche": 6, "lingot_fer": 1 },
+          "sortie": { "meuble_armoire_glace": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 4,
+          "commande": true
+        },
+        "meuble_cuisine_porte": {
+          "entrees": { "planche": 3, "pierre": 1 },
+          "sortie": { "meuble_cuisine_porte": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_cuisine_tiroirs": {
+          "entrees": { "planche": 4 },
+          "sortie": { "meuble_cuisine_tiroirs": 1 },
+          "coefPrix": 140,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_cuisine_sauge": {
+          "entrees": { "planche": 3, "colorant_vert": 1 },
+          "sortie": { "meuble_cuisine_sauge": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_poubelle": {
+          "entrees": { "planche": 1 },
+          "sortie": { "meuble_poubelle": 1 },
+          "coefPrix": 135,
+          "commerce": "scierie",
+          "palier": 2,
+          "commande": true
+        },
+        "meuble_bibliotheque_vitree": {
+          "entrees": { "planche": 6, "lingot_fer": 1 },
+          "sortie": { "meuble_bibliotheque_vitree": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 4,
+          "commande": true
+        },
+        "meuble_lampadaire": {
+          "entrees": { "planche": 1, "lingot_fer": 1, "fibre": 2 },
+          "sortie": { "meuble_lampadaire": 1 },
+          "coefPrix": 150,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_coffre_jouets": {
+          "entrees": { "planche": 4, "colorant_rouge": 1 },
+          "sortie": { "meuble_coffre_jouets": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_plante_ficus": {
+          "entrees": { "planche": 1, "engrais": 1 },
+          "sortie": { "meuble_plante_ficus": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 2,
+          "commande": true
+        },
+        "meuble_plante_monstera": {
+          "entrees": { "planche": 1, "engrais": 2 },
+          "sortie": { "meuble_plante_monstera": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_plante_sansevieria": {
+          "entrees": { "planche": 1, "engrais": 1 },
+          "sortie": { "meuble_plante_sansevieria": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 2,
+          "commande": true
+        },
+        "meuble_plante_cactus": {
+          "entrees": { "pierre": 1, "engrais": 1 },
+          "sortie": { "meuble_plante_cactus": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 2,
+          "commande": true
+        },
+        "meuble_plante_fougere": {
+          "entrees": { "planche": 1, "engrais": 1, "fibre": 1 },
+          "sortie": { "meuble_plante_fougere": 1 },
+          "coefPrix": 150,
+          "commerce": "scierie",
+          "palier": 2,
+          "commande": true
+        },
+        "meuble_plante_palmier": {
+          "entrees": { "planche": 2, "engrais": 2 },
+          "sortie": { "meuble_plante_palmier": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_plante_citronnier": {
+          "entrees": { "planche": 2, "engrais": 3 },
+          "sortie": { "meuble_plante_citronnier": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_plante_orchidee": {
+          "entrees": { "pierre": 1, "engrais": 2 },
+          "sortie": { "meuble_plante_orchidee": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 3,
+          "commande": true
+        },
+        "meuble_plante_aloe": {
+          "entrees": { "pierre": 1, "engrais": 1 },
+          "sortie": { "meuble_plante_aloe": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 2,
+          "commande": true
+        },
+        "meuble_plante_bonsai": {
+          "entrees": { "pierre": 2, "engrais": 2 },
+          "sortie": { "meuble_plante_bonsai": 1 },
+          "coefPrix": 145,
+          "commerce": "scierie",
+          "palier": 4,
+          "commande": true
+        },
+        "faisselle": { "entrees": { "lait": 2 }, "sortie": { "faisselle": 1 }, "coefPrix": 140, "commerce": "fromagerie", "palier": 2 },
+        "tomme_cave": {
+          "entrees": { "faisselle": 2 },
+          "sortie": { "tomme_cave": 1 },
+          "coefPrix": 150,
+          "commerce": "fromagerie",
+          "palier": 2,
+          "cave": 4,
+          "stock": 2
+        }
       },
       "EXCEPTIONS": {
         "paille": "La botteleuse (une machine, pas une recette) rend une paille par fibre : à une pièce l'unité, un prix ne descend pas sous une pièce."
@@ -10214,6 +10674,8 @@ export const RAW_DATA = {
     "ENSEIGNE": 2,
     "ENTRETIEN": 7,
     "COMPTOIR": "comptoir",
+    "CAVE": 6,
+    "PLAFOND": { "VILLAGEOIS": [1, 4, 6, 8, 10, 12], "PORT": [1, 2, 3, 3, 4, 5] },
     "EMOJI": "🏪",
     "PHRASES_COMPTOIR": ["Pour moi : {objet}, s'il te plaît.", "{objet} ! Voilà les pièces.", "Pour mon outil : {objet}, s'il te plaît."],
     "COMMERCES": {
@@ -10228,6 +10690,7 @@ export const RAW_DATA = {
         "LOCAL": { "etabli": "l'enclume et son foyer", "enseigne": "l'enseigne du forgeron" },
         "geste": "forge",
         "emoji": "🔨",
+        "ou": "à l'enclume",
         "donne": "un lot à l'enclume : il fond un lingot, ou forge des clous, des charnières, une lame",
         "SANS": "Le local de la forge n'est plus complet : l'enclume et le foyer, le comptoir dans la pièce, l'enseigne dehors.",
         "ENVIE": [
@@ -10245,6 +10708,90 @@ export const RAW_DATA = {
           "lingot_or": { "entrees": { "minerai_or": 4, "bois": 4 }, "sortie": { "lingot_or": 1 }, "palier": 4 }
         },
         "CLIENTS": { "lame": "outil" }
+      },
+      "scierie": {
+        "nom": "La scierie",
+        "un": "une scierie",
+        "icone": "🪚",
+        "metier": "menuisier",
+        "tache": "bois",
+        "etabli": "scie_long",
+        "enseigne": "enseigne_scierie",
+        "LOCAL": { "etabli": "la scie de long et l'établi", "enseigne": "l'enseigne du menuisier" },
+        "geste": "scie",
+        "emoji": "🪚",
+        "ou": "à l'établi",
+        "donne": "un lot à l'établi : il scie des planches, ou fait un meuble (pour le comptoir, ou commandé)",
+        "SANS": "Le local de la scierie n'est plus complet : la scie de long et l'établi, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Tout ce bois… j'en ferais bien des planches, et des meubles, dans une scierie.",
+          "Une scierie à moi, avec un établi : une chaise, une table, un lit…",
+          "J'aimerais tant ouvrir une scierie : le bois, je le connais."
+        ],
+        "PHRASES": ["Une planche droite, une !", "Ce chêne fera une belle table.", "Ça sent bon la sciure, ici."],
+        "RECETTES": { "planches": { "entrees": { "bois": 4 }, "sortie": { "planche": 2 }, "palier": 2 } },
+        "CLIENTS": {
+          "meuble_chaise": "maison",
+          "meuble_chevet": "maison",
+          "meuble_table_basse": "maison",
+          "meuble_tapis_1": "maison",
+          "meuble_tapis_2": "maison",
+          "meuble_tapis_3": "maison",
+          "meuble_commode": "maison",
+          "meuble_bibliotheque": "maison"
+        }
+      },
+      "boulangerie": {
+        "nom": "La boulangerie",
+        "un": "une boulangerie",
+        "icone": "🥖",
+        "metier": "boulanger",
+        "tache": "champs",
+        "etabli": "four_boulanger",
+        "enseigne": "enseigne_boulangerie",
+        "LOCAL": { "etabli": "le four à bois et l'étal à pains", "enseigne": "l'enseigne du boulanger" },
+        "geste": "cuisine",
+        "emoji": "🍞",
+        "ou": "au four à bois",
+        "donne": "une fournée au four à bois : deux pains, une tarte, un pain d'épices",
+        "SANS": "Le local de la boulangerie n'est plus complet : le four à bois, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Tout ce blé… j'en ferais bien du pain, dans un four à bois.",
+          "Une boulangerie à moi : l'odeur du pain chaud dès le matin !",
+          "J'aimerais ouvrir une boulangerie, pour nourrir tout le village."
+        ],
+        "PHRASES": ["Le four est chaud : la fournée arrive !", "Du bon pain pour tout le village.", "Encore une tarte, et je souffle un peu."],
+        "RECETTES": {
+          "pain": { "entrees": { "farine": 5 }, "sortie": { "pain": 2 }, "palier": 2, "stock": 6 },
+          "tarte_pommes": { "entrees": { "farine": 2, "pomme": 3, "oeuf": 1 }, "sortie": { "tarte_pommes": 1 }, "palier": 2, "stock": 2 },
+          "tarte_myrtilles": { "entrees": { "farine": 2, "myrtille": 4, "sucre": 1 }, "sortie": { "tarte_myrtilles": 1 }, "palier": 3, "stock": 2 },
+          "tarte_fraises": { "entrees": { "farine": 2, "fraise": 3, "oeuf": 1 }, "sortie": { "tarte_fraises": 1 }, "palier": 3, "stock": 2 },
+          "pain_epices": { "entrees": { "farine": 2, "miel": 1, "epices": 1 }, "sortie": { "pain_epices": 1 }, "palier": 4, "stock": 2 }
+        },
+        "CLIENTS": { "pain": "repas" }
+      },
+      "fromagerie": {
+        "nom": "La fromagerie",
+        "un": "une fromagerie",
+        "icone": "🧀",
+        "metier": "fromager",
+        "tache": "betes",
+        "etabli": "cave_affinage",
+        "enseigne": "enseigne_fromagerie",
+        "LOCAL": { "etabli": "la cave d'affinage", "enseigne": "l'enseigne du fromager" },
+        "geste": "ramasse",
+        "emoji": "🧀",
+        "ou": "à la cave",
+        "donne": "un lot au chaudron : il caille du lait en faisselles, ou met une tomme en cave",
+        "SANS": "Le local de la fromagerie n'est plus complet : la cave d'affinage, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Tout ce lait… j'en ferais bien des fromages, dans une cave à moi.",
+          "Une fromagerie, avec ses meules qui s'affinent en cave : j'y pense souvent.",
+          "J'aimerais ouvrir une fromagerie : le lait, je le connais."
+        ],
+        "PHRASES": ["Une tomme de plus en cave !", "Il faut les retourner chaque jour, mes meules.", "Le caillé prend bien ce matin."],
+        "RECETTES": {},
+        "CLIENTS": { "faisselle": "repas" }
       }
     }
   },
@@ -10822,6 +11369,8 @@ export const RAW_DATA = {
     "goujon": 2,
     "saumon": 2,
     "bar": 2,
+    "faisselle": 4,
+    "tomme_cave": 20,
     "herbes_montagne": 3,
     "oignon": 6,
     "ail": 7,

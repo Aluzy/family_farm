@@ -361,14 +361,24 @@ const CULTURE_MONTE = 0;
       key: 'ornements_chute', file: 'ornements_chute.png', frame: { frameWidth: 64, frameHeight: 80 }, images: 8, fps: 5,
       modeles: ['cerisier_japon', 'erable_rouge', 'magnolia', 'saule_pleureur'], prefixe: 'ornement_',
     },
-    // la forge d'un commerce ouvert (fiche I5a, le bloc enclume_foyer ; scripts/batiments/forge.py ; chantier.js
-    // stepLanterns) : ses braises rougeoient, ses deux `images` alternent au hasard (`fps`) ; le soir (le voile plus sombre
-    // que `allume`), sa lueur dans le voile : une flaque `sol` devant elle, la lueur du `foyer`, qui vacille ; un halo (WebGL)
-    forge: {
-      images: ['enclume_foyer_braise_0', 'enclume_foyer_braise_1'], eteint: 'enclume_foyer', fps: 5, allume: 0.12, vacille: 0.18,
-      sol: { rayon: 54, aplati: 0.7, teinte: 0xff8c40, alpha: 0.9, dx: -6, dy: 2 },
-      foyer: { rayon: 15, teinte: 0xffb060, alpha: 0.95, dx: -8, dy: -12 },
-      halo: { couleur: 0xff7a30, rayon: 20, intensite: 0.1, attenuation: 0.08 },
+    // les établis à feu des commerces ouverts (fiches I5a, I5c ; ATELIER.BLOCS[].allume : chantier.js stepFires,
+    // stepLanterns), un par dessin éteint : la forge (enclume_foyer, scripts/batiments/forge.py) dont les braises
+    // rougeoient, le four du boulanger (four_boulanger, scripts/batiments/commerces.py) dont le feu danse. Leurs `images`
+    // défilent (`fps`) : au hasard (`hasard`) ou l'une après l'autre ; le soir (le voile plus sombre que `allume`), leur
+    // lueur dans le voile : une flaque `sol` devant, la lueur du `foyer`, qui vacille ; un halo (WebGL)
+    foyers: {
+      enclume_foyer: {
+        images: ['enclume_foyer_braise_0', 'enclume_foyer_braise_1'], hasard: true, fps: 5, allume: 0.12, vacille: 0.18,
+        sol: { rayon: 54, aplati: 0.7, teinte: 0xff8c40, alpha: 0.9, dx: -6, dy: 2 },
+        foyer: { rayon: 15, teinte: 0xffb060, alpha: 0.95, dx: -8, dy: -12 },
+        halo: { couleur: 0xff7a30, rayon: 20, intensite: 0.1, attenuation: 0.08 },
+      },
+      four_boulanger: {
+        images: ['four_boulanger_feu_0', 'four_boulanger_feu_1', 'four_boulanger_feu_2', 'four_boulanger_feu_3'], hasard: false, fps: 7, allume: 0.12, vacille: 0.14,
+        sol: { rayon: 50, aplati: 0.7, teinte: 0xff9a48, alpha: 0.85, dx: -6, dy: 4 },
+        foyer: { rayon: 13, teinte: 0xffc070, alpha: 0.95, dx: -7, dy: -9 },
+        halo: { couleur: 0xff8a3a, rayon: 18, intensite: 0.1, attenuation: 0.08 },
+      },
     },
     // le nom de la famille sur les enseignes de ferme (le bloc enseigne_<matière> ; chantier.js stepEnseignes) : écrit
     // sur la plaque, son milieu `dy` px au-dessus du bas de l'image, rapetissé s'il dépasse `largeur` px (sur deux
@@ -409,7 +419,8 @@ const CULTURE_MONTE = 0;
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
     // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable ; sur le bac à semis, la Serre ;
     // sur la meule, le Moulin ; sur la boîte à nourriture, ce qu'elle contient (le silo : silo.js, siloAt)
-    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost', etal: 'etal', enclume_foyer: 'commerce', comptoir: 'commerce', enseigne_forge: 'commerce' },
+    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost', etal: 'etal', enclume_foyer: 'commerce', comptoir: 'commerce', enseigne_forge: 'commerce',
+      scie_long: 'commerce', four_boulanger: 'commerce', cave_affinage: 'commerce', enseigne_scierie: 'commerce', enseigne_boulangerie: 'commerce', enseigne_fromagerie: 'commerce' },
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne (le silo :
     // le pied de sa première colonne)
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'bloc_silo' },
@@ -568,8 +579,12 @@ const CULTURE_MONTE = 0;
     // (le quai de chargement de la ferme productive, l'île à bâtir, fiche I8b : scripts/batiments/quai_chargement.py)
     'quai_chargement',
     // (la forge, l'île à bâtir, fiche I5a : scripts/batiments/forge.py ; l'enclume et son foyer, éteint ou ses braises qui
-    // rougeoient, le comptoir d'un commerce, l'enseigne du forgeron ; la lueur du soir, BLOCS_CARTE.forge)
+    // rougeoient, le comptoir d'un commerce, l'enseigne du forgeron ; la lueur du soir, BLOCS_CARTE.foyers)
     'enclume_foyer', 'enclume_foyer_braise_0', 'enclume_foyer_braise_1', 'comptoir', 'enseigne_forge',
+    // (la scierie, la boulangerie, la fromagerie, fiche I5c : scripts/batiments/commerces.py ; la scie de long et
+    // l'établi, le four à bois éteint ou son feu, la cave d'affinage, leurs trois enseignes)
+    'scie_long', 'four_boulanger', 'four_boulanger_feu_0', 'four_boulanger_feu_1', 'four_boulanger_feu_2', 'four_boulanger_feu_3',
+    'cave_affinage', 'enseigne_scierie', 'enseigne_boulangerie', 'enseigne_fromagerie',
     // (le pont de planches, hors de la ferme, l'île à bâtir : scripts/carte/portage.py ; son image suit son sens et ses voisins)
     'pont_planches_ns_0', 'pont_planches_ns_1', 'pont_planches_ns_2', 'pont_planches_ns_3',
     'pont_planches_eo_0', 'pont_planches_eo_1', 'pont_planches_eo_2', 'pont_planches_eo_3',

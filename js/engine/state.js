@@ -1014,6 +1014,14 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v99 → v100 (le chantier « l'île à bâtir », fiche I5c : la scierie, la boulangerie, la fromagerie) : la cave d'un
+  // commerce (c.cave : ce qui s'affine chez le fromager, ses nuits, et pour qui). Une partie d'avant n'a pas de commerce
+  // et reste telle quelle ; les commerces d'une partie de l'île sont relus (une cave abîmée est réparée).
+  99: (state) => {
+    const out = { ...state, version: 100 };
+    if (Array.isArray(state.commerces)) out.commerces = reparerCommerces(state.commerces, state.villageois);
+    return out;
+  },
 };
 
 // Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.

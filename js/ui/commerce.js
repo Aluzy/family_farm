@@ -6,7 +6,7 @@ import { asleep } from '../engine/night.js';
 import { countItem } from '../engine/inventory.js';
 import { trouverVillageois } from '../engine/villageois.js';
 import {
-  commerceDuVillageois, commercesOuverts, commercesPourLaFiche, defCommerce, etatCommerce, nomCommerce, prendreAvisCommerces,
+  commerceDuVillageois, commercesOuverts, commercesPourLaFiche, defCommerce, etatCommerce, nomCommerce, prendreAvisCommerces, recettesDe,
 } from '../engine/artisans.js';
 import { nomRefus, proposerNom, renommer } from '../engine/noms.js';
 import { commerceEnPhrase } from '../engine/noms.js';
@@ -84,11 +84,16 @@ export function renderCommerce() {
   const recettes = `<ul class="boite-liste commerce-recettes">${E.recettes.map((r) => {
     const entrees = Object.entries(r.entrees).map(([o, n]) => `${n} ${OBJ(o) ? OBJ(o).icone : o}`).join(' + ');
     const peut = Object.entries(r.entrees).every(([o, n]) => countItem(state, o) >= n);
+    // (I5c : sur commande seulement, ses nuits de cave ; un meuble que la maison a déjà en assez)
+    const notes = [r.commande ? 'sur commande' : '', r.cave ? `${r.cave} nuits en cave` : ''].filter(Boolean).join(', ');
+    const refus = r.refus ? `<br><span class="muted">🏠 ${escapeHtml(r.refus)}</span>` : '';
     return `<li class="boite-ligne${r.connue ? '' : ' muted'}"><span class="item-icon" aria-hidden="true">${OBJ(r.sortie).icone}</span>
-      <span class="boite-nom">${r.qte > 1 ? `${r.qte} × ` : ''}${escapeHtml(OBJ(r.sortie).nom)} <span class="muted">(${entrees})</span>${r.connue ? '' : `<br><span class="muted">📖 Il l'apprendra quand votre amitié sera « ${escapeHtml(r.palierNom)} ».</span>`}</span>
-      <span class="row">${r.connue ? bouton('commerce-commander', `data-recette="${r.id}"`, `Commander · ${formatCoins(r.prix)} 💰`, state.pieces >= r.prix)
-        + bouton('commerce-commander', `data-recette="${r.id}" data-facon="1"`, `À façon · ${formatCoins(r.facon)} 💰`, peut && state.pieces >= r.facon, peut ? '' : `Tu apportes la matière : ${entrees}`) : ''}</span></li>`;
+      <span class="boite-nom">${r.qte > 1 ? `${r.qte} × ` : ''}${escapeHtml(OBJ(r.sortie).nom)} <span class="muted">(${entrees}${notes ? ` · ${notes}` : ''})</span>${r.connue ? refus : `<br><span class="muted">📖 Il l'apprendra quand votre amitié sera « ${escapeHtml(r.palierNom)} ».</span>`}</span>
+      <span class="row">${r.connue ? bouton('commerce-commander', `data-recette="${r.id}"`, `Commander · ${formatCoins(r.prix)} 💰`, !r.refus && state.pieces >= r.prix, r.refus || '')
+        + bouton('commerce-commander', `data-recette="${r.id}" data-facon="1"`, `À façon · ${formatCoins(r.facon)} 💰`, !r.refus && peut && state.pieces >= r.facon, peut ? r.refus || '' : `Tu apportes la matière : ${entrees}`) : ''}</span></li>`;
   }).join('')}</ul>`;
+  // (I5c : la cave du fromager, ce qui s'y affine et quand il en sortira)
+  const cave = E.caveMax ? `<p>🕯️ En cave (${E.cave.reduce((t, x) => t + x.n, 0)} / ${E.caveMax}) : ${E.cave.length ? E.cave.map((x) => `${x.n > 1 ? `${x.n} × ` : ''}${nomObjet(x.objet)} <span class="muted">(${x.reste ? `prête dans ${x.reste} nuit${x.reste > 1 ? 's' : ''}` : 'prête cette nuit'}${x.pour === 'joueur' ? ', pour toi' : ''})</span>`).join(', ') : '<span class="muted">vide : il y met une tomme quand il a des faisselles</span>'}.</p>` : '';
   const commandes = E.commandes.length
     ? `<p>⏳ En attente : ${E.commandes.map((k) => `${nomObjet(E.recettes.find((r) => r.id === k.recette).sortie)} <span class="muted">(${k.facon ? 'à façon' : 'payée'}, ${formatDay(k.jour)})</span>`).join(', ')} : ${il} les fait avant le reste, et tu les retrouves dans ton inventaire.</p>`
     : '';
@@ -99,7 +104,7 @@ export function renderCommerce() {
     <div class="cards">
       <div class="card">
         <span class="card-title"><span>${E.def.icone} ${escapeHtml(nom)}</span></span>
-        <span class="muted">${v ? `${escapeHtml(v.prenom)} y est ${v.genre === 'm' ? 'artisan' : 'artisane'} depuis ${formatDay(c.depuis)} (${jours} jour${jours > 1 ? 's' : ''} de travail${prochain}). Un commerce reste artisanal : quelques lots par jour, à l'enclume, sans machine.` : ''}</span>
+        <span class="muted">${v ? `${escapeHtml(v.prenom)} y est ${v.genre === 'm' ? 'artisan' : 'artisane'} depuis ${formatDay(c.depuis)} (${jours} jour${jours > 1 ? 's' : ''} de travail${prochain}). Un commerce reste artisanal : quelques lots par jour, ${escapeHtml(E.def.ou || 'à l\'établi')}, sans machine.` : ''}</span>
         ${local}
         <div class="row commerce-nom"><label for="commerce-nom-champ" class="sr-only">Le nom du commerce</label>
           <input type="text" id="commerce-nom-champ" class="member-input" maxlength="${DATA.DEPART.NOM_MAX}" autocomplete="off" spellcheck="false" value="${escapeHtml(nom)}">
@@ -119,6 +124,7 @@ export function renderCommerce() {
         <span class="card-title"><span>📋 Lui commander une pièce</span></span>
         <span class="muted">Payée d'avance, ${il} achète la matière au coffre ; à façon, tu l'apportes et tu ne paies que son travail (${Number(A.FACON) || 25} %). ${A.COMMANDES || 3} commandes en attente au plus.</span>
         ${commandes}
+        ${cave}
         ${recettes}
       </div>
     </div>`;
@@ -146,7 +152,7 @@ export function commerceFicheHtml(id) {
     }
     const C = x.conditions, puce = (k) => `<li>${C[k].ok ? '✅' : '⏳'} ${escapeHtml(C[k].texte)}</li>`;
     return `<dt>💭 Envie</dt><dd class="commerce-envie"><strong>${il === 'il' ? 'Il' : 'Elle'} aimerait ouvrir ${escapeHtml((defCommerce(x.sorte) || {}).un || x.nom.toLowerCase())}.</strong>
-        <ul class="commerce-conditions">${['envie', 'amitie', 'local'].map(puce).join('')}</ul>
+        <ul class="commerce-conditions">${['envie', 'amitie', 'local', 'plafond'].filter((k) => C[k]).map(puce).join('')}</ul>
         <button type="button" class="btn small primary" data-action="commerce-ouvrir" data-id="${e}" data-sorte="${escapeHtml(x.sorte)}"${C.ok ? '' : ' disabled'} id="commerce-ouvrir">${x.icone} Ouvrir ${escapeHtml(x.nom.toLowerCase())}</button>
         <span class="muted">Rien ne presse : son envie ne s'éteint pas. Ouverte, ${il} y deviendra ${il === 'il' ? 'artisan' : 'artisane'}, à la place de sa tâche.</span></dd>`;
   }).join('');
@@ -165,8 +171,9 @@ export function watchCommerces() {
     const c = commercesOuverts(state).find((x) => x.id === a.commerce), nom = c ? nomCommerce(state, c) : 'Le commerce';
     if (a.sorte === 'vente') {
       const v = trouverVillageois(state, a.id);
-      if (v) notify(`🏪 ${v.prenom} a acheté ${nomTexte(a.objet)} à ${commerceEnPhrase(nom, c && c.sorte)}${a.envie === 'besoin' ? ' (pour son outil)' : a.envie === 'adore' ? ' ❤️' : ''} : ${formatCoins(a.prix)} 💰 pour l'artisan.`, { kind: 'info' });
-    } else if (a.sorte === 'commande') notify(`📦 Ta commande est prête : ${a.n > 1 ? `${a.n} × ` : ''}${nomTexte(a.objet)}${a.facon ? ' (à façon)' : ''}, dans ton inventaire.`, { kind: 'succes' });
+      const pour = { outil: ' (pour son outil)', repas: ' (pour son repas)', maison: ' (pour sa maison)' }[a.pour] || ' (pour son outil)';
+      if (v) notify(`🏪 ${v.prenom} a acheté ${nomTexte(a.objet)} à ${commerceEnPhrase(nom, c && c.sorte)}${a.envie === 'besoin' ? pour : a.envie === 'adore' ? ' ❤️' : ''} : ${formatCoins(a.prix)} 💰 pour l'artisan.`, { kind: 'info' });
+    } else if (a.sorte === 'commande') notify(`📦 Ta commande est prête : ${a.n > 1 ? `${a.n} × ` : ''}${nomTexte(a.objet)}${a.facon ? ' (à façon)' : ''}${a.cave ? ', sortie de cave' : ''}, dans ton inventaire${/^meuble_/.test(a.objet) ? ' (à poser dans la maison)' : ''}.`, { kind: 'succes' });
     n++;
   }
   if (!asleep(state) && annonce !== state.day && state.nuit) {
@@ -179,7 +186,7 @@ export function watchCommerces() {
     }
     for (const x of (N && N.appris) || []) {
       const c = commercesOuverts(state).find((y) => y.id === x.commerce), v = c && trouverVillageois(state, c.qui);
-      if (v) notify(`📖 Votre amitié grandit : ${v.prenom} sait faire ${x.recettes.map((r) => nomTexte(((defCommerce(c.sorte).RECETTES || {})[r] ? Object.keys(defCommerce(c.sorte).RECETTES[r].sortie)[0] : r))).join(', ')}.`, { kind: 'info' });
+      if (v) notify(`📖 Votre amitié grandit : ${v.prenom} sait faire ${x.recettes.map((r) => { const R = recettesDe(c.sorte).find((y) => y.id === r); return nomTexte(R ? R.sortie : r); }).join(', ')}.`, { kind: 'info' });
       n++;
     }
   }

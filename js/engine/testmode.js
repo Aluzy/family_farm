@@ -1,5 +1,6 @@
 import { energyMax } from './stamina.js';
 import { DATA } from './catalog.js';
+import { villageActif } from './village.js';
 import { unlockTab } from './base.js';
 import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './devices.js';
 import { noteCompta } from './compta.js';
@@ -281,10 +282,11 @@ export function testFillEnergy(state) {
   return { ok: true };
 }
 
-// Lot 3 : 20 unités de chaque aliment (à conservation pleine).
+// Lot 3 : 20 unités de chaque aliment (à conservation pleine) ; ceux du chantier de l'île (village : la faisselle, la
+// tomme de cave du fromager, I5c), seulement le réglage allumé.
 export function testAddFood(state) {
   for (const item of Object.keys(DATA.OBJETS)) {
-    if (DATA.OBJETS[item].mangeable) addItem(state, item, 20);
+    if (DATA.OBJETS[item].mangeable && (!DATA.OBJETS[item].village || villageActif(state))) addItem(state, item, 20);
   }
   return { ok: true };
 }

@@ -27,7 +27,7 @@
   const { T } = F.C;
   const { reducedMotion } = F;
   const PAUSE = [0.4, 1.6];                     // s entre deux gestes
-  const DE_PROFIL = new Set(['hache', 'pioche', 'faux', 'forge']);
+  const DE_PROFIL = new Set(['hache', 'pioche', 'faux', 'forge', 'scie']);
   const EMOJI_MS = 1600;
 
   F.partie({

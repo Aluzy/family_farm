@@ -82,6 +82,8 @@
     faux: () => [['faux_cote_0', 0.1], ['faux_cote_1', 0.16], ['faux_cote_1', 0.08], ['faux_cote_2', 0.08], ['faux_cote_3', 0.12, 'coup'], ['faux_cote_3', 0.6]],
     cuisine: () => [['cuisine_0', 0.35], ['cuisine_1', 0.35], ['cuisine_2', 0.35], ['cuisine_3', 0.35]],
     // (I5a, le forgeron à l'enclume : d'après la pioche, les mêmes cases ; trois coups courts, le marteau levé moins haut)
+    // (I5c, le menuisier à la scie : d'après la hache, les mêmes cases ; des allers-retours, les bras qui poussent et tirent)
+    scie: () => [['hache_cote_1', 0.18], ['hache_cote_2', 0.16], ['hache_cote_1', 0.18], ['hache_cote_2', 0.16, 'coup'], ['hache_cote_1', 0.18], ['hache_cote_2', 0.16], ['hache_cote_1', 0.18], ['hache_cote_2', 0.16, 'coup'], ['hache_cote_1', 0.5]],
     forge: () => [['pioche_cote_1', 0.14], ['pioche_cote_2', 0.05], ['pioche_cote_3', 0.1, 'coup'], ['pioche_cote_2', 0.08], ['pioche_cote_1', 0.12], ['pioche_cote_2', 0.05], ['pioche_cote_3', 0.1, 'coup'], ['pioche_cote_2', 0.08], ['pioche_cote_1', 0.12], ['pioche_cote_2', 0.05], ['pioche_cote_3', 0.1, 'coup'], ['pioche_cote_3', 0.5]],
   };
   K.GESTES_HABITANTS = SEQ;   // (I3c : les villageois au travail font les mêmes gestes, villageois-travail.js)
