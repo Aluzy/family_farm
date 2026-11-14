@@ -6,33 +6,57 @@
 //   F.2 : le temps du monde est figé quand personne n'y joue (rien ne tourne sans joueur) ; les
 //         commandes ne font pas avancer l'horloge ; E-5 : la nuit est partagée : quand tous les joueurs
 //         connectés sont couchés, le monde joue lui-même la nuit (nuit.partagee, acteur « monde ») ;
+//   D13 (I9a2, l'horloge commune : docs/fiches/ile/I9a2-note-horloge.md) : un monde de l'île (horlogeVivante,
+//         js/engine/temps-monde.js) a une horloge vivante, qui remplace F.2 pour lui : le temps y passe tant qu'un
+//         joueur au moins est connecté, par pas de 5 s d'horloge déduits de l'heure du serveur (ils ne sont pas des
+//         révisions : avant chaque geste, le monde rejoue les pas dus, et le geste porte son numéro de pas) ; la
+//         nuit vient seule à 22 h et défile dix fois plus vite quand tous les joueurs connectés sont couchés
+//         (temps.sommeil, acteur « monde ») ; l'énergie est celle de chaque joueur ; le dernier qui part endort le
+//         monde, le premier qui revient le réveille là où il s'était arrêté. Les mondes d'avant gardent F.2 ;
 //   F.3 : un compte pour jouer en ligne (comptes.mjs) : un membre est un compte ;
 //   F.4 : un monde est créé par copie volontaire d'une partie locale, qui reste intacte.
 //
 // Le stockage (une base SQLite, celle du Durable Object : `sql.exec(requête, ...valeurs)`) :
-//   meta(cle, valeur)                 : version du jeu, propriétaire, nom, révision de l'instantané ;
+//   meta(cle, valeur)                 : version du jeu, propriétaire, nom, révision de l'instantané ; I9a2 :
+//                                       horloge ({ pas, reel, actif, depart } : le pas de l'instantané et son
+//                                       heure réelle, le monde éveillé ou non, l'heure du dernier départ),
+//                                       sauvegarde (l'heure de la dernière sauvegarde à l'heure) ;
 //   instantane(rev, json)             : la partie complète à la révision `rev` (refait toutes les
-//                                       INSTANTANE_TOUS révisions) ;
+//                                       INSTANTANE_TOUS révisions ; I9a2, un monde de l'île : toutes les
+//                                       INSTANTANE_PAS pas ou INSTANTANE_GESTES gestes, et au départ du dernier) ;
 //   journal(rev, id, acteur, cmd, ts) : chaque commande acceptée, dans l'ordre (id unique : un doublon
-//                                       n'est jamais rejoué) ;
+//                                       n'est jamais rejoué) ; I9a2 : cmd.pas, le pas où elle s'est jouée ;
 //   membres(compte, nom, role, revoque).
-// La partie en mémoire se refait au réveil du Durable Object : le dernier instantané, puis le journal.
+// La partie en mémoire se refait au réveil du Durable Object : le dernier instantané, puis le journal (I9a2 :
+// chaque commande à son pas, les pas entre deux rejoués un à un).
 //
 // Le protocole (des messages JSON, par une WebSocket) :
-//   → { t: 'hello', version, depuis? }            ← { t: 'bienvenue', rev, role, membres } puis
+//   → { t: 'hello', version, depuis?, pas? }      ← { t: 'bienvenue', rev, role, membres, horloge? } puis
 //                                                      { t: 'rattrape', evts } (depuis `depuis`) ou
 //                                                      { t: 'instantane', rev, partie }
+//                                                   (I9a2 : horloge = { pas, reel, sommeil, maintenant, dormait? } :
+//                                                   le pas du monde, son heure réelle, l'heure du serveur, depuis
+//                                                   combien de temps le monde dormait ; au-delà de RETARD_PAS pas de
+//                                                   retard, la partie entière plutôt que le journal)
 //                                                   ← { t: 'refus', raison } (version, membre)
 //   → { t: 'cmd', id, type, args }                ← { t: 'ack', id, ok, rev?, erreur? }
-//                                                   ← à tous : { t: 'evt', rev, acteur, cmd: { id, type, args } }
+//                                                   ← à tous : { t: 'evt', rev, acteur, cmd: { id, type, args, pas? }, reel? }
+//                                                   (I9a2 : le pas de la commande, l'heure réelle de ce pas)
 //   → { t: 'pos', x, y }                          ← aux autres : { t: 'pos', acteur, nom, x, y } (E-4 : où regarde
 //                                                   chaque joueur ; relayé, jamais écrit ; POS_MS au plus souvent)
 //                                                   ← aux autres, à son départ : { t: 'parti', acteur }
 //   → { t: 'coucher', oui }                       ← à tous : { t: 'couches', comptes, connectes } (E-5 : qui est
 //                                                   couché ; gardé sur sa connexion, jamais écrit) ; tous
 //                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: nuit.partagee }
+//                                                   (I9a2, un monde de l'île : cmd: temps.sommeil { oui }, la nuit file)
+//   I9a2 :                                         ← à tous, à chaque instantané au temps : { t: 'controle', pas,
+//                                                   empreinte, reel, maintenant } (la partie du monde à ce pas :
+//                                                   un joueur qui ne la retrouve pas redemande tout)
 
-import { caseDansLaFerme, commandeHorsDeLaFerme, COMMANDES, executerCommande, GAME_VERSION, migrate, pickUpAll, ramasserMorceau, refusDuRole, refusFrontiere } from '../../js/engine/index.js';
+import {
+  avancerJusqua, caseDansLaFerme, commandeHorsDeLaFerme, COMMANDES, DATA, dureeDuPas, empreintePartie, energiesDe, executerCommande, GAME_VERSION, horlogeDe, horlogeVivante,
+  ilePartagee, migrate, pasDe, pasDuMonde, pickUpAll, ramasserMorceau, refusDuRole, refusFrontiere,
+} from '../../js/engine/index.js';
 
 export const MONDE = {
   INSTANTANE_TOUS: 20,      // révisions entre deux instantanés
@@ -43,11 +67,19 @@ export const MONDE = {
   POS_MAX: 1e6,             // px : une position au-delà est ignorée
   INVITATION_JOURS: 7,      // E-3 : un lien d'invitation vaut tant de jours, et ne sert qu'une fois
   INVITATIONS_MAX: 20,      // liens en attente au plus par monde
+  // I9a2 (un monde de l'île, l'horloge vivante) :
+  INSTANTANE_PAS: 120,      // un instantané au temps, tous les 120 pas (10 minutes)…
+  INSTANTANE_GESTES: 200,   // …ou tous les 200 gestes (au lieu des 20 révisions), et au départ du dernier joueur
+  ALARME_MS: 600000,        // l'alarme du Durable Object, tant qu'un joueur est là : toutes les 10 minutes
+  SAUVEGARDE_MS: 3600000,   // E-12 : une sauvegarde par heure de jeu en ligne (et au départ du dernier)
+  RATTRAPAGE_MAX_PAS: 240,  // au plus tant de pas rejoués d'un coup (un réveil après une panne) ; au-delà, l'horloge
+                            // reprend à l'heure, sans rattraper le reste
 };
 
 // Les commandes que le monde partagé accepte d'un joueur. La nuit ne se demande pas : le monde la joue
 // quand tous sont couchés (E-5 : nuit.partagee) ; nuit.dormir (la nuit qui défile, en solo) n'a pas cours.
-export const COMMANDES_MONDE = new Set(Object.keys(COMMANDES).filter((t) => t !== 'nuit.dormir' && t !== 'nuit.partagee'));
+// I9a2 : temps.sommeil non plus (le monde la joue quand tous sont couchés, ou plus).
+export const COMMANDES_MONDE = new Set(Object.keys(COMMANDES).filter((t) => t !== 'nuit.dormir' && t !== 'nuit.partagee' && t !== 'temps.sommeil'));
 export const ACTEUR_MONDE = 'monde';
 
 // E-5 : les lits. `sockets` : [{ compte, couche }] (les connexions des membres) → qui est là, qui est
@@ -62,7 +94,8 @@ export function etatDesLits(sockets) {
 export const ROLES = { proprietaire: 'proprietaire', batisseur: 'batisseur', jardinier: 'jardinier', visiteur: 'visiteur' };
 export const ROLES_INVITES = ['batisseur', 'jardinier', 'visiteur'];
 // E-12 : les sauvegardes du monde dans R2 (le bucket du Worker, sous mondes/<id du Durable Object>/) :
-// une après chaque nuit partagée, et à la demande du propriétaire ; les GARDER dernières sont gardées.
+// une après chaque nuit partagée, et à la demande du propriétaire ; les GARDER dernières sont gardées. I9a2, un
+// monde de l'île (cinq nuits par heure) : une par heure de jeu en ligne (SAUVEGARDE_MS), et au départ du dernier.
 export const SAUVEGARDES = { GARDER: 14 };
 const RESTAURER = 'monde.restaurer';   // (la marque d'une restauration dans le journal : jamais rejouée)
 export const JOURNAL_PAGE = 50;
@@ -169,6 +202,14 @@ export class MondeRegistre {
     this.rev = 0;
     this.debits = new Map(); // compte → [heures des dernières commandes]
     this.positions = new Map(); // E-4 : compte → l'heure de sa dernière position relayée (rien n'est écrit)
+    // I9a2 (un monde de l'île) : l'heure réelle du pas où en est la partie en mémoire, le monde éveillé ou non, le pas
+    // et les gestes depuis le dernier instantané ; `quandAvance(r)` : le Durable Object écoute ce que le temps a fait
+    this.reel = null;
+    this.actif = false;
+    this.depart = null;
+    this.pasInstantane = 0;
+    this.gestes = 0;
+    this.quandAvance = null;
     creerTablesMonde(sql);
   }
 
@@ -188,14 +229,22 @@ export class MondeRegistre {
     let s;
     try { s = migrate(partie && partie.s ? partie : { v: partie && partie.version, t: 0, s: partie }); } catch (e) { s = null; }
     if (!s || typeof s !== 'object' || !s.carte) return { ok: false, erreur: 'Cette partie ne peut pas être mise en ligne (illisible).' };
-    // (le monde ne connaît pas de nuit en cours : il naît de jour, son horloge figée là où elle était)
-    s.nuitEnCours = null;
+    // (le monde ne connaît pas de nuit en cours : il naît de jour, son horloge figée là où elle était ; I9a2 : une île
+    // garde sa nuit en cours, que ses pas feront défiler)
+    if (!ilePartagee(s)) s.nuitEnCours = null;
+    s.reveil = false;
     // (E-6 : le monde ne ramasse pas, il n'a pas de personnage à lui : ce qui attendait entre au coffre
     // commun, et désormais tout y va droit : les œufs, le lait, la laine, la récolte)
     pickUpAll(s);
     for (const m of [...(s.morceaux || [])]) ramasserMorceau(s, m.n);   // (E-9 : les morceaux au sol aussi)
     s.ramassage = false;
     s = elaguer(s);
+    // (I9a2 : l'horloge commune d'une île, au pas 0 ; l'énergie du propriétaire est celle de sa partie)
+    if (horlogeVivante(s)) {
+      horlogeDe(s);
+      if (Number.isFinite(s.energie)) energiesDe(s)[proprietaire] = Math.max(0, Math.round(s.energie));
+      this.poserMeta('horloge', JSON.stringify({ pas: pasDe(s), reel: this.maintenant(), actif: false, depart: null }));
+    }
     this.faire('INSERT INTO instantane (rev, json) VALUES (?, ?)', 0, JSON.stringify(s));
     this.poserMeta('version', version);
     this.poserMeta('proprietaire', proprietaire);
@@ -204,26 +253,124 @@ export class MondeRegistre {
     this.ajouterMembre(proprietaire, nom, ROLES.proprietaire);
     this.partie = s;
     this.rev = 0;
+    this.reel = this.maintenant();
+    this.actif = false;
+    this.pasInstantane = pasDe(s);
+    this.gestes = 0;
     return { ok: true, rev: 0 };
   }
 
-  // La partie en mémoire : le dernier instantané, puis les commandes du journal jouées depuis.
+  // La partie en mémoire : le dernier instantané, puis les commandes du journal jouées depuis. I9a2 (un monde de
+  // l'île) : chaque commande à son pas (cmd.pas), les pas d'entre deux rejoués un à un ; l'heure réelle du pas où
+  // l'on arrive se déduit de celle de l'instantané (l'ancre, meta horloge) et de la durée de chaque pas joué.
   charger() {
     if (this.partie) return this.partie;
     const inst = this.un('SELECT rev, json FROM instantane ORDER BY rev DESC LIMIT 1');
     if (!inst) return null;
     const s = JSON.parse(inst.json);
-    let rev = inst.rev;
-    for (const e of this.tous('SELECT rev, cmd FROM journal WHERE rev > ? ORDER BY rev', inst.rev)) {
+    const vivante = horlogeVivante(s), H = this.horloge();
+    let rev = inst.rev, reel = Number.isFinite(H.reel) ? H.reel : this.maintenant(), gestes = 0;
+    const suivre = (ev, d) => { reel += d; };
+    this.pasInstantane = pasDe(s);
+    for (const e of this.tous('SELECT rev, acteur, cmd FROM journal WHERE rev > ? ORDER BY rev', inst.rev)) {
       const c = JSON.parse(e.cmd);
       if (c.type === RESTAURER) { rev = e.rev; continue; }   // (E-12 : une marque, pas une commande)
-      const r = executerCommande(s, c);
+      if (vivante && Number.isInteger(c.pas)) avancerJusqua(s, c.pas, suivre);
+      const r = executerCommande(s, c, vivante && e.acteur !== ACTEUR_MONDE ? { acteur: e.acteur } : {});
       if (!r.ok) throw new Error(`le journal ne se rejoue pas à la révision ${e.rev} : ${r.error}`);
       rev = e.rev;
+      gestes += 1;
     }
     this.partie = s;
     this.rev = rev;
+    this.reel = reel;
+    this.actif = vivante && H.actif === true;
+    this.depart = Number.isFinite(H.depart) ? H.depart : null;
+    this.gestes = gestes;
     return s;
+  }
+
+  /* -- I9a2 : l'horloge commune d'un monde de l'île -- */
+
+  // L'ancre gardée (meta horloge) : { pas, reel, actif, depart }.
+  horloge() {
+    try { const h = JSON.parse(this.meta('horloge') || 'null'); return h && typeof h === 'object' ? h : {}; } catch (e) { return {}; }
+  }
+  poserHorloge() {
+    this.poserMeta('horloge', JSON.stringify({ pas: pasDe(this.partie), reel: this.reel, actif: this.actif, depart: this.depart }));
+  }
+  vivante() {
+    return horlogeVivante(this.charger());
+  }
+
+  // Les pas dus à l'heure `t` (réelle, celle du serveur), joués un à un ; rien si le monde dort, ou si son horloge
+  // est figée (F.2). Un instantané au temps, tous les INSTANTANE_PAS pas. Rend { pas (joués), reveil, instantane }.
+  avancer(t = this.maintenant()) {
+    const s = this.charger();
+    const out = { pas: 0, reveil: false, instantane: false };
+    if (!s || !horlogeVivante(s) || !this.actif) return out;
+    if (!Number.isFinite(this.reel)) this.reel = t;
+    while (this.reel + dureeDuPas(s) <= t) {
+      // (une panne, un réveil très tardif : l'horloge reprend à l'heure, sans tout rattraper)
+      if (out.pas >= MONDE.RATTRAPAGE_MAX_PAS) { this.reel = t; out.instantane = true; break; }
+      const d = dureeDuPas(s);
+      if (pasDuMonde(s).reveil) out.reveil = true;
+      this.reel += d;
+      out.pas += 1;
+    }
+    if (out.instantane || pasDe(s) - this.pasInstantane >= MONDE.INSTANTANE_PAS) { this.instantane(); out.instantane = true; }
+    if ((out.reveil || out.instantane) && this.quandAvance) this.quandAvance(out);
+    return out;
+  }
+
+  // Le premier joueur arrive : le monde se réveille là où il s'était arrêté, sans rattraper le temps passé sans
+  // personne (l'ancre : son pas, à l'heure `t`). Rend { dormait (ms, ou null) } s'il dormait, sinon null.
+  reprendre(t = this.maintenant()) {
+    const s = this.charger();
+    if (!s || !horlogeVivante(s) || this.actif) return null;
+    const dormait = Number.isFinite(this.depart) ? Math.max(0, t - this.depart) : null;
+    this.reel = t;
+    this.actif = true;
+    this.instantane();
+    if (this.meta('sauvegarde') === null) this.poserMeta('sauvegarde', t);
+    return { dormait };
+  }
+
+  // Le dernier joueur part : les pas dus, un instantané (avec son pas), et le monde s'endort (plus rien ne tourne).
+  endormir(t = this.maintenant()) {
+    const s = this.charger();
+    if (!s || !horlogeVivante(s) || !this.actif) return null;
+    this.avancer(t);
+    this.actif = false;
+    this.depart = t;
+    this.instantane();
+    return { pas: pasDe(s), jour: s.day };
+  }
+
+  // Tous les joueurs connectés sont couchés (`oui`), ou plus : la commande du monde temps.sommeil, si elle change
+  // quelque chose.
+  sommeil(oui, t = this.maintenant()) {
+    const s = this.charger();
+    if (!s || !horlogeVivante(s)) return { ok: false, erreur: 'Ce monde n\'a pas d\'horloge vivante.' };
+    this.avancer(t);
+    if (horlogeDe(s).sommeil === (oui === true)) return { ok: true, rien: true };
+    return this.jouer(ACTEUR_MONDE, { id: `sommeil-${this.rev + 1}-${t.toString(36)}`, type: 'temps.sommeil', args: { oui: oui === true } }, t);
+  }
+
+  // Ce qu'un joueur reçoit de l'horloge : { pas, reel, sommeil, maintenant } (null : F.2).
+  horlogeAccueil(t = this.maintenant()) {
+    const s = this.charger();
+    if (!s || !horlogeVivante(s)) return null;
+    return { pas: pasDe(s), reel: this.reel, sommeil: horlogeDe(s).sommeil, maintenant: t };
+  }
+
+  // La sauvegarde à l'heure (E-12) est-elle due : une par heure de jeu en ligne ? Si oui, l'heure est notée.
+  sauvegardeDue(t = this.maintenant()) {
+    if (!this.vivante() || !this.actif) return false;
+    const der = Number(this.meta('sauvegarde'));
+    if (Number.isFinite(der) && der > 0 && t - der < MONDE.SAUVEGARDE_MS) return false;
+    this.poserMeta('sauvegarde', t);
+    return Number.isFinite(der) && der > 0;
   }
 
   ajouterMembre(compte, nom, role = ROLES.batisseur) {
@@ -255,15 +402,23 @@ export class MondeRegistre {
   // L'accueil d'un joueur : refusé si ce n'est pas un membre, ou si son jeu n'a pas la version du monde ;
   // sinon ce qui lui manque depuis la révision `depuis` (les commandes du journal), ou tout (l'instantané
   // de la partie à la révision courante).
-  accueil(compte, { version, depuis } = {}) {
+  accueil(compte, { version, depuis, pas } = {}) {
     const m = this.membre(compte);
     if (!m) return { ok: false, raison: 'membre', erreur: 'Tu n\'es pas (ou plus) membre de ce monde.' };
     const v = this.meta('version');
     if (version !== v) return { ok: false, raison: 'version', erreur: `Ce monde joue la version ${v} du jeu ; la tienne est ${version || 'inconnue'} : recharge la page pour mettre le jeu à jour.` };
     const s = this.charger();
-    const base = { ok: true, rev: this.rev, role: m.role, titre: this.meta('titre'), proprietaire: this.meta('proprietaire'), membres: this.membres() };
+    // (I9a2 : un joueur arrive : le monde, s'il dormait, se réveille là où il s'était arrêté ; sinon, ses pas dus)
+    const t = this.maintenant();
+    const reprise = this.reprendre(t);
+    if (!reprise) this.avancer(t);
+    const horloge = this.horlogeAccueil(t);
+    if (horloge && reprise && reprise.dormait !== null) horloge.dormait = reprise.dormait;
+    const base = { ok: true, rev: this.rev, role: m.role, titre: this.meta('titre'), proprietaire: this.meta('proprietaire'), membres: this.membres(), ...(horloge ? { horloge } : {}) };
     const d = Number(depuis);
-    if (Number.isInteger(d) && d >= 0 && d <= this.rev) {
+    // (I9a2 : trop de pas de retard, ou un retard inconnu : la partie entière, plutôt que le journal et les pas à rejouer)
+    const enRetard = !!horloge && !(Number.isInteger(pas) && pas >= 0 && pas <= horloge.pas && horloge.pas - pas <= DATA.VILLAGE.EN_LIGNE.RETARD_PAS);
+    if (Number.isInteger(d) && d >= 0 && d <= this.rev && !enRetard) {
       const plusVieux = this.un('SELECT MIN(rev) AS r FROM journal');
       if (d === this.rev) return { ...base, evts: [] };
       // (E-12 : une restauration depuis : la partie entière)
@@ -285,6 +440,8 @@ export class MondeRegistre {
     const deja = this.un('SELECT rev, acteur FROM journal WHERE id = ?', c.id);
     if (deja) return deja.acteur === compte ? { ok: true, rev: deja.rev, doublon: true } : { ok: false, erreur: 'Cet identifiant de commande est déjà pris.' };
     if (!COMMANDES_MONDE.has(c.type)) return { ok: false, erreur: `Cette action ne se joue pas encore en ligne (${String(c.type)}).` };
+    // (I9a2 : les pas dus d'abord ; la commande se joue au pas où le monde est quand elle arrive)
+    this.avancer();
     // (E-11 : le rôle du membre le permet-il ?)
     const refus = refusDuRole(m.role, this.charger(), c);
     if (refus) return { ok: false, erreur: refus };
@@ -306,24 +463,37 @@ export class MondeRegistre {
     return this.jouer(ACTEUR_MONDE, { id: `nuit-${this.rev + 1}-${t.toString(36)}`, type: 'nuit.partagee', args: {} }, t);
   }
 
-  // Joue la commande `cmd` au nom d'`acteur` ; acceptée, elle prend la révision suivante et va au journal.
+  // Joue la commande `cmd` au nom d'`acteur` ; acceptée, elle prend la révision suivante et va au journal. I9a2 (un
+  // monde de l'île) : elle prend aussi le pas du monde (cmd.pas) et se joue avec l'énergie de son acteur ; l'événement
+  // dit l'heure réelle de ce pas (reel).
   jouer(acteur, cmd, t) {
     const s = this.charger();
-    const r = executerCommande(s, cmd);
+    const vivante = horlogeVivante(s);
+    const c = vivante ? { ...cmd, pas: pasDe(s) } : cmd;
+    const r = executerCommande(s, c, vivante && acteur !== ACTEUR_MONDE ? { acteur } : {});
     if (!r.ok) return { ok: false, erreur: r.error || 'Refusé.' };
     this.rev += 1;
-    this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, cmd.id, acteur, JSON.stringify(cmd), t);
-    if (this.rev % MONDE.INSTANTANE_TOUS === 0) this.instantane();
-    return { ok: true, rev: this.rev, evt: { t: 'evt', rev: this.rev, acteur, cmd } };
+    this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, c.id, acteur, JSON.stringify(c), t);
+    if (vivante) {
+      this.gestes += 1;
+      if (this.gestes >= MONDE.INSTANTANE_GESTES) this.instantane();
+    } else if (this.rev % MONDE.INSTANTANE_TOUS === 0) this.instantane();
+    return { ok: true, rev: this.rev, evt: { t: 'evt', rev: this.rev, acteur, cmd: c, ...(vivante ? { reel: this.reel } : {}) } };
   }
 
   // Un instantané de la partie à la révision courante ; le journal plus ancien que JOURNAL_GARDE
-  // révisions avant lui, et les instantanés d'avant, retirés.
+  // révisions avant lui, et les instantanés d'avant, retirés. I9a2 : avec son pas et son heure (l'ancre).
   instantane() {
     const s = this.charger();
     this.faire('INSERT OR REPLACE INTO instantane (rev, json) VALUES (?, ?)', this.rev, JSON.stringify(s));
     this.faire('DELETE FROM instantane WHERE rev < ?', this.rev);
     this.faire('DELETE FROM journal WHERE rev <= ?', this.rev - MONDE.JOURNAL_GARDE);
+    if (horlogeVivante(s)) {
+      if (!Number.isFinite(this.reel)) this.reel = this.maintenant();
+      this.poserHorloge();
+      this.pasInstantane = pasDe(s);
+      this.gestes = 0;
+    }
   }
 
   /* -- E-3 : inviter, rejoindre -- */
@@ -372,6 +542,8 @@ export class MondeRegistre {
     this.partie = s;
     this.rev += 1;
     const t = this.maintenant();
+    // (I9a2 : une île repart du pas de sa sauvegarde, à l'heure de la restauration)
+    if (horlogeVivante(s)) { horlogeDe(s); this.reel = t; }
     const marque = { id: `restaure-${this.rev}-${t.toString(36)}`, type: RESTAURER, args: { rev: save.rev, jour: save.jour } };
     this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, marque.id, par, JSON.stringify(marque), t);
     this.instantane();
@@ -429,6 +601,8 @@ export class Monde {
     this.ctx = ctx;
     this.env = env;
     this.registre = new MondeRegistre(ctx.storage.sql);
+    // (I9a2 : ce que le temps a fait, en avançant : un réveil, un instantané au temps)
+    this.registre.quandAvance = (r) => this.apresAvance(r);
   }
 
   // E-12 : les sauvegardes de ce monde (null : pas de bucket R2 lié).
@@ -508,7 +682,9 @@ export class Monde {
         const r = this.registre.restaurer(compte, save);
         if (!r.ok) return json(r, r.statut);
         // (chacun reçoit la partie restaurée, et le mot qui le dit)
-        this.diffuser({ t: 'instantane', rev: r.rev, partie: this.registre.charger() });
+        // (I9a2 : avec l'horloge du monde, à son pas restauré)
+        const horloge = this.registre.horlogeAccueil();
+        this.diffuser({ t: 'instantane', rev: r.rev, partie: this.registre.charger(), ...(horloge ? { horloge } : {}) });
         this.diffuser({ t: 'restaure', rev: r.rev, jour: r.jour });
         return json({ ok: true, rev: r.rev, jour: r.jour });
       }
@@ -533,8 +709,9 @@ export class Monde {
   async webSocketMessage(ws, message) {
     const compte = (this.ctx.getTags(ws) || [])[0] || '';
     traiterMessage(this.registre, compte, message, (m) => envoyer(ws, m), (m) => this.diffuser(m), (m) => this.diffuser(m, compte), {
-      coucher: (oui) => { attacher(ws, { couche: !!oui }); this.lits(); },
-      accueilli: () => this.lits(),
+      // (I9a2 : un lit ne vaut que pour la nuit où l'on s'est couché : le compte des réveils du monde)
+      coucher: (oui) => { attacher(ws, { couche: !!oui, reveils: this.reveils() }); this.lits(); },
+      accueilli: () => { this.lits(); this.programmerAlarme(); },
     });
   }
 
@@ -543,14 +720,78 @@ export class Monde {
     try { ws.close(code === 1005 ? 1000 : code, 'au revoir'); } catch (e) { /* (déjà fermée) */ }
     // (E-4 : son dernier onglet fermé, son avatar s'en va chez les autres)
     if (!this.ctx.getWebSockets(compte).some((w) => w !== ws)) this.diffuser({ t: 'parti', acteur: compte }, compte);
-    // (E-5 : celui qui part ne retient plus la nuit)
+    // (I9a2 : le dernier joueur parti, le monde s'endort ; sinon, E-5 : celui qui part ne retient plus la nuit)
+    if (!this.connexions(ws).length) { this.endormir(); return; }
     this.lits(ws);
   }
 
+  // Les connexions des membres (`sauf` : une connexion qui se ferme).
+  connexions(sauf = null) {
+    return this.ctx.getWebSockets().filter((w) => w !== sauf && this.registre.membre((this.ctx.getTags(w) || [])[0]));
+  }
+
+  /* -- I9a2 : l'horloge commune d'un monde de l'île -- */
+
+  reveils() {
+    const s = this.registre.existe() ? this.registre.charger() : null;
+    return s && s.horloge && Number.isInteger(s.horloge.reveils) ? s.horloge.reveils : 0;
+  }
+
+  // Ce que le temps a fait en avançant (MondeRegistre.avancer) : au réveil, les lits se vident (chacun se lève) ; à
+  // l'instantané au temps, l'empreinte de la partie à ce pas, à tous (un joueur qui ne la retrouve pas redemande
+  // tout) ; une sauvegarde par heure de jeu.
+  apresAvance(r) {
+    if (r.reveil) this.diffuserLits();
+    if (r.instantane && this.connexions().length) {
+      const s = this.registre.charger();
+      this.diffuser({ t: 'controle', pas: pasDe(s), empreinte: empreintePartie(s), reel: this.registre.reel, maintenant: this.registre.maintenant() });
+    }
+    if (this.registre.sauvegardeDue()) this.sauvegarderPlusTard('heure');
+  }
+  sauvegarderPlusTard(raison) {
+    const p = this.sauvegarder(raison).catch(() => null);
+    if (this.ctx.waitUntil) this.ctx.waitUntil(p);
+  }
+
+  // L'alarme du Durable Object (toutes les ALARME_MS tant qu'un joueur est là) : les pas dus (l'instantané au temps,
+  // la sauvegarde à l'heure) ; sans joueur (une connexion perdue sans adieu), le monde s'endort.
+  async alarm() {
+    if (!this.registre.existe() || !this.registre.vivante()) return;
+    if (!this.connexions().length) { this.endormir(); return; }
+    this.registre.avancer();
+    this.programmerAlarme();
+  }
+  programmerAlarme() {
+    const st = this.ctx.storage;
+    if (!st || typeof st.setAlarm !== 'function' || !this.registre.existe() || !this.registre.vivante() || !this.registre.actif) return;
+    try {
+      const p = st.setAlarm(this.registre.maintenant() + MONDE.ALARME_MS);
+      if (p && p.catch) p.catch(() => null);
+    } catch (e) { /* (pas d'alarme ici : les gestes font avancer le monde) */ }
+  }
+  endormir() {
+    if (!this.registre.existe()) return;
+    const r = this.registre.endormir();
+    if (r) this.sauvegarderPlusTard('depart');
+    const st = this.ctx.storage;
+    if (r && st && typeof st.deleteAlarm === 'function') { try { const p = st.deleteAlarm(); if (p && p.catch) p.catch(() => null); } catch (e) { /* (rien) */ } }
+  }
+
   // E-5 : qui est couché, dit à tous ; tous couchés, la nuit passe (et chacun se relève). `sauf` : une
-  // connexion qui se ferme.
+  // connexion qui se ferme. I9a2, un monde de l'île : tous couchés, la nuit file (temps.sommeil) ; un seul debout,
+  // elle reprend son pas.
   lits(sauf = null) {
-    const ws = this.ctx.getWebSockets().filter((w) => w !== sauf && this.registre.membre((this.ctx.getTags(w) || [])[0]));
+    const ws = this.connexions(sauf);
+    if (this.registre.existe() && this.registre.vivante()) {
+      const e = this.etatDesLitsVivants(ws);
+      const s = this.registre.charger();
+      if (e.nuit !== !!(s.horloge && s.horloge.sommeil)) {
+        const r = this.registre.sommeil(e.nuit);
+        if (r.ok && r.evt) this.diffuser(r.evt);
+      }
+      this.diffuser({ t: 'couches', comptes: e.couches, connectes: e.connectes });
+      return;
+    }
     const e = etatDesLits(ws.map((w) => ({ compte: (this.ctx.getTags(w) || [])[0], couche: !!(lireAttache(w) || {}).couche })));
     if (e.nuit) {
       for (const w of ws) attacher(w, { couche: false });
@@ -565,6 +806,16 @@ export class Monde {
       this.diffuser({ t: 'couches', comptes: [], connectes: e.connectes });
       return;
     }
+    this.diffuser({ t: 'couches', comptes: e.couches, connectes: e.connectes });
+  }
+
+  // I9a2 : les lits d'un monde de l'île (un lit d'une nuit passée ne compte plus) ; le dire à tous.
+  etatDesLitsVivants(ws) {
+    const R = this.reveils();
+    return etatDesLits(ws.map((w) => { const a = lireAttache(w) || {}; return { compte: (this.ctx.getTags(w) || [])[0], couche: !!a.couche && a.reveils === R }; }));
+  }
+  diffuserLits() {
+    const e = this.etatDesLitsVivants(this.connexions());
     this.diffuser({ t: 'couches', comptes: e.couches, connectes: e.connectes });
   }
 
@@ -598,9 +849,9 @@ export function traiterMessage(registre, compte, message, repondre, diffuser, di
   try { m = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message)); } catch (e) { repondre({ t: 'erreur', erreur: 'Message illisible.' }); return; }
   if (!m || typeof m !== 'object') return;
   if (m.t === 'hello') {
-    const a = registre.accueil(compte, { version: m.version, depuis: m.depuis });
+    const a = registre.accueil(compte, { version: m.version, depuis: m.depuis, pas: m.pas });
     if (!a.ok) { repondre({ t: 'refus', raison: a.raison, erreur: a.erreur }); return; }
-    repondre({ t: 'bienvenue', rev: a.rev, role: a.role, titre: a.titre, proprietaire: a.proprietaire, moi: compte, membres: a.membres });
+    repondre({ t: 'bienvenue', rev: a.rev, role: a.role, titre: a.titre, proprietaire: a.proprietaire, moi: compte, membres: a.membres, ...(a.horloge ? { horloge: a.horloge } : {}) });
     if (a.partie) repondre({ t: 'instantane', rev: a.rev, partie: a.partie });
     else repondre({ t: 'rattrape', evts: a.evts });
     if (lits) lits.accueilli();

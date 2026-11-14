@@ -11,6 +11,7 @@ import { DatabaseSync } from 'node:sqlite';
 import {
   addItem, allDevices, caseDansLaFerme, caseVue, commandeHorsDeLaFerme, countItem, createNewGame, DATA, HORS_FERME, HORS_FERME_ILE, ilePartagee, refusFrontiere, unirVu, voirAutour, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, buildAtelier, morceauxDe, poserBloc, ramassables, testFillBatteries, testSetLevel, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
 } from '../js/engine/index.js';
+import { clockHours, dureeDuPas, energieDe, horlogeVivante, nightActive, pasDe } from '../js/engine/index.js';
 import { atelier, avecVillage, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
 import { empreinteDuMonde } from './engine/monde-de-la-graine.mjs';
 import { spawnSync } from 'node:child_process';
@@ -772,4 +773,199 @@ test('E-13 : une botteleuse en ligne : les fibres versées, la botte sort tout d
   const q = ramassables(r.charger())[0];
   if (q) assert(jouer('cueillette.ramasser', { cueillette: q.id }).ok, 'la cueillette');
   assert(/Hors de la ferme/.test(jouer('cueillette.ramasser', { cueillette: 'branche:5' }).erreur), 'hors de la ferme');
+});
+
+/* ---------- I9a2 : l'horloge commune d'un monde de l'île ---------- */
+
+// Une île du chantier mise en ligne (une partie d'essai : villageActif), la Cuisine et le foyer bâtis, de quoi faire
+// des omelettes ; `heure` : l'heure de la partie à sa mise en ligne. Le monde a une horloge à lui (`t`, en ms).
+function ileEnLigne({ heure = 6, graine = '17' } = {}) {
+  const ile = avecVillage(() => createNewGame(graine, { nom: 'Île' }));
+  ile.essais = { ...(ile.essais || {}), village: true };
+  testSetLevel(ile, 5);
+  for (const st of ['foyer', 'cuisine']) assert(testBatir(ile, st).ok, `bâtir ${st}`);
+  for (const ing of DATA.RECETTES.omelette.ingredients) addItem(ile, ing.item, ing.qte * 20);
+  addItem(ile, DATA.ATELIER.BLOCS.mur_pierre.objet, 40);
+  ile.awakeMs = (heure - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
+  const sql = baseSql(), h = { t: 1_700_000_000_000 };
+  const r = new MondeRegistre(sql, () => h.t);
+  assert(r.creer({ proprietaire: A, nom: 'Alex', partie: { v: ile.version, t: 0, s: ile } }).ok);
+  r.ajouterMembre(B, 'Sam', 'batisseur');
+  return { r, sql, h };
+}
+// Le même monde, servi par son Durable Object (des WebSockets simulées, comme celles d'un Durable Object : ce qu'elles
+// gardent d'elles, E-5) : les messages reçus par chacun ; `dire(compte, m)`, `partir(compte)`.
+function ileServie(o = {}) {
+  const sql = baseSql(), h = { t: 1_700_000_000_000 }, sockets = [], msgs = [], bucket = fauxBucket();
+  const ctx = { storage: { sql }, id: { toString: () => 'ile' }, getWebSockets: (tag) => sockets.filter((w) => !tag || w.c === tag), getTags: (w) => [w.c], waitUntil: (p) => p };
+  const d = new Monde(ctx, { SESSIONS: bucket });
+  d.registre.maintenant = () => h.t;
+  const ile = avecVillage(() => createNewGame(o.graine || '17', { nom: 'Île' }));
+  ile.essais = { ...(ile.essais || {}), village: true };
+  ile.awakeMs = ((o.heure || 6) - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
+  addItem(ile, DATA.ATELIER.BLOCS.mur_pierre.objet, 40);
+  assert(d.registre.creer({ proprietaire: A, nom: 'Alex', partie: { v: ile.version, t: 0, s: ile } }).ok);
+  d.registre.ajouterMembre(B, 'Sam', 'batisseur');
+  const ws = (c) => { let att = null; return { c, send: (m) => msgs.push([c, JSON.parse(m)]), close() {}, serializeAttachment: (a) => { att = a; }, deserializeAttachment: () => att }; };
+  const de = (c) => sockets.find((w) => w.c === c);
+  const dire = (c, m) => d.webSocketMessage(de(c), JSON.stringify(m));
+  const entrer = (c) => { sockets.push(ws(c)); dire(c, { t: 'hello', version: GAME_VERSION }); };
+  const partir = (c) => { const w = sockets.filter((x) => x.c === c).pop(); sockets.splice(sockets.indexOf(w), 1); d.webSocketClose(w, 1000); };
+  return { d, r: d.registre, sql, h, msgs, bucket, dire, entrer, partir };
+}
+const PAS = DATA.VILLAGE.EN_LIGNE.PAS_MS, C = 'c-trois';
+
+test('I9a2 : un monde de l\'île a une horloge vivante : sans joueur, il dort ; le premier qui arrive le réveille là où il s\'était arrêté, sans rattrapage ; le dernier qui part l\'endort', () => {
+  const { r, sql, h } = ileEnLigne();
+  const s = r.charger();
+  eq([s.mondePartage, s.horloge, r.actif], [true, { pas: 0, sommeil: false, reveils: 0 }, false]);
+  h.t += 3600 * 1000;
+  eq(r.avancer().pas, 0, 'personne : rien ne tourne');
+  const a = r.accueil(A, { version: GAME_VERSION });
+  eq([a.horloge.pas, a.horloge.reel, a.horloge.maintenant, 'dormait' in a.horloge, r.actif], [0, h.t, h.t, false, true], 'le premier arrive : l\'horloge part de là');
+  h.t += 60 * 1000;
+  eq([r.avancer().pas, pasDe(r.charger())], [12, 12], 'une minute : 12 pas de 5 s');
+  h.t += 2500;
+  eq(r.avancer().pas, 0, 'un demi-pas : rien');
+  const jour = r.charger().day, heure = clockHours(r.charger());
+  h.t += 2500;
+  eq(r.endormir().pas, 13, 'le dernier part : les pas dus, puis le sommeil');
+  h.t += 3 * 3600 * 1000;
+  eq(r.avancer().pas, 0, 'trois heures sans personne : rien');
+  const b = r.accueil(B, { version: GAME_VERSION });
+  eq([b.horloge.pas, b.horloge.dormait, r.charger().day, Math.round(clockHours(r.charger()) * 600)], [13, 3 * 3600 * 1000, jour, Math.round(heure * 600) + 100], 'il reprend où il s\'était arrêté (et le dit)');
+  // le Durable Object évincé : réveillé à froid, la même partie, la même heure, le même pas
+  h.t += 7000;
+  r.avancer();
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.charger();
+  froid.avancer();   // (réveillé, il rejoue l'instantané, puis les pas dus jusqu'à l'heure)
+  eq([empreintePartie(froid.charger()), froid.reel, froid.actif, pasDe(froid.charger())], [empreintePartie(r.charger()), r.reel, true, 14]);
+});
+
+test('I9a2 : chaque geste porte son pas ; le Durable Object réveillé à froid rejoue le journal pas à pas (la même empreinte) ; l\'énergie est celle de chacun', () => {
+  const { r, sql, h } = ileEnLigne();
+  r.accueil(A, { version: GAME_VERSION });
+  const cases = casesLibres(r.charger(), 6);
+  const evts = [], attendus = [];
+  let ecoule = 0;
+  for (const [k, c] of cases.entries()) {
+    h.t += 7300 + k * 1100;
+    ecoule += 7300 + k * 1100;
+    attendus.push(Math.floor(ecoule / PAS));
+    const x = r.commande(k % 2 ? B : A, poser(c));
+    assert(x.ok, x.erreur);
+    evts.push(x.evt);
+  }
+  eq(evts.map((e) => e.cmd.pas), attendus, 'le pas où le monde était à l\'arrivée de chaque geste');
+  assert(evts.every((e) => Number.isFinite(e.reel) && e.reel <= h.t), 'l\'heure réelle du pas');
+  const om = r.commande(B, { id: id(), type: 'cuisine.lancer', args: { recette: 'omelette' } });
+  assert(om.ok, om.erreur);
+  const s = r.charger();
+  // (l'énergie de A, le propriétaire, est celle de sa partie à la mise en ligne ; B, arrivé, avait l'énergie pleine et a
+  // lancé une omelette ; celle de la partie du monde ne bouge pas)
+  eq(s.energies[A], s.energie, 'A : celle de sa partie, qu\'il n\'a pas dépensée (poser un mur ne coûte rien)');
+  assert(s.energies[B] < energieDe(s, 'c-inconnu'), `B a dépensé la sienne : ${JSON.stringify(s.energies)}`);
+  h.t += 30000;
+  r.avancer();
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.avancer();   // (le journal rejoué pas à pas, puis les pas dus jusqu'à l'heure)
+  eq([empreintePartie(froid.charger()), froid.reel], [empreintePartie(r.charger()), r.reel], 'le même monde, à la même heure');
+});
+
+test('I9a2 : une préparation finit à son heure (dans les pas, pas à la nuit) ; le soir, la nuit vient seule à 22 h', () => {
+  const { r, h } = ileEnLigne({ heure: 21 });
+  r.accueil(A, { version: GAME_VERSION });
+  const om = r.commande(B, { id: id(), type: 'cuisine.lancer', args: { recette: 'omelette' } });
+  assert(om.ok, om.erreur);
+  const prete = Math.ceil((DATA.RECETTES.omelette.temps * 1000) / PAS);
+  h.t += (prete - 1) * PAS;
+  r.avancer();
+  assert(r.charger().stations.cuisine.tache, 'pas encore');
+  h.t += PAS;
+  r.avancer();
+  eq([r.charger().stations.cuisine.tache, nightActive(r.charger())], [null, false], `prête au pas ${prete}`);
+  h.t += 3600 * 1000 / 60;   // (une minute réelle, deux heures de jeu : 22 h passé)
+  r.avancer();
+  assert(nightActive(r.charger()), 'la nuit est venue seule');
+});
+
+test('I9a2 : le Durable Object : tous couchés, la nuit file dix fois plus vite (temps.sommeil) ; un seul debout, elle garde son pas ; au réveil, chacun se lève ; qui arrive pendant la nuit arrive debout', () => {
+  const { r, h, msgs, dire, entrer, partir } = ileServie({ heure: 21.5 });
+  entrer(A); entrer(B);
+  dire(A, { t: 'coucher', oui: true });
+  eq(msgs.filter(([, m]) => m.t === 'couches').pop()[1], { t: 'couches', comptes: [A], connectes: 2 });
+  h.t += 30000 + PAS;   // (22 h passé)
+  r.avancer();
+  const s = r.charger();
+  assert(nightActive(s) && !s.horloge.sommeil, 'la nuit, à son pas : B est debout');
+  eq(dureeDuPas(s), PAS);
+  msgs.length = 0;
+  dire(B, { t: 'coucher', oui: true });
+  const evt = msgs.find(([, m]) => m.t === 'evt');
+  eq([evt && evt[1].acteur, evt && evt[1].cmd.type, evt && evt[1].cmd.args, s.horloge.sommeil, dureeDuPas(s)], [ACTEUR_MONDE, 'temps.sommeil', { oui: true }, true, PAS / 10], 'tous couchés : la nuit file');
+  // C arrive : il arrive debout, la nuit reprend son pas ; il repart : tous couchés de nouveau
+  r.ajouterMembre(C, 'Cam', 'visiteur');
+  entrer(C);
+  eq([r.charger().horloge.sommeil, msgs.filter(([, m]) => m.t === 'evt').pop()[1].cmd.args], [false, { oui: false }], 'C est debout');
+  partir(C);
+  eq(r.charger().horloge.sommeil, true);
+  const jour = s.day;
+  h.t += 60 * 1000;   // (une minute réelle : la nuit entière, à 0,5 s le pas, en 48 s)
+  msgs.length = 0;
+  r.avancer();
+  eq([s.day, nightActive(s), s.horloge.sommeil, s.horloge.reveils], [jour + 1, false, false, 1], 'le matin, en moins d\'une minute');
+  eq(msgs.filter(([, m]) => m.t === 'couches').map(([c, m]) => [c, m.comptes]), [[A, []], [B, []]], 'chacun se lève');
+  // la nuit suivante, A seul couché : elle garde son pas
+  dire(A, { t: 'coucher', oui: true });
+  h.t += 16 * 30 * 1000;
+  r.avancer();
+  assert(nightActive(s) && !s.horloge.sommeil && dureeDuPas(s) === PAS, 'un seul couché : la nuit à son pas');
+});
+
+test('I9a2 : le Durable Object : un instantané toutes les 120 pas (l\'empreinte, à tous), pas aux 20 gestes ; une sauvegarde par heure ; le départ du dernier endort le monde et le sauve', async () => {
+  const { r, sql, h, msgs, entrer, partir, bucket } = ileServie();
+  entrer(A); entrer(B);
+  const inst = () => sql.db.prepare('SELECT MAX(rev) AS r FROM instantane').get().r;
+  const avant = inst();
+  for (const c of casesLibres(r.charger(), 25)) { h.t += 1000; r.commande(A, poser(c)); }
+  assert(r.rev >= 20, `${r.rev} gestes`);
+  eq(inst(), avant, 'pas d\'instantané aux 20 gestes');
+  msgs.length = 0;
+  h.t += MONDE.INSTANTANE_PAS * PAS;
+  r.avancer();
+  const ctl = msgs.filter(([, m]) => m.t === 'controle');
+  eq([ctl.length, ctl[0][1].pas, ctl[0][1].empreinte], [2, pasDe(r.charger()), empreintePartie(r.charger())], 'l\'instantané au temps, son empreinte à tous');
+  const ancre = () => JSON.parse(sql.db.prepare('SELECT valeur FROM meta WHERE cle = \'horloge\'').get().valeur);
+  eq([inst(), ancre().pas, ancre().actif], [r.rev, pasDe(r.charger()), true], 'l\'ancre : le pas de l\'instantané');
+  // une heure de jeu plus tard : une sauvegarde
+  h.t += MONDE.SAUVEGARDE_MS;
+  r.avancer();
+  await new Promise((ok) => setTimeout(ok, 20));
+  eq([...bucket.m.values()].map((x) => JSON.parse(x.v).raison), ['heure']);
+  // les deux partent : le monde s'endort, sauvé
+  h.t += 3 * PAS;
+  partir(A); partir(B);
+  await new Promise((ok) => setTimeout(ok, 20));
+  eq([[...bucket.m.values()].map((x) => JSON.parse(x.v).raison).sort(), ancre().actif, ancre().pas, inst()], [['depart', 'heure'], false, pasDe(r.charger()), r.rev], 'endormi et sauvé');
+});
+
+test('I9a2 : un joueur en retard de plus de 60 pas reçoit la partie entière ; en deçà, le journal ; les mondes d\'avant gardent F.2 (ni pas, ni horloge)', () => {
+  const { r, h } = ileEnLigne();
+  r.accueil(A, { version: GAME_VERSION });
+  const [c] = casesLibres(r.charger(), 1);
+  h.t += 10 * PAS;
+  assert(r.commande(A, poser(c)).ok);
+  h.t += 20 * PAS;
+  const proche = r.accueil(B, { version: GAME_VERSION, depuis: 0, pas: 0 });
+  eq([!!proche.evts, proche.evts && proche.evts.length], [true, 1], '30 pas : le journal');
+  h.t += 40 * PAS;
+  eq('partie' in r.accueil(B, { version: GAME_VERSION, depuis: 0, pas: 0 }), true, '70 pas : la partie entière');
+  eq('partie' in r.accueil(B, { version: GAME_VERSION, depuis: 0 }), true, 'un retard inconnu : la partie entière');
+  // une ferme d'avant
+  const { r: f } = monde();
+  const a = f.accueil(A, { version: GAME_VERSION });
+  const [t] = casesLibres(f.charger(), 1);
+  const x = f.commande(A, poser(t));
+  eq(['horloge' in a, 'pas' in x.evt.cmd, 'reel' in x.evt, f.avancer().pas, f.reprendre(), horlogeVivante(f.charger())], [false, false, false, 0, null, false]);
 });
