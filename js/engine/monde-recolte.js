@@ -369,6 +369,31 @@ export function recolterMonde(state, id, o = {}) {
   return fail('Il n\'y a rien à prendre ici.');
 }
 
+/* ---------- I9b : le geste d'un joueur d'une île partagée (la commande monde.recolter) ---------- */
+
+// Le contrôle d'une pièce sans le sol de sa région (docs/ile.md, I9b : le choix du contrôle) : son identifiant se lit
+// (une sorte du monde qui se prend), son pied est sur la carte, hors du rectangle de la ferme. Que la pièce soit
+// vraiment là (la région tirée de la graine) n'est pas revu : le joueur ne touche que ce que sa carte dessine, et
+// une pièce prise (ou cueillie) est refusée par le geste même (preparer : un doublon, un second joueur sur le même
+// arbre). Le même contrôle chez le monde et chez chaque joueur : la même réponse. → null, ou la raison.
+export function refusPieceMonde(state, id) {
+  const o = lireIdMonde(id);
+  if (!o || !o.regle) return 'Il n\'y a rien à prendre ici.';
+  const T = farmTerrain(state), F = T.FERME;
+  if (o.X < 0 || o.Y < 0 || o.X >= T.LARGEUR || o.Y >= T.HAUTEUR) return 'Il n\'y a rien à prendre ici.';
+  if (F && o.X >= F.X && o.Y >= F.Y && o.X < F.X + F.LARGEUR && o.Y < F.Y + F.HAUTEUR) return 'Il n\'y a rien à prendre ici.';
+  return null;
+}
+
+// La commande monde.recolter : le geste qui convient à la pièce `id` (recolterMonde), sans morceaux au sol : ce
+// qu'elle lâche va droit à l'inventaire de la partie, le coffre commun d'un monde en ligne (comme les outils de la
+// ferme en ligne, E-9). `o` : { geste, fort, variante, depuis }.
+export function recolterPieceMonde(state, id, o = {}) {
+  const refus = refusPieceMonde(state, id);
+  if (refus) return fail(refus);
+  return recolterMonde(state, id, { geste: o.geste, fort: !!o.fort, variante: o.variante, depuis: o.depuis });
+}
+
 /* ---------- la repousse, au réveil ---------- */
 
 // Au réveil (runNight) : les coups reçus s'oublient ; ce qui est pris ou cueilli et dont le jour est

@@ -32,7 +32,7 @@ import { vuDesRegions, vuInitial } from './monde-vu.js';
 import { genererFerme } from './ferme-generee.js';
 import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
-import { nouvelEquipement } from './equipement.js';
+import { nouvelEquipement, sacDef } from './equipement.js';
 import { nouveauCompagnon } from './compagnon.js';
 import { recitDAvant, recitPour } from './recit-aiguillage.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
@@ -1076,7 +1076,28 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v104 → v105 (le chantier « l'île à bâtir », fiche I9b) : le sac à provisions de chacun dans un monde de l'île
+  // (js/engine/temps-monde.js sacDe). La partie d'un monde (mondePartage) reçoit state.sacs (par compte : les sacs
+  // lisibles sont gardés, leurs aliments aussi ; un monde d'avant n'en a aucun, le sac de sa partie reste là, à
+  // personne). Une partie solo n'en a pas et reste telle quelle.
+  104: (state) => {
+    const out = { ...state, version: 105 };
+    if (state.mondePartage === true) out.sacs = reparerSacs(state.sacs);
+    return out;
+  },
 };
+
+// Les sacs de chacun d'une sauvegarde (la migration v104 → v105) : { compte: { objet (un sac du jeu), items } }.
+function reparerSacs(sacs) {
+  const o = sacs && typeof sacs === 'object' && !Array.isArray(sacs) ? sacs : {};
+  const out = {};
+  for (const [k, q] of Object.entries(o)) {
+    if (!k || !q || typeof q !== 'object' || !sacDef(q.objet)) continue;
+    const items = q.items && typeof q.items === 'object' && !Array.isArray(q.items) ? q.items : {};
+    out[k] = { objet: q.objet, items: Object.fromEntries(Object.entries(items).filter(([it, l]) => !!DATA.OBJETS[it] && Array.isArray(l))) };
+  }
+  return out;
+}
 
 // Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.
 function reparerDidacticielIle(d) {

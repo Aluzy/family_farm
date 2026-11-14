@@ -387,7 +387,9 @@ export function runNight(state) {
   respawnTrees(state); // les arbres abattus dont le jour est venu repoussent
   respawnBushes(state); // les buissons coupés aussi
   regrowGrass(state); // l'herbe haute fauchée dont le jour est venu repousse
-  if (!state.mondePartage) repousseMonde(state); // ce qui a été pris dans le grand monde aussi (monde-recolte.js ; E-8 : pas dans un monde partagé)
+  // ce qui a été pris dans le grand monde aussi (monde-recolte.js) ; E-8 : pas dans un monde partagé (la ferme seule) ; I9b :
+  // une île partagée (l'horloge vivante) l'a, au même pas chez tous (sa nuit vient dans les pas : temps-monde.js)
+  if (!state.mondePartage || horlogeVivante(state)) repousseMonde(state);
   composter(state); // ce qui a périmé cette nuit va au bac à compost (compost.js ; après la péremption)
   remplirRuches(state); // les abeilles remplissent les ruches
   affinerTonnelets(state); // la tomme s'affine, le moût fermente (tonnelets.js)

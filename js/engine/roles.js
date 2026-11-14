@@ -24,7 +24,7 @@ export const ICONES_ROLES = { visiteur: '👀', jardinier: '🌱', batisseur: '�
 // Le rôle demandé par chaque famille de commandes (le début de son type) ; un type précis l'emporte.
 const PAR_FAMILLE = {
   potager: 'jardinier', cruche: 'jardinier', poules: 'jardinier', ramassage: 'jardinier', cuisine: 'jardinier',
-  moulin: 'jardinier', boite: 'jardinier', manger: 'jardinier', outil: 'jardinier', verger: 'jardinier',
+  moulin: 'jardinier', boite: 'jardinier', manger: 'jardinier', outil: 'jardinier', verger: 'jardinier', monde: 'jardinier', sac: 'jardinier',
   bloc: 'batisseur', mur: 'batisseur', etage: 'batisseur', solEtage: 'batisseur', arbre: 'batisseur',
   atelier: 'batisseur', tech: 'batisseur', appareil: 'batisseur', reservoir: 'batisseur', robot: 'batisseur',
   serre: 'batisseur', poulailler: 'batisseur', piece: 'batisseur', murs: 'batisseur',

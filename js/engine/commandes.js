@@ -79,7 +79,12 @@
      frigo.agrandir   { }
      boite.deposer    { objet, quantite }       la boîte à nourriture du foyer ; boite.reprendre
      boite.reprendre  { objet, quantite }
-     manger           { objet?, sac? }          manger sur le pouce (sac : ce qui est dans le sac)
+     manger           { objet?, sac?, dehors? } manger sur le pouce (sac : ce qui est dans le sac ; dehors, I9b : le
+                                                personnage est hors de la ferme, il ne mange que ce que contient son sac)
+     sac.poser        { objet }                 I9b : mettre un sac à provisions (de l'inventaire) ; sac.retirer : l'ôter
+     sac.retirer      { }
+     sac.remplir      { objet, quantite, source? } y mettre des aliments (de l'inventaire, ou « frigo ») ; sac.reprendre
+     sac.reprendre    { objet, quantite }       (dans un monde de l'île, le sac est celui de l'acteur : temps-monde.js)
    Les outils de la ferme (E-9, sans inverse ; sans positions de chute : ce qui tombe va droit à
    l'inventaire, comme dans un monde en ligne, qui ne ramasse pas) :
      outil.couper     { arbre, fort? }          un coup de hache (un arbre, un buisson : « col,rang » de son pied)
@@ -89,6 +94,11 @@
      outil.faucherAutour { touffes }            le coup fort de la faux : les touffes autour (au plus 60)
      outil.pecher     { eau, coin? }            un lancer (etang, mare ; lac, riviere, mer : le grand monde)
      verger.cueillir  { arbre }                 cueillir les fruits d'un arbre du verger (son id)
+   Les changements de l'île (I9b : une île partagée ; sans inverse, ce qui est pris revient seul, au jour dit) :
+     monde.recolter   { piece, geste?, fort?, variante?, depuis? } couper, casser, faucher, cueillir ou ramasser la
+                                                pièce « sorte:x,y » du grand monde (monde-recolte.js) ; ce qu'elle
+                                                lâche va au coffre commun ; pêcher dehors : outil.pecher (lac,
+                                                riviere, mer) ; bâtir dehors : bloc.poser, bloc.reprendre…
    La progression de la ferme (E-10, M.5 : commune à tous ses joueurs ; sans inverse) :
      tech.acheter     { noeud }                 un nœud de l'arbre des technologies
      atelier.fabriquer { recette }              une recette de l'Atelier (un bloc, un outil, un meuble…)
@@ -174,12 +184,14 @@ import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, s
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
 import { deposerBoite, reprendreBoite } from './repas.js';
 import { eatSnack } from './family.js';
+import { poserSac, remplirSac, reprendreSac, retirerSac } from './equipement.js';
 import { castLine, chopTree, mineRock, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass } from './outils.js';
 import { sortirBotte, verserFibres } from './botteleuse.js';
 import { verserChaine } from './chaines.js';
 import { verserGrain } from './distributeur.js';
 import { craft, ramasser } from './atelier.js';
 import { harvestTree } from './orchard.js';
+import { recolterPieceMonde } from './monde-recolte.js';
 import { buyTech } from './techtree.js';
 import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
@@ -225,6 +237,9 @@ const CONTROLES = {
   coord: (v) => typeof v === 'string' && /^\d{1,6},\d{1,6}$/.test(v),
   coords: (v) => Array.isArray(v) && v.length > 0 && v.length <= 60 && v.every((x) => typeof x === 'string' && /^\d{1,6},\d{1,6}$/.test(x)),
   eau: (v) => typeof v === 'string' && /^[a-z]{1,20}$/.test(v),
+  // (I9b : une pièce du grand monde, « sorte:x,y » ; le geste qu'on y fait)
+  piece: (v) => typeof v === 'string' && /^[a-z_]{1,30}:\d{1,6},\d{1,6}$/.test(v),
+  geste: (v) => v === 'couper' || v === 'casser' || v === 'faucher' || v === 'cueillir' || v === 'ramasser',
   noeud: (v) => typeof v === 'string' && !!DATA.ARBRE.noeuds[v],
   recetteAtelier: (v) => typeof v === 'string' && !!DATA.ATELIER.RECETTES[v],
   station: (v) => typeof v === 'string' && !!DATA.STATIONS[v],
@@ -558,9 +573,19 @@ export const COMMANDES = {
   'boite.deposer': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => deposerBoite(state, objet, quantite) },
   'boite.reprendre': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => reprendreBoite(state, objet, quantite) },
   'manger': {
-    args: { objet: 'objet?', sac: 'drapeau?' },
-    executer: (state, { objet = null, sac = false }) => eatSnack(state, objet, { duSac: sac }),
+    args: { objet: 'objet?', sac: 'drapeau?', dehors: 'drapeau?' },
+    // (I9b : dehors, le personnage du joueur est hors de la ferme : il ne mange que ce qu'il y a dans son sac ; le monde
+    // ne sait pas où il est, la page le dit)
+    executer: (state, { objet = null, sac = false, dehors = false }) => eatSnack(state, objet, { duSac: sac || dehors }),
   },
+  // (I9b : le sac à provisions de chacun, dans un monde de l'île : temps-monde.js sacDe ; ailleurs, celui de la partie)
+  'sac.poser': { args: { objet: 'objet' }, executer: (state, { objet }) => poserSac(state, objet) },
+  'sac.retirer': { args: {}, executer: (state) => retirerSac(state) },
+  'sac.remplir': {
+    args: { objet: 'objet', quantite: 'quantite', source: 'texte?' },
+    executer: (state, { objet, quantite, source = 'inventaire' }) => remplirSac(state, objet, Math.max(1, Math.floor(quantite)), source === 'frigo' ? 'frigo' : 'inventaire'),
+  },
+  'sac.reprendre': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => reprendreSac(state, objet, Math.max(1, Math.floor(quantite))) },
   'outil.couper': { args: { arbre: 'coord', fort: 'drapeau?' }, executer: (state, { arbre, fort = false }) => chopTree(state, arbre, null, fort) },
   'outil.casser': { args: { rocher: 'coord', fort: 'drapeau?' }, executer: (state, { rocher, fort = false }) => mineRock(state, rocher, null, fort) },
   'outil.caillou': { args: { rocher: 'coord' }, executer: (state, { rocher }) => ramasserCaillou(state, rocher) },
@@ -568,6 +593,11 @@ export const COMMANDES = {
   'outil.faucherAutour': { args: { touffes: 'coords' }, executer: (state, { touffes }) => scytheAround(state, touffes, null) },
   'outil.pecher': { args: { eau: 'eau', coin: 'texte?' }, executer: (state, { eau, coin = null }) => castLine(state, eau, coin) },
   'verger.cueillir': { args: { arbre: 'texte' }, executer: (state, { arbre }) => harvestTree(state, arbre) },
+  // (I9b : une pièce du grand monde, sur une île partagée : son geste, ce qu'elle lâche au coffre commun)
+  'monde.recolter': {
+    args: { piece: 'piece', geste: 'geste?', fort: 'drapeau?', variante: 'case?', depuis: 'case?' },
+    executer: (state, { piece, geste, fort = false, variante, depuis }) => recolterPieceMonde(state, piece, { geste, fort, variante, depuis }),
+  },
   'tech.acheter': { args: { noeud: 'noeud' }, executer: (state, { noeud }) => buyTech(state, noeud) },
   'atelier.fabriquer': { args: { recette: 'recetteAtelier' }, executer: (state, { recette }) => craft(state, recette) },
   'atelier.construire': { args: { station: 'station' }, executer: (state, { station }) => buildStation(state, station) },

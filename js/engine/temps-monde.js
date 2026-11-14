@@ -152,17 +152,50 @@ export function energieDe(state, compte) {
   const e = state && state.energies && state.energies[compte];
   return Number.isFinite(e) ? e : energyMax(state);
 }
-// `fn()` joué avec l'énergie de `compte` dans state.energie, rangée ensuite ; celle de la partie, remise.
+// `fn()` joué avec l'énergie de `compte` dans state.energie, rangée ensuite ; celle de la partie, remise. I9b : son sac
+// à provisions aussi (state.sacs, posé dans state.equipement.sac le temps de la commande : poserSacDe).
 export function avecActeur(state, compte, fn) {
   if (!compte || compte === ACTEUR_DU_MONDE || !horlogeVivante(state)) return fn();
   const E = energiesDe(state), avant = state.energie;
   state.energie = energieDe(state, compte);
+  const rendreSac = poserSacDe(state, compte);
   try {
     return fn();
   } finally {
     E[compte] = Math.max(0, Math.round(Number(state.energie) || 0));
     state.energie = avant;
+    rendreSac();
   }
+}
+
+/* -- I9b : le sac de chacun (docs/monde-partage.md § 13 : ses provisions de sortie) --
+
+   state.sacs = { <compte>: { objet, items } } : le sac à provisions de chaque joueur d'un monde de l'île (l'objet du
+   sac, ce qu'il contient : equipement.js). Un compte qui n'y est pas n'a pas de sac ; le propriétaire reçoit celui de
+   sa partie à la mise en ligne (worker/src/monde.mjs). Le moteur lit le sac dans state.equipement.sac : une commande y
+   pose celui de son acteur le temps de se jouer, puis le range (avecActeur) ; la nuit fait périmer ce que chacun
+   contient (inventory.js spoil). Une partie sans state.sacs (solo, une ferme d'avant) ne change pas. */
+
+export function sacsDe(state) {
+  return state && state.sacs && typeof state.sacs === 'object' && !Array.isArray(state.sacs) ? state.sacs : null;
+}
+// Le sac de `compte` (null : il n'en a pas).
+export function sacDe(state, compte) {
+  const S = sacsDe(state);
+  return S && S[compte] && typeof S[compte] === 'object' ? S[compte] : null;
+}
+// Le sac de `compte` posé dans state.equipement.sac ; rend la fonction qui le range et remet celui de la partie.
+function poserSacDe(state, compte) {
+  const S = sacsDe(state);
+  if (!S) return () => {};
+  if (!state.equipement || typeof state.equipement !== 'object' || Array.isArray(state.equipement)) state.equipement = { membres: {}, sac: null };
+  const q = state.equipement, avant = q.sac === undefined ? undefined : q.sac;
+  q.sac = sacDe(state, compte);
+  return () => {
+    if (q.sac && typeof q.sac === 'object') S[compte] = q.sac;
+    else delete S[compte];
+    if (avant === undefined) delete q.sac; else q.sac = avant;
+  };
 }
 // La nuit rend l'énergie de chaque joueur (le sommeil, `ms` d'horloge), présent ou non.
 function rendreEnergies(state, ms) {

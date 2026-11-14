@@ -222,6 +222,8 @@ export function spoil(state) {
   if (state.boite && state.boite.items) ageLots(state.boite.items, 1, perdus);
   // (fiche 11 : le sac à provisions non plus)
   if (state.equipement && state.equipement.sac && state.equipement.sac.items) ageLots(state.equipement.sac.items, 1, perdus);
+  // (I9b : le sac de chaque joueur d'un monde de l'île, state.sacs : temps-monde.js)
+  if (state.sacs && typeof state.sacs === 'object') for (const k of Object.keys(state.sacs).sort()) { const q = state.sacs[k]; if (q && q.items && typeof q.items === 'object') ageLots(q.items, 1, perdus); }
   if (!state.nuit.perdus) state.nuit.perdus = {};
   for (const [item, n] of Object.entries(perdus)) {
     state.nuit.perdus[item] = (state.nuit.perdus[item] || 0) + n;
