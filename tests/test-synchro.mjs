@@ -5,8 +5,8 @@
 
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
-import { addItem, blocAt, DATA, empreintePartie, executerCommande, GAME_VERSION, poseStatus } from '../js/engine/index.js';
-import { partie } from './engine/aide.mjs';
+import { addItem, blocAt, caseVue, createNewGame, DATA, empreintePartie, executerCommande, farmTerrain, GAME_VERSION, HORS_FERME_ILE, ilePartagee, poseStatus, refusFrontiere, unirVu, voirAutour } from '../js/engine/index.js';
+import { avecVillage, partie } from './engine/aide.mjs';
 import { MondeRegistre } from '../worker/src/monde.mjs';
 import { Synchro } from '../js/ui/synchro.js';
 
@@ -104,4 +104,35 @@ test('synchro : coupé, le joueur continue ; à la reconnexion, ses commandes re
     if (rep.evt) a.s.evenement(rep.evt);
   }
   eq([r.rev, a.s.enAttente.length, empreintePartie(a.s.locale) === empreintePartie(r.charger())], [2, 0, true]);
+});
+
+test('I9a : l\'île partagée : chacun garde son brouillard sur sa partie locale (posé à chaque fois qu\'elle est refaite) ; la confirmée reste celle du monde ; hors de la ferme, le geste est refusé avant d\'être envoyé', () => {
+  const db = new DatabaseSync(':memory:');
+  const r = new MondeRegistre({ exec(q, ...v) { const x = db.prepare(q).all(...v); return { toArray: () => x }; } });
+  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  ile.essais = { ...(ile.essais || {}), village: true };
+  addItem(ile, DATA.ATELIER.BLOCS.mur_pierre.objet, 20);
+  assert(r.creer({ proprietaire: 'A', partie: ile }).ok);
+  r.ajouterMembre('B', 'Sam');
+  // le brouillard de B : ce que son personnage a vu, hors de la partie du monde (en-ligne.js le garde par monde)
+  const w = r.charger(), T = farmTerrain(w);
+  let loin = T.MONDE.cadre.SORTIE;
+  while (caseVue(w, loin)) loin += 8;
+  const vu = JSON.parse(JSON.stringify(w));
+  voirAutour(vu, loin, { biome: 'prairie' });
+  const brouillard = vu.monde.vu;
+  const a = r.accueil('B', { version: GAME_VERSION });
+  const b = new Synchro({ partie: a.partie, rev: a.rev, executerCommande, quandRefaite: (locale) => unirVu(locale, brouillard) });
+  unirVu(b.locale, brouillard);
+  eq([ilePartagee(b.locale), caseVue(b.locale, loin), caseVue(b.confirmee, loin)], [true, true, false]);
+  // un geste de A (dans la ferme) : la partie de B est refaite, son brouillard reposé ; la confirmée, celle du monde
+  const cases = [];
+  for (let t = 0; t < 644 * 400 && cases.length < 2; t += 7) if (poseStatus(w, 'mur_pierre', t).ok) cases.push(t);
+  const rep = r.commande('A', mur(cases[0]));
+  assert(rep.ok, rep.erreur);
+  assert(b.evenement({ rev: rep.evt.rev, cmd: rep.evt.cmd }));
+  eq([blocAt(b.locale, cases[0]), caseVue(b.locale, loin), empreintePartie(b.confirmee) === empreintePartie(r.charger())], ['mur_pierre', true, true]);
+  // hors de la ferme : refusé avant d'être envoyé (en-ligne.js, jouerEnLigne), comme le monde le refuse
+  const F = T.FERME, dehors = (F.Y + 3) * T.LARGEUR + F.X - 4, c = mur(dehors);
+  eq([refusFrontiere(b.locale, c.args), r.commande('B', c).erreur], [HORS_FERME_ILE, HORS_FERME_ILE]);
 });

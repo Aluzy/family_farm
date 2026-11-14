@@ -9,10 +9,16 @@
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import {
-  addItem, allDevices, countItem, DATA, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, buildAtelier, morceauxDe, poserBloc, ramassables, testFillBatteries, testSetLevel, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
+  addItem, allDevices, caseDansLaFerme, caseVue, commandeHorsDeLaFerme, countItem, createNewGame, DATA, HORS_FERME, HORS_FERME_ILE, ilePartagee, refusFrontiere, unirVu, voirAutour, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, buildAtelier, morceauxDe, poserBloc, ramassables, testFillBatteries, testSetLevel, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
 } from '../js/engine/index.js';
-import { atelier, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
-import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, Monde, MONDE, MondeRegistre, SAUVEGARDES, SauvegardesMonde, traiterMessage } from '../worker/src/monde.mjs';
+import { atelier, avecVillage, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
+import { empreinteDuMonde } from './engine/monde-de-la-graine.mjs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, horsDeLaFerme, Monde, MONDE, MondeRegistre, SAUVEGARDES, SauvegardesMonde, traiterMessage } from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion fausse'); }
@@ -461,6 +467,64 @@ test('E-8 : une commande qui vise une case hors de la ferme est refusée par le 
   assert(/Hors de la ferme/.test(a.erreur), a.erreur);
   eq(r.commande(A, { id: id(), type: 'bloc.deplacer', args: { de: dedans, vers: dehors } }).ok, false, 'pas vers dehors non plus');
   assert(r.commande(A, poser(dedans)).ok, 'dans la ferme');
+});
+
+/* ---------- I9a : l'île partagée ---------- */
+
+// Une île du chantier « l'île à bâtir », mise en ligne : une partie neuve du chantier, devenue partie d'essai (le
+// réglage éteint, elle reste sur l'île : villageActif), ses murs en main.
+function ileLocale(graine = '13') {
+  const s = avecVillage(() => createNewGame(graine, { nom: 'Île' }));
+  s.essais = { ...(s.essais || {}), village: true };
+  addItem(s, DATA.ATELIER.BLOCS.mur_pierre.objet, 20);
+  return s;
+}
+
+test('I9a : la frontière est au moteur (le jeu la vérifie comme le monde) ; une ferme d\'avant garde son mot, l\'île partagée a le sien', () => {
+  eq([horsDeLaFerme === commandeHorsDeLaFerme, dansLaFerme === caseDansLaFerme], [true, true], 'le même code des deux côtés');
+  // une ferme d'avant (le chantier éteint) : comme avant
+  const { r } = monde();
+  const w = r.charger(), T = farmTerrain(w), F = T.FERME;
+  const dehors = (F.Y + 2) * T.LARGEUR + F.X - 3;
+  eq([ilePartagee(w), refusFrontiere(w, { case: dehors }), r.commande(A, poser(dehors)).erreur], [false, HORS_FERME, HORS_FERME]);
+  // l'île partagée : hors de la ferme, rien d'autre n'est encore synchronisé ; dans la ferme, comme avant
+  const s = ileLocale();
+  const ri = new MondeRegistre(baseSql());
+  assert(ri.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  const wi = ri.charger(), Ti = farmTerrain(wi), Fi = Ti.FERME;
+  eq([ilePartagee(wi), wi.mondePartage], [true, true]);
+  const dehorsI = (Fi.Y + 2) * Ti.LARGEUR + Fi.X - 3, dedansI = casesLibres(wi, 1)[0];
+  eq([refusFrontiere(wi, { case: dehorsI }), ri.commande(A, poser(dehorsI)).erreur], [HORS_FERME_ILE, HORS_FERME_ILE]);
+  eq(refusFrontiere(wi, { arbre: '3,3' }), HORS_FERME_ILE, 'un arbre de l\'île');
+  eq(refusFrontiere(wi, { case: dedansI }), null);
+  assert(ri.commande(A, poser(dedansI)).ok, 'dans la ferme');
+});
+
+test('I9a : le monde créé chez l\'invité (un autre processus, de la graine) est identique à celui de l\'hôte ; son brouillard ne touche que son vu', () => {
+  const s = ileLocale('29');
+  const hote = empreinteDuMonde(s);
+  const r = new MondeRegistre(baseSql());
+  assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  r.ajouterMembre(B, 'Sam', 'batisseur');
+  const a = r.accueil(B, { version: GAME_VERSION });
+  assert(a.ok && a.partie, 'l\'invité reçoit la partie du monde');
+  const dossier = mkdtempSync(join(tmpdir(), 'ile-')), f = join(dossier, 'partie.json');
+  writeFileSync(f, JSON.stringify(a.partie));
+  const p = spawnSync(process.execPath, [fileURLToPath(new URL('./engine/monde-de-la-graine.mjs', import.meta.url)), f], { encoding: 'utf8' });
+  rmSync(dossier, { recursive: true, force: true });
+  assert(p.status === 0, p.stderr);
+  const invite = JSON.parse(p.stdout);
+  eq(invite, hote, 'la même île : la carte, le terrain, les éléments, les régions de la ferme, de sa sortie et du port');
+  assert(hote.vues.length >= 2 && hote.elements, 'l\'empreinte regarde l\'île, pas seulement la ferme');
+  // (le brouillard de chacun, posé sur sa partie locale, ne change que son vu : ni ses régions vues, ni la confirmée)
+  const locale = JSON.parse(JSON.stringify(a.partie)), confirmee = empreintePartie(a.partie);
+  const autre = JSON.parse(JSON.stringify(a.partie)), Tl = farmTerrain(autre);
+  let loin = Tl.MONDE.cadre.SORTIE;
+  while (caseVue(a.partie, loin)) loin += 8;   // (vers l'est, la première case que le monde n'a pas vue)
+  voirAutour(autre, loin, { biome: 'prairie' });
+  const vues = JSON.stringify(locale.monde.vues);
+  eq([unirVu(locale, autre.monde.vu), unirVu(locale, autre.monde.vu), JSON.stringify(locale.monde.vues), empreintePartie(a.partie)], [true, false, vues, confirmee]);
+  assert(caseVue(locale, loin) && !caseVue(a.partie, loin), 'vu chez lui seulement');
 });
 
 test('E-8 : la nuit d\'un monde partagé ne fait que la ferme ; 30 nuits sur une copie élaguée, le journal se rejoue', () => {

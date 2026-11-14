@@ -10679,7 +10679,8 @@ export const RAW_DATA = {
         "marais": "dans le marais",
         "*": "sur l'île"
       }
-    }
+    },
+    "EN_LIGNE": { "PARTIE_KO": 256, "DEHORS_KO": 64 }
   },
   "TACHES": {
     "TRAVAIL": [[8, 11.5], [13.5, 16.5]],

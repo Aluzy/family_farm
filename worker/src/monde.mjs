@@ -32,7 +32,7 @@
 //                                                   couché ; gardé sur sa connexion, jamais écrit) ; tous
 //                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: nuit.partagee }
 
-import { COMMANDES, executerCommande, farmTerrain, GAME_VERSION, migrate, pickUpAll, ramasserMorceau, refusDuRole } from '../../js/engine/index.js';
+import { caseDansLaFerme, commandeHorsDeLaFerme, COMMANDES, executerCommande, GAME_VERSION, migrate, pickUpAll, ramasserMorceau, refusDuRole, refusFrontiere } from '../../js/engine/index.js';
 
 export const MONDE = {
   INSTANTANE_TOUS: 20,      // révisions entre deux instantanés
@@ -111,32 +111,13 @@ export function elaguer(s) {
   return t;
 }
 
-// La case `c` est-elle dans le rectangle de la ferme ?
-export function dansLaFerme(s, c) {
-  const T = farmTerrain(s), F = T && T.FERME;
-  if (!F) return true;
-  const x = c % T.LARGEUR, y = Math.floor(c / T.LARGEUR);
-  return x >= F.X && y >= F.Y && x < F.X + F.LARGEUR && y < F.Y + F.HAUTEUR;
-}
-// Une commande qui vise une case hors de la ferme : M.1, le contrôle du monde. Ses arguments case, de,
-// vers (une case) ; E-9 : arbre, rocher (« col,rang ») ; touffe, touffes (« x,y » en px) ; eau (celles du
-// grand monde : lac, rivière, mer).
-const CASES = ['case', 'de', 'vers'];
-const EAUX_DU_MONDE = new Set(['lac', 'riviere', 'mer']);
-const PX = 16;
-export function horsDeLaFerme(s, args) {
-  if (!args) return false;
-  if (CASES.some((k) => Number.isInteger(args[k]) && !dansLaFerme(s, args[k]))) return true;
-  const W = farmTerrain(s).LARGEUR;
-  const tuile = (v) => { const [c, r] = String(v).split(',').map(Number); return r * W + c; };
-  const pixel = (v) => { const [x, y] = String(v).split(',').map(Number); return Math.floor((y - 1) / PX) * W + Math.floor(x / PX); };
-  for (const k of ['arbre', 'rocher']) if (typeof args[k] === 'string' && /^\d+,\d+$/.test(args[k]) && !dansLaFerme(s, tuile(args[k]))) return true;
-  // (E-13 : une cueillette, « sorte:case »)
-  if (typeof args.cueillette === 'string' && /:\d+$/.test(args.cueillette) && !dansLaFerme(s, Number(args.cueillette.split(':').pop()))) return true;
-  const touffes = [].concat(args.touffe || [], args.touffes || []);
-  if (touffes.some((t) => /^\d+,\d+$/.test(String(t)) && !dansLaFerme(s, pixel(t)))) return true;
-  return EAUX_DU_MONDE.has(args.eau);
-}
+// La case `c` est-elle dans le rectangle de la ferme ? Une commande qui vise une case hors de la ferme : M.1,
+// le contrôle du monde (ses arguments case, de, vers ; E-9 : arbre, rocher, touffe, touffes, eau ; E-13 :
+// cueillette). I9a : le contrôle est au moteur (js/engine/frontiere.js), pour que le jeu le fasse aussi
+// avant d'envoyer ; l'île partagée (le chantier allumé) le garde, avec un autre mot : hors de la ferme, rien
+// d'autre n'est encore synchronisé.
+export const dansLaFerme = caseDansLaFerme;
+export const horsDeLaFerme = commandeHorsDeLaFerme;
 
 // E-12 : les sauvegardes d'un monde, dans un bucket R2 (`bucket` : put, get, list, delete), sous `prefixe`.
 // Une clé : <prefixe><ms, sur 15 chiffres>-<rev>.json (l'ordre des clés est celui du temps).
@@ -312,8 +293,10 @@ export class MondeRegistre {
     if (L.length >= MONDE.COMMANDES_PAR_MINUTE) return { ok: false, erreur: 'Trop d\'actions d\'un coup : attends un instant.' };
     L.push(t);
     this.debits.set(compte, L);
-    // (E-8 : le monde est la ferme : rien hors d'elle)
-    if (horsDeLaFerme(this.charger(), c.args)) return { ok: false, erreur: 'Hors de la ferme : en ligne, le monde partagé, c\'est la ferme.' };
+    // (E-8 : le monde est la ferme : rien hors d'elle ; I9a : l'île partagée, mais rien d'autre n'est encore
+    // synchronisé hors de la ferme)
+    const frontiere = refusFrontiere(this.charger(), c.args);
+    if (frontiere) return { ok: false, erreur: frontiere };
     return this.jouer(compte, { id: c.id, type: c.type, args: c.args }, t);
   }
 

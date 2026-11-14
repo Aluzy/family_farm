@@ -38,6 +38,16 @@ jeu, comme I7f l'a fait pour les parties solo.
    deux ; la restauration d'une sauvegarde ; le refus d'un client ancien (`test-monde.mjs`,
    `test-synchro.mjs`, `deux-joueurs.mjs`).
 
+## Revu par I9a (les mesures)
+
+- **L'élagage est à refaire pour une île** : `elaguer` retire aujourd'hui `monde.pris`, les régions vues et `voisins`
+  (les liens du village). Une île garde ce qui a été pris dehors, les chemins posés (`dehors`), `voisins` ; le
+  brouillard du propriétaire part dans son navigateur (comme celui des invités, I9a : `ferme-brouillard-<monde>`).
+- **Le plafond** (`VILLAGE.EN_LIGNE`) : 256 Ko pour la partie du monde, 64 Ko pour l'île hors de la ferme. La route
+  `POST /mondes` accepte aujourd'hui 2 Mo : la vérifier au plafond, avec un message clair. Une île avancée du joueur
+  automatique pèse 75 Ko ; 14 sauvegardes au plafond font 3,5 Mo par monde : on peut en garder 14.
+- **La mesure** : `node scripts/poids-ile.mjs` (trois moments d'une partie, ce qui se recalcule de la graine).
+
 ## Hors périmètre
 
 - Fusionner une île solo et son île en ligne ; un monde à plus de joueurs qu'aujourd'hui.

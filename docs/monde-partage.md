@@ -8,6 +8,12 @@ reste à la partie solo de son propriétaire.
 le retrait d'un membre, l'avatar des autres joueurs, Construire, le potager, les bêtes, la cuisine et la
 nuit partagée. **E-8 a posé la frontière** : M.1, M.2 et M.3 ci-dessous sont faits (§ 7). Le code est dans `worker/src/monde.mjs`, `js/ui/en-ligne.js` et `js/engine/commandes.js`.
 
+> **Le chantier « l'île à bâtir » change cette frontière** (décision D9 de `docs/ile.md`). Sa nouvelle
+> frontière est au § 13, **« L'île partagée »** (fiche I9a, 14 novembre 2026) : elle remplace E-8 (§ 1 à § 7)
+> et F.2 (l'horloge figée, `worker/README.md`) pour les mondes du chantier. Tant que le réglage
+> `VILLAGE.ACTIF` est éteint, le jeu publié et les mondes d'avant gardent E-8, tels quels, jusqu'à la bascule
+> (I9h) et la migration des mondes (I9f).
+
 ## 1. Le principe
 
 > **Un monde partagé, c'est ta ferme.** Tes amis viennent chez toi : ils construisent, cultivent,
@@ -227,3 +233,105 @@ Les rôles de la stratégie (§ 4.4), dans `js/engine/roles.js`. Le monde les v�
 
   Les produits restent sur le tas, et chacun les ramasse par `morceau.ramasser`.
 - **Fermés en ligne, comme le veut la vision :** le grand monde (sa cueillette, ses hameaux, la calèche, le récit) et le commerce (M.4).
+
+## 13. L'île partagée (I9a) : la nouvelle frontière
+
+Décision D9 du chantier « l'île à bâtir » (`docs/ile.md`) : **un monde partagé, c'est l'île entière du
+joueur.** Ses invités y marchent, y bâtissent et y produisent. Cette section remplace E-8 (§ 1 à § 7) et
+F.2 (l'horloge figée) pour les mondes du chantier ; le jeu publié les garde tant que `VILLAGE.ACTIF` est
+éteint.
+
+### Ce qui est commun, ce qui reste à chacun
+
+| Commun : le monde le tient, tous le voient et le changent | À chacun : il ne se synchronise pas |
+|---|---|
+| L'île : son relief, sa nature, ses lieux (tirés de la graine chez chacun) | Son personnage (son allure, sa place) |
+| Les changements de l'île : ce qu'on y a pris et quand cela revient, les chemins et les blocs posés dehors, les quotas du jour | Son énergie |
+| La ferme, comme aujourd'hui (le bâti, le potager, les bêtes, la cuisine, les appareils) | Son brouillard : ce que SON personnage a vu de l'île |
+| Le coffre commun (F.1) et **la caisse** (D14) | Son sac (les provisions d'une sortie) et ce qu'il porte (I9c : sa charge) |
+| Le port, le bac, les commandes, le catalogue d'import | **Son amitié** avec chaque villageois (I9d) |
+| Les villageois, leurs tâches, leurs liens, les commerces, les vocations, les fêtes et les projets | Ses réglages (affichage, son, aide) |
+| La chronique et les noms | L'outil qu'il a en main (E-9) |
+| **L'heure** (D13 : l'horloge commune et vivante, I9a2) | |
+
+Deux règles en découlent :
+
+1. **Ce qui se tire de la graine ne s'envoie jamais.** Le relief, les biomes, les arbres, les rochers, les
+   plantes, les lieux et la carte se refont chez chacun (`genererMonde`, `elementsDuMonde`, le Worker du sol) :
+   le monde n'envoie que les **écarts** (ce qui a été pris, posé, retiré, avec leur jour).
+2. **Le brouillard n'est jamais dans la partie du monde.** Chaque joueur découvre l'île pour lui ; le moteur, lui,
+   ne lit que les régions vues **du monde** (`state.monde.vues`), les mêmes chez tous.
+
+### Ce que fait I9a (le chantier allumé pour la partie du monde : `ilePartagee`, `js/engine/frontiere.js`)
+
+- **La barrière est levée.** En ligne, sur une île, la scène n'a plus de borne : le personnage sort de la
+  ferme et la vue le suit (`js/ui/stage.js`, `enLigneSurLaFerme`). Les autres joueurs le voient où qu'il soit
+  (les positions relayées, E-4).
+- **Le relief de l'île** se dessine chez l'invité comme chez l'hôte : il le tire de la graine de la partie
+  du monde (le même niveau de port, la même ferme vierge, les mêmes chemins posés). Un test le vérifie dans un
+  autre processus, qui n'a rien en mémoire (`tests/test-monde.mjs`, `tests/engine/monde-de-la-graine.mjs`).
+- **Le brouillard de chacun** : ce que son personnage voit lève SON brouillard. Il est gardé dans son
+  navigateur, par monde (`localStorage` `ferme-brouillard-<monde>`), et posé sur sa partie locale chaque fois
+  qu'elle est refaite (`unirVu`, `js/engine/monde-vu.js` ; `js/ui/en-ligne.js`). Les régions vues du moteur ne
+  bougent pas, la partie confirmée reste celle du monde (`tests/test-synchro.mjs`). La carte du monde et la
+  boussole le lisent comme en solo.
+- **Rien d'autre n'est encore synchronisé hors de la ferme.** Hors d'elle, un bandeau le dit sous le bandeau
+  du monde (« 🏝️ Hors de la ferme : rien d'autre n'est encore synchronisé. »). Un geste qui vise une case
+  dehors (couper, casser, cueillir, poser un bloc ou un chemin) est refusé par le jeu avant d'être envoyé, et
+  par le monde s'il arrivait : le même contrôle, passé au moteur (`refusFrontiere`), le même pour le jeu et le
+  serveur (`worker/src/monde.mjs` en garde les noms `dansLaFerme` et `horsDeLaFerme`).
+- **Les mondes d'avant ne changent pas** : sans le chantier, la borne, le mot « Le reste du monde t'attend
+  dans ta ferme solo » et le refus du serveur sont ceux d'E-8 (`tests/deux-joueurs.mjs`, 4a ; `test-monde.mjs`).
+- Rien n'est ajouté à la sauvegarde (le format reste 103) : le brouillard de chacun vit dans son navigateur.
+
+### Le poids, et le plafond
+
+Mesuré par `node scripts/poids-ile.mjs` : une partie neuve du chantier jouée par le joueur automatique
+(graine 1, « applique »), pesée à trois moments.
+
+| Moment | Jour | Villageois | La partie | La copie du monde | L'île hors de la ferme | Le village et le port |
+|---|---|---|---|---|---|---|
+| Début | 11 | 0 | 26,1 Ko (gzip 5,3) | 26,2 Ko | 1,0 Ko | 0,9 Ko |
+| Milieu | 41 | 4 | 58,2 Ko (gzip 10,8) | 57,3 Ko | 1,0 Ko | 17,2 Ko |
+| Avancée | 81 | 6 | 80,3 Ko (gzip 13,2) | 74,7 Ko | 1,0 Ko | 35,6 Ko |
+
+- **Une île pèse moins qu'une ferme d'avant** : 75 Ko pour la copie avancée, contre 106 Ko pour la ferme
+  élaguée d'E-8 (§ 7) et 212 Ko pour la partie entière d'alors. Les habitants des hameaux sont partis (I7e).
+- **Le village grossit avec ses villageois** : ≈ 2,7 Ko chacun (dont 1,2 Ko de journal de 7 jours et 0,45 Ko
+  de tirage : prénom, allure, goûts, traits), plus leurs liens (`voisins`), les commerces et la chronique.
+- **L'île hors de la ferme ne pèse presque rien** pour le joueur automatique (1 Ko : le vu et les régions vues ;
+  il ne récolte pas dehors). Une île très exploitée (1 100 pièces prises en même temps : 150 par jour, revenues en
+  5 à 10 jours) pèse 39 Ko (6,5 Ko en gzip) dans `monde.pris`.
+- **Ce qui se recalcule de la graine, et ne s'envoie pas** : 46 210 arbres, plantes et rochers (≈ 1 Mo s'il
+  fallait les nommer), la carte (5,7 Mo), le terrain (322 Ko). Le refaire coûte : le terrain 0,3 s à froid, le
+  contexte du sol 0,4 à 0,5 s, puis ≈ 12 ms par région (88 régions).
+- **Ce qui se tire de la graine mais se garde** : le tirage des villageois (2,7 Ko pour six). On le garde : la
+  teinture (I5b) et la migration (I7f) le changent.
+- **Le serveur** : la mise en ligne d'une île avancée prend 5 ms ; sa nuit partagée 149 ms la première fois,
+  puis 16 à 34 ms ; l'empreinte de contrôle 2,5 ms.
+
+**Le plafond** (`data/village.json`, `VILLAGE.EN_LIGNE`) :
+
+- **256 Ko** pour la partie d'un monde (ce que reçoit un joueur qui entre, chaque instantané, chaque
+  sauvegarde du monde : 14 sauvegardes, 3,5 Mo au plus par monde). Projection d'une grande île : 80 Ko
+  (l'avancée) + 25 Ko (douze à quinze villageois) + 40 Ko (une île très exploitée) + une ferme d'avant migrée
+  (I7f) ≈ 200 Ko. Le plafond garde une marge.
+- **64 Ko** pour l'île hors de la ferme, dans cette partie (ce qui a été pris et quand cela revient, les chemins
+  et les blocs posés dehors).
+- Ce qui se tire de la graine n'est jamais envoyé, quelle que soit la taille de l'île.
+
+### Ce que les mesures disent des fiches suivantes
+
+- **I9a2 (l'horloge commune)** : un pas toutes les 5 s (réelles) joué comme une commande ferait une révision toutes
+  les 5 s, donc un instantané (`INSTANTANE_TOUS` = 20) toutes les 100 s : ≈ 2,7 Mo écrits par heure passée en
+  ligne pour une île de 75 Ko, 9 Mo à 256 Ko ; et le journal de rattrapage (`JOURNAL_GARDE` = 500 révisions) ne
+  couvrirait plus que 40 minutes. Il faut un instantané au temps (ou des pas qui ne comptent pas comme des révisions).
+- **I9b (les écarts du monde)** : les écarts sont petits (≤ 40 Ko pour une île très exploitée) ; ce qui coûte,
+  c'est leur contrôle par le serveur : vérifier qu'un arbre existe hors de la ferme demande le sol de sa région,
+  donc 0,4 à 0,5 s de contexte au réveil du monde, puis 12 ms par région. À trancher dans la fiche.
+- **I9d (les villageois)** : la copie élaguée d'aujourd'hui (`elaguer`) retire `voisins`, qui porte maintenant les
+  événements entre villageois (les visites du soir, les repas apportés : 5,7 Ko sur l'île avancée, `liens.js`) : un
+  monde de l'île doit le garder. Les fêtes du village sont dans `vocations` (gardé).
+- **I9f (mettre son île en ligne)** : `elaguer` est à refaire pour une île (garder `monde.pris`, les chemins posés,
+  `voisins` ; le brouillard du propriétaire part dans son navigateur) ; le plafond se vérifie à la mise en
+  ligne (aujourd'hui, la route accepte 2 Mo).

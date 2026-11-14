@@ -85,7 +85,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f (fait), I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
-| 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
+| 9. L'île en ligne et la bascule | I9a (fait), I9a2 à I9h | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
 ## L'ordre et les dépendances
 
@@ -2142,6 +2142,46 @@ port (`js/ui/port.js`). Les chiffres qui dépendent des prix sont à refaire apr
   d'I8a ; dessiner le second robot sur la carte (aujourd'hui, sa tournée va deux fois plus vite) ; la bulle d'un
   villageois qui conduit les machines reste celle du ramassage (le geste « ramasse ») ; la tournée ne montre pas encore
   la charrette qu'elle mène ; la stratégie « village » attend les fêtes et les projets d'I8a.
+
+## L'île partagée : la frontière et le poids (I9a, fait)
+
+La nouvelle frontière est dans `docs/monde-partage.md`, § 13 (« L'île partagée ») : elle remplace E-8 et F.2 pour
+les mondes du chantier. Ce qui est commun : l'île et ses changements, la ferme, le coffre, la caisse, le port, les
+villageois, la chronique, l'heure. Ce qui reste à chacun : son personnage, son énergie, son brouillard, son sac, son
+amitié avec chaque villageois, ses réglages.
+
+Ce qui est posé :
+
+- **La frontière au moteur** (`js/engine/frontiere.js`) : `ilePartagee` (le chantier allumé pour la partie du monde),
+  `caseDansLaFerme`, `commandeHorsDeLaFerme`, `refusFrontiere`. Le serveur (`worker/src/monde.mjs`) et le jeu
+  (`js/ui/en-ligne.js`) font le même contrôle.
+- **La barrière levée** : en ligne, sur une île, pas de borne ; le personnage sort, la vue le suit ; chacun voit le
+  relief de l'île, tiré de la graine chez lui ; son brouillard est à lui (dans son navigateur, par monde : `unirVu`,
+  `js/engine/monde-vu.js`) ; hors de la ferme, un bandeau dit que rien d'autre n'est encore synchronisé, et un geste
+  dehors est refusé avant d'être envoyé. Le chantier éteint, rien ne change (la borne et le mot d'E-8).
+- **Le plafond** : `VILLAGE.EN_LIGNE` (`data/village.json`) : 256 Ko la partie du monde, 64 Ko l'île hors de la ferme.
+- **La mesure** : `node scripts/poids-ile.mjs`. Pas de nouveau format (103) : rien n'entre dans la sauvegarde.
+- **Les tests** : `tests/test-monde.mjs` (la frontière, le mot de chaque monde ; le monde de l'invité, refait dans un
+  autre processus, identique à celui de l'hôte : `tests/engine/monde-de-la-graine.mjs`), `tests/test-synchro.mjs` (le
+  brouillard sur la partie locale, la confirmée intacte), `tests/deux-joueurs.mjs` (8a à 8d : deux joueurs sortent et
+  se voient ; 8e, avec `PORT=1` : l'invité suit l'hôte jusqu'au port, ≈ 95 s).
+
+Les mesures (le joueur automatique, graine 1 ; le détail : `docs/monde-partage.md` § 13) :
+
+| Moment | Villageois | La partie | La copie du monde | Hors de la ferme | Le village et le port |
+|---|---|---|---|---|---|
+| Début (jour 11) | 0 | 26,1 Ko | 26,2 Ko | 1,0 Ko | 0,9 Ko |
+| Milieu (jour 41) | 4 | 58,2 Ko | 57,3 Ko | 1,0 Ko | 17,2 Ko |
+| Avancée (jour 81) | 6 | 80,3 Ko | 74,7 Ko | 1,0 Ko | 35,6 Ko |
+
+Une île très exploitée ajouterait ≈ 39 Ko de pièces prises ; chaque villageois ≈ 2,7 Ko. Ce qui se recalcule de la
+graine (46 210 arbres, plantes et rochers, la carte de 5,7 Mo) ne s'envoie jamais ; le refaire coûte 0,3 s (le
+terrain), 0,4 à 0,5 s (le contexte du sol), puis ≈ 12 ms par région.
+
+Le plan du lot, d'après les mesures : I9c et I9e sont confirmées telles quelles ; I9a2, I9b, I9d et I9f gardent leur
+objet, avec une section « Revu par I9a » chacune : l'instantané au temps et non au nombre de pas (I9a2) ; le coût du
+contrôle des gestes dehors par le serveur, le brouillard déjà fait, le sac de chacun (I9b) ; `voisins` que l'élagage
+retire (I9d) ; l'élagage et le plafond à la mise en ligne (I9f).
 
 ## Les règles qui ne changent pas
 

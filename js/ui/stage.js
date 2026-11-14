@@ -55,6 +55,8 @@ import { garantiDuHameau, HABITANTS, habitantsPourLaCarte } from '../engine/habi
 import { visiteDepuisCarte } from './bienvenue.js';
 import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
 import { villageActif } from '../engine/village.js';
+import { caseDansLaFerme, ilePartagee } from '../engine/frontiere.js';
+import { noterBrouillard, noterDehors } from './en-ligne.js';
 import { cuisineVillageAllumee } from '../engine/taches.js';
 import { choisirBloc } from './garde-manger.js';
 import { dessinProjet } from '../engine/projets-village.js';
@@ -984,6 +986,20 @@ function stageIci(tile) {
   expedition(tile);
 }
 
+// I9a : en ligne, sur l'île partagée, la case du personnage : ce qu'il voit lève son brouillard à lui (le vu de
+// la partie locale, gardé par js/ui/en-ligne.js) ; les régions vues du moteur ne bougent pas (elles sont à la
+// partie du monde, la même chez tous) ; rien n'est noté pour le moteur (ni la case, ni l'expédition, ni les
+// plans : la partie du monde ne change que par ses commandes). Hors de la ferme, le bandeau le dit.
+function stageIciEnLigne(tile) {
+  const m = state.monde && typeof state.monde === 'object' ? state.monde : null;
+  const vues = m && Array.isArray(m.vues) ? m.vues.slice() : undefined;
+  const vu = voirAutour(state, tile, { biome: biomeDeCase(tile), nuit: nightActive(state) }) > 0;
+  if (state.monde) { if (vues === undefined) delete state.monde.vues; else state.monde.vues = vues; }
+  // (en ligne, l'horloge est figée : pas de pas du jeu qui redonnerait son modèle à la carte ; on le redonne)
+  if (vu) { noterBrouillard(state.monde.vu); carteMondeVu(); refresh(); }
+  noterDehors(Number.isInteger(tile) && !caseDansLaFerme(state, tile));
+}
+
 // Fiche 11 : l'expédition. En sortant de la ferme, une alerte si le sac à provisions manque, est vide
 // ou presque (loin de la ferme, il ne mange que ce qu'il contient) ; loin de la ferme, une alerte (une
 // fois par sortie) quand l'énergie baisse et que le sac est vide. Ses bottes : sa vitesse à pied dans
@@ -1353,10 +1369,15 @@ function horsFermeDit() {
   const t = Date.now();
   if (t - dernierMot > 3000) { dernierMot = t; notify('🌐 Le reste du monde t\'attend dans ta ferme solo : en ligne, on reste sur la ferme.'); }
 }
+// I9a : l'île partagée (le chantier allumé pour la partie du monde) : pas de borne, le personnage sort de la
+// ferme et la vue le suit ; ce qu'il voit lève SON brouillard (stageIciEnLigne). Les gestes hors de la ferme
+// restent refusés (rien d'autre n'est encore synchronisé : js/engine/frontiere.js, js/ui/en-ligne.js).
 function enLigneSurLaFerme(options) {
   if (!enLigne) return options;
-  const o = { ...options, borne: farmTerrain(state).FERME || null, horsFerme: horsFermeDit };
+  const ile = ilePartagee(state);
+  const o = { ...options, borne: ile ? null : farmTerrain(state).FERME || null, horsFerme: horsFermeDit };
   for (const k of MUETS_EN_LIGNE) if (o[k]) o[k] = () => null;
+  if (ile && o.ici) o.ici = stageIciEnLigne;
   for (const k of REFUSES_EN_LIGNE) if (o[k]) o[k] = pasEnLigne;
   return o;
 }
