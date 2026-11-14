@@ -60,6 +60,34 @@ lient avec les villageois.
 - **Un bloc du dehors posé par un autre** (un chemin, un pont) se reprend avec `bloc.reprendre` : le propriétaire
   voudra peut-être protéger les chemins (comme une structure sensible).
 
+## Revu par I9c (le port et la caisse)
+
+- **Le port a déjà sa grille** (`js/engine/roles.js`, `PAR_TYPE`), celle de cette fiche : vendre, décharger, honorer
+  une commande, livrer un contrat et porter (`portage.*`), l'ami jardinier ; acheter, importer, accepter un contrat,
+  apporter au chantier du port, le bâtisseur ; agrandir le port, le propriétaire (« Seul le propriétaire de l'île
+  agrandit le port. »). Le visiteur ne vend ni n'achète. À reprendre dans le tableau de cas.
+- **Le journal du monde porte le bilan des gestes du commerce** (la colonne `bilan` : qui a vendu quoi, pour combien ;
+  les achats ; le niveau du port) ; l'ordre d'une tâche pourrait y avoir le sien (le villageois, la tâche d'avant et
+  d'après) par le même chemin (`bilanCommerce`, à généraliser).
+- **La charrette et les brouettes** sont à la ferme, donc à tous : une brouette par joueur à la fois, la charrette à un
+  seul ; vide, elle passe à qui la demande. Un réglage du propriétaire (« la charrette est à moi ») serait de cette
+  fiche, s'il manque.
+
+## Revu par I9d (les villageois en ligne)
+
+- **Parler, offrir, accueillir** sont des commandes (`villageois.parler`, `villageois.offrir`, `villageois.accueillir`)
+  qui demandent l'ami jardinier (`js/engine/roles.js`, `PAR_TYPE`). Le visiteur parle aux villageois sans rien changer :
+  sa page tire la bulle sur une copie de sa partie et n'envoie rien (`js/ui/villageois.js`, `parlerEnLigne`). À revoir
+  dans la grille complète.
+- **Les gestes de la fiche d'un villageois** (confier une tâche, donner ou reprendre un outil, la navette, un foyer, un
+  enfant) appellent encore le moteur sur la partie locale (`js/ui/villageois.js`, `js/ui/liens.js`) : en ligne, ce sont
+  des prédictions que la partie refaite efface. Les commandes existent (`villageois.attribuer`, `villageois.outil`,
+  `villageois.vendre`, `villageois.foyer`, `villageois.enfant`) : à brancher ici, avec leur rôle (la famille `villageois`
+  demande aujourd'hui le bâtisseur, par défaut).
+- **Ce que la carte révèle des traits** (un villageois vu, une réplique entendue : `observerTraits`, `noterIndice`) ne
+  s'écrit pas en ligne (le serveur seul fait compter) ; ce qu'il dit de lui en parlant, si (dans `villageois.parler`) :
+  ce qu'on sait de ses traits est du monde, commun à tous. À trancher : par joueur, comme l'amitié ?
+
 ## Hors périmètre
 
 - De nouveaux rôles ; la modération entre joueurs (le propriétaire peut déjà retirer un membre).

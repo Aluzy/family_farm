@@ -279,6 +279,11 @@ function memoLot(state, cle, calcul) {
   if (!lotMemo.has(cle)) lotMemo.set(cle, calcul());
   return lotMemo.get(cle);
 }
+// (I9d : la même chose, pour ce qui ne lit que les blocs posés ailleurs qu'ici : la boîte à nourriture, l'étal, les
+// locaux des commerces ; hors d'un lot, `calcul` tout simplement)
+export function memoEnLot(state, cle, calcul) {
+  return memoLot(state, cle, calcul);
+}
 
 export function casesCouvertes(state) {
   return memoLot(state, 'couvertes', () => calculerCouvertes(state));

@@ -20,6 +20,7 @@ import { executer } from './commandes.js';
 import { registerActions } from './actions.js';
 import { openStageWindow } from './stage-windows.js';
 import { closeModal } from './modal.js';
+import { avisNeufs } from './avis-en-ligne.js';
 
 /* ---------- les commerces d'artisans, côté page (le chantier « l'île à bâtir », fiche I5a) ----------
    Le moteur : js/engine/artisans.js. Ici :
@@ -192,7 +193,8 @@ let annonce = null;
 export function watchCommerces() {
   if (!state || !villageActif(state) || setupPending(state)) return false;
   let n = 0;
-  for (const a of prendreAvisCommerces(state)) {
+  // (I9d : en ligne, un avis déjà dit ne se redit pas quand la partie locale est refaite)
+  for (const a of avisNeufs(prendreAvisCommerces(state), (x) => `${x.commerce}:${x.sorte}:${x.id || ''}:${x.objet}:${x.n || x.prix || ''}`)) {
     const c = commercesOuverts(state).find((x) => x.id === a.commerce), nom = c ? nomCommerce(state, c) : 'Le commerce';
     if (a.sorte === 'vente') {
       const v = trouverVillageois(state, a.id);

@@ -122,13 +122,22 @@ dehors passent (`COMMANDES_DEHORS` : `monde.recolter`, la pêche dans les eaux d
 pièce du monde se contrôle par son identifiant, sans le sol de sa région (`refusPieceMonde`), et le moteur refuse un
 doublon (la pièce déjà prise) ; un bloc posé dehors lit le sol de sa case (tiré de la graine, `REGIONS_SOL` régions
 gardées) ; ce qu'un geste lâche va au coffre commun. Le plafond de poids : `VILLAGE.EN_LIGNE` ; les mesures :
-`node scripts/poids-ile.mjs`, `node scripts/cout-ile.mjs`.
+`node scripts/poids-ile.mjs`, `node scripts/cout-ile.mjs`. I9c (le port et la caisse) : les commandes du port et du
+portage passent aussi (`COMMANDES_DU_PORT`) ; la caisse est commune (D14) ; chacun porte sa charge (`state.charges`) ;
+le lieu du port est écrit dans la partie à la mise en ligne (`state.port.lieu`) ; la case d'un geste du port, que
+donne la page, est comparée à la dernière position relayée du joueur (`ECART_CASES` = 12 cases).
+I9d (les villageois en ligne) : la journée du village se joue dans les pas ; parler, offrir et l'accueil d'un nouveau
+venu sont des commandes (`villageois.parler`, `villageois.offrir`, `villageois.accueillir` : l'ami jardinier au moins),
+jouées avec l'amitié de leur acteur (`state.amities`, par compte ; celle du propriétaire est l'amitié de sa partie,
+posée à la création, et à une restauration qui n'en a aucune) ; sur une île, `elaguer` garde `voisins` (les liens et
+les événements entre villageois). Le protocole ne change pas. La mesure du pas : `node scripts/cout-villageois.mjs`.
 
 Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
 monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au
 déploiement), les numérote (la révision), les écrit dans un journal et les diffuse. Les joueurs les
 rejouent chez eux : le moteur est déterministe (F0-4). Décisions du créateur :
-- **F.1 : un coffre commun.** L'inventaire du monde est à tous ses membres.
+- **F.1 : un coffre commun.** L'inventaire du monde est à tous ses membres. **D14 (I9c) : la caisse aussi** (ses
+  pièces) : une vente de n'importe quel joueur l'alimente, un achat y puise.
 - **F.2 : le monde est figé quand personne n'y joue.** Les commandes ne font pas avancer l'horloge.
   **E-5 : la nuit est partagée.** Quand tous les joueurs connectés sont couchés, le monde joue lui-même
   `nuit.partagee` (acteur `monde`) : toute la nuit d'un coup, le jour suivant. Un joueur ne peut pas
@@ -156,7 +165,9 @@ Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=
     de sa partie confirmée : plus de `RETARD_PAS` (60) pas de retard, ou un retard inconnu, et c'est la partie
     entière ;
   - `cmd { id, type, args }` → `ack { id, ok, rev | erreur }` ; à tous, `evt { rev, acteur, cmd }` (I9a2 :
-    `cmd.pas`, et `reel`, l'heure réelle de ce pas) ;
+    `cmd.pas`, et `reel`, l'heure réelle de ce pas ; I9c : `bilan`, ce qu'a fait un geste du commerce, par exemple
+    `{ objet, n, gain }` pour une vente, `{ vendus, gain }` pour un déchargement, `{ objet, n, cout }` pour un achat,
+    `{ niveau }` pour le port agrandi : `bilanCommerce` ; il n'est jamais rejoué, chacun le dit à son joueur) ;
   - I9a2, une île : à tous, à chaque instantané au temps, `controle { pas, empreinte, reel, maintenant }` (la partie
     du monde à ce pas ; un joueur qui ne la retrouve pas redemande tout) ;
   - `pos { x, y }` (le centre de sa vue) : relayé aux autres membres, `pos { acteur, nom, x, y }`,
@@ -176,7 +187,8 @@ Stockage SQLite du Durable Object :
   dernière sauvegarde à l'heure) ;
 - `instantane` : la partie entière, toutes les 20 révisions (I9a2, une île : tous les 120 pas ou 200 gestes, et au
   départ du dernier joueur ; une alarme toutes les 10 minutes tant qu'un joueur est là) ;
-- `journal` : chaque commande acceptée, son `id` unique (I9a2 : son pas) ;
+- `journal` : chaque commande acceptée, son `id` unique (I9a2 : son pas ; I9c : la colonne `bilan`, ajoutée une fois à
+  une base d'avant) ;
 - `membres` : rôles `proprietaire` et `batisseur`, `revoque`.
 
 Au réveil, la partie se refait : le dernier instantané, puis le journal (I9a2 : chaque commande à son pas, les pas
@@ -234,7 +246,8 @@ Le monde refuse un arbre, un rocher ou une touffe hors de la ferme, et les eaux 
 
 E-10 : la progression commune (`tech.acheter`, `atelier.fabriquer`, `atelier.construire`, `appareil.*`,
 `reservoir.agrandir`, `robot.batterie`, `arbre.planter`, `potager.semis`). Restent hors
-ligne, comme le veut la vision : le Marché, la calèche, les hameaux, le récit, les invitations.
+ligne, comme le veut la vision : le Marché, la calèche, les hameaux, le récit, les invitations. (I9c : sur une île, le
+port, qui remplace le Marché, joue en ligne : ci-dessous.)
 
 E-13 : les machines de l'Atelier (`botteleuse.verser`, `botteleuse.sortir`, `chaine.verser`,
 `distributeur.verser`, `morceau.ramasser`, `cueillette.ramasser`) ; l'horloge figée, les chaînes et le
@@ -243,7 +256,16 @@ distributeur font leur journée à la nuit partagée. Pas de commerce en ligne (
 E-11 : les rôles (`js/engine/roles.js` : visiteur, jardinier, bâtisseur, propriétaire), vérifiés à chaque
 commande ; `POST /mondes/<id>/invitations { role }`, `POST /mondes/<id>/role { compte, role }` (le
 propriétaire ; la liste des membres est diffusée), `GET /mondes/<id>/journal?avant=` (le propriétaire :
-les 50 dernières commandes, avec les noms).
+les 50 dernières commandes, avec les noms ; I9c : avec leur `bilan`, qui a vendu quoi, pour combien).
+
+I9c : le port en ligne (une île seulement ; une ferme d'avant n'a pas de port). Les commandes `port.*` et `portage.*`
+passent la frontière ; le moteur vérifie la distance au comptoir (`PORT.PORTEE`) ou la ferme (on charge sur la ferme).
+Les rôles : vendre, décharger, honorer une commande, livrer un contrat et porter, l'ami jardinier ; acheter, importer,
+accepter un contrat, apporter au chantier du port, le bâtisseur ; agrandir le port, le propriétaire. La case, que la
+page donne, est refusée à plus de `ECART_CASES` (12) cases de la dernière position relayée du joueur (« Ton
+personnage n'est pas là où ce geste se fait ») ; sans position connue, rien à comparer. À la mise en ligne d'une île, le
+lieu du port est calculé d'après le plan de sa graine (≈ 0,7 s, une fois) et écrit dans la partie, comme à une
+restauration ; le portage de la partie devient la charge du propriétaire.
 
 E-12 : les sauvegardes du monde, dans le bucket `SESSIONS` (déjà lié), sous `mondes/<id du Durable
 Object>/` : une après chaque nuit partagée (I9a2, une île : une par heure de jeu en ligne, et au départ du dernier

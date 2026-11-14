@@ -13,6 +13,8 @@ import {
 } from '../js/engine/index.js';
 import { clockHours, dureeDuPas, energieDe, horlogeVivante, nightActive, pasDe } from '../js/engine/index.js';
 import { cheminDehorsSur, migrate, objetsDeRegion, regionVue, solDirect, STATE_VERSION, surCase } from '../js/engine/index.js';
+import { capacitePortage, chargeDuCompte, COMMANDES_DEHORS, COMMANDES_DU_PORT, comptoirDuPort, enVenteAuPort, lieuPort, prixIle } from '../js/engine/index.js';
+import { arriverVillageois, attribuer, donnerOutil, noterEvenement, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
 import { atelier, avecVillage, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
 import { empreinteDuMonde } from './engine/monde-de-la-graine.mjs';
 import { spawnSync } from 'node:child_process';
@@ -20,7 +22,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, horsDeLaFerme, Monde, MONDE, MondeRegistre, SAUVEGARDES, SauvegardesMonde, traiterMessage } from '../worker/src/monde.mjs';
+import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, elaguer, etatDesLits, horsDeLaFerme, Monde, MONDE, MondeRegistre, SAUVEGARDES, SauvegardesMonde, traiterMessage } from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion fausse'); }
@@ -1171,10 +1173,254 @@ test('I9b : le sac de chacun : celui du propriétaire vient de sa partie, l\'inv
   froid.avancer();
   eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal se rejoue');
   // le format 105 : la partie d'un monde reçoit ses sacs (lisibles) ; une partie solo, rien
-  eq(STATE_VERSION, 105);
+  // (I9c : puis le format 106, la charge de chacun ; I9d : puis 107, l'amitié de chacun ; la migration va jusqu'au
+  // format du jeu)
+  assert(STATE_VERSION >= 105);
   const v104 = { ...JSON.parse(JSON.stringify(r.charger())), version: 104, sacs: { [A]: { objet: sacs[0], items: { pomme: [{ qty: 1, nightsLeft: 3 }], licorne: [] } }, [B]: { objet: 'caillou' }, x: 3 } };
   const mig = migrate({ v: 104, t: 0, s: v104 });
-  eq([mig.version, Object.keys(mig.sacs), Object.keys(mig.sacs[A].items)], [105, [A], ['pomme']]);
+  eq([mig.version, Object.keys(mig.sacs), Object.keys(mig.sacs[A].items)], [STATE_VERSION, [A], ['pomme']]);
   const solo = { ...JSON.parse(JSON.stringify(ile)), version: 104 };
   eq('sacs' in migrate({ v: 104, t: 0, s: solo }), false, 'une partie solo n\'y gagne rien');
+});
+
+/* ---------- I9c : le port et la caisse en ligne ---------- */
+
+// Une île en ligne prête à commercer : le propriétaire A (sa partie : une charge de 3 carottes), l'invité B (`roleB`) ;
+// au coffre commun, des carottes, du bois, une brouette, une charrette et le cheval. Le monde est réveillé, à 8 h.
+function ilePort({ roleB = 'batisseur', graine = '17', heure = 8 } = {}) {
+  const ile = avecVillage(() => createNewGame(graine, { nom: 'Île' }));
+  ile.essais = { ...(ile.essais || {}), village: true };
+  ile.awakeMs = (heure - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
+  testSetLevel(ile, 5);   // (le commerce du port s'ouvre au niveau 3)
+  addItem(ile, 'carotte', 13);
+  addItem(ile, 'bois', 20);
+  addItem(ile, 'brouette', 1);
+  addItem(ile, 'charrette', 1);
+  ile.cheval = { monte: false, nourri: true, attache: null };
+  const T = farmTerrain(ile), F = T.FERME, W = T.LARGEUR;
+  const ferme = (F.Y + (F.HAUTEUR >> 1)) * W + F.X + (F.LARGEUR >> 1);
+  assert(executerCommande(ile, { id: 'c-solo', type: 'portage.charger', args: { objet: 'carotte', quantite: 3, case: ferme } }).ok, 'en solo, A charge 3 carottes');
+  const sql = baseSql(), h = { t: 1_700_000_000_000 };
+  const r = new MondeRegistre(sql, () => h.t);
+  const c = r.creer({ proprietaire: A, nom: 'Alex', partie: { v: ile.version, t: 0, s: ile } });
+  assert(c.ok, c.erreur);
+  r.ajouterMembre(B, 'Sam', roleB);
+  r.accueil(A, { version: GAME_VERSION });
+  const w = r.charger(), comptoir = comptoirDuPort(w);
+  const jouer = (qui, type, args) => r.commande(qui, { id: id(), type, args });
+  return { r, sql, h, w, ferme, port: comptoir && comptoir.devant, W, jouer };
+}
+const pieces = (r) => r.charger().pieces;
+
+test('I9c : la mise en ligne : le lieu du port écrit dans la partie, la charge du propriétaire à lui ; la frontière s\'ouvre au port ; on vend au comptoir, la caisse est commune ; loin, refusé', () => {
+  const { r, sql, h, w, ferme, port, jouer } = ilePort();
+  assert(w.port.lieu && Number.isInteger(w.port.lieu.case) && lieuPort(w) === w.port.lieu, 'le lieu du port, dans la partie du monde');
+  eq([Object.keys(w.charges), chargeDuCompte(w, A).charge.carotte.reduce((t, l) => t + l.qty, 0), 'portage' in w], [[A], 3, false], 'la charge de A vient de sa partie ; B n\'en a pas ; aucune à personne');
+  assert(Number.isInteger(port) && !caseDansLaFerme(w, port), 'le comptoir est dehors');
+  // la frontière : sur une île, les commandes du port passent (le moteur vérifie la distance) ; sur une ferme d'avant, non
+  eq([refusFrontiere(w, { case: port }, 'port.vendre'), COMMANDES_DU_PORT.every((t) => COMMANDES_DEHORS.has(t))], [null, true]);
+  // B charge 6 carottes du coffre, sur la ferme ; vend au comptoir : la caisse monte de la somme juste
+  const c0 = countItem(w, 'carotte');
+  let x = jouer(B, 'portage.charger', { objet: 'carotte', quantite: 6, case: ferme });
+  assert(x.ok, x.erreur);
+  eq([countItem(r.charger(), 'carotte'), Object.keys(r.charger().charges).sort()], [c0 - 6, [A, B].sort()], 'sorties du coffre commun, dans la charge de B');
+  x = jouer(B, 'port.vendre', { objet: 'carotte', quantite: 2, case: ferme });
+  assert(!x.ok && x.erreur.startsWith('Tu n\'es pas au port'), `loin du comptoir : refusé par le moteur (${x.erreur})`);
+  const p0 = pieces(r);
+  x = jouer(B, 'port.vendre', { objet: 'carotte', quantite: 6, case: port });
+  assert(x.ok, x.erreur);
+  const gainB = pieces(r) - p0;
+  assert(gainB > 0, 'la caisse commune a monté');
+  // A vend les siennes (sa charge à lui) : la caisse monte encore, de la somme juste
+  x = jouer(A, 'port.vendre', { objet: 'carotte', quantite: 3, case: port });
+  assert(x.ok, x.erreur);
+  eq([B in r.charger().charges, A in r.charger().charges], [false, false], 'les charges vidées ne se gardent pas');
+  // le journal du monde : qui a vendu quoi, pour combien
+  const j = r.journal(A).evts.filter((e) => e.type === 'port.vendre');
+  eq(j.map((e) => [e.nom, e.bilan.objet, e.bilan.n]), [['Alex', 'carotte', 3], ['Sam', 'carotte', 6]]);
+  eq(j[1].bilan.gain, gainB, 'le gain de Sam, au journal');
+  eq(pieces(r), p0 + j[0].bilan.gain + j[1].bilan.gain, 'la caisse : la somme des deux ventes');
+  // une ferme d'avant (le chantier éteint) : rien ne change (E-8, pas de port)
+  eq(refusFrontiere(partieLocale(), { case: port }, 'port.vendre'), HORS_FERME);
+  // le Durable Object réveillé à froid : la même partie
+  h.t += 20000;
+  r.avancer();
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.avancer();
+  eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal se rejoue');
+});
+
+test('I9c : deux ventes du même lot en même temps : un seul joueur l\'a chargé, un seul est payé ; rien en double', () => {
+  const { r, ferme, port, jouer } = ilePort();
+  const n = countItem(r.charger(), 'carotte');
+  assert(jouer(A, 'portage.vehicule', { vehicule: 'brouette', case: ferme }).ok, 'A prend la brouette : tout le lot y tient');
+  // les deux veulent tout le lot du coffre, au même instant : le premier arrivé l'a
+  const a = jouer(A, 'portage.charger', { objet: 'carotte', quantite: n, case: ferme });
+  const b = jouer(B, 'portage.charger', { objet: 'carotte', quantite: n, case: ferme });
+  eq([a.ok, b.ok, countItem(r.charger(), 'carotte')], [true, false, 0], `le premier charge tout, le second rien (${b.erreur})`);
+  // puis les deux vendent « ce lot » au comptoir, au même instant : un seul est payé
+  const p0 = pieces(r);
+  const va = jouer(A, 'port.vendre', { objet: 'carotte', quantite: n + 3, case: port });
+  const vb = jouer(B, 'port.vendre', { objet: 'carotte', quantite: n + 3, case: port });
+  assert(va.ok && !vb.ok && /rien de chargé/i.test(vb.erreur), vb.erreur);
+  const ventes = r.journal(A).evts.filter((e) => e.type === 'port.vendre');
+  eq([pieces(r) - p0, ventes.length], [ventes[0].bilan.gain, 1], 'payé une fois');
+});
+
+test('I9c : une commande du bac honorée à deux : chacun livre ce qu\'il a porté (payé au prix de vente), la prime une fois, avec la dernière livraison', () => {
+  const { r, ferme, port, jouer } = ilePort();
+  r.charger().port.commandes = [{ id: 'c3-1', objet: 'carotte', quantite: 10, prime: 40, jour: 3 }];
+  r.instantane();
+  assert(jouer(A, 'portage.charger', { objet: 'carotte', quantite: 3, case: ferme }).ok);   // (A en a 6)
+  assert(jouer(B, 'portage.charger', { objet: 'carotte', quantite: 4, case: ferme }).ok);
+  const p0 = pieces(r), xp0 = r.charger().progression.xp, h0 = r.charger().port.honorees;
+  let x = jouer(A, 'port.honorer', { commande: 'c3-1', case: port });
+  assert(x.ok, x.erreur);
+  eq([r.charger().port.commandes[0].livre, r.charger().port.honorees], [6, h0], 'A en a livré 6 : la commande attend le reste');
+  const gainA = pieces(r) - p0;
+  x = jouer(B, 'port.honorer', { commande: 'c3-1', case: port });
+  assert(x.ok, x.erreur);
+  const prime = Math.round((10 * prixIle('carotte') * 40) / 100);
+  eq([r.charger().port.commandes.length, r.charger().port.honorees], [0, h0 + 1], 'B livre les 4 qui manquaient : honorée');
+  assert(pieces(r) - p0 - gainA >= prime, 'la prime, avec la dernière livraison');
+  const bil = r.journal(A).evts.filter((e) => e.type === 'port.honorer').map((e) => [e.nom, e.bilan.n, e.bilan.reste ?? null]);
+  eq(bil, [['Sam', 4, null], ['Alex', 6, 4]], 'le journal : qui a livré combien');
+  assert(r.charger().progression.xp - xp0 >= DATA.PORT.COMMANDES.XP, 'l\'XP de la commande');
+  // un troisième essai : la commande n'est plus là
+  assert(jouer(A, 'portage.charger', { objet: 'carotte', quantite: 1, case: ferme }).ok);
+  eq(jouer(A, 'port.honorer', { commande: 'c3-1', case: port }).ok, false);
+});
+
+test('I9c : la charrette attelée par un seul joueur ; la brouette, une par exemplaire ; libre, elle passe à qui la prend', () => {
+  const { r, ferme, port, jouer } = ilePort();
+  let x = jouer(A, 'portage.vehicule', { vehicule: 'charrette', case: ferme });
+  assert(x.ok, x.erreur);
+  assert(jouer(A, 'portage.charger', { objet: 'bois', quantite: 10, case: ferme }).ok, 'A charge du bois sur la charrette');
+  x = jouer(B, 'portage.vehicule', { vehicule: 'charrette', case: ferme });
+  assert(!x.ok && /attelée par un autre joueur/.test(x.erreur), x.erreur);
+  // B prend la brouette (la seule de la ferme) et la charge ; A ne peut plus la prendre
+  assert(jouer(B, 'portage.vehicule', { vehicule: 'brouette', case: ferme }).ok);
+  assert(jouer(B, 'portage.charger', { objet: 'carotte', quantite: 5, case: ferme }).ok);
+  const vueB = { ...JSON.parse(JSON.stringify(r.charger())) };
+  vueB.portage = vueB.charges[B];
+  eq(capacitePortage(vueB), DATA.VILLAGE.PORTAGE.BROUETTE, 'B : la place de la brouette');
+  // A vide sa charrette au port : vide, elle reste à lui, mais passe à qui la demande
+  assert(jouer(A, 'port.decharger', { case: port }).ok);
+  eq(r.charger().charges[A] && r.charger().charges[A].vehicule, 'charrette', 'A la tient encore, vide');
+  assert(jouer(B, 'port.decharger', { case: port }).ok);
+  x = jouer(B, 'portage.vehicule', { vehicule: 'charrette', case: ferme });
+  assert(x.ok, x.erreur);
+  eq([A in r.charger().charges, r.charger().charges[B].vehicule], [false, 'charrette'], 'A est revenu à la main, B a la charrette');
+  eq(jouer(A, 'portage.vehicule', { vehicule: 'brouette', case: ferme }).ok, true, 'la brouette, libérée par B, va à A');
+});
+
+test('I9c : les rôles au port : le visiteur ne vend ni n\'achète ni ne porte ; l\'ami jardinier vend, n\'achète pas ; le bâtisseur achète ; seul le propriétaire agrandit le port', () => {
+  const { r, ferme, port, jouer } = ilePort({ roleB: 'visiteur' });
+  const semence = Object.keys(DATA.OBJETS).find((k) => enVenteAuPort(r.charger(), k));
+  for (const [type, args] of [['port.vendre', { objet: 'carotte', quantite: 1, case: port }], ['port.acheter', { objet: semence, quantite: 1, case: port }], ['portage.charger', { objet: 'carotte', quantite: 1, case: ferme }], ['port.decharger', { case: port }]]) {
+    const x = jouer(B, type, args);
+    assert(!x.ok && /Visiteur/.test(x.erreur), `${type} : ${x.erreur}`);
+  }
+  r.changerRole(A, B, 'jardinier');
+  assert(jouer(B, 'portage.charger', { objet: 'carotte', quantite: 1, case: ferme }).ok, 'le jardinier porte');
+  assert(jouer(B, 'port.vendre', { objet: 'carotte', quantite: 1, case: port }).ok, 'le jardinier vend');
+  let x = jouer(B, 'port.acheter', { objet: semence, quantite: 1, case: port });
+  assert(!x.ok && /bâtisseur/.test(x.erreur), x.erreur);
+  r.changerRole(A, B, 'batisseur');
+  x = jouer(B, 'port.acheter', { objet: semence, quantite: 1, case: port });
+  assert(x.ok, `le bâtisseur achète : ${x.erreur}`);
+  eq(r.journal(A).evts[0].bilan.objet, semence, 'l\'achat au journal');
+  x = jouer(B, 'port.agrandir', { case: port });
+  eq([x.ok, x.erreur], [false, 'Seul le propriétaire de l\'île agrandit le port.']);
+  eq(roleDemande(r.charger(), { type: 'port.agrandir', args: {} }), 'proprietaire');
+});
+
+test('I9c : la case d\'un geste du port vient de la page : le monde la compare à la dernière position relayée du joueur', () => {
+  const { r, ferme, port, W, jouer } = ilePort();
+  assert(jouer(B, 'portage.charger', { objet: 'carotte', quantite: 2, case: ferme }).ok, 'sans position connue : rien à comparer');
+  // B relaie sa position : sur la ferme
+  const dire = (x, y) => traiterMessage(r, B, JSON.stringify({ t: 'pos', x, y }), () => {}, () => {});
+  const px = (c) => [(c % W) * 16 + 8, Math.floor(c / W) * 16 + 15];
+  dire(...px(ferme));
+  let x = jouer(B, 'port.vendre', { objet: 'carotte', quantite: 1, case: port });
+  assert(!x.ok && /pas là où ce geste se fait/.test(x.erreur), `une vente « au comptoir » depuis la ferme : ${x.erreur}`);
+  r.positions.clear();
+  dire(...px(port + 2));
+  x = jouer(B, 'port.vendre', { objet: 'carotte', quantite: 1, case: port });
+  assert(x.ok, `au port : ${x.erreur}`);
+});
+
+test('I9c : le format 106 : la partie d\'un monde reçoit les charges de chacun (lisibles) ; une partie solo n\'y gagne rien ; le lieu du port et ce qui est livré se gardent', () => {
+  assert(STATE_VERSION >= 106);
+  const { r } = ilePort();
+  const w = JSON.parse(JSON.stringify(r.charger()));
+  w.port.commandes = [{ id: 'c3-1', objet: 'carotte', quantite: 10, prime: 40, jour: 3, livre: 4 }];
+  const v105 = { ...w, version: 105, charges: { [A]: { vehicule: 'brouette', charge: { carotte: [{ qty: 2, nightsLeft: 3, origin: 'produit' }], licorne: [{ qty: 1 }] } }, [B]: { vehicule: 'mains', charge: {} }, x: 'non' } };
+  const mig = migrate({ v: 105, t: 0, s: v105 });
+  eq([mig.version, Object.keys(mig.charges), Object.keys(mig.charges[A].charge), mig.port.lieu, mig.port.commandes[0].livre], [STATE_VERSION, [A], ['carotte'], w.port.lieu, 4]);
+  const solo = { ...JSON.parse(JSON.stringify(partieLocale())), version: 105 };
+  eq('charges' in migrate({ v: 105, t: 0, s: solo }), false, 'une partie solo n\'y gagne rien');
+});
+
+// I9d : une île à villageois (le chantier allumé pour sa partie), mise en ligne à 8 h, deux villageois au travail.
+function ileAuVillage(n = 2) {
+  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  ile.essais = { ...(ile.essais || {}), village: true };
+  testSetLevel(ile, 5);
+  assert(testBatir(ile, 'foyer').ok, 'le foyer de la famille');
+  for (let k = 0; k < n; k++) {
+    assert(testMaisonVillageois(ile).ok, 'la maison');
+    assert(arriverVillageois(ile, { direct: true }).ok, 'il arrive');
+  }
+  ile.outils = { ...(ile.outils || {}), hache: true, pioche: true };
+  for (const [v, t, o] of [[villageoisDe(ile)[0], 'bois', 'hache'], [villageoisDe(ile)[1], 'pierre', 'pioche']]) {
+    if (!v) continue;
+    assert(donnerOutil(ile, v.id, o).ok && attribuer(ile, v.id, t).ok, `${v.id} : ${t}`);
+  }
+  ile.awakeMs = 2 * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;   // (8 h)
+  return ile;
+}
+
+test('I9d : les villageois en ligne : l\'amitié du propriétaire vient de sa partie, chacun a la sienne ; les liens du village sont gardés ; le visiteur ne parle pas au monde ; le journal se rejoue', () => {
+  const ile = ileAuVillage();
+  const v = villageoisDe(ile)[0];
+  assert(executerCommande(ile, { id: 'c-solo-parle', type: 'villageois.parler', args: { id: v.id } }).ok, 'en solo, on lui parle');
+  const ptsA = ile.amitie.pnj[v.id].pts;
+  noterEvenement(ile, { sorte: 'visite', qui: 'vg-2', chez: v.id, jour: ile.day });
+  const h = { t: 1_700_000_000_000 }, sql = baseSql();
+  const r = new MondeRegistre(sql, () => h.t);
+  assert(r.creer({ proprietaire: A, partie: { v: ile.version, t: 0, s: JSON.parse(JSON.stringify(ile)) } }).ok);
+  r.ajouterMembre(B, 'Sam', 'jardinier');
+  r.ajouterMembre('c-vis', 'Vi', 'visiteur');
+  r.accueil(A, { version: GAME_VERSION });
+  const w = r.charger();
+  eq([w.amities[A].pnj[v.id].pts, B in w.amities, (w.voisins.evenements || []).length], [ptsA, false, 1], 'A a son amitié ; B rien encore ; les liens du village gardés');
+  // (une ferme d'avant, elle, ne garde pas les liens des hameaux : elaguer, E-8)
+  const ferme = partieLocale();
+  ferme.voisins = { liens: {}, evenements: [{ sorte: 'visite' }] };
+  eq('voisins' in avecVillage(() => elaguer(JSON.parse(JSON.stringify(ferme))), false), false, 'une ferme d\'avant les retire');
+  const jouer = (qui, type, args) => r.commande(qui, { id: id(), type, args });
+  h.t += 6 * 5000;
+  let x = jouer(B, 'villageois.parler', { id: v.id, n: 0 });
+  assert(x.ok, x.erreur);
+  eq([r.charger().amities[A].pnj[v.id].pts, r.charger().amities[B].pnj[v.id].pts], [ptsA, DATA.VILLAGE.AMITIE.ACCUEIL + DATA.AMITIE.PAROLE], 'B a gagné la sienne, celle de A ne bouge pas');
+  x = jouer('c-vis', 'villageois.parler', { id: v.id, n: 1 });
+  eq([x.ok, /visiteur/i.test(x.erreur || '')], [false, true], 'le visiteur ne change rien au monde');
+  x = jouer(A, 'villageois.parler', { id: v.id, n: 2 });
+  assert(x.ok, x.erreur);
+  // le village a travaillé pendant ce temps (les pas) ; un monde réveillé à froid refait la même partie
+  h.t += 120 * 5000;
+  r.avancer();
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.avancer();
+  eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal se rejoue (les amitiés de chacun comprises)');
+  assert(villageoisDe(r.charger()).some((u) => u.travail && u.travail.actions > 0), 'les villageois ont travaillé dans les pas');
+  // une sauvegarde d'avant I9d (format 106, sans amitiés) restaurée : le propriétaire y retrouve celle du village ;
+  // le lieu du port est reposé (I9c)
+  const vieille = JSON.parse(JSON.stringify(r.charger()));
+  delete vieille.amities;
+  vieille.version = 106;
+  assert(r.restaurer(A, { v: 106, rev: r.rev, jour: vieille.day, s: vieille }).ok, 'restaurée');
+  const w2 = r.charger();
+  eq([Object.keys(w2.amities), w2.amities[A].pnj[v.id].pts, !!(w2.port && w2.port.lieu)], [[A], w2.amitie.pnj[v.id].pts, true], 'l\'amitié du propriétaire, le lieu du port');
 });

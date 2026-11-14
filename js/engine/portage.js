@@ -14,6 +14,14 @@
    sous la halle du port (dechargerAuPort : tout ce qui est chargé se vend d'un coup, au prix du port ; port.js
    vendreAuPort ne vend plus que ce qui est chargé). Les semences achetées au port vont droit à la ferme.
    `o.sansPresence` : le joueur automatique (bot.js), qui n'a pas de carte, charge et décharge sans case.
+
+   I9c (le port en ligne, docs/monde-partage.md § 13) : dans la partie d'un monde de l'île, chaque joueur a sa charge,
+   state.charges = { <compte>: { vehicule, charge } } (comme son sac : js/engine/temps-monde.js avecActeur la pose dans
+   state.portage le temps d'une de ses commandes, puis la range). Ce qu'il charge sort du coffre commun ; ce qu'il vend
+   va à la caisse commune. Les véhicules sont ceux de la ferme, à tous : une brouette ne sert qu'à un joueur à la fois
+   (autant de joueurs que de brouettes au coffre), la charrette est attelée par un seul (elle s'attelle au cheval). Un
+   joueur qui la tient, sa charge vide, la laisse au premier qui la demande (elle redevient « à la main » pour lui) ;
+   chargée, elle est à lui jusqu'à ce qu'il la vide. Sans state.charges (le jeu solo, une ferme d'avant), rien ne change.
    ========================================================================== */
 
 import { DATA } from './catalog.js';
@@ -61,16 +69,56 @@ export function capaciteDe(v) {
   return v === 'charrette' ? P().CHARRETTE : v === 'brouette' ? P().BROUETTE : P().MAINS;
 }
 
-// Peut-on partir avec `v` ? null, ou la raison.
+// Peut-on partir avec `v` ? null, ou la raison. (I9c : en ligne, et que les autres joueurs ne la tiennent pas déjà.)
 export function refusVehicule(state, v) {
   if (v === 'mains') return null;
-  if (v === 'brouette') return (state.inventaire && nLots(state.inventaire.brouette) > 0) ? null : 'Il te faut une brouette (l\'Atelier).';
+  if (v === 'brouette') {
+    const n = state.inventaire ? nLots(state.inventaire.brouette) : 0;
+    if (n <= 0) return 'Il te faut une brouette (l\'Atelier).';
+    if (vehiculesTenus(state, v).filter((x) => x.chargee).length >= n) return n > 1 ? `Les ${n} brouettes de la ferme sont prises par d'autres joueurs (chargées).` : 'La brouette de la ferme est prise par un autre joueur (chargée) : attends qu\'il la vide, ou fabriques-en une autre (l\'Atelier).';
+    return null;
+  }
   if (v === 'charrette') {
     if (!(state.inventaire && nLots(state.inventaire.charrette) > 0)) return 'Il te faut une charrette (l\'Atelier).';
     if (!chevalPossede(state)) return 'La charrette s\'attelle au cheval : il te faut un cheval.';
+    if (vehiculesTenus(state, v).some((x) => x.chargee)) return 'La charrette est attelée par un autre joueur (chargée) : elle est à lui jusqu\'à ce qu\'il la vide.';
     return null;
   }
   return 'Véhicule inconnu.';
+}
+
+/* -- I9c : la charge de chacun, en ligne -- */
+
+// Les charges de chacun (la partie d'un monde de l'île), ou null.
+export function chargesDe(state) {
+  return state && state.charges && typeof state.charges === 'object' && !Array.isArray(state.charges) ? state.charges : null;
+}
+// Combien d'exemplaires du véhicule `v` la ferme a (la charrette : une, attelée au cheval).
+function exemplaires(state, v) {
+  if (v === 'charrette') return 1;
+  return v === 'brouette' && state.inventaire ? nLots(state.inventaire.brouette) : Infinity;
+}
+// Les autres joueurs qui tiennent le véhicule `v` : [{ compte, p (leur charge), chargee }] (par compte, dans l'ordre :
+// le même chez tous). « Les autres » : tous, sauf la charge posée dans state.portage (celle de l'acteur).
+export function vehiculesTenus(state, v) {
+  const C = chargesDe(state);
+  if (!C) return [];
+  const out = [];
+  for (const compte of Object.keys(C).sort()) {
+    const p = C[compte];
+    if (!p || p === state.portage || p.vehicule !== v) continue;
+    out.push({ compte, p, chargee: Object.values(p.charge || {}).some((l) => nLots(l) > 0) });
+  }
+  return out;
+}
+// Le véhicule `v` pris par l'acteur : ceux qui le tenaient sans rien dessus le lâchent (ils reviennent à la main), tant
+// qu'il n'y en a pas assez pour tous.
+function lacherVehicule(state, v) {
+  if (v === 'mains') return;
+  const n = exemplaires(state, v), tenus = vehiculesTenus(state, v);
+  let trop = tenus.length + 1 - n;
+  // (vide et à la main, sa charge ne se garde pas : temps-monde.js avecActeur fait de même pour l'acteur)
+  for (const x of tenus) { if (trop <= 0) break; if (!x.chargee) { delete chargesDe(state)[x.compte]; trop -= 1; } }
 }
 
 // Les façons de porter : [{ id, nom, icone, capacite, refus }].
@@ -95,6 +143,7 @@ export function choisirVehicule(state, v, ou = null, o = {}) {
   const r = refusVehicule(state, v);
   if (r) return fail(r);
   if (!o.sansPresence && !surLaFerme(state, ou)) return fail('On choisit son véhicule sur la ferme.');
+  lacherVehicule(state, v);   // (I9c : en ligne, un véhicule libre passe à qui le prend)
   p.vehicule = v;
   return { ok: true, vehicule: v };
 }

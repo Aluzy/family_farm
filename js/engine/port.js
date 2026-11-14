@@ -86,11 +86,29 @@ export function portDuMonde(graine) {
 }
 
 // Le lieu du port de la partie ({ case, sens, chemin : la longueur de son chemin, en cases }), ou null (le
-// chantier éteint, ou pas encore posé).
+// chantier éteint, ou pas encore posé). I9c : la partie d'un monde de l'île le porte (state.port.lieu, posé à la mise
+// en ligne : poserLieuDuPort) ; le serveur et chaque joueur lisent alors le même, sans rien demander à la page (le pas du
+// monde le lit : la tournée d'un villageois).
 export function lieuPort(state) {
   if (!villageActif(state)) return null;
+  const L = state && state.port && state.port.lieu;
+  if (lieuLisible(L)) return L;
   const g = farmSeed(state);
   return g === null ? null : lieuxPorts.get(g) || null;
+}
+export function lieuLisible(L) {
+  return !!L && typeof L === 'object' && Number.isInteger(L.case) && L.case >= 0 && (L.sens === 1 || L.sens === 3) && Number.isInteger(L.chemin) && L.chemin >= 0;
+}
+
+// I9c : le lieu du port écrit dans la partie (celle d'un monde de l'île, à sa mise en ligne ou à sa restauration :
+// worker/src/monde.mjs), calculé d'après le plan de sa graine (portDuMonde : ≈ 0,7 s, une fois). → le lieu, ou null.
+export function poserLieuDuPort(state) {
+  if (!villageActif(state) || !state.port || typeof state.port !== 'object') return null;
+  if (lieuLisible(state.port.lieu)) return state.port.lieu;
+  const g = farmSeed(state), l = g === null ? null : portDuMonde(g);
+  if (!l) return null;
+  state.port.lieu = { case: l.case, sens: l.sens, chemin: l.chemin };
+  return state.port.lieu;
 }
 
 // Le comptoir du port de la partie : { cases (ses trois cases, sous la halle), devant (la case où l'on se tient

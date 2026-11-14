@@ -12,7 +12,9 @@ import {
 import { demandeDe, texteDemande } from './demandes.js';
 import { souvenirParole } from './invitations.js';
 import { CONDITIONS_PROPOS, direSujet } from './propos.js';
-import { jourDeBac, trouverVillageois, villageoisDe } from './villageois.js';
+import { accueillirVillageois, jourDeBac, trouverVillageois, villageoisDe } from './villageois.js';
+import { paroleVillageois } from './villageois-journee.js';
+import { clockHours } from './clock.js';
 import { connaissance } from './villageois-liens.js';
 import { evenementsVillageois, foyerDe, liensVillageois, voisinDe } from './liens.js';
 import { goutTache, noterIndice, partDesTraits, phraseTrait, sujetsDesTraits, traitsDe } from './traits.js';
@@ -329,6 +331,27 @@ export function offrirVillageois(state, id, item) {
   const phrase = un(rnd, ((A().PHRASES || {}).cadeau || {})[r.gout]);
   const confie = r.monte && r.palier >= (Number((A().CONFIE || {}).PALIER) || 2) ? confierGout(state, v, rnd) : null;
   return { ...r, phrase, confie };
+}
+
+/* ---------- I9d : les commandes (js/engine/commandes.js) ----------
+
+   En ligne, sur une île (le monde partagé : docs/monde-partage.md § 13), parler, offrir et l'accueil d'un nouveau venu
+   sont des commandes : le monde les joue (avec l'amitié de leur acteur : temps-monde.js avecActeur) et chacun les
+   rejoue ; la page la joue d'abord chez elle (la bulle tout de suite). En solo, la page appelle les mêmes fonctions. */
+
+// villageois.parler { id, n?, activite?, but? } : la bulle (paroleVillageois, à l'heure de la partie : celle du pas) que
+// l'amitié complète (parlerVillageois). → { ok, ...la bulle } ou un refus.
+export function parlerAuVillageois(state, id, o = {}) {
+  if (!trouverVillageois(state, id)) return fail('Personne de ce nom sur l\'île.');
+  const n = Math.max(0, Math.floor(Number(o.n) || 0));
+  const r = parlerVillageois(state, id, paroleVillageois(state, id, { activite: o.activite || null, but: o.but || null, n, heure: clockHours(state) }), { n });
+  return r ? { ...r, ok: true, villageois: id } : fail('Personne de ce nom sur l\'île.');
+}
+
+// villageois.accueillir { id } : le nouveau venu a frappé à sa porte (la carte l'a vu) : il est chez lui. → { ok } ou un
+// refus (il l'était déjà : le pas du monde l'accueille de toute façon à la fin de l'heure d'arrivée).
+export function accueillirAuVillage(state, id) {
+  return accueillirVillageois(state, id) ? { ok: true } : fail('Il est déjà chez lui.');
 }
 
 /* ---------- la sauvegarde (la migration v89 → v90) ---------- */

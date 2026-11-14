@@ -36,6 +36,8 @@ import { arriveeEnfantRefus, arriverEnfant } from '../engine/liens.js';
 import { goutTache, nomTrait, noterIndice, observerTraits, traitDef, traitsPourFiche } from '../engine/traits.js';
 import { maisonNomHtml } from './chronique-html.js';
 import { commerceFicheHtml, watchCommerces } from './commerce.js';
+import { executer } from './commandes.js';
+import { mondeActuel } from './en-ligne.js';
 
 /* ---------- les villageois, côté page (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -154,10 +156,12 @@ export function villageoisModele() {
 // (les cases des chemins posés de la ferme : ils les préfèrent), vitesse et chemin (VILLAGE.HORAIRE), liens (I3b+ :
 // qui se connaît, villageois-liens.js liensPourLaCarte) et social (VILLAGE.SOCIAL.CROISE, les réglages de la scène :
 // js/carte/ferme/villageois-social.js) } ; null le chantier éteint ou sans villageois.
-export function villageoisHorloge() {
+export function villageoisHorloge(heure = null) {
   if (!state || !villageActif(state) || !nombreVillageois(state)) return null;
+  // (I9d : l'heure donnée par la scène, js/ui/stage.js heureDuJour : en ligne, celle du pas plus la part du pas écoulée,
+  // la même que la lumière ; en solo, clockHours)
   return {
-    h: clockHours(state), t: typeof performance !== 'undefined' ? performance.now() : 0, s: DATA.TEMPS.SECONDES_PAR_HEURE,
+    h: Number.isFinite(heure) ? heure : clockHours(state), t: typeof performance !== 'undefined' ? performance.now() : 0, s: DATA.TEMPS.SECONDES_PAR_HEURE,
     nuit: nightActive(state), chemins: lieuxDuVillage(state).chemins,
     vitesse: Number(DATA.VILLAGE.HORAIRE.VITESSE) || 1, chemin: Number(DATA.VILLAGE.HORAIRE.CHEMIN) || 1,
     liens: liensPourLaCarte(state), social: { ...((DATA.VILLAGE.SOCIAL || {}).CROISE || {}), CAUSE: (DATA.TACHES || {}).CAUSE || 26 },
@@ -190,14 +194,17 @@ export function villageoisDepuisCarte(geste, id, o = {}) {
   // (I3c : un appui long sur un poste de travail, `o.case` : « confier à… »)
   if (geste === 'poste') return ouvrirConfier(o.case);
   // (I6c : les villageois que la carte montre, `o.ids` : ce qu'on les voit faire révèle leurs traits)
+  // (I9d, en ligne : le serveur seul fait compter ; ce que la carte voit ne s'écrit pas dans la partie)
+  if (geste === 'vus' && enLigne) return { ok: true, reveles: [] };
   if (geste === 'vus') {
     const r = observerTraits(state, o.ids, clockHours(state));
     if (r.length) { direAvis(); persistState(); setTimeout(refresh, 0); }
     return { ok: true, reveles: r };
   }
   if (geste === 'parle') {
-    // (I6a : l'amitié complète sa bulle ; un palier passé, un présent reçu : une notification)
-    const r = parlerVillageois(state, id, paroleVillageois(state, id, { ...o, heure: clockHours(state) }), { n: o.n });
+    // (I6a : l'amitié complète sa bulle ; un palier passé, un présent reçu : une notification. I9d, en ligne : une
+    // commande, jouée chez soi puis par le monde, avec son amitié à soi ; le visiteur parle sans rien changer)
+    const r = enLigne ? parlerEnLigne(id, o) : parlerVillageois(state, id, paroleVillageois(state, id, { ...o, heure: clockHours(state) }), { n: o.n });
     // (I6c : il a parlé d'un de ses traits, qui se révèle : la notification aussitôt)
     if (r && r.revele) direAvis();
     if (r && r.amitie) {
@@ -211,9 +218,10 @@ export function villageoisDepuisCarte(geste, id, o = {}) {
   if (geste === 'echange') {
     const r = echangeVillageois(state, id, o.avec, { n: o.n, sorte: o.sorte, heure: clockHours(state) });
     // (I6c : une réplique de l'un de ses traits, sous tes yeux : un indice)
-    if (r && r.trait && o.avec !== 'joueur' && noterIndice(state, trouverVillageois(state, id), r.trait, 'dit')) { direAvis(); persistState(); setTimeout(refresh, 0); }
-    // (I6a : il salue le personnage et lui donne le présent qu'il gardait)
-    if (r && o.avec === 'joueur' && r.present) {
+    if (r && r.trait && o.avec !== 'joueur' && !enLigne && noterIndice(state, trouverVillageois(state, id), r.trait, 'dit')) { direAvis(); persistState(); setTimeout(refresh, 0); }
+    // (I6a : il salue le personnage et lui donne le présent qu'il gardait ; I9d, en ligne : il te le donnera quand tu lui
+    // parleras, par le monde)
+    if (r && o.avec === 'joueur' && r.present && !enLigne) {
       const p = donnerPresent(state, id), v = trouverVillageois(state, id);
       if (p && v) {
         r.cadeau = { objet: p.objet, n: p.n };
@@ -225,6 +233,15 @@ export function villageoisDepuisCarte(geste, id, o = {}) {
     return r;
   }
   if (geste !== 'accueilli') return { ok: false };
+  // (I9a2, I9d : en ligne, une commande ; le visiteur ne l'envoie pas : le pas du monde l'accueille à la fin de l'heure
+  // d'arrivée)
+  if (enLigne) {
+    const v = trouverVillageois(state, id);
+    if (!v || v.accueil !== 'en_route' || estVisiteur()) return { ok: false };
+    const r = executer('villageois.accueillir', { id });
+    if (r.ok) { direAvis(); setTimeout(refresh, 0); }
+    return { ok: !!r.ok };
+  }
   const v = accueillirVillageois(state, id);
   if (!v) return { ok: false };
   direAvis();
@@ -232,6 +249,24 @@ export function villageoisDepuisCarte(geste, id, o = {}) {
   // (appelé pendant l'image de la carte : la vue se refait juste après)
   setTimeout(refresh, 0);
   return { ok: true };
+}
+
+// I9d : en ligne, parler est une commande (villageois.parler : la bulle et l'amitié de l'acteur, jouées chez soi puis par
+// le monde). Le visiteur (E-11) voit le village vivre et parle, sans rien changer : sa bulle est tirée sur une copie de
+// la partie, son amitié montrée telle qu'elle est.
+const estVisiteur = () => { const m = mondeActuel(); return !!(m && m.role === 'visiteur'); };
+function parlerEnLigne(id, o) {
+  const args = { id, n: Math.max(0, Math.floor(Number(o.n) || 0)) };
+  for (const k of ['activite', 'but']) if (typeof o[k] === 'string' && /^[a-z_]{1,24}$/.test(o[k])) args[k] = o[k];
+  if (!estVisiteur()) {
+    const r = executer('villageois.parler', args);
+    if (r && r.ok) return r;
+  }
+  const copie = JSON.parse(JSON.stringify(state));
+  const r = paroleVillageois(copie, id, { ...o, heure: clockHours(state) });
+  const A = amitieVillageois(copie, id);
+  if (r && A && r.etat !== 'dormir') r.amitie = { ...A, gain: 0 };
+  return r;
 }
 
 /* ---------- la carte du joueur, la liste, la fiche ---------- */

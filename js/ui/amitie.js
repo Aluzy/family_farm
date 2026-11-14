@@ -13,7 +13,8 @@ import { demandeHtml } from './demandes.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { itemsText } from './common.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
+import { executer } from './commandes.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -135,7 +136,8 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const { hameau, id, item } = target.dataset;
     const village = hameau === HAMEAU_VILLAGE;
-    const r = village ? offrirVillageois(state, id, item) : offrir(state, hameau, id, item);
+    // (I9d : en ligne, sur une île, une commande : jouée chez soi, puis par le monde, avec son amitié à soi)
+    const r = village ? (enLigne ? executer('villageois.offrir', { id, objet: item }) : offrirVillageois(state, id, item)) : offrir(state, hameau, id, item);
     closeModal();
     if (!r.ok) { notify(r.error, { son: 'erreur' }); return; }
     persistState();

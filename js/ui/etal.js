@@ -12,6 +12,7 @@ import { applyResult } from './game-actions.js';
 import { executer } from './commandes.js';
 import { registerActions } from './actions.js';
 import { notify } from './toasts.js';
+import { avisNeufs } from './avis-en-ligne.js';
 
 /* ---------- l'étal du joueur et la bourse des villageois (le chantier « l'île à bâtir », fiche I4) ----------
    L'étal (un appui sur lui, sur la carte ; js/engine/bourse.js) : ce qui y est en vente (à reprendre), ce qu'on peut y
@@ -86,7 +87,8 @@ export function bourseFicheHtml(id) {
 
 // Les achats à l'étal du moteur : une notification chacun. → true s'il y en a eu.
 export function direAvisEtal() {
-  const l = prendreAvisEtal(state);
+  // (I9d : en ligne, un avis déjà dit ne se redit pas quand la partie locale est refaite)
+  const l = avisNeufs(prendreAvisEtal(state), (a) => `etal:${a.id}:${a.objet}:${a.prix}`);
   for (const a of l) {
     const v = trouverVillageois(state, a.id);
     if (!v || !OBJ(a.objet)) continue;

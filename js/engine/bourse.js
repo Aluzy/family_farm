@@ -12,7 +12,7 @@ import { takeWheat, wheatTotal } from './animals.js';
 import { goutPour } from './amitie.js';
 import { villageoisDe, trouverVillageois } from './villageois.js';
 import { journeeDuVillage } from './villageois-journee.js';
-import { blocBloque, casesCouvertes } from './blocs.js';
+import { blocBloque, casesCouvertes, memoEnLot } from './blocs.js';
 
 /* ---------- la part, la bourse et l'étal (le chantier « l'île à bâtir », fiche I4) ----------
 
@@ -216,8 +216,11 @@ const ET = () => BO().ETAL || {};
 export function caseEtal(state) {
   const B = state && state.blocs;
   if (!B) return null;
-  for (const [c, s] of Object.entries(B)) if (s === 'etal') return Number(c);
-  return null;
+  // (I9d : une fois par pas du monde, blocs.js memoEnLot)
+  return memoEnLot(state, 'caseEtal', () => {
+    for (const [c, s] of Object.entries(B)) if (s === 'etal') return Number(c);
+    return null;
+  });
 }
 
 // L'étal de la partie (créé au besoin) : { objets: { objet: n }, avis: [] }.
@@ -385,7 +388,8 @@ export function acheterALEtal(state, id, o) {
   // (ce qui se mange, il le mange : ses provisions, à son prochain repas)
   else if (DATA.OBJETS[o].energie > 0) { if (!objet(v.provisions)) v.provisions = {}; v.provisions[o] = (v.provisions[o] || 0) + 1; }
   plaisir(v, jour, entier((BO().BONHEUR || {})[envie]));
-  E.avis.push({ id: v.id, objet: o, prix, envie });
+  // (I9d : dans la partie d'un monde de l'île, l'avis porte son pas : la page ne le redit pas quand sa partie est refaite)
+  E.avis.push({ id: v.id, objet: o, prix, envie, ...(state.horloge && Number.isInteger(state.horloge.pas) ? { pas: state.horloge.pas } : {}) });
   if (E.avis.length > 20) E.avis.splice(0, E.avis.length - 20);
   return { ok: true, objet: o, prix, envie };
 }

@@ -59,6 +59,25 @@ téléphone, avec un village complet toujours à l'écran, et corriger ce qui ne
 - **La mesure** : `node scripts/cout-ile.mjs` (les octets par minute à 2 et 4 joueurs, le contrôle d'un geste, une
   île très exploitée).
 
+## Revu par I9c (le port et la caisse)
+
+- **Un geste du port pèse ≈ 210 octets diffusés** (dont ≈ 44 pour son bilan) et coûte au serveur 0,1 à 0,3 ms : le
+  commerce ne pèse rien à côté des positions.
+- **La mise en ligne d'une île** calcule le plan de sa graine pour le lieu du port (≈ 0,7 s, une fois) : à ajouter au
+  coût de la création (I9f).
+- **Le contrôle de la case** d'un geste du port lit la dernière position relayée (`dernieresPos`) : si l'intérêt par
+  région change la façon dont les positions sont gardées, le garder.
+
+## Revu par I9d (les villageois en ligne)
+
+- **Le pas de jour se joue en lot** (`pasDuMonde` → `enLot`, `js/engine/blocs.js` ; `memoEnLot` pour la boîte, l'étal,
+  les locaux des commerces) : ce qui parcourt les blocs posés n'est calculé qu'une fois par pas. Le même résultat (la
+  même empreinte sur 720 pas), et un pas de jour de 5,8 → 1,8 ms à cinq villageois, 15,6 → 3,7 ms à dix, 27 → 6,2 ms
+  à quinze (`node scripts/cout-villageois.mjs`). Le solo n'en profite pas encore (`tick` n'est pas en lot) : à essayer ici.
+- **Ce qui reste cher dans un pas** : `journeeDuVillage` refait ses signatures à chaque villageois
+  (`signatureTaches`, `signatureGardeManger`, `commercesSignature`) ; minuit (`runNight`) coûte 16 à 34 ms à cinq ou dix
+  villageois, 79 ms (au plus 131) à quinze.
+
 ## Hors périmètre
 
 - Toute règle de jeu ; de nouveaux dessins.

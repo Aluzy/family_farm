@@ -29,6 +29,9 @@
 //   par le monde, comme sur la ferme ; ce qu'un geste lâche va au coffre commun ; un geste qui n'a pas de sens dehors
 //   est refusé ici, avant d'être envoyé, comme le monde le refuserait. Le monde relaie les positions des joueurs
 //   proches à leur pas, celles des joueurs loin plus rarement (l'intérêt par région : worker/src/monde.mjs).
+// - I9c, le port et la caisse : au port, chacun vend ce qu'il a porté (sa charge, la sienne : synchro.js), la caisse
+//   est commune ; ce qu'un autre vend, achète, livre ou bâtit au port se dit (le bilan de l'événement : commerceEnMots),
+//   et le journal du monde le garde, avec son auteur.
 
 import { clockHours, DATA, empreintePartie, executerCommande, GAME_VERSION, ICONES_ROLES, ilePartagee, memberPerso, NOMS_ROLES, pasDe, refusDuRole, refusFrontiere, unirVu, validApparence } from '../engine/index.js';
 import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, quandConnecte } from './compte.js';
@@ -241,6 +244,11 @@ function recevoir(ws, data) {
   }
   if (m.t === 'evt') {
     if (!lien.synchro.evenement(m)) toutRedemander();
+    // (I9c : ce qu'un autre a fait au port, dit à chacun ; la caisse est commune)
+    if (m.bilan && m.acteur !== lien.moi && m.cmd) {
+      const qui = (lien.membres.find((x) => x.compte === m.acteur) || {}).nom || 'Un joueur';
+      notify(`${qui} ${commerceEnMots(m.cmd.type, m.bilan, true)}`, { kind: 'info', duree: 6000 });
+    }
     if (m.cmd && m.cmd.type === 'nuit.partagee') matin();
     bandeau();
     return;
@@ -324,7 +332,9 @@ function reveilDuMonde() {
   lien.dormait = null;
   const min = Math.round(ms / 60000), duree = min < 60 ? `${Math.max(1, min)} min` : min < 48 * 60 ? `${Math.round(min / 60)} h` : `${Math.round(min / 1440)} jours`;
   const h = clockHours(s), heure = `${Math.floor(h)} h${Math.floor((h % 1) * 60) ? ` ${String(Math.floor((h % 1) * 60)).padStart(2, '0')}` : ''}`;
-  notify(`🌙 Le monde dormait depuis ${duree} : il reprend où il s'était arrêté (jour ${s.day}, ${heure}).`, { duree: 8000 });
+  // (I9d : le village dormait avec lui : ses villageois n'ont rien fait, rien produit pendant ce temps)
+  const village = Array.isArray(s.villageois) && s.villageois.length ? ' Le village dormait avec lui : ses villageois n\'ont rien produit en ton absence, ils reprennent leur journée.' : '';
+  notify(`🌙 Le monde dormait depuis ${duree} : il reprend où il s'était arrêté (jour ${s.day}, ${heure}).${village}`, { duree: 8000 });
 }
 
 export const TEMPS_DU_MONDE = '🕰️ Le temps de ce monde passe quand au moins un joueur y est. Sans personne, il dort.';
@@ -465,6 +475,8 @@ const JAMAIS = /^(test-|do-import|do-new-game|ask-new-game|demarrer|accueil-)/;
 export function actionPermise(action, bloquees) {
   if (JAMAIS.test(action)) return 'Pas dans un monde en ligne : reviens à ta ferme solo (🌐 › Ma ferme solo).';
   if (action === 'sleep') return 'En ligne, on se couche par le bandeau (🛏 Se coucher) : la nuit passe quand tout le monde dort.';
+  // (I9d : sur une île, offrir un cadeau à un villageois : villageois.offrir, avec son amitié à soi)
+  if (action === 'ami-offrir' && ileEnLigne()) return null;
   if (bloquees.has(action) && !CONSTRUIRE.has(action) && !FERME.has(action)) return 'En ligne, ce geste ne se fait pas encore : il viendra bientôt.';
   return null;
 }
@@ -547,13 +559,38 @@ const GESTES = {
   'tech.acheter': 'a acquis une technologie', 'atelier.fabriquer': 'a fabriqué à l\'Atelier', 'atelier.construire': 'a construit un atelier',
   'appareil.basculer': 'a allumé ou éteint un appareil', 'appareil.ameliorer': 'a amélioré un appareil', 'appareil.entretenir': 'a entretenu un appareil', 'appareil.reparer': 'a réparé un appareil',
   'reservoir.agrandir': 'a agrandi le réservoir', 'robot.batterie': 'a agrandi la batterie du robot', 'arbre.planter': 'a planté un arbre', 'massif.cueillir': 'a cueilli des fleurs',
+  'port.vendre': 'a vendu au port', 'port.decharger': 'a tout vendu au port', 'port.acheter': 'a acheté au port', 'port.honorer': 'a livré une commande du bac',
+  'port.livrer': 'a livré un contrat d\'export', 'port.importer': 'a commandé au catalogue d\'import', 'port.contrat': 'a accepté un contrat d\'export',
+  'port.apporter': 'a apporté au chantier du port', 'port.agrandir': 'a agrandi le port',
+  'portage.charger': 'a chargé pour le port', 'portage.reprendre': 'a déchargé à la ferme', 'portage.vehicule': 'a choisi comment porter',
   'nuit.partagee': 'tout le monde a dormi : la nuit est passée',
   'temps.sommeil': 'tous couchés (la nuit file), ou l\'un s\'est levé',
   'monde.restaurer': 'a restauré une sauvegarde',
 };
 const FAMILLES_GESTES = { mur: 'a bâti un mur', etage: 'a bâti à l\'étage', solEtage: 'a posé un sol à l\'étage' };
-export function gesteEnMots(type) {
+export function gesteEnMots(type, bilan = null) {
+  if (bilan && typeof bilan === 'object') return commerceEnMots(type, bilan);
   return GESTES[type] || FAMILLES_GESTES[String(type).split('.')[0]] || 'a fait un geste';
+}
+// I9c : un geste du commerce et son bilan (worker/src/monde.mjs bilanCommerce), en mots : « a vendu 12 🥕 Carotte au
+// port (+48 💰) ». `caisse` : le dire de la caisse commune (pour les autres joueurs, sur le moment).
+const nomObjet = (k) => { const it = DATA.OBJETS[k]; return it ? `${it.icone} ${it.nom.toLowerCase()}` : String(k || '?'); };
+const pieces = (n) => `${Math.round(Number(n) || 0).toLocaleString('fr-FR')} 💰`;
+export function commerceEnMots(type, b, caisse = false) {
+  const enCaisse = caisse ? ' à la caisse commune' : '';
+  const liste = (o) => Object.entries(o || {}).map(([k, n]) => `${n} ${nomObjet(k)}`).join(', ') || 'rien';
+  switch (type) {
+    case 'port.vendre': return `a vendu ${b.n} ${nomObjet(b.objet)} au port (+${pieces(b.gain)}${enCaisse})`;
+    case 'port.decharger': return `a tout vendu au port : ${liste(b.vendus)} (+${pieces(b.gain)}${enCaisse})`;
+    case 'port.acheter': return `a acheté ${b.n} ${nomObjet(b.objet)} au port (−${pieces(b.cout)}${caisse ? ' de la caisse commune' : ''})`;
+    case 'port.honorer': return `a livré ${b.n} ${nomObjet(b.objet)} à une commande du bac (+${pieces(b.gain)}${enCaisse})${Number.isInteger(b.reste) ? ` : il en reste ${b.reste} à livrer` : ''}`;
+    case 'port.livrer': return `a livré ${b.n} ${nomObjet(b.objet)} à un contrat d'export (+${pieces(b.gain)}${enCaisse})`;
+    case 'port.importer': return `a commandé au catalogue d'import (−${pieces(b.cout)}${caisse ? ' de la caisse commune' : ''})`;
+    case 'port.contrat': return `a accepté un contrat d'export : ${b.n} ${nomObjet(b.objet)}`;
+    case 'port.apporter': return `a apporté au chantier du port : ${liste(b.apporte)}`;
+    case 'port.agrandir': return `a agrandi le port : niveau ${b.niveau}`;
+    default: return GESTES[type] || 'a fait un geste';
+  }
 }
 function ilYa(ts) {
   const m = Math.max(0, Math.round((Date.now() - Number(ts)) / 60000));
@@ -570,7 +607,7 @@ async function ouvrirJournal(suite = false) {
   const r = await appelServeur(`/mondes/${lien.monde}/journal${avant ? `?avant=${avant}` : ''}`, { methode: 'GET' });
   if (!r.ok) { notify(`🌐 ${r.erreur || 'Le journal n\'a pas pu être lu.'}`); return; }
   journalVu = suite ? journalVu.concat(r.evts || []) : (r.evts || []);
-  const lignes = journalVu.length ? journalVu.map((e) => `<li><strong>${echapper(e.nom)}</strong> ${gesteEnMots(e.type)} <span class="muted">· ${ilYa(e.ts)} · n° ${e.rev}</span></li>`).join('') : '<li class="muted">Rien encore.</li>';
+  const lignes = journalVu.length ? journalVu.map((e) => `<li><strong>${echapper(e.nom)}</strong> ${gesteEnMots(e.type, e.bilan)} <span class="muted">· ${ilYa(e.ts)} · n° ${e.rev}</span></li>`).join('') : '<li class="muted">Rien encore.</li>';
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="journal-titre">📜 Le journal du monde</h2>

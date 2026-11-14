@@ -7,6 +7,7 @@ import { noter } from './journal.js';
 import { faimAidePct, faimMarchePct } from './equipement.js';
 import { clockHours, nightActive } from './clock.js';
 import { villageActif } from './village.js';
+import { memoEnLot } from './blocs.js';
 
 /* ---------- la boîte à nourriture et la faim de la famille (FAMILLE.FAIM) ---------- */
 
@@ -104,7 +105,8 @@ export function boiteCounts(state) {
 
 // La boîte est-elle posée sur la carte ?
 export function boitePosee(state) {
-  return Object.values(state.blocs || {}).includes('boite_nourriture') || Object.values(state.etage || {}).includes('boite_nourriture');
+  // (I9d : une fois par pas du monde, blocs.js memoEnLot)
+  return memoEnLot(state, 'boitePosee', () => Object.values(state.blocs || {}).includes('boite_nourriture') || Object.values(state.etage || {}).includes('boite_nourriture'));
 }
 
 // Combien d'unités de `item` peuvent encore entrer dans la boîte (PLATS aliments différents,

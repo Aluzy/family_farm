@@ -587,7 +587,7 @@ export function stageModel() {
     villageois: villageoisModele(),
     bac: bacModele(), // (le bac du port, fiche I1c : js/carte/ferme/bac.js)
     // (fiche I3b : l'heure, pour que la scène les fasse vivre entre deux modèles)
-    villageoisHeure: villageoisHorloge(),
+    villageoisHeure: villageoisHorloge(heureDuJour()),
     // une scène du récit qui se joue sur la carte (js/ui/scene.js : l'arrivée de Fernand ;
     // js/carte/ferme/rencontre.js) ; null le reste du temps
     sceneCarte: sceneCarteModele(),
