@@ -50,7 +50,7 @@ export function sonHtml() {
       <span id="son-mode-titre">🎼 Musique</span>
       <div class="row">${MODES.map(([id, nom]) => `<label class="row check-row"><input type="radio" name="son-mode" value="${id}" ${r.mode === id ? 'checked' : ''}> ${nom}</label>`).join('')}</div>
     </div>
-    <p class="muted">« Par moments » : la musique revient de temps en temps, et la ferme s'entend seule entre deux. Chaque lieu a la sienne (la ferme, un hameau, la forêt, la montagne, la côte, une fête), et chaque moment (le soir, la nuit). Réglage de cet appareil ; la partie n'en dépend pas.</p>
+    <p class="muted">« Par moments » : la musique revient de temps en temps, et la ferme s'entend seule entre deux. Chaque lieu a la sienne (${villageActif(state) ? 'la ferme, la forêt, la montagne, la côte, une fête' : 'la ferme, un hameau, la forêt, la montagne, la côte, une fête'}), et chaque moment (le soir, la nuit). Réglage de cet appareil ; la partie n'en dépend pas.</p>
   </div>`;
 }
 

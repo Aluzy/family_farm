@@ -10,7 +10,7 @@ import { validApparence } from './family.js';
 import { proposDuMoment } from './propos.js';
 import { demandeDe, texteDemande } from './demandes.js';
 import { recitPour } from './recit-aiguillage.js';
-import { prenomsDuJeu } from './village.js';
+import { prenomsDuJeu, villageActif } from './village.js';
 
 /* ---------- les habitants des hameaux du grand monde (docs/grand-monde.md : fiche 7b) ----------
 
@@ -69,8 +69,11 @@ const mangeable = (item) => { const d = DATA.OBJETS[item]; return !!d && !!d.man
 
 /* ---------- les habitants de la partie ---------- */
 
-// Les hameaux peuplés : { [id]: hameau } (lecture ; {} sans eux).
+// Les hameaux peuplés : { [id]: hameau } (lecture ; {} sans eux). Le chantier « l'île à bâtir » allumé (fiche I7e) :
+// l'île n'a pas de hameau, {} toujours (les projets, les fêtes, les demandes, les liens, les invitations ne lisent
+// plus que le village ; une partie d'avant passée sur l'île garde les siens dans l'état : I7f).
 export function habitantsDe(state) {
+  if (villageActif(state)) return {};
   const h = state && state.monde && state.monde.habitants;
   return h && typeof h === 'object' ? h : {};
 }
@@ -103,6 +106,8 @@ export function garantiDuHameau(state, hameauId) {
 export function peuplerHameau(state, plan, o = {}) {
   // (une bâtisse du récit, la cabane, l'atelier : personne n'y naît, monde-hameaux.js planBatisse)
   if (!state || !state.monde || typeof state.monde !== 'object' || !plan || !plan.id || !Array.isArray(plan.maisons) || plan.batisse) return null;
+  // (l'île, fiche I7e : personne n'y naît dans un hameau)
+  if (villageActif(state)) return null;
   if (!state.monde.habitants || typeof state.monde.habitants !== 'object') state.monde.habitants = {};
   const H = state.monde.habitants;
   if (H[plan.id]) return H[plan.id];

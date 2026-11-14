@@ -140,6 +140,7 @@ const PRIX_PRODUCTIONS_AVANT_LOT_12 = {
   oignon: 1, ail: 2, poivron: 2, epinard: 1, fraise: 2, riz: 1, raisin: 3,
   houblon: 3, cacao: 8, vanille: 15, cafe: 6,
   lait: 4,
+  ail_ours: 3, salicorne: 3,   // (les plants sauvages de l'île, fiche I7e : des cultures comme les autres)
 };
 
 // Version 1.1 : les viandes ne sont plus des productions de la ferme. Leur prix

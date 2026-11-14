@@ -13,6 +13,7 @@ import { aCruche, eauCruche, puiserCruche } from './cruche.js';
 import { casesDuTerrain, farmTerrain, tileCount } from './terrain.js';
 import { serrePlaces } from './blocs.js';
 import { recitPour } from './recit-aiguillage.js';
+import { recolteSauvage } from './sauvages.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -556,6 +557,8 @@ export function harvestPlot(state, plot, auto = false, direct = false) {
   };
   gain(cropProduct(culture), harvestYield(state, culture));
   noteCropHarvested(state, culture); // version 1.12 : chapitres 1 et 2
+  // (l'île à bâtir, fiche I7e : un plant sauvage récolté la première fois s'inscrit au catalogue d'import du port)
+  const sauvage = recolteSauvage(state, culture);
   if (def.graines.mode === 'recolte') {
     const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
     gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
@@ -572,7 +575,7 @@ export function harvestPlot(state, plot, auto = false, direct = false) {
   if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9
   if (!auto) spendEnergy(state, 'recolter');
   gainActionXp(state, 'recolter', 1, auto); // version 1.7
-  return { ok: true, culture, items, aRamasser };
+  return { ok: true, culture, items, aRamasser, ...(sauvage ? { sauvage } : {}) };
 }
 
 // Deuxième étape nocturne : +1 stade si la parcelle a été arrosée (jusqu'au

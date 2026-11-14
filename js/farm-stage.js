@@ -130,10 +130,12 @@
         A.feuille(this, F.C.BLOCS_CARTE.portails.key, F.C.BLOCS_CARTE.portails.file, F.C.BLOCS_CARTE.portails.frame, v);
         // les animaux de compagnie de la famille (js/ambient-life.js) : trois robes de chat, trois de chien
         for (const k of COMPAGNONS) A.feuille(this, k, k + '.png', CAT_FRAME, v);
-        // la calèche du grand monde (js/carte/ferme/caleche.js, fiche 7c)
-        if (K.CALECHE) A.feuille(this, K.CALECHE.key, K.CALECHE.file, { frameWidth: K.CALECHE.w, frameHeight: K.CALECHE.h }, v);
-        // sa malle, au bout du chemin de la ferme (js/carte/ferme/malle.js)
-        if (K.MALLE) A.feuille(this, K.MALLE.key, K.MALLE.file, { frameWidth: K.MALLE.w, frameHeight: K.MALLE.h }, v);
+        // la calèche du grand monde (js/carte/ferme/caleche.js, fiche 7c) ; sa malle, au bout du chemin de la ferme
+        // (js/carte/ferme/malle.js). L'île (le chantier « l'île à bâtir », fiche I7e : le monde d'un port, ctx.monde.ile)
+        // n'a ni calèche ni malle : leurs images ne se chargent pas.
+        const ile = !!(this.ctx.monde && this.ctx.monde.ile);
+        if (K.CALECHE && !ile) A.feuille(this, K.CALECHE.key, K.CALECHE.file, { frameWidth: K.CALECHE.w, frameHeight: K.CALECHE.h }, v);
+        if (K.MALLE && !ile) A.feuille(this, K.MALLE.key, K.MALLE.file, { frameWidth: K.MALLE.w, frameHeight: K.MALLE.h }, v);
         // le cheval : sellé, seul (à l'Écurie), son poteau (js/carte/cheval.js)
         if (K.chargeCheval) K.chargeCheval(this, v);
         // la brouette et la charrette attelée (l'île à bâtir, fiche I2 : js/carte/portage.js)

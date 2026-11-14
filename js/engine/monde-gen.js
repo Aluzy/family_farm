@@ -949,6 +949,15 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
   // Seulement si le cadre le demande (cadre.PORT : son niveau) ; en dernier, sans tirage : rien d'autre ne bouge.
   const port = cadre.PORT ? placerPort() : null;
 
+  // L'île (le chantier « l'île à bâtir », fiche I7e) : le monde d'un port n'a ni hameau ni boucle de chemins. Ils
+  // ont été tirés plus haut comme avant, des « fantômes » : les lieux du récit, les secrets et le port les évitent
+  // encore, et tout ce qui se tire après eux (les grottes, les coins de pêche, le port et son chemin) reste à sa
+  // case, à la graine près (la condition d'une migration douce, I7f) ; seuls ne sont pas rendus. Le chemin du port
+  // (lieux.port.chemin) va d'un bout à l'autre, de la sortie de la ferme au port : il ne dépend pas des boucles
+  // qu'il longeait. Là où se tenaient les hameaux, rien n'est réservé : la nature de leur biome reprend.
+  if (cadre.PORT) {
+    return { rivieres, finRivieres, lacs, eaux, chemins: [], lieux: { hameaux: [], grottes, peche, recit, secrets, port } };
+  }
   return { rivieres, finRivieres, lacs, eaux, chemins, lieux: port ? { hameaux, grottes, peche, recit, secrets, port } : { hameaux, grottes, peche, recit, secrets } };
 
   // La case du port : une case de terre (plage, prairie, lande, forêt) au bord de la mer, d'où le quai avance droit

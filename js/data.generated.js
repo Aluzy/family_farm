@@ -568,6 +568,8 @@ export const RAW_DATA = {
     "ble": { "nom": "Blé", "icone": "🌾", "prix": 1, "mangeable": false, "categorie": "ingrédient" },
     "graine_tournesol": { "nom": "Graines de tournesol", "icone": "🌱‍🌻", "prix": 1, "mangeable": false, "categorie": "graine" },
     "plant_vigne": { "nom": "Plant de vigne", "icone": "🌱‍🍇", "prix": 6, "mangeable": false, "categorie": "graine" },
+    "plant_ail_ours": { "nom": "Plant d'ail des ours", "icone": "🌱‍🌿", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
+    "plant_salicorne": { "nom": "Plant de salicorne", "icone": "🌱‍🌊", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "graine_coquelicot": {
       "nom": "Graines de coquelicot",
       "icone": "🌱‍🌺",
@@ -2065,6 +2067,8 @@ export const RAW_DATA = {
     "graine_epinard": { "nom": "Graines d'épinard", "icone": "🌱‍🥬", "prix": 1, "mangeable": false, "categorie": "graine" },
     "fraise": { "nom": "Fraise", "icone": "🍓", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit" },
     "raisin": { "nom": "Raisin", "icone": "🍇", "energie": 6, "prix": 3, "mangeable": true, "categorie": "fruit" },
+    "ail_ours": { "nom": "Ail des ours", "icone": "🌿", "energie": 5, "prix": 3, "mangeable": true, "categorie": "légume", "rachetable": false },
+    "salicorne": { "nom": "Salicorne", "icone": "🌱", "energie": 5, "prix": 3, "mangeable": true, "categorie": "légume", "rachetable": false },
     "graine_fraise": { "nom": "Graines de fraise", "icone": "🌱‍🍓", "prix": 1, "mangeable": false, "categorie": "graine" },
     "riz": { "nom": "Riz", "icone": "🍚", "energie": 10, "prix": 1, "mangeable": true, "categorie": "légume" },
     "houblon": { "nom": "Houblon", "icone": "🌿", "prix": 3, "mangeable": false, "categorie": "ingrédient" },
@@ -4236,6 +4240,28 @@ export const RAW_DATA = {
       "graines": { "item": "plant_vigne", "mode": "plant" },
       "vivace": { "stade": 4 },
       "sprite": { "r": 17, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
+    },
+    "ail_ours": {
+      "nom": "Ail des ours",
+      "icone": "🌿",
+      "lieux": ["potager"],
+      "sauvage": "foret",
+      "stades": 4,
+      "litres": 2,
+      "rendement": 5,
+      "graines": { "item": "plant_ail_ours", "mode": "recolte", "min": 1, "max": 2 },
+      "sprite": { "r": 18, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
+    },
+    "salicorne": {
+      "nom": "Salicorne",
+      "icone": "🌱",
+      "lieux": ["potager"],
+      "sauvage": "plage",
+      "stades": 5,
+      "litres": 3,
+      "rendement": 6,
+      "graines": { "item": "plant_salicorne", "mode": "recolte", "min": 1, "max": 2 },
+      "sprite": { "r": 19, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     }
   },
   "POTAGER": {
@@ -6104,7 +6130,9 @@ export const RAW_DATA = {
       { "nom": "pierre", "genre": "basse", "variantes": 1 },
       { "nom": "champignon_blanc", "genre": "basse", "variantes": 1 },
       { "nom": "champignon_jaune", "genre": "basse", "variantes": 1 },
-      { "nom": "champignon_bleu", "genre": "basse", "variantes": 1 }
+      { "nom": "champignon_bleu", "genre": "basse", "variantes": 1 },
+      { "nom": "ail_ours_sauvage", "genre": "basse", "variantes": 2, "penche": true },
+      { "nom": "salicorne_sauvage", "genre": "basse", "variantes": 2, "penche": true }
     ],
     "REMPLACE": [{ "biome": "foret", "sols": ["feuilles", "mousse"], "de": "feuillu", "vers": "chataignier", "part": 0.0625 }],
     "DENSITES": {
@@ -6415,7 +6443,9 @@ export const RAW_DATA = {
       "pierres_moussues": { "geste": "ramasser", "fin": { "pierre": [1, 1] }, "retour": [4, 6] },
       "coquillages": { "geste": "ramasser", "fin": { "coquille": [1, 1] }, "chance": { "bulot": 30 }, "retour": [2, 4] },
       "etoile_mer": { "geste": "ramasser", "fin": { "etoile_mer": [1, 1] }, "retour": [3, 5] },
-      "algues": { "geste": "ramasser", "fin": { "algues": [1, 2] }, "retour": [2, 4] }
+      "algues": { "geste": "ramasser", "fin": { "algues": [1, 2] }, "retour": [2, 4] },
+      "ail_ours_sauvage": { "geste": "ramasser", "fin": { "plant_ail_ours": [1, 2] }, "retour": [8, 12] },
+      "salicorne_sauvage": { "geste": "ramasser", "fin": { "plant_salicorne": [1, 2] }, "retour": [8, 12] }
     }
   },
   "LIEUX": {
@@ -10509,6 +10539,13 @@ export const RAW_DATA = {
           "10": "Le plus haut niveau. Sur l'île, la veillée de pleine lune se tient d'elle-même, sans niveau : deux villageois et une place (le panneau du village, un puits ou une table de jardin) suffisent"
         }
       }
+    },
+    "SAUVAGES": {
+      "LOIN": 40,
+      "PLANTS": {
+        "ail_ours_sauvage": { "biome": "foret", "sols": ["feuilles", "mousse"], "part": 0.004, "culture": "ail_ours" },
+        "salicorne_sauvage": { "biome": "plage", "sols": ["sable"], "part": 0.015, "eau": [1, 3], "culture": "salicorne" }
+      }
     }
   },
   "TACHES": {
@@ -11378,6 +11415,8 @@ export const RAW_DATA = {
     "epinard": 4,
     "fraise": 4,
     "raisin": 4,
+    "ail_ours": 3,
+    "salicorne": 4,
     "viande_boeuf": 5,
     "viande_volaille": 4,
     "lait": 4,

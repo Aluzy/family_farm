@@ -80,6 +80,7 @@ function renderFetesVillage(fetesV) {
 
 // Les fêtes des hameaux ce mois-ci (V-4) : 🎉, le hameau, le jour ; passées en grisé.
 function renderFetes(fetes) {
+  if (villageActif(state)) return '';   // (l'île, fiche I7e : pas de hameau, pas de fête des hameaux)
   const L = Object.values(fetes).flat().sort((a, b) => a.jour - b.jour);
   if (!L.length) return '';
   const lignes = L.map((f) => `<li${f.jour < state.day ? ' class="muted"' : ''}><span aria-hidden="true">${f.icone}</span> <strong>${escapeHtml(f.nom.charAt(0).toUpperCase() + f.nom.slice(1))}</strong> ${escapeHtml(f.aHameau)} : ${f.jour === state.day ? 'ce soir' : formatDay(f.jour)}, de ${f.debut} h à ${f.fin} h</li>`).join('');

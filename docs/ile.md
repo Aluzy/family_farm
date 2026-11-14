@@ -49,7 +49,7 @@ son île et son village ; une chronique note ce qui s'y passe.
 | En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs. |
 | L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | I1c : non, sur 80 nuits de simulation (le port en prend 6 800 pièces, 814 en caisse à la nuit 80). I4 : le joueur minimal finit à 242 pièces (le port au niveau 3), l'appliqué à 2 727 pour une borne de 1 412 : il a payé le niveau 2 tôt et n'atteint pas le niveau 3 avant la nuit 80 (ses matériaux, pas ses pièces : à 3 500 pièces, il ne le prend pas davantage). À revoir quand le joueur simulé ira plus loin que le palier 6. |
 | La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | I4 : fixe, `VILLAGE.PART` = 30 % (à 20 %, le villageois des champs rapporte 2,5 fois son coût, au bord de la fourchette ; à 40 %, la partie simulée s'appauvrit). |
-| La raison d'explorer sans hameaux à découvrir. | I1c, I8b | Des espèces sauvages à rapporter et à cultiver ; des sites à exploiter. I8b n'y a rien ajouté : la ferme productive se joue sur la ferme et au port. |
+| La raison d'explorer sans hameaux à découvrir. | I1c, I8b, I7e | Des espèces sauvages à rapporter et à cultiver ; des sites à exploiter. I8b n'y a rien ajouté : la ferme productive se joue sur la ferme et au port. I7e : les plants sauvages de chaque biome (deux codés : l'ail des ours des sous-bois, la salicorne des plages), le catalogue d'import qu'ils enrichissent, les lieux muets d'I7c gardés ; la suite proposée plus bas (« Une raison d'explorer », I7e). |
 
 ## Les constats d'où l'on part
 
@@ -83,7 +83,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
 | 5. Les artisans | I5a (fait), I5b, I5c (fait) | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
-| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e, I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
+| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
 | 9. L'île en ligne et la bascule | I9a à I9h, I9a2 | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
@@ -267,8 +267,8 @@ Ce qui est posé (I1c ; les réglages : `PORT.BAC`, `PORT.COMMANDES`, `PORT.IMPO
 - **Les tests** : `tests/engine/village-bac.test.mjs` (les jours du bac ; la vente sans limite et les caisses ; les
   commandes tirées, honorées, manquées ; le catalogue, l'import payé d'avance et livré au passage suivant, la bête
   sans place, le plan ; le rattrapage après une absence, la nuit ; les niveaux ; la sauvegarde ; éteint, rien).
-- Reste : ~~la part des villageois et les prix (I4)~~ (fait, plus bas) ; les plants sauvages à cultiver (I7e, qui appellera
-  `inscrireSauvage`) ; les contrats d'export en volume (I8b) ; le port en ligne (I9c) ; montrer le chantier du port
+- Reste : ~~la part des villageois et les prix (I4)~~ (fait, plus bas) ; ~~les plants sauvages à cultiver (I7e)~~ (fait : ils
+  s'inscrivent à leur première récolte, js/engine/sauvages.js, plus bas) ; les contrats d'export en volume (I8b) ; le port en ligne (I9c) ; montrer le chantier du port
   sur la carte (des matériaux empilés) ; que la tournée d'un villageois honore les commandes.
 
 ## Le chemin du port, modifiable, et le portage (I2, fait)
@@ -337,7 +337,7 @@ Ce qui est posé (I2 ; les réglages : `VILLAGE.DEHORS`, `VILLAGE.CHEMIN`, `VILL
   scène tourne au ralenti : 32 px/s à pied au lieu de 58), le rapport mesuré chemin/herbe est de 1,3 à pied et 1,5 à
   cheval ; l'aller à cheval avec la charrette, sur 426 cases, y a pris 143 s.
 - **Les tests** : `tests/engine/village-chemin.test.mjs` ; `village-commerce` charge avant de vendre.
-- Reste : retirer les boucles vers les hameaux (I7e) ; convertir le tronçon des parties d'avant (I7f) ; le chargement
+- Reste : ~~retirer les boucles vers les hameaux (I7e)~~ (fait : le monde de l'île n'a plus que le tronçon) ; convertir le tronçon des parties d'avant (I7f) ; le chargement
   ne vieillit pas la nuit (il garde sa fraîcheur) ; un chemin repris du tronçon rend un bloc (1 pièce au port).
 
 ## Les villageois : l'arrivée (I3a, fait)
@@ -1420,13 +1420,115 @@ du récit, la page publique de l'encyclopédie, `index.html` et le README).
   la liste et les fiches des villageois, le tableau, les notifications : 176 relevés, aucun nom du récit, ni calèche, ni cocher, ni hameau ; aucune erreur de console. Une partie normale : la
   scène d'arrivée sur la carte (Fernand), le carnet (son bouton, sa page de Maurice), la calèche au menu, l'aide et le
   livre d'avant ; aucune erreur de console.
-- Reste : (I7e) les hameaux sont encore sur la carte de l'île, avec les noms du plan du monde (le Gué, les Genêts,
+- Reste : ~~(I7e) les hameaux sont encore sur la carte de l'île~~ (fait, plus bas), avec les noms du plan du monde (le Gué, les Genêts,
   Bois-Joli, les Mouettes, Brumeval : `PLAN_MONDE.HAMEAUX.GARANTIS`, monde-gen.js), leur fiche, leurs fêtes au
   calendrier (« Les fêtes des hameaux »), leurs projets, leur musique, la calèche qui roule et sa fenêtre : I7e les
   retire avec les hameaux (le joueur de l'île ne les croise qu'en explorant) ; (I7f) une partie d'avant passée sur
   l'île garde son carnet dans l'état (`state.recit`) mais ne le voit plus : la chronique doit en reprendre la trace (la
   ligne `avant`) ; (I9h) appliquer `encyclopedie_ile.json`, mettre en place `docs/ile/accueil.md` et
   `docs/ile/readme.md`, retirer `page()` et les branches d'avant de la page avec le récit.
+
+## Les hameaux, la calèche et les boucles de chemins retirés (I7e, fait)
+
+Une partie de l'île naît sur une île sans hameau, sans habitant, sans calèche, avec pour seul chemin le tronçon de la
+ferme au port. Le reste du grand monde ne bouge pas, à la graine près. Éteint, le jeu est le même (le CSV de la
+simulation octet pour octet ; `monde-plan`, `hameaux`, `caleche` verts).
+
+- **Le plan de l'île** (`js/engine/monde-gen.js`, `elementsDuMonde`) : le monde d'un port (`cadre.PORT`, celui de toute
+  partie de l'île, monde.js) ne rend ni hameau (`lieux.hameaux` vide) ni boucle (`chemins` vide). Ils sont tirés comme
+  avant, en **fantômes** : leurs tirages sont consommés, et les lieux du récit (gardés muets par I7c), les secrets et le
+  port les évitent encore (`PP.HAMEAU`, `surChemin`, `distHameaux`, `distChemin`) ; seulement, ils ne sont pas rendus.
+  Le chemin du port (`lieux.port.chemin`, de la sortie de la ferme au port, case à case) ne dépend pas des boucles qu'il
+  longeait : il reste entier. **La preuve** : `tests/engine/ile-monde-temoins.json`, l'empreinte relevée sur le plan
+  d'avant (bb2b7f6) de 50 graines — les eaux, les rivières, les lacs, les entrées de grotte, les coins de pêche, les
+  lieux du récit, les secrets, le port (sa case, son sens, le prix et le tracé de son chemin) et le tronçon du joueur
+  (I2, `tronconDuPort`, dans le Worker) — que `village-monde` compare au plan de l'île : 50 sur 50 identiques. Les
+  biomes et le relief ne lisent pas les hameaux (les champs : des bruits de la graine). C'est la condition d'une
+  migration douce (I7f) : une partie d'avant passée sur l'île garde son port, son chemin et son tronçon.
+- **La place des hameaux** : rien n'y est plus réservé (`reservesDuMonde`, `plansDesHameaux` : ni maison, ni terre
+  battue, ni emprise) ; la végétation, les rochers et les bêtes de son biome y poussent comme autour (ils se tirent
+  case par case ; la nature lit les chemins du plan, qui ne sont plus que le tronçon). Mesuré sur une graine (six
+  hameaux) : la densité des plantes dans un rayon de 6 cases d'un ancien hameau passe de 0 à 0,05 à 0,30 par case,
+  contre 0,11 à 0,23 autour. Ni trou ni clairière carrée ; dans Chromium, la place de Brumeval est une lande comme une
+  autre.
+- **Le Worker et la scène** : le Worker ne calcule plus de tournée (`cadre.PORT` : `tournee: null`) ; ses plans bâtis
+  ne sont plus que le port et les deux bâtisses muettes du récit. La page : `tourneeDe(state)` rend null sur l'île (la
+  calèche ne roule pas, même si un monde d'avant de la même graine a posé sa tournée) ; la malle n'est ni dessinée ni
+  touchable (`malleDepuisCarte`) ; la scène ne charge ni l'image de la calèche ni celle de la malle (`ctx.monde.ile`,
+  js/farm-stage.js), qui sortent de l'atlas de la ferme (scripts/carte/atlas.py ; le jeu d'avant les charge seules, au
+  pixel près). Les habitants : `habitantsDe(state)` rend `{}` sur l'île, `peuplerHameau` refuse : leurs personnages,
+  la musique et l'ambiance d'un hameau ne se chargent jamais. La planche des hameaux reste chargée : le port et les
+  bâtisses du récit y prennent leurs pièces.
+- **Ce qui s'y appuyait** : les projets, les fêtes, les demandes, les liens et les invitations lisent `habitantsDe` :
+  ils ne lisent plus que le village (I6a, I6b, I8a) ; le calendrier n'a plus « Les fêtes des hameaux » (et
+  `DATA.BIENVENUE.PLATS`, le plat d'une fête de hameau, n'est plus donné) ; la musique d'un hameau ne joue jamais
+  (`hameauIci` ne se pose plus) et le réglage du son ne la cite plus sur l'île ; la carte du monde et la boussole n'ont
+  plus de hameau (`lieuxDeLaCarte` lit le plan) ; les objectifs tirés `si: 'hameau'` sortent de la liste de l'île
+  (`listeTiree`). Le contrôle des textes (`village-textes`) s'élargit à la carte du monde : ses lieux tout vus, les
+  plans bâtis, la boussole vers chaque lieu et vers la ferme, sur trois graines.
+- **Les plants sauvages** (une raison d'explorer, codée pour deux biomes ; `VILLAGE.SAUVAGES`, data/village.json ;
+  `js/engine/sauvages.js`) : l'**ail des ours** des sous-bois (la forêt, ses sols « feuilles » et « mousse », 0,4 % des
+  cases libres) et la **salicorne** des plages (le sable, à 1 à 3 cases de l'eau, 1,5 %), à `LOIN` = 40 cases de la
+  ferme au moins. Dans le monde de l'île seulement, la végétation les pose (monde-vegetation.js : de petites plantes,
+  un tirage à elles, seulement sur les cases où aucune autre petite plante n'a poussé : rien d'autre ne bouge,
+  `village-sauvages` le vérifie en les retirant) ; 33 à 47 ails des ours et 9 à 16 salicornes par monde (graines 1, 2,
+  3, 200364 ; le plus proche à 39 à 43 cases, la moitié au-delà de 85 à 107). On les ramasse à la main (data/monde.json
+  RECOLTE : le plant, `plant_ail_ours`, `plant_salicorne`, 1 ou 2), on les repique dans la zone de culture
+  (data/crops.json : `ail_ours`, 4 jours, `salicorne`, 5 jours, marquées `sauvage` ; elles rendent la plante et 1 à 2
+  plants). Leur **première récolte** les inscrit au catalogue d'import du port (`recolteSauvage`, appelée par crops.js ;
+  elle écrit `state.port.sauvages` comme `inscrireSauvage`, sans importer bac.js, qui importe crops.js) : au rang
+  `PORT.IMPORT.SAUVAGES.RANG` (5), par 3 ; la page l'annonce (js/ui/port.js), l'aide de l'île le dit. Ils ne
+  s'achètent pas au comptoir (`rachetable: false`) ; éteint, ils ne paraissent ni dans le monde, ni aux semis
+  (`plantableCropsFor`), ni ne se plantent. Les dessins (`scripts/carte/sauvages.py`, vus de haut à 45° : chaque
+  feuille, chaque brin sa rampe de 128 tons parmi trois voisines, modelés, le bord à l'ombre plus froid, la pointe plus
+  chaude, l'occlusion au pied, le contour sombre) : dans le monde, deux variantes chacune (52 à 87 couleurs), avec leur
+  ombre douce au pied ; sur la ferme, quatre phases (16 à 116 couleurs : le plant repiqué en a peu, la plante mûre le
+  plus), dans la source des cultures (rangée 8), puis planche_cultures.py.
+- **Une raison d'explorer** (la proposition ; seuls les deux premiers plants sont codés) : chaque biome a deux ou trois
+  plants à lui, rares, loin de la ferme : la prairie (la camomille), la lande (le thym serpolet, la bruyère à miel), le
+  marais (le cresson, la menthe aquatique), la montagne (le génépi, la myrtille), la forêt (l'ail des ours, la fraise
+  des bois), la plage (la salicorne, la criste marine). À trancher : qu'ils poussent mal hors de leur sol sans un soin
+  (un bac de terre de forêt, un arrosage à l'eau de mer), ce qui ferait revenir les chercher. Les lieux muets d'I7c
+  (l'observatoire, l'atelier, l'épave, la cale, l'amas d'améthyste) et les secrets restent : chacun pourrait donner un
+  plant qui n'est nulle part ailleurs, sans récit. Le carnet du naturaliste les noterait trouvés, la chronique la
+  première récolte. Plus tard, des sites à exploiter (un gisement à ouvrir, une carrière, un étang à poissons) feraient
+  le pendant de la ferme productive.
+- **Les mesures** (une même partie de l'île, graine 588505, chargée trois fois dans le site d'avant, bb2b7f6, et dans
+  celui d'après ; Chromium sans écran, 1280 × 800) :
+  - au chargement : le jeu affiché en 3,4 s (3,0 à 3,9) avant, 3,3 s (3,0 à 3,6) après ; les lieux du Worker prêts en
+    4,6 s contre 4,6 s ; la mémoire JS de la page, après un ramasse-miettes, 61,0 Mo contre 60,6 Mo : rien de
+    mesurable, la page d'avant ne chargeait presque rien des hameaux tant qu'on n'y allait pas ; les images
+    téléchargées 1 419 Ko contre 1 393 Ko (l'atlas de la ferme sans la calèche ni la malle : 190 → 158 Ko ; les plants
+    sauvages : + 3 Ko aux cultures, + 3 Ko à la végétation) ;
+  - à la place du premier hameau (Brumeval) : avant, il naît (son habitant, sa musique, son ambiance, les couches des
+    personnages : 1,2 Mo de plus téléchargés, dont `musique_hameau.ogg` 437 Ko, `hameau.ogg` 348 Ko, `couches.json`
+    375 Ko), et la mémoire JS monte de 3,2 à 3,7 Mo (65,0 et 68,9 Mo contre 61,8 et 65,2) ; après, rien ;
+  - le Worker (dans Node, huit graines) : les éléments du monde de l'île 706 → 595 ms (− 16 %), dont les plans bâtis
+    78 → 1 ms ; 1 369 → 72 pièces bâties ; le message « pret » envoyé à la page 204 → 7 Ko ; une région 41 → 38 ms.
+- **La sauvegarde** : pas de nouveau format (99) : `state.port.sauvages` existait (I1c).
+- **Le joueur automatique** : `--village`, le CSV est le même octet pour octet (il ne visitait pas les hameaux sur
+  l'île : son excursion suit la tournée de la calèche, qu'il n'a plus) ; éteint, le même aussi.
+- **Les tests** : `tests/engine/village-monde.cas.mjs` (en quatre parties : les 50 graines et leurs témoins, le chemin
+  de la sortie au port case à case, les biomes, le Worker et le calcul direct identiques et sans tournée, la nature à
+  la place des hameaux, une partie de l'île sans hameau ni calèche ni habitant, éteint le monde d'avant) ;
+  `village-sauvages.test.mjs` (leur place, rien d'autre ne bouge, trouvé, ramassé, repiqué, récolté, inscrit une
+  fois ; éteint, rien) ; `village-textes` (la carte du monde) ; `village-port` et `village-sans-recit` revus (l'île n'a
+  pas de hameau ; ceux du monde d'avant n'y naissent pas). Les tests de données d'avant comptent les deux cultures de
+  plus (`potager`, `champ-poulailler`, `cuisine`, `inventaire`).
+- **Vérifié dans Chromium** (`?village=1`, « Seul », graines 942981 et 519829) : la carte du monde tout vue sans
+  hameau (le port et les coins de pêche seuls), la même graine éteinte avec ses sept hameaux ; la place de Brumeval
+  puis des Genêts, une lande comme une autre, la boussole vers le port (la même place éteinte : le hameau, son puits,
+  son habitant) ; un ail des ours en fleurs dans un sous-bois, ramassé (son plant), une salicorne sur une plage,
+  repiqués à la ferme, récoltés : l'annonce, puis le catalogue d'import du port (rang 5) ; le texte de la page cherché à
+  chaque étape : aucun nom du récit, ni calèche, ni cocher, ni hameau ; aucune erreur de console.
+- Reste : (I7f) une partie d'avant passée sur l'île : ses hameaux vus et ses habitants restent dans l'état
+  (`state.monde.hameaux`, `state.monde.habitants`, et les projets, les demandes, les liens qui les citent), muets
+  (`habitantsDe` rend `{}`) : les retirer, ou les garder pour la chronique ; son tronçon généré (`genere`) suit encore
+  les boucles là où le plan les rejoignait : le convertir ; (I9h) les fichiers (`monde-hameaux.js` hors du port et des
+  bâtisses, `habitants.js`, `caleche.js`, `caleche-tournee.js`, la scène des hameaux), les fantômes du plan (le jour où
+  l'on accepte que le port bouge), les trois cases réservées de la malle au bout du chemin de la ferme (le terrain les
+  garde : les villageois arrivent par elles, villageois.js) ; les autres plants sauvages, leur page au livre de l'île
+  et au carnet du naturaliste ; le joueur automatique ne les cherche pas.
 
 ## La chronique et les noms (I7g, fait)
 

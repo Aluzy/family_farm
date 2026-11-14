@@ -1299,7 +1299,7 @@ function mondeDuBot(state) {
   if (!T.MONDE || g === null) return null;
   if (!mondes.has(g)) {
     const sol = solDirect(T), el = elementsSol(sol.ctx), cadre = sol.ctx.cadre;
-    const tour = poserTournee(g, tourneeDuPlan({ W: cadre.LARGEUR, chemins: el.chemins, hameaux: el.lieux.hameaux, sortie: cadre.SORTIE, ferme: cadre.FERME }));
+    const tour = cadre.PORT ? null : poserTournee(g, tourneeDuPlan({ W: cadre.LARGEUR, chemins: el.chemins, hameaux: el.lieux.hameaux, sortie: cadre.SORTIE, ferme: cadre.FERME }));
     const plans = new Map(sol.ctx.hameaux.plans.map((p) => [p.id, p]));
     mondes.set(g, { W: cadre.LARGEUR, tour, plans, lieux: el.lieux, sortie: cadre.SORTIE });
     while (mondes.size > 3) mondes.delete(mondes.keys().next().value);

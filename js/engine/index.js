@@ -108,6 +108,7 @@ export * from './port.js';
 export * from './dehors.js';
 export * from './portage.js';
 export * from './bac.js';
+export * from './sauvages.js';
 export * from './vocations.js';
 export * from './vocation-village.js';
 export * from './fetes-village.js';

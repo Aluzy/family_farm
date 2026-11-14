@@ -98,12 +98,13 @@ export const SI_OBJECTIFS = Object.keys(SI);
 
 // La liste des objectifs qui se tirent : celle d'OBJECTIFS.TIRES, et le chantier allumé, celle du port et du
 // village (une entrée de même id remplace celle d'avant, à sa place ; les autres s'ajoutent à la fin).
+// (fiche I7e : sur l'île, ce qui se fait dans un hameau — `si: 'hameau'` — sort de la liste : elle n'en a pas)
 export function listeTiree(state) {
   const I = ileObjectifs(state), L = TIRES().LISTE;
   const ile = (I && I.TIRES && Array.isArray(I.TIRES.LISTE) && I.TIRES.LISTE) || [];
   if (!ile.length) return L;
   const parId = new Map(ile.map((d) => [d.id, d]));
-  return [...L.map((d) => parId.get(d.id) || d), ...ile.filter((d) => !L.some((x) => x.id === d.id))];
+  return [...L.map((d) => parId.get(d.id) || d), ...ile.filter((d) => !L.some((x) => x.id === d.id))].filter((d) => d.si !== 'hameau');
 }
 
 // Les objectifs de la liste que la partie peut faire aujourd'hui.

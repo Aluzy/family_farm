@@ -530,6 +530,7 @@ function annoncerPassage(m) {
 // La malle pour la scène (js/carte/ferme/malle.js) : { x, y (px : le bord gauche et le bas de ses cases), cases,
 // pleine }, ou null (pas de malle : pas de grand monde).
 export function malleDepuisCarte() {
+  if (villageActif(state)) return null;   // (l'île, fiche I7e : pas de calèche, pas de malle)
   const Tf = farmTerrain(state), M = Tf && Tf.MALLE;
   return M ? { x: M.x, y: M.y, cases: M.cases, pleine: mallePleine(state) } : null;
 }

@@ -1376,6 +1376,10 @@ def dessins():
     for nom in ('fleur_rouge', 'fleur_mauve', 'pierre', 'champignon_blanc', 'champignon_jaune', 'champignon_bleu'):
         out[nom] = [None]
     originaux(out)
+    # les plants sauvages de l'île (le chantier « l'île à bâtir », fiche I7e : scripts/carte/sauvages.py), à la fin
+    from sauvages import ail_ours_monde, salicorne_monde
+    out['ail_ours_sauvage'] = [ail_ours_monde(k) for k in range(2)]
+    out['salicorne_sauvage'] = [salicorne_monde(k) for k in range(2)]
     return out
 
 
