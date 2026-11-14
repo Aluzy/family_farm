@@ -1,5 +1,15 @@
 # Fiche I9b — Les changements du monde, synchronisés par région
 
+> **Fait** (le détail, les mesures, les deux choix : `docs/ile.md`, « Les changements de l'île »). En bref :
+> - les gestes du dehors passent par le monde (`monde.recolter`, la pêche, les blocs du dehors) ; ce qu'ils lâchent va
+>   au **coffre commun** (comme les outils de la ferme en ligne) ;
+> - le monde contrôle une pièce **par son identifiant, sans le sol** de sa région (0,5 µs, contre 0,5 s au réveil puis
+>   10 ms par région) ; le moteur refuse un doublon : deux joueurs sur le même arbre, un seul gagne ;
+> - la repousse vient avec la nuit dans les pas, au même pas chez tous ;
+> - l'intérêt par région porte sur les **positions** (dix fois plus lourdes que les gestes, qui vont à tous : la
+>   partie de chacun reste celle du monde) ;
+> - le sac de chacun (`state.sacs`, format 105) ; le bandeau « rien d'autre n'est encore synchronisé » retiré.
+
 ## Objectif
 
 Faire que ce qu'un joueur change sur l'île hors de la ferme (un arbre coupé, un rocher cassé, une

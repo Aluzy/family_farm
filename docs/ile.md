@@ -47,6 +47,8 @@ son île et son village ; une chronique note ce qui s'y passe.
 | Question | Fiche | Proposition par défaut |
 |---|---|---|
 | Comment le serveur fait avancer l'horloge commune, et à quel coût ? | I9a2 (fait) | Par pas de 5 s d'horloge déduits de l'heure du serveur (pas des révisions), tant qu'un joueur est connecté ; le monde dort sans joueur. Par heure : 720 pas, ≈ 3,5 s de calcul, 0,5 Mo écrits, 6 alarmes. |
+| Où va ce qu'un geste lâche hors de la ferme, en ligne ? | I9b (fait) | Au coffre commun, comme les outils de la ferme en ligne (E-9) ; le sac de chacun est celui des provisions de sortie. |
+| Comment le serveur contrôle-t-il un geste dehors ? | I9b (fait) | Par l'identifiant de la pièce, sans le sol de sa région (0,5 µs contre 0,5 s au réveil, puis 10 ms par région) ; le moteur refuse un doublon. Le sol n'est tiré que pour un bloc posé dehors (12 régions gardées). |
 | En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs. |
 | L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | I1c : non, sur 80 nuits de simulation (le port en prend 6 800 pièces, 814 en caisse à la nuit 80). I4 : le joueur minimal finit à 242 pièces (le port au niveau 3), l'appliqué à 2 727 pour une borne de 1 412 : il a payé le niveau 2 tôt et n'atteint pas le niveau 3 avant la nuit 80 (ses matériaux, pas ses pièces : à 3 500 pièces, il ne le prend pas davantage). À revoir quand le joueur simulé ira plus loin que le palier 6. |
 | La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | I4 : fixe, `VILLAGE.PART` = 30 % (à 20 %, le villageois des champs rapporte 2,5 fois son coût, au bord de la fourchette ; à 40 %, la partie simulée s'appauvrit). |
@@ -86,7 +88,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f (fait), I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
-| 9. L'île en ligne et la bascule | I9a, I9a2 (faits), I9b à I9h | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
+| 9. L'île en ligne et la bascule | I9a, I9a2, I9b (faits), I9c à I9h | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
 ## L'ordre et les dépendances
 
@@ -2249,6 +2251,160 @@ versement en ligne (E-13 : sa sortie suit la carte, pas l'horloge) ; une alarme 
 ≈ 1 s au serveur (à suivre au premier déploiement) ; aucun battement d'heure n'est diffusé : l'heure du serveur se
 mesure à l'accueil seulement (l'aller-retour compris) ; une île déjà en ligne avant I9a2 repart au pas 0, ses joueurs à
 l'énergie pleine.
+
+## Les changements de l'île (I9b, fait)
+
+Ce qu'un joueur change sur l'île hors de la ferme (un arbre coupé, un rocher cassé, une cueillette, un poisson, un
+chemin posé) est vu des autres. L'île se recrée chez chacun de la graine ; seuls les écarts voyagent, dans les gestes
+eux-mêmes (`docs/monde-partage.md` § 13).
+
+### Les deux choix
+
+**1. Ce qu'un geste lâche dehors va au coffre commun.** Pas au sac de chacun, ni au sol.
+
+- C'est la règle de la ferme en ligne (E-9 : la hache, la pioche, la faux y lâchent leur bois, leur pierre, leur fibre
+  droit au coffre ; E-13 : les morceaux qui traînent y entrent à la mise en ligne). Dehors, la même hache fait la même
+  chose : la frontière ne change pas ce que fait un geste, seulement où il se fait.
+- Le jeu solo n'a qu'un inventaire ; en ligne, c'est le coffre commun (F.1). Le bois coupé dehors sert à bâtir la
+  ferme et le port de tous : il doit y être, comme il serait dans l'inventaire en solo.
+- **Le sac de chacun** (§ 13) est celui des **provisions de sortie** (ce qu'il mange loin de la ferme), pas une
+  besace : il est fait ici, par compte (ci-dessous), mais il ne reçoit pas la récolte. Ce que chacun porte pour le
+  vendre (sa charge) est à I9c.
+- **Le sol** (des morceaux à ramasser en marchant dessus, comme en solo) ferait de chaque bûche un objet de la partie
+  du monde, avec sa place tirée par la page de celui qui coupe, ramassé par un autre ou perdu : plus d'écarts, plus de
+  conflits, et rien de mieux qu'un coffre que tous voient.
+
+**2. Le serveur contrôle un geste dehors par l'identifiant de la pièce, sans le sol de sa région** (`refusPieceMonde`,
+`js/engine/monde-recolte.js`), et le moteur refuse un doublon (la pièce déjà prise : `preparer`).
+
+Mesuré (`node scripts/cout-ile.mjs`, l'île de la graine 1, le Durable Object sur `node:sqlite`) :
+
+| | (a) le sol des régions où l'on joue | (b) l'identifiant sans le sol |
+|---|---|---|
+| Au réveil du monde | 0,49 à 0,55 s (le contexte du sol : ses champs, puis ses éléments) | rien |
+| Par région nouvelle | 9,5 ms en moyenne (max 39 ms ; 88 régions) | rien |
+| Une heure à 4 joueurs qui récoltent (6 gestes par minute chacun, une région nouvelle toutes les 5 minutes) | 48 régions tirées (0,54 s), 0,48 ms par geste, + le réveil | 0,5 µs par geste |
+| Mémoire | les 12 dernières régions (≈ 0,5 Mo de sol) | rien |
+| Ce qu'il empêche | une pièce inventée par un jeu trafiqué | une pièce hors de la carte, dans la ferme, d'une sorte qui ne se prend pas ; un doublon (par le geste) |
+
+Pourquoi (b) :
+
+- **Le coût de (a) tombe au pire moment** : le premier geste dehors après le réveil du monde paie 0,5 s de plus,
+  ajoutées au rattrapage des pas (jusqu'à 1,2 s) ; c'est le geste que l'autre doit voir « en moins d'une seconde ».
+- **Ce que (a) protège est mince** : les membres d'un monde sont invités par le propriétaire, ont un rôle, et le
+  geste vérifie déjà l'outil, l'énergie (celle de son auteur), la distance, la pièce prise. Une pièce inventée
+  donnerait un peu de bois à un tricheur, dans le monde de ses amis.
+- **(b) est le même contrôle chez le monde et chez chaque joueur** (le moteur pur) : un geste refusé l'est aussi dans
+  la partie locale, avant d'être envoyé ; avec (a), le monde seul saurait refuser, et un joueur verrait son coup
+  annulé un aller-retour plus tard.
+- **Le sol reste lu là où le moteur en a besoin** : un bloc posé dehors (I2 : ni dans l'eau, ni sur un arbre, ni dans
+  un hameau ; `dehors.js` `poseDehorsStatus`). Le serveur le tire alors de la graine (`solDirect`), en garde les
+  `MONDE.REGIONS_SOL` (12) dernières régions (`limiterSolDirect`) : un chemin posé dehors coûte 0,43 s la première
+  fois, puis 14 à 33 ms. Chez un joueur, une région que sa page n'a pas encore se tire en direct pour rejouer le bloc
+  d'un autre (`poserSolDehors(sol, { repli })` : sinon sa partie confirmée divergerait et tout serait redemandé) ;
+  en solo, rien ne change.
+
+### Ce qui est posé
+
+- **La commande `monde.recolter`** `{ piece, geste?, fort?, variante?, depuis? }` (`js/engine/commandes.js`) :
+  couper, casser, faucher, cueillir ou ramasser la pièce « sorte:x,y » du monde (`recolterPieceMonde` : le contrôle,
+  puis `recolterMonde` sans morceaux au sol). Le rôle : ami jardinier (`js/engine/roles.js`). La page de l'île la joue
+  par le pont de la carte (`js/ui/outils.js` `mondeFromStage` ; `js/ui/stage.js` ne refuse plus `recolte` sur une
+  île) ; le gain s'affiche « au coffre commun », comme les outils de la ferme.
+- **La frontière ouverte commande par commande** (`js/engine/frontiere.js`) : `refusFrontiere(state, args, type)` ;
+  sur une île, `COMMANDES_DEHORS` passe (`monde.recolter`, `outil.pecher` dans un lac, une rivière, la mer, et les
+  blocs : `bloc.poser`, `reprendre`, `remettre`, `deplacer`, `tourner`, `orienter`, `peindre`, `portail.basculer`) ;
+  le moteur les vérifie ensuite (un mur dehors : « pas hors de la ferme »). Une autre commande qui vise dehors (un
+  arbre de la ferme, un labour…) est refusée, avec son mot. Une ferme d'avant garde E-8 (« en ligne, le monde partagé,
+  c'est la ferme »), `monde.recolter` compris.
+- **La repousse** : `runNight` la fait pour une île partagée (`horlogeVivante`) ; elle vient avec minuit, dans les pas,
+  au même pas chez tous. Les quotas (la pêche du jour) sont dans la partie du monde : communs. Une ferme d'avant n'en
+  a toujours pas (E-8).
+- **Le conflit** : deux joueurs sur le même arbre : le premier arrivé au monde l'a ; le second coup est refusé par le
+  moteur (« Il n'y a plus rien ici »), sa partie locale se refait sans lui (son bois disparaît, l'arbre tombe) : rien en
+  double.
+- **L'arbre que l'autre abat tombe sous nos yeux** (`js/carte/ferme/recolte-monde.js` `mondeChuteDistante`, d'après le
+  changement « distant » du modèle) ; un rocher se brise.
+- **L'intérêt par région** (`worker/src/monde.mjs`) : il porte sur les positions, pas sur les gestes. Les gestes vont
+  à tous : la partie confirmée de chacun est celle du monde, et un geste dehors y touche le coffre, l'énergie de son
+  auteur, la région vue, les objectifs, les quotas : un joueur qui n'en recevrait qu'une part n'aurait plus la même
+  partie (l'empreinte de contrôle le verrait, et il redemanderait tout). Un geste pèse ≈ 155 octets. Les positions,
+  elles, ne touchent pas la partie et pèsent dix fois plus : à qui joue dans la même région ou l'une des huit autour,
+  elles vont à leur pas ; aux autres, une toutes les 2 s (`POS_LOIN_MS` : l'avatar reste là où il est) ; à qui entre
+  dans une région, le lot des joueurs qui y sont (`lot`). Les écarts d'une région, eux, sont déjà chez chacun, dans
+  sa partie : y entrer ne demande rien au serveur.
+- **Le bandeau « rien d'autre n'est encore synchronisé » est retiré.**
+- **Le sac de chacun** (`state.sacs`, par compte, dans la partie d'un monde de l'île ; `js/engine/temps-monde.js`
+  `sacDe`) : une commande y pose le sac de son acteur le temps de se jouer (`avecActeur`, comme l'énergie) ; le
+  propriétaire reçoit celui de sa partie à la mise en ligne, un invité arrive sans ; les commandes `sac.poser`,
+  `sac.retirer`, `sac.remplir`, `sac.reprendre` ; `manger { dehors }` : dehors (la page le dit, le monde ne sait pas
+  où est chacun), il ne mange que ce que contient son sac ; la nuit fait périmer chaque sac. La page montre le sien
+  (`js/ui/synchro.js`).
+- **La sauvegarde** passe au format 105 (`sacs` dans la partie d'un monde ; une partie solo n'y gagne rien).
+- **Le jeu solo est le même** : le CSV de `node scripts/simulate.mjs` est identique octet pour octet à celui d'I9a2.
+
+### Les mesures (`node scripts/cout-ile.mjs`)
+
+Les octets diffusés par minute (10 minutes ; chaque joueur récolte 6 fois par minute et envoie sa position 5 fois par
+seconde : il marche) :
+
+| Joueurs | Où | Intérêt par région | Diffusé (tous) | Par joueur | Gestes (evt) | Positions |
+|---|---|---|---|---|---|---|
+| 2 | ensemble (une région) | oui | 63 Ko/min | 32 Ko/min | 3,6 Ko/min | 59 Ko/min |
+| 2 | dispersés | oui | **10 Ko/min** | 5 Ko/min | 3,6 Ko/min | 6 Ko/min |
+| 2 | dispersés | non | 63 Ko/min | 32 Ko/min | 3,6 Ko/min | 59 Ko/min |
+| 4 | ensemble | oui | 362 Ko/min | 90 Ko/min | 14 Ko/min | 346 Ko/min |
+| 4 | dispersés | oui | **50 Ko/min** | 13 Ko/min | 15 Ko/min | 35 Ko/min |
+| 4 | dispersés | non | 362 Ko/min | 91 Ko/min | 15 Ko/min | 346 Ko/min |
+
+Un geste dehors pèse ≈ 155 octets diffusés à chacun, et coûte au serveur 0,3 à 0,5 ms (les pas dus compris).
+Ce qui pèse, ce sont les positions (E-4), pas les écarts.
+
+Une île très exploitée (150 pièces prises par jour pendant 10 jours, par des commandes, chacune revenue au jour dit) :
+1 500 pièces prises, au plus 659 manquantes en même temps, 499 au bout de 10 jours : **17,3 Ko** d'écarts (gzip
+3,3 Ko), l'île hors de la ferme 17,4 Ko (plafond 64 Ko), la partie 25,6 Ko (plafond 256 Ko). Un écart pèse ≈ 35
+octets : les 1 100 pièces prises en même temps qu'I9a supposait feraient 38 Ko. **Le plafond d'I9a tient.**
+
+Entrer dans la région la plus chargée (303 écarts, 10,7 Ko) : son sol 12,5 ms (dans le Worker du sol, comme avant),
+ses 297 pièces manquantes retrouvées en 0,66 ms ; rien à recevoir.
+
+### Les tests
+
+- `tests/engine/rejeu.test.mjs` : un journal de 160 gestes du dehors, tirés à graine fixe (abattre, faucher, ramasser,
+  pêcher, poser et reprendre un chemin, le sac, manger dehors), chacun à son pas, par deux joueurs, sur six journées
+  et plus : rejoué chez l'hôte, l'invité (par JSON) et le monde (sauvé et repris à mi-chemin) : les mêmes résultats
+  un à un, la même partie, la même repousse.
+- `tests/test-monde.mjs` : l'arbre abattu par l'invité (le bois au coffre, rien au sol, un doublon refusé, une pièce
+  inventée ou dans la ferme refusée, le Durable Object réveillé à froid) ; le conflit sur le même buisson, la pêche
+  au lac, la faux, la main, le visiteur ; un chemin posé dehors et repris, un mur refusé ; la repousse au jour dit, au
+  monde et au monde réveillé à froid, et pas dans une ferme d'avant ; l'intérêt par région (près, loin, le lot, une
+  ferme d'avant qui relaie tout) ; le sac de chacun et le format 105.
+- `tests/test-synchro.mjs` : l'hôte, l'invité et le monde pendant six journées de gestes du dehors : la même partie,
+  chaque pièce revenue le même jour chez les trois, le brouillard de chacun à lui ; le conflit dans la partie de chacun.
+- `tests/deux-joueurs.mjs` (Chromium, 10a à 10e) : A abat un arbre, B le voit tomber en moins d'une seconde ; les deux
+  sur le même buisson, un seul gagne ; un chemin posé par B, vu chez A ; le bandeau retiré ; le brouillard de chacun.
+
+### Ce que les fiches suivantes en reçoivent
+
+Une section « Revu par I9b » dans I9c à I9g. En bref : I9c ouvre les commandes du port à la frontière
+(`COMMANDES_DEHORS`) et fait la charge de chacun à côté de son sac ; I9d fait passer les prises des villageois par les
+écarts communs ; I9e revoit la grille des rôles (`monde`, `sac`) ; I9f garde, à la mise en ligne, ce qui est pris, les
+régions vues, les chemins et le sac du propriétaire ; I9g regarde les positions (≈ 90 Ko/min par joueur à quatre dans
+la même région) et le sol tiré en direct chez un joueur (≈ 0,5 s une fois, d'après le serveur).
+
+### Ce qui reste
+
+- **L'intérêt par région ne porte que sur les positions** : les gestes vont à tous (ci-dessus). Si un jour les écarts
+  pesaient (des centaines de joueurs, des milliers de gestes), il faudrait sortir de la partie commune ce qui est
+  pris, et le contrôler à part : ce n'est pas le cas (14 Ko/min à quatre).
+- **Le monde ne sait pas où est chacun** : `depuis` (la distance à la pièce) et `dehors` (manger de son sac) viennent
+  de la page. Un jeu trafiqué pourrait couper un arbre de loin.
+- **Une pièce revient sous les pieds d'un joueur** : `state.monde.ici` (rien ne repousse sous le personnage) est celui
+  de la partie du monde, pas celui de chacun ; un arbre peut repousser sous un joueur dehors au réveil (il en sort en
+  marchant).
+- **Le premier chemin posé loin de soi par un autre** coûte à la page 0,5 s (le sol tiré en direct, une fois).
+- **La sacoche du cheval, la tente** restent celles de la partie (à personne) en ligne.
+- Une île déjà en ligne avant I9b garde le sac de sa partie à personne ; chacun commence sans.
 
 ## Les règles qui ne changent pas
 
