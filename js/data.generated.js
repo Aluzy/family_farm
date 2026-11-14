@@ -1719,6 +1719,25 @@ export const RAW_DATA = {
     "clous": { "nom": "Clous", "icone": "📌", "prix": 5, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "charniere": { "nom": "Charnière", "icone": "🔗", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "lame": { "nom": "Lame d'outil", "icone": "🔪", "prix": 22, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "rouet_metier": {
+      "nom": "Rouet et métier à tisser",
+      "icone": "🧶",
+      "prix": 36,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "enseigne_mercerie": {
+      "nom": "Enseigne de la mercerie",
+      "icone": "🪧",
+      "prix": 20,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "village": true
+    },
+    "fil": { "nom": "Fil de laine", "icone": "🪢", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "brouette": { "nom": "Brouette", "icone": "🛒", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "charrette": { "nom": "Charrette", "icone": "🛞", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "lavoir": {
@@ -2363,6 +2382,17 @@ export const RAW_DATA = {
       "clous": { "entrees": { "lingot_fer": 1 }, "sortie": { "clous": 4 }, "village": true, "commerce": "forge", "coefPrix": 135 },
       "charniere": { "entrees": { "lingot_fer": 1 }, "sortie": { "charniere": 2 }, "village": true, "commerce": "forge", "coefPrix": 135 },
       "lame": { "entrees": { "lingot_fer": 1, "bois": 1 }, "sortie": { "lame": 1 }, "village": true, "commerce": "forge", "coefPrix": 145 },
+      "rouet_metier": { "entrees": { "planche": 6, "bois": 2, "fibre": 4 }, "sortie": { "rouet_metier": 1 }, "village": true, "coefPrix": 150 },
+      "enseigne_mercerie": {
+        "entrees": { "planche": 2, "charniere": 2, "clous": 2 },
+        "sortie": { "enseigne_mercerie": 1 },
+        "village": true,
+        "coefPrix": 150
+      },
+      "tissu": { "entrees": { "laine": 2 }, "sortie": { "tissu": 1 }, "village": true, "commerce": "mercerie" },
+      "gants_travail": { "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "village": true, "commerce": "mercerie" },
+      "manteau_chaud": { "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "village": true, "commerce": "mercerie" },
+      "salopette": { "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "village": true, "commerce": "mercerie" },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
@@ -2400,7 +2430,7 @@ export const RAW_DATA = {
       },
       "sac_grand": { "entrees": { "laine": 3, "fibre": 6 }, "sortie": { "sac_grand": 1 }, "debloque": "moutons", "coefPrix": 145 },
       "chapeau_paille": { "entrees": { "paille": 4, "fibre": 1 }, "sortie": { "chapeau_paille": 1 }, "coefPrix": 145 },
-      "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 }, "coefPrix": 135 },
+      "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 }, "commerce": "mercerie", "coefPrix": 135 },
       "bottes": { "entrees": { "planche": 1, "fibre": 6 }, "sortie": { "bottes": 1 }, "coefPrix": 145 },
       "casque_lampe": {
         "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "champignon_lumineux": 2 },
@@ -2550,9 +2580,9 @@ export const RAW_DATA = {
         "dedans": true,
         "bloque": true,
         "dessin": "enclume_foyer",
+        "ouvert": "enclume_foyer_braise_0",
         "largeur": 2,
         "commerce": "forge",
-        "allume": "braise",
         "village": true
       },
       "scie_long": {
@@ -2571,9 +2601,9 @@ export const RAW_DATA = {
         "dedans": true,
         "bloque": true,
         "dessin": "four_boulanger",
+        "ouvert": "four_boulanger_feu_0",
         "largeur": 2,
         "commerce": "boulangerie",
-        "allume": "feu",
         "village": true
       },
       "cave_affinage": {
@@ -2638,6 +2668,28 @@ export const RAW_DATA = {
         "largeur": 2,
         "enseigneCommerce": "fromagerie",
         "texte": "#2b1a0e",
+        "village": true
+      },
+      "rouet_metier": {
+        "nom": "Rouet et métier à tisser",
+        "objet": "rouet_metier",
+        "dedans": true,
+        "bloque": true,
+        "dessin": "rouet_metier",
+        "ouvert": "rouet_metier_0",
+        "largeur": 2,
+        "commerce": "mercerie",
+        "village": true
+      },
+      "enseigne_mercerie": {
+        "nom": "Enseigne de la mercerie",
+        "objet": "enseigne_mercerie",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "enseigne_mercerie",
+        "largeur": 2,
+        "enseigneCommerce": "mercerie",
+        "texte": "#2a1830",
         "village": true
       },
       "refrigerateur": {
@@ -3615,11 +3667,13 @@ export const RAW_DATA = {
           "scie_long",
           "four_boulanger",
           "cave_affinage",
+          "rouet_metier",
           "comptoir",
           "enseigne_forge",
           "enseigne_scierie",
           "enseigne_boulangerie",
-          "enseigne_fromagerie"
+          "enseigne_fromagerie",
+          "enseigne_mercerie"
         ]
       }
     },
@@ -5640,7 +5694,10 @@ export const RAW_DATA = {
         "VERS": ["betes", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"]
       },
       "ETAL": { "PAR_OBJET": 2 },
-      "COMMERCE": { "PALIER": 4, "SORTE": "forge", "MATIERES": { "minerai_fer": 12, "bois": 8 } }
+      "COMMERCES": [
+        { "PALIER": 4, "SORTE": "forge", "MATIERES": { "minerai_fer": 12, "bois": 8 } },
+        { "PALIER": 6, "SORTE": "mercerie", "MATIERES": {}, "GARDER": { "laine": 12 }, "AVANCE": 60 }
+      ]
     },
     "VOCATIONS": {
       "village": { "nom": "Vocation village", "eveilS": 60 },
@@ -10149,7 +10206,8 @@ export const RAW_DATA = {
     "PRIX": {
       "FOURCHETTE": [130, 160],
       "ARTISANS": {
-        "tissu": { "entrees": { "laine": 2 }, "sortie": { "tissu": 1 }, "coefPrix": 135 },
+        "fil": { "entrees": { "laine": 1 }, "sortie": { "fil": 1 }, "coefPrix": 130 },
+        "tissu": { "entrees": { "fil": 2 }, "sortie": { "tissu": 1 }, "coefPrix": 135 },
         "gants_travail": { "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "coefPrix": 140 },
         "manteau_chaud": { "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "coefPrix": 145 },
         "salopette": { "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "coefPrix": 145 },
@@ -10829,8 +10887,54 @@ export const RAW_DATA = {
         "PHRASES": ["Une tomme de plus en cave !", "Il faut les retourner chaque jour, mes meules.", "Le caillé prend bien ce matin."],
         "RECETTES": {},
         "CLIENTS": { "faisselle": "repas" }
+      },
+      "mercerie": {
+        "nom": "La mercerie",
+        "un": "une mercerie",
+        "icone": "🧶",
+        "metier": "mercier",
+        "tache": "betes",
+        "etabli": "rouet_metier",
+        "enseigne": "enseigne_mercerie",
+        "LOCAL": { "etabli": "le rouet et le métier à tisser", "enseigne": "l'enseigne de la mercerie" },
+        "geste": "filer",
+        "emoji": "🧶",
+        "ou": "au rouet et au métier",
+        "donne": "un lot au rouet ou au métier : il file la laine, tisse le fil, coud un vêtement (teint s'il a un colorant) ou un tapis",
+        "SANS": "Le local de la mercerie n'est plus complet : le rouet et le métier à tisser, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Toute cette laine… j'aimerais la filer moi-même, dans une mercerie.",
+          "Un rouet, un métier à tisser, un comptoir : une mercerie à moi, j'y pense souvent.",
+          "Je tonds les moutons ; je voudrais aussi coudre les manteaux du village."
+        ],
+        "PHRASES": ["Le rouet tourne, le fil vient tout seul.", "Encore une pièce de tissu, et je couds un manteau.", "Une belle laine, bien filée !"],
+        "PHRASES_COMPTOIR": ["Pour moi : {objet}, s'il te plaît.", "{objet} ! Voilà les pièces.", "Pour l'hiver : {objet}, s'il te plaît."],
+        "RECETTES": {
+          "manteau_chaud": { "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "palier": 2, "etape": "coudre", "teinte": true },
+          "salopette": { "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "palier": 3, "etape": "coudre", "teinte": true },
+          "tissu": { "entrees": { "fil": 2 }, "sortie": { "tissu": 1 }, "palier": 2, "etape": "tisser" },
+          "fil": { "entrees": { "laine": 2 }, "sortie": { "fil": 2 }, "palier": 2, "etape": "filer" },
+          "gants_travail": { "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "palier": 2, "etape": "coudre", "teinte": true },
+          "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 }, "palier": 2, "etape": "coudre", "teinte": true },
+          "meuble_tapis_2": { "entrees": { "tissu": 2, "colorant_rouge": 1 }, "sortie": { "meuble_tapis_2": 1 }, "palier": 3, "etape": "coudre" },
+          "meuble_tapis_3": { "entrees": { "tissu": 2, "colorant_bleu": 1 }, "sortie": { "meuble_tapis_3": 1 }, "palier": 3, "etape": "coudre" }
+        },
+        "DEUX": { "VILLAGEOIS": 6, "TITULAIRE": ["filer", "tisser"], "SECOND": ["coudre"] }
       }
-    }
+    },
+    "TEINTURE": {
+      "COEF": 145,
+      "CORPS": ["manteau_chaud", "salopette", "tablier"],
+      "COULEURS": {
+        "rouge": { "colorant": "colorant_rouge", "nom": "rouge", "tissu": "rouge", "palette": "tissu_rouge", "point": "#c0564e" },
+        "orange": { "colorant": "colorant_orange", "nom": "orange", "tissu": "orange", "palette": null, "point": "#e8862e" },
+        "jaune": { "colorant": "colorant_jaune", "nom": "jaune", "tissu": "jaune", "palette": "tissu_moutarde", "point": "#dcb850" },
+        "vert": { "colorant": "colorant_vert", "nom": "vert", "tissu": "vert", "palette": "tissu_vert", "point": "#70a86e" },
+        "bleu": { "colorant": "colorant_bleu", "nom": "bleu", "tissu": "ciel", "palette": "tissu_bleu", "point": "#6a8ec4" },
+        "violet": { "colorant": "colorant_violet", "nom": "violet", "tissu": "lilas", "palette": null, "point": "#9c6ed6" }
+      }
+    },
+    "CHAUD": ["manteau_chaud"]
   },
   "TRAITS": {
     "NOMBRE": [2, 3],

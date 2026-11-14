@@ -137,6 +137,7 @@
      commerce.acheter   { commerce, objet, quantite }   acheter au comptoir du commerce (au prix de vente : à l'artisan)
      commerce.commander { commerce, recette, facon? }   lui commander une pièce, payée d'avance ou à façon (la matière du joueur)
      commerce.lettres   { commerce, lettres? }          les lettres de son enseigne (une couleur débloquée ; sans : d'origine)
+     commerce.rejoindre { id, commerce }                I5b : le villageois `id` rejoint le commerce en second (la décision du joueur)
 */
 
 import { objectifsARevoir } from './campaign.js';
@@ -157,7 +158,7 @@ import { recolterBac, semerBac } from './bacs.js';
 import { cueillirMassif } from './massifs.js';
 import { remplirTonnelet } from './tonnelets.js';
 import { mettreALEtal, reprendreDeLEtal } from './bourse.js';
-import { acheterAuCommerce, choisirLettres, commanderAuCommerce, ouvrirCommerce } from './artisans.js';
+import { acheterAuCommerce, choisirLettres, commanderAuCommerce, ouvrirCommerce, rejoindreCommerce } from './artisans.js';
 import { engraisser, jeterAuCompost } from './compost.js';
 import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, stopCurrent } from './kitchen.js';
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
@@ -676,6 +677,10 @@ export const COMMANDES = {
   'commerce.lettres': {
     args: { commerce: 'texte', lettres: 'texte?' },
     executer: (state, { commerce, lettres = null }) => choisirLettres(state, commerce, lettres),
+  },
+  'commerce.rejoindre': {
+    args: { id: 'texte', commerce: 'texte' },
+    executer: (state, { id, commerce }) => rejoindreCommerce(state, id, commerce),
   },
 };
 

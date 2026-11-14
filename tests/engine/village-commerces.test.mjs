@@ -11,6 +11,7 @@
    - la fromagerie : la faisselle, la tomme en cave (des nuits d'affinage), au comptoir ou au joueur qui l'a commandée ;
    - le plafond : le nombre de commerces suit les villageois et le port ; trois commerces dans un village de huit, trois
      lignes au tableau ;
+   - la carte (avec I5b) : une seule table d'animation des établis, BLOCS_CARTE.commerces : la forge, le four, le rouet ;
    - la sauvegarde (99 → 100 : la cave) ; éteint, rien.
    Lancer seul : node tests/run-tests.mjs village-commerces
    ========================================================================== */
@@ -24,6 +25,7 @@ import {
 import { ajouterAmitie } from '../../js/engine/amitie.js';
 import { platsBonheur } from '../../js/engine/bonheur.js';
 import { testLocalCommerce } from '../../js/engine/testmode.js';
+import { existsSync, readFileSync } from 'node:fs';
 import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
@@ -68,8 +70,10 @@ test('trois sortes de plus sur le socle : leur établi, leur enseigne, leur tâc
     assert(DATA.VILLAGE.NOMS.COMMERCES[sorte], `${sorte} : son nom`);
   }
   assertEqual([AR.COMMERCES.scierie.tache, AR.COMMERCES.boulangerie.tache, AR.COMMERCES.fromagerie.tache], ['bois', 'champs', 'betes'], 'les filières');
-  // (le four du boulanger s'allume comme la forge ; la scie et la cave n'ont pas de feu)
-  assertEqual([DATA.ATELIER.BLOCS.four_boulanger.allume, DATA.ATELIER.BLOCS.enclume_foyer.allume, DATA.ATELIER.BLOCS.scie_long.allume], ['feu', 'braise', undefined]);
+  // (le four du boulanger s'allume comme la forge, son image `ouvert` ; la scie et la cave n'en ont pas ; la carte anime
+  // les deux et pose leur lueur le soir : BLOCS_CARTE.commerces, mis en commun avec I5b)
+  const B = DATA.ATELIER.BLOCS;
+  assertEqual([B.four_boulanger.ouvert, B.enclume_foyer.ouvert, B.scie_long.ouvert, B.cave_affinage.ouvert], ['four_boulanger_feu_0', 'enclume_foyer_braise_0', undefined, undefined]);
 });
 
 test('les trois filières dans la fourchette d\'I4 : chaque recette rend entre 130 et 160 % de ses matières', () => {
@@ -245,8 +249,34 @@ test('trois commerces ouverts dans un village de huit ; trois lignes « commerce
 
 /* ---------- la sauvegarde, éteint ---------- */
 
+// (I5b + I5c : une seule table d'animation des établis, BLOCS_CARTE.commerces, js/carte/ferme/config.js, chargée comme
+// la page la charge)
+function blocsCarte() {
+  const fenetre = { devicePixelRatio: 1, navigator: {}, matchMedia: () => ({ matches: false }), localStorage: { getItem: () => null, setItem() {} } };
+  const S = ['js/carte/kit.js', 'js/carte/chemins.js', 'js/carte/nature.js', 'js/carte/gestes.js', 'js/carte/lumiere.js', 'js/carte/eau.js', 'js/carte/ressort.js',
+    'js/carte/cheval.js', 'js/carte/toit.js', 'js/fermier.js', 'js/carte/ferme/config.js'];
+  for (const f of S) new Function('window', readFileSync(new URL('../../' + f, import.meta.url), 'utf8'))(fenetre);
+  return fenetre.FermeCarte.C.BLOCS_CARTE;
+}
+
+test('la carte : chaque établi qui a une image ouvert est animé (la forge, le four, le rouet) ; la forge et le four luisent le soir, pas le rouet', () => {
+  const BC = blocsCarte(), A = BC.commerces, B = DATA.ATELIER.BLOCS;
+  assert(!('foyers' in BC) && !('forge' in BC), 'une seule table');
+  const ouverts = Object.keys(B).filter((k) => B[k].commerce && B[k].ouvert).sort();
+  assertEqual(ouverts, ['enclume_foyer', 'four_boulanger', 'rouet_metier']);
+  for (const k of ouverts) {
+    assert(A[k] && A[k].images[0] === B[k].ouvert, `${k} : sa première image est son image ouvert`);
+    for (const im of A[k].images) {
+      assert(existsSync(new URL(`../../assets/meuble_${im}.png`, import.meta.url)), `assets/meuble_${im}.png`);
+    }
+  }
+  assertEqual(['enclume_foyer', 'four_boulanger', 'rouet_metier'].map((k) => !!A[k].lueur), [true, true, false], 'la lueur du soir');
+  assertEqual(['enclume_foyer', 'four_boulanger', 'rouet_metier'].map((k) => !!A[k].suite), [false, true, true], 'au hasard ou à la suite');
+  for (const k of ['scie_long', 'cave_affinage', 'rouet_metier', 'four_boulanger', 'enclume_foyer']) assertEqual(BC.fenetres[k], 'commerce', k);
+});
+
 test('la sauvegarde : v99 → v100 ; la cave gardée, réparée', () => {
-  assertEqual(STATE_VERSION, 100, 'le format 100');
+  assert(STATE_VERSION >= 100, 'le format 100 au moins (I5b : 101)');
   const { s, V: [v] } = ile(1);
   const c = ouvrir(s, v, 'fromagerie');
   c.cave = [{ objet: 'tomme_cave', n: 1, nuits: 2, recette: 'tomme_cave', pour: 'joueur' }];

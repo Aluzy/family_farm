@@ -81,7 +81,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
 | 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d (fait) | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau |
 | 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
-| 5. Les artisans | I5a (fait), I5b, I5c (fait) | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
+| 5. Les artisans | I5a (fait), I5b (fait), I5c (fait) | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f, I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
@@ -987,7 +987,7 @@ la page : `js/ui/commerce.js` (la fenêtre du commerce, la fiche, les notificati
   forgé et son enclume découpée, la planche pendue, son dessus raccourci, une enclume peinte sous le nom). **Couleurs
   comptées** : enclume et foyer 497 (allumé 566 et 567), comptoir 313, enseigne 296 (un dessin en aplats des mêmes
   aurait 20 à 30 couleurs). La scène (`chantier.js`) : la forge d'un commerce ouvert rougeoie (ses braises alternent,
-  `BLOCS_CARTE.forge`, devenu `BLOCS_CARTE.foyers` avec I5c), et le soir sa lueur passe dans le voile, dedans et à travers le toit. **Le geste « forger »**
+  `BLOCS_CARTE.forge`, devenu `BLOCS_CARTE.commerces` avec I5b et I5c), et le soir sa lueur passe dans le voile, dedans et à travers le toit. **Le geste « forger »**
   (`habitants.js`, `forge`) : les cases de la pioche, trois coups courts, de profil, devant l'enclume ; pas de planche
   nouvelle.
 - **La sauvegarde** : format 99 (`state.commerces` ; `v.pratique`, `v.envies`, `v.commerce`, `v.achatCommerce`,
@@ -1023,12 +1023,122 @@ la page : `js/ui/commerce.js` (la fenêtre du commerce, la fiche, les notificati
   au joueur, aux villageois, au bac ; la façon et les commandes payées ; l'Atelier jamais bloqué ; le tableau ; la
   sauvegarde ; les commandes ; le joueur automatique ; éteint).
 - Reste : fermer un commerce, changer d'artisan (un commerce sans artisan n'existe que par une sauvegarde abîmée) ; la
-  mercerie (I5b) et les autres commerces (I5c) ; le même commerce comme cause de lien entre villageois (I6b) ; les
+  ~~mercerie (I5b)~~ (fait : plus bas) et les autres commerces (I5c) ; le même commerce comme cause de lien entre villageois (I6b) ; les
   pièces de la forge dans d'autres recettes de l'Atelier (aujourd'hui : le comptoir et l'enseigne ; la porte de fer, la
   brouette, la charrette pourraient les prendre sur l'île) ; la forge n'achète que ce que le coffre a (le joueur ne
   choisit pas ce qu'il lui laisse, au-delà de `GARDE`) ; l'enseigne n'a qu'un dessin (pas de variante de bois) ; la
   fumée de la cheminée de la forge ; un villageois à la pierre trouve vite les rochers de la ferme épuisés (sans
   rochers, pas de jour de pratique : l'envie tarde).
+
+## La mercerie (I5b, fait)
+
+La filière de la laine, sur le socle d'I5a : un villageois qui s'occupe des bêtes ouvre une mercerie, file, tisse, teint
+et coud, quelques pièces par jour. Les réglages : `ARTISANS.COMMERCES.mercerie`, `ARTISANS.TEINTURE`, `ARTISANS.CHAUD`
+(`data/village.json`) ; le moteur : `js/engine/artisans.js` (rien de propre à la mercerie : ce qu'elle demandait est
+ajouté au socle par petites fonctions) ; les dessins : `scripts/batiments/mercerie.py`.
+
+- **La sorte** : la tâche de la filière `betes` (dix jours aux bêtes : l'envie), l'établi « rouet et métier à tisser »
+  (`rouet_metier`, deux cases), l'enseigne de la mercerie (`enseigne_mercerie`), le comptoir commun ; le geste « filer »,
+  l'emoji 🧶, ses phrases (`ENVIE`, `PHRASES`, `PHRASES_COMPTOIR` : une sorte peut avoir les siennes au comptoir) ; à
+  l'Atelier, l'établi (6 planches, 2 bois, 4 fibres) et l'enseigne (2 planches, 2 charnières, 2 clous), dans la
+  catégorie « Commerces ». **Les recettes en trois étapes** (`etape`) : filer (2 laines → 2 fils), tisser (2 fils → 1
+  tissu), coudre (le manteau chaud, 3 tissus ; la salopette, 2 tissus et un lingot de fer, au palier « proche » ; les
+  gants, 1 tissu ; le tablier, 8 fibres, comme à l'Atelier ; les tapis rouge et bleu, 2 tissus et leur colorant, au
+  palier « proche »). `LOTS` (3) par jour, toutes étapes confondues. L'ordre des recettes est celui où il les choisit :
+  il coud dès qu'il a le tissu, sinon il tisse, sinon il file ; la laine de la tonte devient un manteau le troisième jour
+  (jour 1 : 4 fils, 1 tissu ; jour 2 : 2 tissus, 2 fils ; jour 3 : le manteau).
+- **Les prix (I4)** : `VILLAGE.PRIX.ARTISANS` gagne le fil (1 laine → 1 fil, 130 %) et le tissu se fait de 2 fils (135 %) :
+  laine 12 → fil 16 → tissu 43 → manteau 187, gants 60, salopette 154, tapis teints 131 (le tissu valait 32 : les
+  meubles de tissu de l'île montent avec lui, le lit 177, le canapé 230). Chaque recette de la mercerie rend dans la
+  fourchette, une teinte comprise ; chaque étape vaut plus que la précédente. Le jeu éteint garde ses prix écrits.
+- **La teinture** (`TEINTURE`, `colorantPourTeindre`, `prixTeint`) : une recette marquée `teinte` (les quatre vêtements)
+  prend un colorant de plus quand l'artisan en a un (son stock, sinon le coffre au-delà de `GARDE`, acheté de sa bourse
+  comme le reste) : celui qu'il a le plus. Aucune matière nouvelle : les six colorants du mortier. La pièce teinte se
+  garde au comptoir avec sa couleur (`c.teintes = { objet: { couleur: n } }`, une part de `c.stock`) et vaut son prix
+  plus `COEF` (145) % du colorant (le manteau rouge : 193). Le joueur n'achète que les pièces sans teinte (la famille n'a
+  pas de vêtements de couleur : hors périmètre) ; les teintes sont pour les villageois. Les tapis teints sont ceux qui
+  existaient (le rouge, le bleu).
+- **Les vêtements des villageois** : au comptoir, ce qui lui manque (`VILLAGE.BOURSE.BESOINS`, un vêtement, un meuble pour
+  sa maison) est un besoin, comme à l'étal (`envieAuComptoir` lit `besoinDe`) ; un vêtement acheté va à ses affaires. Un
+  vêtement de corps teint (`TEINTURE.CORPS` : le manteau, la salopette, le tablier), il le porte : le haut de sa tenue
+  prend la couleur (`TEINTURE.COULEURS[].tissu`, une couleur des tenues de `FAMILLE.PROFIL.APPARENCE.TISSU` : rouge,
+  orange, jaune, vert, ciel, lilas). Un villageois qui a un manteau chaud (`ARTISANS.CHAUD`, `auChaud`) ne s'abrite plus
+  sous la pluie : il reste à son poste dehors (`villageois-journee.js sousLaPluie`).
+- **Ce qu'elle garde pour son travail** (`pourSonTravail`) : une sortie qui est l'entrée d'une autre de ses recettes (le
+  fil, le tissu) ne part pas au bac ; les pièces sans teinte partent d'abord, puis les teintes à leur prix. (La forge n'y
+  perd rien : ses lingots ne se vendent pas au port.)
+- **Sans mercerie, le joueur n'est jamais bloqué** : l'Atelier, le chantier allumé, tisse (2 laines → 1 tissu) et coud
+  les gants, le manteau et la salopette comme la couture d'avant I7c (sans façon à payer) ; ces recettes, et le tablier,
+  sont marquées `commerce: "mercerie"` : une mercerie ouverte qui les sait les fait désormais (`atelier.js`, comme la
+  forge pour les clous).
+- **Deux artisans** (le socle d'I5a ne le permettait pas : un commerce, un `qui`) : une sorte qui a `DEUX` (la mercerie ;
+  la forge se tient seule) peut avoir un second artisan (`c.second`) quand le village compte `DEUX.VILLAGEOIS` (6)
+  villageois : un villageois qui a l'envie de cette sorte et l'amitié du joueur (`conditionsSecond`) la rejoint, le
+  joueur le décide sur sa fiche (« Rejoindre la mercerie… », `rejoindreCommerce`, la commande `commerce.rejoindre`).
+  Chacun fait ses `LOTS` (le double, sans machine), le titulaire les étapes `TITULAIRE` (filer, tisser), le second
+  `SECOND` (coudre) (`etapesDe`) ; seul, le titulaire fait tout. Une bourse, celle du titulaire (`caisseDe`) : elle paie
+  la matière, reçoit les ventes. Le second a son poste à côté du premier, devant l'établi (`postesCommerce` rend les deux
+  postes, le sien d'abord ; la journée de l'équipe les partage). La fenêtre du commerce dit « Paul file et tisse, Léa
+  coud » et compte les lots des deux.
+- **Les changements au socle** (pour I5c, qui avance en parallèle) : `commerceDuVillageois` (le titulaire ou le second),
+  `secondDe`, `artisansDuCommerce`, `deuxDe`, `conditionsSecond`, `rejoindreCommerce`, `etapesDe`, `caisseDe` ;
+  `recettesDe` lit `etape` et `teinte` ; `couleursTeinture`, `prixTeint`, `teintesDe`, `colorantPourTeindre`,
+  `pourSonTravail`, `offresDuComptoir` (en vente pièce par pièce : `enVenteAuCommerce` rend `teinte`) ;
+  `acheterAuComptoir(…, teinte)` ; `phraseComptoir(…, sorte)` ; `commercesPourLaFiche` rend `rejoindre`. Les données d'un
+  établi : `ouvert` (son image, le commerce ouvert : `js/ui/stage.js`). La carte : `BLOCS_CARTE.forge` devient
+  `BLOCS_CARTE.commerces` (par dessin d'établi : ses images, au hasard ou dans l'ordre — `suite` —, et une `lueur`
+  facultative) ; la forge rougeoie et luit le soir comme avant, le rouet de la mercerie tourne, sans lueur (rien n'y
+  brûle) ; la fenêtre d'un appui sur un bloc de commerce et sa hauteur (`stationAt`) se lisent de `BLOCS_CARTE.fenetres`.
+- **Les dessins** (`scripts/batiments/mercerie.py`, vus de haut à 45°, la lumière en haut à gauche, un contour d'un
+  pixel, sans ombre portée ; le comptoir est celui de la forge) : le rouet et le métier à tisser (32 × 46 : le métier de
+  frêne, ses montants, sa traverse où sèchent quatre écheveaux teints aux tons exacts de `PALETTES` tissu_rouge,
+  tissu_bleu, tissu_moutarde, tissu_vert, les lames et leurs lisses, la nappe de la chaîne vue d'en haut et la navette,
+  la toile tissée, la poitrinière, dessous l'ensouple et les pédales dans l'ombre ; le rouet de noyer, son banc, la roue
+  de frêne dont on voit le dessus de la jante et, entre les rayons, le sol à travers, la manivelle, la bielle et la
+  pédale, l'épinglier et sa bobine, la quenouille et son nuage de laine) au repos, et le rouet qui tourne en quatre images
+  (`rouet_metier_0` à `_3` : les rayons d'un quart, la bielle et la pédale, la bobine, le fil qui file) ; l'enseigne de la
+  mercerie (32 × 46 : le poteau, la potence, la bobine de fil rouge qui la coiffe, son dessus raccourci ; la planche où la
+  carte écrit le nom, au même endroit que chez le forgeron ; une pelote bleue piquée de son aiguille). **Couleurs
+  comptées** : le rouet et le métier 509 (qui tourne : 515 à 518), l'enseigne 290 (un dessin en aplats aurait 20 à 30
+  couleurs). **Le geste « filer »** (`habitants.js`, `villageois-travail.js`) : assise, d'après les sièges (les cases
+  « assis »), de dos devant l'établi ; les deux images assises alternent lentement, elle reste assise entre deux gestes et
+  quand elle cause.
+- **La sauvegarde** : format 101 (`c.second`, `c.teintes` ; 100 est celui d'I5c, écrite en même temps). La migration
+  100 → 101 (`reparerCommerces`, `reparerArtisan`) :
+  un second absent, ou d'une sorte qui se tient seule, s'en va et reprend « sans tâche » ; les teintes d'une couleur
+  inconnue s'en vont, celles qui dépassent le stock sont bornées ; une partie d'avant n'est pas touchée.
+- **Le joueur automatique** (`bot.js`, `SIMULATION.VILLAGEOIS.COMMERCES`, une liste : la forge dès le palier 4, puis la
+  mercerie dès le palier 6) : il prépare un commerce à la fois (`botUnCommerce`), entretient ceux qui sont ouverts
+  (`botEntretenirCommerce`) ; ne prend jamais un artisan pour candidat ; achète à la forge (ou lui commande) les clous et
+  les charnières que l'Atelier ne fait plus ; garde au coffre la laine de la mercerie ouverte (`GARDER` : 12) au lieu de
+  la vendre au port ; et, sa caisse sous `AVANCE` (60) pièces, lui commande des pièces payées d'avance (une artisane qui
+  ouvre la bourse vide ne peut pas acheter sa laine). Mesure (`node scripts/simulate.mjs --village`, graine 1, 80 nuits) :
+  la forge comme avant (joueur appliqué : l'envie à la nuit 33,
+  la forge à 34, le palier 6 en cours dès 38) ; l'envie de la mercerie naît à la nuit 47 (la bergère, dix jours aux
+  bêtes), la mercerie ouvre à la nuit 50 (minimal : 58, le palier 6 franchi à 50) ; le palier 6 de l'appliqué est franchi
+  à la nuit 70 (69 avant I5b : un villageois de moins aux bêtes). La mercerie fait peu : une dizaine de journées de lots
+  sur trente (du fil, du tissu, une paire de gants), car la boîte commune est vide dès la nuit 50 et la mercière, mal
+  nourrie, se repose la plupart des jours (c'était déjà vrai avant I5b pour le troisième villageois) ; le palier 7 reste
+  en cours (dix villageois). Éteint, le CSV est le même octet pour octet.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, trois villageois puis six) : la bergère et son envie, sa fiche (les
+  trois conditions), le local (dehors : l'enseigne écrite ; dedans : le rouet et le métier, le comptoir), la décision
+  (« Mathurin ouvre la mercerie du Coq ! »), la mercière au rouet (le geste, un GIF), les trois jours (le premier, 4 fils et
+  un tissu ; le deuxième, 2 tissus et 2 fils ; le troisième, le manteau teint en rouge, 193 pièces, « pour les
+  villageois » dans la fenêtre), un villageois qui vient le chercher au comptoir (« Pour l'hiver : manteau chaud 🧥,
+  s'il te plaît. », la notification) et le porte dehors (le haut de sa tenue, rouge), la fiche d'une seconde villageoise
+  (« Rejoindre la mercerie »), la fenêtre à deux, les deux artisans assis devant l'établi, leurs six lots de la nuit ; la
+  fenêtre sur un téléphone ; le soir. Aucune erreur dans la console.
+- **Les tests** : `tests/engine/village-mercerie.test.mjs` (la sorte, ses étapes, ses prix dans la fourchette, une teinte
+  comprise, la filière qui vaut plus à chaque étape ; de bout en bout, trois jours d'artisan jusqu'au manteau teint ; la
+  teinture, le joueur et les teintes ; l'achat d'un villageois, sa tenue, la pluie ; le bac et ce qu'elle garde ; à deux,
+  les étapes, les postes, la caisse ; l'Atelier jamais bloqué ; la sauvegarde 100 → 101 ; le joueur automatique ;
+  éteint). `equipement.test.mjs` et `colorants.test.mjs` restent verts.
+- Reste : le chapeau de laine de la fiche n'existe pas (un vêtement neuf : hors périmètre) ; le tablier de la mercerie
+  est de fibre, comme à l'Atelier (de tissu, il vaudrait moins que sa matière) ; la famille ne porte pas de couleur (le
+  joueur n'achète pas les teintes) ; un tapis ne se teint qu'en rouge ou en bleu (les deux qui existent) ; le second ne
+  quitte pas le commerce (comme le titulaire, I5a) ; le joueur automatique ne prend pas de second ; la faim du village à
+  partir de la nuit 50 dans la simulation (la boîte commune vide : c'était déjà là avant I5b) laisse la mercière au repos
+  la plupart des jours ; un vêtement ne s'use pas (un villageois n'en rachète jamais).
 
 ## La scierie, la boulangerie, la fromagerie (I5c, fait)
 
@@ -1079,10 +1189,12 @@ Trois commerces de plus sur le socle d'I5a, presque sans code neuf : trois entr�
   villageois — la forge du joueur automatique ne bouge pas —, deux à quatre villageois et le port 2, trois à six et le
   port 3, quatre à huit ; huit villageois, c'est le port au niveau 4 : quatre commerces). La fiche le dit avec les trois
   autres conditions (« Un 2e commerce attend 4 villageois (3 aujourd'hui) et le port au niveau 2 (1 aujourd'hui). »).
-- **La lueur** : le four du boulanger s'allume comme la forge, de façon générale : un établi porte `allume` (la forge
-  `braise`, le four `feu`) ; `stage.js` donne au commerce ouvert l'image `<dessin>_<allume>_0` ; `BLOCS_CARTE.foyers`
-  (`config.js`, un réglage par dessin : ses images, au hasard ou à la suite, sa lueur du soir, son halo) remplace
-  `BLOCS_CARTE.forge` ; `chantier.js` (`foyerDe`) anime l'un et l'autre, et pose leur lueur dans le voile le soir.
+- **La lueur** : le four du boulanger s'allume comme la forge, de façon générale. Écrit en même temps qu'I5b, qui avait
+  fait de même pour le rouet ; l'intégration garde une seule table (voir plus bas) : l'établi porte `ouvert` (son image
+  le commerce ouvert : `enclume_foyer_braise_0`, `four_boulanger_feu_0`), que `stage.js` lui donne ;
+  `BLOCS_CARTE.commerces` (`config.js`, un réglage par dessin : ses images, au hasard ou à la suite — `suite` —, sa
+  `lueur` du soir et son halo) remplace `BLOCS_CARTE.forge` ; `chantier.js` (`etablisAnimes`) anime l'un et l'autre, et
+  pose leur lueur dans le voile le soir.
 - **Les dessins** (`scripts/batiments/commerces.py`, vus de haut à 45°, la lumière en haut à gauche, un contour d'un
   pixel, sans ombre portée ; la toile, la maçonnerie, les matières et l'enseigne de `forge.py`, la houle des flammes de
   `four.py`) : la scie de long et l'établi (32 × 40 : le plateau de quatre planches vu d'en haut, la ceinture, les pieds,
@@ -1119,6 +1231,57 @@ Trois commerces de plus sur le socle d'I5a, presque sans code neuf : trois entr�
   ses affaires, pas encore dans sa maison (I4) ; la scierie ne rend pas plus de planches que l'Atelier (la fourchette) ;
   les plantes vertes chez le menuisier (la fiche voulait les 36 meubles) ; le boulanger cuit sans bois (son four n'en
   prend pas) ; une seule forme d'enseigne par sorte ; les icônes de la faisselle et de la tomme sont des emoji simples.
+
+## La mercerie et les trois autres commerces ensemble (I5b sur I5c, l'intégration)
+
+I5b et I5c ont été écrites en parallèle sur le socle d'I5a ; chacune l'a fait évoluer de son côté. L'intégration garde
+tout ce que chacune apporte :
+
+- **Une seule table d'animation des établis** : `BLOCS_CARTE.commerces` (`js/carte/ferme/config.js`), par dessin
+  d'établi : ses `images` au hasard ou à la suite (`suite`), et une `lueur` du soir facultative (`allume`, `vacille`,
+  la flaque `sol`, le `foyer`, le `halo`). La forge (au hasard) et le four du boulanger (à la suite) rougeoient le jour
+  et luisent le soir ; le rouet de la mercerie tourne, sans lueur. `BLOCS_CARTE.foyers` (I5c) n'existe plus, ni
+  `foyerDe` : `chantier.js etablisAnimes` sert aux deux. Côté données, un seul champ sur l'établi : `ouvert`, l'image du
+  commerce ouvert (`enclume_foyer_braise_0`, `four_boulanger_feu_0`, `rouet_metier_0`) ; le champ `allume` d'I5c
+  (« braise », « feu ») est retiré, ce qu'il faisait passe par `ouvert` et la table. `stationAt` : l'établi et
+  l'enseigne d'un commerce restent hauts (I5c), ses blocs se lisent de `fenetres` (I5b).
+- **La sauvegarde** : format 101. La migration 99 → 100 reste celle d'I5c (la cave) ; celle d'I5b devient 100 → 101 (le
+  second artisan, les teintes), et son test suit (`village-mercerie`). `reparerCommerces` répare les deux.
+- **Les recettes de la mercerie** restent dans `ARTISANS.COMMERCES.mercerie.RECETTES` (la façon d'I5b) : leurs étapes,
+  leur teinte, leur ordre (il coud, sinon il tisse, sinon il file), leurs lots (2 laines → 2 fils) et le tablier de
+  fibre n'iraient pas dans `VILLAGE.PRIX.ARTISANS` sans changer un prix ou l'ordre. Les entrées de `PRIX.ARTISANS` du fil,
+  du tissu et des vêtements ne portent pas `commerce` : elles ne donnent que les prix. Aucun doublon : `recettesDe`
+  prend une fois chaque id (celle de `RECETTES` l'emporte sur celle des prix). Les tapis rouge et bleu sont des deux
+  côtés à dessein (le menuisier les a par `PRIX.ARTISANS`, la mercière les coud) : les tests des deux fiches le veulent.
+  Une recette porte maintenant tous les champs : `commande`, `stock`, `cave`, `etape`, `teinte`.
+- **Le comptoir** : `besoinAuComptoir` (I5c) dit pour qui c'est : « outil », « repas », « maison », et « vetement »
+  (I5b : un vêtement qui lui manque, `besoinDe`) ; `envieAuComptoir` le lit. `rangerAchat` range ce qui se mange à ses
+  provisions, un meuble dont il avait besoin et tout vêtement à ses affaires ; `porterTeinte` habille. Les achats
+  gardent la teinte (I5b) et le « pour » (I5c) ; la notification dit « (pour son repas) », « (pour sa maison) » ou
+  « (il n'en avait pas) ». Le joueur n'achète que les pièces sans teinte, et pas un meuble de trop (`refusMeubleJoueur`).
+  Un lot de l'artisan suit les deux : les recettes à commande ou à cave (I5c), ses étapes à deux et la teinture (I5b).
+- **Le plafond d'I5c touche la mercerie** : un 2e commerce attend quatre villageois et le port au niveau 2. Le test du
+  joueur automatique d'I5b (`village-mercerie`) prend donc quatre villageois et le port 2.
+- **Le joueur automatique** prend la liste `COMMERCES` d'I5b (la forge, puis la mercerie) ; aucune sorte d'I5c n'y est
+  ajoutée : elle ne changerait rien, le plafond ne laissant pas ouvrir un 2e commerce. Mesure (`node scripts/simulate.mjs
+  --village`, graine 1, 80 nuits) : la forge comme avant (l'envie à la nuit 34, ouverte à 35) ; le palier 7 en cours dès
+  la nuit 70 (appliqué ; le minimal : le palier 6 dès 51) ; la mercerie n'ouvre plus (la bergère a son envie dès la nuit
+  48, mais le village reste à trois villageois : le quatrième n'arrive pas, la boîte commune vide ; à 130 nuits non
+  plus). Le palier 7 demande dix villageois et deux commerces : il reste en cours. Éteint, le CSV est le même octet pour
+  octet que celui d'I5c.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, huit villageois, le port au niveau 4 : le plafond en tient quatre) :
+  les quatre commerces ouverts dans la même partie (la mercerie par la fiche, les quatre conditions), leurs établis
+  animés le jour (la forge, le four, le rouet : leurs images défilent), la forge et le four allumés le soir (le feu
+  dedans, la lueur sur le toit), un manteau teint en rouge acheté par un villageois qui n'en avait pas (« … a acheté
+  manteau chaud, teint en rouge à la mercerie du Puits (il n'en avait pas) : 193 💰 pour l'artisan. », le haut de sa
+  tenue rouge), la mercerie tenue à deux (« Benoît rejoint la mercerie du Puits : ils la tiennent à deux. », les deux
+  au rouet, huit lots la nuit). Aucune erreur dans la console.
+- **Les tests** : `village-artisans`, `village-commerces` (et la table de la carte : chaque établi qui a une image
+  `ouvert` y est animé, la forge et le four luisent, pas le rouet ; une seule table), `village-mercerie`.
+- Deux retouches : le joueur qui achète au comptoir ôte ses pièces du stock sans toucher aux teintes (I5b les
+  comptait de travers) ; la fenêtre d'un commerce tenu à deux compte les lots d'un artisan pour dire s'il en gagnera un.
+- Reste : le joueur automatique n'ouvre pas de 2e commerce dans la simulation (le plafond, le village de trois) ; les
+  tapis teints chez deux artisans.
 
 ## Les villageois : les traits de personnalité (I6c, fait)
 

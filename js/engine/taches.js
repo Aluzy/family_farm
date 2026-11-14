@@ -29,7 +29,7 @@ import { millPending, startMilling } from './kitchen.js';
 import { contratsAcceptes, livrerDepuisLaFerme } from './contrats.js';
 import { quaiDeChargement } from './production.js';
 import { chevalPossede } from './cheval.js';
-import { commerceDuVillageois, estTacheCommerce, lotCommerce, lotsDuJour, postesCommerce, tacheCommerce } from './artisans.js';
+import { commerceDuVillageois, estTacheCommerce, lotCommerce, lotsDuJour, postesCommerce, secondDe, tacheCommerce } from './artisans.js';
 
 /* ---------- les tâches attribuées (le chantier « l'île à bâtir », fiche I3c) ----------
 
@@ -236,8 +236,8 @@ export function postesDe(state, id, v = null) {
   const def = tacheDef(id);
   if (!def) return [];
   const L = lieuxDuVillage(state);
-  // (I5a : le poste d'un artisan est celui de son commerce)
-  const sig = `${id}:${v && Number.isInteger(v.maison) ? v.maison : '-'}:${v && estTacheCommerce(id) ? v.id : ''}:${signatureTaches(state)}`;
+  // (I5a : le poste d'un artisan est celui de son commerce ; I5b : à deux, les deux postes)
+  const sig = `${id}:${v && Number.isInteger(v.maison) ? v.maison : '-'}:${v && estTacheCommerce(id) ? `${v.id}/${secondDe(commerceDuVillageois(state, v.id)) || ''}` : ''}:${signatureTaches(state)}`;
   const m = postesMemo.get(sig);
   if (m && m.L === L) return m.postes;
   const postes = calculerPostes(state, id, v, def, L);

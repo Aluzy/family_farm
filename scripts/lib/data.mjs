@@ -155,7 +155,7 @@ export function sourcesOf(data, id) {
     const b = p.bloc && A && A.BLOCS && A.BLOCS[p.bloc];
     if ((b && b.objet === id) || id in (p.donne || {})) out.push(`projet du village ${sid}`);
   }
-  // (le chantier « l'île à bâtir », fiches I5a, I5c : ce que fait un commerce d'artisan, ses recettes et celles de
+  // (le chantier « l'île à bâtir », fiches I5a, I5b, I5c : ce que fait un commerce d'artisan, ses recettes et celles de
   // VILLAGE.PRIX.ARTISANS qui portent sa sorte)
   for (const [sorte, c] of Object.entries((data.ARTISANS && data.ARTISANS.COMMERCES) || {})) {
     for (const r of Object.values((c && c.RECETTES) || {})) if (r && id in (r.sortie || {})) out.push(`commerce ${sorte}`);

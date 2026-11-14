@@ -68,9 +68,25 @@ import { niveauPort } from './port.js';
    - le plafond (plafondCommerces, ARTISANS.PLAFOND) : le nombre de commerces suit les villageois et le port, une
      quatrième condition d'ouverture.
 
-   Ce que la partie garde (format 100) : state.commerces ([{ id, sorte, qui, ouvert, depuis, jours, etabli, stock,
-   commandes, seq, connues, journal, avis, lettres (I8a : la couleur des lettres de l'enseigne, couleursEnseigne), cave
-   (I5c : [{ objet, n, nuits, recette, pour ('joueur' : une commande, ou null) }]) }] ; les paliers de l'île, paliers.js, le comptent), et sur chaque villageois :
+   La mercerie (fiche I5b) ajoute au socle, par petites fonctions, ce qu'une sorte peut demander :
+   - les étapes : une recette peut porter la sienne (etape : filer, tisser, coudre) ; ce qu'un commerce fait pour
+     lui-même (pourSonTravail : une sortie qui est l'entrée d'une autre de ses recettes, le fil, le tissu) reste au
+     comptoir pour son travail, le bac ne l'emporte pas ;
+   - la teinture (ARTISANS.TEINTURE) : une recette marquée teinte prend un colorant de plus quand il en a un
+     (colorantPourTeindre) ; la pièce teinte se garde avec sa couleur (c.teintes = { objet: { couleur: n } }, une part de
+     c.stock) et vaut plus (prixTeint) ; le joueur achète les pièces sans teinte, un villageois qui achète un vêtement de
+     corps teint le porte (le haut de sa tenue) ;
+   - les deux artisans (DEUX d'une sorte) : quand le village a grandi, un second villageois qui a l'envie de ce commerce
+     le rejoint (conditionsSecond, rejoindreCommerce : la décision du joueur ; c.second) ; chacun fait ses lots, le
+     titulaire les étapes TITULAIRE, le second les étapes SECOND (etapesDe) ; la bourse du titulaire paie les matières et
+     reçoit les ventes (caisseDe) ; le second a son poste à côté (postesCommerce) ;
+   - au comptoir, ce qui lui manque (VILLAGE.BOURSE.BESOINS : un vêtement, un meuble) est un besoin, comme à l'étal ;
+     un vêtement acheté va à ses affaires (un manteau : il ne s'abrite plus sous la pluie, villageois-journee.js).
+
+   Ce que la partie garde (format 101) : state.commerces ([{ id, sorte, qui, second (I5b), ouvert, depuis, jours, etabli,
+   stock, teintes (I5b), commandes, seq, connues, journal, avis, lettres (I8a : la couleur des lettres de l'enseigne,
+   couleursEnseigne), cave (I5c : [{ objet, n, nuits, recette, pour ('joueur' : une commande, ou null) }]) }] ; les
+   paliers de l'île, paliers.js, le comptent), et sur chaque villageois :
    v.pratique ({ tâche: jours }), v.envies ({ sorte: jour }), v.commerce (l'id de son commerce), v.achatCommerce ({ jour,
    objet, commerce }), v.entretien (le jour de sa dernière lame). Des entiers partout. Le chantier éteint
    (villageActif), rien ne se lit ni ne s'écrit. Les tests : tests/engine/village-artisans.test.mjs. */
@@ -140,8 +156,9 @@ function recettesDesPrix(sorte) {
 }
 
 // Les recettes de la sorte : [{ id, entrees, sortie (l'objet), qte, palier, commande (il ne la fait que commandée), stock
-// (ce qu'il en garde au comptoir, ou null : STOCK), cave (ses nuits d'affinage, 0 : aucune) }], dans l'ordre des données :
-// les siennes (RECETTES), puis celles des prix de l'île.
+// (ce qu'il en garde au comptoir, ou null : STOCK), cave (ses nuits d'affinage, 0 : aucune), etape (I5b : filer, tisser,
+// coudre… ou null), teinte (I5b : elle prend un colorant quand il en a un) }], dans l'ordre des données : les siennes
+// (RECETTES), puis celles des prix de l'île (une seule fois chacune : celle de RECETTES l'emporte).
 const recettesMemo = new Map();
 export function recettesDe(sorte) {
   const d = defCommerce(sorte);
@@ -149,11 +166,13 @@ export function recettesDe(sorte) {
   const A = DATA.VILLAGE && DATA.VILLAGE.PRIX && DATA.VILLAGE.PRIX.ARTISANS;
   const m = recettesMemo.get(sorte);
   if (m && m.d === d && m.A === A && m.R === d.RECETTES) return m.l.map((r) => ({ ...r, entrees: { ...r.entrees } }));
-  const l = [...Object.entries(d.RECETTES || {}), ...recettesDesPrix(sorte)].filter(([k, r]) => !k.startsWith('//') && objet(r) && objet(r.sortie)).map(([id, r]) => {
+  const propres = Object.entries(d.RECETTES || {}), ids = new Set(propres.map(([k]) => k));
+  const l = [...propres, ...recettesDesPrix(sorte).filter(([k]) => !ids.has(k))].filter(([k, r]) => !k.startsWith('//') && objet(r) && objet(r.sortie)).map(([id, r]) => {
     const [sortie, qte] = Object.entries(r.sortie)[0];
     return {
       id, entrees: { ...(r.entrees || {}) }, sortie, qte: Math.max(1, entier(qte)), palier: Math.max(0, entier(r.palier)),
       commande: r.commande === true, stock: Number.isInteger(r.stock) ? Math.max(0, r.stock) : null, cave: Math.max(0, entier(r.cave)),
+      etape: typeof r.etape === 'string' ? r.etape : null, teinte: r.teinte === true,
     };
   });
   recettesMemo.set(sorte, { d, A, R: d.RECETTES, l });
@@ -179,9 +198,17 @@ export function commerceDe(state, id) {
   return commercesDe(state).find((c) => c.id === id) || null;
 }
 
-// Le commerce que tient le villageois `vid` (ouvert), ou null.
+// Le commerce que tient le villageois `vid` (ouvert ; I5b : en titulaire ou en second), ou null.
 export function commerceDuVillageois(state, vid) {
-  return commercesOuverts(state).find((c) => c.qui === vid) || null;
+  return commercesOuverts(state).find((c) => c.qui === vid || (vid && c.second === vid)) || null;
+}
+
+// I5b : le second artisan du commerce `c` (son id), ou null ; les artisans du commerce (le titulaire d'abord).
+export function secondDe(c) {
+  return c && typeof c.second === 'string' && c.second ? c.second : null;
+}
+export function artisansDuCommerce(c) {
+  return c ? [c.qui, secondDe(c)].filter((x) => typeof x === 'string' && x) : [];
 }
 
 // Y a-t-il un commerce ouvert de la sorte `sorte` ?
@@ -252,15 +279,26 @@ export function postesCommerce(state, v) {
   const c = v && commerceDuVillageois(state, v.id);
   const l = c && localDe(state, c);
   if (!l || !l.complet) return [];
+  // (I5b : le second prend la case libre suivante, à côté du titulaire ; à deux, les deux postes, le sien d'abord : la
+  // journée de l'équipe, villageois-journee.js planDuTravail, les lit sur le premier et donne le suivant à l'autre)
+  const D = casesDevantEtabli(state, c, l), moi = v.id === secondDe(c) ? 1 : 0;
+  const cases = [D[moi], ...(secondDe(c) ? [D[1 - moi]] : [])].filter((q) => q !== undefined);
+  if (!cases.length || D[moi] === undefined) return [];
+  const w = W(state), larg = largeurEtabli(c.sorte);
+  const vers = (q) => (q >= l.etabli + w ? q - w : q < l.etabli ? l.etabli : l.etabli + larg - 1);
+  return cases.map((q) => ({ case: q, vers: vers(q), dedans: true }));
+}
+
+const largeurEtabli = (sorte) => Math.max(1, entier((DATA.ATELIER.BLOCS[defCommerce(sorte).etabli] || {}).largeur) || 1);
+
+// Les cases libres d'où l'on travaille à l'établi du local `l` : devant lui (à droite d'abord), puis à ses côtés.
+function casesDevantEtabli(state, c, l) {
   const w = W(state), B = state.blocs || {}, couvertes = casesCouvertes(state), dedans = new Set(l.piece.cases);
-  const larg = Math.max(1, entier((DATA.ATELIER.BLOCS[defCommerce(c.sorte).etabli] || {}).largeur) || 1);
+  const larg = largeurEtabli(c.sorte);
   const cases = Array.from({ length: larg }, (_, k) => l.etabli + k);
   const libre = (q) => dedans.has(q) && B[q] === undefined && !couvertes.has(q) && !l.piece.paillasses.includes(q);
   // (devant l'enclume, à droite de l'établi d'abord ; sinon devant le reste, ou à côté)
-  const q = [...cases].reverse().map((t) => t + w).concat([l.etabli - 1, l.etabli + larg]).find(libre);
-  if (q === undefined) return [];
-  const vers = q >= l.etabli + w ? q - w : q < l.etabli ? l.etabli : l.etabli + larg - 1;
-  return [{ case: q, vers, dedans: true }];
+  return [...cases].reverse().map((t) => t + w).concat([l.etabli - 1, l.etabli + larg]).filter(libre);
 }
 
 // Les cases d'où l'on achète au comptoir de `c` : devant lui (dessous), sinon à ses côtés, dans la pièce. → [case].
@@ -354,14 +392,19 @@ export function conditionsCommerce(state, vid, sorte) {
 }
 
 // Ce que la fiche du villageois montre de ses commerces : [{ sorte, nom, icone, envie (jour ou null), conditions,
-// commerce (le sien, ouvert, ou null) }] : les sortes dont il a l'envie ou qu'il tient.
+// commerce (le sien, ouvert, ou null), rejoindre (I5b : { commerce, conditions } — un commerce de la sorte, ouvert, qui
+// peut le prendre en second —, ou null) }] : les sortes dont il a l'envie ou qu'il tient.
 export function commercesPourLaFiche(state, vid) {
   const v = trouverVillageois(state, vid);
   if (!v || !villageActif(state)) return [];
   const sien = commerceDuVillageois(state, vid);
   return sortesCommerces().filter((s) => (sien && sien.sorte === s) || (objet(v.envies) && Number.isInteger(v.envies[s]))).map((s) => {
     const d = defCommerce(s);
-    return { sorte: s, nom: d.nom, icone: d.icone, envie: objet(v.envies) && Number.isInteger(v.envies[s]) ? v.envies[s] : null, conditions: conditionsCommerce(state, vid, s), commerce: sien && sien.sorte === s ? sien : null };
+    const autre = !sien && commercesOuverts(state).find((c) => c.sorte === s && conditionsSecond(state, vid, c.id));
+    return {
+      sorte: s, nom: d.nom, icone: d.icone, envie: objet(v.envies) && Number.isInteger(v.envies[s]) ? v.envies[s] : null, conditions: conditionsCommerce(state, vid, s), commerce: sien && sien.sorte === s ? sien : null,
+      rejoindre: autre ? { commerce: autre, conditions: conditionsSecond(state, vid, autre.id) } : null,
+    };
   });
 }
 
@@ -408,6 +451,137 @@ export function ouvrirCommerce(state, vid, sorte) {
   const nomC = nomCommerce(state, c);
   const f = fixerFeteOuverture(state, id, nomC);
   return { ok: true, commerce: c, nom: nomC, fete: f && f.ok ? f.fete : null };
+}
+
+/* ---------- I5b : le second artisan ---------- */
+
+// Les deux artisans de la sorte `sorte` (ARTISANS.COMMERCES[sorte].DEUX : { VILLAGEOIS, TITULAIRE, SECOND }), ou null :
+// la sorte n'en a qu'un (la forge).
+export function deuxDe(sorte) {
+  const d = defCommerce(sorte);
+  return d && objet(d.DEUX) && Array.isArray(d.DEUX.SECOND) ? d.DEUX : null;
+}
+
+// Les conditions pour que le villageois `vid` rejoigne le commerce `cid` en second : { ok, village: { ok, texte },
+// envie, amitie, poste: { ok, texte } } ; null : rien à proposer (la sorte n'a qu'un artisan, il a déjà son second, le
+// villageois tient déjà un commerce ou n'en a pas l'envie).
+export function conditionsSecond(state, vid, cid) {
+  const c = commerceDe(state, cid), v = trouverVillageois(state, vid), D = c && deuxDe(c.sorte);
+  if (!c || !v || !D || c.ouvert === false || secondDe(c) || v.enfant || commerceDuVillageois(state, vid)) return null;
+  if (!(objet(v.envies) && Number.isInteger(v.envies[c.sorte]))) return null;
+  const base = conditionsCommerce(state, vid, c.sorte);
+  const n = villageoisDe(state).length, voulu = Math.max(2, Math.floor(Number(D.VILLAGEOIS) || 2));
+  const l = localDe(state, c), postes = l && l.complet ? casesDevantEtabli(state, c, l).length : 0;
+  const out = {
+    village: { ok: n >= voulu, texte: n >= voulu ? `Le village a ${n} villageois : assez pour tenir ${minuscule(defCommerce(c.sorte).nom)} à deux.` : `Il faut un village de ${voulu} villageois pour la tenir à deux (encore ${voulu - n}).` },
+    envie: base.envie, amitie: base.amitie,
+    poste: { ok: postes >= 2, texte: postes >= 2 ? 'Il y a la place pour deux devant l\'établi.' : 'Il faut deux cases libres devant l\'établi (ou à ses côtés).' },
+  };
+  out.ok = out.village.ok && out.envie.ok && out.amitie.ok && out.poste.ok;
+  return out;
+}
+
+// Le joueur décide : le villageois `vid` rejoint le commerce `cid` en second (la tâche du commerce ; ses lots, ses
+// étapes : etapesDe). → { ok, commerce } ou un refus.
+export function rejoindreCommerce(state, vid, cid) {
+  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
+  const c = commerceDe(state, cid), v = trouverVillageois(state, vid);
+  if (!c || !v) return fail('Commerce inconnu.');
+  if (!deuxDe(c.sorte)) return fail(`${defCommerce(c.sorte).nom} se tient seul.`);
+  if (secondDe(c)) return fail('Ce commerce a déjà ses deux artisans.');
+  const C = conditionsSecond(state, vid, cid);
+  if (!C) return fail(`${v.prenom} ne peut pas le rejoindre.`);
+  for (const k of ['village', 'envie', 'amitie', 'poste']) if (!C[k].ok) return fail(C[k].texte);
+  c.second = v.id;
+  v.tache = c.sorte;
+  v.commerce = c.id;
+  const jour = jourDe(state);
+  if (objet(v.travail) && v.travail.jour === jour) v.travail = { ...v.travail, tache: c.sorte, actions: 0, essai: 0 };
+  return { ok: true, commerce: c };
+}
+
+// Les étapes que fait le villageois `v` au commerce `c` : null (toutes : il est seul), sinon celles de son rôle (DEUX :
+// TITULAIRE ou SECOND).
+export function etapesDe(c, v) {
+  const D = c && deuxDe(c.sorte), s = secondDe(c);
+  if (!D || !s || !v) return null;
+  return new Set(v.id === s ? D.SECOND : (D.TITULAIRE || []));
+}
+const sonEtape = (E, r) => !E || E.has(r.etape);
+
+// La caisse du commerce : la bourse de son titulaire (il paie les matières, il reçoit les ventes).
+const caisseDe = (state, c) => (c ? trouverVillageois(state, c.qui) : null);
+
+/* ---------- I5b : la teinture ---------- */
+
+const TE = () => AR().TEINTURE || {};
+
+// Les couleurs de la teinture (ARTISANS.TEINTURE.COULEURS) : [{ id, colorant, nom, tissu, palette }], dans l'ordre.
+export function couleursTeinture() {
+  return Object.entries(TE().COULEURS || {}).filter(([k, x]) => !k.startsWith('//') && objet(x) && DATA.OBJETS[x.colorant]).map(([id, x]) => ({ id, ...x }));
+}
+const couleurDe = (id) => couleursTeinture().find((x) => x.id === id) || null;
+
+// Le prix d'une pièce `o` teinte en `couleur` (null : sans teinte) : son prix, plus COEF % de celui du colorant.
+export function prixTeint(o, couleur = null) {
+  const x = couleur && couleurDe(couleur);
+  return prixArtisan(o) + (x ? Math.round((prixArtisan(x.colorant) * Math.floor(Number(TE().COEF) || 100)) / 100) : 0);
+}
+
+// Les pièces teintes de `o` au comptoir de `c` : { couleur: n } (une part de c.stock[o]).
+export function teintesDe(c, o) {
+  const T = c && objet(c.teintes) && objet(c.teintes[o]) ? c.teintes[o] : {};
+  return Object.fromEntries(Object.entries(T).filter(([k, n]) => couleurDe(k) && entier(n) > 0).map(([k, n]) => [k, entier(n)]));
+}
+const nbTeints = (c, o) => Object.values(teintesDe(c, o)).reduce((t, n) => t + n, 0);
+// (les pièces de `o` sans teinte)
+const nonTeints = (c, o) => Math.max(0, entier(((c && c.stock) || {})[o]) - nbTeints(c, o));
+function ajouterTeinte(c, o, couleur, n = 1) {
+  if (!objet(c.teintes)) c.teintes = {};
+  if (!objet(c.teintes[o])) c.teintes[o] = {};
+  c.teintes[o][couleur] = entier(c.teintes[o][couleur]) + n;
+}
+function oterTeinte(c, o, couleur, n = 1) {
+  if (!objet(c.teintes) || !objet(c.teintes[o])) return;
+  c.teintes[o][couleur] = entier(c.teintes[o][couleur]) - n;
+  if (c.teintes[o][couleur] <= 0) delete c.teintes[o][couleur];
+  if (!Object.keys(c.teintes[o]).length) delete c.teintes[o];
+  if (!Object.keys(c.teintes).length) delete c.teintes;
+}
+
+// La couleur dont il teindra le prochain vêtement : le colorant qu'il a le plus (son stock, puis le coffre au-delà de
+// GARDE), à égalité dans l'ordre des couleurs ; null : il n'en a pas (la pièce reste sans teinte).
+export function colorantPourTeindre(state, c) {
+  const garde = Math.max(0, Math.floor(reglage('GARDE', 0))), S = objet(c && c.stock) ? c.stock : {};
+  let mieux = null;
+  for (const x of couleursTeinture()) {
+    const n = Math.max(0, entier(S[x.colorant])) + Math.max(0, Math.floor(countItem(state, x.colorant) + 1e-9) - garde);
+    if (n > 0 && (!mieux || n > mieux.n)) mieux = { id: x.id, n };
+  }
+  return mieux ? mieux.id : null;
+}
+
+// Ce que le commerce fait pour lui-même : les sorties de ses recettes qui sont l'entrée d'une autre (le fil, le tissu ;
+// le lingot de la forge). Le bac ne l'emporte pas.
+export function pourSonTravail(sorte) {
+  const R = recettesDe(sorte), sorties = new Set(R.map((r) => r.sortie));
+  return new Set(R.flatMap((r) => Object.keys(r.entrees)).filter((o) => sorties.has(o)));
+}
+
+// Ce qui est en vente au comptoir de `c`, pièce par pièce : [{ objet, teinte (une couleur, ou null), n, prix }] ; les
+// pièces sans teinte d'abord, dans l'ordre des recettes.
+function offresDuComptoir(c) {
+  const S = objet(c && c.stock) ? c.stock : {};
+  const ordre = recettesDe(c && c.sorte).map((r) => r.sortie);
+  const out = [];
+  const objets = Object.keys(S).filter((o) => DATA.OBJETS[o] && entier(S[o]) > 0)
+    .sort((a, b) => (ordre.indexOf(a) + 1 || 99) - (ordre.indexOf(b) + 1 || 99) || (a < b ? -1 : 1));
+  for (const o of objets) {
+    const libres = nonTeints(c, o), T = teintesDe(c, o);
+    if (libres > 0) out.push({ objet: o, teinte: null, n: libres, prix: prixArtisan(o) });
+    for (const x of couleursTeinture()) if (T[x.id] > 0) out.push({ objet: o, teinte: x.id, n: T[x.id], prix: prixTeint(o, x.id) });
+  }
+  return out;
 }
 
 /* ---------- le travail : les lots ---------- */
@@ -463,7 +637,8 @@ function devisMatieres(state, c, entrees) {
   return { ok: true, depuisStock, depuisCoffre, cout };
 }
 
-// Il prend les matières d'un devis : son stock, et ce qu'il achète au coffre de sa bourse (les pièces au joueur).
+// Il prend les matières d'un devis : son stock, et ce qu'il achète au coffre de sa bourse (les pièces au joueur ; I5b :
+// `v`, la caisse du commerce, la bourse du titulaire).
 function prendreMatieres(state, c, v, D, J) {
   for (const [o, n] of Object.entries(D.depuisStock)) { c.stock[o] -= n; if (c.stock[o] <= 0) delete c.stock[o]; }
   for (const [o, n] of Object.entries(D.depuisCoffre)) { takeItem(state, o, n); J.achete[o] = (J.achete[o] || 0) + n; }
@@ -548,6 +723,8 @@ export function affinerCaves(state) {
 export function lotCommerce(state, v) {
   const c = v && commerceDuVillageois(state, v.id);
   if (!c) return fail('Pas de commerce.');
+  // (I5b : la caisse, la bourse du titulaire ; ses étapes, s'ils sont deux)
+  const caisse = caisseDe(state, c) || v, E = etapesDe(c, v);
   const l = localDe(state, c);
   if (!l || !l.complet) return fail(defCommerce(c.sorte).SANS || 'Le local n\'est plus complet.');
   if (l.etabli !== c.etabli) c.etabli = l.etabli;
@@ -567,11 +744,12 @@ export function lotCommerce(state, v) {
     const k = c.commandes[i], r = recetteDe(c.sorte, k.recette);
     if (!r) { c.commandes.splice(i--, 1); continue; }
     if (r.cave && !placeEnCave(c)) continue;
+    if (!sonEtape(E, r)) continue;
     let cout = 0;
     if (!k.facon) {
       const D = devisMatieres(state, c, r.entrees);
-      if (!D.ok || D.cout > entier(v.bourse)) continue;
-      prendreMatieres(state, c, v, D, J);
+      if (!D.ok || D.cout > entier(caisse.bourse)) continue;
+      prendreMatieres(state, c, caisse, D, J);
       cout = D.cout;
     }
     c.commandes.splice(i, 1);
@@ -587,43 +765,48 @@ export function lotCommerce(state, v) {
   // celles qu'il ne fait que commandées)
   const S = Math.max(1, Math.floor(reglage('STOCK', 4)));
   const L = recettesConnues(state, c).filter((r) => !r.commande).map((r, i) => ({ r, i, n: enStock(c, r.sortie) }))
-    .filter((x) => x.n < (x.r.stock === null ? S : x.r.stock) && (!x.r.cave || placeEnCave(c)))
+    .filter((x) => x.n < (x.r.stock === null ? S : x.r.stock) && (!x.r.cave || placeEnCave(c)) && sonEtape(E, x.r))
     .sort((a, b) => a.i - b.i);
   for (const { r } of L) {
-    const D = devisMatieres(state, c, r.entrees);
-    if (!D.ok || D.cout > entier(v.bourse)) continue;
-    prendreMatieres(state, c, v, D, J);
+    // (I5b : un vêtement teint, s'il a un colorant ; sinon sans teinte)
+    const couleur = r.teinte ? colorantPourTeindre(state, c) : null, x = couleur && couleurDe(couleur);
+    const avec = x ? { ...r.entrees, [x.colorant]: (r.entrees[x.colorant] || 0) + 1 } : null;
+    let D = avec ? devisMatieres(state, c, avec) : null, teint = !!(D && D.ok && D.cout <= entier(caisse.bourse));
+    if (!teint) D = devisMatieres(state, c, r.entrees);
+    if (!D.ok || D.cout > entier(caisse.bourse)) continue;
+    prendreMatieres(state, c, caisse, D, J);
     if (r.cave) caveDe(c).push({ objet: r.sortie, n: r.qte, nuits: 0, recette: r.id, pour: null });
     else c.stock[r.sortie] = Math.max(0, entier(c.stock[r.sortie])) + r.qte;
-    return fini(r, null, D.cout);
+    if (teint) ajouterTeinte(c, r.sortie, couleur, r.qte);
+    const res = fini(r, null, D.cout);
+    if (teint) res.lot.teinte = couleur;
+    return res;
   }
   return fail(L.length ? 'Il manque des matières au coffre, ou de quoi les payer.' : 'Le comptoir est garni.');
 }
 
 /* ---------- la vente au joueur, les commandes ---------- */
 
-// Ce qui est en vente au comptoir de `c` : [{ objet, n, prix }], dans l'ordre des recettes.
+// Ce qui est en vente au comptoir de `c` : [{ objet, teinte (I5b : une couleur, ou null), n, prix }], dans l'ordre des
+// recettes (les pièces sans teinte d'abord).
 export function enVenteAuCommerce(state, c) {
-  const S = objet(c && c.stock) ? c.stock : {};
-  const ordre = recettesDe(c && c.sorte).map((r) => r.sortie);
-  return Object.entries(S).filter(([o, n]) => DATA.OBJETS[o] && n > 0).map(([o, n]) => ({ objet: o, n, prix: prixArtisan(o) }))
-    .sort((a, b) => (ordre.indexOf(a.objet) + 1 || 99) - (ordre.indexOf(b.objet) + 1 || 99) || (a.objet < b.objet ? -1 : 1));
+  return offresDuComptoir(c);
 }
 
 const artisanDe = (state, c) => (c ? trouverVillageois(state, c.qui) : null);
 
-// Le joueur achète `n` unités de `o` au comptoir du commerce `id` (au prix de vente : les pièces vont à l'artisan). →
-// { ok, objet, n, prix } ou un refus.
+// Le joueur achète `n` unités de `o` au comptoir du commerce `id` (au prix de vente : les pièces vont à l'artisan ;
+// I5b : les pièces sans teinte, les teintes sont pour les villageois). → { ok, objet, n, prix } ou un refus.
 export function acheterAuCommerce(state, id, o, n = 1) {
   const c = commerceDe(state, id), v = artisanDe(state, c);
   if (!c || c.ouvert === false || !v) return fail('Ce commerce n\'est pas ouvert.');
-  const q = Math.max(0, Math.floor(Number(n) || 0)), dispo = Math.max(0, entier((c.stock || {})[o]));
-  if (q <= 0 || dispo < q) return fail(dispo ? `Il n'en a que ${dispo}.` : `Plus de ${minuscule(nom(o))} en vente.`);
+  const q = Math.max(0, Math.floor(Number(n) || 0)), dispo = nonTeints(c, o);
+  if (q <= 0 || dispo < q) return fail(dispo ? `Il n'en a que ${dispo}.` : nbTeints(c, o) ? 'Il ne reste que des pièces teintes : elles sont pour les villageois.' : `Plus de ${minuscule(nom(o))} en vente.`);
   const refus = refusMeubleJoueur(state, o, q);
   if (refus) return fail(refus);
   const prix = q * prixArtisan(o);
   if (!pay(state, prix, `${nomCommerce(state, c)} : ${q} ${minuscule(nom(o))}`)) return fail(NO_COINS);
-  c.stock[o] = dispo - q;
+  c.stock[o] = entier(c.stock[o]) - q;
   if (c.stock[o] <= 0) delete c.stock[o];
   donnerAuJoueur(state, o, q);
   v.bourse = Math.max(0, entier(v.bourse)) + prix;
@@ -677,9 +860,13 @@ function aDesProvisions(v) {
   return objet(v.provisions) && Object.entries(v.provisions).some(([o, n]) => n > 0 && DATA.OBJETS[o] && DATA.OBJETS[o].energie > 0);
 }
 
-// Le besoin de `o` pour le villageois `v` au comptoir de la sorte `sorte` (CLIENTS) : 'outil' (une lame, s'il tient un
-// outil et n'en a pas eu depuis ENTRETIEN jours), 'repas' (I5c : il n'a plus de provisions), 'maison' (I5c : un meuble
-// dont sa maison a besoin, bourse.js besoinDe), ou null.
+// I5b : un vêtement (VILLAGE.BOURSE.BESOINS.vetement) ?
+const estVetement = (o) => ((((DATA.VILLAGE || {}).BOURSE || {}).BESOINS || {}).vetement || []).includes(o);
+
+// Le besoin de `o` pour le villageois `v` au comptoir de la sorte `sorte` : 'outil' (CLIENTS : une lame, s'il tient un
+// outil et n'en a pas eu depuis ENTRETIEN jours), 'repas' (I5c, CLIENTS : il n'a plus de provisions), 'maison' (un meuble
+// dont sa maison a besoin, bourse.js besoinDe), 'vetement' (I5b : un vêtement qui lui manque, bourse.js besoinDe, comme
+// à l'étal), ou null.
 export function besoinAuComptoir(v, o, sorte, jour) {
   const cl = ((defCommerce(sorte) || {}).CLIENTS || {})[o];
   if (cl === 'outil' && v.outil) {
@@ -687,12 +874,12 @@ export function besoinAuComptoir(v, o, sorte, jour) {
     if (!Number.isInteger(v.entretien) || jour - v.entretien >= E) return 'outil';
   }
   if (cl === 'repas' && !aDesProvisions(v)) return 'repas';
-  if (cl === 'maison' && besoinDe(v, o)) return 'maison';
+  if (besoinDe(v, o)) return estVetement(o) ? 'vetement' : 'maison';
   return null;
 }
 
-// Ce que `o` est pour le villageois `v` au comptoir de la sorte `sorte` : 'adore', 'besoin' (CLIENTS : besoinAuComptoir),
-// 'aime', ou null.
+// Ce que `o` est pour le villageois `v` au comptoir de la sorte `sorte` : 'adore', 'besoin' (besoinAuComptoir : CLIENTS,
+// et ce qui lui manque, VILLAGE.BOURSE.BESOINS, un vêtement, un meuble, comme à l'étal), 'aime', ou null.
 export function envieAuComptoir(v, o, sorte, jour) {
   const g = goutPour(v, o);
   if (g === 'deteste') return null;
@@ -702,9 +889,10 @@ export function envieAuComptoir(v, o, sorte, jour) {
 }
 
 // I5c : ce qu'il a acheté, il le range comme à l'étal : ce qui se mange, ses provisions (il le mange à son prochain repas :
-// villageois.js nuitDe, bourse.js mangerSesProvisions) ; un meuble ou un vêtement dont il avait besoin, ses affaires.
+// villageois.js nuitDe, bourse.js mangerSesProvisions) ; un meuble dont il avait besoin, ses affaires ; I5b : un
+// vêtement, à ses affaires, quoi qu'il l'ait acheté (un manteau le garde au chaud).
 function rangerAchat(v, o, pour) {
-  const sac = DATA.OBJETS[o] && DATA.OBJETS[o].energie > 0 ? 'provisions' : pour === 'maison' ? 'affaires' : null;
+  const sac = DATA.OBJETS[o] && DATA.OBJETS[o].energie > 0 ? 'provisions' : pour === 'maison' || estVetement(o) ? 'affaires' : null;
   if (!sac) return;
   if (!objet(v[sac])) v[sac] = {};
   v[sac][o] = (v[sac][o] || 0) + 1;
@@ -720,26 +908,30 @@ export function achatsCommercesDuJour(state, jour = jourDe(state)) {
   const C = commercesOuverts(state).filter((c) => devantComptoir(state, c).length);
   if (!C.length) return out;
   const V = [...villageoisDe(state)].sort((a, b) => (a.id < b.id ? -1 : 1));
-  const stock = new Map(C.map((c) => [c.id, { ...(c.stock || {}) }]));
-  const cle = JSON.stringify([jour, C.map((c) => [c.id, c.stock, c.qui]), V.map((v) => [v.id, entier(v.bourse), !!v.enfant, !!v.repos, v.accueil || 0, v.outil || 0, v.entretien || 0, v.achatCommerce || 0, v.gouts || 0, v.provisions || 0, v.affaires || 0, v.maison ?? null])]);
+  const stock = new Map(C.map((c) => [c.id, {}]));
+  const cle = JSON.stringify([jour, C.map((c) => [c.id, c.stock, c.qui, c.second || 0, c.teintes || 0]), V.map((v) => [v.id, entier(v.bourse), !!v.enfant, !!v.repos, v.accueil || 0, v.outil || 0, v.entretien || 0, v.achatCommerce || 0, v.gouts || 0, v.provisions || 0, v.affaires || 0, v.maison ?? null])]);
   if (memoCle === cle && memoAchats && memoAchats.s === state) return memoAchats.m;
   for (const v of V) {
     if (objet(v.achatCommerce) && v.achatCommerce.jour === jour) { out.set(v.id, { commerce: v.achatCommerce.commerce, objet: v.achatCommerce.objet, fait: true }); continue; }
     if (v.enfant || v.repos || v.accueil) continue;
     let mieux = null;
     for (const c of C) {
-      if (c.qui === v.id) continue;
-      for (const [o, n] of Object.entries(stock.get(c.id))) {
-        if (!(n > 0) || !DATA.OBJETS[o]) continue;
-        const e = envieAuComptoir(v, o, c.sorte, jour), p = prixArtisan(o);
+      if (artisansDuCommerce(c).includes(v.id)) continue;
+      // (I5b : pièce par pièce, une teinte à son prix ; ce que d'autres ont déjà pris aujourd'hui en moins)
+      const pris = stock.get(c.id);
+      for (const f of offresDuComptoir(c)) {
+        const n = f.n - (pris[`${f.objet}~${f.teinte || ''}`] || 0);
+        if (!(n > 0)) continue;
+        const e = envieAuComptoir(v, f.objet, c.sorte, jour), p = f.prix;
         if (!e || p > entier(v.bourse)) continue;
-        const x = { c, o, r: RANG[e], p };
-        if (!mieux || x.r > mieux.r || (x.r === mieux.r && (x.p > mieux.p || (x.p === mieux.p && o < mieux.o)))) mieux = x;
+        const x = { c, o: f.objet, teinte: f.teinte, r: RANG[e], p };
+        if (!mieux || x.r > mieux.r || (x.r === mieux.r && (x.p > mieux.p || (x.p === mieux.p && f.objet < mieux.o)))) mieux = x;
       }
     }
     if (!mieux) continue;
-    stock.get(mieux.c.id)[mieux.o] -= 1;
-    out.set(v.id, { commerce: mieux.c.id, objet: mieux.o, fait: false });
+    const k = `${mieux.o}~${mieux.teinte || ''}`, pris = stock.get(mieux.c.id);
+    pris[k] = (pris[k] || 0) + 1;
+    out.set(v.id, { commerce: mieux.c.id, objet: mieux.o, ...(mieux.teinte ? { teinte: mieux.teinte } : {}), fait: false });
   }
   memoCle = cle;
   memoAchats = { s: state, m: out };
@@ -753,37 +945,51 @@ export function commercesSignature(state, jour = jourDe(state)) {
   return [commercesOuverts(state).map((c) => [c.id, c.etabli, c.qui]), [...m].map(([id, a]) => [id, a.commerce, a.objet])];
 }
 
-// Ce qu'il dit en arrivant au comptoir (ARTISANS.PHRASES_COMPTOIR).
-export function phraseComptoir(state, id, o) {
-  const P = AR().PHRASES_COMPTOIR || [];
+// Ce qu'il dit en arrivant au comptoir (ARTISANS.PHRASES_COMPTOIR ; I5b : celles de la sorte `sorte`, s'il y en a).
+export function phraseComptoir(state, id, o, sorte = null) {
+  const P = (defCommerce(sorte) || {}).PHRASES_COMPTOIR || AR().PHRASES_COMPTOIR || [];
   if (!P.length || !DATA.OBJETS[o]) return '';
   const p = P[Math.floor(rngDe(`${graineDe(state)}:comptoir:${id}:${jourDe(state)}`)() * P.length)];
   const d = DATA.OBJETS[o];
   return p.replace('{objet}', `${minuscule(d.nom)} ${d.icone}`).replace(/^./, (x) => x.toUpperCase());
 }
 
-// Le villageois `vid` achète `o` au comptoir du commerce `cid` (de sa bourse ; les pièces vont à l'artisan). → { ok,
-// objet, prix, envie } ou un refus.
-export function acheterAuComptoir(state, vid, cid, o) {
+// Le villageois `vid` achète `o` au comptoir du commerce `cid` (de sa bourse ; les pièces vont à l'artisan ; I5b :
+// `teinte`, une pièce teinte de cette couleur). Un vêtement va à ses affaires (un manteau le garde au chaud) ; un
+// vêtement de corps teint, il le porte : le haut de sa tenue en prend la couleur. → { ok, objet, teinte, prix, envie }
+// ou un refus.
+export function acheterAuComptoir(state, vid, cid, o, teinte = null) {
   const v = trouverVillageois(state, vid), c = commerceDe(state, cid), a = artisanDe(state, c);
   if (!v || !c || !a || c.ouvert === false) return fail('Ce commerce n\'est pas ouvert.');
   const jour = jourDe(state);
   if (objet(v.achatCommerce) && v.achatCommerce.jour === jour) return fail('Déjà un achat au comptoir aujourd\'hui.');
-  if (!(entier((c.stock || {})[o]) > 0)) return fail('Plus en vente.');
-  const envie = envieAuComptoir(v, o, c.sorte, jour), prix = prixArtisan(o), pour = besoinAuComptoir(v, o, c.sorte, jour);
+  const x = teinte ? couleurDe(teinte) : null;
+  if (teinte && !x) return fail('Couleur inconnue.');
+  if (!((x ? teintesDe(c, o)[teinte] || 0 : nonTeints(c, o)) > 0)) return fail('Plus en vente.');
+  const envie = envieAuComptoir(v, o, c.sorte, jour), prix = prixTeint(o, x ? teinte : null), pour = besoinAuComptoir(v, o, c.sorte, jour);
   if (!envie) return fail('Il n\'en veut pas.');
   if (entier(v.bourse) < prix) return fail('Pas assez dans sa bourse.');
   c.stock[o] -= 1;
   if (c.stock[o] <= 0) delete c.stock[o];
+  if (x) oterTeinte(c, o, teinte);
   v.bourse = entier(v.bourse) - prix;
   a.bourse = Math.max(0, entier(a.bourse)) + prix;
   v.achatCommerce = { jour, objet: o, commerce: c.id };
   if (envie === 'besoin' && pour === 'outil') v.entretien = jour;
   rangerAchat(v, o, envie === 'besoin' ? pour : null);
+  if (x) porterTeinte(v, o, x);
   plaisirAchat(v, jour, envie, { objet: o, prix, ou: 'commerce' });
   journalDuJour(c, jour).ventes.villageois += prix;
-  avis(c, { sorte: 'vente', id: v.id, objet: o, prix, envie, ...(envie === 'besoin' && pour ? { pour } : {}) });
-  return { ok: true, objet: o, prix, envie, ...(pour ? { pour } : {}) };
+  avis(c, { sorte: 'vente', id: v.id, objet: o, prix, envie, ...(envie === 'besoin' && pour ? { pour } : {}), ...(x ? { teinte } : {}) });
+  return { ok: true, objet: o, teinte: x ? teinte : null, prix, envie, ...(pour ? { pour } : {}) };
+}
+
+// I5b : il porte un vêtement de corps teint (TEINTURE.CORPS) : le haut de sa tenue prend le tissu de la couleur
+// (TEINTURE.COULEURS[].tissu, une couleur des tenues) ; son motif reste.
+function porterTeinte(v, o, x) {
+  const T = (TE().CORPS || []), A = (((DATA.FAMILLE || {}).PROFIL || {}).APPARENCE || {}).TISSU || {};
+  if (!T.includes(o) || !A[x.tissu] || !objet(v.apparence) || !objet(v.apparence.tenue) || !objet(v.apparence.tenue.haut)) return;
+  v.apparence = { ...v.apparence, tenue: { ...v.apparence.tenue, haut: { ...v.apparence.tenue.haut, tissu: x.tissu } } };
 }
 
 // Le créneau du comptoir de `id` aujourd'hui (sa journée) : { de, a } ou null.
@@ -801,7 +1007,7 @@ export function avancerCommerces(state) {
   for (const [id, a] of achatsCommercesDuJour(state)) {
     if (a.fait) continue;
     const c = creneauComptoir(state, id);
-    if (c && h >= (c.de + c.a) / 2 && acheterAuComptoir(state, id, a.commerce, a.objet).ok) n++;
+    if (c && h >= (c.de + c.a) / 2 && acheterAuComptoir(state, id, a.commerce, a.objet, a.teinte || null).ok) n++;
   }
   return n;
 }
@@ -809,20 +1015,35 @@ export function avancerCommerces(state) {
 /* ---------- au passage du bac, la nuit ---------- */
 
 // L'arrivée du bac (bac.js, après les paniers) : chaque commerce lui confie ce qui dépasse BAC de chaque pièce qui se
-// vend au port (au prix de l'île : la bourse de l'artisan ; les pièces partent dans les caisses, `vendu`). → { id: pieces }.
+// vend au port (au prix de l'île : la bourse de l'artisan ; les pièces partent dans les caisses, `vendu`). I5b : pas ce
+// qu'il garde pour son travail (pourSonTravail : le fil, le tissu) ; les pièces sans teinte d'abord, une teinte à son
+// prix. → { id: pieces }.
 export function commercesAuBac(state, jour, vendu = null) {
   const out = {};
   const garde = Math.max(0, Math.floor(reglage('BAC', 1)));
   for (const c of commercesOuverts(state)) {
     const v = artisanDe(state, c);
     if (!v || !objet(c.stock)) continue;
+    const garder = pourSonTravail(c.sorte);
     let pieces = 0;
     for (const [o, n] of Object.entries(c.stock)) {
-      const u = valeurPort(o), k = entier(n) - garde;
-      if (u <= 0 || k <= 0) continue;
+      const u = valeurPort(o);
+      let k = entier(n) - garde;
+      if (u <= 0 || k <= 0 || garder.has(o)) continue;
       c.stock[o] = entier(n) - k;
-      pieces += k * u;
       if (vendu) vendu[o] = (vendu[o] || 0) + k;
+      // (les sans teinte d'abord, puis les teintes : chacune son prix)
+      const libres = Math.min(k, Math.max(0, entier(n) - nbTeints(c, o)));
+      pieces += libres * u;
+      k -= libres;
+      for (const x of couleursTeinture()) {
+        if (k <= 0) break;
+        const t = Math.min(k, teintesDe(c, o)[x.id] || 0);
+        if (t <= 0) continue;
+        oterTeinte(c, o, x.id, t);
+        pieces += t * (u + prixTeint(o, x.id) - prixArtisan(o));
+        k -= t;
+      }
     }
     if (pieces > 0) {
       v.bourse = Math.max(0, entier(v.bourse)) + pieces;
@@ -842,7 +1063,7 @@ export function artisansNuit(state) {
   const jour = jourDe(state), J = Math.max(1, Math.floor(reglage('JOURS', 10)));
   const out = { envies: [], appris: [], achats: 0, caves: [] };
   // (l'achat au comptoir qu'on n'a pas vu : la page fermée)
-  for (const [id, a] of achatsCommercesDuJour(state)) if (!a.fait && creneauComptoir(state, id) && acheterAuComptoir(state, id, a.commerce, a.objet).ok) out.achats++;
+  for (const [id, a] of achatsCommercesDuJour(state)) if (!a.fait && creneauComptoir(state, id) && acheterAuComptoir(state, id, a.commerce, a.objet, a.teinte || null).ok) out.achats++;
   // (I5c : la cave du fromager)
   out.caves = affinerCaves(state);
   for (const v of villageoisDe(state)) {
@@ -925,14 +1146,16 @@ export function bilanCommerce(state, c, jours = 7) {
     for (const k of Object.keys(ventes)) ventes[k] += entier((J.ventes || {})[k]);
   }
   const stock = Object.fromEntries(Object.entries(c.stock || {}).filter(([o, n]) => DATA.OBJETS[o] && n > 0));
+  const s = secondDe(c) && trouverVillageois(state, secondDe(c));
   return {
-    id: c.id, sorte: c.sorte, nom: nomCommerce(state, c), icone: d.icone, qui: c.qui, prenom: v ? v.prenom : '', lots, fait, achete, paye, ventes, facon,
+    id: c.id, sorte: c.sorte, nom: nomCommerce(state, c), icone: d.icone, qui: c.qui, prenom: v ? v.prenom : '', second: s ? s.id : null, prenomSecond: s ? s.prenom : '', lots, fait, achete, paye, ventes, facon,
     total: ventes.joueur + ventes.villageois + ventes.bac + facon, stock, valeurStock: Object.entries(stock).reduce((t, [o, n]) => t + n * prixArtisan(o), 0),
-    bourse: v ? Math.max(0, entier(v.bourse)) : 0, lotsParJour: lotsDuJour(c), jours: E, depuis: c.depuis,
+    bourse: v ? Math.max(0, entier(v.bourse)) : 0, lotsParJour: lotsDuJour(c) * (s ? 2 : 1), jours: E, depuis: c.depuis,
   };
 }
 
-// Pour la fenêtre du commerce : { commerce, nom, sorte, def, artisan, local, lots (aujourd'hui : faits / du jour),
+// Pour la fenêtre du commerce : { commerce, nom, sorte, def, artisan, second (I5b), deux (I5b), local, lots (aujourd'hui :
+// faits / du jour, des deux artisans), couleurs (I5b),
 // aujourdhui (l'entrée du journal du jour), enVente, recettes ([{ …recette, connue, prix, facon, refus (I5c : pourquoi le
 // joueur ne peut pas en avoir un de plus, un meuble) }]), commandes, bilan, cave (I5c : [{ objet, n, nuits, reste, pour }]),
 // caveMax }.
@@ -940,13 +1163,16 @@ export function etatCommerce(state, id) {
   const c = commerceDe(state, id);
   if (!c) return null;
   const v = artisanDe(state, c), d = defCommerce(c.sorte), jour = jourDe(state);
-  const T = v && objet(v.travail) && v.travail.jour === jour ? v.travail : null;
+  // (I5b : le second artisan, ses lots avec ceux du titulaire)
+  const s = secondDe(c) ? trouverVillageois(state, secondDe(c)) : null;
+  const faits = (x) => (x && objet(x.travail) && x.travail.jour === jour ? entier(x.travail.actions) : 0);
   const connues = new Set(recettesConnues(state, c).map((r) => r.id));
   const J = (Array.isArray(c.journal) ? c.journal : []).find((x) => objet(x) && x.jour === jour) || nouveauJournal(jour);
   return {
-    commerce: c, nom: nomCommerce(state, c), sorte: c.sorte, def: d, artisan: v, local: localDe(state, c),
-    lots: { faits: T ? entier(T.actions) : 0, du: lotsDuJour(c) }, aujourdhui: J, enVente: enVenteAuCommerce(state, c),
+    commerce: c, nom: nomCommerce(state, c), sorte: c.sorte, def: d, artisan: v, second: s, deux: deuxDe(c.sorte), local: localDe(state, c),
+    lots: { faits: faits(v) + faits(s), du: lotsDuJour(c) * (s ? 2 : 1) }, aujourdhui: J, enVente: enVenteAuCommerce(state, c),
     recettes: recettesDe(c.sorte).map((r) => ({ ...r, connue: connues.has(r.id), prix: prixCommandeArtisan(r, false), facon: prixCommandeArtisan(r, true), palierNom: nomPalier(r.palier), refus: refusMeubleJoueur(state, r.sortie, r.qte) })),
+    couleurs: couleursTeinture(),
     commandes: (c.commandes || []).map((k) => ({ ...k })), bilan: bilanCommerce(state, c),
     cave: (Array.isArray(c.cave) ? c.cave : []).map((x) => { const r = recetteDe(c.sorte, x.recette); return { objet: x.objet, n: x.n, nuits: x.nuits, reste: Math.max(0, (r ? r.cave : 0) - entier(x.nuits)), pour: x.pour || null }; }),
     caveMax: recettesDe(c.sorte).some((r) => r.cave) ? Math.max(1, Math.floor(reglage('CAVE', 6))) : 0,
@@ -955,21 +1181,26 @@ export function etatCommerce(state, id) {
 
 /* ---------- la sauvegarde ---------- */
 
-// Les commerces d'une sauvegarde (la migration 98 → 99) : lisibles ; un commerce d'une sorte inconnue s'en va.
+// Les commerces d'une sauvegarde (la migration 98 → 99 ; I5c, 99 → 100 : la cave ; I5b, 100 → 101 : le second
+// artisan, les pièces teintes) : lisibles ; un commerce d'une sorte inconnue s'en va, un second qui n'est pas là, ou d'une sorte qui se tient seule,
+// aussi ; les teintes bornées par le stock.
 export function reparerCommerces(L, villageois = []) {
   if (!Array.isArray(L)) return [];
   const ids = new Set((Array.isArray(villageois) ? villageois : []).filter(objet).map((v) => v.id));
   const comptes = (o) => Object.fromEntries(Object.entries(objet(o) ? o : {}).filter(([k, n]) => DATA.OBJETS[k] && Number.isInteger(n) && n > 0));
-  const vus = new Set();
+  const vus = new Set(), vus2 = new Set(L.filter(objet).map((c) => c.qui));
   const out = [];
   for (const c of L) {
     if (!objet(c) || !defCommerce(c.sorte) || typeof c.id !== 'string' || vus.has(c.id)) continue;
     vus.add(c.id);
     const rs = new Set(recettesDe(c.sorte).map((r) => r.id));
+    const stock = comptes(c.stock);
+    const second = typeof c.second === 'string' && ids.has(c.second) && c.second !== c.qui && deuxDe(c.sorte) && !vus2.has(c.second) ? c.second : null;
+    if (second) vus2.add(second);
     out.push({
-      id: c.id, sorte: c.sorte, qui: typeof c.qui === 'string' ? c.qui : null, ouvert: c.ouvert !== false && ids.has(c.qui),
+      id: c.id, sorte: c.sorte, qui: typeof c.qui === 'string' ? c.qui : null, ...(second ? { second } : {}), ouvert: c.ouvert !== false && ids.has(c.qui),
       depuis: Number.isInteger(c.depuis) ? c.depuis : 1, jours: Math.max(0, entier(c.jours)), etabli: Number.isInteger(c.etabli) ? c.etabli : null,
-      stock: comptes(c.stock),
+      stock, ...reparerTeintes(c.teintes, stock),
       commandes: (Array.isArray(c.commandes) ? c.commandes : []).filter((k) => objet(k) && rs.has(k.recette))
         .map((k) => ({ n: Math.max(0, entier(k.n)), recette: k.recette, facon: !!k.facon, prix: Math.max(0, entier(k.prix)), jour: Number.isInteger(k.jour) ? k.jour : 1 })),
       seq: Math.max(0, entier(c.seq)), connues: (Array.isArray(c.connues) ? c.connues : []).filter((r) => rs.has(r)),
@@ -1002,14 +1233,32 @@ function reparerCave(L, sorte) {
   return out;
 }
 
-// Ce qu'une sauvegarde garde d'un villageois pour les commerces (la migration 98 → 99).
+// (I5b : les pièces teintes d'une sauvegarde, { teintes } ou rien : des couleurs connues, pas plus que le stock)
+function reparerTeintes(T, stock) {
+  if (!objet(T)) return {};
+  const out = {};
+  for (const [o, M] of Object.entries(T)) {
+    if (!objet(M) || !(stock[o] > 0)) continue;
+    let reste = stock[o];
+    for (const x of couleursTeinture()) {
+      const n = Math.min(reste, Number.isInteger(M[x.id]) && M[x.id] > 0 ? M[x.id] : 0);
+      if (n <= 0) continue;
+      if (!out[o]) out[o] = {};
+      out[o][x.id] = n;
+      reste -= n;
+    }
+  }
+  return Object.keys(out).length ? { teintes: out } : {};
+}
+
+// Ce qu'une sauvegarde garde d'un villageois pour les commerces (la migration 98 → 99 ; I5b, 100 → 101 : le second artisan).
 export function reparerArtisan(v, commerces = []) {
   if (!objet(v)) return v;
   const out = { ...v };
   const jours = (o) => Object.fromEntries(Object.entries(objet(o) ? o : {}).filter(([, n]) => Number.isInteger(n) && n > 0));
   if ('pratique' in v) out.pratique = jours(v.pratique);
   if ('envies' in v) out.envies = Object.fromEntries(Object.entries(objet(v.envies) ? v.envies : {}).filter(([s, j]) => defCommerce(s) && Number.isInteger(j)));
-  const sien = commerces.find((c) => c.qui === v.id && c.ouvert !== false);
+  const sien = commerces.find((c) => (c.qui === v.id || c.second === v.id) && c.ouvert !== false);
   if (sien) { out.commerce = sien.id; out.tache = sien.sorte; } else {
     delete out.commerce;
     if (estTacheCommerce(out.tache)) out.tache = null;

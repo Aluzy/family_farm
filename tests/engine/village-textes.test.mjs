@@ -83,7 +83,7 @@ test('l\'aide de l\'île : sa fiche, le grand monde, les règles ; aucune trace 
   const s = partieIle();
   const f = ficheIle(s);
   const titres = f.lignes.map(([t]) => t);
-  for (const t of ['Le port', 'Le bac', 'Les commandes du bac', 'L\'import', 'Le chemin et le portage', 'Les villageois', 'Les tâches', 'Le tableau', 'L\'amitié', 'Les liens', 'Les traits', 'La part', 'L\'étal', 'Les vocations', 'Les fêtes', 'Les projets', 'La chronique et les noms', 'Les commerces']) {
+  for (const t of ['Le port', 'Le bac', 'Les commandes du bac', 'L\'import', 'Le chemin et le portage', 'Les villageois', 'Les tâches', 'Le tableau', 'L\'amitié', 'Les liens', 'Les traits', 'La part', 'L\'étal', 'Les vocations', 'Les fêtes', 'Les projets', 'La chronique et les noms', 'Les commerces', 'La mercerie']) {
     assert(titres.includes(t), `la fiche dit « ${t} »`);
   }
   assertEqual(fautes(f, 'ficheIle'), [], 'la fiche de l\'île');

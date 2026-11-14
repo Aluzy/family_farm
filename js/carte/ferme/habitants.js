@@ -84,6 +84,10 @@
     // (I5a, le forgeron à l'enclume : d'après la pioche, les mêmes cases ; trois coups courts, le marteau levé moins haut)
     // (I5c, le menuisier à la scie : d'après la hache, les mêmes cases ; des allers-retours, les bras qui poussent et tirent)
     scie: () => [['hache_cote_1', 0.18], ['hache_cote_2', 0.16], ['hache_cote_1', 0.18], ['hache_cote_2', 0.16, 'coup'], ['hache_cote_1', 0.18], ['hache_cote_2', 0.16], ['hache_cote_1', 0.18], ['hache_cote_2', 0.16, 'coup'], ['hache_cote_1', 0.5]],
+    // (I5b, la mercière au rouet : assise, d'après les sièges (les cases « assis »), de dos devant l'établi ; le pied qui
+    // pousse la pédale, la main qui tire le fil : les deux images assises alternent, lentement ; villageois-travail.js la
+    // garde assise entre deux)
+    filer: (vue) => [[`assis_${vue}_0`, 0.42], [`assis_${vue}_1`, 0.38], [`assis_${vue}_0`, 0.42], [`assis_${vue}_1`, 0.38], [`assis_${vue}_0`, 0.42], [`assis_${vue}_1`, 0.38, 'coup']],
     forge: () => [['pioche_cote_1', 0.14], ['pioche_cote_2', 0.05], ['pioche_cote_3', 0.1, 'coup'], ['pioche_cote_2', 0.08], ['pioche_cote_1', 0.12], ['pioche_cote_2', 0.05], ['pioche_cote_3', 0.1, 'coup'], ['pioche_cote_2', 0.08], ['pioche_cote_1', 0.12], ['pioche_cote_2', 0.05], ['pioche_cote_3', 0.1, 'coup'], ['pioche_cote_3', 0.5]],
   };
   K.GESTES_HABITANTS = SEQ;   // (I3c : les villageois au travail font les mêmes gestes, villageois-travail.js)

@@ -197,6 +197,7 @@ export const GAME_ACTIONS = {
   'etal-mettre': 'Tenir l\'étal des villageois',
   'etal-reprendre': 'Tenir l\'étal des villageois',
   'commerce-ouvrir': 'Ouvrir un commerce',
+  'commerce-rejoindre': 'Rejoindre un commerce en second',
   'commerce-acheter': 'Acheter à un commerce',
   'commerce-commander': 'Commander à un commerce',
   'commerce-lettres': 'Choisir les lettres de l\'enseigne d\'un commerce',
