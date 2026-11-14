@@ -43,6 +43,9 @@ const PAR_TYPE = {
   'portage.charger': 'jardinier', 'portage.reprendre': 'jardinier', 'portage.vehicule': 'jardinier',
   'port.acheter': 'batisseur', 'port.importer': 'batisseur', 'port.contrat': 'batisseur', 'port.apporter': 'batisseur',
   'port.agrandir': 'proprietaire',
+  // (I9d : parler à un villageois, lui offrir un cadeau, le nouveau venu à sa porte : ce que fait un ami jardinier ; le
+  // visiteur voit le village vivre et lui parle, sans rien changer : sa page ne l'envoie pas, js/ui/villageois.js)
+  'villageois.parler': 'jardinier', 'villageois.offrir': 'jardinier', 'villageois.accueillir': 'jardinier',
 };
 
 // Un bloc dont le retrait est réservé au propriétaire.

@@ -1096,6 +1096,15 @@ export const MIGRATIONS = {
     if (state.mondePartage === true) out.charges = reparerCharges(state.charges);
     return out;
   },
+  // v106 → v107 (le chantier « l'île à bâtir », fiche I9d) : l'amitié de chacun avec les villageois dans un monde de l'île
+  // (js/engine/temps-monde.js amitieDuJoueur). La partie d'un monde (mondePartage) reçoit state.amities (par compte : ce
+  // qui est lisible est gardé ; un monde d'avant n'en a aucune : chacun commence à l'accueil, et l'amitié de sa partie
+  // reste celle du village). Une partie solo n'en a pas et reste telle quelle.
+  106: (state) => {
+    const out = { ...state, version: 107 };
+    if (state.mondePartage === true) out.amities = reparerAmities(state.amities);
+    return out;
+  },
 };
 
 // Les charges de chacun d'une sauvegarde (la migration v105 → v106) : { compte: { vehicule, charge } }.
@@ -1106,6 +1115,25 @@ function reparerCharges(charges) {
     if (!k || !p || typeof p !== 'object' || Array.isArray(p)) continue;
     const r = reparerPortage(p);
     if (r.vehicule !== 'mains' || Object.keys(r.charge).length) out[k] = r;
+  }
+  return out;
+}
+
+// L'amitié de chacun d'une sauvegarde (la migration v106 → v107) : { compte: { pnj: { clé: { pts, gouts… } }, visites,
+// porte } } ; une fiche illisible s'en va, des points hors de l'échelle sont ramenés dedans.
+function reparerAmities(amities) {
+  const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+  const o = objet(amities) ? amities : {}, max = DATA.AMITIE.ECHELLE.MAX, out = {};
+  for (const [k, a] of Object.entries(o)) {
+    if (!k || !objet(a)) continue;
+    const pnj = {};
+    for (const [cle, p] of Object.entries(objet(a.pnj) ? a.pnj : {})) {
+      if (!objet(p)) continue;
+      const f = { ...p, gouts: objet(p.gouts) ? Object.fromEntries(Object.entries(p.gouts).filter(([it, g]) => DATA.OBJETS[it] && ['adore', 'aime', 'neutre', 'deteste'].includes(g))) : {} };
+      if ('pts' in f) f.pts = Number.isFinite(Number(f.pts)) ? Math.max(0, Math.min(max, Math.round(Number(f.pts)))) : 0;
+      pnj[cle] = f;
+    }
+    out[k] = { pnj, visites: objet(a.visites) ? a.visites : {}, porte: Array.isArray(a.porte) ? a.porte : [] };
   }
   return out;
 }

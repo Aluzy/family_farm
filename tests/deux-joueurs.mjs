@@ -51,6 +51,10 @@
 //      comptoir ; le bac accoste à 9 h, vu par les deux au même pas ; A vend ses carottes, B son bois : la caisse commune
 //      monte de la somme juste chez l'autre, qui le lit (« … a tout vendu au port : 12 🥕 carotte ») ; le journal dit qui a vendu quoi.
 //      (CAPTURES : le refus de la charrette, les deux au port, le bac à quai, la caisse chez B, le journal.)
+//  12. I9d : les villageois en ligne (une île à trois villageois au travail, B ami jardinier) : A et B voient chaque
+//      villageois au même poste, au travail puis à table à midi ; le bois coupé arrive au coffre commun dans la matinée ;
+//      A parle à un villageois : son amitié monte, celle de B reste la sienne ; le tableau du village est le même chez les
+//      deux. (CAPTURES : au travail, à table, la bulle, la liste des villageois, chez l'hôte et chez l'invité.)
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
 import { createServer } from 'node:http';
@@ -59,6 +63,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
+import { arriverVillageois, attribuer, donnerOutil, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
 import { addItem, avancerJusqua, caseDansLaFerme, caseMarchable, caseVue, cheminDehorsSur, comptoirDuPort, etatBac, contexteSol, countItem, elementsSol, createNewGame, DATA, empreintePartie, farmTerrain, pasDe, testBatir, testFarmMap, testFermeConstruite, testSetLevel } from '../js/engine/index.js';
 import { avecVillage, garden, plantRipe, reglagesDuJeu } from './engine/aide.mjs';
 import W from '../worker/src/index.js';
@@ -485,11 +490,15 @@ try {
     const [ra, rb] = buisson ? await Promise.all([couper(pa, buisson), couper(pb, buisson)]) : [{}, {}];
     await pa.waitForTimeout(800);
     const gagnants = [...regIle.tous('SELECT cmd FROM journal WHERE rev > ?', revB0)].map((e) => JSON.parse(e.cmd)).filter((c) => c.type === 'monde.recolter' && c.args.piece === buisson).length;
-    const unSeul = gagnants === 1 && countItem(regIle.charger(), 'bois') > boisMonde0 && (await memePas(pa, regIle)) && (await memePas(pb, regIle));
+    const revs = async () => [regIle.rev, ...(await Promise.all([pa, pb].map((p) => p.evaluate(async () => (await import('/js/ui/en-ligne.js'))._lien().synchro.rev))))];
+    const revs0 = await revs(), memeA = await memePas(pa, regIle), memeB = await memePas(pb, regIle);
+    const unSeul = gagnants === 1 && countItem(regIle.charger(), 'bois') > boisMonde0 && memeA && memeB;
     const attenteVide = await pb.evaluate(async () => { const L = await import('/js/ui/en-ligne.js'); return L._lien().synchro.enAttente.length === 0; }) && await pa.evaluate(async () => { const L = await import('/js/ui/en-ligne.js'); return L._lien().synchro.enAttente.length === 0; });
     const boisAB = [await boisDe(pa), await boisDe(pb), countItem(regIle.charger(), 'bois')];
-    verifie(!!buisson && ra.ok && rb.ok && unSeul && attenteVide && boisAB[0] === boisAB[2] && boisAB[1] === boisAB[2],
-      `10b. A et B coupent le même buisson (${buisson}) au même instant : le monde n'en garde qu'un (${gagnants} au journal), l'autre coup est annulé ; le bois une seule fois, le même chez les deux (${boisAB.join(' / ')})`);
+    // (I9d : « au même instant » se joue à quelques millisecondes : si l'événement de l'un arrive chez l'autre avant que son coup
+    // parte, sa partie locale le refuse déjà — le buisson est pris — ; c'est le même conflit, tranché plus tôt)
+    verifie(!!buisson && (ra.ok || rb.ok) && unSeul && attenteVide && boisAB[0] === boisAB[2] && boisAB[1] === boisAB[2],
+      `10b. A et B coupent le même buisson (${buisson}) au même instant : le monde n'en garde qu'un (${gagnants} au journal), l'autre coup est annulé ; le bois une seule fois, le même chez les deux (${boisAB.join(' / ')}) ${JSON.stringify({ a: ra.ok, b: rb.ok, unSeul, attenteVide, memeA, memeB, revs: revs0 })}`);
     // 10c. un chemin posé dehors par B, vu chez A
     const posee = await pb.evaluate(async () => {
       const E = await import('/js/engine/index.js'), C = await import('/js/ui/commandes.js');
@@ -726,6 +735,112 @@ try {
       for (const p of [pa, pb]) { await pourCapture(p); await p.waitForTimeout(500); }
       await pa.screenshot({ path: process.env.CAPTURES + '/i9a2-hote-matin.png' });
       await pb.screenshot({ path: process.env.CAPTURES + '/i9a2-invite-matin.png' });
+    }
+  }
+  // 12. I9d : les villageois en ligne
+  {
+    const ile3 = avecVillage(() => createNewGame('31', { nom: 'Île' }));
+    ile3.essais = { ...(ile3.essais || {}), village: true };
+    testSetLevel(ile3, 5);
+    testBatir(ile3, 'foyer');
+    for (let k = 0; k < 3; k++) { testMaisonVillageois(ile3); arriverVillageois(ile3, { direct: true }); }
+    addItem(ile3, 'pain', 80);
+    addItem(ile3, 'pomme', 10);
+    ile3.outils = { ...(ile3.outils || {}), hache: true, pioche: true, faux: true };
+    villageoisDe(ile3).forEach((v, i) => { const [t, o] = [['bois', 'hache'], ['pierre', 'pioche'], ['fauchage', 'faux']][i]; donnerOutil(ile3, v.id, o); attribuer(ile3, v.id, t); });
+    ile3.awakeMs = (10.4 - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;   // (10 h 24 : au travail)
+    const cree3 = await appel(A, '/mondes', { partie: { v: ile3.version, t: Date.now(), s: ile3 }, titre: 'Le village' });
+    const inv3 = cree3.ok ? await appel(A, `/mondes/${cree3.monde}/invitations`, { role: 'jardinier' }) : {};
+    const entre3 = inv3.ok ? await appel(B, '/rejoindre', { code: inv3.code }) : {};
+    const id3 = cree3.monde, reg3 = id3 && mondes.get(id3).registre;
+    for (const p of [pa, pb]) await p.goto(`${BASE}/jeu.html?monde=${id3}`);
+    const dedans3 = (await attendre(pa, pret, null, 30000)) !== null && (await attendre(pb, pret, null, 30000)) !== null;
+    const nVg = villageoisDe(ile3).length;
+    await attendre(pa, (n) => (FarmStage.scene().villageoisVus || new Map()).size >= n, nVg, 10000);
+    await attendre(pb, (n) => (FarmStage.scene().villageoisVus || new Map()).size >= n, nVg, 10000);
+    // ce que chacun voit : où le moteur met chaque villageois à l'heure affichée (son état, son lieu), où la scène le dessine
+    const vus = (p) => p.evaluate(async () => {
+      const E = await import('/js/engine/index.js'), S = await import('/js/ui/stage.js');
+      const sc = FarmStage.scene(), h = S.heureDuJour(), out = {};
+      for (const [id, m] of sc.villageoisVus || new Map()) {
+        const q = E.positionVillageois(FF.state, id, h);
+        out[id] = { etat: q && q.etat, lieu: q && q.lieu ? q.lieu.case ?? null : null, x: Math.round(m.x), y: Math.round(m.y) };
+      }
+      return { h, pas: E.pasDe(FF.state), v: out };
+    });
+    // (les deux au même instant : on relève quand les deux pages sont au même pas, loin d'un bord de pas)
+    const ensemble = async () => {
+      for (let k = 0; k < 40; k++) {
+        const [x, y] = await Promise.all([vus(pa), vus(pb)]);
+        if (x.pas === y.pas && Math.abs(x.h - y.h) < 0.05) return [x, y];
+        await pa.waitForTimeout(300);
+      }
+      return Promise.all([vus(pa), vus(pb)]);
+    };
+    // (les captures : la fenêtre du moment fermée, la vue posée sur le premier villageois — la caméra ne suit plus le personnage)
+    // (les captures : la fenêtre du moment fermée ; chacun est allé près du premier villageois, la vue le suit)
+    const versVillageois = (p) => p.evaluate(() => { const sc = FarmStage.scene(), m = (sc.villageoisVus || new Map()).get('vg-1'); if (m) sc.goHere(Math.round(m.x) + 24, Math.round(m.y) + 40); });
+    const capture = async (p, nom) => {
+      await action(p, 'close-modal');
+      await pourCapture(p);
+      await p.screenshot({ path: `${process.env.CAPTURES}/${nom}.png` });
+    };
+    const captures = async (k) => {
+      await Promise.all([versVillageois(pa), versVillageois(pb)]);
+      await pa.waitForTimeout(6000);
+      await Promise.all([capture(pa, `i9d-hote-${k}`), capture(pb, `i9d-invite-${k}`)]);   // (au même instant)
+    };
+    const compare = ([x, y]) => {
+      const ids = Object.keys(x.v);
+      const memes = ids.every((id) => y.v[id] && y.v[id].etat === x.v[id].etat && y.v[id].lieu === x.v[id].lieu);
+      const ecart = Math.max(0, ...ids.map((id) => (y.v[id] ? Math.hypot(y.v[id].x - x.v[id].x, y.v[id].y - x.v[id].y) : 1e9)));
+      return { memes, ecart: Math.round(ecart), etats: ids.map((id) => x.v[id].etat), n: ids.length };
+    };
+    // (le temps que chacun ait marché jusqu'à son poste : les deux cartes ne l'ont pas fait partir au même instant)
+    let travail = null;
+    for (let k = 0; k < 15; k++) { await pa.waitForTimeout(1000); travail = compare(await ensemble()); if (travail.memes && travail.ecart <= 32) break; }
+    verifie(cree3.ok && entre3.ok && dedans3 && travail.n === nVg && travail.memes && travail.etats.filter((e) => e === 'travail').length >= 2 && travail.ecart <= 32,
+      `12a. le village en ligne (${id3}) : A et B voient les ${travail.n} villageois aux mêmes postes, au travail (${travail.etats.join(', ')} ; au plus ${travail.ecart} px d'écart entre les deux cartes)`);
+    if (process.env.CAPTURES) {
+      await captures('travail');
+    }
+    // 12b. le bois coupé arrive au coffre commun dans la matinée, chez les deux
+    const bois3 = countItem(ile3, 'bois');
+    const boisA = await attendre(pa, (n) => import('/js/engine/index.js').then((E) => E.countItem(FF.state, 'bois') > n), bois3, 30000);
+    const boisB = await attendre(pb, (n) => import('/js/engine/index.js').then((E) => E.countItem(FF.state, 'bois') > n), bois3, 5000);
+    const hBois = await pa.evaluate(async () => (await import('/js/engine/index.js')).clockHours(FF.state));
+    verifie(boisA !== null && boisB !== null && hBois < 12 && (await memePas(pa, reg3)) && (await memePas(pb, reg3)), `12b. le bois coupé arrive au coffre commun dans la matinée, chez les deux (à ${hBois.toFixed(2)} h) ; les parties confirmées sont celle du monde`);
+    // 12c. à table, à midi
+    await attendre(pa, async () => (await import('/js/engine/index.js')).clockHours(FF.state) >= 12.15, null, 70000);
+    let table = null;
+    for (let k = 0; k < 15; k++) { await pa.waitForTimeout(1000); table = compare(await ensemble()); if (table.memes && table.ecart <= 32) break; }
+    verifie(table.memes && table.etats.filter((e) => e === 'repas').length >= 2 && table.ecart <= 32, `12c. à midi, A et B les voient à table, aux mêmes places (${table.etats.join(', ')} ; au plus ${table.ecart} px d'écart)`);
+    if (process.env.CAPTURES) {
+      await captures('table');
+    }
+    // 12d. A parle à un villageois : son amitié monte ; celle de B reste la sienne
+    const amitieDe = (p, id) => p.evaluate(async (i) => (await import('/js/engine/index.js')).amitieVillageois(FF.state, i).pts, id);
+    const vg = 'vg-1', avantA = await amitieDe(pa, vg), avantB = await amitieDe(pb, vg), rev3 = reg3.rev;
+    const parle = await pa.evaluate(async (i) => { const V = await import('/js/ui/villageois.js'); const r = V.villageoisDepuisCarte('parle', i, { n: 0, activite: 'repas' }); return r ? { ok: true, gain: r.amitie ? r.amitie.gain : null, texte: r.texte } : { ok: false }; }, vg);
+    await attendre(pb, (r) => import('/js/ui/en-ligne.js').then((L) => L._lien().synchro.rev >= r), rev3 + 1, 5000);
+    const [apresA, apresB] = [await amitieDe(pa, vg), await amitieDe(pb, vg)];
+    const w3 = reg3.charger();
+    verifie(parle.ok && parle.gain > 0 && apresA === avantA + parle.gain && apresB === avantB && w3.amities[A.id].pnj[vg].pts === apresA && !(w3.amities[B.id] && w3.amities[B.id].pnj[vg] && w3.amities[B.id].pnj[vg].pts !== avantB) && (await memePas(pb, reg3)),
+      `12d. A parle à ${vg} (« ${parle.texte} ») : son amitié passe de ${avantA} à ${apresA} ; celle de B reste ${apresB} ; le monde garde chacune`);
+    if (process.env.CAPTURES) {
+      await pa.waitForTimeout(300);
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9d-hote-parle.png' });
+    }
+    // 12e. le tableau du village est le même chez les deux
+    const tableau = (p) => p.evaluate(async () => { const L = await import('/js/ui/en-ligne.js'); const E = await import('/js/engine/index.js'); const S = L._lien().synchro; return { t: JSON.stringify(E.tableauVillage(FF.state)), pas: E.pasDe(FF.state), c: JSON.stringify(E.tableauVillage(S.confirmee)) }; });
+    let tA = null, tB = null;
+    for (let k = 0; k < 20; k++) { [tA, tB] = await Promise.all([tableau(pa), tableau(pb)]); if (tA.pas === tB.pas) break; await pa.waitForTimeout(250); }
+    verifie(tA.pas === tB.pas && tA.t === tB.t && tA.c === tB.c && tA.t.length > 50, `12e. le tableau du village est le même chez A et chez B (${tA.t.length} caractères, pas ${tA.pas})`);
+    if (process.env.CAPTURES) {
+      for (const p of [pa, pb]) { await action(p, 'villageois-liste'); await p.waitForTimeout(400); }
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9d-hote-liste.png' });
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9d-invite-liste.png' });
+      for (const p of [pa, pb]) await action(p, 'close-modal');
     }
   }
 } finally {

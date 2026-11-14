@@ -154,6 +154,15 @@ export function bilanCommerce(c, r) {
   }
 }
 
+// I9d : l'amitié du propriétaire d'une île (state.amities, temps-monde.js amitieDuJoueur) : à la mise en ligne, et à
+// une restauration dont la partie n'en porte aucune (une sauvegarde d'avant I9d, une partie solo), c'est l'amitié de sa
+// partie, qui reste aussi celle du village ; une amitié de chacun déjà là est gardée telle quelle.
+function poserAmitieDuProprietaire(s, proprietaire) {
+  const A = s.amities && typeof s.amities === 'object' && !Array.isArray(s.amities) ? s.amities : (s.amities = {});
+  if (Object.keys(A).length || !s.amitie || typeof s.amitie !== 'object') return;
+  A[proprietaire] = JSON.parse(JSON.stringify(s.amitie));
+}
+
 // E-3 : un secret d'invitation au hasard (24 octets : 192 bits, en base64url) et son empreinte.
 export function secretAuHasard() {
   const b = crypto.getRandomValues(new Uint8Array(24));
@@ -173,7 +182,9 @@ export const GRAND_MONDE = ['habitants', 'hameaux', 'vues', 'vu', 'pris'];
 export function elaguer(s) {
   const m = s.monde && typeof s.monde === 'object' ? s.monde : {};
   for (const k of GRAND_MONDE) delete m[k];
-  delete s.voisins;   // (V-3 : les liens entre les habitants des hameaux, eux aussi au grand monde)
+  // (V-3 : les liens entre les habitants des hameaux, eux aussi au grand monde ; I9d : sur une île, state.voisins porte les
+  // liens entre villageois et ce qui se passe entre eux, liens.js : ils sont du monde, gardés)
+  if (!ilePartagee(s)) delete s.voisins;
   delete s.fetes;     // (V-4 : les fêtes des hameaux)
   delete s.secrets;   // (D-2 : les secrets du monde, hors de la ferme)
   m.but = null;
@@ -296,6 +307,10 @@ export class MondeRegistre {
       if (s.portage && !chargeVide(s.portage)) s.charges[proprietaire] = s.portage;
       delete s.portage;
       poserLieuDuPort(s);
+      // (I9d : l'amitié de chacun avec les villageois ; celle du propriétaire est l'amitié de sa partie, qui reste aussi
+      // celle du village : temps-monde.js amitieDuJoueur)
+      s.amities = {};
+      poserAmitieDuProprietaire(s, proprietaire);
       this.poserMeta('horloge', JSON.stringify({ pas: pasDe(s), reel: this.maintenant(), actif: false, depart: null }));
     }
     this.faire('INSERT INTO instantane (rev, json) VALUES (?, ?)', 0, JSON.stringify(s));
@@ -657,8 +672,9 @@ export class MondeRegistre {
     this.partie = s;
     this.rev += 1;
     const t = this.maintenant();
-    // (I9a2 : une île repart du pas de sa sauvegarde, à l'heure de la restauration ; I9c : avec le lieu de son port)
-    if (horlogeVivante(s)) { horlogeDe(s); poserLieuDuPort(s); this.reel = t; }
+    // (I9a2 : une île repart du pas de sa sauvegarde, à l'heure de la restauration ; I9c : avec le lieu de son port ;
+    // I9d : avec l'amitié de chacun, et celle du propriétaire si la sauvegarde n'en a aucune)
+    if (horlogeVivante(s)) { horlogeDe(s); poserLieuDuPort(s); poserAmitieDuProprietaire(s, par); this.reel = t; }
     const marque = { id: `restaure-${this.rev}-${t.toString(36)}`, type: RESTAURER, args: { rev: save.rev, jour: save.jour } };
     this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, marque.id, par, JSON.stringify(marque), t);
     this.instantane();

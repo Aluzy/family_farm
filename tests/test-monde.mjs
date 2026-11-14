@@ -14,6 +14,7 @@ import {
 import { clockHours, dureeDuPas, energieDe, horlogeVivante, nightActive, pasDe } from '../js/engine/index.js';
 import { cheminDehorsSur, migrate, objetsDeRegion, regionVue, solDirect, STATE_VERSION, surCase } from '../js/engine/index.js';
 import { capacitePortage, chargeDuCompte, COMMANDES_DEHORS, COMMANDES_DU_PORT, comptoirDuPort, enVenteAuPort, lieuPort, prixIle } from '../js/engine/index.js';
+import { arriverVillageois, attribuer, donnerOutil, noterEvenement, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
 import { atelier, avecVillage, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
 import { empreinteDuMonde } from './engine/monde-de-la-graine.mjs';
 import { spawnSync } from 'node:child_process';
@@ -21,7 +22,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, horsDeLaFerme, Monde, MONDE, MondeRegistre, SAUVEGARDES, SauvegardesMonde, traiterMessage } from '../worker/src/monde.mjs';
+import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, elaguer, etatDesLits, horsDeLaFerme, Monde, MONDE, MondeRegistre, SAUVEGARDES, SauvegardesMonde, traiterMessage } from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion fausse'); }
@@ -1172,7 +1173,8 @@ test('I9b : le sac de chacun : celui du propriétaire vient de sa partie, l\'inv
   froid.avancer();
   eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal se rejoue');
   // le format 105 : la partie d'un monde reçoit ses sacs (lisibles) ; une partie solo, rien
-  // (I9c : puis le format 106, la charge de chacun ; la migration va jusqu'au format du jeu)
+  // (I9c : puis le format 106, la charge de chacun ; I9d : puis 107, l'amitié de chacun ; la migration va jusqu'au
+  // format du jeu)
   assert(STATE_VERSION >= 105);
   const v104 = { ...JSON.parse(JSON.stringify(r.charger())), version: 104, sacs: { [A]: { objet: sacs[0], items: { pomme: [{ qty: 1, nightsLeft: 3 }], licorne: [] } }, [B]: { objet: 'caillou' }, x: 3 } };
   const mig = migrate({ v: 104, t: 0, s: v104 });
@@ -1358,4 +1360,67 @@ test('I9c : le format 106 : la partie d\'un monde reçoit les charges de chacun 
   eq([mig.version, Object.keys(mig.charges), Object.keys(mig.charges[A].charge), mig.port.lieu, mig.port.commandes[0].livre], [STATE_VERSION, [A], ['carotte'], w.port.lieu, 4]);
   const solo = { ...JSON.parse(JSON.stringify(partieLocale())), version: 105 };
   eq('charges' in migrate({ v: 105, t: 0, s: solo }), false, 'une partie solo n\'y gagne rien');
+});
+
+// I9d : une île à villageois (le chantier allumé pour sa partie), mise en ligne à 8 h, deux villageois au travail.
+function ileAuVillage(n = 2) {
+  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  ile.essais = { ...(ile.essais || {}), village: true };
+  testSetLevel(ile, 5);
+  assert(testBatir(ile, 'foyer').ok, 'le foyer de la famille');
+  for (let k = 0; k < n; k++) {
+    assert(testMaisonVillageois(ile).ok, 'la maison');
+    assert(arriverVillageois(ile, { direct: true }).ok, 'il arrive');
+  }
+  ile.outils = { ...(ile.outils || {}), hache: true, pioche: true };
+  for (const [v, t, o] of [[villageoisDe(ile)[0], 'bois', 'hache'], [villageoisDe(ile)[1], 'pierre', 'pioche']]) {
+    if (!v) continue;
+    assert(donnerOutil(ile, v.id, o).ok && attribuer(ile, v.id, t).ok, `${v.id} : ${t}`);
+  }
+  ile.awakeMs = 2 * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;   // (8 h)
+  return ile;
+}
+
+test('I9d : les villageois en ligne : l\'amitié du propriétaire vient de sa partie, chacun a la sienne ; les liens du village sont gardés ; le visiteur ne parle pas au monde ; le journal se rejoue', () => {
+  const ile = ileAuVillage();
+  const v = villageoisDe(ile)[0];
+  assert(executerCommande(ile, { id: 'c-solo-parle', type: 'villageois.parler', args: { id: v.id } }).ok, 'en solo, on lui parle');
+  const ptsA = ile.amitie.pnj[v.id].pts;
+  noterEvenement(ile, { sorte: 'visite', qui: 'vg-2', chez: v.id, jour: ile.day });
+  const h = { t: 1_700_000_000_000 }, sql = baseSql();
+  const r = new MondeRegistre(sql, () => h.t);
+  assert(r.creer({ proprietaire: A, partie: { v: ile.version, t: 0, s: JSON.parse(JSON.stringify(ile)) } }).ok);
+  r.ajouterMembre(B, 'Sam', 'jardinier');
+  r.ajouterMembre('c-vis', 'Vi', 'visiteur');
+  r.accueil(A, { version: GAME_VERSION });
+  const w = r.charger();
+  eq([w.amities[A].pnj[v.id].pts, B in w.amities, (w.voisins.evenements || []).length], [ptsA, false, 1], 'A a son amitié ; B rien encore ; les liens du village gardés');
+  // (une ferme d'avant, elle, ne garde pas les liens des hameaux : elaguer, E-8)
+  const ferme = partieLocale();
+  ferme.voisins = { liens: {}, evenements: [{ sorte: 'visite' }] };
+  eq('voisins' in avecVillage(() => elaguer(JSON.parse(JSON.stringify(ferme))), false), false, 'une ferme d\'avant les retire');
+  const jouer = (qui, type, args) => r.commande(qui, { id: id(), type, args });
+  h.t += 6 * 5000;
+  let x = jouer(B, 'villageois.parler', { id: v.id, n: 0 });
+  assert(x.ok, x.erreur);
+  eq([r.charger().amities[A].pnj[v.id].pts, r.charger().amities[B].pnj[v.id].pts], [ptsA, DATA.VILLAGE.AMITIE.ACCUEIL + DATA.AMITIE.PAROLE], 'B a gagné la sienne, celle de A ne bouge pas');
+  x = jouer('c-vis', 'villageois.parler', { id: v.id, n: 1 });
+  eq([x.ok, /visiteur/i.test(x.erreur || '')], [false, true], 'le visiteur ne change rien au monde');
+  x = jouer(A, 'villageois.parler', { id: v.id, n: 2 });
+  assert(x.ok, x.erreur);
+  // le village a travaillé pendant ce temps (les pas) ; un monde réveillé à froid refait la même partie
+  h.t += 120 * 5000;
+  r.avancer();
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.avancer();
+  eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal se rejoue (les amitiés de chacun comprises)');
+  assert(villageoisDe(r.charger()).some((u) => u.travail && u.travail.actions > 0), 'les villageois ont travaillé dans les pas');
+  // une sauvegarde d'avant I9d (format 106, sans amitiés) restaurée : le propriétaire y retrouve celle du village ;
+  // le lieu du port est reposé (I9c)
+  const vieille = JSON.parse(JSON.stringify(r.charger()));
+  delete vieille.amities;
+  vieille.version = 106;
+  assert(r.restaurer(A, { v: 106, rev: r.rev, jour: vieille.day, s: vieille }).ok, 'restaurée');
+  const w2 = r.charger();
+  eq([Object.keys(w2.amities), w2.amities[A].pnj[v.id].pts, !!(w2.port && w2.port.lieu)], [[A], w2.amitie.pnj[v.id].pts, true], 'l\'amitié du propriétaire, le lieu du port');
 });

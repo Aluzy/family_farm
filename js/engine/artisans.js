@@ -8,7 +8,7 @@ import { farmSeed, farmTerrain } from './terrain.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { goutPour, palierAmitie, pointsAmitie } from './amitie.js';
 import { trouverVillageois, villageoisDe } from './villageois.js';
-import { blocBloque, casesCouvertes, piecesCloses } from './blocs.js';
+import { blocBloque, casesCouvertes, memoEnLot, piecesCloses } from './blocs.js';
 import { commerceOuvert, noterChronique } from './chronique.js';
 import { commerceEnPhrase, nomDe } from './noms.js';
 import { fixerFeteOuverture } from './fetes-village.js';
@@ -231,6 +231,10 @@ const distance = (w, a, b) => Math.max(Math.abs((a % w) - (b % w)), Math.abs(Mat
 export function locaux(state, sorte) {
   const d = defCommerce(sorte);
   if (!d || !villageActif(state)) return [];
+  // (I9d : une fois par pas du monde, blocs.js memoEnLot ; ceux qui les lisent ne les changent pas)
+  return memoEnLot(state, `locaux:${sorte}`, () => calculerLocaux(state, d));
+}
+function calculerLocaux(state, d) {
   const B = state.blocs || {}, w = W(state), comptoir = AR().COMPTOIR || 'comptoir', R = Math.max(1, Math.floor(reglage('ENSEIGNE', 2)));
   const enseignes = Object.keys(B).map(Number).filter((t) => B[t] === d.enseigne).sort((a, b) => a - b);
   const out = [];
@@ -612,9 +616,10 @@ function journalDuJour(c, jour) {
   return J;
 }
 
-function avis(c, a) {
+// (I9d : dans la partie d'un monde de l'île, l'avis porte son pas : la page ne le redit pas quand sa partie est refaite)
+function avis(c, a, state = null) {
   if (!Array.isArray(c.avis)) c.avis = [];
-  c.avis.push(a);
+  c.avis.push(state && state.horloge && Number.isInteger(state.horloge.pas) ? { ...a, pas: state.horloge.pas } : a);
   if (c.avis.length > 20) c.avis.splice(0, c.avis.length - 20);
 }
 
@@ -709,7 +714,7 @@ export function affinerCaves(state) {
       const r = recetteDe(c.sorte, x.recette), nuits = Math.max(1, r ? r.cave : 1);
       x.nuits = Math.max(0, entier(x.nuits)) + 1;
       if (x.nuits < nuits || !DATA.OBJETS[x.objet]) { reste.push(x); continue; }
-      if (x.pour === 'joueur') { donnerAuJoueur(state, x.objet, x.n); avis(c, { sorte: 'commande', objet: x.objet, n: x.n, facon: !!x.facon, cave: true }); }
+      if (x.pour === 'joueur') { donnerAuJoueur(state, x.objet, x.n); avis(c, { sorte: 'commande', objet: x.objet, n: x.n, facon: !!x.facon, cave: true }, state); }
       else { if (!objet(c.stock)) c.stock = {}; c.stock[x.objet] = Math.max(0, entier(c.stock[x.objet])) + entier(x.n); }
       out.push({ commerce: c.id, objet: x.objet, n: entier(x.n), pour: x.pour || null });
     }
@@ -756,7 +761,7 @@ export function lotCommerce(state, v) {
     if (r.cave) caveDe(c).push({ objet: r.sortie, n: r.qte, nuits: 0, recette: r.id, pour: 'joueur', ...(k.facon ? { facon: true } : {}) });
     else {
       donnerAuJoueur(state, r.sortie, r.qte);
-      avis(c, { sorte: 'commande', objet: r.sortie, n: r.qte, facon: !!k.facon });
+      avis(c, { sorte: 'commande', objet: r.sortie, n: r.qte, facon: !!k.facon }, state);
     }
     return fini(r, k, cout);
   }
@@ -980,7 +985,7 @@ export function acheterAuComptoir(state, vid, cid, o, teinte = null) {
   if (x) porterTeinte(v, o, x);
   plaisirAchat(v, jour, envie, { objet: o, prix, ou: 'commerce' });
   journalDuJour(c, jour).ventes.villageois += prix;
-  avis(c, { sorte: 'vente', id: v.id, objet: o, prix, envie, ...(envie === 'besoin' && pour ? { pour } : {}), ...(x ? { teinte } : {}) });
+  avis(c, { sorte: 'vente', id: v.id, objet: o, prix, envie, ...(envie === 'besoin' && pour ? { pour } : {}), ...(x ? { teinte } : {}) }, state);
   return { ok: true, objet: o, teinte: x ? teinte : null, prix, envie, ...(pour ? { pour } : {}) };
 }
 

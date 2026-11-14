@@ -8,6 +8,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { addItem, blocAt, caseVue, createNewGame, DATA, empreintePartie, executerCommande, farmTerrain, GAME_VERSION, HORS_FERME_ILE, ilePartagee, poseStatus, refusFrontiere, testBatir, testSetLevel, unirVu, voirAutour } from '../js/engine/index.js';
 import { caseDansLaFerme, cheminDehorsSur, countItem, objetsDeRegion, pasDe, solDirect } from '../js/engine/index.js';
 import { avancerJusqua, clockHours, comptoirDuPort, etatBac } from '../js/engine/index.js';
+import { arriverVillageois, attribuer, donnerOutil, tableauVillage, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
 import { avecVillage, partie } from './engine/aide.mjs';
 import { MondeRegistre } from '../worker/src/monde.mjs';
 import { Synchro } from '../js/ui/synchro.js';
@@ -419,4 +420,69 @@ test('I9c : le bac vu par les deux à la même heure : il accoste au même pas c
   assert(accoste.A !== null && accoste.A === accoste.B && accoste.B === accoste.monde, `le même pas : ${JSON.stringify(accoste)}`);
   eq([etatBac(a.locale).aQuai, etatBac(b.locale).aQuai, clockHours(a.locale) >= 9 && clockHours(a.locale) < 9.3], [true, true, true], 'à quai, à 9 h, chez les deux');
   eq([JSON.stringify(a.locale.port.commandes), JSON.stringify(b.locale.port.commandes)], [JSON.stringify(w.port.commandes), JSON.stringify(w.port.commandes)], 'les mêmes commandes, tirées chez chacun');
+});
+
+// I9d : une île à trois villageois au travail (le bois, la pierre, le fauchage), en ligne à 6 h ; A propriétaire, B ami.
+function villageEnLigne() {
+  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  ile.essais = { ...(ile.essais || {}), village: true };
+  testSetLevel(ile, 5);
+  if (!testBatir(ile, 'foyer').ok) throw new Error('foyer');
+  for (let k = 0; k < 3; k++) {
+    if (!testMaisonVillageois(ile).ok) throw new Error('maison');
+    if (!arriverVillageois(ile, { direct: true }).ok) throw new Error('villageois');
+  }
+  addItem(ile, 'pomme', 10);
+  addItem(ile, 'pain', 80);
+  ile.outils = { ...(ile.outils || {}), hache: true, pioche: true, faux: true };
+  villageoisDe(ile).forEach((v, i) => {
+    const [t, o] = [['bois', 'hache'], ['pierre', 'pioche'], ['fauchage', 'faux']][i];
+    if (!donnerOutil(ile, v.id, o).ok || !attribuer(ile, v.id, t).ok) throw new Error(t);
+  });
+  ile.awakeMs = 0;
+  const db = new DatabaseSync(':memory:'), h = { t: 1_700_000_000_000 };
+  const r = new MondeRegistre({ exec(q, ...v) { const x = db.prepare(q).all(...v); return { toArray: () => x }; } }, () => h.t);
+  r.creer({ proprietaire: 'A', partie: ile });
+  r.ajouterMembre('B', 'Sam', 'jardinier');
+  return { r, h };
+}
+const commeLeMondeI9d = (locale, w) => commeLeMonde({ ...locale, amitie: w.amitie }, w);
+
+test('I9d : une journée du village : le monde et deux joueurs ont la même partie ; le bois au coffre commun dans la matinée ; chacun son amitié ; le même tableau', () => {
+  const { r, h } = villageEnLigne();
+  const a = joueurIle(r, 'A'), b = joueurIle(r, 'B');
+  const geste = (qui, compte, c) => {
+    const x = qui.jouer(c);
+    if (!x.ok) return x;
+    const rep = r.commande(compte, c);
+    if (rep.ok) assert(a.evenement(rep.evt) && b.evenement(rep.evt), 'reçu dans l\'ordre'); else qui.refusee(c.id);
+    return rep;
+  };
+  const bois0 = countItem(r.charger(), 'bois');
+  let midi = null, k = 0;
+  const debut = h.t;
+  while (h.t < debut + 16 * 30 * 1000) {   // (de 6 h à 22 h : 16 heures de jeu, 30 s chacune)
+    h.t += 1000;
+    a.avancer(h.t); b.avancer(h.t + 300);
+    k += 1;
+    if (k === 70) eq(geste(a, 'A', { id: 'c-a-parle', type: 'villageois.parler', args: { id: 'vg-1', n: 0, activite: 'dehors' } }).ok, true, 'A parle à vg-1');
+    if (k === 75) eq(geste(b, 'B', { id: 'c-b-offre', type: 'villageois.offrir', args: { id: 'vg-2', objet: 'pomme' } }).ok, true, 'B offre une pomme à vg-2');
+    if (k === 80) eq(geste(b, 'B', { id: 'c-b-parle', type: 'villageois.parler', args: { id: 'vg-2', n: 0 } }).ok, true, 'B parle à vg-2');
+    if (midi === null && k % 10 === 0) { r.avancer(h.t); if (clockHours(r.charger()) >= 12) midi = countItem(r.charger(), 'bois') - bois0; }
+  }
+  r.avancer(h.t);
+  a.avancer(h.t); b.avancer(h.t);
+  const w = r.charger();
+  a.avancerConfirmee(pasDe(w)); b.avancerConfirmee(pasDe(w));
+  const em = empreintePartie(w);
+  eq([empreintePartie(a.confirmee), empreintePartie(b.confirmee), commeLeMondeI9d(a.locale, w), commeLeMondeI9d(b.locale, w)], [em, em, em, em], 'la même partie partout');
+  assert(midi > 0, `le bois au coffre commun avant midi (${midi})`);
+  assert(villageoisDe(w).every((v) => v.travail && v.travail.actions > 0), 'les trois ont travaillé');
+  // chacun voit son amitié : A a parlé à vg-1, B a offert à vg-2 et lui a parlé
+  const pts = (s, id) => s.amitie.pnj[id].pts, acc = DATA.VILLAGE.AMITIE.ACCUEIL;
+  eq([pts(a.locale, 'vg-1') > acc, pts(b.locale, 'vg-1'), pts(b.locale, 'vg-2') > acc, pts(a.locale, 'vg-2')], [true, acc, true, w.amities.A.pnj['vg-2'].pts], 'chacun la sienne');
+  eq([pts(a.locale, 'vg-1'), pts(b.locale, 'vg-2')], [w.amities.A.pnj['vg-1'].pts, w.amities.B.pnj['vg-2'].pts], 'celles du monde');
+  // le tableau du village (I3d) : le même chez chacun et au monde
+  const T = (s) => JSON.stringify(tableauVillage(s));
+  eq([T(a.confirmee), T(b.confirmee), T(a.locale), T(b.locale)], [T(w), T(w), T(w), T(w)], 'le même tableau');
 });

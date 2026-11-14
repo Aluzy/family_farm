@@ -144,6 +144,12 @@
    Les liens entre villageois (l'île à bâtir, fiche I6b ; js/engine/liens.js, sans inverse) :
      villageois.foyer     { a, b, maison? }     proposer à deux proches de vivre ensemble (la maison : sa boîte aux lettres)
      villageois.enfant    { foyer }             proposer à un foyer d'accueillir un enfant (il viendra par le prochain bac)
+   L'amitié avec les villageois (fiche I9d, en ligne ; js/engine/villageois-amitie.js, sans inverse ; dans un monde de
+   l'île, avec l'amitié de l'acteur : temps-monde.js) :
+     villageois.parler    { id, n?, activite?, but? } lui parler (sa bulle ; n : le rang de l'appui, activite : ce que la
+                                                carte le voit faire, but : celui de sa sortie)
+     villageois.offrir    { id, objet }         lui offrir un cadeau (un par jour)
+     villageois.accueillir { id }               le nouveau venu a frappé à sa porte : il est chez lui
    L'étal du joueur (l'île à bâtir, fiche I4 ; js/engine/bourse.js, l'inverse l'un de l'autre) :
      etal.mettre      { objet, quantite }       mettre en vente à l'étal (de l'inventaire, puis du réfrigérateur)
      etal.reprendre   { objet, quantite }       reprendre de l'étal (à l'inventaire)
@@ -202,6 +208,7 @@ import { accepterContrat, livrerContrat } from './contrats.js';
 import { chargerPortage, choisirVehicule, dechargerPortage } from './portage.js';
 import { attribuer, donnerOutil, marquerAVendre, reprendreOutil } from './taches.js';
 import { accueillirEnfant, formerFoyer } from './liens.js';
+import { accueillirAuVillage, offrirVillageois, parlerAuVillageois } from './villageois-amitie.js';
 import { designerCuisine, designerGardeManger, reglerReserve } from './garde-manger.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
@@ -247,6 +254,8 @@ const CONTROLES = {
   mode: (v) => typeof v === 'string' && /^[a-z_]{1,20}$/.test(v),
   fleur: (v) => typeof v === 'string' && !!(DATA.BACS && DATA.BACS.FLEURS[v]),
   quantite: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e6,   // (0 : le moteur dit pourquoi)
+  // (I9d : ce que fait un villageois, le but de sa sortie : un mot)
+  mot: (v) => typeof v === 'string' && /^[a-z_]{1,24}$/.test(v),
   // (I3c : une tâche des villageois, ou « aucune » ; un outil de travail, ou « reprendre » ; des objets à vendre)
   tache: (v) => typeof v === 'string' && (v === 'aucune' || !!((DATA.TACHES && DATA.TACHES.LISTE) || {})[v]),
   outil: (v) => v === 'reprendre' || v === 'hache' || v === 'pioche' || v === 'faux' || v === 'canne',
@@ -691,6 +700,19 @@ export const COMMANDES = {
   'villageois.vendre': {
     args: { id: 'texte', objets: 'objets' },
     executer: (state, { id, objets }) => marquerAVendre(state, id, objets),
+  },
+  // (I9d : parler, offrir, l'accueil d'un nouveau venu ; en ligne, avec l'amitié de l'acteur)
+  'villageois.parler': {
+    args: { id: 'texte', n: 'quantite?', activite: 'mot?', but: 'mot?' },
+    executer: (state, { id, n = 0, activite = null, but = null }) => parlerAuVillageois(state, id, { n, activite, but }),
+  },
+  'villageois.offrir': {
+    args: { id: 'texte', objet: 'objet' },
+    executer: (state, { id, objet }) => offrirVillageois(state, id, objet),
+  },
+  'villageois.accueillir': {
+    args: { id: 'texte' },
+    executer: (state, { id }) => accueillirAuVillage(state, id),
   },
   'villageois.foyer': {
     args: { a: 'texte', b: 'texte', maison: 'case?' },

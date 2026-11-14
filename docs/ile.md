@@ -2245,8 +2245,8 @@ qui est diffusé est fait des gestes (le temps seul : l'empreinte de contrôle, 
 
 Ce que les fiches suivantes en reçoivent : une section « Revu par I9a2 » dans I9b à I9g.
 
-Ce qui reste : le geste « accueilli » d'un villageois (la carte) écrit encore dans la partie locale (I9d) ; les avis de
-l'étal et des commerces peuvent se redire après une partie refaite (I9c, I9d) ; la botteleuse sort toujours sa botte au
+Ce qui reste : le geste « accueilli » d'un villageois (la carte) écrit encore dans la partie locale (I9d : fait) ; les
+avis de l'étal et des commerces peuvent se redire après une partie refaite (I9d : fait) ; la botteleuse sort toujours sa botte au
 versement en ligne (E-13 : sa sortie suit la carte, pas l'horloge) ; une alarme qui rejoue 120 pas d'un coup coûte
 ≈ 1 s au serveur (à suivre au premier déploiement) ; aucun battement d'heure n'est diffusé : l'heure du serveur se
 mesure à l'accueil seulement (l'aller-retour compris) ; une île déjà en ligne avant I9a2 repart au pas 0, ses joueurs à
@@ -2518,11 +2518,121 @@ chez l'autre en quelques dizaines de millisecondes.
 - **Une île mise en ligne avant I9c n'a pas de lieu de port** dans sa partie : son comptoir reste fermé en ligne
   jusqu'à sa migration (I9f) ; son portage reste celui de la partie, à personne.
 - **La case contrôlée n'est pas une preuve** (le choix 5).
-- **Les avis du port** (l'étal, les commerces) peuvent encore se redire après une partie refaite (I9a2, I9d).
+- **Les avis du port** (l'étal, les commerces) pouvaient encore se redire après une partie refaite : réglé par I9d
+  (les avis rangés par pas, `js/ui/avis-en-ligne.js`).
 - **Le chargement ne vieillit pas la nuit** (I2) : la charge de chacun non plus.
 - **Les noms au journal et dans les avis** sont ceux que chaque page donne (le prénom du personnage de la partie qu'elle
   joue) : sur une île en ligne, deux joueurs peuvent s'y appeler tous deux « Voisin » (vu dans Chromium). Le journal
   garde le compte de chacun ; le nom montré est à revoir (I9e).
+
+## Les villageois en ligne (I9d, fait)
+
+Le village vit dans un monde de l'île, au rythme de l'horloge commune (I9a2) : les villageois se lèvent, travaillent,
+mangent, se lient et tiennent leurs commerces dans les pas, sous les yeux de tous les joueurs, qui les voient aux mêmes
+endroits faire les mêmes choses. La règle (`docs/monde-partage.md` § 13) : **le serveur seul fait compter**.
+
+### Ce qui est posé
+
+- **La journée du village dans les pas.** Elle y était depuis I9a2 (`pasDuMonde` → `farmStep` → `avancerTaches`, les
+  repas, les liens et les arrivées à leur heure, les maisons toutes les six pas) : les mêmes fonctions qu'en solo. Ce que
+  les villageois produisent arrive au coffre commun au fil de la journée (le bois avant midi). Ce que la page faisait
+  encore dans la partie est retiré en ligne : le geste « accueilli » de la carte devient la commande
+  `villageois.accueillir` ; ce que la carte voit des traits (`observerTraits`, une réplique entendue) ne s'écrit plus ;
+  le présent qu'un ami tend en saluant attend la conversation (par le monde).
+- **Le pas en lot** (`js/engine/temps-monde.js` : `enLot`, `js/engine/blocs.js`) : le pas de jour d'un monde de l'île
+  calcule une seule fois ce qui parcourt les blocs posés (les pièces closes, les cases couvertes, les maisons, et par
+  `memoEnLot` la boîte à nourriture, l'étal, les locaux des commerces) ; rien dans le pas ne pose ni ne reprend de bloc.
+  Le même résultat (la même empreinte après 720 pas sur l'île du joueur automatique à 7 et à 10 villageois, comparée au
+  moteur d'avant), trois à cinq fois plus vite. Il n'y a pas eu besoin d'étaler les villageois sur plusieurs pas. Le
+  solo n'est pas touché (`tick` n'est pas en lot ; le CSV de `node scripts/simulate.mjs` est le même octet pour octet).
+- **Ce que chacun voit** : la scène place les villageois d'après l'heure interpolée (`villageoisHorloge(heureDuJour())`,
+  `js/ui/villageois.js` ; la même que la lumière : le pas plus la part du pas écoulée) et leur journée, tirée de la
+  graine. Aucune position n'est envoyée.
+- **L'amitié de chacun** (`js/engine/temps-monde.js` : `state.amities`, `amitieDuJoueur`) : par compte, la forme de
+  `state.amitie` ; un villageois qu'un joueur ne connaît pas encore y est à `VILLAGE.AMITIE.ACCUEIL`. Une commande pose
+  l'amitié de son acteur dans `state.amitie` le temps de se jouer (`avecActeur`, avec son énergie, son sac et sa charge
+  d'I9c), puis la range ; la page montre la
+  sienne (`js/ui/synchro.js`, comme l'énergie et le sac). Entre deux commandes, `state.amitie` est l'amitié du village :
+  ce que lisent les pas (`tacheSansHumeur`, les recettes d'un artisan ami, les paliers de l'île) ; elle prend, villageois
+  par villageois, la meilleure des joueurs (`accorderAmitieDuMonde`) et ne baisse jamais. Le propriétaire reçoit celle
+  de sa partie à la création (`MondeRegistre.creer`), et à une restauration dont la sauvegarde n'en a aucune
+  (`restaurer`). Les liens entre villageois (`voisins`) sont du monde : `elaguer` les
+  garde pour une île.
+- **Les commandes** `villageois.parler { id, n?, activite?, but? }` (la bulle, à l'heure du pas : `parlerAuVillageois`),
+  `villageois.offrir { id, objet }`, `villageois.accueillir { id }` ; l'ami jardinier au moins (`js/engine/roles.js`). La
+  page les joue d'abord chez elle : la bulle s'affiche tout de suite. « 🎁 Offrir » passe en ligne sur une île
+  (`actionPermise`).
+- **Le visiteur** voit le village vivre et parle : sa bulle est tirée sur une copie de sa partie, son amitié montrée sans
+  gain, rien n'est envoyé (`parlerEnLigne`).
+- **Le tableau** (I3d) se lit de la partie : le même chez tous (vérifié chez le monde, la confirmée et la locale de deux
+  joueurs).
+- **Sans joueur**, le village dort avec le monde ; la fenêtre du retour le dit : « Le village dormait avec lui : ses
+  villageois n'ont rien produit en ton absence, ils reprennent leur journée. »
+- **Les avis de l'étal et des commerces** portent leur pas dans la partie d'un monde (`bourse.js`, `artisans.js`) : la
+  page ne les redit plus quand sa partie est refaite (`js/ui/avis-en-ligne.js`).
+- **Un villageois et un joueur sur le même arbre** (le conflit d'I9b) : les tâches des villageois ne travaillent que sur
+  la ferme (`ciblesDe` : pas de pièce du grand monde) ; sur la ferme, leurs prises sont celles du joueur
+  (`state.outils.arbres`, `chopTree`…). Le premier joué l'a, dans l'ordre des pas et des gestes : un arbre abattu par le
+  villageois refuse le coup du joueur (« Cet arbre est déjà abattu ») ; un arbre entamé par lui et fini par le joueur, le
+  villageois passe au suivant ; rien en double (le bois : celui du joueur plus celui du villageois).
+- **La sauvegarde** : format 107, après les charges d'I9c (106) (`amities` dans la partie d'un monde, la migration
+  106 → 107 ; un monde d'avant n'en a aucune : chacun commence à l'accueil, et l'amitié de sa partie reste celle du
+  village ; une partie solo n'y gagne rien).
+
+### Les mesures (`node scripts/cout-villageois.mjs`)
+
+Les îles du joueur automatique (graine 1, « applique » : 5 villageois au jour 41 environ, 10 au jour 161 — il n'en fait
+pas venir plus, faute de maisons ; 15 : celle de 10, plus cinq maisons bâties et leurs villageois, une tâche chacun),
+mises en ligne, puis 720 pas (cinq journées). Le moteur d'avant (64cd42a) et celui-ci, sur les mêmes parties ; le même
+travail des deux côtés (les mêmes actions) :
+
+| Villageois | Un pas de jour, avant | Un pas de jour, I9d (p99 / max) | Un pas de nuit | Minuit | 120 pas d'un coup (une alarme), avant → I9d | La partie |
+|---|---|---|---|---|---|---|
+| 5 | 5,8 ms | **1,8 ms** (6,4 / 130, le premier pas, à froid) | 0,6 ms | 16 ms | 653 → **188 ms** | 69 Ko |
+| 10 | 15,6 ms | **3,7 ms** (20 / 24) | 1,2 ms | 34 ms | 1 490 → **383 ms** | 129 Ko |
+| 15 | 27,2 ms | **6,2 ms** (43 / 109) | 1,9 ms | 79 ms (au plus 131) | 3 194 → **835 ms** | 139 Ko |
+
+Sur l'île de test (`tests/engine/village-en-ligne.test.mjs` : quinze maisons, cinq tâches), un pas de jour coûte
+6,5 ms en moyenne. **La limite** : le serveur rejoue au plus 240 pas d'un coup (`RATTRAPAGE_MAX_PAS`), ≈ 1,7 s à quinze
+villageois, loin des 30 s de calcul d'une requête d'un Durable Object ; une heure en ligne (720 pas) ≈ 5 s de calcul à
+quinze ; chaque joueur paie deux fois le pas (sa partie et la confirmée) : ≈ 12 ms toutes les 5 s. Le test garde un pas
+de jour sous 25 ms en moyenne à quinze. **Étaler les villageois sur plusieurs pas n'a pas été nécessaire.** Ce qui
+reste cher : minuit (la nuit du village, `runNight` : jusqu'à 131 ms à quinze, une fois par journée de jeu) et les
+signatures que `journeeDuVillage` refait pour chaque villageois (`signatureTaches`, `signatureGardeManger`,
+`commercesSignature` : à I9g). La partie grossit de ≈ 3 Ko à cinq villageois, ≈ 6 Ko à dix (`voisins` gardé).
+
+### Les tests
+
+- `tests/engine/village-en-ligne.test.mjs` : une journée du village jouée deux fois (et par un joueur arrivé à midi) :
+  la même partie à chaque heure, le bois au coffre avant midi ; la même position de chaque villageois chez deux joueurs,
+  à dix heures tirées au hasard ; l'amitié par joueur (parler, offrir ; celle du village ; une partie solo) ; l'accueil
+  par commande, les rôles ; le temps d'un pas à quinze villageois sous la limite (25 ms en moyenne) et le même tableau ;
+  le conflit sur un arbre ; le format 107.
+- `tests/test-monde.mjs` : l'amitié du propriétaire vient de sa partie, celle de l'invité commence à l'accueil ; les
+  liens du village gardés (une ferme d'avant les retire) ; le visiteur refusé ; le journal rejoué à froid.
+- `tests/test-synchro.mjs` : une journée du village (6 h → 22 h), le monde et deux joueurs, des paroles et un cadeau :
+  la même partie partout, le bois avant midi, chacun son amitié, le même tableau.
+- `tests/deux-joueurs.mjs` (Chromium, 12a à 12e, après les 11a à 11d d'I9c) : les mêmes villageois aux mêmes postes chez A et B, au travail puis à
+  table ; le bois au coffre dans la matinée ; A parle, l'amitié de B reste la sienne ; le même tableau. Le 10b (I9b, deux
+  coups « au même instant » sur un buisson) accepte aussi que l'un des deux soit refusé dans sa partie locale, quand
+  l'événement de l'autre l'a précédé de quelques millisecondes : le même conflit, tranché plus tôt.
+
+### Ce qui reste
+
+- **Les gestes de la fiche d'un villageois** (confier une tâche, un outil, la navette, un foyer, un enfant) et des
+  commerces tenus par la page appellent encore le moteur sur la partie locale : à brancher sur leurs commandes avec la
+  grille des rôles (I9e). La fenêtre « Nommer le village » (I7g) aussi.
+- **Ce qu'on sait des traits** est du monde (ce qu'un villageois dit de lui en parlant s'écrit dans la commande) ; ce
+  que la carte voit ne s'écrit plus en ligne : un joueur en ligne découvre moins de traits qu'en solo. À trancher
+  (I9e) : par joueur, comme l'amitié ?
+- **Les présents d'un ami** ne se préparent pas la nuit dans un monde partagé (`amitieVillageoisNuit`, comme avant) ; les
+  invitations à un repas, les demandes rendues restent fermées en ligne.
+- **La scène** fait marcher chaque villageois chez chacun : au même poste, au même but, mais pas au pixel près (jusqu'à
+  une case d'écart mesurée, le temps que les deux cartes l'aient fait partir au même instant).
+- **Une île mise en ligne avant I9d** n'a pas d'amitiés par joueur : chacun y commence à l'accueil (I9f : rendre au
+  propriétaire la sienne).
+- **Le pas en lot** suppose qu'un pas ne pose ni ne reprend de bloc : vrai aujourd'hui ; une machine qui bâtirait seule
+  devrait sortir du lot.
 
 ## Les règles qui ne changent pas
 

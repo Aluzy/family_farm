@@ -68,6 +68,16 @@ téléphone, avec un village complet toujours à l'écran, et corriger ce qui ne
 - **Le contrôle de la case** d'un geste du port lit la dernière position relayée (`dernieresPos`) : si l'intérêt par
   région change la façon dont les positions sont gardées, le garder.
 
+## Revu par I9d (les villageois en ligne)
+
+- **Le pas de jour se joue en lot** (`pasDuMonde` → `enLot`, `js/engine/blocs.js` ; `memoEnLot` pour la boîte, l'étal,
+  les locaux des commerces) : ce qui parcourt les blocs posés n'est calculé qu'une fois par pas. Le même résultat (la
+  même empreinte sur 720 pas), et un pas de jour de 5,8 → 1,8 ms à cinq villageois, 15,6 → 3,7 ms à dix, 27 → 6,2 ms
+  à quinze (`node scripts/cout-villageois.mjs`). Le solo n'en profite pas encore (`tick` n'est pas en lot) : à essayer ici.
+- **Ce qui reste cher dans un pas** : `journeeDuVillage` refait ses signatures à chaque villageois
+  (`signatureTaches`, `signatureGardeManger`, `commercesSignature`) ; minuit (`runNight`) coûte 16 à 34 ms à cinq ou dix
+  villageois, 79 ms (au plus 131) à quinze.
+
 ## Hors périmètre
 
 - Toute règle de jeu ; de nouveaux dessins.

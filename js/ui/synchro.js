@@ -24,7 +24,7 @@
 //     pas, puis les pas jusqu'à l'heure ; une commande confirmée au pas où la locale l'avait jouée ne la refait pas.
 // `moi` : son compte (ses gestes se jouent avec son énergie ; la locale montre la sienne dans state.energie).
 
-import { avancerJusqua, chargeDuCompte, dureeDuPas, energieDe, horlogeVivante, pasDe, sacDe, sacsDe } from '../engine/temps-monde.js';
+import { amitieDuJoueur, avancerJusqua, chargeDuCompte, dureeDuPas, energieDe, horlogeVivante, pasDe, sacDe, sacsDe } from '../engine/temps-monde.js';
 import { chargesDe } from '../engine/portage.js';
 
 const cloner = (v) => JSON.parse(JSON.stringify(v));
@@ -174,6 +174,8 @@ export class Synchro {
   // I9b : son sac à provisions de même (state.sacs, montré dans state.equipement.sac ; celui de la partie, à côté).
   // I9c : sa charge aussi (state.charges, montrée dans state.portage : ce que lisent la fenêtre du port et la scène ; la
   // page ne la change pas, ses gestes passent par les commandes ; les règles des véhicules la reconnaissent ainsi).
+  // I9d : son amitié avec les villageois de même (state.amities, montrée dans state.amitie : une copie, complétée ;
+  // celle du village, à côté).
   montrer(locale) {
     if (!this.vivante || !this.moi) return;
     this.energieDuMonde = locale.energie;
@@ -190,6 +192,9 @@ export class Synchro {
       locale.portage = chargeDuCompte(locale, this.moi) || { vehicule: 'mains', charge: {} };
       this.chargePosee = true;
     }
+    const a = amitieDuJoueur(locale, this.moi);
+    this.amitiePosee = !!a;
+    if (a) { this.amitieDuMonde = locale.amitie; locale.amitie = a; }
   }
   cacher(locale) {
     if (this.vivante && this.moi && this.energieDuMonde !== null) locale.energie = this.energieDuMonde;
@@ -198,5 +203,6 @@ export class Synchro {
       if (this.portageDuMonde === undefined) delete locale.portage; else locale.portage = this.portageDuMonde;
       this.chargePosee = false;
     }
+    if (this.amitiePosee) { locale.amitie = this.amitieDuMonde; this.amitiePosee = false; }
   }
 }

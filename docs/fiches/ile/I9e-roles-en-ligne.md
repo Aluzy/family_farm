@@ -73,6 +73,21 @@ lient avec les villageois.
   seul ; vide, elle passe à qui la demande. Un réglage du propriétaire (« la charrette est à moi ») serait de cette
   fiche, s'il manque.
 
+## Revu par I9d (les villageois en ligne)
+
+- **Parler, offrir, accueillir** sont des commandes (`villageois.parler`, `villageois.offrir`, `villageois.accueillir`)
+  qui demandent l'ami jardinier (`js/engine/roles.js`, `PAR_TYPE`). Le visiteur parle aux villageois sans rien changer :
+  sa page tire la bulle sur une copie de sa partie et n'envoie rien (`js/ui/villageois.js`, `parlerEnLigne`). À revoir
+  dans la grille complète.
+- **Les gestes de la fiche d'un villageois** (confier une tâche, donner ou reprendre un outil, la navette, un foyer, un
+  enfant) appellent encore le moteur sur la partie locale (`js/ui/villageois.js`, `js/ui/liens.js`) : en ligne, ce sont
+  des prédictions que la partie refaite efface. Les commandes existent (`villageois.attribuer`, `villageois.outil`,
+  `villageois.vendre`, `villageois.foyer`, `villageois.enfant`) : à brancher ici, avec leur rôle (la famille `villageois`
+  demande aujourd'hui le bâtisseur, par défaut).
+- **Ce que la carte révèle des traits** (un villageois vu, une réplique entendue : `observerTraits`, `noterIndice`) ne
+  s'écrit pas en ligne (le serveur seul fait compter) ; ce qu'il dit de lui en parlant, si (dans `villageois.parler`) :
+  ce qu'on sait de ses traits est du monde, commun à tous. À trancher : par joueur, comme l'amitié ?
+
 ## Hors périmètre
 
 - De nouveaux rôles ; la modération entre joueurs (le propriétaire peut déjà retirer un membre).

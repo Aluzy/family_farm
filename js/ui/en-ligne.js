@@ -332,7 +332,9 @@ function reveilDuMonde() {
   lien.dormait = null;
   const min = Math.round(ms / 60000), duree = min < 60 ? `${Math.max(1, min)} min` : min < 48 * 60 ? `${Math.round(min / 60)} h` : `${Math.round(min / 1440)} jours`;
   const h = clockHours(s), heure = `${Math.floor(h)} h${Math.floor((h % 1) * 60) ? ` ${String(Math.floor((h % 1) * 60)).padStart(2, '0')}` : ''}`;
-  notify(`🌙 Le monde dormait depuis ${duree} : il reprend où il s'était arrêté (jour ${s.day}, ${heure}).`, { duree: 8000 });
+  // (I9d : le village dormait avec lui : ses villageois n'ont rien fait, rien produit pendant ce temps)
+  const village = Array.isArray(s.villageois) && s.villageois.length ? ' Le village dormait avec lui : ses villageois n\'ont rien produit en ton absence, ils reprennent leur journée.' : '';
+  notify(`🌙 Le monde dormait depuis ${duree} : il reprend où il s'était arrêté (jour ${s.day}, ${heure}).${village}`, { duree: 8000 });
 }
 
 export const TEMPS_DU_MONDE = '🕰️ Le temps de ce monde passe quand au moins un joueur y est. Sans personne, il dort.';
@@ -473,6 +475,8 @@ const JAMAIS = /^(test-|do-import|do-new-game|ask-new-game|demarrer|accueil-)/;
 export function actionPermise(action, bloquees) {
   if (JAMAIS.test(action)) return 'Pas dans un monde en ligne : reviens à ta ferme solo (🌐 › Ma ferme solo).';
   if (action === 'sleep') return 'En ligne, on se couche par le bandeau (🛏 Se coucher) : la nuit passe quand tout le monde dort.';
+  // (I9d : sur une île, offrir un cadeau à un villageois : villageois.offrir, avec son amitié à soi)
+  if (action === 'ami-offrir' && ileEnLigne()) return null;
   if (bloquees.has(action) && !CONSTRUIRE.has(action) && !FERME.has(action)) return 'En ligne, ce geste ne se fait pas encore : il viendra bientôt.';
   return null;
 }

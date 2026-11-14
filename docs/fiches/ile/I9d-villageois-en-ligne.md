@@ -91,8 +91,10 @@ tous les joueurs, qui les voient aux mêmes endroits faire les mêmes choses.
 - **`avecActeur` (`js/engine/temps-monde.js`) pose trois choses à chacun** le temps d'une commande : son énergie, son
   sac, sa charge (`state.charges`). Un compte qui n'a encore rien dépensé n'est plus noté par un geste refusé (le monde
   gagnait l'énergie pleine du compte dans sa partie, pas les joueurs : une divergence). L'amitié par joueur, si elle
-  passe par le même chemin, y trouvera sa place.
-- **Le format** : I9c passe à 106 (`charges`) ; à renuméroter à l'intégration si I9d ajoute aussi des données.
+  passe par le même chemin, y trouvera sa place. (Fait à l'intégration : `avecActeur` pose aussi l'amitié de chacun,
+  `state.amities`.)
+- **Le format** : I9c passe à 106 (`charges`) ; à renuméroter à l'intégration si I9d ajoute aussi des données. (Fait :
+  l'amitié de chacun est la migration 106 → 107.)
 
 ## Hors périmètre
 

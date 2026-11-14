@@ -13,6 +13,7 @@ import { energyMax } from './stamina.js';
 import { penalite } from './inventory.js';
 import { ilePartagee } from './frontiere.js';
 import { chargesDe } from './portage.js';
+import { enLot } from './blocs.js';
 
 /* ---------- I9a2 : l'horloge commune d'un monde de l'île (docs/fiches/ile/I9a2-note-horloge.md) ----------
 
@@ -100,6 +101,15 @@ export function pasDuMonde(state) {
     h.pas += 1;
     return ev;
   }
+  // (I9d : le pas de jour se joue « en lot » (blocs.js enLot) : ce qui parcourt tous les blocs posés (les pièces closes,
+  // les cases couvertes, les maisons des villageois) n'est calculé qu'une fois par pas, au lieu d'une fois par question.
+  // Rien dans le pas ne pose ni ne reprend de bloc (les commandes, entre deux pas, le font) : le résultat est le même,
+  // trois fois plus vite avec dix villageois — docs/ile.md, « Les villageois en ligne »)
+  enLot(state, () => pasDeJour(state, h, dt, ev));
+  h.pas += 1;
+  return ev;
+}
+function pasDeJour(state, h, dt, ev) {
   farmStep(state, dt, { horloge: true });
   refreshUnlocks(state);
   chapitresAuPas(state);
@@ -119,8 +129,6 @@ export function pasDuMonde(state) {
   assurerArrivee(state);
   // (la nuit vient seule à 22 h : js/ui/loop.js watchDay, en solo)
   if (bedtimeDue(state) && startNight(state)) ev.nuit = true;
-  h.pas += 1;
-  return ev;
 }
 const MAISONS_TOUS = 6;   // pas (une heure de jeu)
 function nuitRestante(state) {
@@ -154,13 +162,16 @@ export function energieDe(state, compte) {
   return Number.isFinite(e) ? e : energyMax(state);
 }
 // `fn()` joué avec l'énergie de `compte` dans state.energie, rangée ensuite ; celle de la partie, remise. I9b : son sac
-// à provisions aussi (state.sacs, posé dans state.equipement.sac le temps de la commande : poserSacDe).
+// à provisions aussi (state.sacs, posé dans state.equipement.sac le temps de la commande : poserSacDe). I9c : sa charge
+// au port (state.charges, posée dans state.portage : poserChargeDe). I9d : son amitié avec les villageois
+// (state.amities, posée dans state.amitie : poserAmitieDe).
 export function avecActeur(state, compte, fn) {
   if (!compte || compte === ACTEUR_DU_MONDE || !horlogeVivante(state)) return fn();
   const E = energiesDe(state), avant = state.energie, e0 = energieDe(state, compte);
   state.energie = e0;
   const rendreSac = poserSacDe(state, compte);
   const rendreCharge = poserChargeDe(state, compte);
+  const rendreAmitie = poserAmitieDe(state, compte);
   try {
     return fn();
   } finally {
@@ -171,6 +182,68 @@ export function avecActeur(state, compte, fn) {
     state.energie = avant;
     rendreSac();
     rendreCharge();
+    rendreAmitie();
+  }
+}
+
+/* -- I9d : l'amitié de chacun (docs/monde-partage.md § 13 : son amitié avec chaque villageois) --
+
+   state.amities = { <compte>: { pnj: { <id du villageois>: sa fiche (amitie.js : pts, parle, cadeau, vu, gouts…) },
+   visites, porte } } : l'amitié de chaque joueur d'un monde de l'île, la même forme que state.amitie. Un villageois qui
+   n'est pas dans la sienne y entre à VILLAGE.AMITIE.ACCUEIL points (le village l'a accueilli, comme en solo) ; le
+   propriétaire reçoit celle de sa partie à la mise en ligne, ou à une restauration qui n'en porte aucune
+   (worker/src/monde.mjs). Une commande pose l'amitié de son acteur dans state.amitie le temps de se jouer (avecActeur,
+   comme l'énergie, le sac et la charge) : parler, offrir, acheter à un artisan ami, tout lit la sienne.
+
+   state.amitie, dans la partie d'un monde de l'île, est l'amitié du village : ce que lisent les pas (un ami proche
+   accepte une tâche qu'il n'aime pas, un artisan ami apprend de nouvelles pièces, les paliers de l'île). Elle suit la
+   meilleure amitié des joueurs (accorderAmitieDuMonde : après chaque commande qui change celle de son acteur, chaque
+   villageois y prend le plus haut des deux ; elle ne baisse jamais). Les liens entre villageois (state.voisins) sont
+   du monde, comme en solo. Une partie sans state.amities (solo, une ferme d'avant) ne change pas. */
+
+const objetSimple = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+export function amitiesDe(state) {
+  return state && objetSimple(state.amities) ? state.amities : null;
+}
+// L'amitié du joueur `compte`, complétée (une copie : la partie n'est pas touchée) : chaque villageois qui n'y est pas
+// encore y entre à ACCUEIL points ; null sans state.amities.
+export function amitieDuJoueur(state, compte) {
+  const A = amitiesDe(state);
+  if (!A) return null;
+  const a = objetSimple(A[compte]) ? JSON.parse(JSON.stringify(A[compte])) : {};
+  if (!objetSimple(a.pnj)) a.pnj = {};
+  if (!objetSimple(a.visites)) a.visites = {};
+  if (!Array.isArray(a.porte)) a.porte = [];
+  const accueil = Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0;
+  for (const v of villageoisDe(state)) if (v && typeof v.id === 'string' && !objetSimple(a.pnj[v.id])) a.pnj[v.id] = { pts: accueil, gouts: {} };
+  return a;
+}
+// L'amitié de `compte` posée dans state.amitie ; rend la fonction qui remet celle du village (et range la sienne, si
+// la commande l'a changée).
+function poserAmitieDe(state, compte) {
+  const A = amitiesDe(state);
+  if (!A) return () => {};
+  const avant = state.amitie, a = amitieDuJoueur(state, compte), texte = JSON.stringify(a);
+  state.amitie = a;
+  return () => {
+    const apres = state.amitie;
+    state.amitie = avant;
+    if (objetSimple(apres) && JSON.stringify(apres) !== texte) {
+      A[compte] = apres;
+      accorderAmitieDuMonde(state, apres);
+    }
+  };
+}
+// L'amitié du village suit la meilleure des joueurs : chaque villageois de `a` (l'amitié d'un joueur) y prend le plus
+// haut des deux.
+function accorderAmitieDuMonde(state, a) {
+  if (!objetSimple(state.amitie)) state.amitie = {};
+  const M = state.amitie;
+  if (!objetSimple(M.pnj)) M.pnj = {};
+  for (const [id, p] of Object.entries(a.pnj || {})) {
+    if (!/^vg-\d+$/.test(id) || !objetSimple(p) || !Number.isFinite(p.pts)) continue;
+    const m = objetSimple(M.pnj[id]) ? M.pnj[id] : (M.pnj[id] = { gouts: {} });
+    if (!Number.isFinite(m.pts) || m.pts < p.pts) m.pts = p.pts;
   }
 }
 

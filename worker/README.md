@@ -126,6 +126,11 @@ gardées) ; ce qu'un geste lâche va au coffre commun. Le plafond de poids : `VI
 portage passent aussi (`COMMANDES_DU_PORT`) ; la caisse est commune (D14) ; chacun porte sa charge (`state.charges`) ;
 le lieu du port est écrit dans la partie à la mise en ligne (`state.port.lieu`) ; la case d'un geste du port, que
 donne la page, est comparée à la dernière position relayée du joueur (`ECART_CASES` = 12 cases).
+I9d (les villageois en ligne) : la journée du village se joue dans les pas ; parler, offrir et l'accueil d'un nouveau
+venu sont des commandes (`villageois.parler`, `villageois.offrir`, `villageois.accueillir` : l'ami jardinier au moins),
+jouées avec l'amitié de leur acteur (`state.amities`, par compte ; celle du propriétaire est l'amitié de sa partie,
+posée à la création, et à une restauration qui n'en a aucune) ; sur une île, `elaguer` garde `voisins` (les liens et
+les événements entre villageois). Le protocole ne change pas. La mesure du pas : `node scripts/cout-villageois.mjs`.
 
 Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
 monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au

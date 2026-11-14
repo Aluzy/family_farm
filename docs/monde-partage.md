@@ -379,6 +379,40 @@ Le détail et les mesures : `docs/ile.md`, « Le port et la caisse en ligne ».
   cases au plus). Un jeu trafiqué pourrait encore mentir sur sa position : c'est un garde-fou, pas une preuve.
 - **La sauvegarde** passe au format 106 (`charges` dans la partie d'un monde ; une partie solo n'y gagne rien).
 
+### Ce que fait I9d (les villageois en ligne)
+
+Le détail et les mesures : `docs/ile.md`, « Les villageois en ligne ».
+
+**La règle : le serveur seul fait compter.** En solo, ce qui se passe sous les yeux du joueur compte une fois (la règle
+de la fiche 7b : le moteur fait le travail à l'heure, la scène ne fait que le montrer). En ligne, sur une île, c'est le
+pas du monde qui fait compter : le travail des villageois, leurs repas, leurs liens, leurs achats à l'étal et aux
+commerces, les arrivées se jouent dans les pas (`pasDuMonde`), au serveur et à l'identique chez chaque joueur, qui les
+rejoue ; ce que la carte d'un joueur montre (un villageois qui frappe à sa porte, un geste vu, une réplique entendue)
+n'écrit rien dans la partie, ou passe par une commande que le monde joue (`villageois.accueillir`). Aucune position
+n'est envoyée : chacun place les villageois d'après l'heure commune (celle du pas, plus la part du pas écoulée : la même
+que la lumière) et leur horaire, tiré de la graine ; le geste qu'il voit et l'action que joue le pas tombent à la même
+heure.
+
+- **La journée du village** est dans les pas, par les mêmes fonctions qu'en solo (`avancerTaches`, les repas, les liens
+  de la nuit, les commerces) ; ce qu'ils produisent arrive au coffre commun au fil de la journée. Le pas de jour se joue
+  « en lot » (`enLot`, `js/engine/blocs.js`) : ce qui parcourt les blocs posés n'est calculé qu'une fois par pas (le même
+  résultat, trois à cinq fois plus vite).
+- **L'amitié est à chacun** : `state.amities` (par compte, dans la partie du monde) ; une commande pose celle de son
+  acteur dans `state.amitie` le temps de se jouer (`avecActeur`, comme l'énergie, le sac et la charge) ; un villageois que l'on ne
+  connaît pas encore est à l'accueil (`VILLAGE.AMITIE.ACCUEIL`) ; le propriétaire reçoit celle de sa partie. Chacun voit
+  la sienne. Ce que le pas lit de l'amitié (un ami proche accepte une tâche qu'il n'aime pas, un artisan ami apprend des
+  pièces, les paliers de l'île) est **l'amitié du village**, la meilleure des joueurs (elle ne baisse jamais). Les
+  liens entre villageois (`voisins`) sont du monde ; la copie d'une île les garde.
+- **Parler, offrir** : les commandes `villageois.parler { id, n?, activite?, but? }` et `villageois.offrir { id, objet }`
+  (l'ami jardinier au moins), jouées d'abord chez soi (la bulle tout de suite), puis par le monde.
+- **Le tableau** (I3d) se lit de la partie du monde : le même pour tous.
+- **Sans joueur, le village dort avec le monde** : rien n'est produit pendant l'absence ; la fenêtre du retour le dit
+  (« Le village dormait avec lui… »).
+- **Le visiteur** voit le village vivre et lui parle : sa page tire la bulle sur une copie de sa partie, sans rien
+  envoyer ; il ne change rien.
+- **La sauvegarde** passe au format 107, après les charges d'I9c (`amities` dans la partie d'un monde ; une partie
+  solo n'y gagne rien).
+
 ### Le poids, et le plafond
 
 Mesuré par `node scripts/poids-ile.mjs` : une partie neuve du chantier jouée par le joueur automatique
