@@ -39,7 +39,7 @@ son île et son village ; une chronique note ce qui s'y passe.
 | D12 | Le villageois garde une part de ce qu'il produit ; une tâche demande son outil, que le joueur fabrique et lui donne ; deux villageois assez proches peuvent former un foyer si on leur bâtit une maison ; chaque biome a ses plants sauvages. | I4, I3c, I6b, I7e. |
 | D13 | En ligne, l'horloge est commune et vivante. | Le serveur fait avancer le temps tant qu'un joueur est connecté (I9a2) ; F.2 est levée. |
 | D14 | En ligne, la caisse est commune. | I9c (fait) : les pièces de la partie du monde, à tous ; chacun porte sa charge. |
-| D15 | C'est le joueur qui attribue les tâches. Un villageois ouvre un commerce quand il a une affinité suffisante avec le joueur, qu'il en manifeste l'envie et que le joueur le décide. | I5a ; en ligne, « le joueur » est lu comme le propriétaire de l'île (I9e, à confirmer). |
+| D15 | C'est le joueur qui attribue les tâches. Un villageois ouvre un commerce quand il a une affinité suffisante avec le joueur, qu'il en manifeste l'envie et que le joueur le décide. | I5a ; en ligne, « le joueur » est le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs ; un invité très ami peut lui suggérer un commerce (I9e, fait). |
 | D16 | La pierre de lune n'a plus d'effet magique : rien ne pousse plus vite. | Sur l'île, c'est déjà le cas depuis I7c (`recit-muet.js`, `facteurPousse` vaut 1) ; une partie d'avant la perd à la migration (I7f). À la bascule (I9h), le fil de la lune et l'objet sortent avec le récit. Les effets de la lune sur les cultures (`LUNE`, `lune.js`) restent : c'est une règle, pas de la magie. |
 
 ## Ce qui reste à trancher (dans les fiches qui le portent)
@@ -49,7 +49,8 @@ son île et son village ; une chronique note ce qui s'y passe.
 | Comment le serveur fait avancer l'horloge commune, et à quel coût ? | I9a2 (fait) | Par pas de 5 s d'horloge déduits de l'heure du serveur (pas des révisions), tant qu'un joueur est connecté ; le monde dort sans joueur. Par heure : 720 pas, ≈ 3,5 s de calcul, 0,5 Mo écrits, 6 alarmes. |
 | Où va ce qu'un geste lâche hors de la ferme, en ligne ? | I9b (fait) | Au coffre commun, comme les outils de la ferme en ligne (E-9) ; le sac de chacun est celui des provisions de sortie. |
 | Comment le serveur contrôle-t-il un geste dehors ? | I9b (fait) | Par l'identifiant de la pièce, sans le sol de sa région (0,5 µs contre 0,5 s au réveil, puis 10 ms par région) ; le moteur refuse un doublon. Le sol n'est tiré que pour un bloc posé dehors (12 régions gardées). |
-| En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs. |
+| En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e (fait) | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs (un réglage du monde, éteint par défaut). |
+| En ligne, ce qu'on sait des traits d'un villageois : commun ou par joueur ? | I9e | Commun au monde (des faits sur le villageois) : fait ainsi, à confirmer. |
 | L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | I1c : non, sur 80 nuits de simulation (le port en prend 6 800 pièces, 814 en caisse à la nuit 80). I4 : le joueur minimal finit à 242 pièces (le port au niveau 3), l'appliqué à 2 727 pour une borne de 1 412 : il a payé le niveau 2 tôt et n'atteint pas le niveau 3 avant la nuit 80 (ses matériaux, pas ses pièces : à 3 500 pièces, il ne le prend pas davantage). À revoir quand le joueur simulé ira plus loin que le palier 6. |
 | La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | I4 : fixe, `VILLAGE.PART` = 30 % (à 20 %, le villageois des champs rapporte 2,5 fois son coût, au bord de la fourchette ; à 40 %, la partie simulée s'appauvrit). |
 | La raison d'explorer sans hameaux à découvrir. | I1c, I8b, I7e | Des espèces sauvages à rapporter et à cultiver ; des sites à exploiter. I8b n'y a rien ajouté : la ferme productive se joue sur la ferme et au port. I7e : les plants sauvages de chaque biome (deux codés : l'ail des ours des sous-bois, la salicorne des plages), le catalogue d'import qu'ils enrichissent, les lieux muets d'I7c gardés ; la suite proposée plus bas (« Une raison d'explorer », I7e). |
@@ -88,7 +89,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f (fait), I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
-| 9. L'île en ligne et la bascule | I9a, I9a2, I9b (faits), I9c à I9h | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
+| 9. L'île en ligne et la bascule | I9a, I9a2, I9b, I9c, I9d, I9e (faits), I9f à I9h | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
 ## L'ordre et les dépendances
 
@@ -2522,8 +2523,8 @@ chez l'autre en quelques dizaines de millisecondes.
   (les avis rangés par pas, `js/ui/avis-en-ligne.js`).
 - **Le chargement ne vieillit pas la nuit** (I2) : la charge de chacun non plus.
 - **Les noms au journal et dans les avis** sont ceux que chaque page donne (le prénom du personnage de la partie qu'elle
-  joue) : sur une île en ligne, deux joueurs peuvent s'y appeler tous deux « Voisin » (vu dans Chromium). Le journal
-  garde le compte de chacun ; le nom montré est à revoir (I9e).
+  joue) : sur une île en ligne, deux joueurs pouvaient s'y appeler tous deux « Voisin » (vu dans Chromium). Réglé par
+  I9e : la page envoie le prénom avec `hello`.
 
 ## Les villageois en ligne (I9d, fait)
 
@@ -2620,11 +2621,11 @@ signatures que `journeeDuVillage` refait pour chaque villageois (`signatureTache
 ### Ce qui reste
 
 - **Les gestes de la fiche d'un villageois** (confier une tâche, un outil, la navette, un foyer, un enfant) et des
-  commerces tenus par la page appellent encore le moteur sur la partie locale : à brancher sur leurs commandes avec la
-  grille des rôles (I9e). La fenêtre « Nommer le village » (I7g) aussi.
+  commerces tenus par la page appelaient encore le moteur sur la partie locale : branchés sur leurs commandes avec la
+  grille des rôles par I9e, comme la fenêtre « Nommer le village » (I7g).
 - **Ce qu'on sait des traits** est du monde (ce qu'un villageois dit de lui en parlant s'écrit dans la commande) ; ce
-  que la carte voit ne s'écrit plus en ligne : un joueur en ligne découvre moins de traits qu'en solo. À trancher
-  (I9e) : par joueur, comme l'amitié ?
+  que la carte voit ne s'écrit plus en ligne : un joueur en ligne découvre moins de traits qu'en solo. I9e les garde
+  communs (des faits sur le villageois) ; à confirmer.
 - **Les présents d'un ami** ne se préparent pas la nuit dans un monde partagé (`amitieVillageoisNuit`, comme avant) ; les
   invitations à un repas, les demandes rendues restent fermées en ligne.
 - **La scène** fait marcher chaque villageois chez chacun : au même poste, au même but, mais pas au pixel près (jusqu'à
@@ -2633,6 +2634,135 @@ signatures que `journeeDuVillage` refait pour chaque villageois (`signatureTache
   propriétaire la sienne).
 - **Le pas en lot** suppose qu'un pas ne pose ni ne reprend de bloc : vrai aujourd'hui ; une machine qui bâtirait seule
   devrait sortir du lot.
+
+## Les rôles en ligne (I9e, fait)
+
+**Le but du jeu en ligne**, dit par le joueur qui l'a voulu : « inviter des amis sur sa propre partie afin de faire
+progresser plus vite le village d'un ami ». Le monde en ligne est donc **l'île d'un propriétaire** ; ses amis invités
+viennent l'aider à faire grandir **son** village. Les rôles sont une grille de confiance entre lui et eux : l'ami aidant
+doit être vraiment utile (il produit, vend, se lie aux villageois, les outille, bâtit), et le propriétaire garde ce qui
+est structurant pour son village. D15 est lue ainsi : en ligne, « le joueur » qui attribue les tâches et décide des
+commerces est le propriétaire de l'île.
+
+### La grille (`js/engine/roles.js`, `GRILLE_ILE` ; `docs/monde-partage.md` § 10)
+
+| Rôle | Ce qu'il fait sur une île (en plus du rôle d'avant) |
+|---|---|
+| 👀 Visiteur | Il regarde, se promène, parle aux villageois (sa page seule : rien n'est envoyé), dort avec les autres. Il ne change rien. |
+| 🌱 Ami jardinier | Le potager, les bêtes, la cuisine, les outils ; récolter sur l'île ; vendre au port et à l'étal, porter ; parler, offrir, accueillir ; **fabriquer à l'Atelier** ; **confier ou reprendre un outil** à un villageois, **la navette** (ce qu'il porte au port) ; **suggérer un commerce** au propriétaire ; **épingler et annoter la chronique** (signé). |
+| 🔨 Bâtisseur | Construire (sur l'île aussi : chemins, ponts, bancs) ; acheter au port et aux commerces, l'import, les contrats, le chantier du port ; régler la cuisine et le garde-manger du village ; **attribuer les tâches si le propriétaire le lui confie** (le réglage du monde). |
+| 🏡 Propriétaire | **Attribuer les tâches** ; **décider qu'un villageois ouvre ou rejoint un commerce**, son enseigne ; **former un foyer, accueillir un enfant** ; **nommer** l'île, le village, une maison, un commerce ; agrandir le port ; **retirer la maison d'un villageois** (sa boîte aux lettres, sa porte, ses murs, son lit) ; retirer une structure sensible ; inviter, changer les rôles, retirer un membre, les sauvegardes, les réglages du monde. |
+
+Pourquoi cette ligne de partage : tout ce qui **fait avancer** le village sans en changer la forme (produire, vendre,
+outiller un villageois, se lier à lui, bâtir ce que le propriétaire a voulu) est ouvert aux amis, parce que c'est
+pour cela qu'il les invite ; ce qui **décide de la forme** du village (qui fait quoi, quel commerce, quel foyer, quels
+noms, la taille du port, la maison d'un habitant) reste au propriétaire, parce que c'est son village et qu'un ami
+bien intentionné ne doit pas le défaire. La délégation des tâches couvre le cas d'un ami de confiance qui joue
+pendant que le propriétaire n'est pas là. Une ferme d'avant (E-8, sans le chantier) garde la grille d'E-11 telle quelle
+(`roleDemande` ne lit `GRILLE_ILE` que pour une île).
+
+### Les décisions
+
+1. **Les gestes de gestion du village sont des commandes du monde.** La fiche d'un villageois (la tâche :
+   `villageois.attribuer` ; l'outil : `villageois.outil` ; la navette : `villageois.vendre`), ses liens (un foyer :
+   `villageois.foyer` ; un enfant : `villageois.enfant`), les noms (`nom.donner { quoi, texte, id? }`, nouvelle : la
+   fenêtre « Nommer », celle du commerce) et la chronique (`chronique.epingler`, `chronique.noter`, nouvelles) écrivaient
+   dans la partie locale : en ligne, ce n'étaient que des prédictions que la partie refaite effaçait. La page les envoie
+   maintenant au monde (`executer`) ; en solo, elle appelle le moteur comme avant (le jeu solo ne change pas). Les
+   commerces et l'étal, qui passaient déjà par `executer`, sont ouverts sur une île (`actionPermise`). Le chantier d'un
+   projet du village (`vocation-projet-envoyer`, `-abandonner`) n'a pas encore de commande : refusé en ligne plutôt que
+   joué sur la seule page.
+2. **La délégation est un réglage du monde**, pas de la partie : `meta.reglages = { taches }` au Durable Object, éteint
+   par défaut ; le propriétaire seul le change (`{ t: 'reglages', taches }` sur la WebSocket ; la fenêtre 👥 : « 🧺
+   Confier l'attribution des tâches aux bâtisseurs ») ; l'accueil et la diffusion le disent à chacun ; un bâtisseur est
+   prévenu quand il change. Elle ne couvre que les tâches (le reste au propriétaire ne se délègue pas).
+3. **L'envie d'un commerce : l'affinité qui compte est celle du propriétaire.** Seul le propriétaire joue
+   `commerce.ouvrir`, et une commande se joue avec l'amitié de son acteur (I9d, `avecActeur`) : c'est la sienne que lit
+   la condition. L'envie (`v.envies`) vient des jours de pratique du villageois et se voit par tous (sa bulle, sa fiche).
+   **Un invité très ami peut la suggérer** : `commerce.suggerer { id, sorte }` (l'ami jardinier) vérifie l'envie et
+   l'amitié **de l'invité** au palier des artisans, ne change rien à la partie, va au journal du monde (signée) et
+   prévient le propriétaire (« Sam suggère que Léa ouvre une forge. À toi de décider (sa fiche). »).
+4. **Les garde-fous.** Un ordre de tâche est daté et signé dans le journal (son bilan : le villageois, la tâche d'avant
+   et d'après : `bilanGeste`, qui généralise le `bilanCommerce` d'I9c ; aussi un outil, un foyer, un commerce ouvert ou
+   suggéré, un nom). La maison d'un villageois ne se retire que par le propriétaire (`bloc.reprendre`, `bloc.remettre`,
+   `bloc.deplacer`, `mur.abaisser` sur sa boîte aux lettres, ses portes, ses lits ou les murs autour de sa pièce) ; une
+   maison libre, si. Un villageois ne se renvoie pas : aucune commande ne le fait (un test le garde).
+5. **La vue « qui fait quoi » est à tous** ; ses boutons ne paraissent qu'à qui a le droit (`gestePermis`,
+   `js/ui/en-ligne.js`) : « Tâche » au propriétaire (ou au bâtisseur délégué ; les autres lisent « 🔒 Le propriétaire de
+   l'île attribue les tâches. »), « Donner », « Reprendre » et « Choisir » (la navette) à l'ami jardinier, « Ouvrir »
+   un commerce au propriétaire (les autres : « 💡 Le lui suggérer »), « ✏️ » des noms au propriétaire, 📌 et ✏️ de la
+   chronique à l'ami jardinier. Un geste tenté quand même est refusé par la page avec un mot clair, et par le monde.
+6. **La chronique est celle du monde** ; une ligne épinglée ou annotée porte le compte de qui l'a fait (`par`, posé par
+   la commande : `acteurEnCours`, `js/engine/temps-monde.js`), et la fenêtre dit son prénom (« — Sam »). Le baptême du
+   village n'est proposé qu'au propriétaire.
+7. **Les noms.** Chaque page envoie le prénom du personnage de sa partie solo avec `hello` (`prenom`) ; le monde le
+   nettoie (`prenomDuJoueur` : sans balise, 20 signes) et redit la liste des membres s'il a changé. Le prénom passait
+   déjà dans l'adresse de la WebSocket, mais un monde créé ou rejoint par une route sans lui gardait « Voisin » tant
+   qu'aucune connexion ne l'avait renommé (c'était le cas de `tests/deux-joueurs.mjs`, qui ouvre les WebSockets sans
+   passer par la route du Worker). Le journal, les avis (« Alex a confié à Léa : 🧺 cueillette (avant : 🪓 bois) ») et
+   les avatars disent le vrai prénom.
+8. **Ce qu'on sait des traits d'un villageois reste commun au monde** (ce sont des faits sur lui ; ce qu'il dit de lui
+   en parlant s'écrit dans `villageois.parler`). **À confirmer par le joueur** : l'autre lecture (par joueur, comme
+   l'amitié) ferait découvrir chacun pour soi, au prix d'un `traitsConnus` par compte.
+9. **Les chemins posés dehors ne sont pas protégés.** Un bâtisseur est un ami à qui le propriétaire confie la
+   construction ; un chemin se repose en un geste, le journal dit qui l'a repris et une sauvegarde le rend. Les protéger
+   demanderait de savoir qui a posé quoi (la partie ne le garde pas) pour peu de chose. Ce qui ne se rattrape pas (une
+   structure sensible, la maison d'un villageois) est protégé.
+10. **La présence d'un visiteur compte** pour l'horloge (une connexion ouverte fait tourner le monde, D13) et pour les
+    lits (il retient la nuit tant qu'il n'est pas couché) : confirmé. Un visiteur qui ne se couche pas retient la nuit
+    comme un autre ; le propriétaire peut changer son rôle ou le retirer.
+11. **La charrette (I2b, à venir)** : l'achat de ses évolutions (capacité, vitesse, cheval, rails) sera un geste du
+    bâtisseur (la famille `charrette.*` y tombe par défaut ; le propriétaire le peut aussi), noté dans `GRILLE_ILE`.
+
+### Ce que l'ami gagne en aidant (des propositions, pas codées)
+
+L'ami prend du temps sur sa propre île pour aider celle d'un autre. Ce qu'il peut y gagner, sans rien prendre au
+propriétaire : **ses amitiés** avec les villageois de l'ami (déjà par joueur, I9d) qui lui ouvrent des présents ; **une
+part de ce qu'il vend** au port, versée à sa propre caisse solo au retour (une « paie d'ami », bornée par jour) ; **des
+graines et des plants sauvages** de l'île de l'ami, rapportés dans sa malle ; **des recettes ou des pièces d'artisan**
+que les commerces de l'ami lui apprennent ; **son nom dans la chronique** de l'île (« Sam a aidé à bâtir le pont ») ;
+**une invitation en retour** facilitée (les amis, `amis.mjs`) et un compteur d'entraide sur sa fiche d'ami. Le plus
+simple et le plus juste d'abord : la paie d'ami et la chronique.
+
+### Les mesures
+
+Le contrôle des rôles est presque gratuit : `roleDemande` d'un ordre de tâche ≈ 0,5 µs ; celui d'un `bloc.reprendre`
+sur une île (la maison d'un villageois : les pièces closes relevées) ≈ 0,3 à 0,6 ms de cinq à quinze maisons, 0 ms
+quand la case est sa boîte ou son lit. Un ordre de tâche diffusé porte un bilan de ≈ 60 octets.
+
+### Les tests
+
+- `tests/engine/village-roles.test.mjs` : la grille complète (34 commandes, chacune son rôle minimal, chacun des quatre
+  rôles permis ou refusé, un refus en mots) ; la délégation ; la maison habitée (la boîte, la porte, le lit, un mur ;
+  une maison libre) ; chaque geste de gestion joué en commande fait ce que fait le moteur ; la suggestion (l'envie,
+  l'amitié de l'invité, rien ne change) ; la chronique signée, rien en solo ; aucune commande ne renvoie un villageois ;
+  le format 108.
+- `tests/test-monde.mjs` : les gestes de gestion par le monde selon le rôle, refusés même si le jeu est modifié ; la
+  délégation (le propriétaire seul la change, à tous, dans l'accueil) ; les vrais prénoms par `hello` ; le journal
+  (chaque ordre et son auteur nommé, le bilan) ; le monde réveillé à froid ; une ferme d'avant garde la grille d'E-11.
+- `tests/test-synchro.mjs` : l'ordre du propriétaire et l'outil de l'ami joués chez eux puis par le monde ; l'ordre d'un
+  ami (un jeu modifié) refusé et retiré de sa partie ; la même partie chez A, B et le monde.
+- `tests/deux-joueurs.mjs` (Chromium, 13a à 13e) : les vrais prénoms ; B (bâtisseur) lit la tâche sans bouton, son
+  geste est refusé avec un mot clair ; A la change par la fiche, B le voit et son avis dit « Alex a confié à … » ; A
+  confie les tâches aux bâtisseurs, B est prévenu et donne un ordre ; le journal porte chaque ordre et son auteur.
+
+### La sauvegarde
+
+Format 108 : dans un monde de l'île, une ligne de la chronique peut porter `par` (le compte de qui l'a épinglée ou
+annotée) ; la migration 107 → 108 relit la chronique de la partie d'un monde (une signature illisible s'en va) ; une
+partie solo n'y gagne rien. Les réglages du monde sont au Durable Object, pas dans la partie.
+
+### Ce qui reste
+
+- **Les fêtes et les projets du village** (I8a) n'ont pas de commandes : en ligne, ils restent refusés (« ne se fait
+  pas encore »). Fixer une fête serait au propriétaire, apporter au chantier à l'ami jardinier.
+- **La famille de la partie** (la fiche d'un membre, ses habits, un animal) et le choix d'un lit s'écrivent encore dans la
+  partie locale en ligne (des gestes d'avant I9e, à revoir avec I9f).
+- **La suggestion d'un commerce** n'est gardée qu'au journal : un propriétaire absent la lit dans 📜, pas sur la fiche.
+- **« La charrette est à moi »** (un réglage du propriétaire, I9c) n'est pas fait : la règle d'I9c (vide, elle passe à
+  qui la demande) a suffi dans les essais.
+- **Les traits par joueur** : à trancher (la décision 8).
+- **Ce que l'ami gagne** : à décider et à faire dans une fiche à elle.
 
 ## Les règles qui ne changent pas
 

@@ -91,6 +91,17 @@ jeu, comme I7f l'a fait pour les parties solo.
 - **Le poids** : `voisins` gardé ajoute ≈ 3 Ko à une île de cinq villageois, ≈ 6 Ko à dix (`node scripts/cout-villageois.mjs`,
   la colonne « partie Ko ») ; l'amitié de chacun, la taille de `state.amitie` par joueur qui a parlé aux villageois.
 
+## Revu par I9e (les rôles en ligne)
+
+- **Les réglages du monde** (`meta.reglages = { taches }`, la délégation des tâches) sont au Durable Object, pas dans la
+  partie : une migration de monde les laisse ; une restauration aussi (ils ne sont pas dans la sauvegarde).
+- **La grille d'une île** ne vaut que pour une île (`ilePartagee`) : un monde d'avant migré en île change de grille
+  (fabriquer passe à l'ami jardinier ; les gestes du village, au propriétaire). Le dire au propriétaire à la migration.
+- **Le format 108** (`par` sur une ligne de la chronique d'un monde) : la migration d'un monde la relit.
+- **Les noms** : un monde d'avant garde ses noms de membres jusqu'à la première connexion de chacun (`hello.prenom`).
+- **Ce qui s'écrit encore dans la partie locale en ligne** (la fiche d'un membre de la famille, ses habits, un animal,
+  le choix d'un lit) : à revoir avec la mise en ligne d'une île, où la famille de la partie est celle du propriétaire.
+
 ## Hors périmètre
 
 - Fusionner une île solo et son île en ligne ; un monde à plus de joueurs qu'aujourd'hui.

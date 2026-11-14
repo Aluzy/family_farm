@@ -48,6 +48,15 @@ documentation.
    suivants pour les erreurs de migration ; prévoir comment revenir en arrière (republier la
    version d'avant : les parties migrées gardent leur copie de sûreté, I7f).
 
+## Revu par I9e (les rôles en ligne)
+
+- **Deux grilles de rôles vivent ensemble** (`js/engine/roles.js`) : celle d'E-11 pour une ferme d'avant, `GRILLE_ILE`
+  par-dessus pour une île (`ilePartagee`). À la bascule, toutes les parties sont des îles : `GRILLE_ILE` devient la
+  grille, et la branche « ferme d'avant » de `roleDemande` s'en va avec `villageActif`.
+- **`ROLES_TEXTE`** (`js/ui/en-ligne.js`, la fenêtre 👥) a deux versions, la ferme et l'île : garder celle de l'île.
+- **Le but du jeu en ligne** (aider l'île d'un ami) est dans `docs/monde-partage.md` § 10 et `docs/ile.md` : le reprendre
+  dans le README et la page d'accueil.
+
 ## Hors périmètre
 
 - Toute nouvelle règle ; la troisième vocation.

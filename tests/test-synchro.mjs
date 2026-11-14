@@ -486,3 +486,34 @@ test('I9d : une journée du village : le monde et deux joueurs ont la même part
   const T = (s) => JSON.stringify(tableauVillage(s));
   eq([T(a.confirmee), T(b.confirmee), T(a.locale), T(b.locale)], [T(w), T(w), T(w), T(w)], 'le même tableau');
 });
+
+test('I9e : les gestes de gestion du village chez chacun : l\'ordre d\'une tâche du propriétaire et l\'outil confié par l\'ami, joués chez eux puis par le monde ; l\'ordre d\'un ami (un jeu modifié) refusé par le monde et retiré de sa partie ; la même partie partout', () => {
+  const { r, h } = villageEnLigne();
+  const a = joueurIle(r, 'A'), b = joueurIle(r, 'B');
+  const geste = (qui, compte, c) => {
+    const x = qui.jouer(c);
+    if (!x.ok) return x;
+    const rep = r.commande(compte, c);
+    if (rep.ok) assert(a.evenement(rep.evt) && b.evenement(rep.evt), 'reçu dans l\'ordre'); else qui.refusee(c.id);
+    return rep;
+  };
+  h.t += 20 * 1000;
+  a.avancer(h.t); b.avancer(h.t);
+  // (A, le propriétaire, change la tâche de vg-1 : chez lui tout de suite, puis chez B par le monde)
+  const ordre = geste(a, 'A', { id: 'c-a-ordre', type: 'villageois.attribuer', args: { id: 'vg-1', tache: 'cueillette' } });
+  eq([ordre.ok, ordre.evt.bilan.avant, ordre.evt.bilan.apres], [true, 'bois', 'cueillette'], 'l\'ordre et son bilan');
+  eq([villageoisDe(a.locale)[0].tache, villageoisDe(b.locale)[0].tache], ['cueillette', 'cueillette']);
+  // (B, ami jardinier, reprend la pioche de vg-2 : un geste permis)
+  eq(geste(b, 'B', { id: 'c-b-outil', type: 'villageois.outil', args: { id: 'vg-2', outil: 'reprendre' } }).ok, true, 'l\'outil repris par l\'ami');
+  // (le jeu de B, modifié, joue un ordre chez lui et l'envoie : le monde le refuse, sa partie locale le retire)
+  const avant = b.enAttente.length;
+  const refus = geste(b, 'B', { id: 'c-b-ordre', type: 'villageois.attribuer', args: { id: 'vg-3', tache: 'cueillette' } });
+  eq([refus.ok, /propriétaire/.test(refus.erreur), b.enAttente.length, villageoisDe(b.locale)[2].tache], [false, true, avant, 'fauchage'], 'refusé, retiré');
+  h.t += 20 * 1000;
+  r.avancer(h.t);
+  a.avancer(h.t); b.avancer(h.t);
+  const w = r.charger();
+  a.avancerConfirmee(pasDe(w)); b.avancerConfirmee(pasDe(w));
+  const em = empreintePartie(w);
+  eq([empreintePartie(a.confirmee), empreintePartie(b.confirmee), commeLeMondeI9d(a.locale, w), commeLeMondeI9d(b.locale, w)], [em, em, em, em], 'la même partie partout');
+});

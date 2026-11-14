@@ -61,6 +61,12 @@ export function prenomJoueur() {
   const m = personnageSolo();
   return m && typeof m.prenom === 'string' ? encodeURIComponent(m.prenom.trim().slice(0, 40)) : '';
 }
+// I9e : ce prénom, tel quel (le message hello de la WebSocket du monde : js/ui/en-ligne.js ; le monde le nettoie) ; ''
+// sans partie.
+export function prenomPersonnage() {
+  const m = personnageSolo();
+  return m && typeof m.prenom === 'string' ? m.prenom.trim().slice(0, 40) : '';
+}
 export async function appelServeur(chemin, { methode = 'POST', corps } = {}) {
   const base = adresseServeur();
   if (!base) return { ok: false, erreur: 'Le jeu en ligne n\'est pas disponible ici.' };

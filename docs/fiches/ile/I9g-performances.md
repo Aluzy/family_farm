@@ -78,6 +78,14 @@ téléphone, avec un village complet toujours à l'écran, et corriger ce qui ne
   (`signatureTaches`, `signatureGardeManger`, `commercesSignature`) ; minuit (`runNight`) coûte 16 à 34 ms à cinq ou dix
   villageois, 79 ms (au plus 131) à quinze.
 
+## Revu par I9e (les rôles en ligne)
+
+- **Le contrôle des rôles est presque gratuit** (≈ 0,5 µs par commande), sauf un `bloc.reprendre` sur une île : il
+  relève les pièces closes pour savoir si la case tient la maison d'un villageois (≈ 0,3 à 0,6 ms de cinq à quinze
+  maisons, au serveur et chez le joueur qui joue le geste). À garder en mémoire par pas (`memoEnLot`) si un tracé de
+  murs repris en masse le fait sentir.
+- **Le bilan d'un geste du village** ajoute ≈ 60 octets à l'événement diffusé (l'ordre d'une tâche).
+
 ## Hors périmètre
 
 - Toute règle de jeu ; de nouveaux dessins.

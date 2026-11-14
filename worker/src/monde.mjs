@@ -33,7 +33,7 @@
 // chaque commande à son pas, les pas entre deux rejoués un à un).
 //
 // Le protocole (des messages JSON, par une WebSocket) :
-//   → { t: 'hello', version, depuis?, pas? }      ← { t: 'bienvenue', rev, role, membres, horloge? } puis
+//   → { t: 'hello', version, depuis?, pas?, prenom? } ← { t: 'bienvenue', rev, role, membres, horloge?, reglages } puis
 //                                                      { t: 'rattrape', evts } (depuis `depuis`) ou
 //                                                      { t: 'instantane', rev, partie }
 //                                                   (I9a2 : horloge = { pas, reel, sommeil, maintenant, dormait? } :
@@ -56,6 +56,10 @@
 //                                                   couché ; gardé sur sa connexion, jamais écrit) ; tous
 //                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: nuit.partagee }
 //                                                   (I9a2, un monde de l'île : cmd: temps.sommeil { oui }, la nuit file)
+//   I9e : hello porte le prénom du personnage du joueur (prenom : le nom montré aux autres, au journal, dans les avis ;
+//         sans lui, celui de l'adresse de la WebSocket) ; changé, la liste des membres est rediffusée.
+//   → { t: 'reglages', taches }                   (I9e, le propriétaire seul) ← à tous : { t: 'reglages', reglages }
+//                                                   (taches : l'attribution des tâches déléguée aux bâtisseurs)
 //   I9a2 :                                         ← à tous, à chaque instantané au temps : { t: 'controle', pas,
 //                                                   empreinte, reel, maintenant } (la partie du monde à ce pas :
 //                                                   un joueur qui ne la retrouve pas redemande tout)
@@ -63,7 +67,7 @@
 import {
   avancerJusqua, caseDansLaFerme, commandeHorsDeLaFerme, COMMANDES, DATA, farmTerrain, dureeDuPas, empreintePartie, energiesDe, executerCommande, GAME_VERSION, horlogeDe, horlogeVivante,
   ilePartagee, limiterSolDirect, migrate, pasDe, pasDuMonde, pickUpAll, ramasserMorceau, refusDuRole, refusFrontiere,
-  chargeVide, COMMANDES_DU_PORT, poserLieuDuPort,
+  chargeVide, COMMANDES_DU_PORT, poserLieuDuPort, reglagesMonde,
 } from '../../js/engine/index.js';
 
 export const MONDE = {
@@ -152,6 +156,34 @@ export function bilanCommerce(c, r) {
     case 'port.agrandir': return { niveau: r.niveau };
     default: return null;
   }
+}
+
+// I9e : le bilan d'un geste du village (`s` : la partie, après le geste) : qui a changé quoi, signé dans le journal du
+// monde et dit au propriétaire (un ordre de tâche, la tâche d'avant et d'après ; un commerce ouvert ou suggéré ; un
+// nom…) ; pour un geste du commerce, son bilan (bilanCommerce) ; null pour un autre geste.
+const prenomDe = (s, id) => { const v = s && Array.isArray(s.villageois) ? s.villageois.find((x) => x && x.id === id) : null; return v ? v.prenom : null; };
+export function bilanGeste(c, r, s = null) {
+  const b = bilanCommerce(c, r);
+  if (b) return b;
+  const a = (c && c.args) || {};
+  switch (c && c.type) {
+    case 'villageois.attribuer': return { id: a.id, prenom: r.prenom || prenomDe(s, a.id), avant: r.avant || null, apres: r.tache || null };
+    case 'villageois.outil': return { id: a.id, prenom: prenomDe(s, a.id), outil: r.outil || null, repris: a.outil === 'reprendre' };
+    case 'villageois.vendre': return { id: a.id, prenom: prenomDe(s, a.id), n: Array.isArray(r.vendre) ? r.vendre.length : 0 };
+    case 'villageois.foyer': return { a: prenomDe(s, a.a), b: prenomDe(s, a.b) };
+    case 'villageois.enfant': return { foyer: a.foyer };
+    case 'commerce.ouvrir': return { id: a.id, prenom: prenomDe(s, a.id), sorte: a.sorte, nom: r.nom || null };
+    case 'commerce.rejoindre': return { id: a.id, prenom: prenomDe(s, a.id), commerce: a.commerce };
+    case 'commerce.suggerer': return { id: a.id, prenom: r.prenom || prenomDe(s, a.id), sorte: a.sorte, nom: r.nom || null };
+    case 'nom.donner': return { quoi: a.quoi, nom: r.nom || null, avant: r.avant || null };
+    default: return null;
+  }
+}
+
+// I9e : le prénom qu'envoie la page (hello), nettoyé comme celui de l'adresse (worker/src/index.js nomAffiche) : sans
+// caractère de contrôle ni balise, 20 caractères au plus ; '' sans prénom (le nom du membre ne change pas).
+export function prenomDuJoueur(v) {
+  return Array.from(String(typeof v === 'string' ? v : '').replace(/[\u0000-\u001f\u007f<>]+/g, ' ').replace(/\s+/g, ' ').trim()).slice(0, 20).join('').trim();
 }
 
 // I9d : l'amitié du propriétaire d'une île (state.amities, temps-monde.js amitieDuJoueur) : à la mise en ligne, et à
@@ -467,6 +499,20 @@ export class MondeRegistre {
   }
   membres() { return this.tous('SELECT compte, nom, role FROM membres WHERE revoque = 0 ORDER BY role DESC, nom'); }
 
+  // I9e : les réglages du monde (js/engine/roles.js reglagesMonde : taches, l'attribution des tâches déléguée aux
+  // bâtisseurs ; éteint par défaut), gardés dans meta.
+  reglages() {
+    let r = null;
+    try { r = JSON.parse(this.meta('reglages') || 'null'); } catch (e) { r = null; }
+    return reglagesMonde(r);
+  }
+  changerReglages(par, r) {
+    if (par !== this.meta('proprietaire')) return { ok: false, statut: 403, erreur: 'Seul le propriétaire du monde change ses réglages.' };
+    const avant = this.reglages(), apres = reglagesMonde({ ...avant, ...(r && typeof r === 'object' ? r : {}) });
+    this.poserMeta('reglages', JSON.stringify(apres));
+    return { ok: true, reglages: apres };
+  }
+
   // L'accueil d'un joueur : refusé si ce n'est pas un membre, ou si son jeu n'a pas la version du monde ;
   // sinon ce qui lui manque depuis la révision `depuis` (les commandes du journal), ou tout (l'instantané
   // de la partie à la révision courante).
@@ -482,7 +528,7 @@ export class MondeRegistre {
     if (!reprise) this.avancer(t);
     const horloge = this.horlogeAccueil(t);
     if (horloge && reprise && reprise.dormait !== null) horloge.dormait = reprise.dormait;
-    const base = { ok: true, rev: this.rev, role: m.role, titre: this.meta('titre'), proprietaire: this.meta('proprietaire'), membres: this.membres(), ...(horloge ? { horloge } : {}) };
+    const base = { ok: true, rev: this.rev, role: m.role, titre: this.meta('titre'), proprietaire: this.meta('proprietaire'), membres: this.membres(), reglages: this.reglages(), ...(horloge ? { horloge } : {}) };
     const d = Number(depuis);
     // (I9a2 : trop de pas de retard, ou un retard inconnu : la partie entière, plutôt que le journal et les pas à rejouer)
     const enRetard = !!horloge && !(Number.isInteger(pas) && pas >= 0 && pas <= horloge.pas && horloge.pas - pas <= DATA.VILLAGE.EN_LIGNE.RETARD_PAS);
@@ -510,8 +556,8 @@ export class MondeRegistre {
     if (!COMMANDES_MONDE.has(c.type)) return { ok: false, erreur: `Cette action ne se joue pas encore en ligne (${String(c.type)}).` };
     // (I9a2 : les pas dus d'abord ; la commande se joue au pas où le monde est quand elle arrive)
     this.avancer();
-    // (E-11 : le rôle du membre le permet-il ?)
-    const refus = refusDuRole(m.role, this.charger(), c);
+    // (E-11 : le rôle du membre le permet-il ? I9e : avec les réglages du monde, la délégation des tâches)
+    const refus = refusDuRole(m.role, this.charger(), c, this.reglages());
     if (refus) return { ok: false, erreur: refus };
     // (le débit : COMMANDES_PAR_MINUTE au plus par membre)
     const t = this.maintenant(), L = (this.debits.get(compte) || []).filter((x) => x > t - 60000);
@@ -558,8 +604,9 @@ export class MondeRegistre {
     const r = executerCommande(s, c, vivante && acteur !== ACTEUR_MONDE ? { acteur } : {});
     if (!r.ok) return { ok: false, erreur: r.error || 'Refusé.' };
     this.rev += 1;
-    // (I9c : ce qu'a fait un geste du commerce, en peu de mots : au journal, et à tous avec l'événement)
-    const bilan = bilanCommerce(c, r);
+    // (I9c : ce qu'a fait un geste du commerce, en peu de mots : au journal, et à tous avec l'événement ; I9e : un geste du
+    // village aussi, l'ordre d'une tâche par exemple)
+    const bilan = bilanGeste(c, r, s);
     this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts, bilan) VALUES (?, ?, ?, ?, ?, ?)', this.rev, c.id, acteur, JSON.stringify(c), t, bilan ? JSON.stringify(bilan) : null);
     if (vivante) {
       this.gestes += 1;
@@ -983,12 +1030,22 @@ export function traiterMessage(registre, compte, message, repondre, diffuser, di
   try { m = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message)); } catch (e) { repondre({ t: 'erreur', erreur: 'Message illisible.' }); return; }
   if (!m || typeof m !== 'object') return;
   if (m.t === 'hello') {
+    // (I9e : le prénom du personnage du joueur, que sa page envoie : le nom montré aux autres)
+    const prenom = prenomDuJoueur(m.prenom);
+    if (prenom && registre.renommer(compte, prenom)) diffuser({ t: 'membres', membres: registre.membres() });
     const a = registre.accueil(compte, { version: m.version, depuis: m.depuis, pas: m.pas });
     if (!a.ok) { repondre({ t: 'refus', raison: a.raison, erreur: a.erreur }); return; }
-    repondre({ t: 'bienvenue', rev: a.rev, role: a.role, titre: a.titre, proprietaire: a.proprietaire, moi: compte, membres: a.membres, ...(a.horloge ? { horloge: a.horloge } : {}) });
+    repondre({ t: 'bienvenue', rev: a.rev, role: a.role, titre: a.titre, proprietaire: a.proprietaire, moi: compte, membres: a.membres, reglages: a.reglages, ...(a.horloge ? { horloge: a.horloge } : {}) });
     if (a.partie) repondre({ t: 'instantane', rev: a.rev, partie: a.partie });
     else repondre({ t: 'rattrape', evts: a.evts });
     if (lits) lits.accueilli();
+    return;
+  }
+  if (m.t === 'reglages') {
+    // I9e : le propriétaire change un réglage du monde ; à tous, les réglages
+    const r = registre.changerReglages(compte, { taches: m.taches === true });
+    if (!r.ok) { repondre({ t: 'erreur', erreur: r.erreur }); return; }
+    diffuser({ t: 'reglages', reglages: r.reglages });
     return;
   }
   if (m.t === 'coucher') {

@@ -55,6 +55,11 @@
 //      villageois au même poste, au travail puis à table à midi ; le bois coupé arrive au coffre commun dans la matinée ;
 //      A parle à un villageois : son amitié monte, celle de B reste la sienne ; le tableau du village est le même chez les
 //      deux. (CAPTURES : au travail, à table, la bulle, la liste des villageois, chez l'hôte et chez l'invité.)
+//  13. I9e : les rôles en ligne (une île à trois villageois, B bâtisseur) : chacun s'appelle du prénom de son personnage ;
+//      B lit la tâche d'un villageois sans bouton pour la changer, son geste est refusé tout de suite ; A la change par la
+//      fiche, B le voit et son avis dit « Alex a confié à … » ; A confie les tâches aux bâtisseurs (👥), B est prévenu et
+//      donne un ordre ; le journal porte chaque ordre et son auteur. (CAPTURES : la fiche sans droit, le refus, l'avis au
+//      vrai nom, la fiche de l'hôte, la délégation, le journal.)
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
 import { createServer } from 'node:http';
@@ -130,6 +135,8 @@ plantRipe(s0, 'potager-1', 'carotte');   // (E-5 : une carotte à récolter en l
 s0.poulailler.poules = 2;   // (E-6 : deux poules à nourrir, du blé)
 addItem(s0, 'ble', 6);
 s0.outils = { hache: true, pioche: true, faux: true, canne: true };   // (E-9 : les outils de la ferme)
+// (I9e : le personnage de A s'appelle Alex : c'est le nom que les autres voient, au journal et dans les avis)
+Object.assign(s0.famille.membres.find((m) => m.id === s0.famille.principal) || s0.famille.membres[0], { prenom: 'Alex' });
 const SAUVEGARDE = JSON.stringify({ v: s0.version, t: Date.now(), s: s0 });
 // (la partie solo de B : son personnage à lui, Sam, le personnage 7 du catalogue ; c'est lui qu'il joue en ligne)
 const sB = JSON.parse(JSON.stringify(s0));
@@ -842,6 +849,90 @@ try {
       await pb.screenshot({ path: process.env.CAPTURES + '/i9d-invite-liste.png' });
       for (const p of [pa, pb]) await action(p, 'close-modal');
     }
+  }
+  // 13. I9e : les rôles en ligne (une île à trois villageois au travail ; B invité comme bâtisseur)
+  {
+    const ile4 = avecVillage(() => createNewGame('31', { nom: 'Île' }));
+    ile4.essais = { ...(ile4.essais || {}), village: true };
+    testSetLevel(ile4, 5);
+    testBatir(ile4, 'foyer');
+    for (let k = 0; k < 3; k++) { testMaisonVillageois(ile4); arriverVillageois(ile4, { direct: true }); }
+    addItem(ile4, 'pain', 80);
+    ile4.outils = { ...(ile4.outils || {}), hache: true, pioche: true, faux: true };
+    villageoisDe(ile4).forEach((v, i) => { const [t, o] = [['bois', 'hache'], ['pierre', 'pioche'], ['fauchage', 'faux']][i]; donnerOutil(ile4, v.id, o); attribuer(ile4, v.id, t); });
+    ile4.awakeMs = (9 - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
+    const cree4 = await appel(A, '/mondes', { partie: { v: ile4.version, t: Date.now(), s: ile4 }, titre: 'Le village d\'Alex' });
+    const inv4 = cree4.ok ? await appel(A, `/mondes/${cree4.monde}/invitations`, { role: 'batisseur' }) : {};
+    const entre4 = inv4.ok ? await appel(B, '/rejoindre', { code: inv4.code }) : {};
+    const id4 = cree4.monde, reg4 = id4 && mondes.get(id4).registre;
+    const vg = villageoisDe(ile4)[0], prenomVg = vg.prenom;
+    // (les noms montrés sont ceux que la page envoie : la mise en ligne et l'invitation, par les routes, n'en avaient pas)
+    const nomsAvant = reg4 ? reg4.membres().map((m) => m.nom).sort() : [];
+    for (const p of [pa, pb]) await p.goto(`${BASE}/jeu.html?monde=${id4}`);
+    const dedans4 = (await attendre(pa, pret, null, 30000)) !== null && (await attendre(pb, pret, null, 30000)) !== null;
+    const sansAide4 = (p) => p.evaluate(() => { if (document.getElementById('capture-style4')) return; const st = document.createElement('style'); st.id = 'capture-style4'; st.textContent = '#tuto-root, #consent-banner { display: none !important; }'; document.head.appendChild(st); });
+    const sansMessages4 = (p) => p.evaluate(() => document.querySelectorAll('.toast').forEach((e) => e.remove()));
+    for (const p of [pa, pb]) { await p.evaluate(() => { const st = document.getElementById('capture-style'); if (st) st.remove(); }); await sansAide4(p); }
+    // 13a. chacun s'appelle du prénom de son personnage (le hello de sa page), au monde et chez l'autre
+    const nomsVus = await attendre(pa, (ids) => import('/js/ui/en-ligne.js').then((L) => { const M = L._lien().membres; const n = (c) => (M.find((m) => m.compte === c) || {}).nom; return n(ids[0]) === 'Alex' && n(ids[1]) === 'Sam'; }), [A.id, B.id], 8000);
+    const nomsMonde = reg4 ? reg4.membres().map((m) => m.nom).sort() : [];
+    verifie(cree4.ok && entre4.ok && dedans4 && nomsVus !== null && JSON.stringify(nomsMonde) === JSON.stringify(['Alex', 'Sam']),
+      `13a. l'île de A (${id4}) : chacun s'appelle du prénom de son personnage (avant ${JSON.stringify(nomsAvant)}, au monde ${JSON.stringify(nomsMonde)})`);
+    // 13b. B, bâtisseur, ouvre la fiche d'un villageois : qui fait quoi se lit, pas de bouton « Tâche » ; s'il le tente, refusé
+    await action(pb, 'villageois-fiche', { id: vg.id });
+    const ficheB = await attendre(pb, () => !!document.getElementById('villageois-tache-droit') && !document.getElementById('villageois-tache') && /Tâche/.test(document.querySelector('.villageois-fiche').innerText), null, 5000);
+    if (process.env.CAPTURES) { await sansMessages4(pb); await pb.waitForTimeout(300); await pb.screenshot({ path: process.env.CAPTURES + '/i9e-invite-fiche-sans-droit.png' }); }
+    const rev4 = reg4.rev;
+    await action(pb, 'villageois-attribuer', { id: vg.id, tache: 'cueillette' });
+    const refusB = await attendre(pb, () => /Seul le propriétaire de l'île attribue les tâches/.test(document.body.innerText), null, 5000);
+    await pb.waitForTimeout(400);
+    const tacheMonde = () => villageoisDe(reg4.charger()).find((v) => v.id === vg.id).tache;
+    const enAttenteB = await pb.evaluate(async () => (await import('/js/ui/en-ligne.js'))._lien().synchro.enAttente.length);
+    verifie(ficheB !== null && refusB !== null && reg4.rev === rev4 && tacheMonde() === 'bois' && enAttenteB === 0,
+      `13b. B (bâtisseur) lit la tâche de ${prenomVg} sans bouton pour la changer ; son geste est refusé tout de suite (« Seul le propriétaire de l'île attribue les tâches… »), rien n'est envoyé`);
+    if (process.env.CAPTURES) await pb.screenshot({ path: process.env.CAPTURES + '/i9e-invite-refus.png' });
+    // 13c. A, le propriétaire, donne une tâche par la fiche : le monde l'a, B la voit, et l'avis de B dit le vrai nom de A
+    await sansMessages4(pb);
+    await action(pa, 'villageois-fiche', { id: vg.id });
+    await attendre(pa, () => !!document.getElementById('villageois-tache'), null, 5000);
+    await pa.click('#villageois-tache');
+    await attendre(pa, () => !!document.querySelector('[data-action="villageois-attribuer"][data-tache="cueillette"]'), null, 5000);
+    await pa.click('[data-action="villageois-attribuer"][data-tache="cueillette"]');
+    const ordreA = await (async () => { const t0 = Date.now(); while (Date.now() - t0 < 8000) { if (tacheMonde() === 'cueillette') return Date.now() - t0; await pa.waitForTimeout(25); } return null; })();
+    const avisB = await attendre(pb, (p) => /Alex a confié à/.test(document.body.innerText) && document.body.innerText.includes(p), prenomVg, 5000);
+    const vuB = await pb.evaluate(async (i) => (await import('/js/engine/index.js')).trouverVillageois(FF.state, i).tache, vg.id);
+    verifie(ordreA !== null && avisB !== null && vuB === 'cueillette',
+      `13c. A donne à ${prenomVg} la cueillette par sa fiche : le monde l'a en ${ordreA} ms ; B la voit, et son avis dit « Alex a confié à ${prenomVg} … »`);
+    if (process.env.CAPTURES) {
+      await pb.waitForTimeout(200);
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9e-invite-avis-vrai-nom.png' });
+      await sansMessages4(pa); await pa.waitForTimeout(200);
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9e-hote-fiche.png' });
+    }
+    // 13d. A confie l'attribution des tâches aux bâtisseurs (👥) : B en est prévenu, le bouton paraît, sa tâche passe
+    await action(pa, 'monde-membres');
+    await attendre(pa, () => !!document.getElementById('monde-deleguer'), null, 5000);
+    await pa.click('#monde-deleguer');
+    const delegue = await (async () => { const t0 = Date.now(); while (Date.now() - t0 < 5000) { if (reg4.reglages().taches) return true; await pa.waitForTimeout(25); } return false; })();
+    await attendre(pa, () => /attribuent aussi les tâches/.test((document.getElementById('monde-deleguer') || {}).innerText || ''), null, 5000);
+    if (process.env.CAPTURES) { await sansMessages4(pa); await pa.waitForTimeout(200); await pa.screenshot({ path: process.env.CAPTURES + '/i9e-hote-delegation.png' }); }
+    await action(pa, 'close-modal');
+    const prevenu = await attendre(pb, () => /te confie l'attribution des tâches/.test(document.body.innerText), null, 5000);
+    await action(pb, 'villageois-fiche', { id: vg.id });
+    const bouton = await attendre(pb, () => !!document.getElementById('villageois-tache'), null, 5000);
+    await action(pb, 'villageois-attribuer', { id: vg.id, tache: 'bois' });
+    const ordreB = await (async () => { const t0 = Date.now(); while (Date.now() - t0 < 8000) { if (tacheMonde() === 'bois') return Date.now() - t0; await pa.waitForTimeout(25); } return null; })();
+    const avisA = await attendre(pa, () => /Sam a confié à/.test(document.body.innerText), null, 5000);
+    verifie(delegue && prevenu !== null && bouton !== null && ordreB !== null && avisA !== null,
+      `13d. A confie les tâches aux bâtisseurs : B en est prévenu, le bouton « Tâche » paraît, son ordre passe (${ordreB} ms) ; l'avis de A dit « Sam a confié à ${prenomVg} … »`);
+    // 13e. le journal du monde : chaque ordre, son auteur (son vrai prénom), la tâche d'avant et d'après
+    await sansMessages4(pa);
+    await action(pa, 'monde-journal');
+    const journal4 = await attendre(pa, () => /Sam\s+a confié à/.test(document.body.innerText) && /Alex\s+a confié à/.test(document.body.innerText) && /avant :/.test(document.body.innerText), null, 5000);
+    verifie(journal4 !== null && (await memePas(pa, reg4)) && (await memePas(pb, reg4)), '13e. le journal du monde porte chaque ordre et son auteur, nommé (« Alex a confié à … », « Sam a confié à … ») ; les parties confirmées sont celle du monde');
+    if (process.env.CAPTURES) { await pa.waitForTimeout(300); await pa.screenshot({ path: process.env.CAPTURES + '/i9e-journal.png' }); }
+    await action(pa, 'close-modal');
+    await action(pb, 'close-modal');
   }
 } finally {
   await navigateur.close();

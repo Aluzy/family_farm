@@ -164,6 +164,17 @@
      commerce.commander { commerce, recette, facon? }   lui commander une pièce, payée d'avance ou à façon (la matière du joueur)
      commerce.lettres   { commerce, lettres? }          les lettres de son enseigne (une couleur débloquée ; sans : d'origine)
      commerce.rejoindre { id, commerce }                I5b : le villageois `id` rejoint le commerce en second (la décision du joueur)
+     commerce.suggerer  { id, sorte }                   I9e, en ligne : un invité très ami du villageois suggère au
+                                                        propriétaire de l'île qu'il ouvre ce commerce (rien ne change : le
+                                                        journal du monde et l'avis au propriétaire ; artisans.js)
+   Les noms et la chronique (l'île à bâtir, fiche I7g ; I9e : des commandes, pour qu'en ligne ils soient ceux du monde ;
+   js/engine/noms.js, chronique.js, sans inverse) :
+     nom.donner        { quoi, texte, id? }      nommer l'île, le village (quoi : ile, village), une maison (id : la case de sa
+                                                boîte aux lettres) ou un commerce (id : le sien) ; une maison sans texte perd
+                                                son nom
+     chronique.epingler { n, oui }              épingler (ou détacher) la ligne `n` de la chronique
+     chronique.noter   { n, texte? }            écrire sa note sur la ligne `n` (sans texte : l'effacer) ; dans un monde de
+                                                l'île, la ligne porte le compte de qui l'a épinglée ou annotée (par)
 */
 
 import { objectifsARevoir } from './campaign.js';
@@ -184,7 +195,9 @@ import { recolterBac, semerBac } from './bacs.js';
 import { cueillirMassif } from './massifs.js';
 import { remplirTonnelet } from './tonnelets.js';
 import { mettreALEtal, reprendreDeLEtal } from './bourse.js';
-import { acheterAuCommerce, choisirLettres, commanderAuCommerce, ouvrirCommerce, rejoindreCommerce } from './artisans.js';
+import { acheterAuCommerce, choisirLettres, commanderAuCommerce, ouvrirCommerce, rejoindreCommerce, suggererCommerce } from './artisans.js';
+import { epinglerLigne, noterLigne, renommerEtNoter } from './chronique.js';
+import { nomsDe } from './noms.js';
 import { engraisser, jeterAuCompost } from './compost.js';
 import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, stopCurrent } from './kitchen.js';
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
@@ -260,6 +273,10 @@ const CONTROLES = {
   tache: (v) => typeof v === 'string' && (v === 'aucune' || !!((DATA.TACHES && DATA.TACHES.LISTE) || {})[v]),
   outil: (v) => v === 'reprendre' || v === 'hache' || v === 'pioche' || v === 'faux' || v === 'canne',
   objets: (v) => Array.isArray(v) && v.length <= 40 && v.every((x) => typeof x === 'string' && !!DATA.OBJETS[x]),
+  // (I9e : ce qu'on nomme ; un texte libre, peut-être vide, borné : le moteur le nettoie ; le rang d'une ligne)
+  nomme: (v) => v === 'ile' || v === 'village' || v === 'maison' || v === 'commerce',
+  ecrit: (v) => typeof v === 'string' && v.length <= 400,
+  rang: (v) => Number.isInteger(v) && v >= 0 && v <= 1e9,
   // les papiers peints (js/engine/papiers.js) : un motif, ou « aucun » ; le niveau 0 (en bas) ou 1 (l'étage) ;
   // des murs et leur motif (l'annulation : { [case du mur]: motif | aucun }, 400 au plus)
   motif: (v) => v === AUCUN || (typeof v === 'string' && !!(DATA.PAPIERS_PEINTS || {})[v]),
@@ -761,6 +778,27 @@ export const COMMANDES = {
   'commerce.rejoindre': {
     args: { id: 'texte', commerce: 'texte' },
     executer: (state, { id, commerce }) => rejoindreCommerce(state, id, commerce),
+  },
+  // (I9e : la suggestion d'un invité ; les noms et la chronique)
+  'commerce.suggerer': {
+    args: { id: 'texte', sorte: 'texte' },
+    executer: (state, { id, sorte }) => suggererCommerce(state, id, sorte),
+  },
+  'nom.donner': {
+    args: { quoi: 'nomme', texte: 'ecrit', id: 'texte?' },
+    executer: (state, { quoi, texte, id = null }) => {
+      nomsDe(state);
+      const r = renommerEtNoter(state, quoi, texte, quoi === 'maison' || quoi === 'commerce' ? id : null);
+      return r.ok ? { ...r, quoi } : { ok: false, error: r.error };
+    },
+  },
+  'chronique.epingler': {
+    args: { n: 'rang', oui: 'drapeau' },
+    executer: (state, { n, oui }) => { const r = epinglerLigne(state, n, oui); return r.ok ? r : { ok: false, error: r.error }; },
+  },
+  'chronique.noter': {
+    args: { n: 'rang', texte: 'ecrit?' },
+    executer: (state, { n, texte = '' }) => { const r = noterLigne(state, n, texte); return r.ok ? r : { ok: false, error: r.error }; },
   },
 };
 

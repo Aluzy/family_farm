@@ -7,28 +7,33 @@ import { nomAffiche, nomDe } from '../engine/noms.js';
 
    Ce que la fenêtre de la chronique montre (js/ui/chronique.js l'ouvre et joue ses boutons), sans rien d'autre que le
    moteur : les tests le lisent dans Node (tests/engine/village-chronique.test.mjs). Tout ce que le joueur écrit (les
-   noms, ses notes) est échappé (escapeHtml). */
+   noms, ses notes) est échappé (escapeHtml).
+   I9e, en ligne : `o` (chroniqueHtml, maisonNomHtml) dit ce que le joueur a le droit de faire (nommer : le propriétaire
+   de l'île ; épingler et annoter : l'ami jardinier) et le nom d'un joueur (signature : compte → prénom) ; une ligne
+   épinglée ou annotée par un joueur le dit (« — Sam »). Sans `o`, comme en solo : tout, sans signature. */
 
 const CH = () => (DATA.VILLAGE && DATA.VILLAGE.CHRONIQUE) || {};
 
 // Une ligne : son jour, son icône, son texte, la note du joueur ; 📌 l'épingler (ou la détacher), ✏️ y écrire une note.
-function ligneHtml(l) {
+function ligneHtml(l, o = {}) {
   const n = escapeHtml(String(l.n));
-  const gestes = l.resume ? '' : `<span class="chronique-gestes">
+  const gestes = l.resume || o.noter === false ? '' : `<span class="chronique-gestes">
       <button type="button" class="btn small chronique-epingle${l.epingle ? ' active' : ''}" data-action="chronique-epingler" data-n="${n}" aria-pressed="${l.epingle}" title="${l.epingle ? 'Détacher' : 'Épingler'}" aria-label="${l.epingle ? 'Détacher cette ligne' : 'Épingler cette ligne'}">📌</button>
       <button type="button" class="btn small" data-action="chronique-note" data-n="${n}" title="${l.note ? 'Changer ma note' : 'Écrire une note'}" aria-label="${l.note ? 'Changer ma note' : 'Écrire une note sur cette ligne'}">✏️</button></span>`;
-  const note = l.note ? `<p class="chronique-note"><span aria-hidden="true">🖋️</span> ${escapeHtml(l.note)}</p>` : '';
+  const qui = l.par && typeof o.signature === 'function' ? o.signature(l.par) : '';
+  const signe = qui ? ` <span class="muted chronique-signature">— ${escapeHtml(qui)}</span>` : '';
+  const note = l.note ? `<p class="chronique-note"><span aria-hidden="true">🖋️</span> ${escapeHtml(l.note)}${signe}</p>` : l.epingle && signe ? `<p class="chronique-note muted">📌${signe}</p>` : '';
   return `<li class="chronique-ligne${l.epingle ? ' epinglee' : ''}${l.resume ? ' resume' : ''}" data-n="${n}">
     <span class="chronique-jour">${l.resume ? '' : `Jour ${escapeHtml(String(l.jour))}`}</span>
     <span class="chronique-texte"><span aria-hidden="true">${escapeHtml(l.icone)}</span> ${escapeHtml(l.texte)}</span>${gestes}${note}</li>`;
 }
 
 // Les noms de l'île et du village, chacun avec « ✏️ Renommer ».
-export function nomsHtml(state) {
-  const ile = nomDe(state, 'ile'), village = nomDe(state, 'village');
+export function nomsHtml(state, o = {}) {
+  const ile = nomDe(state, 'ile'), village = nomDe(state, 'village'), nommer = o.nommer !== false;
   return `<dl class="chronique-noms">
-    <dt>🏝️ L'île</dt><dd><strong>${escapeHtml(ile || '—')}</strong> <button type="button" class="btn small" data-action="noms-renommer" data-quoi="ile" title="Renommer l'île" aria-label="Renommer l'île">✏️</button></dd>
-    <dt>🏘️ Le village</dt><dd>${village ? `<strong>${escapeHtml(village)}</strong>` : '<span class="muted">pas encore de nom (il en prend un quand le troisième villageois s\'installe)</span>'} <button type="button" class="btn small" data-action="noms-renommer" data-quoi="village" title="${village ? 'Renommer le village' : 'Nommer le village'}" aria-label="${village ? 'Renommer le village' : 'Nommer le village'}">✏️</button></dd>
+    <dt>🏝️ L'île</dt><dd><strong>${escapeHtml(ile || '—')}</strong>${nommer ? ' <button type="button" class="btn small" data-action="noms-renommer" data-quoi="ile" title="Renommer l\'île" aria-label="Renommer l\'île">✏️</button>' : ''}</dd>
+    <dt>🏘️ Le village</dt><dd>${village ? `<strong>${escapeHtml(village)}</strong>` : '<span class="muted">pas encore de nom (il en prend un quand le troisième villageois s\'installe)</span>'}${nommer ? ` <button type="button" class="btn small" data-action="noms-renommer" data-quoi="village" title="${village ? 'Renommer le village' : 'Nommer le village'}" aria-label="${village ? 'Renommer le village' : 'Nommer le village'}">✏️</button>` : ''}</dd>
   </dl>`;
 }
 
@@ -39,24 +44,25 @@ function deNom(nom) {
   return /^[AEIOUYÂÊÎÔÛÉÈÀaeiouy]/.test(nom) ? `d'${escapeHtml(nom)}` : `de ${escapeHtml(nom)}`;
 }
 
-export function chroniqueHtml(state) {
+export function chroniqueHtml(state, o = {}) {
   const mois = chroniqueParMois(state), epingles = lignesEpinglees(state);
-  const titre = nomAffiche(state);
+  const titre = nomAffiche(state), ligne = (l) => ligneHtml(l, o);
   const corps = mois.length
-    ? mois.map((m) => `<section class="chronique-mois"><h3>🌙 ${escapeHtml(m.titre)}</h3><ol class="chronique-lignes">${m.lignes.map(ligneHtml).join('')}</ol></section>`).join('')
+    ? mois.map((m) => `<section class="chronique-mois"><h3>🌙 ${escapeHtml(m.titre)}</h3><ol class="chronique-lignes">${m.lignes.map(ligne).join('')}</ol></section>`).join('')
     : '<p class="hint">Rien encore : ce qui comptera sur l\'île viendra s\'écrire ici.</p>';
   return `
     <h2 id="chronique-titre">📜 La chronique${titre ? ` ${deNom(titre)}` : ''}</h2>
-    ${nomsHtml(state)}
-    ${epingles.length ? `<section class="chronique-mois chronique-epinglees"><h3>📌 Épinglées</h3><ol class="chronique-lignes">${epingles.map(ligneHtml).join('')}</ol></section>` : ''}
+    ${nomsHtml(state, o)}
+    ${epingles.length ? `<section class="chronique-mois chronique-epinglees"><h3>📌 Épinglées</h3><ol class="chronique-lignes">${epingles.map(ligne).join('')}</ol></section>` : ''}
     <div class="chronique-corps">${corps}</div>
     <div class="row"><button type="button" class="btn primary" data-action="close-modal" id="chronique-fermer">Fermer</button></div>`;
 }
 
 // Le nom de la maison du villageois `v` (sur sa fiche, js/ui/villageois.js), et « ✏️ » pour la nommer.
-export function maisonNomHtml(state, v) {
+export function maisonNomHtml(state, v, o = {}) {
   if (!v || !Number.isInteger(v.maison)) return '';
   const nom = nomDe(state, 'maison', v.maison);
+  if (o.nommer === false) return nom ? ` · <strong>${escapeHtml(nom)}</strong>` : '';
   return ` · ${nom ? `<strong>${escapeHtml(nom)}</strong>` : '<span class="muted">sans nom</span>'} <button type="button" class="btn small" data-action="noms-renommer" data-quoi="maison" data-id="${v.maison}" data-retour="${escapeHtml(v.id)}" title="Nommer la maison" aria-label="Nommer la maison">✏️</button>`;
 }
 

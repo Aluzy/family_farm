@@ -37,7 +37,7 @@ import { goutTache, nomTrait, noterIndice, observerTraits, traitDef, traitsPourF
 import { maisonNomHtml } from './chronique-html.js';
 import { commerceFicheHtml, watchCommerces } from './commerce.js';
 import { executer } from './commandes.js';
-import { mondeActuel } from './en-ligne.js';
+import { gestePermis, mondeActuel } from './en-ligne.js';
 
 /* ---------- les villageois, côté page (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -69,6 +69,10 @@ import { mondeActuel } from './en-ligne.js';
        faire révèle ses traits ; ce qu'il dit aussi (sa bulle, ses répliques) ; un trait révélé, une notification ; sa
        fiche montre ses traits connus et un « ? » pour chacun des autres (une ligne), la liste des tâches et le tableau
        marquent celle qui est « à son goût » ou « pas son goût ».
+     - I9e (en ligne, les rôles : js/engine/roles.js) : les gestes de sa fiche sont des commandes du monde
+       (villageois.attribuer, villageois.outil, villageois.vendre ; les liens : js/ui/liens.js) ; qui fait quoi se lit par
+       tous, et ses boutons ne paraissent qu'à qui a le droit (gestePermis) : attribuer une tâche est au propriétaire (ou
+       aux bâtisseurs s'il le délègue), confier un outil et la navette à l'ami jardinier.
    Le chantier éteint (villageActif), rien ici ne se montre. */
 
 const WATCH_MS = 1000;
@@ -312,15 +316,18 @@ function tacheHtml(id) {
     : q.etat === 'attend' ? `${def.icone} ${escapeHtml(def.nom)} · <span class="villageois-manque">⏳ ${escapeHtml(q.raison)}</span>`
     : `${def.icone} ${escapeHtml(def.nom)} · ${q.actions} / ${q.sur} aujourd'hui${produitTexte(q.produit) ? ` : ${produitTexte(q.produit)}` : ''}`;
   const T = (o) => toolDef(o), mon = (o) => (T(o).ARTICLE === 'un' ? 'mon' : 'ma');
-  const outil = v.outil ? `${T(v.outil).ICONE} ${escapeHtml(T(v.outil).NOM)} <button type="button" class="btn small" data-action="villageois-reprendre" data-id="${e}">Reprendre</button>`
+  // (I9e : en ligne, les boutons ne paraissent qu'à qui a le droit ; ce qui se fait se lit par tous)
+  const outilPermis = gestePermis('villageois.outil', { id, outil: 'reprendre' }), tachePermise = gestePermis('villageois.attribuer', { id, tache: 'aucune' });
+  const outil = v.outil ? `${T(v.outil).ICONE} ${escapeHtml(T(v.outil).NOM)}${outilPermis ? ` <button type="button" class="btn small" data-action="villageois-reprendre" data-id="${e}">Reprendre</button>` : ''}`
     : '<span class="muted">aucun</span>';
-  const donner = outilsDesTaches().filter((o) => o !== v.outil && hasTool(state, o))
+  const donner = !outilPermis ? '' : outilsDesTaches().filter((o) => o !== v.outil && hasTool(state, o))
     .map((o) => `<button type="button" class="btn small" data-action="villageois-donner" data-id="${e}" data-outil="${o}">${T(o).ICONE} Donner ${mon(o)} ${escapeHtml(T(o).NOM.toLowerCase())}</button>`).join(' ');
   const liste = (v.vendre || []).filter((o) => DATA.OBJETS[o]);
-  const vendre = q.tache === 'navette' ? `<dt>⚓ À vendre</dt><dd>${liste.length ? liste.map((o) => `${icone(o)} ${escapeHtml(DATA.OBJETS[o].nom)}`).join(', ') : '<span class="muted">rien</span>'} <button type="button" class="btn small" data-action="villageois-vendre" data-id="${e}">Choisir</button></dd>` : '';
+  const vendre = q.tache === 'navette' ? `<dt>⚓ À vendre</dt><dd>${liste.length ? liste.map((o) => `${icone(o)} ${escapeHtml(DATA.OBJETS[o].nom)}`).join(', ') : '<span class="muted">rien</span>'}${gestePermis('villageois.vendre', { id, objets: [] }) ? ` <button type="button" class="btn small" data-action="villageois-vendre" data-id="${e}">Choisir</button>` : ''}</dd>` : '';
   // (I5a : l'artisan tient son commerce, c'est sa tâche : pas de liste, la fenêtre du commerce)
   const bouton = def && def.commerce ? '<button type="button" class="btn small" data-action="stage-open" data-window="commerce">Le commerce</button>'
-    : `<button type="button" class="btn small" data-action="villageois-taches" data-id="${e}" id="villageois-tache">Tâche</button>`;
+    : tachePermise ? `<button type="button" class="btn small" data-action="villageois-taches" data-id="${e}" id="villageois-tache">Tâche</button>`
+    : '<span class="muted villageois-droit" id="villageois-tache-droit">🔒 Le propriétaire de l\'île attribue les tâches.</span>';
   return `<dt>🧺 Tâche</dt><dd>${etat} ${bouton}</dd>
       <dt>🧰 Outil</dt><dd>${outil}${donner ? ` <span class="villageois-outils">${donner}</span>` : ''}</dd>${vendre}`;
 }
@@ -366,6 +373,8 @@ function ouvrirAVendre(id) {
 export function ouvrirConfier(t) {
   const ids = tachesDuPoste(state, t), V = villageoisDe(state);
   if (!ids.length || !V.length) return { ok: false };
+  // (I9e : en ligne, qui n'attribue pas les tâches n'a rien à confier ici : l'appui reste un appui)
+  if (!gestePermis('villageois.attribuer', { id: V[0].id, tache: 'aucune' })) return { ok: false };
   const Q = new Map(quiFaitQuoi(state).map((q) => [q.id, q]));
   const blocs = ids.map((tid) => {
     const def = tacheDef(tid);
@@ -448,7 +457,7 @@ export function ouvrirFicheVillageois(id) {
     <h2 id="villageois-title"><span class="villageois-portrait">${portrait(f)}</span> ${escapeHtml(f.prenom)}</h2>
     <p class="muted">${f.enfant ? 'Enfant' : `Villageois${f.genre === 'm' ? '' : 'e'}`} de l'île, ${escapeHtml(depuisTexte(f))}.</p>
     <dl class="villageois-fiche">
-      <dt>🏠 Maison</dt><dd>${escapeHtml(f.maison)}${maisonNomHtml(state, trouverVillageois(state, id))}</dd>
+      <dt>🏠 Maison</dt><dd>${escapeHtml(f.maison)}${maisonNomHtml(state, trouverVillageois(state, id), { nommer: gestePermis('nom.donner', { quoi: 'maison', texte: 'x' }) })}</dd>
       <dt>${HUMEUR_ICONE[f.humeur] || '🙂'} Humeur</dt><dd>${escapeHtml(f.humeurTexte)} · bonheur ${bonheurHtml(f)}</dd>
       ${traitsHtml(id)}
       ${amitieHtml(id, f)}
@@ -495,24 +504,25 @@ registerActions({
   'villageois-attribuer': (target) => {
     const id = target.dataset.id, t = target.dataset.tache || null, v = trouverVillageois(state, id);
     if (!v) return;
-    const r = attribuer(state, id, t), def = tacheDef(t);
+    // (I9e : en ligne, une commande du monde : villageois.attribuer, au propriétaire, signée au journal)
+    const r = enLigne ? executer('villageois.attribuer', { id, tache: t || 'aucune' }) : attribuer(state, id, t), def = tacheDef(t);
     const texte = !r.ok ? '' : def ? `${def.icone} ${v.prenom} : ${def.nom.toLowerCase()}${r.manque ? ` (${r.manque})` : ', dès son prochain créneau de travail.'}` : `${v.prenom} n'a plus de tâche.`;
     if (apres(r, id, texte) && t === 'navette' && !(v.vendre || []).length) ouvrirAVendre(id);
   },
   'villageois-donner': (target) => {
     const id = target.dataset.id, o = target.dataset.outil, v = trouverVillageois(state, id), d = toolDef(o);
     if (!v || !d) return;
-    apres(donnerOutil(state, id, o), id, `${d.ICONE} ${v.prenom} a ${d.ARTICLE === 'un' ? 'ton' : 'ta'} ${d.NOM.toLowerCase()} : ${ilElle(v)} ${d.ARTICLE === 'un' ? 'le' : 'la'} garde.`);
+    apres(enLigne ? executer('villageois.outil', { id, outil: o }) : donnerOutil(state, id, o), id, `${d.ICONE} ${v.prenom} a ${d.ARTICLE === 'un' ? 'ton' : 'ta'} ${d.NOM.toLowerCase()} : ${ilElle(v)} ${d.ARTICLE === 'un' ? 'le' : 'la'} garde.`);
   },
   'villageois-reprendre': (target) => {
     const id = target.dataset.id, v = trouverVillageois(state, id), d = v && v.outil ? toolDef(v.outil) : null;
     if (!d) return;
-    apres(reprendreOutil(state, id), id, `${d.ICONE} Tu as repris ${d.ARTICLE === 'un' ? 'le' : 'la'} ${d.NOM.toLowerCase()} de ${v.prenom}.`);
+    apres(enLigne ? executer('villageois.outil', { id, outil: 'reprendre' }) : reprendreOutil(state, id), id, `${d.ICONE} Tu as repris ${d.ARTICLE === 'un' ? 'le' : 'la'} ${d.NOM.toLowerCase()} de ${v.prenom}.`);
   },
   'villageois-vendre': (target) => ouvrirAVendre(target.dataset.id),
   'villageois-vendre-ok': (target) => {
     const id = target.dataset.id, f = document.getElementById('villageois-vendre-form');
     const objets = f ? [...f.querySelectorAll('input[name="vendre"]:checked')].map((i) => i.value) : [];
-    apres(marquerAVendre(state, id, objets), id, '');
+    apres(enLigne ? executer('villageois.vendre', { id, objets }) : marquerAVendre(state, id, objets), id, '');
   },
 });

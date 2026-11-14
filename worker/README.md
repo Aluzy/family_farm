@@ -131,6 +131,12 @@ venu sont des commandes (`villageois.parler`, `villageois.offrir`, `villageois.a
 jouées avec l'amitié de leur acteur (`state.amities`, par compte ; celle du propriétaire est l'amitié de sa partie,
 posée à la création, et à une restauration qui n'en a aucune) ; sur une île, `elaguer` garde `voisins` (les liens et
 les événements entre villageois). Le protocole ne change pas. La mesure du pas : `node scripts/cout-villageois.mjs`.
+I9e (les rôles en ligne) : le monde d'une île est celle d'un propriétaire, que ses amis aident ; la grille d'une île
+(`GRILLE_ILE`, `js/engine/roles.js`) est vérifiée à chaque commande, avec les réglages du monde (`meta.reglages`,
+`{ taches }` : l'attribution des tâches déléguée aux bâtisseurs, éteinte par défaut). Les gestes de gestion du village
+sont des commandes (`villageois.attribuer`, `villageois.outil`, `villageois.vendre`, `villageois.foyer`,
+`villageois.enfant`, `nom.donner`, `chronique.epingler`, `chronique.noter`, `commerce.suggerer`) ; leur bilan va au
+journal (`bilanGeste`). Le protocole gagne `hello.prenom` et le message `reglages` (ci-dessous).
 
 Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
 monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au
@@ -158,16 +164,21 @@ Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=
 - `GET /mondes` : ses mondes ;
 - `GET /mondes/<id>/fiche` : titre, révision, membres (membres seulement) ;
 - `GET /mondes/<id>/ws` : la connexion d'un joueur (une WebSocket en hibernation). Messages :
-  - `hello { version, depuis?, pas? }` → `bienvenue`, puis `rattrape { evts }` (ce qui manque depuis
+  - `hello { version, depuis?, pas?, prenom? }` → `bienvenue`, puis `rattrape { evts }` (ce qui manque depuis
     `depuis`) ou `instantane { partie }` ; `refus` si le jeu n'a pas la version du monde ou si
     l'on n'est pas membre. I9a2, une île : `bienvenue.horloge = { pas, reel, sommeil, maintenant, dormait? }`
     (le pas du monde, l'heure réelle de ce pas, l'heure du serveur, depuis combien de ms il dormait) ; `pas`, celui
     de sa partie confirmée : plus de `RETARD_PAS` (60) pas de retard, ou un retard inconnu, et c'est la partie
-    entière ;
+    entière. I9e : `prenom`, celui du personnage du joueur (sa partie solo), nettoyé (`prenomDuJoueur` : sans balise,
+    20 signes) : le nom montré aux autres, au journal, dans les avis ; changé, la liste des membres est rediffusée ;
+    `bienvenue.reglages` : les réglages du monde ;
+  - I9e : `reglages { taches }` (le propriétaire seul ; sinon `erreur`) → à tous, `reglages { reglages }` ;
   - `cmd { id, type, args }` → `ack { id, ok, rev | erreur }` ; à tous, `evt { rev, acteur, cmd }` (I9a2 :
     `cmd.pas`, et `reel`, l'heure réelle de ce pas ; I9c : `bilan`, ce qu'a fait un geste du commerce, par exemple
     `{ objet, n, gain }` pour une vente, `{ vendus, gain }` pour un déchargement, `{ objet, n, cout }` pour un achat,
-    `{ niveau }` pour le port agrandi : `bilanCommerce` ; il n'est jamais rejoué, chacun le dit à son joueur) ;
+    `{ niveau }` pour le port agrandi : `bilanCommerce` ; I9e : un geste du village, par exemple `{ id, prenom, avant,
+    apres }` pour l'ordre d'une tâche, `{ id, prenom, sorte }` pour un commerce suggéré : `bilanGeste` ; il n'est jamais
+    rejoué, chacun le dit à son joueur) ;
   - I9a2, une île : à tous, à chaque instantané au temps, `controle { pas, empreinte, reel, maintenant }` (la partie
     du monde à ce pas ; un joueur qui ne la retrouve pas redemande tout) ;
   - `pos { x, y }` (le centre de sa vue) : relayé aux autres membres, `pos { acteur, nom, x, y }`,
@@ -184,7 +195,7 @@ Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=
 
 Stockage SQLite du Durable Object :
 - `meta` (I9a2 : `horloge`, l'ancre `{ pas, reel, actif, depart }` de l'instantané ; `sauvegarde`, l'heure de la
-  dernière sauvegarde à l'heure) ;
+  dernière sauvegarde à l'heure ; I9e : `reglages`, ceux du monde) ;
 - `instantane` : la partie entière, toutes les 20 révisions (I9a2, une île : tous les 120 pas ou 200 gestes, et au
   départ du dernier joueur ; une alarme toutes les 10 minutes tant qu'un joueur est là) ;
 - `journal` : chaque commande acceptée, son `id` unique (I9a2 : son pas ; I9c : la colonne `bilan`, ajoutée une fois à

@@ -457,6 +457,24 @@ export function ouvrirCommerce(state, vid, sorte) {
   return { ok: true, commerce: c, nom: nomC, fete: f && f.ok ? f.fete : null };
 }
 
+/* ---------- I9e : un invité suggère le commerce au propriétaire ---------- */
+
+// En ligne, seul le propriétaire de l'île décide qu'un villageois ouvre un commerce (js/engine/roles.js) ; un invité très
+// ami du villageois (son amitié à lui au palier ARTISANS.AMITIE : la commande se joue avec l'amitié de son acteur,
+// temps-monde.js avecActeur) peut le lui suggérer. Rien ne change dans la partie : la commande va au journal du monde,
+// signée, et l'événement prévient le propriétaire (js/ui/en-ligne.js). → { ok, villageois, sorte, prenom, nom } ou un refus.
+export function suggererCommerce(state, vid, sorte) {
+  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
+  const v = trouverVillageois(state, vid), d = defCommerce(sorte);
+  if (!v || !d) return fail('Commerce inconnu.');
+  if (v.enfant) return fail('Les enfants ne tiennent pas de commerce.');
+  const C = conditionsCommerce(state, vid, sorte);
+  if (C.deja) return fail(`${v.prenom} tient déjà ${commerceEnPhrase(nomCommerce(state, C.deja), C.deja.sorte)}.`);
+  if (!C.envie.ok) return fail(C.envie.texte);
+  if (!C.amitie.ok) return fail(`Pour le suggérer, il faut être très ami avec ${v.genre === 'm' ? 'lui' : 'elle'} : ${C.amitie.texte}`);
+  return { ok: true, villageois: v.id, sorte, prenom: v.prenom, nom: d.nom };
+}
+
 /* ---------- I5b : le second artisan ---------- */
 
 // Les deux artisans de la sorte `sorte` (ARTISANS.COMMERCES[sorte].DEUX : { VILLAGEOIS, TITULAIRE, SECOND }), ou null :
