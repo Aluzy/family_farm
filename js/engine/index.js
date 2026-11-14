@@ -118,3 +118,4 @@ export * from './projets-village.js';
 export * from './production.js';
 export * from './contrats.js';
 export * from './vocation-production.js';
+export * from './frontiere.js';

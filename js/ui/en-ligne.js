@@ -17,8 +17,13 @@
 //   reconnecte, demande ce qu'il a manqué depuis sa révision et renvoie ses commandes en attente (le
 //   monde ne joue pas deux fois la même : leur id).
 // - Le bandeau « 🌐 » dit où l'on est, si l'on est à jour, et permet de revenir à sa ferme solo.
+// - I9a, l'île partagée (le chantier allumé pour la partie du monde : ilePartagee, js/engine/frontiere.js) : le
+//   personnage sort de la ferme et la vue le suit (js/ui/stage.js) ; chacun voit le relief de l'île, tiré chez
+//   lui de la graine ; son brouillard est à lui (gardé dans son navigateur, par monde : brouillard) ; hors de
+//   la ferme, rien d'autre n'est encore synchronisé (le bandeau le dit, et le geste est refusé ici, avant
+//   d'être envoyé, comme le monde le refuserait).
 
-import { executerCommande, GAME_VERSION, ICONES_ROLES, memberPerso, NOMS_ROLES, refusDuRole, validApparence } from '../engine/index.js';
+import { executerCommande, GAME_VERSION, ICONES_ROLES, ilePartagee, memberPerso, NOMS_ROLES, refusDuRole, refusFrontiere, unirVu, validApparence } from '../engine/index.js';
 import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, quandConnecte } from './compte.js';
 import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';
@@ -186,6 +191,7 @@ function recevoir(ws, data) {
   if (m.t === 'instantane') {
     if (!lien.synchro) {
       lien.synchro = new Synchro({ partie: m.partie, rev: m.rev, executerCommande, quandRefaite: partieRefaite });
+      poserBrouillard(lien.synchro.locale);
       setEnLigne(lien.synchro);
       lien.etat = 'ok';
       const p = lien.premiere;
@@ -250,6 +256,7 @@ function marquerChangement(qui) {
   if (F) F.changement = !F.changement || F.changement === qui ? qui : 'mixte';
 }
 function partieRefaite(locale) {
+  poserBrouillard(locale);
   marquerChangement('distant');
   setState(locale);
   refresh();
@@ -261,6 +268,10 @@ export function jouerEnLigne(cmd) {
   // (E-11 : son rôle dans le monde ne le permet pas : refusé ici, sans attendre le monde, qui le vérifie aussi)
   const refus = lien.role ? refusDuRole(lien.role, lien.synchro.locale, cmd) : null;
   if (refus) return { ok: false, error: `🌐 ${refus}` };
+  // (I9a : l'île partagée ; hors de la ferme, rien d'autre n'est encore synchronisé : refusé ici, comme le monde
+  // le refuserait. Le chantier éteint, le monde seul le refuse, comme avant.)
+  const frontiere = ilePartagee(lien.synchro.locale) ? refusFrontiere(lien.synchro.locale, cmd.args) : null;
+  if (frontiere) return { ok: false, error: `🌐 ${frontiere}` };
   const r = lien.synchro.jouer(cmd);
   if (r.ok) { marquerChangement('local'); envoyer({ t: 'cmd', id: cmd.id, type: cmd.type, args: cmd.args }); }
   bandeau();
@@ -268,6 +279,49 @@ export function jouerEnLigne(cmd) {
 }
 
 brancherEnLigne(jouerEnLigne);
+
+/* ---------- I9a : l'île partagée ---------- */
+
+// Le monde partagé est-il l'île entière (le chantier allumé pour la partie du monde) ? Sinon, la ferme (E-8).
+export function ileEnLigne() {
+  return !!(lien && lien.synchro && ilePartagee(lien.synchro.locale));
+}
+
+// Le brouillard de chacun : ce que SON personnage a vu de l'île. Il n'est pas dans la partie du monde (elle
+// garde le vu de sa création) : il est gardé ici, dans le navigateur, par monde (localStorage), et posé sur la
+// partie locale à chaque fois qu'elle est refaite (unirVu : ce que le monde a vu, plus ce que l'on a vu). Les
+// régions vues du moteur (state.monde.vues) restent celles du monde : le moteur les lit, la partie confirmée
+// doit être la même chez tous.
+let brouillard = null;   // { monde, vu (base64, comme state.monde.vu) }
+const cleBrouillard = (monde) => `ferme-brouillard-${monde}`;
+function brouillardDuMonde() {
+  if (!lien) return null;
+  if (!brouillard || brouillard.monde !== lien.monde) {
+    let vu = '';
+    try { vu = localStorage.getItem(cleBrouillard(lien.monde)) || ''; } catch (e) { vu = ''; }
+    brouillard = { monde: lien.monde, vu };
+  }
+  return brouillard;
+}
+function poserBrouillard(partie) {
+  if (!partie || !ilePartagee(partie)) return;
+  const b = brouillardDuMonde();
+  if (b && b.vu) unirVu(partie, b.vu);
+}
+// Le vu de la partie locale a grandi (le personnage a marché : js/ui/stage.js) : il devient celui de chacun.
+export function noterBrouillard(vu) {
+  const b = brouillardDuMonde();
+  if (!b || typeof vu !== 'string' || !vu || vu === b.vu) return;
+  b.vu = vu;
+  try { localStorage.setItem(cleBrouillard(b.monde), vu); } catch (e) { /* (le navigateur ne garde rien : la session seule) */ }
+}
+
+// Le personnage est-il hors de la ferme ? (js/ui/stage.js, à chaque case) : le bandeau le dit.
+export function noterDehors(oui) {
+  if (!lien || !!lien.dehors === !!oui) return;
+  lien.dehors = !!oui;
+  bandeau();
+}
 
 /* ---------- E-4 : la présence ---------- */
 
@@ -347,7 +401,10 @@ export function bandeau() {
   const nc = (lien.couches || []).length, total = lien.connectes || 0;
   const lit = `<button class="btn${lien.couche ? ' primary' : ''}" type="button" data-action="monde-coucher" aria-pressed="${!!lien.couche}">🛏 ${lien.couche ? 'Couché' : 'Se coucher'}${total > 1 && nc ? ` ${nc}/${total}` : ''}</button>`;
   const role = lien.role ? `<span title="Ton rôle : ${NOMS_ROLES[lien.role] || lien.role}" aria-label="Ton rôle : ${NOMS_ROLES[lien.role] || lien.role}">${ICONES_ROLES[lien.role] || ''}</span> ` : '';
-  el.innerHTML = `<span class="en-ligne-etat">🌐 ${role}<span class="en-ligne-mot">En ligne · </span>${etat}${attente}</span>${lit}<button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter" aria-label="Revenir à ma ferme solo"><span class="en-ligne-mot">Ma ferme </span>solo</button>`;
+  // (I9a : hors de la ferme, sur l'île partagée)
+  const dehors = lien.dehors && ileEnLigne();
+  el.classList.toggle('dehors', !!dehors);
+  el.innerHTML = `<span class="en-ligne-etat">🌐 ${role}<span class="en-ligne-mot">En ligne · </span>${etat}${attente}</span>${lit}<button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter" aria-label="Revenir à ma ferme solo"><span class="en-ligne-mot">Ma ferme </span>solo</button>${dehors ? '<span class="en-ligne-dehors">🏝️ Hors de la ferme : rien d\'autre n\'est encore synchronisé.</span>' : ''}`;
 }
 
 /* ---------- E-3 : les membres, inviter, retirer ---------- */

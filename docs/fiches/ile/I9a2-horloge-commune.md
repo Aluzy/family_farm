@@ -47,6 +47,19 @@ plantes poussent, les appareils tournent, les préparations cuisent, comme en so
    son heure ; un client en retard rattrape sans écart (`test-synchro.mjs`, `deux-joueurs.mjs`,
    `test-monde.mjs`).
 
+## Revu par I9a (les mesures)
+
+- **Les pas et le stockage du monde.** Joué comme une commande (une révision chacun), un pas toutes les 5 s fait un
+  instantané toutes les 100 s (`MONDE.INSTANTANE_TOUS` = 20) : ≈ 2,7 Mo écrits par heure passée en ligne pour une
+  île de 75 Ko (l'île avancée du joueur automatique), 9 Mo au plafond (256 Ko) ; et le journal de rattrapage
+  (`JOURNAL_GARDE` = 500 révisions) ne couvrirait plus que 40 minutes. La note de conception doit le régler : un
+  instantané au temps (et non au nombre de révisions), ou des pas qui ne sont pas des révisions du journal (le pas se
+  déduit de l'heure du serveur : `temps.pas { jusqua }` rejoue tout l'intervalle), à mesurer avec le reste du coût.
+- **La nuit d'une île** coûte 149 ms au serveur la première fois, puis 16 à 34 ms (six villageois) : la nuit qui vient
+  seule à l'heure dite tient dans un pas.
+- **L'énergie de chacun** (la frontière, `docs/monde-partage.md` § 13) : aujourd'hui, celle du personnage est dans la
+  partie du monde (F.1) ; elle devient celle de chaque joueur dans cette fiche (point 2).
+
 ## Hors périmètre
 
 - Les villageois dans le temps commun (I9d) ; le monde hors de la ferme (I9b).

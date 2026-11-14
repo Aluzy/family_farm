@@ -9241,7 +9241,7 @@ export const RAW_DATA = {
     "ACTIF": false,
     "ARRIVEE": {
       "RESERVE_JOURS": 2,
-      "PLAFOND": { "1": 2, "2": 4, "3": 6, "4": 9, "5": 12 },
+      "PLAFOND": { "1": 2, "2": 5, "3": 10, "4": 12, "5": 14 },
       "BOURSE": 20,
       "JOURNAL": 7,
       "TOC": "Toc, toc !",
@@ -10679,7 +10679,8 @@ export const RAW_DATA = {
         "marais": "dans le marais",
         "*": "sur l'île"
       }
-    }
+    },
+    "EN_LIGNE": { "PARTIE_KO": 256, "DEHORS_KO": 64 }
   },
   "TACHES": {
     "TRAVAIL": [[8, 11.5], [13.5, 16.5]],
@@ -11340,7 +11341,7 @@ export const RAW_DATA = {
       "SAUVAGES": { "RANG": 5, "MARGE": 300, "LOT": 3 }
     },
     "SORTES": [
-      { "nom": "quai", "genre": "ponton", "variantes": 8 },
+      { "nom": "quai", "genre": "ponton", "variantes": 12 },
       { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
       { "nom": "poteau_halle", "genre": "objet", "variantes": 1 },
       { "nom": "comptoir", "genre": "meuble", "variantes": 1, "largeur": 3 },

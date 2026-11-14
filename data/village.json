@@ -24,7 +24,7 @@
     "ACTIF": false,
     "ARRIVEE": {
       "RESERVE_JOURS": 2,
-      "PLAFOND": { "1": 2, "2": 4, "3": 6, "4": 9, "5": 12 },
+      "PLAFOND": { "1": 2, "2": 5, "3": 10, "4": 12, "5": 14 },
       "BOURSE": 20,
       "JOURNAL": 7,
       "TOC": "Toc, toc !",
@@ -1025,7 +1025,16 @@
         "lande": "dans la lande", "prairie": "dans la prairie", "cote": "sur la côte", "foret": "dans la forêt",
         "montagne": "dans la montagne", "marais": "dans le marais", "*": "sur l'île"
       }
-    }
+    },
+    "//EN_LIGNE": [
+      "L'île partagée (fiche I9a ; docs/monde-partage.md, « L'île partagée » ; les mesures : docs/ile.md et",
+      "scripts/poids-ile.mjs) : le plafond de poids d'un monde en ligne de l'île. PARTIE_KO : la partie du monde, en Ko de",
+      "JSON : ce que reçoit un joueur qui entre, chaque instantané (toutes les 20 révisions) et chaque sauvegarde du monde",
+      "(14 gardées). DEHORS_KO : dans elle, ce que pèse l'île hors de la ferme (ce qui y a été pris et le jour où cela revient,",
+      "les chemins et les blocs posés dehors). Ce qui se recalcule de la graine (le relief, les arbres, les rochers, les lieux,",
+      "la carte) ne s'envoie jamais, et le brouillard de chacun reste dans son navigateur."
+    ],
+    "EN_LIGNE": { "PARTIE_KO": 256, "DEHORS_KO": 64 }
   },
   "//TACHES": [
     "Les tâches attribuées (fiche I3c ; le moteur : js/engine/taches.js ; la journée : js/engine/villageois-journee.js ;",
@@ -1705,7 +1714,7 @@
       "SAUVAGES": { "RANG": 5, "MARGE": 300, "LOT": 3 }
     },
     "SORTES": [
-      { "nom": "quai", "genre": "ponton", "variantes": 8 },
+      { "nom": "quai", "genre": "ponton", "variantes": 12 },
       { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
       { "nom": "poteau_halle", "genre": "objet", "variantes": 1 },
       { "nom": "comptoir", "genre": "meuble", "variantes": 1, "largeur": 3 },

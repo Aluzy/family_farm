@@ -40,6 +40,16 @@ tous les joueurs, qui les voient aux mêmes endroits faire les mêmes choses.
    deux clients calculent la même position pour chaque villageois à dix heures tirées au hasard ;
    l'amitié par joueur ; le temps d'un pas sous la limite.
 
+## Revu par I9a (les mesures)
+
+- **La copie élaguée perd les liens du village** : `elaguer` (`worker/src/monde.mjs`) retire `voisins`, qui porte
+  aujourd'hui les événements entre villageois (les visites du soir, les repas apportés : 5,7 Ko sur l'île avancée du
+  joueur automatique ; `liens.js`). Un monde de l'île doit le garder (avec I9f, qui refait l'élagage).
+- **Le poids** : ≈ 2,7 Ko par villageois (dont 1,2 Ko de journal de 7 jours) ; quinze villageois tiennent dans le
+  plafond (256 Ko).
+- **La nuit d'une île à six villageois** coûte 149 ms au serveur la première fois, puis 16 à 34 ms : à mesurer avec
+  quinze, et par pas (point 1).
+
 ## Hors périmètre
 
 - Attribuer des tâches et décider d'un commerce à plusieurs (I9e).

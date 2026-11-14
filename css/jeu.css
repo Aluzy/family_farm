@@ -3961,6 +3961,9 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 }
 .en-ligne-bandeau .btn { min-height: 32px; padding: 2px 10px; font-size: 0.8rem; white-space: nowrap; flex: none; }
 .en-ligne-etat { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* I9a : hors de la ferme, sur l'île partagée : une seconde ligne dit que rien d'autre n'est encore synchronisé */
+.en-ligne-bandeau.dehors { flex-wrap: wrap; border-radius: 16px; }
+.en-ligne-dehors { flex-basis: 100%; padding: 0 4px 2px; font-size: 0.78rem; color: var(--text-muted, inherit); }
 /* Sur un écran étroit, la carte du joueur (en haut à gauche), la lune et la boussole (à droite) occupent
    le haut : le bandeau passe sous la carte du joueur (≈ 50 pixels du jeu, --hud-px), à gauche de la
    boussole, sur deux lignes (l'état, puis les boutons), « Ma ferme solo » dit « solo ». */

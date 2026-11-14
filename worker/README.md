@@ -115,7 +115,11 @@ un **lien reçu par e-mail**, sans mot de passe (`worker/src/comptes.mjs`, la ru
 Sa vision : `docs/monde-partage.md` (un monde partagé, c'est la zone de la ferme ; le grand monde
 reste à la partie solo). E-8 : à la création, la copie est élaguée (`elaguer` : sans les habitants,
 les hameaux ni les régions vues ; `mondePartage = true`, une nuit de la ferme seule) ; une commande qui
-vise une case hors de la ferme est refusée (`horsDeLaFerme`).
+vise une case hors de la ferme est refusée (`horsDeLaFerme`). I9a (le chantier « l'île à bâtir », sa partie allumée :
+`docs/monde-partage.md` § 13) : le monde partagé devient l'île ; le joueur en sort et chacun voit le relief tiré de la
+graine, mais le monde refuse encore toute commande hors de la ferme, avec le mot « rien d'autre n'est encore
+synchronisé » (le contrôle est au moteur, `js/engine/frontiere.js`, le même dans le jeu). Le plafond de poids :
+`VILLAGE.EN_LIGNE` ; la mesure : `node scripts/poids-ile.mjs`.
 
 Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
 monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au

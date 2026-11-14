@@ -172,6 +172,23 @@ function voirCellules(state, T, cellules) {
   return nouvelles.length;
 }
 
+// I9a (l'île partagée) : le vu `autre` (une chaîne base64 : le brouillard de chacun dans un monde en ligne,
+// gardé à part, js/ui/en-ligne.js) ajouté à celui de la partie ; ses régions ne changent pas (elles sont au
+// moteur, à la partie du monde). → vrai si le vu de la partie a changé.
+export function unirVu(state, autre, T = farmTerrain(state)) {
+  if (!T || !T.FERME || typeof autre !== 'string' || !autre) return false;
+  const bits = new Uint8Array(bitsDe(state, T)), plus = deBase64(autre, bits.length);
+  let change = false;
+  for (let i = 0; i < bits.length; i++) {
+    const v = bits[i] | plus[i];
+    if (v !== bits[i]) { bits[i] = v; change = true; }
+  }
+  if (!change) return false;
+  if (!state.monde || typeof state.monde !== 'object') state.monde = { vues: [] };
+  state.monde.vu = versBase64(bits);
+  return true;
+}
+
 // Le personnage est sur la case t (le biome de sa case, son nom ; la nuit ou non) : ce qu'il voit
 // devient vu (fiche 11 : la nuit, le casque à lampe voit plus loin, equipement.js vueNuitPct). → le
 // nombre de cellules nouvelles.

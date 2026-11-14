@@ -40,6 +40,22 @@ cueillette, un chemin posé) soit vu par les autres, en n'envoyant que le strict
    la repousse calculée est la même partout ; l'abonnement par région ; le conflit ; le brouillard
    non partagé (`test-synchro.mjs`, `deux-joueurs.mjs`, un test moteur du rejeu).
 
+## Revu par I9a (les mesures)
+
+- **Le brouillard de chacun est fait** (point 4) : gardé dans le navigateur, par monde, posé sur la partie locale
+  (`js/ui/en-ligne.js`, `unirVu`). Reste à cette fiche : rien.
+- **La frontière** : I9a a passé le contrôle au moteur (`js/engine/frontiere.js`, `refusFrontiere`) ; cette fiche
+  l'ouvre, commande par commande, pour une île (`ilePartagee`), et retire le bandeau « rien d'autre n'est encore
+  synchronisé » quand tout l'est.
+- **Le poids des écarts** est petit : 1 Ko pour le joueur automatique (il ne récolte pas dehors), 39 Ko pour une île
+  très exploitée (1 100 pièces prises en même temps) ; le plafond est de 64 Ko (`VILLAGE.EN_LIGNE.DEHORS_KO`).
+- **Ce qui coûte, c'est le contrôle du serveur** : vérifier qu'une pièce existe dehors (un arbre, un rocher) demande le
+  sol de sa région, tiré de la graine : 0,4 à 0,5 s pour le contexte au réveil du monde, puis ≈ 12 ms par région
+  (88 régions sur l'île). À trancher ici : le serveur tire les régions où l'on joue (et garde les dernières), ou il
+  vérifie l'identifiant sans le sol (la pièce, son jour de retour) et laisse le moteur refuser un doublon.
+- **Le sac de chacun** (ses provisions de sortie : `docs/monde-partage.md` § 13) : il devient celui de chaque joueur
+  ici, puisque c'est la fiche qui fait sortir pour de bon.
+
 ## Hors périmètre
 
 - Le port (I9c), les villageois (I9d), les rôles étendus (I9e).
