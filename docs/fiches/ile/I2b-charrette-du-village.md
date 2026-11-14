@@ -48,8 +48,12 @@ village et le port pour mettre un wagonnet qui serait l'évolution de la charret
    de vitesse, son cheval, son wagonnet. Elle naît au premier villageois mis à la tournée du port, au
    palier 1 des deux branches (offert) : une charrette à bras de 20 volumes. Elle se range sur la ferme
    (devant le coffre, ou au quai de chargement s'il est posé) quand elle ne roule pas.
-2. **La tournée du port devient la tournée de la charrette.** Le villageois de la tournée en est le
-   charretier ; il n'y en a qu'un (voir les choix ouverts). Sa journée de tournée va de 7 h à 17 h
+2. **La tournée du port devient la tournée de la charrette.** Les villageois de la tournée en sont les
+   **charretiers** (D17) : un seul suffit, plusieurs **se relaient**. La charrette est une : un seul
+   charretier la mène à la fois, voyage par voyage ; au retour d'un voyage, elle passe au suivant de la
+   tournée qui est disponible (pas à son jour de repos, pas trop fatigué, son repas pris). Le relais sert à
+   ce que la charrette ne s'arrête pas : un jour de repos, une fatigue ou un repas d'un charretier ne la
+   laissent plus au coffre ; il ne fait pas aller plus vite (c'est la vitesse qui le fait). Sa journée de tournée va de 7 h à 17 h
    (`CHARRETTE.JOUR`, 10 h : il part au lever, il mange au port, son repas compte comme les autres) ; il
    enchaîne des **voyages entiers** : charger au coffre (`CHARGE` 0,25 h ; 0,1 h au quai), l'aller,
    décharger et vendre au comptoir (`VENTE` 0,25 h), le retour. Un voyage ne part que s'il revient avant
@@ -249,8 +253,8 @@ terre ; 4 traverses par case, une tous les 4 px), le wagonnet et son cheval (216
    le village a plus « à vendre » que la charrette n'en porte ; il pose la voie à la fin de son plan s'il a
    les lingots. Dans `node scripts/simulate.mjs --village` et `--vocations` : le débit de la tournée, les
    pièces dépensées en paliers, les pièces en caisse à la nuit 80, avant et après.
-9. **La sauvegarde** : format 108 ; `state.charrette` (`capacite`, `vitesse`, `cheval`, `wagonnet`) et
-   `state.dehors.rails` ; la migration 107 → 108 : une partie dont un villageois fait la tournée reçoit la
+9. **La sauvegarde** : format 109 ; `state.charrette` (`capacite`, `vitesse`, `cheval`, `wagonnet`) et
+   `state.dehors.rails` ; la migration 108 → 109 : une partie dont un villageois fait la tournée reçoit la
    charrette au palier de ce qu'elle portait (rien : C1 V1 ; une brouette : C2 V2 ; la charrette et le
    cheval du joueur : C3 V3, son cheval à elle offert si l'Écurie a la place, sinon V2), pour que la tournée
    ne porte jamais moins qu'avant ; une partie sans tournée ne reçoit rien.
@@ -289,7 +293,7 @@ d'I9e pour le jeu solo : si I9e tarde, elle peut se faire avant, ses rôles pos�
 
 ## Hors périmètre
 
-- Une seconde charrette, un second charretier ; les aiguillages, une voie double, un dépôt au port.
+- Une seconde charrette (le relais des charretiers est dans la fiche, D17) ; les aiguillages, une voie double, un dépôt au port.
 - Une locomotive, une machine à vapeur, l'électricité sur les rails (D5 et le ton).
 - Améliorer la charrette du joueur (I2) ; le portage du joueur ne change pas.
 - La voie ailleurs que vers le port (vers la mine, par exemple) : les rails se posent partout, seule la

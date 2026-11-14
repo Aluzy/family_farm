@@ -41,6 +41,8 @@ son île et son village ; une chronique note ce qui s'y passe.
 | D14 | En ligne, la caisse est commune. | I9c (fait) : les pièces de la partie du monde, à tous ; chacun porte sa charge. |
 | D15 | C'est le joueur qui attribue les tâches. Un villageois ouvre un commerce quand il a une affinité suffisante avec le joueur, qu'il en manifeste l'envie et que le joueur le décide. | I5a ; en ligne, « le joueur » est le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs ; un invité très ami peut lui suggérer un commerce (I9e, fait). |
 | D16 | La pierre de lune n'a plus d'effet magique : rien ne pousse plus vite. | Sur l'île, c'est déjà le cas depuis I7c (`recit-muet.js`, `facteurPousse` vaut 1) ; une partie d'avant la perd à la migration (I7f). À la bascule (I9h), le fil de la lune et l'objet sortent avec le récit. Les effets de la lune sur les cultures (`LUNE`, `lune.js`) restent : c'est une règle, pas de la magie. |
+| D17 | Le transport des marchandises entre le coffre du village et le port est le métier d'un villageois, ou de plusieurs qui se relaient. | I2b (la charrette du village, ses charretiers). En ligne, aucun joueur n'attelle la charrette du village : elle roule par ses charretiers, au pas du monde. La règle d'I9c (« vide, elle passe au premier qui la demande ») ne vaut que pour la charrette du joueur (I2). |
+| D18 | Les traits découverts d'un villageois sont partagés entre tous les joueurs. | I9e (fait) : ce qu'on sait des traits est du monde, un seul `traitsConnus`. |
 
 ## Ce qui reste à trancher (dans les fiches qui le portent)
 
@@ -50,7 +52,6 @@ son île et son village ; une chronique note ce qui s'y passe.
 | Où va ce qu'un geste lâche hors de la ferme, en ligne ? | I9b (fait) | Au coffre commun, comme les outils de la ferme en ligne (E-9) ; le sac de chacun est celui des provisions de sortie. |
 | Comment le serveur contrôle-t-il un geste dehors ? | I9b (fait) | Par l'identifiant de la pièce, sans le sol de sa région (0,5 µs contre 0,5 s au réveil, puis 10 ms par région) ; le moteur refuse un doublon. Le sol n'est tiré que pour un bloc posé dehors (12 régions gardées). |
 | En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e (fait) | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs (un réglage du monde, éteint par défaut). |
-| En ligne, ce qu'on sait des traits d'un villageois : commun ou par joueur ? | I9e | Commun au monde (des faits sur le villageois) : fait ainsi, à confirmer. |
 | L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | I1c : non, sur 80 nuits de simulation (le port en prend 6 800 pièces, 814 en caisse à la nuit 80). I4 : le joueur minimal finit à 242 pièces (le port au niveau 3), l'appliqué à 2 727 pour une borne de 1 412 : il a payé le niveau 2 tôt et n'atteint pas le niveau 3 avant la nuit 80 (ses matériaux, pas ses pièces : à 3 500 pièces, il ne le prend pas davantage). À revoir quand le joueur simulé ira plus loin que le palier 6. |
 | La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | I4 : fixe, `VILLAGE.PART` = 30 % (à 20 %, le villageois des champs rapporte 2,5 fois son coût, au bord de la fourchette ; à 40 %, la partie simulée s'appauvrit). |
 | La raison d'explorer sans hameaux à découvrir. | I1c, I8b, I7e | Des espèces sauvages à rapporter et à cultiver ; des sites à exploiter. I8b n'y a rien ajouté : la ferme productive se joue sur la ferme et au port. I7e : les plants sauvages de chaque biome (deux codés : l'ail des ours des sous-bois, la salicorne des plages), le catalogue d'import qu'ils enrichissent, les lieux muets d'I7c gardés ; la suite proposée plus bas (« Une raison d'explorer », I7e). |
@@ -2625,7 +2626,7 @@ signatures que `journeeDuVillage` refait pour chaque villageois (`signatureTache
   grille des rôles par I9e, comme la fenêtre « Nommer le village » (I7g).
 - **Ce qu'on sait des traits** est du monde (ce qu'un villageois dit de lui en parlant s'écrit dans la commande) ; ce
   que la carte voit ne s'écrit plus en ligne : un joueur en ligne découvre moins de traits qu'en solo. I9e les garde
-  communs (des faits sur le villageois) ; à confirmer.
+  communs (des faits sur le villageois), confirmé (D18).
 - **Les présents d'un ami** ne se préparent pas la nuit dans un monde partagé (`amitieVillageoisNuit`, comme avant) ; les
   invitations à un repas, les demandes rendues restent fermées en ligne.
 - **La scène** fait marcher chaque villageois chez chacun : au même poste, au même but, mais pas au pixel près (jusqu'à
@@ -2702,8 +2703,8 @@ pendant que le propriétaire n'est pas là. Une ferme d'avant (E-8, sans le chan
    passer par la route du Worker). Le journal, les avis (« Alex a confié à Léa : 🧺 cueillette (avant : 🪓 bois) ») et
    les avatars disent le vrai prénom.
 8. **Ce qu'on sait des traits d'un villageois reste commun au monde** (ce sont des faits sur lui ; ce qu'il dit de lui
-   en parlant s'écrit dans `villageois.parler`). **À confirmer par le joueur** : l'autre lecture (par joueur, comme
-   l'amitié) ferait découvrir chacun pour soi, au prix d'un `traitsConnus` par compte.
+   en parlant s'écrit dans `villageois.parler`). **Confirmé par le joueur** (D18) : les traits découverts sont
+   partagés entre tous les joueurs.
 9. **Les chemins posés dehors ne sont pas protégés.** Un bâtisseur est un ami à qui le propriétaire confie la
    construction ; un chemin se repose en un geste, le journal dit qui l'a repris et une sauvegarde le rend. Les protéger
    demanderait de savoir qui a posé quoi (la partie ne le garde pas) pour peu de chose. Ce qui ne se rattrape pas (une
@@ -2761,7 +2762,6 @@ partie solo n'y gagne rien. Les réglages du monde sont au Durable Object, pas d
 - **La suggestion d'un commerce** n'est gardée qu'au journal : un propriétaire absent la lit dans 📜, pas sur la fiche.
 - **« La charrette est à moi »** (un réglage du propriétaire, I9c) n'est pas fait : la règle d'I9c (vide, elle passe à
   qui la demande) a suffi dans les essais.
-- **Les traits par joueur** : à trancher (la décision 8).
 - **Ce que l'ami gagne** : à décider et à faire dans une fiche à elle.
 
 ## Les règles qui ne changent pas
