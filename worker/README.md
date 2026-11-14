@@ -117,9 +117,12 @@ reste à la partie solo). E-8 : à la création, la copie est élaguée (`elague
 les hameaux ni les régions vues ; `mondePartage = true`, une nuit de la ferme seule) ; une commande qui
 vise une case hors de la ferme est refusée (`horsDeLaFerme`). I9a (le chantier « l'île à bâtir », sa partie allumée :
 `docs/monde-partage.md` § 13) : le monde partagé devient l'île ; le joueur en sort et chacun voit le relief tiré de la
-graine, mais le monde refuse encore toute commande hors de la ferme, avec le mot « rien d'autre n'est encore
-synchronisé » (le contrôle est au moteur, `js/engine/frontiere.js`, le même dans le jeu). Le plafond de poids :
-`VILLAGE.EN_LIGNE` ; la mesure : `node scripts/poids-ile.mjs`.
+graine (le contrôle de la frontière est au moteur, `js/engine/frontiere.js`, le même dans le jeu). I9b : les gestes du
+dehors passent (`COMMANDES_DEHORS` : `monde.recolter`, la pêche dans les eaux du monde, les blocs du dehors) ; une
+pièce du monde se contrôle par son identifiant, sans le sol de sa région (`refusPieceMonde`), et le moteur refuse un
+doublon (la pièce déjà prise) ; un bloc posé dehors lit le sol de sa case (tiré de la graine, `REGIONS_SOL` régions
+gardées) ; ce qu'un geste lâche va au coffre commun. Le plafond de poids : `VILLAGE.EN_LIGNE` ; les mesures :
+`node scripts/poids-ile.mjs`, `node scripts/cout-ile.mjs`.
 
 Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
 monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au
@@ -157,7 +160,12 @@ Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=
   - I9a2, une île : à tous, à chaque instantané au temps, `controle { pas, empreinte, reel, maintenant }` (la partie
     du monde à ce pas ; un joueur qui ne la retrouve pas redemande tout) ;
   - `pos { x, y }` (le centre de sa vue) : relayé aux autres membres, `pos { acteur, nom, x, y }`,
-    5 fois par seconde au plus, jamais écrit ; `parti { acteur }` quand son dernier onglet se ferme ;
+    5 fois par seconde au plus, jamais écrit ; `parti { acteur }` quand son dernier onglet se ferme. I9b, une île :
+    l'intérêt par région (les régions du sol, `MONDE.taille` cases de côté). À qui joue dans la même région ou l'une
+    des huit autour, à son pas ; aux autres, une toutes les `POS_LOIN_MS` (2 s) ; à qui entre dans une région, à lui
+    seul, `lot { pos: [...] }`, les dernières positions des joueurs qui y sont près de lui. Les gestes (`evt`) vont
+    toujours à tous : la partie confirmée de chacun doit rester celle du monde (le coffre, l'énergie, les quotas, ce
+    qui est pris, tout y est mêlé) ;
   - `coucher { oui }` : se coucher, ou se relever. À tous : `couches { comptes, connectes }`. C'est
     gardé sur la connexion (`serializeAttachment`, qui survit à l'hibernation), jamais écrit. Tous
     couchés, le monde joue la nuit et la diffuse comme un `evt`. Un joueur qui part ne retient plus
