@@ -55,7 +55,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I8a — la vocation « village »](I8a-vocation-village.md) | 8 | I6b | fait (le socle des vocations ; la convivialité, quatre paliers ; les fêtes, la veillée ; six projets dont quatre bâtiments ; voir docs/ile.md) |
 | [I8b — la vocation « ferme productive »](I8b-vocation-productive.md) | 8 | I1c, I4 | fait (branché sur le socle des vocations d'I8a et les prix de l'île d'I4 ; les chiffres des contrats à refaire après I4 ; voir docs/ile.md) |
 | [I9a — l'île partagée : la frontière et le poids](I9a-ile-partagee.md) | 9 | I7f | fait (la frontière : `docs/monde-partage.md` § 13 ; la barrière levée, le brouillard de chacun dans son navigateur, rien d'autre de synchronisé dehors ; une île avancée pèse 75 Ko, plafond 256 Ko ; I9a2, I9b, I9d, I9f revues, voir docs/ile.md) |
-| [I9a2 — l'horloge commune](I9a2-horloge-commune.md) | 9 | I9a | à faire |
+| [I9a2 — l'horloge commune](I9a2-horloge-commune.md) | 9 | I9a | fait (la voie b de la note : des pas de 5 s déduits de l'heure du serveur, hors du journal ; la nuit seule à 22 h, ×10 quand tous dorment ; l'énergie de chacun ; sans joueur, le monde dort ; format 104 ; par heure, 720 pas, ≈ 3,5 s de calcul, 0,5 Mo écrits, 6 alarmes : `scripts/cout-horloge.mjs` ; I9b à I9g revues, voir docs/ile.md) |
 | [I9b — les changements du monde, synchronisés par région](I9b-synchro-monde.md) | 9 | I9a2 | à faire |
 | [I9c — le port et la caisse en ligne](I9c-port-en-ligne.md) | 9 | I9b | à faire |
 | [I9d — les villageois en ligne](I9d-villageois-en-ligne.md) | 9 | I9b | à faire |

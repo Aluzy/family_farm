@@ -109,7 +109,9 @@ export function pasDuMonde(state) {
     if (b.arrivees && b.arrivees.length) ev.bac = true;
   }
   // (les villageois : js/ui/villageois.js watchVillageois, en solo ; la chronique : js/ui/chronique.js)
-  verifierMaisons(state);
+  // (les maisons : la page les revoit chaque seconde en solo ; ici, une fois par heure de jeu, au pas rond — elles ne
+  // changent qu'avec les blocs, et les revoir coûte autant que le reste du pas : 5 ms sur l'île avancée)
+  if (h.pas % MAISONS_TOUS === 0) verifierMaisons(state);
   if (arriveeDue(state) && arriverVillageois(state).ok) ev.arrivee = true;
   else if (arriveeEnfantRefus(state) === null && arriverEnfant(state).ok) ev.arrivee = true;
   if (hourOfDay(state) >= DATA.PORT.BAC.HEURES[1]) for (const v of villageoisDe(state)) if (v.accueil === 'en_route') accueillirVillageois(state, v.id);
@@ -119,6 +121,7 @@ export function pasDuMonde(state) {
   h.pas += 1;
   return ev;
 }
+const MAISONS_TOUS = 6;   // pas (une heure de jeu)
 function nuitRestante(state) {
   const T = DATA.TEMPS;
   return (24 - T.HEURE_NUIT + T.HEURE_REVEIL) * T.SECONDES_PAR_HEURE * 1000 - state.nuitEnCours.ms;

@@ -56,6 +56,20 @@ cueillette, un chemin posé) soit vu par les autres, en n'envoyant que le strict
 - **Le sac de chacun** (ses provisions de sortie : `docs/monde-partage.md` § 13) : il devient celui de chaque joueur
   ici, puisque c'est la fiche qui fait sortir pour de bon.
 
+## Revu par I9a2 (l'horloge commune)
+
+- **Un geste dehors porte son pas, comme les autres** : le monde rejoue les pas dus avant de le jouer et lui donne
+  son numéro (`cmd.pas`) ; chaque joueur avance sa partie confirmée jusqu'à ce pas, puis le joue
+  (`js/ui/synchro.js`). Le serveur valide donc un geste **au pas où il l'a reçu**, pas à celui du joueur ; une commande
+  qui ne passe plus à ce pas est refusée, comme aujourd'hui.
+- **Les repousses et les quotas du jour suivent la nuit qui vient dans les pas** (`js/engine/temps-monde.js`
+  `pasDuMonde` : la nuit à 22 h, minuit, le réveil) : rien à diffuser pour eux, chacun les calcule au même pas.
+  `runNight` garde `repousseMonde` hors des mondes partagés (`mondePartage`) : à revoir ici pour une île.
+- **L'énergie est celle de chacun** (`state.energies`, par compte ; `executerCommande(state, c, { acteur })`) : un geste
+  dehors la dépense chez son auteur seul.
+- **Le contrôle du serveur** se fait entre deux pas : le coût d'un sol tiré (0,4 à 0,5 s au réveil) s'ajoute au
+  rattrapage des pas (au plus 120 pas après un réveil à froid, ≈ 1,2 s sur l'île avancée). À mesurer ensemble.
+
 ## Hors périmètre
 
 - Le port (I9c), les villageois (I9d), les rôles étendus (I9e).

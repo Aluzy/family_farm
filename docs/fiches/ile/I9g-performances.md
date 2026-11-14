@@ -34,6 +34,18 @@ téléphone, avec un village complet toujours à l'écran, et corriger ce qui ne
 6. **Un test de garde** : une borne de temps sur la nuit d'un village de 15 et sur la taille de la
    sauvegarde, dans `perf-ferme.test.mjs`.
 
+## Revu par I9a2 (l'horloge commune)
+
+- **Le pas du monde sur un téléphone de référence** : chaque joueur d'une île en ligne joue un pas toutes les 5 s (deux,
+  avec la partie confirmée qui suit de deux pas en arrière), ≈ 6 ms de jour sur un ordinateur pour l'île avancée, 15 à
+  20 ms à minuit. À mesurer sur les trois appareils, avec un village de 15.
+- **Le rattrapage** : au-delà de 60 pas de retard (5 minutes : un onglet resté caché), le joueur redemande la partie
+  entière (`VILLAGE.EN_LIGNE.RETARD_PAS`) ; en deçà, il rejoue les pas d'un coup (≈ 0,4 s pour 60 pas sur un
+  ordinateur). Mesurer ce gel sur un téléphone ; s'il se voit, abaisser le seuil ou étaler le rattrapage sur
+  quelques images.
+- **Le serveur** : une alarme toutes les 10 minutes joue d'un coup les pas dus sans geste (jusqu'à 120 : ≈ 1 s de
+  calcul sur l'île avancée) ; à suivre dans les journaux de Cloudflare (le temps de calcul par requête).
+
 ## Hors périmètre
 
 - Toute règle de jeu ; de nouveaux dessins.

@@ -10,7 +10,8 @@ nuit partagée. **E-8 a posé la frontière** : M.1, M.2 et M.3 ci-dessous sont 
 
 > **Le chantier « l'île à bâtir » change cette frontière** (décision D9 de `docs/ile.md`). Sa nouvelle
 > frontière est au § 13, **« L'île partagée »** (fiche I9a, 14 novembre 2026) : elle remplace E-8 (§ 1 à § 7)
-> et F.2 (l'horloge figée, `worker/README.md`) pour les mondes du chantier. Tant que le réglage
+> et F.2 (l'horloge figée, `worker/README.md`) pour les mondes du chantier : I9a2 y pose l'horloge vivante (§ 13,
+> « Ce que fait I9a2 »). Tant que le réglage
 > `VILLAGE.ACTIF` est éteint, le jeu publié et les mondes d'avant gardent E-8, tels quels, jusqu'à la bascule
 > (I9h) et la migration des mondes (I9f).
 
@@ -232,6 +233,10 @@ Les rôles de la stratégie (§ 4.4), dans `js/engine/roles.js`. Le monde les v�
   - **les chaînes** font leur journée au début de la nuit partagée (`chainesDeLaJournee`) : leur production en cours, puis ce que leur stock et une journée (de 6 h à 22 h) permettent, jusqu'à ce que leur tas soit plein. Le courant n'est pas compté.
 
   Les produits restent sur le tas, et chacun les ramasse par `morceau.ramasser`.
+
+  I9a2 : un monde de l'île a une horloge vivante (§ 13) : ses machines tournent dans les pas, et sa nuit ne refait pas
+  leur journée (la production doublerait). La botteleuse y sort encore sa botte au versement (sa sortie suit la carte,
+  pas l'horloge).
 - **Fermés en ligne, comme le veut la vision :** le grand monde (sa cueillette, ses hameaux, la calèche, le récit) et le commerce (M.4).
 
 ## 13. L'île partagée (I9a) : la nouvelle frontière
@@ -284,6 +289,43 @@ Deux règles en découlent :
   dans ta ferme solo » et le refus du serveur sont ceux d'E-8 (`tests/deux-joueurs.mjs`, 4a ; `test-monde.mjs`).
 - Rien n'est ajouté à la sauvegarde (le format reste 103) : le brouillard de chacun vit dans son navigateur.
 
+### Ce que fait I9a2 (l'horloge commune : D13 remplace F.2 pour les îles)
+
+La note de conception : `docs/fiches/ile/I9a2-note-horloge.md` (validée telle quelle). Pour un monde de l'île
+(`horlogeVivante`, `js/engine/temps-monde.js`), F.2 (l'horloge figée) et E-5 (la nuit partagée d'un coup) ne valent
+plus ; les mondes d'avant les gardent jusqu'à leur migration (I9f).
+
+- **Le temps passe tant qu'un joueur au moins est connecté.** Une connexion ouverte compte (sans détection
+  d'inactivité). Le dernier qui part endort le monde (un instantané, une sauvegarde) ; le premier qui revient le
+  réveille là où il s'était arrêté, sans rattraper le temps passé sans personne, et le dit (« 🌙 Le monde dormait
+  depuis… »).
+- **Par pas de 5 s d'horloge** (10 minutes de jeu), toujours un après l'autre, déduits de l'heure du serveur : ils ne
+  sont pas des révisions du journal. Avant chaque geste, le monde rejoue les pas dus ; le geste porte son pas
+  (`cmd.pas`) ; chaque joueur avance sa partie confirmée jusqu'à ce pas, puis joue le geste. Entre deux gestes, chaque
+  joueur avance sa partie lui-même, à l'heure du serveur (mesurée à l'accueil), et l'heure affichée glisse entre deux
+  pas. Rien n'est diffusé pour le temps qui passe, sauf, à chaque instantané au temps (toutes les 10 minutes),
+  l'empreinte de la partie : un joueur qui ne la retrouve pas redemande tout.
+- **Le pas ne lit que la partie.** Ce que les veilleurs de la page font en solo (la nuit à 22 h, le réveil, le bac, les
+  contrats, les arrivées, les maisons, la chronique) est dans le pas ; en ligne, ces veilleurs se taisent.
+  `Math.hypot` (dont l'arrondi peut varier d'un navigateur à l'autre) est sorti du chemin du pas.
+- **La nuit vient seule à 22 h.** Quand tous les joueurs connectés sont couchés (« 🛏 Se coucher », « 1/2 »), le monde
+  joue `temps.sommeil` et la nuit file dix fois plus vite (8 h en 48 s) ; un seul debout, elle garde son pas ; au
+  réveil, chacun se lève (un lit ne vaut que pour sa nuit). Se coucher avant 22 h attend la nuit.
+- **L'énergie est celle de chacun** : `state.energies`, par compte, dans la partie du monde (le monde la vérifie à chaque
+  geste) ; la nuit la rend à tous les membres ; un nouveau membre commence avec l'énergie pleine, le propriétaire avec
+  celle de sa partie. Chaque joueur voit la sienne.
+- **Une préparation finit à son heure** (dans les pas) ; celle qui cuit encore à minuit finit à minuit, comme en solo.
+  Construire ne fige plus l'heure en ligne.
+- **Les instantanés** : tous les 120 pas ou 200 gestes, et au départ du dernier ; le journal garde ses 500 gestes ; au-
+  delà de 60 pas de retard, un joueur reçoit la partie entière. **Les sauvegardes** (E-12) : une par heure de jeu en
+  ligne et au départ du dernier (14 gardées).
+- **La sauvegarde du jeu** passe au format 104 (`horloge`, `energies` dans la partie d'un monde).
+
+Le coût, mesuré (`node scripts/cout-horloge.mjs` ; le détail : `docs/ile.md`, « L'horloge commune ») : par heure en
+ligne, 720 pas (1 021 si tous dorment chaque nuit), ≈ 3,5 s de calcul pour le serveur, 0,47 Mo écrits pour l'île
+avancée (1,5 Mo au plafond), 6 alarmes, presque rien de diffusé sans geste ; à quatre joueurs qui font chacun 4 gestes
+par minute, 0,58 Mo écrits et 0,6 Mo diffusés, et le journal couvre 31 minutes.
+
 ### Le poids, et le plafond
 
 Mesuré par `node scripts/poids-ile.mjs` : une partie neuve du chantier jouée par le joueur automatique
@@ -322,7 +364,7 @@ Mesuré par `node scripts/poids-ile.mjs` : une partie neuve du chantier jouée p
 
 ### Ce que les mesures disent des fiches suivantes
 
-- **I9a2 (l'horloge commune)** : un pas toutes les 5 s (réelles) joué comme une commande ferait une révision toutes
+- **I9a2 (l'horloge commune, faite : ci-dessus)** : un pas toutes les 5 s (réelles) joué comme une commande ferait une révision toutes
   les 5 s, donc un instantané (`INSTANTANE_TOUS` = 20) toutes les 100 s : ≈ 2,7 Mo écrits par heure passée en
   ligne pour une île de 75 Ko, 9 Mo à 256 Ko ; et le journal de rattrapage (`JOURNAL_GARDE` = 500 révisions) ne
   couvrirait plus que 40 minutes. Il faut un instantané au temps (ou des pas qui ne comptent pas comme des révisions).

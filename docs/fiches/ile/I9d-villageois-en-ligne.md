@@ -50,6 +50,23 @@ tous les joueurs, qui les voient aux mêmes endroits faire les mêmes choses.
 - **La nuit d'une île à six villageois** coûte 149 ms au serveur la première fois, puis 16 à 34 ms : à mesurer avec
   quinze, et par pas (point 1).
 
+## Revu par I9a2 (l'horloge commune)
+
+- **Les tâches des villageois sont l'essentiel du coût d'un pas** : un pas de jour coûte en moyenne ≈ 6 ms sur l'île
+  avancée (sept villageois ; `node scripts/cout-horloge.mjs`, la fin de sa sortie), presque tout dans `farmStep`
+  (`avancerTaches`). À mesurer à quinze ; s'il le faut, étaler les villageois sur les pas (le même résultat pour tous).
+- **Les arrivées sont dans le pas** (`pasDuMonde` : `arriverVillageois`, `arriverEnfant`, l'accueil à la fin de
+  l'heure d'arrivée, `assurerArrivee`) ; **les maisons** (`verifierMaisons`) une fois toutes les six pas (une heure de
+  jeu), au pas rond : elles coûtaient 5 ms à chaque pas. En ligne, le veilleur de la page (`js/ui/villageois.js`) ne les
+  fait plus ; le geste « accueilli » de la carte écrit encore dans la partie locale (une prédiction, que la partie
+  refaite efface) : à passer en commande ici.
+- **Leur position se calcule de l'heure interpolée** : la scène lit `heureDuJour` (`js/ui/stage.js`), qui ajoute la
+  part du pas écoulée (`fractionDuPas`, `js/ui/en-ligne.js`) ; `villageoisHorloge` (`js/ui/villageois.js`) lit encore
+  `clockHours` : à brancher sur la même heure.
+- **Sans joueur, le village dort** : rien ne tourne, et au retour il reprend où il s'était arrêté.
+- **Les avis des villageois** (`direAvis`) ne se redisent plus après une partie refaite ; ceux de l'étal et des
+  commerces, si (à faire ici).
+
 ## Hors périmètre
 
 - Attribuer des tâches et décider d'un commerce à plusieurs (I9e).
