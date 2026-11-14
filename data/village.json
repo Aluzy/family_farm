@@ -24,7 +24,7 @@
     "ACTIF": false,
     "ARRIVEE": {
       "RESERVE_JOURS": 2,
-      "PLAFOND": { "1": 2, "2": 4, "3": 6, "4": 9, "5": 12 },
+      "PLAFOND": { "1": 2, "2": 5, "3": 10, "4": 12, "5": 14 },
       "BOURSE": 20,
       "JOURNAL": 7,
       "TOC": "Toc, toc !",
