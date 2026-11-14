@@ -83,8 +83,8 @@ village et le port pour mettre un wagonnet qui serait l'évolution de la charret
 | C1 | 20 | offert | la caisse nue, ridelles basses |
 | C2 | 40 | 300 | des ridelles plus hautes |
 | C3 | 80 | 1 000 | les rehausses à claire-voie |
-| C4 | 160 | 2 500 | les rehausses et une bâche (il faut le cheval, palier V3) |
-| C5 | 320 | 6 000 | un wagonnet plus long, ou un second wagonnet en rame (il faut la voie, palier V5) |
+| C4 | 160 | 2 500 | les rehausses et une bâche |
+| C5 | 320 | 6 000 | une longue charrette à quatre roues ; sur la voie (V5), un second wagonnet en rame |
 
 ### La vitesse (en fois la marche d'un villageois sur le chemin)
 
@@ -218,8 +218,10 @@ terre ; 4 traverses par case, une tous les 4 px), le wagonnet et son cheval (216
 1. **Les réglages** (`data/village.json`, section `CHARRETTE` et son commentaire `//CHARRETTE`) :
    `CAPACITES` [20, 40, 80, 160, 320] et `PRIX_CAPACITE` [0, 300, 1000, 2500, 6000] ; `VITESSES` [0.75, 1,
    1.4, 2, 3] et `PRIX_VITESSE` [0, 400, 1500, 3000, 5000] ; `JOUR` [7, 17] ; `CHARGE` 0,25, `QUAI` 0,1,
-   `VENTE` 0,25 ; `HORS_CHEMIN` 50 (%) ; `CHEVAL` (le palier qui le demande, sa ration) ; `CAPACITE_CHEVAL`
-   (C4 demande V3) et `CAPACITE_VOIE` (C5 demande V5) ; `RAILS` (la recette, la case de la gare).
+   `VENTE` 0,25 ; `HORS_CHEMIN` 50 (%) ; `CHEVAL` (le palier qui le demande, sa ration). **Les deux branches sont
+   libres** (décision du joueur) : un palier de capacité ne demande aucun palier de vitesse, et l'inverse ;
+   seul le wagonnet (V5) demande la voie complète. Une grande capacité tirée à bras reste lente, c'est
+   tout ; `RAILS` (la recette, la case de la gare).
    `TACHES.LISTE.navette.ACTIONS` et `PORTEE`, `PRODUCTION.NAVETTE` : retirés le réglage allumé (gardés pour
    le jeu éteint) ; le quai lu comme ci-dessus.
 2. **Le moteur** (`js/engine/charrette.js`) : `charretteDu(state)`, `acheterPalier(state, branche)` (les
