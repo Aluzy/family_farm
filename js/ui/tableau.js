@@ -104,6 +104,7 @@ function tableauHtml(T) {
       </table>
     </div>
     ${commercesHtml(T)}
+    ${gardeMangerHtml(T)}
     <p class="muted tableau-aide">Le coût : ce qu'il a mangé à la boîte, sa part (${DATA.VILLAGE.PART} % de ce qu'il produit, gardée sur sa récolte et
       vendue pour lui au bac) et ce que son travail a pris au coffre (les légumes d'un plat, la graine ressemée) ; le produit : ce que
       son travail a rapporté. Le solde est un repère pour choisir qui fait quoi${t.ventes ? ` ; la tournée du port a vendu pour ${pieces(t.ventes)} ce que la ferme avait déjà` : ''}. Un appui sur un prénom : ses sept jours.</p>
@@ -131,6 +132,29 @@ function commercesHtml(T) {
       </table>
     </div>
     <p class="muted tableau-aide">Un commerce achète ses matières au coffre de la ferme (ces pièces sont pour toi), puis vend ce qu'il fait au comptoir et au bac (ses pièces sont pour lui) : dans la ligne de l'artisan, son produit est ce qu'il a payé à la ferme.</p>`;
+}
+
+// Fiche I3e : la ligne du garde-manger commun (tableau.js ligneGardeManger) : ce que le travail y a déposé, ce que la
+// cuisine du village y a fait, ce que le village y a mangé, qui cuisine, ses jours de repas.
+function gardeMangerHtml(T) {
+  const G = T.gardeManger;
+  if (!G) return '';
+  const objets = (l) => l.map((x) => `${formatNumber(x.n)} ${icone(x.objet)}`).join(' ');
+  return `<h3 class="tableau-commerces-titre">🏘️ Le garde-manger commun</h3>
+    <div class="tableau-cadre">
+      <table class="tableau-village tableau-commerces tableau-garde-manger">
+        <thead><tr><th scope="col" class="t-qui">Cuisine</th><th scope="col" class="t-tache t-second">Plats faits</th><th scope="col" class="t-num">Déposé</th><th scope="col" class="t-num">Cuisiné</th><th scope="col" class="t-num">Mangé</th><th scope="col" class="t-humeur t-second">Jours</th></tr></thead>
+        <tbody><tr class="tableau-ligne tableau-commerce">
+          <th scope="row" class="t-qui"><span class="tableau-nom">🍲 ${G.cuisiniers.length ? escapeHtml(G.cuisiniers.join(', ')) : '<span class="muted">personne</span>'}</span></th>
+          <td class="t-tache t-second">${G.plats.length ? `<span class="tableau-objets">${objets(G.plats)}</span>` : '—'}</td>
+          <td class="t-num" title="Ce que le travail des villageois y a déposé : ${escapeHtml(G.depose.map((x) => `${x.n} ${nom(x.objet)}`).join(', ') || 'rien')}">${formatNumber(G.valeurDepose)}</td>
+          <td class="t-num" title="Les plats de la cuisine du village">${formatNumber(G.valeurPlats)}</td>
+          <td class="t-num" title="Ce que le village y a mangé">${formatNumber(G.valeurMange)}</td>
+          <td class="t-humeur t-second"><span title="Jours de repas du village qu'il contient">${formatNumber(G.jours)} j</span></td>
+        </tr></tbody>
+      </table>
+    </div>
+    <p class="muted tableau-aide">Le garde-manger commun : ce que le travail y a déposé, ce que la cuisine du village y a fait et ce que le village y a mangé, en pièces au prix du port ; la réserve, en jours de repas du village.</p>`;
 }
 
 // Le tableau (la période et le tri choisis). `focus` : ce qui prend le focus (l'en-tête qu'on vient d'appuyer).

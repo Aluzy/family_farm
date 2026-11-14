@@ -5,7 +5,8 @@ import { enLigne, SAVE_KEY, setState, state } from './store.js';
 import { setPendingAbsence, setSimulatedAt, simulatedAt, syncJobs } from './loop.js';
 import { notify } from './toasts.js';
 import { mesurer } from './chrono.js';
-import { partieNeuve } from './village.js';
+import { essaiDemande, partieNeuve } from './village.js';
+import { copieRetourGardee, essayerSurLIle, partieDAvant } from '../engine/migration-ile.js';
 
 /* ---------- stockage : localStorage, toujours entouré de try/catch ---------- */
 
@@ -38,10 +39,49 @@ export function loadOrCreateState() {
     if (typeof parsed.t === 'number' && Number.isFinite(parsed.t)) setSimulatedAt(parsed.t);
     // (migrate répare une partie abîmée : un champ manquant ou d'un autre type reprend sa valeur de
     // départ, js/engine/state.js reparerPartie)
-    return demenagement(migrate(parsed), raw);
+    return versLIle(demenagement(migrate(parsed), raw), raw);
   } catch (e) {
     return abimee(raw);
   }
+}
+
+/* ---------- fiche I7f : une partie d'avant qui passe sur l'île ---------- */
+
+// La sauvegarde d'avant le passage sur l'île, gardée sur l'appareil (au cas où) : exportable depuis ⚙️ Options.
+export const SAVE_AVANT_ILE = 'ferme-save-avant-ile';
+
+// Une partie d'avant ouverte sur l'île y passe (js/engine/migration-ile.js) : le réglage allumé, migrate l'a fait ;
+// pendant le chantier, jeu.html?village=1 la rend partie d'essai et la fait passer ici. La première fois, la
+// sauvegarde d'avant (`raw`, telle qu'elle était sur l'appareil) est gardée à part, puis la partie est enregistrée.
+function versLIle(s, raw) {
+  if (essaiDemande() && partieDAvant(s)) essayerSurLIle(s);
+  if (s && s.retourIle && !s.retourIle.copie && raw) {
+    safeStorageSet(SAVE_AVANT_ILE, raw);
+    copieRetourGardee(s);
+    ileNeuve = true;
+  }
+  return s;
+}
+let ileNeuve = false;
+
+// Au démarrage (js/main.js) : la partie qui vient de passer sur l'île est enregistrée tout de suite (la fenêtre du retour,
+// js/ui/retour-ile.js, s'ouvre d'elle-même).
+export function ileAnnonce() {
+  if (!ileNeuve) return;
+  ileNeuve = false;
+  persistState();
+}
+
+// La sauvegarde d'avant l'île, gardée sur l'appareil (le texte), ou null.
+export function sauvegardeAvantIle() {
+  return safeStorageGet(SAVE_AVANT_ILE);
+}
+
+// Télécharge la sauvegarde d'avant l'île en fichier .json (⚙️ Options). → true si le téléchargement a été lancé.
+export function telechargerAvantIle() {
+  const raw = sauvegardeAvantIle();
+  if (!raw) return false;
+  return telecharger(raw, nomFichierSauvegarde().replace(/^moon-bloom-village/, 'moon-bloom-village-avant-ile'));
 }
 
 // Fiche 9a : une sauvegarde illisible (coupée, pas du JSON, pas une partie) ne bloque pas la page :
@@ -153,12 +193,16 @@ export function nomFichierSauvegarde(date = new Date()) {
 
 // Télécharge la sauvegarde en fichier .json. → true si le téléchargement a été lancé.
 export function telechargerSauvegarde() {
+  return telecharger(exportSaveJson(), nomFichierSauvegarde());
+}
+
+function telecharger(texte, nom) {
   try {
-    const blob = new Blob([exportSaveJson()], { type: 'application/json' });
+    const blob = new Blob([texte], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = nomFichierSauvegarde();
+    a.download = nom;
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
@@ -183,7 +227,8 @@ export function importSaveText(text) {
       throw new Error('format de sauvegarde invalide');
     }
     // Une sauvegarde importée reprend maintenant : pas de rattrapage hors-ligne.
-    const s = migrate(parsed);
+    // (fiche I7f : une partie d'avant importée sur l'île y passe ; la copie de sûreté est le texte importé)
+    const s = versLIle(migrate(parsed), JSON.stringify(parsed));
     delete s.demenagee;
     setState(s);
     setSimulatedAt(Date.now());

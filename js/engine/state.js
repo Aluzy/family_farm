@@ -18,6 +18,7 @@ import { VEHICULES } from './portage.js';
 import { commencerPaliers } from './paliers.js';
 import { nouveauxNoms, reparerNoms } from './noms.js';
 import { nouvelleChronique, reparerChronique } from './chronique.js';
+import { migrationIleDue, migrerVersLIle, reparerMigrationIle } from './migration-ile.js';
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
@@ -37,6 +38,7 @@ import { recitDAvant, recitPour } from './recit-aiguillage.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
 import { reparerLiens } from './liens.js';
 import { reparerBourse, reparerEtal } from './bourse.js';
+import { reparerGardeManger } from './garde-manger.js';
 import { reparerTraits } from './traits.js';
 import { reparerPaliersVocations } from './vocations.js';
 import { reparerFetes } from './fetes-village.js';
@@ -1034,6 +1036,27 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v101 → v102 (le chantier « l'île à bâtir », fiche I7f) : la migration des parties d'avant vers l'île
+  // (js/engine/migration-ile.js). Une partie passée sur l'île garde ses amis d'avant qui attendent une maison
+  // (state.candidats) et la fenêtre de son retour (state.retourIle) ; ce qui y est abîmé est réparé (un candidat
+  // illisible s'en va). La migration elle-même ne dépend pas du format : elle se fait à l'ouverture d'une partie
+  // d'avant sur l'île (migrate, plus bas : le réglage allumé ; js/ui/storage.js : une partie d'essai), quel que soit
+  // le format d'où elle vient. Une partie d'avant ouverte le réglage éteint n'est pas touchée.
+  101: (state) => reparerMigrationIle({ ...state, version: 102 }),
+  // v102 → v103 (le chantier « l'île à bâtir », fiche I3e) : le garde-manger commun et la cuisine du village
+  // (js/engine/garde-manger.js : state.gardeManger, commun ou non, la réserve visée, les cases de la cuisine du village,
+  // le journal de ce qu'on y a déposé, cuisiné, mangé). Une partie d'avant n'en a pas et reste telle quelle ; ce qui est
+  // abîmé est réparé (une réserve hors de 0 à 10, une case illisible, une entrée du journal sans jour), ce qui est
+  // illisible s'en va.
+  102: (state) => {
+    const out = { ...state, version: 103 };
+    if ('gardeManger' in state) {
+      const g = reparerGardeManger(state.gardeManger);
+      if (g) out.gardeManger = g;
+      else delete out.gardeManger;
+    }
+    return out;
+  },
 };
 
 // Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.
@@ -1921,7 +1944,14 @@ export function migrate(save, jusqua = STATE_VERSION) {
     guard++;
   }
   if (typeof state.version !== 'number') state.version = version;
-  if (state.version === STATE_VERSION && jusqua === STATE_VERSION) state = reparerPartie(state);
+  if (state.version === STATE_VERSION && jusqua === STATE_VERSION) {
+    state = reparerPartie(state);
+    // (fiche I7f : une partie d'avant ouverte sur l'île y passe : le réglage allumé, ou une partie d'essai)
+    if (migrationIleDue(state)) {
+      // (sur une copie : une partie qui ne passe pas reste telle quelle, jamais à moitié ; jamais d'exception ici)
+      try { const ile = structuredClone(state); if (migrerVersLIle(ile)) state = ile; } catch (e) { /* (rien) */ }
+    }
+  }
   return state;
 }
 

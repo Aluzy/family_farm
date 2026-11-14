@@ -9,7 +9,7 @@ import {
   acheterAuPort, agrandirPort, apporterAuChantier, articleDe, avancerBac, awakeMsAtHour, bacAQuai, caissesAQuai,
   catalogueImport, chargerPortage, choisirVehicule, commanderImport, commandesDuBac, comptoirDuPort, contenuPort, countItem, createNewGame, DATA,
   enVenteAuPort, etalPort, etatBac, executerCommande, farmSeed, honorerCommande, importsAttendus, inscrireSauvage, jourDeBac,
-  migrate, niveauPort, paiementCommande, plafondVillageois, planConnu, portDe, portDuMonde, prendreAvisBac, prochainBac,
+  migrate, niveauPort, nouveauPort, paiementCommande, plafondVillageois, planConnu, portDe, portDuMonde, prendreAvisBac, prochainBac,
   prochainNiveau, runNight, savoirProduire, sellPrice, STATE_VERSION, testBatir, tirerCommandes, unlockLevel, vendreAuPort,
 } from '../../js/engine/index.js';
 import { jourDeBac as jourDuVillageois } from '../../js/engine/villageois.js';
@@ -324,8 +324,11 @@ test('la sauvegarde : v89 → v90 ; le port gardé, un port abîmé réparé, un
   assertEqual([abime.port.niveau, abime.port.commandes, abime.port.imports, abime.port.vendu], [1, [], [], {}], 'réparé');
   const avant = avecVillage(() => createNewGame(5), false);
   assert(!('port' in avant), 'le réglage éteint : pas de port');
+  // (la migration v89 → v90 n'ajoute rien à une partie d'avant ; ouverte le réglage allumé, elle passe ensuite sur l'île,
+  // avec un port neuf : fiche I7f, migration-ile.js)
+  assert(!('port' in avecVillage(() => migrate({ ...copie(avant), version: 89 }), false)), 'une partie d\'avant, éteint : rien d\'ajouté');
   const v = migrate({ ...copie(avant), version: 89 });
-  assert(!('port' in v), 'une partie d\'avant : rien d\'ajouté');
+  assertEqual(v.port, nouveauPort(v.day), 'une partie d\'avant, sur l\'île : un port neuf (fiche I7f)');
 });
 
 test('le réglage éteint : rien ne se lit ni ne s\'écrit', () => {

@@ -1104,7 +1104,7 @@
         if (!hoeing && this.siloAt(wx, wy)) return { window: 'silo' };
         // un four, une cuisinière posés (la ferme générée) : la fenêtre de sa station
         const station = !hoeing ? this.stationAt(wx, wy) : null;
-        if (station) return { window: station };
+        if (station) return { window: station, bloc: this.blocTouche };
         for (const z of this.zones()) {
           const i = z.at(wx, wy);
           if (i < 0) continue;
@@ -1319,7 +1319,7 @@
         if (hit.panneau) { if (this.ctx.bridge.hameauPanneau) this.ctx.bridge.hameauPanneau({ id: hit.panneau.id, nom: hit.panneau.nom, style: hit.panneau.style }); return; }
         if (hit.hameauRefus) { if (this.ctx.bridge.hameauRefus) this.ctx.bridge.hameauRefus(hit.hameauRefus.outil, hit.hameauRefus.nom); return; }
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien
-        if (hit.window) { this.ctx.bridge.act('stage-open', { window: hit.window }); return; }
+        if (hit.window) { this.ctx.bridge.act('stage-open', Number.isInteger(hit.bloc) ? { window: hit.window, bloc: hit.bloc } : { window: hit.window }); return; }
         if (hit.hoe) { K.vibre('houe'); this.ctx.bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
         if (hit.plante !== undefined) { this.ctx.bridge.act('arbre-case', { case: hit.plante }); return; }
         if (hit.bati !== undefined) { this.ctx.bridge.act('bloc', { case: hit.bati }); return; }

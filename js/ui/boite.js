@@ -22,8 +22,9 @@ function ligne(item, n, boutons) {
 }
 
 // Le contenu de la fenêtre : ce qui est dans la boîte (à reprendre), puis les aliments de
-// l'inventaire (à y mettre), et la faim de ceux qui y mangent.
-export function renderBoite() {
+// l'inventaire (à y mettre), et la faim de ceux qui y mangent. `avant` : une carte en tête (fiche I3e : le garde-manger
+// commun, js/ui/garde-manger.js).
+export function renderBoite(avant = '') {
   const B = DATA.ATELIER.BOITE;
   const dedans = boiteCounts(state);
   const plats = Object.keys(dedans);
@@ -41,6 +42,7 @@ export function renderBoite() {
   const faim = mangeurs(state).map((m) => `${memberNameHtml(m.id)} <span class="num">${Math.floor(jaugeMembre(m))}</span>`).join(' · ');
   return `
     <div class="cards">
+      ${avant}
       <div class="card">
         <span class="card-title"><span>🧺 Dans la boîte · <span class="num">${plats.length} / ${B.PLATS}</span> aliments</span></span>
         <span class="muted">Au plus ${B.PLATS} aliments différents, ${B.QUANTITE} de chacun. Quand un membre a faim (jauge à ${DATA.FAMILLE.FAIM.SEUIL}), il vient y manger${penalite('PEREMPTION') ? ', d\'abord ce qui périme le plus tôt' : ''}.</span>

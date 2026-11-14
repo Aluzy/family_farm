@@ -82,6 +82,8 @@ import { accepterContrat, contratsAcceptes, contratsDuPort, livrerContrat } from
 import { quiEstLie } from './liens.js';
 import { scoreVocation } from './vocations.js';
 import { poserBloc } from './blocs.js';
+import { cuisineDuVillage, cuisinesDuVillage, deposerAuGardeManger, designerCuisine, designerGardeManger, gardeManger, gardeMangerCommun, menuDuVillage, utileAuGardeManger } from './garde-manger.js';
+import { sourceRepas } from './repas.js';
 
 /* ==========================================================================
    Lot 10 : simulation d'un joueur automatique (conception, sections 8.10 et
@@ -215,6 +217,8 @@ export function botVillageois(state) {
   }
   // (I8b : la tournée du port de la stratégie « production » porte aussi VENDRE, une fois les contrats livrés)
   if (strat && Array.isArray(strat.VENDRE)) for (const v of V) if (v.tache === 'navette' && !(v.vendre || []).length) marquerAVendre(state, v.id, strat.VENDRE);
+  // (I3e : le garde-manger commun, la cuisine du village et ses cuisiniers)
+  botGardeManger(state, V);
   if (strat && strat.REATTRIBUER === false) return;
   botReattribuer(state, V);
   botEtal(state, V);
@@ -306,7 +310,7 @@ function botUnCommerce(state, V, S) {
   if (!adultes.length) return null;
   const m = candidatDe(state, S.SORTE);
   let v = adultes.find((x) => x.id === m.id) || adultes.find((x) => x.envies && Number.isInteger(x.envies[S.SORTE])) || adultes.find((x) => x.tache === d.tache);
-  const garder = new Set(((DATA.SIMULATION.VILLAGEOIS.REATTRIBUER || {}).GARDER) || []);
+  const garder = new Set(tachesGardees(state));
   // (le dernier arrivé qui ne fait pas une tâche de GARDER ; et dont l'outil, s'il en a un, peut revenir au joueur)
   const T = tacheDef(d.tache);
   const libre = (x) => !garder.has(x.tache) && (!x.outil || x.outil === T.outil || !hasTool(state, x.outil));
@@ -347,6 +351,45 @@ function botUnCommerce(state, V, S) {
   if (!C || !C.ok) return null;
   const r = ouvrirCommerce(state, v.id, S.SORTE);
   return r.ok ? r.commerce.id : null;
+}
+
+// Les tâches qu'il ne retire pas (REATTRIBUER.GARDER : les champs ; I3e : la cuisine du village, qui nourrit le village).
+function tachesGardees(state) {
+  const G = ((DATA.SIMULATION.VILLAGEOIS || {}).REATTRIBUER || {}).GARDER || [];
+  return cuisineDuVillage(state) ? [...G, 'cuisine'] : G;
+}
+
+// Fiche I3e (garde-manger.js) : SIMULATION.VILLAGEOIS.GARDE_MANGER. Dès qu'un villageois est là et qu'il y a une boîte
+// à nourriture posée (ou le réfrigérateur), il la rend commune ; la cuisinière et le four posés (dans le foyer) deviennent
+// la cuisine du village ; puis il a CUISINIERS[n] cuisiniers quand le village compte n villageois adultes (le plus grand
+// seuil atteint) : le dernier arrivé qui ne fait ni une tâche gardée, ni un commerce, prend la cuisine.
+function botGardeManger(state, V) {
+  const S = DATA.SIMULATION.VILLAGEOIS && DATA.SIMULATION.VILLAGEOIS.GARDE_MANGER;
+  const adultes = V.filter((v) => !v.enfant && !v.accueil);
+  if (!S || !adultes.length) return;
+  if (!gardeMangerCommun(state) && sourceRepas(state)) designerGardeManger(state, true);
+  if (!gardeMangerCommun(state)) return;
+  if (cuisinesDuVillage(state).length < 2) {
+    const B = state.blocs || {};
+    for (const [k, b] of Object.entries(B)) if (b === 'cuisiniere' || b === 'four') designerCuisine(state, Number(k), true);
+  }
+  if (!cuisineDuVillage(state)) return;
+  let voulus = 0;
+  for (const [n, k] of Object.entries(S.CUISINIERS || {})) if (adultes.length >= Number(n)) voulus = Math.max(voulus, k);
+  const cuisiniers = adultes.filter((v) => v.tache === 'cuisine').length;
+  if (cuisiniers >= voulus) return;
+  const garder = new Set(tachesGardees(state));
+  const v = [...adultes].reverse().find((x) => x.tache !== 'cuisine' && !garder.has(x.tache) && !commerceDuVillageois(state, x.id) && !candidatGarde(state, x));
+  if (v && !tacheManque(state, v, 'cuisine')) attribuer(state, v.id, 'cuisine');
+}
+
+// I3e : la farine que la cuisine du village prend au coffre chaque jour (deux par plat qui en demande, ACTIONS plats par
+// cuisinier) ; 0 sans elle.
+function farineDuVillage(state) {
+  if (!cuisineDuVillage(state)) return 0;
+  const cuisiniers = villageoisDe(state).filter((v) => v.tache === 'cuisine').length;
+  const A = Number(((DATA.VILLAGE.GARDE_MANGER || {}).CUISINE || {}).ACTIONS) || 0;
+  return menuDuVillage(state).some((r) => DATA.RECETTES[r].ingredients.some((i) => ingredientOptions(i).includes('farine'))) ? 2 * A * cuisiniers : 0;
 }
 
 // I4 (bourse.js) : l'étal. Dès qu'un villageois est là, il le fabrique et le pose ; chaque jour, il y met de ce qu'un
@@ -390,7 +433,7 @@ export function botReattribuer(state, V = villageoisDe(state)) {
   const bas = soldeLePlusBas(state, R.JOURS, avecTache.map((v) => v.id));
   if (!bas || !bas.complet) return null;
   const v = V.find((x) => x.id === bas.id);
-  if ((R.GARDER || []).includes(v.tache)) return null;   // (ce qui nourrit le village ne se retire pas)
+  if (tachesGardees(state).includes(v.tache)) return null;   // (ce qui nourrit le village ne se retire pas)
   const m = memo[v.id] || (memo[v.id] = { releves: {}, dernier: { tache: null, jour: -Infinity }, tenu: false });
   if (m.dernier.tache === v.tache && state.day - m.dernier.jour < R.JOURS) return null;
   const releves = m.releves[v.tache] || (m.releves[v.tache] = []);
@@ -712,7 +755,7 @@ export function botMill(state) {
   if (!st.construit) return;
   const d = st.appareil;
   if (d && (!d.allume || isBroken(d))) return;
-  const voulu = S.STOCK_FARINE - countItem(state, 'farine') - millPending(state);
+  const voulu = S.STOCK_FARINE + farineDuVillage(state) - countItem(state, 'farine') - millPending(state);
   if (voulu < 1) return;
   const n = Math.min(voulu, Math.max(0, wheatTotal(state) - botWheatKept(state)));
   if (n >= 1) startMilling(state, n);
@@ -723,7 +766,8 @@ export function botMill(state) {
 // Unités disponibles d'un ingrédient (inventaire et frigo), sans la réserve de semences.
 function botSpare(state, item) {
   if (item === DATA.SILO.ITEM) return wheatTotal(state);
-  const reserve = state.famille.reserve[item] || 0;
+  // (I3e : la farine de la cuisine du village, farineDuVillage, ne va pas à sa propre cuisine)
+  const reserve = (state.famille.reserve[item] || 0) + (item === 'farine' ? farineDuVillage(state) : 0);
   return stockCount(state, item) - reserve;
 }
 
@@ -1293,7 +1337,7 @@ export function botSell(state) {
   const paille = strawStock(state) - strawNeed(state) * S.PAILLE_MAX_NUITS;
   if (paille >= 1) sellItem(state, DATA.PATURAGE.NOURRITURE, paille);
   const vs = vocationDe.get(state);   // (I8b : la stratégie « production » garde sa farine pour le pain)
-  const farine = countItem(state, 'farine') - (vs && Number.isFinite(vs.FARINE_MAX) ? vs.FARINE_MAX : S.FARINE_MAX);
+  const farine = countItem(state, 'farine') - (vs && Number.isFinite(vs.FARINE_MAX) ? vs.FARINE_MAX : S.FARINE_MAX) - farineDuVillage(state);
   if (farine >= 1) sellItem(state, 'farine', farine);
   // I0b : les récoltes et les œufs en trop (la boîte remplie : botStore passe avant), au-delà de
   // VIVRES_GARDES de chacun et des semences gardées (de quoi cuisiner, ressemer, offrir)
@@ -1331,6 +1375,15 @@ function botSemences(state) {
 // l'Atelier et posée : botBatir) : elle s'y remplit, les plats d'abord.
 function botStore(state) {
   const f = state.frigo, reserve = botSemences(state);
+  // (I3e : le garde-manger commun — les plats d'abord, puis ce que la cuisine du village cuisine, puis ce qui nourrit le
+  // plus ; jamais ce qui nourrit peu et n'est pas au menu : les baies)
+  // (la boîte commune reste le garde-manger du village le réfrigérateur acheté : la famille mange au réfrigérateur, il
+  // le remplit ensuite comme avant)
+  const G = gardeManger(state);
+  if (G) {
+    if (G.sorte === 'boite' || (f.appareil.allume && !isBroken(f.appareil))) botGarnir(state, reserve);
+    if (G.sorte === 'frigo' || !f.construit) return;
+  }
   if (f.construit) {
     // (I4 : sur l'île, les baies — des milliers, cueillies en passant — ne remplissent plus le frigo, où mangent la
     // famille et les villageois : il en garde VIVRES_GARDES au frais, le reste attend dans l'inventaire ; avant, le
@@ -1346,6 +1399,21 @@ function botStore(state) {
   for (const item of items) {
     const n = countItem(state, item) - (reserve[item] || 0);
     if (n >= 1) deposerBoite(state, item, Math.floor(n));
+  }
+}
+
+// I3e : il garnit le garde-manger commun de l'inventaire (sans les semences gardées ni GARDE_MANGER.GARDE de chaque
+// aliment, pour sa propre cuisine), tant qu'il y a de la place : les plats d'abord, puis ce que la cuisine du village peut
+// cuisiner et ce qui nourrit bien (utileAuGardeManger), puis le reste (deposerAuGardeManger lui laisse la place des plats).
+function botGarnir(state, reserve) {
+  const garde = Number((((DATA.SIMULATION.VILLAGEOIS || {}).GARDE_MANGER || {}).GARDE)) || 0;
+  const items = Object.keys(inventoryCounts(state)).filter((k) => DATA.OBJETS[k] && DATA.OBJETS[k].mangeable && DATA.OBJETS[k].energie > 0);
+  const rang = (k) => (dishHappiness(k) > 0 ? 0 : utileAuGardeManger(state, k, Math.max(1, Math.floor(countItem(state, k)))) ? 1 : 2);
+  const rangs = new Map(items.map((k) => [k, rang(k)]));
+  items.sort((a, b) => rangs.get(a) - rangs.get(b) || (DATA.OBJETS[b].energie || 0) - (DATA.OBJETS[a].energie || 0) || (a < b ? -1 : 1));
+  for (const item of items) {
+    const n = Math.floor(countItem(state, item) - (reserve[item] || 0) - (dishHappiness(item) > 0 ? 0 : garde));
+    if (n >= 1) deposerAuGardeManger(state, item, n);
   }
 }
 
@@ -1542,6 +1610,8 @@ function botActions(state, strat, options, soir) {
   // avant la cuisine.
   botObjectives(state);
   botCook(state);
+  // (I3e : la farine de la cuisine du village se moud avant les champs, qui prennent l'énergie qui reste)
+  if (cuisineDuVillage(state)) botMill(state);
   // (les bêtes d'abord, leur paille et leur tonte : les cultures et le labour prennent
   // l'énergie qui reste)
   botScythe(state);

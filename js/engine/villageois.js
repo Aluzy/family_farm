@@ -20,6 +20,7 @@ import { bonheurDesTraits, traitsTires } from './traits.js';
 import { chroniqueArrivee } from './chronique.js';
 import { bonheurDeLaFete } from './fetes-village.js';
 import { lienArrivee } from './vocation-village.js';
+import { cuisineDuVillage, desservirLaTable, gardeMangerCommun, noterMange, servirLaTable } from './garde-manger.js';
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -243,6 +244,32 @@ export function tirerVillageois(state, rang = villageoisDe(state).length + 1) {
   return { prenom, genre, perso, apparence, gouts, traits };
 }
 
+// Fiche I7f (migration-ile.js) : le premier ami d'une partie d'avant qui attend une maison (state.candidats), pris
+// de la liste. Il garde son prénom, son personnage, son apparence, ses goûts et son amitié ; ses traits sont tirés de
+// son rang, comme ceux d'un autre (il n'en avait pas). → { villageois (comme tirerVillageois, et ancienAmi : true),
+// pts, connus } ou null.
+function prendreCandidat(state, rang) {
+  if (!Array.isArray(state.candidats)) return null;
+  while (state.candidats.length) {
+    const c = state.candidats.shift();
+    if (!objet(c) || typeof c.prenom !== 'string' || !c.prenom) continue;
+    if (!state.candidats.length) delete state.candidats;
+    const t = tirerVillageois(state, rang), genre = c.genre === 'm' ? 'm' : 'f';
+    const gouts = objet(c.gouts) && Object.keys(c.gouts).length ? { ...c.gouts } : t.gouts;
+    return {
+      villageois: {
+        prenom: c.prenom, genre, perso: Number.isInteger(c.perso) ? c.perso : t.perso,
+        apparence: objet(c.apparence) ? validApparence(c.apparence, false) || t.apparence : t.genre === genre ? t.apparence : tirerApparence(rngDe(`${graineDe(state)}:villageois:apparence:${rang}:ancien`), { enfant: false, genre }),
+        gouts, traits: t.traits, ancienAmi: true,
+      },
+      pts: Math.max(0, Math.min(DATA.AMITIE.ECHELLE.MAX, Math.round(Number(c.pts) || 0))),
+      connus: objet(c.connus) ? c.connus : {},
+    };
+  }
+  delete state.candidats;
+  return null;
+}
+
 // Un nouveau venu débarque et s'installe dans la première maison libre (sans vérifier le jour : arriveeRefus le
 // fait). `o.direct` : il y est d'un coup (la nuit, loin de la vue) ; sinon il marche du port à sa maison
 // (accueil « en_route » : la scène le montre, puis accueillirVillageois). → { ok, villageois } ou un refus.
@@ -252,7 +279,9 @@ export function arriverVillageois(state, o = {}) {
   if (!libre) return fail('Pas de maison libre.');
   if (!Array.isArray(state.villageois)) state.villageois = [];
   const rang = state.villageois.length + 1;
-  const t = tirerVillageois(state, rang);
+  // (fiche I7f, migration-ile.js : un ami d'une partie d'avant, candidat, passe avant tout villageois tiré)
+  const ancien = prendreCandidat(state, rang);
+  const t = ancien ? ancien.villageois : tirerVillageois(state, rang);
   const v = {
     id: `vg-${rang}`, ...t, maison: libre.boite, lit: libre.lits[0], bourse: Number(ARRIVEE.BOURSE) || 0,
     bonheur: DATA.BONHEUR.DEPART, faim: 0, arrive: jourDe(state), repos: false,
@@ -261,7 +290,8 @@ export function arriverVillageois(state, o = {}) {
   };
   state.villageois.push(v);
   // (fiche I6a : la famille l'accueille, l'amitié commence à VILLAGE.AMITIE.ACCUEIL points, « poli »)
-  if (!amitieDe(state).pnj[v.id]) ajouterAmitie(state, v.id, Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0);
+  if (!amitieDe(state).pnj[v.id]) ajouterAmitie(state, v.id, ancien ? ancien.pts : Number((DATA.VILLAGE.AMITIE || {}).ACCUEIL) || 0);
+  if (ancien) amitieDe(state).pnj[v.id].gouts = { ...ancien.connus };
   // (fiche I8a, vocation-village.js : un village convivial attire des gens qui y ont déjà un ami, un parent)
   const lien = lienArrivee(state, v, rngDe(`${graineDe(state)}:villageois:${rang}:lien`));
   if (lien && poserAffinite(state, v.id, lien.id, lien.affinite)) { v.lienArrivee = { id: lien.id, sorte: lien.sorte }; avis(v, `lien_arrivee:${lien.id}`); }
@@ -326,11 +356,13 @@ export function meublesMaison(state, v) {
 // lit ; son bonheur fait CIBLE.VITESSE % du chemin vers sa cible (la base, ses plats, leur variété, les meubles
 // de sa maison ; CIBLE.FAIM de moins s'il a eu faim) ; sans pénalité (PENALITES.BONHEUR_BAISSE coupée), il ne
 // baisse pas. Mal nourri ou sans lit : il se repose demain. → son entrée du journal.
-function nuitDe(state, v, jour) {
+function nuitDe(state, v, jour, table = null) {
   const besoin = v.enfant ? DATA.FAMILLE.AJ.enfant : besoinAdulte();
   // (fiche I4, bourse.js : il mange d'abord ce qu'il s'est acheté, puis à la boîte commune pour le reste)
-  const siens = mangerSesProvisions(v, besoin);
-  const r0 = mangerAuRangement(state, Math.max(0, besoin - siens.energie));
+  // (fiche I3e : la tablée — ses provisions mangées avant, villageoisNuit lui a servi sa part de la table commune)
+  const siens = table ? table.siens : mangerSesProvisions(v, besoin);
+  const r0 = table ? { mange: table.mange, energie: table.energie, source: 'table' } : mangerAuRangement(state, Math.max(0, besoin - siens.energie));
+  if (!table && gardeMangerCommun(state)) noterMange(state, r0.mange);
   // (encore faim : sa part qui attend le bac est à lui, il en mange)
   const reste = besoin - siens.energie - r0.energie;
   if (reste > 0) {
@@ -341,6 +373,8 @@ function nuitDe(state, v, jour) {
   const r = { ...r0, energie: r0.energie + siens.energie };
   const tout = { ...r0.mange };
   for (const [o, n] of Object.entries(siens.mange)) tout[o] = (tout[o] || 0) + n;
+  // (I3e : à la tablée, il a goûté à tous les plats de la table)
+  if (table) for (const [o, n] of Object.entries(table.plats || {})) if (n > 0 && !tout[o]) tout[o] = 1;
   const C = DATA.BONHEUR.CIBLE;
   // (fiche I6b, liens.js : un ami au village, un proche, un repas apporté par un ami)
   // (fiche I4, bourse.js : un achat qui lui a plu aujourd'hui, à l'étal ou par le bac ; I6c, traits.js : la tâche qu'il
@@ -377,6 +411,44 @@ function nuitDe(state, v, jour) {
   return J;
 }
 
+// Fiche I3e (garde-manger.js) : la tablée. Chacun mange d'abord ses provisions ; puis on sert la table commune, au
+// garde-manger, pour ce qui reste du besoin de tous (servirLaTable : les plats d'abord, un de chaque) ; chacun, dans
+// l'ordre des id, y prend jusqu'à son besoin, une part entamée passe au suivant (un gratin nourrit trois villageois) ;
+// ce qui n'est pas entamé retourne au garde-manger. Le plat ouvert est compté à qui l'entame (le tableau : son coût) ;
+// chacun a goûté à tous les plats de la table (son bonheur). → Map(id → { siens, mange, energie, plats }).
+function tablee(state, V) {
+  const besoins = new Map(), out = new Map();
+  for (const v of V) {
+    const b = v.enfant ? DATA.FAMILLE.AJ.enfant : besoinAdulte();
+    const siens = mangerSesProvisions(v, b);
+    besoins.set(v.id, Math.max(0, b - siens.energie));
+    out.set(v.id, { siens, mange: {}, energie: 0, plats: {} });
+  }
+  const total = [...besoins.values()].reduce((t, x) => t + x, 0);
+  const servi = servirLaTable(state, total);
+  let k = 0, entame = 0;   // (l'unité en cours, ce qu'il en reste)
+  for (const v of V) {
+    const T = out.get(v.id);
+    let reste = besoins.get(v.id);
+    while (reste > 0) {
+      if (entame <= 0) {
+        if (k >= servi.unites.length) break;
+        const u = servi.unites[k++];
+        entame = u.energie;
+        T.mange[u.objet] = (T.mange[u.objet] || 0) + 1;
+      }
+      const pris = Math.min(reste, entame);
+      entame -= pris; reste -= pris; T.energie += pris;
+    }
+    if (T.energie > 0) T.plats = servi.plats;
+  }
+  desservirLaTable(state, servi.unites, k);
+  const mange = {};
+  for (const u of servi.unites.slice(0, k)) mange[u.objet] = (mange[u.objet] || 0) + 1;
+  noterMange(state, mange);
+  return out;
+}
+
 // La nuit (runNight, avant le jour suivant) : les maisons vérifiées ; un jour de bac où personne n'est venu
 // (la journée finie avant l'heure, la page fermée), le nouveau venu qui pouvait venir est là d'un coup ; celui
 // qui marchait encore est chez lui ; puis chacun vit sa nuit. → { arrive (son id, ou null), repas (combien ont
@@ -394,9 +466,11 @@ export function villageoisNuit(state) {
   const jour = jourDe(state);
   let repas = 0;
   const sansLit = [];
+  for (const v of V) if (v.accueil === 'en_route') accueillirVillageois(state, v.id);
+  // (fiche I3e : la cuisine du village tourne, le village mange ensemble : tablee)
+  const tables = cuisineDuVillage(state) ? tablee(state, V) : null;
   for (const v of V) {
-    if (v.accueil === 'en_route') accueillirVillageois(state, v.id);
-    const J = nuitDe(state, v, jour);
+    const J = nuitDe(state, v, jour, tables ? tables.get(v.id) : null);
     if (J.energie >= J.besoin) repas++;
     if (J.lit === null) sansLit.push(v.id);
   }

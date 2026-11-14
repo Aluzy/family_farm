@@ -948,7 +948,8 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (changeMur(blocAt(state, tile), sorte)) {
     return hauteurMur(state, tile) > 1 ? { ok: false, raison: 'Ce mur est rehaussé : reprends d\'abord ses blocs du dessus.' } : { ok: true };
   }
-  if (s.boite && state.frigo && state.frigo.construit) return { ok: false, raison: 'La famille mange au réfrigérateur : la boîte à nourriture ne sert plus.' };
+  // (fiche I3e : sur l'île, une boîte posée après le réfrigérateur peut devenir le garde-manger commun du village)
+  if (s.boite && state.frigo && state.frigo.construit && !villageActif(state)) return { ok: false, raison: 'La famille mange au réfrigérateur : la boîte à nourriture ne sert plus.' };
   if (s.unique && dejaPose(state, sorte)) return { ok: false, raison: `Il y a déjà ${s.nom.toLowerCase() === 'citerne' ? 'une' : 'un'} ${s.nom.toLowerCase()} sur la ferme.` };
   // la station du robot : quand il est là (récolte ou semis automatiques)
   if (s.robot && !robotOn(state)) return { ok: false, raison: 'Il faut d\'abord le robot : la récolte ou le semis automatiques (arbre des technologies).' };

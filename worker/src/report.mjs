@@ -196,6 +196,9 @@ export const GAME_ACTIONS = {
   'boite-reprendre': 'Remplir la boîte à nourriture',
   'etal-mettre': 'Tenir l\'étal des villageois',
   'etal-reprendre': 'Tenir l\'étal des villageois',
+  'garde-manger-commun': 'Tenir le garde-manger commun',
+  'garde-manger-reserve': 'Tenir le garde-manger commun',
+  'cuisine-village': 'Tenir le garde-manger commun',
   'commerce-ouvrir': 'Ouvrir un commerce',
   'commerce-rejoindre': 'Rejoindre un commerce en second',
   'commerce-acheter': 'Acheter à un commerce',
@@ -241,6 +244,8 @@ export const INTERFACE_ACTIONS = new Set([
   'commerce-onglet', 'commerce-nom-autre',
   // (fiche I8a : les onglets de la fenêtre « L'île »)
   'ile-onglet',
+  // (fiche I7f : la fenêtre du retour d'une partie d'avant passée sur l'île ; sa sauvegarde d'avant, téléchargée)
+  'retour-ile-ok', 'download-avant-ile',
   // (les gemmes : js/ui/gemmes.js)
   'gemmes-ouvrir', 'gemmes-onglet', 'gemmes-pack', 'gemmes-payer', 'gemmes-acheter', 'gemmes-connexion',
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',

@@ -6,6 +6,7 @@ import { cibleBonheur, dishHappiness, memberHappiness, setHappiness, versCible }
 import { noter } from './journal.js';
 import { faimAidePct, faimMarchePct } from './equipement.js';
 import { clockHours, nightActive } from './clock.js';
+import { villageActif } from './village.js';
 
 /* ---------- la boîte à nourriture et la faim de la famille (FAMILLE.FAIM) ---------- */
 
@@ -120,7 +121,8 @@ export function placeBoite(state, item) {
 export function deposerBoite(state, item, qty = 1) {
   const def = DATA.OBJETS[item];
   if (!def || !def.mangeable) return fail('Seuls les aliments vont dans la boîte.');
-  if (state.frigo && state.frigo.construit) return fail('La famille mange au réfrigérateur.');
+  // (fiche I3e : la boîte rendue commune au village sert encore, le réfrigérateur acheté)
+  if (state.frigo && state.frigo.construit && rangementCommun(state) !== 'boite') return fail('La famille mange au réfrigérateur.');
   if (!countItem(state, item)) return fail(`Plus de ${def.nom.toLowerCase()} dans l'inventaire.`);
   const place = placeBoite(state, item);
   if (!place) return fail(boiteCount(state, item) ? `La boîte a déjà ${B().QUANTITE} ${def.nom.toLowerCase()}.` : `La boîte a déjà ${B().PLATS} aliments différents.`);
@@ -154,8 +156,10 @@ export function viderBoite(state) {
   return counts;
 }
 
-// Le réfrigérateur construit : la boîte posée et son contenu reviennent dans l'inventaire.
+// Le réfrigérateur construit : la boîte posée et son contenu reviennent dans l'inventaire. (Fiche I3e : sauf la boîte
+// rendue commune au village, qui reste son garde-manger ; la famille mange au réfrigérateur.)
 export function rangerBoite(state) {
+  if (rangementCommun(state) === 'boite') return { contenu: {}, boite: false };
   const contenu = viderBoite(state);
   let boite = false;
   // (en bas ou à l'étage)
@@ -185,6 +189,26 @@ function rangement(state, source) {
   return null;
 }
 
+// Fiche I3e (garde-manger.js) : le rangement que le joueur a rendu commun au village ('boite' | 'frigo'), s'il est là ;
+// null sinon (ou le chantier éteint).
+export function rangementCommun(state) {
+  const g = state && state.gardeManger;
+  if (!g || typeof g !== 'object' || !g.commun || !villageActif(state)) return null;
+  if (g.sorte === 'frigo') return state.frigo && state.frigo.construit ? 'frigo' : null;
+  if (g.sorte === 'boite') return boitePosee(state) ? 'boite' : null;
+  return null;
+}
+
+// Où mangent les villageois : le garde-manger commun, sinon le rangement de la famille (sourceRepas).
+export function sourceVillage(state) {
+  return rangementCommun(state) || sourceRepas(state);
+}
+
+// Les lots d'un rangement ('boite' | 'frigo'), ou null.
+export function rangementDe(state, source) {
+  return rangement(state, source);
+}
+
 // Le prochain aliment d'un rangement : ce qui périme le plus tôt, puis le plat qui rend le
 // plus de bonheur, puis ce qui rend le plus.
 function prochainAliment(store) {
@@ -203,8 +227,9 @@ function prochainAliment(store) {
 // que la famille (le réfrigérateur, sinon la boîte), dans le même ordre (prochainAliment), en énergie des objets
 // (DATA.OBJETS[].energie, comme le besoin FAMILLE.AJ). reserveRangement : l'énergie de tout ce qu'il contient ;
 // mangerAuRangement : des aliments jusqu'à `besoin`, tant qu'il y en a. → { mange: { objet: n }, energie, source }.
+// (Fiche I3e : au garde-manger commun s'il y en a un, sourceVillage.)
 export function reserveRangement(state) {
-  const store = rangement(state, sourceRepas(state));
+  const store = rangement(state, sourceVillage(state));
   let e = 0;
   for (const item of Object.keys(store || {})) {
     const def = DATA.OBJETS[item];
@@ -213,7 +238,7 @@ export function reserveRangement(state) {
   return e;
 }
 export function mangerAuRangement(state, besoin) {
-  const source = sourceRepas(state), store = rangement(state, source), mange = {};
+  const source = sourceVillage(state), store = rangement(state, source), mange = {};
   let energie = 0;
   while (store && energie < besoin) {
     const item = prochainAliment(store);

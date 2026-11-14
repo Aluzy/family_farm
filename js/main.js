@@ -7,7 +7,7 @@ import { chapterCount, mailbox } from './engine/campaign.js';
 import { alertSnapshot } from './engine/alerts.js';
 import { AUTOSAVE_MS, setState, state } from './ui/store.js';
 import {setTelChapter, telDay, telView} from './ui/consent.js';
-import { demenagementAnnonce, importSaveText, loadOrCreateState, makeSeed, persistState, sauvegardeAnnonce } from './ui/storage.js';
+import { demenagementAnnonce, ileAnnonce, importSaveText, loadOrCreateState, makeSeed, persistState, sauvegardeAnnonce } from './ui/storage.js';
 import { ecranTitre, ecranTitreVoulu } from './ui/ecran-titre.js';
 import { lireTransfert } from './ui/transfert.js';
 import { newGameFrom } from './engine/alerts.js';
@@ -122,6 +122,7 @@ async function demarrer() {
   catchUp(); // Lot 11 : le temps passé page fermée depuis la dernière sauvegarde
   demenagementAnnonce(); // une ancienne partie vient de quitter la ferme du grand-père
   sauvegardeAnnonce(); // une sauvegarde illisible : une nouvelle partie (l'ancienne gardée)
+  ileAnnonce(); // fiche I7f : une partie d'avant vient de passer sur l'île (enregistrée ; la fenêtre du retour suit)
 
   setInterval(persistState, AUTOSAVE_MS);
   window.addEventListener('beforeunload', persistState);

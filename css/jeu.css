@@ -3346,6 +3346,12 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .absence-biens { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .absence-biens li { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elevated); }
 .absence-biens strong { margin-left: auto; }
+/* fiche I7f : la fenêtre du retour d'une partie d'avant passée sur l'île (js/ui/retour-ile.js) */
+.retour-ile-modal { max-width: 540px; }
+.retour-ile-intro { margin: 0 0 8px; }
+.retour-ile-lignes { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.retour-ile-lignes li { display: flex; gap: 8px; align-items: flex-start; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elevated); line-height: 1.35; }
+.retour-ile-cadeau { margin: 0 0 10px; font-weight: 600; }
 
 /* ---------- Planter un arbre depuis l'Inventaire (js/ui/plantation.js) ----------
    Un bandeau en bas de l'écran (quoi faire, « Annuler ») ; la question, au milieu. */

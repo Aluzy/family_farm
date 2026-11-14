@@ -7,6 +7,7 @@ import { toolDef } from './outils.js';
 import { auChantier, defProjet } from './projets-village.js';
 import { validApparence } from './family.js';
 import { bilanCommerce, commercesOuverts } from './artisans.js';
+import { bilanGardeManger, gardeMangerCommun, joursDeReserve } from './garde-manger.js';
 
 /* ---------- le tableau des villageois (le chantier « l'île à bâtir », fiche I3d) ----------
 
@@ -239,6 +240,23 @@ export function tableauVillage(state, periode = 'semaine', tri = {}) {
     periode: p, jours: PERIODES[p], du: Math.max(1, au - PERIODES[p] + 1), au,
     lignes: trierTableau(lignes, tri.colonne, tri.sens), moyenne, total,
     commerces: commercesOuverts(state).map((c) => bilanCommerce(state, c, PERIODES[p])),
+    gardeManger: ligneGardeManger(state, PERIODES[p]),
+  };
+}
+
+// Fiche I3e (garde-manger.js) : la ligne du garde-manger commun, sur les `jours` derniers jours : ce que le travail y a
+// déposé, ce que la cuisine du village y a fait, ce que le village y a mangé (des objets, et leur valeur au port), qui
+// cuisine, ses jours de repas aujourd'hui. null sans garde-manger commun ni rien de noté.
+export function ligneGardeManger(state, jours = PERIODES.semaine) {
+  const B = bilanGardeManger(state, jours), actif = gardeMangerCommun(state);
+  if (!actif && !B.jours) return null;
+  const valeur = (m) => Object.entries(m).reduce((t, [o, n]) => t + valeurPort(o) * n, 0);
+  const liste = (m) => Object.entries(m).filter(([, n]) => n > 0).map(([o, n]) => ({ objet: o, n, valeur: valeurPort(o) * n })).sort((a, b) => b.valeur - a.valeur || (a.objet < b.objet ? -1 : 1));
+  return {
+    actif, depose: liste(B.depose), plats: liste(B.plats), mange: liste(B.mange),
+    valeurDepose: valeur(B.depose), valeurPlats: valeur(B.plats), valeurMange: valeur(B.mange),
+    jours: Number.isFinite(joursDeReserve(state)) ? joursDeReserve(state) : 0,
+    cuisiniers: villageoisDe(state).filter((v) => v.tache === 'cuisine').map((v) => v.prenom),
   };
 }
 

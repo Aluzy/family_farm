@@ -8,8 +8,9 @@
 
    La partie : state.palier, le numéro du palier en cours (1 à 7 : la forme de state.campagne.chapitre,
    que campaign.js tient égal) ; il n'existe que dans une partie neuve faite le réglage allumé (ou une
-   partie d'essai, allumerEssaiVillage). Une partie d'avant n'en a pas : elle garde ses chapitres, même le
-   réglage allumé, jusqu'à sa migration (fiche I7f). Les compteurs restent ceux de state.campagne.
+   partie d'essai, allumerEssaiVillage). Une partie d'avant n'en a pas : elle garde ses chapitres tant qu'elle
+   n'est pas passée sur l'île ; sa migration (fiche I7f, migration-ile.js) lui donne le palier du rang de son
+   chapitre. Les compteurs restent ceux de state.campagne.
 
    Les objectifs du chantier (OBJECTIFS_ILE) lisent l'état de façon défensive : un champ absent compte 0.
    Ils attendent des fiches suivantes :

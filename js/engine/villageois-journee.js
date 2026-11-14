@@ -16,6 +16,7 @@ import { achatsCommercesDuJour, commerceDe, commercesSignature, devantComptoir, 
 import { brefDesTraits, butsDesTraits, horaireDesTraits, soirDesTraits, traitsDe } from './traits.js';
 import { feteDuJourVillage, presentsALaFete, signatureFetes } from './fetes-village.js';
 import { auChantier, centreDeLaPlace, postesChantier, signatureProjets } from './projets-village.js';
+import { cuisineDuVillage, signatureGardeManger } from './garde-manger.js';
 
 /* ---------- la journée des villageois sur la ferme (le chantier « l'île à bâtir », fiche I3b) ----------
 
@@ -289,7 +290,9 @@ export function journeeDuVillage(state, jour = jourDe(state)) {
   const cle = JSON.stringify([graineDe(state), jour, H(), SB(), (DATA.VILLAGE.SOCIAL || {}).CONNAISSANCE, (DATA.VILLAGE || {}).LIENS, liensSignature(state), lp ? [lp.case, lp.chemin] : 0, avecTache ? signatureTaches(state) : 0,
     V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0, v.enfant ? 1 : 0, traitsDe(v).join('+'), v.chantier || 0, auChaud(v) ? 1 : 0]),
     // (I4 : les achats du jour ; I6c : les traits ; I8a : la fête du jour, le chantier du village)
-    achatsSignature(state, jour), DATA.TRAITS ? 1 : 0, signatureFetes(state, jour), signatureProjets(state), commercesSignature(state, jour)]);
+    achatsSignature(state, jour), DATA.TRAITS ? 1 : 0, signatureFetes(state, jour), signatureProjets(state), commercesSignature(state, jour),
+    // (I3e : la cuisine du village, la tablée)
+    signatureGardeManger(state)]);
   const deja = memoJours.get(cle);
   if (deja && deja.L === L) return deja.J;
   const J = calculerJournee(state, jour, V, L);
@@ -396,8 +399,10 @@ function calculerJournee(state, jour, V, L) {
     };
     // un repas : un siège de sa table, sinon de la table commune ; sans siège, chez lui. I6b : le siège le plus près
     // d'un ami déjà assis (à égalité, le premier) : des amis mangent côte à côte
+    // (fiche I3e : la cuisine du village tourne — on mange ensemble, la table commune d'abord, puis la sienne)
+    const tablee = cuisineDuVillage(state);
     const repas = (de, a, cle) => {
-      const tables = [x.maison && x.maison.table, L.commune].filter(Boolean);
+      const tables = (tablee ? [L.commune, x.maison && x.maison.table] : [x.maison && x.maison.table, L.commune]).filter(Boolean);
       for (const tb of tables) {
         const k = cle + ':' + tb.table, deja = assis.get(k) || [];
         const amis = deja.filter((o) => { const c = connaissance(state, x.v.id, o.id); return c && c.degre >= 2; }).map((o) => o.case);
@@ -938,7 +943,9 @@ export function paroleVillageois(state, id, o = {}) {
   const chantier = etat === 'travail' && auChantier(state, v);
   // (I3c : au travail, une phrase de sa tâche ; sa tâche attend (un outil, un poste) : il le dit)
   const def = tacheDef(v.tache), manque = etat !== 'dormir' && etat !== 'repas' && !fete && !chantier ? manqueDit(state, v) : '';
-  const texte = chantier ? un(A.chantier) : etat === 'travail' && def ? un(def.PHRASES) : manque ? un((P().ACTIVITE || {}).attend).replace('{raison}', manque) : un(but ? A[but] : (P().ACTIVITE || {})[etat]);
+  // (I3e : le cuisinier de la cuisine du village a ses phrases, GARDE_MANGER.CUISINE.PHRASES)
+  const phrases = v.tache === 'cuisine' && cuisineDuVillage(state) ? ((DATA.VILLAGE.GARDE_MANGER || {}).CUISINE || {}).PHRASES || (def && def.PHRASES) : def && def.PHRASES;
+  const texte = chantier ? un(A.chantier) : etat === 'travail' && def ? un(phrases) : manque ? un((P().ACTIVITE || {}).attend).replace('{raison}', manque) : un(but ? A[but] : (P().ACTIVITE || {})[etat]);
   return {
     // (I6c : un réservé ne dit ni le salut de l'heure ni son humeur ; les tirages sont faits quand même, le reste ne
     // change pas)

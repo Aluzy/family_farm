@@ -5697,7 +5697,8 @@ export const RAW_DATA = {
       "COMMERCES": [
         { "PALIER": 4, "SORTE": "forge", "MATIERES": { "minerai_fer": 12, "bois": 8 } },
         { "PALIER": 6, "SORTE": "mercerie", "MATIERES": {}, "GARDER": { "laine": 12 }, "AVANCE": 60 }
-      ]
+      ],
+      "GARDE_MANGER": { "CUISINIERS": { "3": 1, "6": 2 }, "GARDE": 6 }
     },
     "VOCATIONS": {
       "village": { "nom": "Vocation village", "eveilS": 60 },
@@ -10542,6 +10543,42 @@ export const RAW_DATA = {
         "Ça, je le prends : {objet}. Voilà les pièces."
       ]
     },
+    "GARDE_MANGER": {
+      "RESERVE": 3,
+      "RESERVES": [0, 1, 2, 3, 5],
+      "ENERGIE_MIN": 12,
+      "PLACES_PLATS": { "boite": 1, "frigo": 4 },
+      "JOURNAL": 7,
+      "CUISINE": {
+        "MAX": 2,
+        "ACTIONS": 4,
+        "RECETTES": [
+          "soupe_legumes",
+          "ratatouille",
+          "omelette",
+          "omelette_champignons",
+          "mayonnaise",
+          "poisson_grille",
+          "salade_tomates",
+          "riz_au_lait",
+          "gratin_patates",
+          "quiche_epinards",
+          "tarte_pommes",
+          "tarte_fraises",
+          "tarte_myrtilles",
+          "pain_ail",
+          "pain"
+        ],
+        "NOM": "La cuisine du village",
+        "SANS": "Le garde-manger commun n'a pas de quoi faire un plat du menu.",
+        "PHRASES": [
+          "Je cuisine pour tout le village.",
+          "Ce soir, on mange ensemble !",
+          "Ça sent bon jusqu'à la place.",
+          "Encore un plat pour le garde-manger."
+        ]
+      }
+    },
     "DEPART": {
       "PHRASE": "Une île, un abri, un port. Tout est à bâtir.",
       "PIECES": 450,
@@ -10603,6 +10640,44 @@ export const RAW_DATA = {
       "PLANTS": {
         "ail_ours_sauvage": { "biome": "foret", "sols": ["feuilles", "mousse"], "part": 0.004, "culture": "ail_ours" },
         "salicorne_sauvage": { "biome": "plage", "sols": ["sable"], "part": 0.015, "eau": [1, 3], "culture": "salicorne" }
+      }
+    },
+    "MIGRATION": {
+      "AMI": 2,
+      "CADEAU": { "pieces": 300, "objets": { "boite_aux_lettres": 1, "planche": 30, "pierre": 20 } },
+      "RETOUR": {
+        "TITRE": "Bienvenue sur l'île à bâtir",
+        "INTRO": "Ta ferme est intacte. Autour d'elle, l'île a changé :",
+        "PORT": "Le port t'attend au bout du chemin de la ferme : on y vend tout, on y achète les graines, et le bac y passe tous les {periode} jours.",
+        "VILLAGEOIS": "Des villageois débarquent du bac dès qu'une maison libre les attend : une pièce close, un lit, une boîte aux lettres contre sa porte.",
+        "AMIS": "Tes amis d'avant viendront les premiers : {amis}.",
+        "SANS_AMIS": "Tes voisins d'avant sont partis ; d'autres viendront par le bac.",
+        "RENDU": "Tes commandes en cours et ce qui attendait d'être livré te sont rendus : {rendu}.",
+        "SANS_RENDU": "Tu n'avais aucune commande en cours : rien n'est perdu.",
+        "PRIX": "Les prix ont changé : ce qu'on fabrique se vend de {de} à {a} % plus cher que ses matières, et les villageois gardent {part} % de ce qu'ils produisent.",
+        "CADEAU": "Un cadeau de bienvenue : {cadeau}.",
+        "BOUTON": "Merci, au travail !"
+      },
+      "CHRONIQUE": {
+        "DEBUT": "La famille {famille} s'installe sur sa terre.",
+        "VENTE": "Première vente de la ferme : le début des affaires.",
+        "VOISINS": "Tu rencontres des voisins {lieu}.",
+        "AMI": "Tu te lies d'amitié avec un voisin {lieu}.",
+        "AMIS": "Tu te lies d'amitié avec {n} voisins {lieu}.",
+        "BILAN": "Avant l'île : {chapitres}, le niveau {niveau} atteint.",
+        "CHAPITRE": "un chapitre de la ferme franchi",
+        "CHAPITRES": "{n} chapitres de la ferme franchis",
+        "SANS_CHAPITRE": "le premier chapitre de la ferme en cours",
+        "ILE": "Le port ouvre au bout du chemin : l'île est à bâtir."
+      },
+      "LIEUX": {
+        "lande": "dans la lande",
+        "prairie": "dans la prairie",
+        "cote": "sur la côte",
+        "foret": "dans la forêt",
+        "montagne": "dans la montagne",
+        "marais": "dans le marais",
+        "*": "sur l'île"
       }
     }
   },

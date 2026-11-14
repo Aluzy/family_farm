@@ -1374,7 +1374,8 @@
         // large ; l'établi et l'enseigne, hauts)
         const win = BLOCS_CARTE.fenetres[e.sorte], commerce = win === 'commerce', large = e.sorte === 'etal' || commerce;
         const h = e.sorte === 'refrigerateur' ? 34 : e.sorte === 'etal' ? 30 : commerce && e.sorte !== 'comptoir' ? 40 : 24, demi = large ? T + 2 : T / 2 + 2;
-        if (win && Math.abs(wx - e.x) <= demi && wy <= e.y + 2 && wy >= e.y - h) return win;
+        // (fiche I3e : la case du bloc touché, pour la cuisine du village : farm-stage.js la passe à la fenêtre)
+        if (win && Math.abs(wx - e.x) <= demi && wy <= e.y + 2 && wy >= e.y - h) { this.blocTouche = e.case; return win; }
       }
       return null;
     },

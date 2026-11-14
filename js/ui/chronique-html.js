@@ -33,6 +33,12 @@ export function nomsHtml(state) {
 }
 
 // La fenêtre : les noms, les lignes épinglées, puis la chronique par mois de lune (du plus récent au plus ancien).
+// « de » devant un nom : « de l'Île Verte-Rive », « d'Aubépine », « de Roche-Fleuri » (échappé).
+function deNom(nom) {
+  if (/^[ÎI]le\b/.test(nom)) return `de l'${escapeHtml(nom)}`;
+  return /^[AEIOUYÂÊÎÔÛÉÈÀaeiouy]/.test(nom) ? `d'${escapeHtml(nom)}` : `de ${escapeHtml(nom)}`;
+}
+
 export function chroniqueHtml(state) {
   const mois = chroniqueParMois(state), epingles = lignesEpinglees(state);
   const titre = nomAffiche(state);
@@ -40,7 +46,7 @@ export function chroniqueHtml(state) {
     ? mois.map((m) => `<section class="chronique-mois"><h3>🌙 ${escapeHtml(m.titre)}</h3><ol class="chronique-lignes">${m.lignes.map(ligneHtml).join('')}</ol></section>`).join('')
     : '<p class="hint">Rien encore : ce qui comptera sur l\'île viendra s\'écrire ici.</p>';
   return `
-    <h2 id="chronique-titre">📜 La chronique${titre ? ` de ${escapeHtml(titre)}` : ''}</h2>
+    <h2 id="chronique-titre">📜 La chronique${titre ? ` ${deNom(titre)}` : ''}</h2>
     ${nomsHtml(state)}
     ${epingles.length ? `<section class="chronique-mois chronique-epinglees"><h3>📌 Épinglées</h3><ol class="chronique-lignes">${epingles.map(ligneHtml).join('')}</ol></section>` : ''}
     <div class="chronique-corps">${corps}</div>
