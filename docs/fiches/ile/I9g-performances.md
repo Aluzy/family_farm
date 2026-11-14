@@ -46,6 +46,19 @@ téléphone, avec un village complet toujours à l'écran, et corriger ce qui ne
 - **Le serveur** : une alarme toutes les 10 minutes joue d'un coup les pas dus sans geste (jusqu'à 120 : ≈ 1 s de
   calcul sur l'île avancée) ; à suivre dans les journaux de Cloudflare (le temps de calcul par requête).
 
+## Revu par I9b (les changements de l'île)
+
+- **Ce qui pèse sur le réseau, ce sont les positions** (E-4), pas les gestes : à quatre joueurs dans la même région,
+  362 Ko/min diffusés (90 Ko/min par joueur), dont 346 de positions ; un geste dehors pèse ≈ 155 octets (14 Ko/min à
+  quatre qui récoltent). L'intérêt par région (I9b) ramène quatre joueurs dispersés à 50 Ko/min ; ensemble, il ne
+  change rien : réduire la cadence (5 par seconde) ou la taille d'une position serait le levier suivant.
+- **Le sol tiré en direct** : au serveur, pour un bloc posé dehors, 0,43 s la première fois (le contexte), puis 14 à
+  33 ms par région (12 gardées) ; chez un joueur, la même chose sur le fil principal quand un autre pose un bloc dans
+  une région que sa page n'a pas encore (≈ 0,5 s, une fois) : à mesurer dans un vrai navigateur, et à passer au
+  Worker du sol si cela se voit.
+- **La mesure** : `node scripts/cout-ile.mjs` (les octets par minute à 2 et 4 joueurs, le contrôle d'un geste, une
+  île très exploitée).
+
 ## Hors périmètre
 
 - Toute règle de jeu ; de nouveaux dessins.

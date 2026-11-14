@@ -25,7 +25,7 @@ import {
   tentePortee,
 } from '../engine/equipement.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
 import { tel } from './consent.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
@@ -312,22 +312,23 @@ registerActions({
     const r = apres(applyResult(portee ? retirerTente(state) : poserTente(state)));
     if (r.ok) notify(portee ? '⛺ La tente est rangée dans l\'inventaire.' : '⛺ Tu portes ta tente : loin de la ferme, la nuit, tu dormiras là où tu es (Dormir).');
   },
+  // (I9b : en ligne, par le monde : le sac est celui du joueur, sac.poser… ; en solo, comme avant)
   'sac-poser': (target) => {
-    const r = apres(applyResult(poserSac(state, target.dataset.item)));
+    const r = apres(applyResult(enLigne ? executer('sac.poser', { objet: target.dataset.item }) : poserSac(state, target.dataset.item)));
     if (r.ok) notify(`${DATA.OBJETS[r.item].icone} ${DATA.OBJETS[r.item].nom} : remplis-le avant de partir.`);
   },
   'sac-retirer': () => {
-    const r = apres(applyResult(retirerSac(state)));
+    const r = apres(applyResult(enLigne ? executer('sac.retirer', {}) : retirerSac(state)));
     if (r.ok) { closeModal(); notify(`${DATA.OBJETS[r.item].icone} Le sac et son contenu sont rangés dans l'inventaire.`); }
   },
   'sac-remplir': (target) => {
     const item = target.dataset.item;
-    const r = apres(applyResult(remplirSac(state, item, Number(target.dataset.n) || 1, target.dataset.source)));
+    const r = apres(applyResult(enLigne ? executer('sac.remplir', { objet: item, quantite: Number(target.dataset.n) || 1, ...(target.dataset.source === 'frigo' ? { source: 'frigo' } : {}) }) : remplirSac(state, item, Number(target.dataset.n) || 1, target.dataset.source)));
     // fiche 10 : remplir plusieurs fois de suite cumule dans une seule notification
     if (r.ok) notify(null, { cumul: { cle: `sac:${item}`, quantites: { n: r.moved }, texte: (t) => `🎒 Dans le sac : +${t.n} ${DATA.OBJETS[item].icone} (${portionsSac(state)} / ${capaciteSac(state)})` } });
   },
   'sac-reprendre': (target) => {
-    apres(applyResult(reprendreSac(state, target.dataset.item, Number(target.dataset.n) || 1)));
+    apres(applyResult(enLigne ? executer('sac.reprendre', { objet: target.dataset.item, quantite: Number(target.dataset.n) || 1 }) : reprendreSac(state, target.dataset.item, Number(target.dataset.n) || 1)));
   },
   'sac-manger': (target) => {
     const r = apres(applyResult(executer('manger', { objet: target.dataset.item || null, sac: true })));

@@ -24,7 +24,7 @@
 //     pas, puis les pas jusqu'à l'heure ; une commande confirmée au pas où la locale l'avait jouée ne la refait pas.
 // `moi` : son compte (ses gestes se jouent avec son énergie ; la locale montre la sienne dans state.energie).
 
-import { avancerJusqua, dureeDuPas, energieDe, horlogeVivante, pasDe } from '../engine/temps-monde.js';
+import { avancerJusqua, dureeDuPas, energieDe, horlogeVivante, pasDe, sacDe, sacsDe } from '../engine/temps-monde.js';
 
 const cloner = (v) => JSON.parse(JSON.stringify(v));
 export const MARGE = 2;   // pas : la confirmée suit la locale d'aussi loin
@@ -170,12 +170,20 @@ export class Synchro {
   // La locale montre l'énergie du joueur dans state.energie (ce que lit la page) ; celle de la partie (à personne, mais
   // le moteur la lit et l'écrit : le rapport du matin la note) est gardée à côté, et remise avant chaque pas ou geste
   // joué sur la locale (cacher) : la locale reste la confirmée, plus ses gestes en attente.
+  // I9b : son sac à provisions de même (state.sacs, montré dans state.equipement.sac ; celui de la partie, à côté).
   montrer(locale) {
     if (!this.vivante || !this.moi) return;
     this.energieDuMonde = locale.energie;
     locale.energie = energieDe(locale, this.moi);
+    this.sacPose = false;
+    if (sacsDe(locale) && locale.equipement && typeof locale.equipement === 'object') {
+      this.sacDuMonde = locale.equipement.sac;
+      locale.equipement.sac = sacDe(locale, this.moi);
+      this.sacPose = true;
+    }
   }
   cacher(locale) {
     if (this.vivante && this.moi && this.energieDuMonde !== null) locale.energie = this.energieDuMonde;
+    if (this.sacPose && locale.equipement) { locale.equipement.sac = this.sacDuMonde; this.sacPose = false; }
   }
 }

@@ -12,6 +12,7 @@ import {
   addItem, allDevices, caseDansLaFerme, caseVue, commandeHorsDeLaFerme, countItem, createNewGame, DATA, HORS_FERME, HORS_FERME_ILE, ilePartagee, refusFrontiere, unirVu, voirAutour, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, buildAtelier, morceauxDe, poserBloc, ramassables, testFillBatteries, testSetLevel, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
 } from '../js/engine/index.js';
 import { clockHours, dureeDuPas, energieDe, horlogeVivante, nightActive, pasDe } from '../js/engine/index.js';
+import { cheminDehorsSur, migrate, objetsDeRegion, regionVue, solDirect, STATE_VERSION, surCase } from '../js/engine/index.js';
 import { atelier, avecVillage, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
 import { empreinteDuMonde } from './engine/monde-de-la-graine.mjs';
 import { spawnSync } from 'node:child_process';
@@ -481,22 +482,26 @@ function ileLocale(graine = '13') {
   return s;
 }
 
-test('I9a : la frontière est au moteur (le jeu la vérifie comme le monde) ; une ferme d\'avant garde son mot, l\'île partagée a le sien', () => {
+test('I9a, I9b : la frontière est au moteur (le jeu la vérifie comme le monde) ; une ferme d\'avant garde son mot ; l\'île partagée ouvre les gestes du dehors', () => {
   eq([horsDeLaFerme === commandeHorsDeLaFerme, dansLaFerme === caseDansLaFerme], [true, true], 'le même code des deux côtés');
   // une ferme d'avant (le chantier éteint) : comme avant
   const { r } = monde();
   const w = r.charger(), T = farmTerrain(w), F = T.FERME;
   const dehors = (F.Y + 2) * T.LARGEUR + F.X - 3;
   eq([ilePartagee(w), refusFrontiere(w, { case: dehors }), r.commande(A, poser(dehors)).erreur], [false, HORS_FERME, HORS_FERME]);
-  // l'île partagée : hors de la ferme, rien d'autre n'est encore synchronisé ; dans la ferme, comme avant
+  eq([refusFrontiere(w, { piece: 'feuillu:40,40' }, 'monde.recolter'), r.commande(A, { id: id(), type: 'monde.recolter', args: { piece: 'feuillu:40,40' } }).erreur], [HORS_FERME, HORS_FERME], 'I9b : une pièce du monde, pas dans une ferme d\'avant');
+  // l'île partagée (I9b) : hors de la ferme, les gestes du dehors passent (le moteur les vérifie : un mur ne se pose pas
+  // dehors) ; les autres sont refusés à la frontière ; dans la ferme, comme avant
   const s = ileLocale();
   const ri = new MondeRegistre(baseSql());
   assert(ri.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
   const wi = ri.charger(), Ti = farmTerrain(wi), Fi = Ti.FERME;
   eq([ilePartagee(wi), wi.mondePartage], [true, true]);
   const dehorsI = (Fi.Y + 2) * Ti.LARGEUR + Fi.X - 3, dedansI = casesLibres(wi, 1)[0];
-  eq([refusFrontiere(wi, { case: dehorsI }), ri.commande(A, poser(dehorsI)).erreur], [HORS_FERME_ILE, HORS_FERME_ILE]);
-  eq(refusFrontiere(wi, { arbre: '3,3' }), HORS_FERME_ILE, 'un arbre de l\'île');
+  eq([refusFrontiere(wi, { case: dehorsI }), refusFrontiere(wi, { case: dehorsI }, 'bloc.poser'), refusFrontiere(wi, { case: dehorsI }, 'potager.labourer')], [HORS_FERME_ILE, null, HORS_FERME_ILE]);
+  assert(/pas hors de la ferme/.test(ri.commande(A, poser(dehorsI)).erreur), 'un mur dehors : le moteur le refuse');
+  eq(refusFrontiere(wi, { arbre: '3,3' }, 'outil.couper'), HORS_FERME_ILE, 'un arbre de la ferme, hors d\'elle : pas de sens');
+  eq([refusFrontiere(wi, { eau: 'lac' }, 'outil.pecher'), refusFrontiere(wi, { piece: 'feuillu:40,40' }, 'monde.recolter')], [null, null], 'pêcher au lac, récolter une pièce du monde');
   eq(refusFrontiere(wi, { case: dedansI }), null);
   assert(ri.commande(A, poser(dedansI)).ok, 'dans la ferme');
 });
@@ -968,4 +973,208 @@ test('I9a2 : un joueur en retard de plus de 60 pas reçoit la partie entière ; 
   const [t] = casesLibres(f.charger(), 1);
   const x = f.commande(A, poser(t));
   eq(['horloge' in a, 'pas' in x.evt.cmd, 'reel' in x.evt, f.avancer().pas, f.reprendre(), horlogeVivante(f.charger())], [false, false, false, 0, null, false]);
+});
+
+/* ---------- I9b : les changements de l'île ---------- */
+
+// Les pièces du monde autour de la sortie de la ferme (dans sa région et celles autour), hors de la ferme, que le geste
+// `geste` prend : [{ id, nom, x, y, variante, regle, case }] (le sol tiré de la graine, comme chez chaque joueur).
+function piecesDehors(w, geste, k = 1, test = () => true) {
+  const T = farmTerrain(w), N = T.MONDE.taille, W = T.LARGEUR, sol = solDirect(T);
+  const S = T.MONDE.cadre.SORTIE, rx = Math.floor((S % W) / N), ry = Math.floor(Math.floor(S / W) / N);
+  const out = [], vus = new Set();
+  for (let d = 0; d <= 2 && out.length < k; d++) {
+    for (let dy = -d; dy <= d; dy++) for (let dx = -d; dx <= d; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== d) continue;
+      for (const o of objetsDeRegion(sol.region(rx + dx, ry + dy))) {
+        const X = Math.floor(o.x / 16), Y = Math.floor((o.y - 1) / 16), c = Y * W + X;
+        if (vus.has(o.id) || out.length >= k || o.regle.geste !== geste || caseDansLaFerme(w, c) || !test(o)) continue;
+        vus.add(o.id);
+        out.push({ ...o, case: c });
+      }
+    }
+  }
+  return out;
+}
+const recolter = (piece, o = {}) => ({ id: id(), type: 'monde.recolter', args: { piece, ...o } });
+// (pour l'essai : les outils au coffre, posés dans la partie du monde, puis un instantané)
+function outille(r) {
+  const w = r.charger();
+  w.outils = { ...(w.outils || {}), hache: true, pioche: true, faux: true, canne: true };
+  r.instantane();
+  return w;
+}
+
+test('I9b : un arbre de l\'île abattu par l\'invité : son bois au coffre commun (rien au sol), sa région vue du monde ; un doublon refusé ; le Durable Object réveillé à froid rejoue tout', () => {
+  const { r, sql, h } = ileEnLigne();
+  r.accueil(A, { version: GAME_VERSION });
+  const w = outille(r);
+  const [a] = piecesDehors(w, 'couper', 1, (o) => o.regle.coups >= 2);
+  assert(a, 'un arbre de plusieurs coups près de la sortie');
+  const bois0 = countItem(w, 'bois'), vues0 = (w.monde.vues || []).length;
+  let x;
+  for (let k = 0; k < a.regle.coups; k++) { h.t += 1500; x = r.commande(B, recolter(a.id)); assert(x.ok, x.erreur); }
+  const s = r.charger();
+  eq([typeof s.monde.pris[a.id], s.monde.pris[a.id].retour > s.day, countItem(s, 'bois') > bois0, (s.morceaux || []).length], ['object', true, true, 0], 'abattu : il reviendra ; son bois au coffre');
+  assert(x.evt.cmd.type === 'monde.recolter' && Number.isInteger(x.evt.cmd.pas) && JSON.stringify(x.evt).length < 300, `l'événement, petit : ${JSON.stringify(x.evt)}`);
+  assert(regionVue(s, a.case) && (s.monde.vues || []).length >= vues0, 'sa région, vue du monde (elle repoussera)');
+  const bois = countItem(s, 'bois');
+  eq([r.commande(A, recolter(a.id)).erreur, countItem(r.charger(), 'bois')], ['Il n\'y a plus rien ici : ça repoussera.', bois], 'le même arbre, une seconde fois : refusé, rien en double');
+  eq(r.commande(B, recolter('licorne:40,40')).ok, false, 'une sorte inconnue');
+  const F = farmTerrain(s).FERME;
+  eq(r.commande(B, recolter(`feuillu:${(F.X + 4) * 16 + 8},${(F.Y + 4) * 16 + 15}`)).erreur, 'Il n\'y a rien à prendre ici.', 'une pièce du monde dans la ferme : il n\'y en a pas');
+  eq(r.commande(B, recolter(a.id.replace(/:.*/, ':999999,999999'))).erreur, 'Il n\'y a rien à prendre ici.', 'hors de la carte');
+  h.t += 20000;
+  r.avancer();
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.avancer();
+  eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal se rejoue pas à pas, à l\'identique');
+});
+
+test('I9b : le conflit : deux joueurs sur le même buisson au même instant : le premier arrivé l\'a, le second est refusé ; pêcher au lac, faucher, ramasser dehors ; le rôle visiteur ne prend rien', () => {
+  const { r } = ileEnLigne();
+  r.accueil(A, { version: GAME_VERSION });
+  const w = outille(r);
+  const [b, b2] = piecesDehors(w, 'couper', 2, (o) => o.regle.coups === 1);
+  const premier = r.commande(B, recolter(b.id)), second = r.commande(A, recolter(b.id));
+  eq([premier.ok, second.ok, second.erreur], [true, false, 'Il n\'y a plus rien ici : ça repoussera.'], 'un seul gagne');
+  const [f] = piecesDehors(w, 'faucher');
+  if (f) { const q = r.commande(B, recolter(f.id)); assert(q.ok, `faucher : ${q.erreur}`); }
+  const [m] = piecesDehors(w, 'ramasser');
+  if (m) { const q = r.commande(B, recolter(m.id)); assert(q.ok, `ramasser : ${q.erreur}`); }
+  const p = r.commande(A, { id: id(), type: 'outil.pecher', args: { eau: 'lac' } });
+  assert(p.ok, `pêcher au lac : ${p.erreur}`);
+  r.ajouterMembre('c-visite', 'Vic', 'visiteur');
+  assert(/Visiteur/.test(r.commande('c-visite', recolter(b2.id)).erreur), 'un visiteur regarde');
+});
+
+test('I9b : un chemin posé dehors par l\'invité (le sol de sa région tiré par le monde), repris ; un mur dehors refusé par le moteur ; le journal se rejoue', () => {
+  const { r, sql, h } = ileEnLigne();
+  r.accueil(A, { version: GAME_VERSION });
+  const w = r.charger();
+  addItem(w, DATA.ATELIER.BLOCS.chemin.objet, 5);
+  r.instantane();
+  const T = farmTerrain(w), W = T.LARGEUR, S = T.MONDE.cadre.SORTIE;
+  let t = null;
+  for (let k = 3; k < 60 && t === null; k++) for (const c of [S + k, S + k * W, S - k, S - k * W]) if (t === null && !caseDansLaFerme(w, c) && poseStatus(w, 'chemin', c).ok) t = c;
+  assert(t !== null, 'une case du dehors où un chemin se pose');
+  const p = r.commande(B, { id: id(), type: 'bloc.poser', args: { sorte: 'chemin', case: t } });
+  assert(p.ok, p.erreur);
+  eq([cheminDehorsSur(r.charger(), t), surCase(r.charger(), t)], [true, 'chemin'], 'le chemin, dans les chemins possédés');
+  assert(/pas hors de la ferme/.test(r.commande(B, poser(t + 2)).erreur), 'un mur dehors : refusé');
+  h.t += 6000;
+  const q = r.commande(A, { id: id(), type: 'bloc.reprendre', args: { case: t, attendu: 'chemin' } });
+  assert(q.ok, q.erreur);
+  eq(cheminDehorsSur(r.charger(), t), false, 'repris');
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.avancer();
+  eq(empreintePartie(froid.charger()), empreintePartie(r.charger()));
+});
+
+test('I9b : la repousse d\'une île suit la nuit qui vient dans les pas (le même jour au monde et au monde réveillé à froid) ; une ferme d\'avant, toujours pas (E-8)', () => {
+  const { r, sql, h } = ileEnLigne({ heure: 21 });
+  r.accueil(A, { version: GAME_VERSION });
+  const w = outille(r);
+  const [b] = piecesDehors(w, 'couper', 1, (o) => o.regle.coups === 1);
+  assert(r.commande(B, recolter(b.id)).ok);
+  const retour = r.charger().monde.pris[b.id].retour;
+  let jour = null;
+  for (let k = 0; k < 120 && jour === null; k++) {
+    h.t += PAS * 12;
+    r.avancer();
+    if (!r.charger().monde.pris[b.id]) jour = r.charger().day;
+  }
+  eq(jour, retour, `il repousse le jour ${retour}, au réveil`);
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.avancer();
+  eq([empreintePartie(froid.charger()), b.id in froid.charger().monde.pris], [empreintePartie(r.charger()), false], 'le monde réveillé à froid le refait à l\'identique');
+  // E-8 : la nuit d'une ferme d'avant ne fait pas repousser le grand monde (elle n'en a pas)
+  const ferme = partieLocale();
+  ferme.mondePartage = true;
+  ferme.monde.pris = { [b.id]: { retour: ferme.day } };
+  runNight(ferme);
+  eq(b.id in ferme.monde.pris, true, 'une ferme d\'avant : rien ne repousse');
+});
+
+test('I9b : l\'intérêt par région : près, les positions à leur pas ; loin, une toutes les POS_LOIN_MS ; en entrant dans une région, le lot de ceux qui y sont ; une ferme d\'avant relaie tout', () => {
+  const { r, h, msgs, entrer, dire } = ileServie();
+  r.ajouterMembre(C, 'Cam', 'batisseur');
+  entrer(A); entrer(B); entrer(C);
+  const T = farmTerrain(r.charger()), N = T.MONDE.taille * 16;
+  const pos = (c, x, y) => { h.t += 200; dire(c, { t: 'pos', x, y }); };
+  const recus = (dest, de) => msgs.filter(([q, m]) => q === dest && m.t === 'pos' && m.acteur === de).length;
+  // A et B dans la même région ; C trois régions plus loin
+  pos(A, 2 * N + 40, 2 * N + 40); pos(B, 2 * N + 90, 2 * N + 60); pos(C, 5 * N + 40, 2 * N + 40);
+  msgs.length = 0;
+  for (let k = 0; k < 9; k++) pos(A, 2 * N + 40 + k * 4, 2 * N + 40);   // (9 positions en 1,8 s)
+  eq([recus(B, A), recus(C, A)], [9, 1], 'B, près, les a toutes ; C, loin, une seule');
+  h.t += MONDE.POS_LOIN_MS;
+  pos(A, 2 * N + 90, 2 * N + 40);
+  eq(recus(C, A), 2, 'deux secondes plus tard : une de plus');
+  // C entre dans la région voisine de A : le lot des joueurs proches, tout de suite
+  msgs.length = 0;
+  pos(C, 3 * N + 10, 2 * N + 40);
+  const lot = msgs.find(([q, m]) => q === C && m.t === 'lot');
+  eq(lot && lot[1].pos.map((p) => p.acteur).sort(), [A, B].sort(), 'le lot : A et B, là où ils sont');
+  msgs.length = 0;
+  pos(A, 2 * N + 100, 2 * N + 40);
+  eq(recus(C, A), 1, 'désormais proche : à son pas');
+  // une ferme d'avant : pas de régions, tout est relayé comme avant (E-4)
+  const sock = [], m2 = [];
+  const ctx = { storage: { sql: baseSql() }, id: { toString: () => 'f' }, getWebSockets: (tag) => sock.filter((w) => !tag || w.c === tag), getTags: (w) => [w.c], waitUntil: (p) => p };
+  const d = new Monde(ctx, {});
+  assert(d.registre.creer({ proprietaire: A, partie: partieLocale() }).ok);
+  d.registre.ajouterMembre(B, 'Sam');
+  for (const c of [A, B]) sock.push({ c, send: (m) => m2.push([c, JSON.parse(m)]), close() {} });
+  let t = 1e12;
+  d.registre.maintenant = () => t;
+  for (let k = 0; k < 5; k++) { t += 200; d.webSocketMessage(sock[0], JSON.stringify({ t: 'pos', x: 10 + k * 3000, y: 10 })); }
+  eq(m2.filter(([q, m]) => q === B && m.t === 'pos').length, 5, 'une ferme d\'avant : toutes');
+});
+
+test('I9b : le sac de chacun : celui du propriétaire vient de sa partie, l\'invité arrive sans ; chacun remplit le sien, mange du sien dehors ; format 105', () => {
+  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  ile.essais = { ...(ile.essais || {}), village: true };
+  const sacs = Object.keys(DATA.EQUIPEMENT.SACS);
+  addItem(ile, sacs[0], 2);
+  addItem(ile, 'pomme', 12);
+  if (ile.equipement && ile.equipement.sac) ile.equipement.sac = null;
+  assert(executerCommande(ile, { id: 'c-sac', type: 'sac.poser', args: { objet: sacs[0] } }).ok, 'en solo, la commande pose le sac de la partie');
+  const avantSac = JSON.stringify(ile.equipement.sac);
+  const h = { t: 1_700_000_000_000 }, sql = baseSql();
+  const r = new MondeRegistre(sql, () => h.t);
+  assert(r.creer({ proprietaire: A, partie: { v: ile.version, t: 0, s: ile } }).ok);
+  r.ajouterMembre(B, 'Sam', 'batisseur');
+  r.accueil(A, { version: GAME_VERSION });
+  const w = r.charger();
+  eq([JSON.stringify(w.sacs[A]), w.equipement.sac, B in w.sacs], [avantSac, null, false], 'A a le sien, B aucun ; celui de la partie, à personne');
+  const jouer = (qui, type, args) => r.commande(qui, { id: id(), type, args });
+  let x = jouer(B, 'sac.poser', { objet: sacs[0] });
+  assert(x.ok, `B prend le second sac du coffre : ${x.erreur}`);
+  x = jouer(B, 'sac.remplir', { objet: 'pomme', quantite: 3 });
+  assert(x.ok, x.erreur);
+  x = jouer(A, 'sac.remplir', { objet: 'pomme', quantite: 1 });
+  assert(x.ok, x.erreur);
+  const nb = (q) => Object.values(q.items).flat().reduce((t, l) => t + l.qty, 0);
+  eq([nb(r.charger().sacs[A]), nb(r.charger().sacs[B]), r.charger().equipement.sac], [1, 3, null], 'chacun le sien');
+  // B a dépensé de l'énergie, puis mange dehors : de son sac
+  r.charger().energies[B] = 1000;
+  r.instantane();
+  const m = jouer(B, 'manger', { dehors: true });
+  assert(m.ok, m.erreur);
+  eq([nb(r.charger().sacs[B]), nb(r.charger().sacs[A])], [2, 1], 'de son sac à lui');
+  eq(jouer(A, 'sac.retirer', {}).ok, true);
+  eq([A in r.charger().sacs, r.charger().equipement.sac], [false, null], 'A a rangé son sac');
+  h.t += 30000;
+  r.avancer();
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.avancer();
+  eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal se rejoue');
+  // le format 105 : la partie d'un monde reçoit ses sacs (lisibles) ; une partie solo, rien
+  eq(STATE_VERSION, 105);
+  const v104 = { ...JSON.parse(JSON.stringify(r.charger())), version: 104, sacs: { [A]: { objet: sacs[0], items: { pomme: [{ qty: 1, nightsLeft: 3 }], licorne: [] } }, [B]: { objet: 'caillou' }, x: 3 } };
+  const mig = migrate({ v: 104, t: 0, s: v104 });
+  eq([mig.version, Object.keys(mig.sacs), Object.keys(mig.sacs[A].items)], [105, [A], ['pomme']]);
+  const solo = { ...JSON.parse(JSON.stringify(ile)), version: 104 };
+  eq('sacs' in migrate({ v: 104, t: 0, s: solo }), false, 'une partie solo n\'y gagne rien');
 });

@@ -67,6 +67,18 @@ tous les joueurs, qui les voient aux mêmes endroits faire les mêmes choses.
 - **Les avis des villageois** (`direAvis`) ne se redisent plus après une partie refaite ; ceux de l'étal et des
   commerces, si (à faire ici).
 
+## Revu par I9b (les changements de l'île)
+
+- **Ce qui est pris dehors est commun** (`state.monde.pris`, dans la partie du monde) et revient au jour dit dans les
+  pas (`repousseMonde` dans la nuit d'une île) : un villageois qui coupe ou ramasse dehors (les tâches, I3c) le fait
+  dans le pas, sur ces mêmes écarts : rien à diffuser de plus, mais un conflit possible avec un joueur (le même
+  arbre) se tranche par l'ordre du pas et du geste (le premier joué l'a) ; le refus doit rester propre (pas d'objet
+  en double, la tâche passe à la pièce suivante).
+- **Les régions vues du monde** (`state.monde.vues`) grandissent avec les gestes des joueurs (un arbre coupé y rend sa
+  région vue) : c'est là que les pièces repoussent et que les tâches des villageois regardent (`casesDuTerrain`).
+- **Le prix d'un pas** compte double chez chaque joueur (sa partie et la confirmée) : un geste dehors n'y ajoute
+  presque rien (0,3 à 0,5 ms au serveur).
+
 ## Hors périmètre
 
 - Attribuer des tâches et décider d'un commerce à plusieurs (I9e).

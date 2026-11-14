@@ -24,9 +24,11 @@
 //   monde dort, et le dit au retour. Chacun a son énergie (la partie du monde la range par compte).
 // - I9a, l'île partagée (le chantier allumé pour la partie du monde : ilePartagee, js/engine/frontiere.js) : le
 //   personnage sort de la ferme et la vue le suit (js/ui/stage.js) ; chacun voit le relief de l'île, tiré chez
-//   lui de la graine ; son brouillard est à lui (gardé dans son navigateur, par monde : brouillard) ; hors de
-//   la ferme, rien d'autre n'est encore synchronisé (le bandeau le dit, et le geste est refusé ici, avant
-//   d'être envoyé, comme le monde le refuserait).
+//   lui de la graine ; son brouillard est à lui (gardé dans son navigateur, par monde : brouillard).
+// - I9b, les changements de l'île : hors de la ferme, on récolte (monde.recolter), on pêche et l'on pose des chemins
+//   par le monde, comme sur la ferme ; ce qu'un geste lâche va au coffre commun ; un geste qui n'a pas de sens dehors
+//   est refusé ici, avant d'être envoyé, comme le monde le refuserait. Le monde relaie les positions des joueurs
+//   proches à leur pas, celles des joueurs loin plus rarement (l'intérêt par région : worker/src/monde.mjs).
 
 import { clockHours, DATA, empreintePartie, executerCommande, GAME_VERSION, ICONES_ROLES, ilePartagee, memberPerso, NOMS_ROLES, pasDe, refusDuRole, refusFrontiere, unirVu, validApparence } from '../engine/index.js';
 import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, quandConnecte } from './compte.js';
@@ -166,7 +168,12 @@ function recevoir(ws, data) {
     bandeau();
     return;
   }
-  // E-4 : où regardent les autres (relayé par le monde, jamais écrit) ; leur départ
+  // E-4 : où regardent les autres (relayé par le monde, jamais écrit) ; leur départ. I9b : en entrant dans une région,
+  // les joueurs qui y sont, en un lot.
+  if (m.t === 'lot') {
+    for (const p of Array.isArray(m.pos) ? m.pos : []) if (p && p.t === 'pos') recevoir(ws, JSON.stringify(p));
+    return;
+  }
   if (m.t === 'pos') {
     const a = autres.get(m.acteur) || { nom: '', look: null, ech: [], t: 0 };
     a.nom = m.nom;
@@ -347,9 +354,9 @@ export function jouerEnLigne(cmd) {
   // (E-11 : son rôle dans le monde ne le permet pas : refusé ici, sans attendre le monde, qui le vérifie aussi)
   const refus = lien.role ? refusDuRole(lien.role, lien.synchro.locale, cmd) : null;
   if (refus) return { ok: false, error: `🌐 ${refus}` };
-  // (I9a : l'île partagée ; hors de la ferme, rien d'autre n'est encore synchronisé : refusé ici, comme le monde
-  // le refuserait. Le chantier éteint, le monde seul le refuse, comme avant.)
-  const frontiere = ilePartagee(lien.synchro.locale) ? refusFrontiere(lien.synchro.locale, cmd.args) : null;
+  // (I9a, I9b : l'île partagée ; hors de la ferme, seuls les gestes du dehors passent : un autre est refusé ici,
+  // comme le monde le refuserait. Le chantier éteint, le monde seul le refuse, comme avant.)
+  const frontiere = ilePartagee(lien.synchro.locale) ? refusFrontiere(lien.synchro.locale, cmd.args, cmd.type) : null;
   if (frontiere) return { ok: false, error: `🌐 ${frontiere}` };
   const r = lien.synchro.jouer(cmd);
   if (r.ok) { marquerChangement('local'); envoyer({ t: 'cmd', id: cmd.id, type: cmd.type, args: cmd.args }); }
@@ -395,10 +402,12 @@ export function noterBrouillard(vu) {
   try { localStorage.setItem(cleBrouillard(b.monde), vu); } catch (e) { /* (le navigateur ne garde rien : la session seule) */ }
 }
 
-// Le personnage est-il hors de la ferme ? (js/ui/stage.js, à chaque case) : le bandeau le dit.
+// Le personnage est-il hors de la ferme ? (js/ui/stage.js, à chaque case : gardé ; I9b, le bandeau ne le dit plus.)
 export function noterDehors(oui) {
   if (!lien || !!lien.dehors === !!oui) return;
   lien.dehors = !!oui;
+  // (I9b : sur une île, dehors, il mange de son sac : js/ui/energie.js le lit)
+  if (typeof window !== 'undefined' && window.FermeEnLigne) window.FermeEnLigne.dehors = !!oui && ileEnLigne();
   bandeau();
 }
 
@@ -451,7 +460,7 @@ if (typeof window !== 'undefined') setInterval(envoyerPosition, POS_MS);
 // actions qui changent la partie (actions.js, SOMMEIL_BLOQUEES), sauf celles-là. Dormir : par le bandeau.
 const CONSTRUIRE = new Set(['bloc', 'bloc-many', 'build-toggle', 'build-pick', 'build-tab', 'build-groupe', 'build-filtre', 'meuble-ok', 'build-level-menu', 'build-level', 'build-piece', 'build-gomme', 'build-tourner', 'build-peindre', 'build-tapisser', 'build-motif', 'meuble-peindre', 'build-sens', 'meuble-tourner', 'build-annuler', 'bloc-pipette', 'bloc-deplacer', 'etage-toggle']);
 // (E-5 : le potager ; E-6 : les bêtes ; E-7 : la cuisine, le Moulin, le frigo, la boîte, manger ; E-9 : les outils, le verger ; E-10 : la progression, l'Atelier, les appareils, planter un arbre)
-const FERME = new Set(['buy-tech', 'atelier-fabriquer', 'bloc-fabriquer', 'build-station', 'toggle', 'upgrade', 'upgrade-tank', 'robot-autonomie', 'maintain', 'repair', 'arbre-planter', 'arbre-case', 'arbre-oui', 'semis-set', 'silo-agrandir', 'tool-use', 'axe-toggle', 'pick-toggle', 'scythe-toggle', 'rod-toggle', 'harvest-tree', 'start-recipe', 'cancel-queued', 'stop-recipe', 'mill-start', 'mill-cancel', 'eat', 'sac-manger', 'fridge-in', 'fridge-out', 'fridge-in-all', 'fridge-in-urgent', 'frigo-ranger', 'build-fridge', 'upgrade-fridge', 'boite-deposer', 'boite-reprendre', 'feed-hen', 'feed-all', 'shear', 'cow-herbs', 'buy-pasture', 'upgrade-poulailler', 'plant', 'plant-many', 'plant-all', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'hoe', 'hoe-many', 'hoe-toggle', 'hoe-take', 'cruche-remplir', 'tonnelet-remplir', 'compost-jeter', 'engrais-many', 'engrais-toggle']);
+const FERME = new Set(['sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre', 'buy-tech', 'atelier-fabriquer', 'bloc-fabriquer', 'build-station', 'toggle', 'upgrade', 'upgrade-tank', 'robot-autonomie', 'maintain', 'repair', 'arbre-planter', 'arbre-case', 'arbre-oui', 'semis-set', 'silo-agrandir', 'tool-use', 'axe-toggle', 'pick-toggle', 'scythe-toggle', 'rod-toggle', 'harvest-tree', 'start-recipe', 'cancel-queued', 'stop-recipe', 'mill-start', 'mill-cancel', 'eat', 'sac-manger', 'fridge-in', 'fridge-out', 'fridge-in-all', 'fridge-in-urgent', 'frigo-ranger', 'build-fridge', 'upgrade-fridge', 'boite-deposer', 'boite-reprendre', 'feed-hen', 'feed-all', 'shear', 'cow-herbs', 'buy-pasture', 'upgrade-poulailler', 'plant', 'plant-many', 'plant-all', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'hoe', 'hoe-many', 'hoe-toggle', 'hoe-take', 'cruche-remplir', 'tonnelet-remplir', 'compost-jeter', 'engrais-many', 'engrais-toggle']);
 const JAMAIS = /^(test-|do-import|do-new-game|ask-new-game|demarrer|accueil-)/;
 export function actionPermise(action, bloquees) {
   if (JAMAIS.test(action)) return 'Pas dans un monde en ligne : reviens à ta ferme solo (🌐 › Ma ferme solo).';
@@ -480,10 +489,9 @@ export function bandeau() {
   const nc = (lien.couches || []).length, total = lien.connectes || 0;
   const lit = `<button class="btn${lien.couche ? ' primary' : ''}" type="button" data-action="monde-coucher" aria-pressed="${!!lien.couche}">🛏 ${lien.couche ? 'Couché' : 'Se coucher'}${total > 1 && nc ? ` ${nc}/${total}` : ''}</button>`;
   const role = lien.role ? `<span title="Ton rôle : ${NOMS_ROLES[lien.role] || lien.role}" aria-label="Ton rôle : ${NOMS_ROLES[lien.role] || lien.role}">${ICONES_ROLES[lien.role] || ''}</span> ` : '';
-  // (I9a : hors de la ferme, sur l'île partagée)
-  const dehors = lien.dehors && ileEnLigne();
-  el.classList.toggle('dehors', !!dehors);
-  el.innerHTML = `<span class="en-ligne-etat">🌐 ${role}<span class="en-ligne-mot">En ligne · </span>${etat}${attente}</span>${lit}<button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter" aria-label="Revenir à ma ferme solo"><span class="en-ligne-mot">Ma ferme </span>solo</button>${dehors ? '<span class="en-ligne-dehors">🏝️ Hors de la ferme : rien d\'autre n\'est encore synchronisé.</span>' : ''}`;
+  // (I9b : hors de la ferme, sur l'île partagée, tout se synchronise : le bandeau d'I9a, « rien d'autre n'est encore
+  // synchronisé », est retiré)
+  el.innerHTML = `<span class="en-ligne-etat">🌐 ${role}<span class="en-ligne-mot">En ligne · </span>${etat}${attente}</span>${lit}<button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter" aria-label="Revenir à ma ferme solo"><span class="en-ligne-mot">Ma ferme </span>solo</button>`;
 }
 
 /* ---------- E-3 : les membres, inviter, retirer ---------- */
@@ -534,6 +542,7 @@ const GESTES = {
   'ramassage.prendre': 'a ramassé', 'cuisine.lancer': 'a lancé une recette', 'cuisine.annuler': 'a retiré une préparation', 'cuisine.arreter': 'a arrêté une préparation', 'moulin.moudre': 'a moulu du blé', 'moulin.annuler': 'a repris du blé',
   'frigo.ranger': 'a rangé au frigo', 'frigo.sortir': 'a sorti du frigo', 'frigo.toutRanger': 'a tout rangé au frigo', 'frigo.urgent': 'a mis au frais', 'frigo.acheter': 'a acheté le frigo', 'frigo.agrandir': 'a agrandi le frigo',
   'boite.deposer': 'a garni la boîte', 'boite.reprendre': 'a repris dans la boîte', 'manger': 'a mangé',
+  'monde.recolter': 'a récolté sur l\'île', 'sac.poser': 'a pris un sac à provisions', 'sac.retirer': 'a rangé son sac', 'sac.remplir': 'a rempli son sac', 'sac.reprendre': 'a repris dans son sac',
   'outil.couper': 'a coupé du bois', 'outil.casser': 'a cassé un rocher', 'outil.caillou': 'a ramassé un caillou', 'outil.faucher': 'a fauché', 'outil.faucherAutour': 'a fauché', 'outil.pecher': 'a pêché', 'verger.cueillir': 'a cueilli des fruits',
   'tech.acheter': 'a acquis une technologie', 'atelier.fabriquer': 'a fabriqué à l\'Atelier', 'atelier.construire': 'a construit un atelier',
   'appareil.basculer': 'a allumé ou éteint un appareil', 'appareil.ameliorer': 'a amélioré un appareil', 'appareil.entretenir': 'a entretenu un appareil', 'appareil.reparer': 'a réparé un appareil',

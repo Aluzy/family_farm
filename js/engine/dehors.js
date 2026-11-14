@@ -153,22 +153,34 @@ export function cheminsPourLeSol(state) {
 
 /* ---------- le sol du monde, pour bâtir dehors ---------- */
 
-let solPage = null;
+let solPage = null, repli = null;
 // La page donne le sol du monde de la partie (js/ui/monde-sol.js : region(rx, ry), hameaux()) ; null : le calcul direct.
-export function poserSolDehors(sol) {
+// I9b : `o.repli` (une fonction : vrai en ligne) : une région, ou les plans, que la page n'a pas encore se tirent ici, en
+// direct (solDirect), plutôt que d'être refusés : un bloc posé dehors par un autre joueur, loin de soi, se rejoue chez
+// chacun comme le monde l'a joué (sinon la partie confirmée divergerait, et tout serait redemandé). En solo, comme avant.
+export function poserSolDehors(sol, o = {}) {
   solPage = sol || null;
+  repli = typeof o.repli === 'function' ? o.repli : null;
 }
+const enRepli = () => !!(repli && repli());
 
 function solDe(T) {
   return solPage || solDirect(T);
 }
 
+// La région (rx, ry) du sol (celui de la page, ou le calcul direct), ou null si elle n'est pas encore faite.
+function regionDe(T, rx, ry) {
+  const reg = solDe(T) ? solDe(T).region(rx, ry) : null;
+  if (reg || !solPage || !enRepli()) return reg;
+  const d = solDirect(T);
+  return d ? d.region(rx, ry) : null;
+}
+
 // La région de la case t (son biome, si l'on y marche), ou null si elle n'est pas encore faite.
 function infoCase(T, t) {
-  const sol = solDe(T);
-  if (!sol || !T.MONDE) return null;
+  if (!solDe(T) || !T.MONDE) return null;
   const W = T.LARGEUR, N = T.MONDE.taille, c = t % W, r = Math.floor(t / W);
-  const reg = sol.region(Math.floor(c / N), Math.floor(r / N));
+  const reg = regionDe(T, Math.floor(c / N), Math.floor(r / N));
   if (!reg) return null;
   const k = (r - reg.cy0) * reg.cl + c - reg.cx0;
   return { biome: BIOMES[reg.biome[k]], marche: reg.marche[k] === 1 };
@@ -176,7 +188,10 @@ function infoCase(T, t) {
 
 // Les plans des hameaux et du port (monde-hameaux.js : leur cadre), ou null tant qu'ils ne sont pas là.
 function plansDe(T) {
-  if (solPage) return solPage.hameaux ? solPage.hameaux() : null;
+  if (solPage) {
+    const p = solPage.hameaux ? solPage.hameaux() : null;
+    if (p || !enRepli()) return p;
+  }
   const s = solDirect(T);
   if (!s) return null;
   elementsSol(s.ctx);

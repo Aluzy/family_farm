@@ -280,7 +280,7 @@ Deux règles en découlent :
   qu'elle est refaite (`unirVu`, `js/engine/monde-vu.js` ; `js/ui/en-ligne.js`). Les régions vues du moteur ne
   bougent pas, la partie confirmée reste celle du monde (`tests/test-synchro.mjs`). La carte du monde et la
   boussole le lisent comme en solo.
-- **Rien d'autre n'est encore synchronisé hors de la ferme.** Hors d'elle, un bandeau le dit sous le bandeau
+- **Rien d'autre n'est encore synchronisé hors de la ferme** (I9b l'a fait : ci-dessous). Hors d'elle, un bandeau le dit sous le bandeau
   du monde (« 🏝️ Hors de la ferme : rien d'autre n'est encore synchronisé. »). Un geste qui vise une case
   dehors (couper, casser, cueillir, poser un bloc ou un chemin) est refusé par le jeu avant d'être envoyé, et
   par le monde s'il arrivait : le même contrôle, passé au moteur (`refusFrontiere`), le même pour le jeu et le
@@ -326,6 +326,33 @@ ligne, 720 pas (1 021 si tous dorment chaque nuit), ≈ 3,5 s de calcul pour le 
 avancée (1,5 Mo au plafond), 6 alarmes, presque rien de diffusé sans geste ; à quatre joueurs qui font chacun 4 gestes
 par minute, 0,58 Mo écrits et 0,6 Mo diffusés, et le journal couvre 31 minutes.
 
+### Ce que fait I9b (les changements de l'île)
+
+Le détail et les mesures : `docs/ile.md`, « Les changements de l'île ». Le bandeau « rien d'autre n'est encore
+synchronisé » d'I9a est retiré : hors de la ferme, ce qu'un joueur change est vu des autres.
+
+- **Les gestes du dehors passent par le monde**, comme ceux de la ferme : `monde.recolter` (couper, casser, faucher,
+  cueillir, ramasser une pièce de l'île, « sorte:x,y »), la pêche dans un lac, une rivière, la mer, et les blocs du
+  dehors (un chemin, un pont, une barrière, un banc, une lumière). La frontière s'ouvre commande par commande
+  (`COMMANDES_DEHORS`, `js/engine/frontiere.js`) ; un geste qui n'a pas de sens dehors reste refusé, avant d'être
+  envoyé.
+- **Ce qu'un geste lâche va au coffre commun** (F.1), comme les outils de la ferme en ligne (E-9) : ni au sol, ni
+  dans le sac.
+- **Le monde contrôle une pièce par son identifiant**, sans tirer le sol de sa région (`refusPieceMonde`) ; le geste
+  refuse une pièce déjà prise. Deux joueurs sur le même arbre : le premier arrivé l'a, le coup de l'autre est annulé
+  proprement, rien en double. Un bloc posé dehors, lui, lit le sol de sa case (le monde le tire de la graine).
+- **Ce qui est pris revient au jour dit**, au même pas chez tous : la repousse vient avec la nuit dans les pas (une
+  île l'a ; une ferme d'avant, toujours pas). Les quotas (la pêche du jour) sont dans la partie du monde : communs.
+- **Rien n'est envoyé pour ce qui se déduit de la graine et du jour** : un geste du dehors pèse ≈ 155 octets ; une île
+  très exploitée, ≈ 17 à 38 Ko d'écarts dans la partie (plafond 64 Ko).
+- **L'intérêt par région** porte sur les positions (E-4), dix fois plus lourdes que les gestes : celles des joueurs
+  proches (la même région ou l'une des huit autour) arrivent à leur pas, celles des autres une fois toutes les 2 s ;
+  en entrant dans une région, on reçoit d'un coup où sont ceux qui y jouent. Les gestes vont à tous : la partie de
+  chacun doit rester celle du monde.
+- **Le sac de chacun** : `state.sacs`, par compte, dans la partie d'un monde de l'île (le propriétaire reçoit celui de
+  sa partie ; un invité arrive sans) ; chacun le remplit, le vide, en mange dehors. La sauvegarde passe au format 105.
+- **Le brouillard reste à chacun** (I9a).
+
 ### Le poids, et le plafond
 
 Mesuré par `node scripts/poids-ile.mjs` : une partie neuve du chantier jouée par le joueur automatique
@@ -368,7 +395,7 @@ Mesuré par `node scripts/poids-ile.mjs` : une partie neuve du chantier jouée p
   les 5 s, donc un instantané (`INSTANTANE_TOUS` = 20) toutes les 100 s : ≈ 2,7 Mo écrits par heure passée en
   ligne pour une île de 75 Ko, 9 Mo à 256 Ko ; et le journal de rattrapage (`JOURNAL_GARDE` = 500 révisions) ne
   couvrirait plus que 40 minutes. Il faut un instantané au temps (ou des pas qui ne comptent pas comme des révisions).
-- **I9b (les écarts du monde)** : les écarts sont petits (≤ 40 Ko pour une île très exploitée) ; ce qui coûte,
+- **I9b (les écarts du monde, faite : ci-dessus ; le contrôle par l'identifiant, sans le sol)** : les écarts sont petits (≤ 40 Ko pour une île très exploitée) ; ce qui coûte,
   c'est leur contrôle par le serveur : vérifier qu'un arbre existe hors de la ferme demande le sol de sa région,
   donc 0,4 à 0,5 s de contexte au réveil du monde, puis 12 ms par région. À trancher dans la fiche.
 - **I9d (les villageois)** : la copie élaguée d'aujourd'hui (`elaguer`) retire `voisins`, qui porte maintenant les

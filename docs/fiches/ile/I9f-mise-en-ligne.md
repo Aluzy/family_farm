@@ -60,6 +60,17 @@ jeu, comme I7f l'a fait pour les parties solo.
   sauvegarde par heure de jeu en ligne et au départ du dernier (14 gardées) ; plus de sauvegarde « après la nuit »
   pour une île (cinq nuits par heure).
 
+## Revu par I9b (les changements de l'île)
+
+- **À garder à la mise en ligne d'une île** (`elaguer` les retire encore) : `monde.pris` (ce qui est pris dehors et
+  quand cela revient : il repousse maintenant dans les pas), `monde.vues` (les régions vues du monde : là où l'on
+  repousse), `dehors` (les chemins posés). Le brouillard du propriétaire (`monde.vu`) part dans son navigateur.
+- **Le sac du propriétaire** devient le sien dans `state.sacs` (c'est fait à la création : `MondeRegistre.creer`) ; une
+  île mise en ligne avant I9b garde le sac de sa partie à personne (la migration 104 → 105 n'en sait pas le
+  propriétaire) : le lui rendre à la migration d'un monde.
+- **Le plafond** : une île très exploitée pèse 17 à 38 Ko d'écarts (`node scripts/cout-ile.mjs`) ; l'île hors de la
+  ferme reste sous ses 64 Ko.
+
 ## Hors périmètre
 
 - Fusionner une île solo et son île en ligne ; un monde à plus de joueurs qu'aujourd'hui.

@@ -1267,7 +1267,8 @@ function mondeDeLaCarte() {
   const sol = solDuMonde(farmTerrain(state));
   // (fiche I2 : les ponts de planches posés s'ouvrent aussi ; le moteur lit ce sol pour bâtir dehors, dehors.js)
   if (sol) sol.ouvertes = () => (villageActif(state) ? ouvertesAvecPonts() : casesOuvertesMonde(state));
-  poserSolDehors(sol);
+  // (I9b : en ligne, une région que la page n'a pas encore se tire en direct pour rejouer un bloc posé dehors)
+  poserSolDehors(sol, { repli: () => !!enLigne });
   return sol;
 }
 
@@ -1373,15 +1374,16 @@ function horsFermeDit() {
   if (t - dernierMot > 3000) { dernierMot = t; notify('🌐 Le reste du monde t\'attend dans ta ferme solo : en ligne, on reste sur la ferme.'); }
 }
 // I9a : l'île partagée (le chantier allumé pour la partie du monde) : pas de borne, le personnage sort de la
-// ferme et la vue le suit ; ce qu'il voit lève SON brouillard (stageIciEnLigne). Les gestes hors de la ferme
-// restent refusés (rien d'autre n'est encore synchronisé : js/engine/frontiere.js, js/ui/en-ligne.js).
+// ferme et la vue le suit ; ce qu'il voit lève SON brouillard (stageIciEnLigne). I9b : les gestes du dehors passent
+// par le monde (js/engine/frontiere.js COMMANDES_DEHORS, js/ui/en-ligne.js) : les pièces du monde se prennent (recolte :
+// la commande monde.recolter, js/ui/outils.js), on pêche, on pose des chemins.
 function enLigneSurLaFerme(options) {
   if (!enLigne) return options;
   const ile = ilePartagee(state);
   const o = { ...options, borne: ile ? null : farmTerrain(state).FERME || null, horsFerme: horsFermeDit };
   for (const k of MUETS_EN_LIGNE) if (o[k]) o[k] = () => null;
   if (ile && o.ici) o.ici = stageIciEnLigne;
-  for (const k of REFUSES_EN_LIGNE) if (o[k]) o[k] = pasEnLigne;
+  for (const k of REFUSES_EN_LIGNE) if (o[k] && !(ile && k === 'recolte')) o[k] = pasEnLigne;
   return o;
 }
 

@@ -132,18 +132,19 @@ test('I9a2 : l\'énergie est celle de chaque joueur (sa commande la dépense, pa
 });
 
 test('I9a2 : la sauvegarde passe au format 104 : la partie d\'un monde reçoit son horloge et les énergies (lisibles) ; une partie solo n\'y gagne rien', () => {
-  assertEqual(STATE_VERSION, 104);
+  // (I9b : puis au format 105, le sac de chacun : tests/test-monde.mjs ; la migration va jusqu'au format du jeu)
+  assert(STATE_VERSION >= 104);
   const s = ileDuMonde();
   const v103 = { ...cloner(s), version: 103 };
   delete v103.horloge; delete v103.energies;
   const m = migrate({ v: 103, t: 0, s: v103 });
-  assertEqual([m.version, m.horloge, m.energies], [104, { pas: 0, sommeil: false, reveils: 0 }, {}]);
+  assertEqual([m.version, m.horloge, m.energies], [STATE_VERSION, { pas: 0, sommeil: false, reveils: 0 }, {}]);
   const abime = migrate({ v: 103, t: 0, s: { ...cloner(v103), horloge: { pas: -3, sommeil: 'oui', reveils: 2 }, energies: { A: 4000, B: 'x', C: -1 } } });
   assertEqual([abime.horloge, abime.energies], [{ pas: 0, sommeil: false, reveils: 2 }, { A: 4000 }]);
   const solo = { ...cloner(s), version: 103, mondePartage: false };
   delete solo.horloge; delete solo.energies;
   const ms = migrate({ v: 103, t: 0, s: solo });
-  assertEqual([ms.version, 'horloge' in ms, 'energies' in ms], [104, false, false]);
+  assertEqual([ms.version, 'horloge' in ms, 'energies' in ms], [STATE_VERSION, false, false]);
 });
 
 test('I9a2 : le bac accoste dans le pas, à son heure (ce que faisait la page en solo : watchBac)', () => {

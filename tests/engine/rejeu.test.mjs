@@ -8,9 +8,10 @@
    ========================================================================== */
 
 import {
-  buildAtelier, defaire, empreintePartie, executerCommande, farmTerrain, mulberry32, poserBloc, testFarmMap,
+  avancerJusqua, buildAtelier, caseDansLaFerme, createNewGame, DATA, defaire, empreintePartie, executerCommande, farmTerrain, mulberry32,
+  objetsDeRegion, poserBloc, poseStatus, solDirect, testFarmMap,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, garden, setInv, test, tireless } from './aide.mjs';
+import { assert, assertEqual, avecVillage, garden, setInv, test, tireless } from './aide.mjs';
 
 const N = 1000;              // commandes par journal
 const GRAINE = 20261107;     // le hasard du tirage (pas celui de la partie) ; choisi pour que le journal
@@ -175,4 +176,82 @@ test('rejeu : l\'empreinte change avec la partie, pas avec l\'ordre de ses clés
   assert(empreintePartie(a) !== e, 'une lanterne posée change l\'empreinte');
   assertEqual(defaire(a, r.inverses), 1);
   assertEqual(empreintePartie(a), e, 'reprise : la partie retrouve son empreinte (un objet vide créé en passant ne compte pas)');
+});
+
+/* ---------- I9b : les gestes du dehors d'une île partagée, rejoués pas à pas ---------- */
+
+// Une île du chantier, partie d'un monde en ligne (son horloge vit : temps-monde.js), outillée, des chemins et un sac
+// en main, de quoi manger ; deux joueurs (A, le propriétaire, son sac ; B, sans).
+function ileDuMonde() {
+  const s = avecVillage(() => createNewGame('rejeu-ile', { nom: 'Île' }));
+  s.essais = { ...(s.essais || {}), village: true };
+  s.mondePartage = true;
+  s.outils = { ...(s.outils || {}), hache: true, pioche: true, faux: true, canne: true };
+  setInv(s, { chemin: 30, pomme: 20, ...Object.fromEntries(Object.keys(DATA.EQUIPEMENT.SACS).slice(0, 1).map((k) => [k, 2])) });
+  s.horloge = { pas: 0, sommeil: false, reveils: 0 };
+  s.energies = {};
+  s.sacs = {};
+  return s;
+}
+
+// Le journal d'une île : des gestes du dehors (abattre, casser, faucher, ramasser, pêcher, poser et reprendre un chemin,
+// le sac, manger dehors), tirés à graine fixe, chacun à son pas, par A ou par B ; des doublons (un même arbre, deux fois).
+function journalIle(s, n = 160) {
+  const T = farmTerrain(s), W = T.LARGEUR, N = T.MONDE.taille, sol = solDirect(T), S = T.MONDE.cadre.SORTIE;
+  const rx = Math.floor((S % W) / N), ry = Math.floor(Math.floor(S / W) / N), pieces = [], cases = [];
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) for (const o of objetsDeRegion(sol.region(rx + dx, ry + dy))) {
+    const c = Math.floor((o.y - 1) / 16) * W + Math.floor(o.x / 16);
+    if (!caseDansLaFerme(s, c) && pieces.length < 120 && !pieces.some((p) => p.id === o.id)) pieces.push(o);
+  }
+  for (let k = 3; k < 80 && cases.length < 10; k++) for (const c of [S + k, S + k * W]) if (!caseDansLaFerme(s, c) && poseStatus(s, 'chemin', c).ok && cases.length < 10) cases.push(c);
+  const sac = Object.keys(DATA.EQUIPEMENT.SACS)[0];
+  const r = mulberry32(GRAINE + 9), tire = (L) => L[Math.floor(r() * L.length)];
+  const out = [];
+  let pas = 0;
+  for (let i = 0; i < n; i++) {
+    pas += Math.floor(r() * 18);
+    const acteur = r() < 0.5 ? 'A' : 'B', x = r();
+    const o = tire(pieces);
+    const cmd = x < 0.55 ? { type: 'monde.recolter', args: { piece: o.id, ...(o.regle.geste === 'cueillir' ? { variante: o.variante } : {}) } }
+      : x < 0.65 ? { type: 'outil.pecher', args: { eau: tire(['lac', 'riviere', 'mer']) } }
+        : x < 0.78 ? { type: 'bloc.poser', args: { sorte: 'chemin', case: tire(cases) } }
+          : x < 0.86 ? { type: 'bloc.reprendre', args: { case: tire(cases) } }
+            : x < 0.9 ? { type: 'sac.poser', args: { objet: sac } }
+              : x < 0.95 ? { type: 'sac.remplir', args: { objet: 'pomme', quantite: 1 + Math.floor(r() * 3) } }
+                : { type: 'manger', args: { dehors: true } };
+    out.push({ acteur, pas, cmd: { id: `ile-${i}`, ...cmd } });
+  }
+  return out;
+}
+
+// Le journal joué sur la partie `s`, chaque geste à son pas (les pas d'entre deux, un à un), avec l'énergie et le sac de
+// son acteur : les résultats.
+function rejouerIle(s, entrees) {
+  return entrees.map(({ acteur, pas, cmd }) => {
+    avancerJusqua(s, pas);
+    return resume(executerCommande(s, cmd, { acteur }));
+  });
+}
+
+test('rejeu (I9b) : les gestes du dehors d\'une île, chacun à son pas, rejoués chez l\'hôte, l\'invité (par JSON) et le monde : les mêmes résultats, la même partie, la même repousse', () => {
+  const hote = ileDuMonde(), depart0 = JSON.stringify(hote);
+  const entrees = journalIle(hote);
+  const resA = rejouerIle(hote, entrees);
+  const reussies = entrees.filter((e, i) => resA[i].ok), sortes = new Set(reussies.map((e) => e.cmd.type));
+  for (const type of ['monde.recolter', 'outil.pecher', 'bloc.poser', 'bloc.reprendre', 'sac.poser', 'sac.remplir']) assert(sortes.has(type), `au moins un « ${type} » réussi`);
+  assert(resA.some((x, i) => !x.ok && entrees[i].cmd.type === 'monde.recolter' && /plus rien ici/.test(x.error)), 'un doublon refusé par le moteur');
+  assert(hote.day >= 6, `plusieurs journées (jour ${hote.day})`);
+  // la repousse a eu lieu : des pièces prises avant le jour 3 sont revenues
+  const prises = new Set(entrees.filter((e, i) => resA[i].ok && e.cmd.type === 'monde.recolter').map((e) => e.cmd.args.piece));
+  assert([...prises].some((id) => !(id in ((hote.monde && hote.monde.pris) || {}))), 'des pièces revenues');
+  // l'invité : la partie et le journal reçus en JSON ; le monde : la même chose, sauvée et reprise à mi-chemin
+  const invite = JSON.parse(depart0), lu = JSON.parse(JSON.stringify(entrees));
+  const resB = rejouerIle(invite, lu);
+  const monde = JSON.parse(depart0), moitie = entrees.length >> 1;
+  rejouerIle(monde, entrees.slice(0, moitie));
+  const repris = JSON.parse(JSON.stringify(monde));
+  rejouerIle(repris, entrees.slice(moitie));
+  for (let i = 0; i < entrees.length; i++) assertEqual(resB[i], resA[i], `geste ${i + 1} (${entrees[i].cmd.type})`);
+  assertEqual([empreintePartie(invite), empreintePartie(repris)], [empreintePartie(hote), empreintePartie(hote)], 'la même île partout');
+  assert(Object.keys(hote.sacs).length >= 1 && Object.keys(hote.energies).length === 2, `le sac et l'énergie de chacun : ${JSON.stringify(Object.keys(hote.sacs))}`);
 });

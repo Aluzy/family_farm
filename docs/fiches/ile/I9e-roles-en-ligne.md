@@ -51,6 +51,15 @@ lient avec les villageois.
 - **Le journal du monde** compte une commande de plus, celle du monde : `temps.sommeil` (« tous couchés, la nuit file,
   ou l'un s'est levé »), acteur « monde ».
 
+## Revu par I9b (les changements de l'île)
+
+- **Les nouvelles familles de commandes** ont leur rôle dans `js/engine/roles.js` : `monde` (`monde.recolter` : couper,
+  casser, faucher, cueillir, ramasser dehors) et `sac` (`sac.poser`, `sac.remplir`…) demandent l'ami jardinier, comme
+  les outils de la ferme ; les blocs du dehors (`bloc.*`), le bâtisseur. À revoir dans la grille complète : un visiteur
+  devrait-il pouvoir ranger son propre sac, manger de ses provisions ?
+- **Un bloc du dehors posé par un autre** (un chemin, un pont) se reprend avec `bloc.reprendre` : le propriétaire
+  voudra peut-être protéger les chemins (comme une structure sensible).
+
 ## Hors périmètre
 
 - De nouveaux rôles ; la modération entre joueurs (le propriétaire peut déjà retirer un membre).

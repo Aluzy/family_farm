@@ -663,8 +663,13 @@ export function apercuDesBiomes(ctx, pas = 8) {
 
 // Le sol du monde du terrain T, calculé en direct (sans Worker : Node, les tests, la page sans
 // Worker), ses régions gardées : { region(rx, ry) → solDeRegion… }. null pour un terrain sans
-// monde (la carte de Tiled, la ferme seule d'une ancienne partie).
+// monde (la carte de Tiled, la ferme seule d'une ancienne partie). I9b : le serveur d'un monde en ligne n'en garde que
+// les dernières (limiterSolDirect : une île a 88 régions, ≈ 45 Ko chacune) ; ailleurs, toutes.
 const directs = new Map();
+let regionsMax = Infinity;
+export function limiterSolDirect(n) {
+  regionsMax = Number.isInteger(n) && n > 0 ? n : Infinity;
+}
 export function solDirect(T) {
   const m = T && T.MONDE;
   if (!m) return null;
@@ -676,8 +681,15 @@ export function solDirect(T) {
       ctx,
       region(rx, ry) {
         const cle = rx + ',' + ry;
-        if (!regions.has(cle)) regions.set(cle, solDeRegion(ctx, rx, ry));
-        return regions.get(cle);
+        let reg = regions.get(cle);
+        if (reg) {
+          if (regionsMax !== Infinity) { regions.delete(cle); regions.set(cle, reg); }   // (la plus récente, à la fin)
+          return reg;
+        }
+        reg = solDeRegion(ctx, rx, ry);
+        regions.set(cle, reg);
+        while (regions.size > regionsMax) regions.delete(regions.keys().next().value);
+        return reg;
       },
     };
     directs.set(m.cle || m.graine, s);

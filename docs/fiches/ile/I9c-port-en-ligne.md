@@ -44,6 +44,20 @@ jouent en ligne, avec une caisse et un coffre communs, et chacun voit ce que l'a
 - **Les avis tirés de la partie locale** (bac, contrats) se redisaient après chaque partie refaite : ils sont gardés
   une fois dits (par leur texte). Les autres avis du port (l'étal, les commerces) restent à faire de même.
 
+## Revu par I9b (les changements de l'île)
+
+- **La frontière s'ouvre commande par commande** (`js/engine/frontiere.js`, `COMMANDES_DEHORS`) : les commandes du port
+  (`port.*`, `portage.*`) portent la case du personnage (`case`), hors de la ferme : elles sont aujourd'hui refusées sur
+  une île (« Hors de la ferme, ce geste ne se fait pas »). Les ajouter à `COMMANDES_DEHORS` ; le moteur vérifie déjà
+  la distance au comptoir (`PORT.PORTEE`).
+- **Ce qu'un geste lâche dehors va au coffre commun** (le choix d'I9b) ; le sac de chacun (`state.sacs`) ne garde que
+  les provisions de sortie. La charge de chacun (ses mains, sa brouette) est à faire ici, à côté : par compte, posée le
+  temps d'une commande comme l'énergie et le sac (`avecActeur`, `js/engine/temps-monde.js`).
+- **Le monde ne sait pas où est chacun** : `case` (comme `depuis` pour une pièce du monde) vient de la page. Une vente
+  « au comptoir » depuis l'autre bout de l'île passerait avec un jeu trafiqué : à garder en tête pour la caisse commune.
+- **Les positions des joueurs loin** arrivent une fois toutes les 2 s (l'intérêt par région) : au port, tous ceux qui
+  y sont se voient à leur pas.
+
 ## Hors périmètre
 
 - Les villageois et la navette en ligne (I9d) ; les contrats d'export (ils suivent, sans fiche

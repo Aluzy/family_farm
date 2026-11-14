@@ -255,11 +255,24 @@ export function scytheAroundFromStage(ids, ou) {
 // casse…), ou null (il dort, sans outil, sans énergie, trop loin : un message).
 export function mondeFromStage(id, o) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = recolterMonde(state, id, o || {});
+  const r = enLigne ? mondeEnLigne(id, o || {}) : recolterMonde(state, id, o || {});
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
   return r;
+}
+
+// I9b : en ligne, sur une île partagée, le geste passe par le monde (la commande monde.recolter : la pièce, son
+// geste, le coup fort, son dessin, la case du personnage) ; ce qu'elle lâche va au coffre commun, pas au sol.
+function mondeEnLigne(id, o) {
+  const args = { piece: String(id) };
+  if (o.geste) args.geste = String(o.geste);
+  if (o.fort) args.fort = true;
+  if (Number.isInteger(o.variante) && o.variante >= 0) args.variante = o.variante;
+  if (Number.isInteger(o.depuis) && o.depuis >= 0) args.depuis = o.depuis;
+  const r = executer('monde.recolter', args);
+  if (!r.ok || !r.items) return r;
+  return enLigneGain(r, Object.fromEntries(Object.keys(r.items).map((item) => [item, (x) => x.items[item]])));
 }
 
 // La carte : le personnage a marché sur le morceau `n` (bois, pierre) : dans l'inventaire.

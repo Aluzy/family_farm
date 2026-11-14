@@ -45,6 +45,10 @@
 //   → { t: 'pos', x, y }                          ← aux autres : { t: 'pos', acteur, nom, x, y } (E-4 : où regarde
 //                                                   chaque joueur ; relayé, jamais écrit ; POS_MS au plus souvent)
 //                                                   ← aux autres, à son départ : { t: 'parti', acteur }
+//                                                   (I9b, une île : l'intérêt par région. À qui joue dans la même
+//                                                   région ou l'une des huit autour : à son pas ; aux autres : une fois
+//                                                   toutes les POS_LOIN_MS ; à qui entre dans une région, à lui :
+//                                                   { t: 'lot', pos: [les dernières positions des joueurs proches] })
 //   → { t: 'coucher', oui }                       ← à tous : { t: 'couches', comptes, connectes } (E-5 : qui est
 //                                                   couché ; gardé sur sa connexion, jamais écrit) ; tous
 //                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: nuit.partagee }
@@ -54,8 +58,8 @@
 //                                                   un joueur qui ne la retrouve pas redemande tout)
 
 import {
-  avancerJusqua, caseDansLaFerme, commandeHorsDeLaFerme, COMMANDES, DATA, dureeDuPas, empreintePartie, energiesDe, executerCommande, GAME_VERSION, horlogeDe, horlogeVivante,
-  ilePartagee, migrate, pasDe, pasDuMonde, pickUpAll, ramasserMorceau, refusDuRole, refusFrontiere,
+  avancerJusqua, caseDansLaFerme, commandeHorsDeLaFerme, COMMANDES, DATA, farmTerrain, dureeDuPas, empreintePartie, energiesDe, executerCommande, GAME_VERSION, horlogeDe, horlogeVivante,
+  ilePartagee, limiterSolDirect, migrate, pasDe, pasDuMonde, pickUpAll, ramasserMorceau, refusDuRole, refusFrontiere,
 } from '../../js/engine/index.js';
 
 export const MONDE = {
@@ -74,7 +78,13 @@ export const MONDE = {
   SAUVEGARDE_MS: 3600000,   // E-12 : une sauvegarde par heure de jeu en ligne (et au départ du dernier)
   RATTRAPAGE_MAX_PAS: 240,  // au plus tant de pas rejoués d'un coup (un réveil après une panne) ; au-delà, l'horloge
                             // reprend à l'heure, sans rattraper le reste
+  // I9b (les changements de l'île) :
+  REGIONS_SOL: 12,          // les régions du sol gardées en mémoire (un bloc posé dehors les lit : dehors.js) ; les plus
+                            // anciennes s'en vont (une région ≈ 45 Ko, refaite en ≈ 12 ms)
+  POS_LOIN_MS: 2000,        // une position relayée au plus toutes les POS_LOIN_MS ms à qui joue loin (hors des régions voisines)
 };
+// (I9b : le sol d'une île, tiré de la graine pour un bloc posé dehors : ses dernières régions seulement)
+limiterSolDirect(MONDE.REGIONS_SOL);
 
 // Les commandes que le monde partagé accepte d'un joueur. La nuit ne se demande pas : le monde la joue
 // quand tous sont couchés (E-5 : nuit.partagee) ; nuit.dormir (la nuit qui défile, en solo) n'a pas cours.
@@ -202,6 +212,11 @@ export class MondeRegistre {
     this.rev = 0;
     this.debits = new Map(); // compte → [heures des dernières commandes]
     this.positions = new Map(); // E-4 : compte → l'heure de sa dernière position relayée (rien n'est écrit)
+    // I9b, l'intérêt par région (une île) : compte → { rx, ry } (la région de sa dernière position) ; le dernier message
+    // de position de chacun (pour le lot d'une région où l'on entre) ; « source>dest » → l'heure du dernier relais loin
+    this.regionsJoueurs = new Map();
+    this.dernieresPos = new Map();
+    this.relaisLoin = new Map();
     // I9a2 (un monde de l'île) : l'heure réelle du pas où en est la partie en mémoire, le monde éveillé ou non, le pas
     // et les gestes depuis le dernier instantané ; `quandAvance(r)` : le Durable Object écoute ce que le temps a fait
     this.reel = null;
@@ -243,6 +258,9 @@ export class MondeRegistre {
     if (horlogeVivante(s)) {
       horlogeDe(s);
       if (Number.isFinite(s.energie)) energiesDe(s)[proprietaire] = Math.max(0, Math.round(s.energie));
+      // (I9b : le sac de chacun ; celui du propriétaire est le sac de sa partie, les autres arrivent sans)
+      s.sacs = {};
+      if (s.equipement && s.equipement.sac) { s.sacs[proprietaire] = s.equipement.sac; s.equipement.sac = null; }
       this.poserMeta('horloge', JSON.stringify({ pas: pasDe(s), reel: this.maintenant(), actif: false, depart: null }));
     }
     this.faire('INSERT INTO instantane (rev, json) VALUES (?, ?)', 0, JSON.stringify(s));
@@ -450,9 +468,10 @@ export class MondeRegistre {
     if (L.length >= MONDE.COMMANDES_PAR_MINUTE) return { ok: false, erreur: 'Trop d\'actions d\'un coup : attends un instant.' };
     L.push(t);
     this.debits.set(compte, L);
-    // (E-8 : le monde est la ferme : rien hors d'elle ; I9a : l'île partagée, mais rien d'autre n'est encore
-    // synchronisé hors de la ferme)
-    const frontiere = refusFrontiere(this.charger(), c.args);
+    // (E-8 : le monde est la ferme : rien hors d'elle ; I9b, une île partagée : les gestes du dehors passent,
+    // COMMANDES_DEHORS, et le moteur les vérifie : une pièce du monde par son identifiant, sans le sol de sa région ;
+    // un bloc du dehors avec ce sol, comme en solo)
+    const frontiere = refusFrontiere(this.charger(), c.args, c.type);
     if (frontiere) return { ok: false, erreur: frontiere };
     return this.jouer(compte, { id: c.id, type: c.type, args: c.args }, t);
   }
@@ -494,6 +513,49 @@ export class MondeRegistre {
       this.pasInstantane = pasDe(s);
       this.gestes = 0;
     }
+  }
+
+  /* -- I9b : l'intérêt par région (les positions relayées) -- */
+
+  // La région de la position (x, y) en px (celle des régions du sol : MONDE.taille cases de côté), ou null (une partie
+  // sans monde autour : une ferme d'avant).
+  regionDe(x, y) {
+    const s = this.charger(), T = s && farmTerrain(s), N = T && T.MONDE && T.MONDE.taille;
+    if (!N) return null;
+    return { rx: Math.floor(x / 16 / N), ry: Math.floor((y - 1) / 16 / N) };
+  }
+  // La position de `compte` notée : sa région ; `entre` : il vient d'en changer (ou il arrive).
+  noterRegion(compte, x, y) {
+    const g = this.regionDe(x, y), avant = this.regionsJoueurs.get(compte);
+    if (!g) return { region: null, entre: false };
+    this.regionsJoueurs.set(compte, g);
+    return { region: g, entre: !avant || avant.rx !== g.rx || avant.ry !== g.ry };
+  }
+  // `a` et `b` jouent-ils près l'un de l'autre (la même région, ou l'une des huit autour) ? Une région inconnue : oui.
+  proches(a, b) {
+    const A = this.regionsJoueurs.get(a), B = this.regionsJoueurs.get(b);
+    return !A || !B || (Math.abs(A.rx - B.rx) <= 1 && Math.abs(A.ry - B.ry) <= 1);
+  }
+  // La position de `source` va-t-elle à `dest`, à l'heure `t` ? Près : toujours (au pas de POS_MS) ; loin : une fois
+  // toutes les POS_LOIN_MS (son avatar reste là où il est, chez l'autre, sans le suivre pas à pas).
+  relayer(source, dest, t) {
+    if (this.proches(source, dest)) { this.relaisLoin.delete(`${source}>${dest}`); return true; }
+    const k = `${source}>${dest}`, avant = this.relaisLoin.get(k);
+    if (avant !== undefined && t - avant < MONDE.POS_LOIN_MS) return false;
+    this.relaisLoin.set(k, t);
+    return true;
+  }
+  // Le lot d'une région où `compte` entre : les dernières positions des autres joueurs qui y sont près de lui.
+  lotDeRegion(compte) {
+    const out = [];
+    for (const [autre, m] of this.dernieresPos) if (autre !== compte && this.proches(compte, autre)) out.push(m);
+    return out;
+  }
+  // Un joueur parti : il n'a plus de région.
+  oublierRegion(compte) {
+    this.regionsJoueurs.delete(compte);
+    this.dernieresPos.delete(compte);
+    for (const k of [...this.relaisLoin.keys()]) if (k.startsWith(`${compte}>`) || k.endsWith(`>${compte}`)) this.relaisLoin.delete(k);
   }
 
   /* -- E-3 : inviter, rejoindre -- */
@@ -708,7 +770,7 @@ export class Monde {
 
   async webSocketMessage(ws, message) {
     const compte = (this.ctx.getTags(ws) || [])[0] || '';
-    traiterMessage(this.registre, compte, message, (m) => envoyer(ws, m), (m) => this.diffuser(m), (m) => this.diffuser(m, compte), {
+    traiterMessage(this.registre, compte, message, (m) => envoyer(ws, m), (m) => this.diffuser(m), (m, pour) => this.diffuser(m, compte, pour), {
       // (I9a2 : un lit ne vaut que pour la nuit où l'on s'est couché : le compte des réveils du monde)
       coucher: (oui) => { attacher(ws, { couche: !!oui, reveils: this.reveils() }); this.lits(); },
       accueilli: () => { this.lits(); this.programmerAlarme(); },
@@ -718,8 +780,8 @@ export class Monde {
   async webSocketClose(ws, code) {
     const compte = (this.ctx.getTags(ws) || [])[0] || '';
     try { ws.close(code === 1005 ? 1000 : code, 'au revoir'); } catch (e) { /* (déjà fermée) */ }
-    // (E-4 : son dernier onglet fermé, son avatar s'en va chez les autres)
-    if (!this.ctx.getWebSockets(compte).some((w) => w !== ws)) this.diffuser({ t: 'parti', acteur: compte }, compte);
+    // (E-4 : son dernier onglet fermé, son avatar s'en va chez les autres ; I9b : sa région oubliée)
+    if (!this.ctx.getWebSockets(compte).some((w) => w !== ws)) { this.registre.oublierRegion(compte); this.diffuser({ t: 'parti', acteur: compte }, compte); }
     // (I9a2 : le dernier joueur parti, le monde s'endort ; sinon, E-5 : celui qui part ne retient plus la nuit)
     if (!this.connexions(ws).length) { this.endormir(); return; }
     this.lits(ws);
@@ -819,11 +881,12 @@ export class Monde {
     this.diffuser({ t: 'couches', comptes: e.couches, connectes: e.connectes });
   }
 
-  // Un message à tous les membres connectés (`sauf` : pas à ce compte-là).
-  diffuser(m, sauf = null) {
+  // Un message à tous les membres connectés (`sauf` : pas à ce compte-là ; `pour(compte)` : I9b, seulement à ceux-là).
+  diffuser(m, sauf = null, pour = null) {
     for (const ws of this.ctx.getWebSockets()) {
       const compte = (this.ctx.getTags(ws) || [])[0];
       if (sauf && compte === sauf) continue;
+      if (pour && this.registre.membre(compte) && !pour(compte)) continue;
       // (un membre révoqué entre-temps : sa connexion est fermée)
       if (!this.registre.membre(compte)) { try { ws.close(4003, 'plus membre'); } catch (e) { /* (rien) */ } continue; }
       envoyer(ws, m);
@@ -881,7 +944,14 @@ export function traiterMessage(registre, compte, message, repondre, diffuser, di
     const h = Number(m.h), img = typeof m.img === 'string' && /^[a-z]+(_[a-z]+)*_\d{1,2}$/.test(m.img) && m.img.length <= 32 ? m.img : '';
     let look;
     try { look = m.look && typeof m.look === 'object' && JSON.stringify(m.look).length <= 1000 ? m.look : undefined; } catch (e) { look = undefined; }
-    diffuserAutres({ t: 'pos', acteur: compte, nom: membre.nom, x: Math.round(x), y: Math.round(y), h: Number.isFinite(h) ? Math.max(0, Math.min(200, Math.round(h))) : 0, img, flip: m.flip === true, ...(look ? { look } : {}) });
+    const pos = { t: 'pos', acteur: compte, nom: membre.nom, x: Math.round(x), y: Math.round(y), h: Number.isFinite(h) ? Math.max(0, Math.min(200, Math.round(h))) : 0, img, flip: m.flip === true };
+    // (I9b, une île : l'intérêt par région ; une ferme d'avant n'a pas de régions, tout est relayé comme avant)
+    const ile = ilePartagee(registre.charger());
+    const g = ile ? registre.noterRegion(compte, x, y) : { region: null, entre: false };
+    if (ile) { const prec = registre.dernieresPos.get(compte), lk = look || (prec && prec.look); registre.dernieresPos.set(compte, lk ? { ...pos, look: lk } : pos); }
+    diffuserAutres({ ...pos, ...(look ? { look } : {}) }, g.region ? (dest) => registre.relayer(compte, dest, t) : null);
+    // (il entre dans une région : les joueurs qui y sont près de lui, en un lot, tout de suite)
+    if (g.entre) { const lot = registre.lotDeRegion(compte); if (lot.length) repondre({ t: 'lot', pos: lot }); }
     return;
   }
   repondre({ t: 'erreur', erreur: `Message inconnu : ${String(m.t)}.` });

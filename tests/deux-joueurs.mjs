@@ -32,7 +32,8 @@
 //   8. I9a : l'île partagée. A met en ligne une île du chantier (une partie d'essai : villageActif), y invite B ;
 //      les deux sortent de la ferme (pas de borne, la vue les suit) et se voient dehors ; le bandeau dit que rien
 //      d'autre n'est encore synchronisé ; le brouillard de B se lève chez lui seul (la partie confirmée reste
-//      celle du monde) ; un mur posé dehors est refusé avant d'être envoyé.
+//      celle du monde) ; un mur posé dehors est refusé avant d'être envoyé. (I9b : le bandeau est retiré ; le mur
+//      est refusé par le moteur, dans la partie locale.)
 //      PORT=1 (long) : A marche jusqu'au port, B le suit ; au port, chacun voit l'autre.
 //      (CAPTURES=<dossier> : les captures de l'hôte et de l'invité dehors, et au port avec PORT=1.)
 //   9. I9a2 : l'horloge commune. A met en ligne une île à 21 h, y invite B : l'heure avance chez les deux et reste la
@@ -40,6 +41,11 @@
 //      nuit tombe seule à 22 h ; A se couche, B non : la nuit garde son pas ; B se couche : elle file, le matin vient
 //      chez les deux en moins d'une minute ; les parties confirmées sont celle du monde, au même pas.
 //      (CAPTURES=<dossier> : le soir, la nuit où tous dorment, le matin, chez l'hôte et chez l'invité.)
+//  10. I9b : les changements de l'île (dans l'île de 8, les deux dehors) : A abat un arbre du monde à la hache, B le voit
+//      tomber en moins d'une seconde, le bois au coffre commun ; A et B coupent le même buisson au même instant : un
+//      seul coup gagne, le bois une fois ; B pose un chemin dehors, A le voit ; plus de bandeau « rien d'autre n'est
+//      encore synchronisé » ; le brouillard reste à chacun. (CAPTURES : l'arbre qui tombe chez B, le chemin, les deux
+//      dehors.)
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
 import { createServer } from 'node:http';
@@ -48,7 +54,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { addItem, avancerJusqua, caseDansLaFerme, caseMarchable, caseVue, contexteSol, elementsSol, createNewGame, DATA, empreintePartie, farmTerrain, pasDe, testBatir, testFarmMap, testFermeConstruite, testSetLevel } from '../js/engine/index.js';
+import { addItem, avancerJusqua, caseDansLaFerme, caseMarchable, caseVue, cheminDehorsSur, contexteSol, countItem, elementsSol, createNewGame, DATA, empreintePartie, farmTerrain, pasDe, testBatir, testFarmMap, testFermeConstruite, testSetLevel } from '../js/engine/index.js';
 import { avecVillage, garden, plantRipe, reglagesDuJeu } from './engine/aide.mjs';
 import W from '../worker/src/index.js';
 import { Comptes } from '../worker/src/comptes.mjs';
@@ -372,6 +378,8 @@ try {
   const ile = avecVillage(() => createNewGame('29', { nom: 'Île' }));
   ile.essais = { ...(ile.essais || {}), village: true };
   addItem(ile, DATA.ATELIER.BLOCS.mur_pierre.objet, 10);
+  addItem(ile, DATA.ATELIER.BLOCS.chemin.objet, 10);   // (I9b : des chemins à poser dehors)
+  ile.outils = { ...(ile.outils || {}), hache: true, pioche: true, faux: true, canne: true };   // (I9b : la hache, dehors)
   const Ti = farmTerrain(ile), Fi = Ti.FERME, Wi = Ti.LARGEUR, sortie = Ti.MONDE.cadre.SORTIE;
   const appel = async (qui, chemin, corps) => (await W.fetch(new Request(`http://127.0.0.1:8787${chemin}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${qui.session}`, origin: 'https://aluzy.github.io' }, body: JSON.stringify(corps) }), env)).json();
   const cree = await appel(A, '/mondes', { partie: { v: ile.version, t: Date.now(), s: ile }, titre: 'L\'île' });
@@ -405,11 +413,12 @@ try {
   const vueB = await pb.evaluate(() => { const v = FarmStage.scene().cameras.main.worldView; return { x: v.x, y: v.y, l: v.width, h: v.height }; });
   const dehorsB = !caseDansLaFerme(ile, cb);
   const vueSuit = vueB.x + vueB.l > (Fi.X + Fi.LARGEUR + 6) * 16 && (cb % Wi) * 16 >= vueB.x && (cb % Wi) * 16 <= vueB.x + vueB.l;
-  const bandeauB = await attendre(pb, () => /rien d'autre n'est encore synchronisé/.test(document.getElementById('en-ligne-bandeau').innerText), null, 5000);
+  // (I9b : le bandeau « rien d'autre n'est encore synchronisé » d'I9a est retiré)
+  const bandeauB = await attendre(pb, () => /à jour/.test(document.getElementById('en-ligne-bandeau').innerText) && !/rien d'autre/.test(document.getElementById('en-ligne-bandeau').innerText), null, 5000);
   const brouillardB = await pb.evaluate(async (o) => { const E = await import('/js/engine/index.js'); const L = await import('/js/ui/en-ligne.js'); return { ici: E.caseVue(FF.state, o.c), garde: (localStorage.getItem('ferme-brouillard-' + o.id) || '').length, confirmee: E.caseVue(L._lien().synchro.confirmee, o.c) }; }, { c: cb, id: idIle });
   brouillardB.em = await memePas(pb, regIle);
   verifie(dehorsB && vueSuit && bandeauB !== null && brouillardB.ici && brouillardB.garde > 0 && !brouillardB.confirmee && brouillardB.em,
-    `8b. B est sorti de la ferme (case ${cb % Wi},${Math.floor(cb / Wi)} ; la ferme finit à la colonne ${Fi.X + Fi.LARGEUR - 1}) : la vue le suit, le bandeau dit que rien d'autre n'est synchronisé, son brouillard se lève chez lui seul (${JSON.stringify({ vueSuit, bandeau: bandeauB !== null, ...brouillardB })})`);
+    `8b. B est sorti de la ferme (case ${cb % Wi},${Math.floor(cb / Wi)} ; la ferme finit à la colonne ${Fi.X + Fi.LARGEUR - 1}) : la vue le suit, le bandeau ne dit plus « rien d'autre n'est synchronisé » (I9b), son brouillard se lève chez lui seul (${JSON.stringify({ vueSuit, bandeau: bandeauB !== null, ...brouillardB })})`);
   const ca = await allerA(pa, buts[1]);
   const piedsDe = (p) => p.evaluate(() => { const v = FarmStage.scene().fermier.vu(); return v && { x: v.x, y: v.y - v.h }; });
   const voitLAutre = (p, id, pieds) => attendre(p, (c) => { const e = (FarmStage.scene().presences || new Map()).get(c.id); return !!e && Math.hypot(e.img.x - c.x, e.img.y - c.y) < 6; }, { id, ...pieds }, 6000);
@@ -420,11 +429,96 @@ try {
     await pb.screenshot({ path: process.env.CAPTURES + '/i9a-invite-dehors.png' });
     await pa.screenshot({ path: process.env.CAPTURES + '/i9a-hote-dehors.png' });
   }
-  // un mur posé dehors : refusé avant d'être envoyé (rien d'autre n'est encore synchronisé hors de la ferme)
+  // un mur posé dehors : refusé avant d'être envoyé (I9b : par le moteur, dans la partie locale : dehors, pas de mur)
   const revIle = regIle.rev;
   const refusDehors = await pb.evaluate(async (t) => { const C = await import('/js/ui/commandes.js'); const L = await import('/js/ui/en-ligne.js'); const r = C.executer('bloc.poser', { sorte: 'mur_pierre', case: t }); return { ok: r.ok, erreur: r.error || '', attente: L._lien().synchro.enAttente.length }; }, cb + 2 * Wi);
   await pb.waitForTimeout(300);
-  verifie(!refusDehors.ok && /rien d'autre n'est encore synchronisé/.test(refusDehors.erreur) && refusDehors.attente === 0 && regIle.rev === revIle, `8d. un mur posé dehors est refusé tout de suite (${refusDehors.erreur}) ; le monde n'a rien reçu`);
+  verifie(!refusDehors.ok && /pas hors de la ferme/.test(refusDehors.erreur) && refusDehors.attente === 0 && regIle.rev === revIle, `8d. un mur posé dehors est refusé tout de suite (${refusDehors.erreur}) ; le monde n'a rien reçu`);
+  // 10. I9b : les changements de l'île. A et B sont dehors, l'un près de l'autre.
+  {
+    // (une pièce du monde que les deux cartes dessinent, à prendre avec la hache, la plus proche de A : `coups` coups)
+    const pieceVue = (p, coups, sauf = []) => p.evaluate((o) => {
+      const sc = FarmStage.scene(), f = sc.fermier.info();
+      let best = null, bd = Infinity;
+      for (const x of (sc.mondeObjets || new Map()).values()) {
+        if (!x.img || !x.img.visible || x.regle.geste !== 'couper' || (x.regle.coups || 1) !== o.coups || o.sauf.includes(x.id)) continue;
+        const d = Math.hypot(x.fx - f.x, x.fy - f.y);
+        if (d < bd) { bd = d; best = x.id; }
+      }
+      return best;
+    }, { coups, sauf });
+    const vuePar = (p, id) => p.evaluate((i) => !!(FarmStage.scene().mondeObjets || new Map()).get(i), id);
+    // (le geste par le pont de la carte, comme un appui de la hache : js/ui/outils.js mondeFromStage)
+    const couper = (p, id) => p.evaluate(async (i) => { const O = await import('/js/ui/outils.js'); const r = O.mondeFromStage(i, { geste: 'couper', depuis: -1 }); return r ? { ok: true, tombe: !!r.tombe, items: r.items || null } : { ok: false }; }, id);
+    const boisDe = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'bois'); });
+    // 10a. A abat un arbre : B le voit tomber
+    let arbre = null;
+    for (const c of [3, 2, 4]) { const id = await pieceVue(pa, c); if (id && await vuePar(pb, id)) { arbre = id; break; } }
+    const nCoups = arbre ? Number((await pa.evaluate((i) => FarmStage.scene().mondeObjets.get(i).regle.coups, arbre)) || 1) : 0;
+    const boisB0 = await boisDe(pb);
+    let dernier = null, t0 = 0;
+    for (let k = 0; arbre && k < nCoups; k++) {
+      if (k === nCoups - 1) t0 = Date.now();
+      dernier = await couper(pa, arbre);
+      if (!dernier.ok) break;
+      await pa.waitForTimeout(250);
+    }
+    const msChute = arbre ? await attendre(pb, (i) => { const sc = FarmStage.scene(), o = sc.mondeObjets.get(i); return !!sc.mondeEtat && sc.mondeEtat.pris.has(i) && !!o && (!!o.anim || !o.img.visible); }, arbre, 3000) : null;
+    const msVu = msChute === null ? null : Date.now() - t0;
+    if (process.env.CAPTURES && arbre) {
+      await pb.waitForTimeout(250);
+      for (const p of [pa, pb]) await pourCapture(p);
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9b-invite-arbre-tombe.png' });
+    }
+    const boisB = await attendre(pb, (n) => import('/js/engine/index.js').then((E) => E.countItem(FF.state, 'bois') > n), boisB0, 3000);
+    verifie(!!arbre && dernier && dernier.ok && dernier.tombe && msChute !== null && msVu < 1000 && boisB !== null && (await memePas(pa, regIle)) && (await memePas(pb, regIle)),
+      `10a. A a abattu l'arbre ${arbre} (${nCoups} coups de hache) : B le voit tomber ${msVu} ms après le dernier coup ; le bois au coffre commun chez B ; les parties confirmées sont celle du monde`);
+    // 10b. les deux sur le même buisson, au même instant : un seul gagne
+    let buisson = null;
+    for (const sauf of [[arbre]]) { const id = await pieceVue(pb, 1, sauf); if (id && await vuePar(pa, id)) buisson = id; }
+    const boisMonde0 = countItem(regIle.charger(), 'bois'), revB0 = regIle.rev;
+    const [ra, rb] = buisson ? await Promise.all([couper(pa, buisson), couper(pb, buisson)]) : [{}, {}];
+    await pa.waitForTimeout(800);
+    const gagnants = [...regIle.tous('SELECT cmd FROM journal WHERE rev > ?', revB0)].map((e) => JSON.parse(e.cmd)).filter((c) => c.type === 'monde.recolter' && c.args.piece === buisson).length;
+    const unSeul = gagnants === 1 && countItem(regIle.charger(), 'bois') > boisMonde0 && (await memePas(pa, regIle)) && (await memePas(pb, regIle));
+    const attenteVide = await pb.evaluate(async () => { const L = await import('/js/ui/en-ligne.js'); return L._lien().synchro.enAttente.length === 0; }) && await pa.evaluate(async () => { const L = await import('/js/ui/en-ligne.js'); return L._lien().synchro.enAttente.length === 0; });
+    const boisAB = [await boisDe(pa), await boisDe(pb), countItem(regIle.charger(), 'bois')];
+    verifie(!!buisson && ra.ok && rb.ok && unSeul && attenteVide && boisAB[0] === boisAB[2] && boisAB[1] === boisAB[2],
+      `10b. A et B coupent le même buisson (${buisson}) au même instant : le monde n'en garde qu'un (${gagnants} au journal), l'autre coup est annulé ; le bois une seule fois, le même chez les deux (${boisAB.join(' / ')})`);
+    // 10c. un chemin posé dehors par B, vu chez A
+    const posee = await pb.evaluate(async () => {
+      const E = await import('/js/engine/index.js'), C = await import('/js/ui/commandes.js');
+      const sc = FarmStage.scene(), f = sc.fermier.info(), W = E.farmTerrain(FF.state).LARGEUR;
+      const c0 = Math.floor((f.y - 1) / 16) * W + Math.floor(f.x / 16);
+      for (let d = 2; d < 8; d++) for (const c of [c0 + d * W, c0 - d * W, c0 + d, c0 - d]) {
+        if (E.caseDansLaFerme(FF.state, c) || !E.poseStatus(FF.state, 'chemin', c).ok) continue;
+        const r = C.executer('bloc.poser', { sorte: 'chemin', case: c });
+        return { case: c, ok: r.ok, erreur: r.error || '' };
+      }
+      return { case: null, ok: false, erreur: 'pas de case' };
+    });
+    const msChemin = posee.ok ? await attendre(pa, (c) => import('/js/engine/index.js').then((E) => E.cheminDehorsSur(FF.state, c)), posee.case, 3000) : null;
+    const monde = posee.ok && cheminDehorsSur(regIle.charger(), posee.case);
+    if (process.env.CAPTURES && posee.ok) {
+      await pa.waitForTimeout(600);
+      for (const p of [pa, pb]) await pourCapture(p);
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9b-hote-chemin.png' });
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9b-invite-chemin.png' });
+    }
+    verifie(posee.ok && msChemin !== null && monde && (await memePas(pa, regIle)), `10c. B a posé un chemin dehors (case ${posee.case}) : A le voit en ${msChemin} ms ; le monde l'a dans ses chemins (${posee.erreur})`);
+    // 10d. le bandeau d'I9a est retiré ; chacun garde son brouillard
+    const bandeaux = [await pa.evaluate(() => document.getElementById('en-ligne-bandeau').innerText), await pb.evaluate(() => document.getElementById('en-ligne-bandeau').innerText)];
+    const vuDe = (p) => p.evaluate(async () => { const L = await import('/js/ui/en-ligne.js'); return { locale: FF.state.monde.vu, confirmee: L._lien().synchro.confirmee.monde.vu }; });
+    const [vuA, vuB] = [await vuDe(pa), await vuDe(pb)], vuMonde = regIle.charger().monde.vu;
+    verifie(bandeaux.every((t) => !/rien d'autre/.test(t) && /à jour/.test(t)), `10d. dehors, plus de bandeau « rien d'autre n'est encore synchronisé » (A : « ${bandeaux[0].replace(/\s+/g, ' ')} »)`);
+    verifie(vuA.confirmee === vuMonde && vuB.confirmee === vuMonde && vuA.locale !== vuMonde && vuB.locale !== vuMonde && vuA.locale !== vuB.locale,
+      '10e. le brouillard reste à chacun : la partie confirmée de chacun a le vu du monde, sa partie locale le sien, différent de celui de l\'autre');
+    if (process.env.CAPTURES) {
+      for (const p of [pa, pb]) await pourCapture(p);
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9b-hote-dehors.png' });
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9b-invite-dehors.png' });
+    }
+  }
   // 8e. (PORT=1, long : ≈ 2 min) A marche jusqu'au port par son chemin, B le suit ; au port, chacun voit l'autre
   if (process.env.PORT) {
     const M = Ti.MONDE, ctxSol = contexteSol(M.graine, M.cadre, M.ferme, M.taille), port = elementsSol(ctxSol).lieux.port;
