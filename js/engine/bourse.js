@@ -148,6 +148,12 @@ function plaisir(v, jour, n) {
   v.plaisir = objet(v.plaisir) && v.plaisir.jour === jour ? { jour, bonheur: v.plaisir.bonheur + n } : { jour, bonheur: n };
 }
 
+// (fiche I5a, artisans.js : un achat au comptoir d'un commerce : son plaisir de cette nuit, et la liste de ses achats)
+export function plaisirAchat(v, jour, envie, achat) {
+  plaisir(v, jour, entier((BO().BONHEUR || {})[envie]));
+  if (achat) noterAchat(v, { jour, objet: achat.objet, prix: Math.max(0, entier(achat.prix)), ou: achat.ou || 'commerce' });
+}
+
 function noterAchat(v, x) {
   if (!Array.isArray(v.achats)) v.achats = [];
   v.achats.push(x);
@@ -481,7 +487,7 @@ export function reparerBourse(v) {
     reste: Math.max(0, entier(v.reste)),
     achat: jourObjet(v.achat),
     achats: (Array.isArray(v.achats) ? v.achats : []).filter((x) => objet(x) && Number.isInteger(x.jour) && DATA.OBJETS[x.objet])
-      .map((x) => ({ jour: x.jour, objet: x.objet, prix: Math.max(0, entier(x.prix)), ou: x.ou === 'bac' ? 'bac' : 'etal' })),
+      .map((x) => ({ jour: x.jour, objet: x.objet, prix: Math.max(0, entier(x.prix)), ou: x.ou === 'bac' || x.ou === 'commerce' ? x.ou : 'etal' })),
     affaires: comptes(v.affaires),
     provisions: comptes(v.provisions),
     commande: objet(v.commande) && DATA.OBJETS[v.commande.objet] && Number.isInteger(v.commande.arrive)

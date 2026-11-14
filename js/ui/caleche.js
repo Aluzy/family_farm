@@ -10,7 +10,7 @@ import {
   etalCaleche, heler, helable, heureTexte, horaireCaleche, majCaleche, mallePleine, ouEstCaleche, poserTournee, prendreLivraison,
   prochainPassage, reprendreMalle, reprendreTout, retenir, tourneeDe, vendablesCaleche, vendreCaleche,
 } from '../engine/caleche.js';
-import { marcheFerme, marcheOuvert } from '../engine/devices.js';
+import { fail, marcheFerme, marcheOuvert } from '../engine/devices.js';
 import { unlockLevel } from '../engine/levels.js';
 import { calecheAPortee, etapeDidacticiel, rencontreCaleche } from '../engine/didacticiel.js';
 import { objectifsActifs } from '../engine/objectifs.js';
@@ -28,8 +28,7 @@ import { morph, refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
-import { aFait, livrerPromesse, nomCocher, parler, promesses, RECIT } from '../engine/recit.js';
-import { acheterMeubleHameau, ateliersConnus, commander, commandesDe, delaiCommande, lotsPossibles, meublesDuHameau, prixCommande, prixMeubleHameau, retirerToutes } from '../engine/ile.js';
+import { recitPage, recitPour } from '../engine/recit-aiguillage.js';
 import { palierAmitieNom, remiseAmitie } from '../engine/amitie.js';
 import { habitantsDe } from '../engine/habitants.js';
 import { meubleRefus } from '../engine/meubles.js';
@@ -37,6 +36,28 @@ import { itemsText } from './common.js';
 import { proposerScene } from './scene.js';
 import { renvoiAuPort } from './port.js';
 import { villageActif } from '../engine/village.js';
+
+// Ce que la calèche lit du récit (le cocher, ses promesses, les ateliers et les meubles des hameaux), par l'aiguillage
+// (fiche I7d) : une partie d'avant passe au récit tel quel ; l'île à bâtir n'en a rien (recitPage rend null : ni
+// promesse, ni atelier, ni réplique ; la calèche n'y commerce plus, I1b, et sort avec I7e).
+const RIEN_ICI = () => fail('Pas de récit sur l\'île.');
+const parLeRecit = (nom, sinon) => (...a) => { const R = recitPage(state); return R ? R[nom](...a) : sinon(); };
+const aFait = (s, id) => recitPour(s).aFait(s, id);
+const nomCocher = (s, majuscule = true) => recitPour(s).nomCocher(s, majuscule);
+const parler = parLeRecit('parler', () => null);
+const promesses = parLeRecit('promesses', () => []);
+const livrerPromesse = parLeRecit('livrerPromesse', RIEN_ICI);
+const ateliersConnus = parLeRecit('ateliersConnus', () => []);
+const commandesDe = parLeRecit('commandesDe', () => []);
+const lotsPossibles = parLeRecit('lotsPossibles', () => 0);
+const prixCommande = parLeRecit('prixCommande', () => 0);
+const delaiCommande = parLeRecit('delaiCommande', () => 0);
+const meublesDuHameau = parLeRecit('meublesDuHameau', () => []);
+const prixMeubleHameau = parLeRecit('prixMeubleHameau', () => 0);
+const retirerToutes = parLeRecit('retirerToutes', () => ({ ok: true, items: {} }));
+const commander = parLeRecit('commander', RIEN_ICI);
+const acheterMeubleHameau = parLeRecit('acheterMeubleHameau', RIEN_ICI);
+const personnages = () => { const R = recitPage(state); return (R && R.RECIT.PERSONNAGES) || {}; };
 
 /* ---------- la calèche (fiche 7c : le Marché qui fait le tour du monde) ----------
 
@@ -300,7 +321,7 @@ function atelierHtml(p, a) {
   // (l'amitié avec qui tient l'atelier : une remise sur ses prix, un délai plus court, js/engine/amitie.js)
   const remise = remiseAmitie(state, a.qui), gagne = a.jours - delaiCommande(state, a.id);
   const ami = remise || gagne > 0 ? ` <span class="ile-ami">💛 ${escapeHtml(palierAmitieNom(state, a.qui))} : ${[remise ? `−${remise} %` : '', gagne > 0 ? `${gagne === 1 ? 'un jour' : `${gagne} jours`} plus tôt` : ''].filter(Boolean).join(', ')}</span>` : '';
-  const qui = a.qui && RECIT.PERSONNAGES[a.qui] ? `, chez ${escapeHtml(RECIT.PERSONNAGES[a.qui].nom)}${ami}` : '';
+  const qui = a.qui && personnages()[a.qui] ? `, chez ${escapeHtml(personnages()[a.qui].nom)}${ami}` : '';
   const titre = `<h4 class="ile-atelier-titre"><span aria-hidden="true">${a.icone || ''}</span> ${escapeHtml(a.nom)} <span class="muted">— ${escapeHtml(hameau)}${qui}</span></h4>`;
   if (a.sorte === 'meubles') {
     const li = meublesDuHameau(state, a.hameau).map((id) => {

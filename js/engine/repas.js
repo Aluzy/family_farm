@@ -103,7 +103,7 @@ export function boiteCounts(state) {
 
 // La boîte est-elle posée sur la carte ?
 export function boitePosee(state) {
-  return Object.values(state.blocs || {}).includes('boite_nourriture');
+  return Object.values(state.blocs || {}).includes('boite_nourriture') || Object.values(state.etage || {}).includes('boite_nourriture');
 }
 
 // Combien d'unités de `item` peuvent encore entrer dans la boîte (PLATS aliments différents,
@@ -158,11 +158,14 @@ export function viderBoite(state) {
 export function rangerBoite(state) {
   const contenu = viderBoite(state);
   let boite = false;
-  for (const [tile, sorte] of Object.entries(state.blocs || {})) {
-    if (sorte !== 'boite_nourriture') continue;
-    delete state.blocs[tile];
-    addItem(state, 'boite_nourriture', 1);
-    boite = true;
+  // (en bas ou à l'étage)
+  for (const cle of ['blocs', 'etage']) {
+    for (const [tile, sorte] of Object.entries(state[cle] || {})) {
+      if (sorte !== 'boite_nourriture') continue;
+      delete state[cle][tile];
+      addItem(state, 'boite_nourriture', 1);
+      boite = true;
+    }
   }
   return { contenu, boite };
 }

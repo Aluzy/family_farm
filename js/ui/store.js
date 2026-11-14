@@ -78,43 +78,51 @@ export function setEcranFerme(value) {
 export let hoeMode = false;
 export function setHoeMode(value) {
   hoeMode = value;
-  if (value) { axeMode = false; pickMode = false; rodMode = false; scytheMode = false; buildMode = null; } // un seul outil en main
+  if (value) { axeMode = false; pickMode = false; rodMode = false; scytheMode = false; buildMode = null; engraisMode = false; } // un seul outil en main
   return value;
 }
 // La hache en main : un appui sur un arbre de la carte le fait couper (du bois).
 export let axeMode = false;
 export function setAxeMode(value) {
   axeMode = value;
-  if (value) { hoeMode = false; pickMode = false; rodMode = false; scytheMode = false; buildMode = null; }
+  if (value) { hoeMode = false; pickMode = false; rodMode = false; scytheMode = false; buildMode = null; engraisMode = false; }
   return value;
 }
 // La pioche en main : un appui sur un rocher de la carte le fait casser (de la pierre).
 export let pickMode = false;
 export function setPickMode(value) {
   pickMode = value;
-  if (value) { hoeMode = false; axeMode = false; rodMode = false; scytheMode = false; buildMode = null; }
+  if (value) { hoeMode = false; axeMode = false; rodMode = false; scytheMode = false; buildMode = null; engraisMode = false; }
   return value;
 }
 // La canne à pêche en main : un appui sur l'eau de la carte y fait pêcher (truite, brochet).
 export let rodMode = false;
 export function setRodMode(value) {
   rodMode = value;
-  if (value) { hoeMode = false; axeMode = false; pickMode = false; scytheMode = false; buildMode = null; }
+  if (value) { hoeMode = false; axeMode = false; pickMode = false; scytheMode = false; buildMode = null; engraisMode = false; }
   return value;
 }
 // La faux en main : un appui sur une touffe d'herbe haute de la carte la fauche (de la fibre).
 export let scytheMode = false;
 export function setScytheMode(value) {
   scytheMode = value;
-  if (value) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; buildMode = null; }
+  if (value) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; buildMode = null; engraisMode = false; }
   return value;
+}
+// L'engrais en main (pris dans l'inventaire ou au bac à compost) : glisser sur les cultures arrosées de la carte les
+// engraisse (js/carte/ferme/engrais.js) ; sans lui en main, le glissement ne fait rien. Un seul outil à la fois.
+export let engraisMode = false;
+export function setEngraisMode(value) {
+  engraisMode = !!value;
+  if (value) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; scytheMode = false; buildMode = null; }
+  return engraisMode;
 }
 // La ferme générée, le mode « Construire » : la sorte de bloc qu'un appui sur une case pose
 // (null : le mode est fermé). Un seul outil ou mode à la fois.
 export let buildMode = null;
 export function setBuildMode(value) {
   buildMode = value || null;
-  if (buildMode) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; scytheMode = false; }
+  if (buildMode) { hoeMode = false; axeMode = false; pickMode = false; rodMode = false; scytheMode = false; engraisMode = false; }
   return buildMode;
 }
 // Le niveau où l'on construit, en mode Construire (0 : le sol, 1 : l'étage ; js/ui/chantier.js).

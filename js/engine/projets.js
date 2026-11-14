@@ -2,7 +2,7 @@ import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { countItem, takeItem } from './inventory.js';
 import { habitantsDe } from './habitants.js';
-import { ajouterConfiance } from './recit.js';
+import { recitPour } from './recit-aiguillage.js';
 import { ajouterAmitie, cleDe } from './amitie.js';
 import { noterChronique } from './chronique.js';
 
@@ -111,7 +111,7 @@ export function projetsNuit(state) {
     p.faits.push({ sorte: pr.sorte, jour: jourDe(state) });
     p.rang += 1;
     p.recu = {};
-    ajouterConfiance(state, hid, PROJETS.FIN.CONFIANCE);
+    recitPour(state).ajouterConfiance(state, hid, PROJETS.FIN.CONFIANCE);   // (fiche I7c : le récit d'avant seulement)
     for (const m of membres(state, hid)) ajouterAmitie(state, cleDe(m), PROJETS.FIN.AMITIE);
     out.push({ hameau: hid, sorte: pr.sorte });
     // (l'île à bâtir, fiche I7g : le projet fini, dans la chronique ; rien le chantier éteint)

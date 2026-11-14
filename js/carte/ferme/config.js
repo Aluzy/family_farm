@@ -210,7 +210,7 @@ const CULTURE_MONTE = 0;
     // en mode Construire : à `transparent` (quand on est dans le bâtiment, en bas : à `dedans`,
     // on n'en voit que son niveau) ; à l'étage, un voile sombre sur toute la
     // ferme (`voile`, `alpha` ; au-dessus de ce qui vole), et ce qui est de l'étage devant lui
-    etage: { haut: 70, dy: 30, transparent: 0.3, dedans: 0, voile: 0x0d1018, alpha: 0.62 },
+    etage: { haut: 70, depasse: 8, dy: 30, transparent: 0.3, dedans: 0, voile: 0x0d1018, alpha: 0.62 },
     // en mode Construire, aux niveaux où l'on rehausse les murs (chantier.js syncRang) : un
     // voile sombre (`voile`) sur la ferme ; devant lui, le rang de mur du niveau, celui du
     // dessous à `dessous`, les autres à `autres` (presque invisibles) ; les cases où poser le
@@ -361,13 +361,22 @@ const CULTURE_MONTE = 0;
       key: 'ornements_chute', file: 'ornements_chute.png', frame: { frameWidth: 64, frameHeight: 80 }, images: 8, fps: 5,
       modeles: ['cerisier_japon', 'erable_rouge', 'magnolia', 'saule_pleureur'], prefixe: 'ornement_',
     },
+    // la forge d'un commerce ouvert (fiche I5a, le bloc enclume_foyer ; scripts/batiments/forge.py ; chantier.js
+    // stepLanterns) : ses braises rougeoient, ses deux `images` alternent au hasard (`fps`) ; le soir (le voile plus sombre
+    // que `allume`), sa lueur dans le voile : une flaque `sol` devant elle, la lueur du `foyer`, qui vacille ; un halo (WebGL)
+    forge: {
+      images: ['enclume_foyer_braise_0', 'enclume_foyer_braise_1'], eteint: 'enclume_foyer', fps: 5, allume: 0.12, vacille: 0.18,
+      sol: { rayon: 54, aplati: 0.7, teinte: 0xff8c40, alpha: 0.9, dx: -6, dy: 2 },
+      foyer: { rayon: 15, teinte: 0xffb060, alpha: 0.95, dx: -8, dy: -12 },
+      halo: { couleur: 0xff7a30, rayon: 20, intensite: 0.1, attenuation: 0.08 },
+    },
     // le nom de la famille sur les enseignes de ferme (le bloc enseigne_<matière> ; chantier.js stepEnseignes) : écrit
     // sur la plaque, son milieu `dy` px au-dessus du bas de l'image, rapetissé s'il dépasse `largeur` px (sur deux
     // lignes s'il devait l'être plus que `deuxLignes` et qu'il a un espace ou un trait d'union) ; sa couleur
     // suit la peinture (data/meubles.json PEINTURES enseigne_<matière>, `texte`)
     enseigne: {
       taille: 7, ombre: 'rgba(0,0,0,0.35)', deuxLignes: 0.7,
-      dy: { bois: 17.5, email: 17, fer: 16.5, village: 18.5 }, largeur: { bois: 19, email: 19, fer: 15, village: 23 },
+      dy: { bois: 17.5, email: 17, fer: 16.5, village: 18.5, commerce: 26 }, largeur: { bois: 19, email: 19, fer: 15, village: 23, commerce: 22 },
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
     // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
@@ -400,7 +409,7 @@ const CULTURE_MONTE = 0;
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
     // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable ; sur le bac à semis, la Serre ;
     // sur la meule, le Moulin ; sur la boîte à nourriture, ce qu'elle contient (le silo : silo.js, siloAt)
-    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost', etal: 'etal' },
+    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost', etal: 'etal', enclume_foyer: 'commerce', comptoir: 'commerce', enseigne_forge: 'commerce' },
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne (le silo :
     // le pied de sa première colonne)
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'bloc_silo' },
@@ -558,6 +567,9 @@ const CULTURE_MONTE = 0;
     'four_commun', 'four_commun_chantier',
     // (le quai de chargement de la ferme productive, l'île à bâtir, fiche I8b : scripts/batiments/quai_chargement.py)
     'quai_chargement',
+    // (la forge, l'île à bâtir, fiche I5a : scripts/batiments/forge.py ; l'enclume et son foyer, éteint ou ses braises qui
+    // rougeoient, le comptoir d'un commerce, l'enseigne du forgeron ; la lueur du soir, BLOCS_CARTE.forge)
+    'enclume_foyer', 'enclume_foyer_braise_0', 'enclume_foyer_braise_1', 'comptoir', 'enseigne_forge',
     // (le pont de planches, hors de la ferme, l'île à bâtir : scripts/carte/portage.py ; son image suit son sens et ses voisins)
     'pont_planches_ns_0', 'pont_planches_ns_1', 'pont_planches_ns_2', 'pont_planches_ns_3',
     'pont_planches_eo_0', 'pont_planches_eo_1', 'pont_planches_eo_2', 'pont_planches_eo_3',
@@ -570,6 +582,8 @@ const CULTURE_MONTE = 0;
     'sapin_noel', 'couronne_noel', 'bonhomme_neige',
     // (les décors d'Halloween : scripts/batiments/halloween.py ; leur bougie, BLOCS_CARTE.citrouilles)
     'citrouille_halloween', 'tas_citrouilles',
+    // (les décors de Pâques : scripts/batiments/paques.py)
+    'panier_oeufs', 'oeuf_geant',
     // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
     'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',

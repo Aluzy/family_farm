@@ -38,7 +38,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I3c — les tâches attribuées](I3c-taches.md) | 3 | I3b | fait |
 | [I3d — le tableau des villageois](I3d-tableau.md) | 3 | I3c | fait (le coût compte aussi ce que le travail prend au coffre ; le joueur automatique réattribue après deux semaines pleines) |
 | [I4 — les prix des filières, la part et la bourse](I4-prix-part-bourse.md) | 4 | I3d, I1b | fait (les prix nouveaux seulement le réglage allumé : le jeu éteint ne bouge pas ; la part de 30 % prise sur le produit ; l'étal, l'achat d'un villageois, l'import à lui ; voir docs/ile.md) |
-| [I5a — l'atelier d'artisan, sa boutique, la forge](I5a-artisan-forge.md) | 5 | I4, I6a | à faire |
+| [I5a — l'atelier d'artisan, sa boutique, la forge](I5a-artisan-forge.md) | 5 | I4, I6a | fait (le socle des commerces, la forge ; l'envie, l'affinité, le local, la décision ; les matières payées au joueur, la vente au joueur, aux villageois, au bac, la façon ; la simulation dépasse le palier 6 : voir docs/ile.md) |
 | [I5b — la mercerie](I5b-mercerie.md) | 5 | I5a | à faire |
 | [I5c — la scierie, la boulangerie, la fromagerie](I5c-autres-commerces.md) | 5 | I5a | à faire |
 | [I6a — l'amitié avec les villageois](I6a-amitie.md) | 6 | I3b | fait (goûts tirés, pas « par tâche préférée » ; le présent d'un ami donné en main propre) |
@@ -46,8 +46,8 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I6c — les traits de personnalité](I6c-traits.md) | 6 | I6b, I3c | fait (douze traits, deux ou trois chacun ; découverts en les voyant vivre ou en les écoutant ; le réglage « marqué » en place, « doux » filmé aussi : à faire choisir ; voir docs/ile.md) |
 | [I7a — les objectifs sans récit](I7a-objectifs.md) | 7 | I0a | fait, sauf le point 6 (le joueur automatique suit les paliers : après I0b) |
 | [I7b — le nouveau départ](I7b-nouveau-depart.md) | 7 | I7a, I1b, I3a | fait (« seul » en trois appuis, la terre vierge, le didacticiel d'une ligne par étape, 15 étapes ; une étape « charger » ajoutée : le portage d'I2 ; pas de test avec un joueur réel) |
-| [I7c — le récit retiré du moteur](I7c-recit-moteur.md) | 7 | I7a, I6a | à faire |
-| [I7d — le récit retiré de l'interface, de l'aide et de l'encyclopédie](I7d-recit-interface.md) | 7 | I7c | à faire |
+| [I7c — le récit retiré du moteur](I7c-recit-moteur.md) | 7 | I7a, I6a | fait (un aiguillage, deux récits : l'ancien éteint, le muet allumé ; la page passe par lui pour ce qui ferait parler le récit ; la confiance ne débloquait rien de mécanique ; les lieux du récit gardés muets ; pas de nouveau format ; voir docs/ile.md) |
+| [I7d — le récit retiré de l'interface, de l'aide et de l'encyclopédie](I7d-recit-interface.md) | 7 | I7c | fait (la page ne lit le récit que par l'aiguillage, `recitPage` : rien sur l'île ; l'aide et le livre de l'île, deux sources pendant le chantier ; le contrôle des textes ; sept prénoms du récit hors du tirage ; l'accueil et le README préparés à part ; les hameaux et leurs noms restent sur la carte jusqu'à I7e ; voir docs/ile.md) |
 | [I7e — les hameaux, la calèche et les boucles de chemins retirés](I7e-hameaux-caleche.md) | 7 | I7d, I1c, I2 | à faire |
 | [I7f — la migration des parties en cours](I7f-migration.md) | 7 | I7e, I7g, I3a | à faire |
 | [I7g — la chronique et les noms](I7g-chronique-et-noms.md) | 7 | I7c | fait (avant I7c : la chronique s'ajoute au carnet, réglage allumé ; le commerce et les fêtes du village prêts à brancher, I5a, I8a ; voir docs/ile.md) |

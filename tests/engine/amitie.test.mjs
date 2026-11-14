@@ -10,14 +10,14 @@
    Lancer seul : node tests/run-tests.mjs amitie.
    ========================================================================== */
 
-import { addItem, countItem, DATA, RECIT, relation } from '../../js/engine/index.js';
+import { addItem, countItem, DATA } from '../../js/engine/index.js';
 import {
   AMITIE, ajouterAmitie, amitieAvec, amitieNuit, cadeauxPossibles, goutPour, goutsDe, humeurPnj, offrable, offrir,
   palierAmitie, parlerAmitie, pointsAmitie, prixAmitie, ramasserPresents, remiseAmitie, delaiAmitie, trouverPnj,
   visiterHameau,
 } from '../../js/engine/amitie.js';
 import { habitantsDe, peuplerHameau } from '../../js/engine/habitants.js';
-import { confiance } from '../../js/engine/recit.js';
+import { confiance, RECIT, relation } from '../../js/engine/recit.js';   // (fiche I7d : l'index ne ré-exporte plus le récit)
 import { assert, assertEqual, garden, test } from './aide.mjs';
 
 // Un petit hameau fait à la main : deux maisons (un adulte et un enfant, puis un adulte).

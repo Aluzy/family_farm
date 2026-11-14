@@ -3,7 +3,7 @@ import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
-import { villageActif } from './village.js';
+import { prenomsDuJeu, villageActif } from './village.js';
 import { hourOfDay, nightActive } from './clock.js';
 import { maisonsMarquees, litsDeLaFamille } from './blocs.js';
 import { jourDeBac } from './bac.js';
@@ -518,8 +518,9 @@ export function arriverEnfant(state, o = {}) {
   const genre = rnd() < 0.5 ? 'f' : 'm';
   const H = DATA.HABITANTS, un = (l) => l[Math.floor(rnd() * l.length)];
   const pris = new Set([...V, ...F].map((m) => String(m.prenom || '').toLowerCase()));
-  const prenoms = (H.PRENOMS[genre] || []).filter((p) => !pris.has(p.toLowerCase()));
-  const prenom = prenoms.length ? un(prenoms) : `${un(H.PRENOMS[genre])} ${rangV}`;
+  const tous = prenomsDuJeu(state, genre);   // (fiche I7d : sans les noms du récit)
+  const prenoms = tous.filter((p) => !pris.has(p.toLowerCase()));
+  const prenom = prenoms.length ? un(prenoms) : `${un(tous)} ${rangV}`;
   const persosPris = new Set(V.filter((v) => v.enfant).map((v) => v.perso));
   const persos = ((H.PERSOS.enfant || {})[genre] || []).filter((p) => !persosPris.has(p));
   const perso = persos.length ? un(persos) : un(H.PERSOS.enfant[genre]);

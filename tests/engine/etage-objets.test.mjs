@@ -27,14 +27,16 @@ function etage() {
   return { s, hauts, sols };
 }
 
-test('étage : les tableaux et la décoration du jardin s\'y posent ; les stations, le frigo, la boîte restent au sol', () => {
+test('étage : les tableaux, la décoration du jardin et les stations s\'y posent ; ce qui sert dehors reste au sol', () => {
   for (const t of ['meuble_tableau_1', 'meuble_tableau_2', 'meuble_tableau_3', ...DECOR_ETAGE]) assert(ETAGE_BLOCS.includes(t), t);
-  for (const t of ['four', 'cuisiniere', 'refrigerateur', 'boite_nourriture', 'meule', 'ruche', 'puits', 'atelier']) assert(!ETAGE_BLOCS.includes(t), t);
+  // (le créateur, novembre 2026 : « le joueur peut poser les stations à n'importe quel niveau »)
+  for (const t of ['four', 'cuisiniere', 'refrigerateur', 'boite_nourriture', 'meule', 'mortier']) assert(ETAGE_BLOCS.includes(t), t);
+  for (const t of ['ruche', 'puits', 'atelier']) assert(!ETAGE_BLOCS.includes(t), t);
   const { s, sols } = etage();
-  for (const sorte of ['four', 'refrigerateur', 'boite_nourriture']) {
+  for (const sorte of ['ruche', 'puits']) {
     addItem(s, B[sorte].objet, 1);
     const st = poseEtageStatus(s, sorte, sols[0]);
-    assert(!st.ok && /il sert en bas, où la famille cuisine et mange/.test(st.raison), `${sorte} : ${st.raison}`);
+    assert(!st.ok && /il sert dehors/.test(st.raison), `${sorte} : ${st.raison}`);
   }
   // chaque décoration se pose à l'étage, et se reprend
   for (const sorte of DECOR_ETAGE) {

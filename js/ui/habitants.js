@@ -1,5 +1,5 @@
 import { DATA } from '../engine/catalog.js';
-import { deHameau } from '../engine/bienvenue.js';
+import { deHameau } from '../engine/fetes.js';
 import { evenementsDuHameau } from '../engine/voisins.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
 import { clockHours } from '../engine/clock.js';
@@ -7,12 +7,10 @@ import { countItem } from '../engine/inventory.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { HAMEAUX, hameauxVus } from '../engine/monde-hameaux.js';
 import { ficheHameau, garantiDuHameau, habitantAgit, habitantsDe, installerEcrits, peuplerHameau } from '../engine/habitants.js';
-import { paroleHameau } from '../engine/recit.js';
-import { reparerToit, toitsUses, USURE } from '../engine/usure.js';
+import { ateliersDuHameau, paroleHameau, recitPage } from '../engine/recit-aiguillage.js';   // (fiches I7c, I7d : par l'aiguillage du récit)
 import { proposerScene } from './scene.js';
 import { registerActions } from './actions.js';
 import { applyResult } from './game-actions.js';
-import { ateliersDuHameau } from '../engine/ile.js';
 import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
 import { plancheAvecChargement } from './apparence.js';
@@ -172,10 +170,13 @@ function calecheHtml(fi) {
 /* -- le récit, lot 7 : les ateliers des hameaux garantis (js/engine/ile.js, data/ile.json) : la fiche les
    nomme ; on leur passe commande par le cocher, à la calèche (js/ui/caleche.js, l'onglet Commandes). -- */
 
-/* -- le récit, lot 9 : les toits abîmés du hameau (js/engine/usure.js) : on les répare d'ici, sur place. -- */
+/* -- le récit, lot 9 : les toits abîmés du hameau (js/engine/usure.js) : on les répare d'ici, sur place. L'île à
+   bâtir n'en a pas (fiche I7d : recitPage rend null). -- */
 
 function toitsHtml(hid) {
-  const L = toitsUses(state, hid);
+  const R = recitPage(state);
+  if (!R) return '';
+  const L = R.toitsUses(state, hid);
   if (!L.length) return '';
   const fi = ficheHameau(state, hid);
   const qui = (maison) => {
@@ -183,7 +184,7 @@ function toitsHtml(hid) {
     const a = f && f.membres.find((m) => !m.enfant);
     return a ? `chez ${escapeHtml(a.prenom)}` : 'une maison';
   };
-  const cout = Object.entries(USURE.REPARER).map(([item, n]) => `${n} ${(DATA.OBJETS[item] || { icone: '' }).icone}`).join(' ');
+  const cout = Object.entries(R.USURE.REPARER).map(([item, n]) => `${n} ${(DATA.OBJETS[item] || { icone: '' }).icone}`).join(' ');
   const li = L.map((maison) => `<li class="row"><span>🏚 Le toit, ${qui(maison)}, prend l'eau.</span>
       <button type="button" class="btn" data-action="toit-reparer" data-hameau="${escapeHtml(hid)}" data-maison="${escapeHtml(maison)}">🔨 Réparer (${cout})</button></li>`).join('');
   return `<h3 class="book-h3">Les toits</h3><ul class="hameau-toits">${li}</ul>`;
@@ -274,8 +275,9 @@ registerActions({
   },
   // le récit, lot 9 : réparer un toit abîmé (la fiche du hameau, sur place) ; la fiche se refait
   'toit-reparer': (target) => {
-    const id = target.dataset.hameau;
-    const r = applyResult(reparerToit(state, id, target.dataset.maison));
+    const id = target.dataset.hameau, R = recitPage(state);
+    if (!R) return;
+    const r = applyResult(R.reparerToit(state, id, target.dataset.maison));
     if (!r.ok) return;
     persistState();
     notify('🔨 Le toit est réparé. Le hameau s\'en souviendra.', { kind: 'info' });

@@ -486,6 +486,25 @@ export function testBatir(state, id) {
 // Le chantier « l'île à bâtir » (fiche I3a) : bâtit d'un coup, sur un coin d'herbe libre, la maison d'un
 // villageois : une pièce close de 5 × 4 cases (la porte au milieu du bas), `lits` paillasses dedans, et la boîte
 // aux lettres dehors, contre la porte (en bas à gauche). → { ok, coin, porte, boite, lits: [cases] } ou un refus.
+// Fiche I5a (les commerces, artisans.js) : bâtit d'un coup, sur un coin d'herbe libre, le local du commerce `sorte` :
+// une pièce close de 6 × 5 cases (la porte au milieu du bas), l'établi de la sorte au fond à gauche, le comptoir devant
+// la porte, l'enseigne dehors, à droite de la porte. `donner` : les trois blocs donnés avant d'être posés (sinon, pris
+// dans l'inventaire, comme le joueur). → { ok, coin, porte, etabli, comptoir, enseigne } ou un refus.
+export function testLocalCommerce(state, sorte = 'forge', donner = true) {
+  const d = ((DATA.ARTISANS || {}).COMMERCES || {})[sorte];
+  if (!d) return fail('Commerce inconnu.');
+  const z = coinLibre(state, 6, 6);
+  if (!z) return fail('Plus de place libre sur la ferme.');
+  const at = piece(state, z, 6, 5);
+  const pose = (s, t) => (donner ? poserDonne(state, s, t) : poserBloc(state, s, t));
+  const comptoir = (DATA.ARTISANS || {}).COMPTOIR || 'comptoir';
+  for (const [s, t] of [[d.etabli, at(1, 1)], [comptoir, at(3, 2)], [d.enseigne, at(4, 5)]]) {
+    const r = pose(s, t);
+    if (!r.ok) return r;
+  }
+  return { ok: true, coin: at(0, 0), porte: at(3, 4), etabli: at(1, 1), comptoir: at(3, 2), enseigne: at(4, 5) };
+}
+
 // Fiche I4 (l'étal du joueur, bourse.js) : pose l'étal de l'inventaire dans un coin libre de la ferme (deux cases de
 // large, la case de devant libre), comme le joueur ; `donner` : l'objet donné juste avant (les tests). → { ok, case }.
 export function poserEtalLibre(state, donner = false) {

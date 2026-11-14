@@ -81,7 +81,7 @@ export function setSemis(state, plotId, mode, culture) {
 // plus tard la veille, vient de finir), au plus tôt quand ils ont fini de tourner. Appelée à
 // chaque pas d'horloge (tick, sleep, simulateOffline). Sur la carte, les asperseurs tournent
 // ARROSAGE_S secondes (state.irrigation = { jour, h, cases : celles de ce passage, faites :
-// celles du jour, arrosees, sansEau }).
+// celles du jour, serre : les bacs de la Serre arrosés ce jour, arrosees, sansEau }).
 // Renvoie { arrosees, sansEau } (ce passage), ou null s'il n'y a pas de passage.
 function thirstyPlots(state) {
   const prioritaire = !!techFlag(state, 'arrosagePrioritaire');
@@ -114,9 +114,13 @@ export function irrigate(state) {
   // un repassage sans eau ne fait pas tourner les asperseurs (ni ne recommence aussitôt)
   if (dejaCeJour && !faites.length) { I.sansEau = sansEau; I.h = now; I.cases = []; return { arrosees: 0, sansEau }; }
   const cases = faites.filter((p) => p.lieu === 'potager' && Number.isInteger(p.case)).map((p) => p.case);
+  // (les bacs de la Serre arrosés par son irrigation : pas d'asperseur du potager pour eux, mais la carte doit savoir
+  // que ce n'est pas un geste du personnage, js/ui/stage.js autoDone)
+  const serre = faites.filter((p) => p.lieu === 'serre' && Number.isInteger(p.case)).map((p) => p.case);
   state.irrigation = {
     jour: state.day, h: now, cases,
     faites: (dejaCeJour ? I.faites || I.cases || [] : []).concat(cases),
+    serre: (dejaCeJour ? I.serre || [] : []).concat(serre),
     arrosees: (dejaCeJour ? I.arrosees || 0 : 0) + faites.length, sansEau,
   };
   return { arrosees: faites.length, sansEau };

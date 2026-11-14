@@ -81,6 +81,8 @@
     arrose: (vue) => [[`arrose_${vue}_0`, 0.3], [`arrose_${vue}_1`, 0.3], [`arrose_${vue}_2`, 0.9], [`arrose_${vue}_1`, 0.3, 'coup']],
     faux: () => [['faux_cote_0', 0.1], ['faux_cote_1', 0.16], ['faux_cote_1', 0.08], ['faux_cote_2', 0.08], ['faux_cote_3', 0.12, 'coup'], ['faux_cote_3', 0.6]],
     cuisine: () => [['cuisine_0', 0.35], ['cuisine_1', 0.35], ['cuisine_2', 0.35], ['cuisine_3', 0.35]],
+    // (I5a, le forgeron à l'enclume : d'après la pioche, les mêmes cases ; trois coups courts, le marteau levé moins haut)
+    forge: () => [['pioche_cote_1', 0.14], ['pioche_cote_2', 0.05], ['pioche_cote_3', 0.1, 'coup'], ['pioche_cote_2', 0.08], ['pioche_cote_1', 0.12], ['pioche_cote_2', 0.05], ['pioche_cote_3', 0.1, 'coup'], ['pioche_cote_2', 0.08], ['pioche_cote_1', 0.12], ['pioche_cote_2', 0.05], ['pioche_cote_3', 0.1, 'coup'], ['pioche_cote_3', 0.5]],
   };
   K.GESTES_HABITANTS = SEQ;   // (I3c : les villageois au travail font les mêmes gestes, villageois-travail.js)
   // le geste de chaque métier (le moteur : HABITANTS.METIERS[m].geste) et ce qu'on y voit

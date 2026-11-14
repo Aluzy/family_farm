@@ -19,6 +19,7 @@ import { render } from './ui/render.js';
 import { setEmojiNames, watch as watchEmojis } from './ui/pixel-emoji.js';
 import { setAlertState } from './ui/toasts.js';
 import * as engine from './engine/index.js';
+import { texteDuRecit } from './engine/village.js';
 import { stageModel } from './ui/stage.js';
 import { stageWindow } from './ui/stage-windows.js';
 import { wantConsentBanner } from './ui/calme.js';
@@ -77,8 +78,10 @@ import './ui/hote.js';
 // l'autonomie), garde l'emoji comme libellé.
 const SYMBOLES_UI = new Set(['🌿']);
 const emojiNames = {};
+// (fiche I7d : un objet du récit ne prête pas son nom à son emoji — ✉️ n'est pas « Enveloppe de Maurice », 🔔 pas « Cloche
+// de Maurice » : ces emojis servent aussi à l'interface, le courrier, les invitations, les alertes)
 for (const it of Object.values(DATA.OBJETS)) {
-  if (!it.icone || SYMBOLES_UI.has(it.icone)) continue;
+  if (!it.icone || SYMBOLES_UI.has(it.icone) || texteDuRecit(it.nom)) continue;
   emojiNames[it.icone] = it.icone in emojiNames && emojiNames[it.icone] !== it.nom ? null : it.nom;
 }
 setEmojiNames(Object.fromEntries(Object.entries(emojiNames).filter(([, nom]) => nom)));

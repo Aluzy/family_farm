@@ -7,9 +7,9 @@ import { validApparence } from './family.js';
 import { countItem, takeItem } from './inventory.js';
 import { habitantsDe, metierHabitant } from './habitants.js';
 import { rassasierFamille, repasJour } from './repas.js';
-import { RECIT } from './recit.js';
+import { recitPour } from './recit-aiguillage.js';
 import { ajouterAmitie, amitieDe, cleDe, fiche, goutPour, HAMEAU_VILLAGE, palierAmitie, styleHabitant, trouverPnj } from './amitie.js';
-import { villageActif } from './village.js';
+import { texteDuRecit, villageActif } from './village.js';
 import { porteVillageois, trouverVillageois } from './villageois.js';
 import { noterRepasPartage } from './vocation-village.js';
 import { tacheDef } from './taches.js';
@@ -60,10 +60,10 @@ export function relationsInvitables(state) {
   for (const [hid, h] of Object.entries(habitantsDe(state))) {
     for (const f of (h && h.foyers) || []) for (const m of f.membres || []) {
       const cle = cleDe(m), p = a.pnj[cle];
-      const connu = (p && (Number.isFinite(p.parle) || Number.isFinite(p.vu))) || (RECIT.PERSONNAGES[cle] && palierAmitie(state, cle) > 0);
+      const connu = (p && (Number.isFinite(p.parle) || Number.isFinite(p.vu))) || (recitPour(state).ecrit(state, cle) && palierAmitie(state, cle) > 0);
       if (!connu) continue;
       const palier = palierAmitie(state, cle);
-      out.push({ hameau: hid, hameauNom: h.nom, id: m.id, cle, prenom: m.prenom, enfant: !!m.enfant, metier: metierHabitant(h, m), palier, nomPalier: RECIT.PALIER_NOMS[palier] });
+      out.push({ hameau: hid, hameauNom: h.nom, id: m.id, cle, prenom: m.prenom, enfant: !!m.enfant, metier: metierHabitant(h, m), palier, nomPalier: DATA.AMITIE.ECHELLE.NOMS[palier] });
     }
   }
   // (fiche I6a : les villageois, tous connus ; son « métier » : sa tâche)
@@ -71,7 +71,7 @@ export function relationsInvitables(state) {
     for (const v of state.villageois) {
       if (!v || typeof v.id !== 'string') continue;
       const palier = palierAmitie(state, v.id), def = tacheDef(v.tache);
-      out.push({ hameau: HAMEAU_VILLAGE, hameauNom: 'le village', id: v.id, cle: v.id, prenom: v.prenom, enfant: false, villageois: true, metier: def ? def.nom : (v.genre === 'm' ? 'villageois' : 'villageoise'), palier, nomPalier: RECIT.PALIER_NOMS[palier] });
+      out.push({ hameau: HAMEAU_VILLAGE, hameauNom: 'le village', id: v.id, cle: v.id, prenom: v.prenom, enfant: false, villageois: true, metier: def ? def.nom : (v.genre === 'm' ? 'villageois' : 'villageoise'), palier, nomPalier: DATA.AMITIE.ECHELLE.NOMS[palier] });
     }
   }
   return out.sort((x, y) => y.palier - x.palier || (x.prenom < y.prenom ? -1 : x.prenom > y.prenom ? 1 : 0));
@@ -198,8 +198,10 @@ export function invitesModele(state) {
     invites.push({ id: q.id, hameau: q.hameau, hameauNom: h.nom, prenom: t.m.prenom, perso: t.m.perso, apparence: validApparence(t.m.apparence, !!t.m.enfant), enfant: !!t.m.enfant, metier: metierHabitant(h, t.m), depart: Number.isInteger(h.case) ? h.case : null, admire });
   }
   if (!invites.length) return null;
-  // (des villageois à table : on ne parle ni de la calèche ni de « chez nous », mais de l'île)
-  const table = invites.some((g) => g.villageois) ? [...P.TABLE.filter((x) => !/calèche|chez nous/i.test(x)), ...(((DATA.VILLAGE || {}).AMITIE || {}).PHRASES || {}).table || []] : P.TABLE;
+  // (des villageois à table : on ne parle ni de la calèche ni de « chez nous », mais de l'île ; sur l'île, pas de
+  // calèche non plus avec un habitant d'un hameau, fiche I7d)
+  const surIle = villageActif(state) ? P.TABLE.filter((x) => !texteDuRecit(x)) : P.TABLE;
+  const table = invites.some((g) => g.villageois) ? [...P.TABLE.filter((x) => !/calèche|chez nous/i.test(x)), ...(((DATA.VILLAGE || {}).AMITIE || {}).PHRASES || {}).table || []] : surIle;
   return { id: inv.id, moment: inv.moment, nom: INVITATION.MOMENTS[inv.moment].nom, etat: inv.etat, invites, paroles: { arrive: P.ARRIVE, table, merci: P.MERCI, seul: P.SEUL } };
 }
 

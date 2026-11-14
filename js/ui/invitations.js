@@ -33,7 +33,9 @@ import { fixerFeteDuJour } from './vocations.js';
    d'Achille quand on n'invite que des villageois) ; la fiche d'un villageois ouvre la fenêtre, lui déjà coché. */
 
 // (le messager : Achille pour les hameaux ; de porte en porte pour les villageois seuls)
-const seulsVillageois = (invites) => villageActif(state) && invites.length > 0 && invites.every((q) => q.hameau === 'village');
+// (l'île à bâtir : le message passe de porte en porte ; fiche I7d, même pour un habitant d'un hameau : le cocher n'y
+// est plus nommé)
+const seulsVillageois = () => villageActif(state);
 
 const MOMENTS = INVITATION.MOMENTS;
 const liste = (noms) => (noms.length < 2 ? noms.join('') : `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`);
@@ -99,7 +101,7 @@ function openEvenement(jour, coche = null) {
       <fieldset class="evt-groupe"><legend>Qui inviter ? (${INVITATION.INVITES_MAX} au plus)</legend>
         ${gens || `<p class="muted">Tu ne connais encore personne : ${villageActif(state) ? 'un villageois viendra par le bac' : 'va parler aux habitants des hameaux'}.</p>`}
       </fieldset>
-      <p class="muted">${villageActif(state) ? 'Ton message passera de porte en porte (Achille, le cocher, le porte aux hameaux)' : 'Achille, le cocher, portera ton message pendant sa tournée'} : les réponses arriveront demain matin. Le jour dit, tes invités viendront s'asseoir à ta table (une table de jardin et ses chaises, ou celle de la maison) : touche la table pour servir le repas, et une chaise pour t'asseoir avec eux.</p>
+      <p class="muted">${villageActif(state) ? 'Ton message passera de porte en porte' : 'Achille, le cocher, portera ton message pendant sa tournée'} : les réponses arriveront demain matin. Le jour dit, tes invités viendront s'asseoir à ta table (une table de jardin et ses chaises, ou celle de la maison) : touche la table pour servir le repas, et une chaise pour t'asseoir avec eux.</p>
       <div class="evt-boutons">
         <button type="button" class="btn primary" data-action="evt-inviter"${R.length ? '' : ' disabled'}>✉️ ${villageActif(state) ? 'Inviter' : 'Confier à Achille'}</button>
         <button type="button" class="btn" data-action="close-modal">Fermer</button>
@@ -122,7 +124,7 @@ export function watchInvitations() {
     const M = MOMENTS[r.moment];
     const oui = r.oui.map(escapeHtml), non = r.non.map(escapeHtml);
     const quand = `${M.nom} ${leJour(r.jour)}`;
-    const inv0 = invitation(state, r.id), porte = inv0 && seulsVillageois(inv0.invites) ? '✉️ Ton invitation a fait le tour des portes' : '✉️ Achille a porté ton invitation';
+    const porte = seulsVillageois() ? '✉️ Ton invitation a fait le tour des portes' : '✉️ Achille a porté ton invitation';
     const texte = oui.length
       ? `${porte} pour ${quand} : ${liste(oui)} ${oui.length > 1 ? 'viendront' : 'viendra'} avec plaisir${non.length ? ` ; ${liste(non)} ne ${non.length > 1 ? 'pourront' : 'pourra'} pas` : ''}.`
       : `${porte} pour ${quand} : ${liste(non)} ne ${non.length > 1 ? 'pourront' : 'pourra'} pas venir, cette fois.`;
@@ -222,7 +224,7 @@ registerActions({
     if (!r.ok) { notify(r.error, { son: 'erreur' }); return; }
     persistState();
     refresh();
-    if (inv) notify(`Invitation annulée${inv.etat === 'repondue' ? ' : Achille préviendra tes invités' : ''}.`, { kind: 'info' });
+    if (inv) notify(`Invitation annulée${inv.etat === 'repondue' ? (villageActif(state) ? ' : tes invités en seront prévenus' : ' : Achille préviendra tes invités') : ''}.`, { kind: 'info' });
   },
   'repas-servir': (target) => {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }

@@ -1,7 +1,8 @@
 /* carte/ferme/engrais.js — la scène de la ferme : glisser l'engrais sur les cultures arrosées, son scintillement.
  *
- * Avec de l'engrais dans l'inventaire et rien en main, un glissement qui part d'une culture arrosée (modèle.
- * engraissables, js/engine/compost.js casesEngraissables) marque en violet celles qu'il traverse, comme les cases
+ * L'engrais pris en main (js/ui/compost.js engrais-toggle : sa fiche de l'inventaire, la fenêtre du compost), un
+ * glissement qui part d'une culture arrosée (modèle.engraissables, seulement l'engrais en main : js/ui/stage.js ;
+ * js/engine/compost.js casesEngraissables) marque en violet celles qu'il traverse, comme les cases
  * bleues de l'arrosage (arroseTo, js/farm-stage.js). Au relâchement, chacune scintille l'une après l'autre : des
  * éclats violets et blancs qui jaillissent, montent et s'éteignent, un éclair lilas sur la case ; puis la page
  * met l'engrais (engrais-many, js/ui/compost.js) : la culture gagne un stade, et la carte joue l'éclat vert de la

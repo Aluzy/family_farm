@@ -25,7 +25,7 @@ L'icône (maquette E4, `scripts/icones/engrais.py`) : un petit tas brun foncé p
 Il vient du bac, ou **s'achète à la calèche**, avec les semences (« 🌱 Semences et engrais » ; `OBJETS.engrais.comptoir`,
 `market.js isBuyable`) : 5 pièces de prix de vente, au cours du Marché comme elles (il monte à chaque unité achetée).
 
-Avec de l'engrais dans l'inventaire et rien en main, **un glissement qui part d'une culture arrosée** marque en
+L'engrais **pris en main** (le bouton « Prendre en main » de sa fiche, dans l'inventaire, ou celui de la fenêtre du bac à compost ; sa pastille sur la carte le range, et il se range tout seul quand il n'en reste plus), **un glissement qui part d'une culture arrosée** marque en
 violet les cultures arrosées qu'il traverse (comme les cases bleues de l'arrosage). Au relâchement, chacune
 scintille (un éclair lilas, des éclats violets et blancs), puis reçoit son engrais (`engrais-many`,
 `potager.engrais`) : **elle gagne un cycle tout de suite** (un stade) et la carte joue l'éclat vert de la pousse.

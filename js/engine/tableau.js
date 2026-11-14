@@ -6,6 +6,7 @@ import { goutTache } from './traits.js';
 import { toolDef } from './outils.js';
 import { auChantier, defProjet } from './projets-village.js';
 import { validApparence } from './family.js';
+import { bilanCommerce, commercesOuverts } from './artisans.js';
 
 /* ---------- le tableau des villageois (le chantier « l'île à bâtir », fiche I3d) ----------
 
@@ -33,7 +34,11 @@ import { validApparence } from './family.js';
    jours, glissants : ceux qui finissent hier). Le chantier éteint, rien : villageoisDe est vide.
    Fiche I8a : un jour au chantier d'un projet du village (J.tache « chantier », J.chantier : la sorte du projet) est
    montré à la place de la tâche (chantier : { sorte, nom, icone }) ; il compte son repas et ne produit rien, et ne
-   compte pas dans le rendement de sa tâche. Le villageois envoyé au chantier aujourd'hui : bilanVillageois.chantier. */
+   compte pas dans le rendement de sa tâche. Le villageois envoyé au chantier aujourd'hui : bilanVillageois.chantier.
+   Fiche I5a (artisans.js) : l'artisan a pour tâche celle de son commerce ; ce que son travail rapporte à la ferme, ce
+   sont les matières qu'il y achète (J.produit.pieces, comme la tournée du port) ; la pièce qu'il fait va à son comptoir.
+   Le tableau a en plus une ligne par commerce ouvert (commerces : artisans.js bilanCommerce, sur la période) : ses lots,
+   ce qu'il a fait, ce qu'il a payé à la ferme, ses ventes (au joueur, aux villageois, au bac), la façon, ce qu'il a en vente. */
 
 // Le projet du village d'un jour au chantier, ou d'un villageois qui y est envoyé : { sorte, nom, icone } ou null.
 export function chantierDit(sorte) {
@@ -233,6 +238,7 @@ export function tableauVillage(state, periode = 'semaine', tri = {}) {
   return {
     periode: p, jours: PERIODES[p], du: Math.max(1, au - PERIODES[p] + 1), au,
     lignes: trierTableau(lignes, tri.colonne, tri.sens), moyenne, total,
+    commerces: commercesOuverts(state).map((c) => bilanCommerce(state, c, PERIODES[p])),
   };
 }
 

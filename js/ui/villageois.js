@@ -19,7 +19,6 @@ import {
 import { hasTool, toolDef } from '../engine/outils.js';
 import { HAMEAU_VILLAGE } from '../engine/amitie.js';
 import { amitieVillageois, donnerPresent, parlerVillageois } from '../engine/villageois-amitie.js';
-import { RECIT } from '../engine/recit.js';
 import { demandeHtml } from './demandes.js';
 import { itemsText } from './common.js';
 import { inventoryCounts } from '../engine/inventory.js';
@@ -36,6 +35,7 @@ import { direAvisLien, liensFicheHtml } from './liens.js';
 import { arriveeEnfantRefus, arriverEnfant } from '../engine/liens.js';
 import { goutTache, nomTrait, noterIndice, observerTraits, traitDef, traitsPourFiche } from '../engine/traits.js';
 import { maisonNomHtml } from './chronique-html.js';
+import { commerceFicheHtml, watchCommerces } from './commerce.js';
 
 /* ---------- les villageois, côté page (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -111,6 +111,8 @@ export function watchVillageois() {
   if (avis) direAvis();
   // (I4 : un achat à l'étal, une notification)
   if (direAvisEtal()) change = true;
+  // (I5a : une vente au comptoir d'un commerce, une commande livrée ; au réveil, une envie née)
+  if (watchCommerces()) change = true;
   if (change || avis) {
     persistState();
     refresh();
@@ -271,7 +273,10 @@ function tacheHtml(id) {
     .map((o) => `<button type="button" class="btn small" data-action="villageois-donner" data-id="${e}" data-outil="${o}">${T(o).ICONE} Donner ${mon(o)} ${escapeHtml(T(o).NOM.toLowerCase())}</button>`).join(' ');
   const liste = (v.vendre || []).filter((o) => DATA.OBJETS[o]);
   const vendre = q.tache === 'navette' ? `<dt>⚓ À vendre</dt><dd>${liste.length ? liste.map((o) => `${icone(o)} ${escapeHtml(DATA.OBJETS[o].nom)}`).join(', ') : '<span class="muted">rien</span>'} <button type="button" class="btn small" data-action="villageois-vendre" data-id="${e}">Choisir</button></dd>` : '';
-  return `<dt>🧺 Tâche</dt><dd>${etat} <button type="button" class="btn small" data-action="villageois-taches" data-id="${e}" id="villageois-tache">Tâche</button></dd>
+  // (I5a : l'artisan tient son commerce, c'est sa tâche : pas de liste, la fenêtre du commerce)
+  const bouton = def && def.commerce ? '<button type="button" class="btn small" data-action="stage-open" data-window="commerce">Le commerce</button>'
+    : `<button type="button" class="btn small" data-action="villageois-taches" data-id="${e}" id="villageois-tache">Tâche</button>`;
+  return `<dt>🧺 Tâche</dt><dd>${etat} ${bouton}</dd>
       <dt>🧰 Outil</dt><dd>${outil}${donner ? ` <span class="villageois-outils">${donner}</span>` : ''}</dd>${vendre}`;
 }
 
@@ -352,7 +357,7 @@ const nomObjet = (o) => (DATA.OBJETS[o] ? `${DATA.OBJETS[o].icone} ${escapeHtml(
 
 // Sa jauge d'amitié : le palier, la barre, ce qu'il reste jusqu'au suivant.
 function jaugeAmitie(A) {
-  const suite = A.prochain !== null ? `encore ${A.prochain - A.pts} pour « ${RECIT.PALIER_NOMS[A.palier + 1]} »` : 'le plus haut palier';
+  const suite = A.prochain !== null ? `encore ${A.prochain - A.pts} pour « ${DATA.AMITIE.ECHELLE.NOMS[A.palier + 1]} »` : 'le plus haut palier';
   return `<span class="ami-palier">💛 ${escapeHtml(A.nom)}</span> <span class="ami-jauge grande" role="img" aria-label="Amitié : ${A.pts} sur ${A.max}"><span style="width:${Math.round((A.pts * 100) / A.max)}%"></span></span> <span class="muted num">${A.pts}/${A.max} · ${suite}</span>`;
 }
 
@@ -404,6 +409,7 @@ export function ouvrirFicheVillageois(id) {
       ${amitieHtml(id, f)}
       ${liensFicheHtml(id)}
       ${f.enfant ? `<dt>🪁 Journée</dt><dd>Les enfants ne travaillent pas : ${f.genre === 'm' ? 'il' : 'elle'} joue sur la place.</dd>` : tacheHtml(id)}
+      ${f.enfant ? '' : commerceFicheHtml(id)}
       ${f.enfant ? '' : bourseFicheHtml(id)}
     </dl>
     ${repos}

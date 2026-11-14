@@ -23,13 +23,12 @@ import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { genererMonde } from './monde.js';
 import { niveauPort } from './port.js';
-import { fermeVierge, nouveauDehors, villageActif } from './village.js';
+import { fermeVierge, nouveauDehors, prenomsDuJeu, villageActif } from './village.js';
 import { chemin } from './chemin.js';
 import { addItem } from './inventory.js';
 import { nomDe, proposerNom } from './noms.js';
 import { blocAt, caseBatissable, enLot, poserBloc } from './blocs.js';
 import { deposerBoite } from './repas.js';
-import { platDuVisiteur } from './bienvenue.js';
 import { commencerDidacticielIle } from './didacticiel-ile.js';
 
 const D = () => DATA.VILLAGE.DEPART;
@@ -66,7 +65,7 @@ export function familleSeule(state) {
   const un = (l, d) => (Array.isArray(l) && l.length ? l[Math.floor(r() * l.length)] : d);
   const max = DATA.FAMILLE.PROFIL.PERSOS;
   const persos = ((H.PERSOS && H.PERSOS.adulte && H.PERSOS.adulte[genre]) || []).filter((n) => Number.isInteger(n) && n >= 1 && n <= max);
-  const prenoms = ((H.PRENOMS && H.PRENOMS[genre]) || []).filter((p) => typeof p === 'string' && p.length >= 1 && p.length <= DATA.FAMILLE.PROFIL.PRENOM_MAX);
+  const prenoms = prenomsDuJeu(state, genre).filter((p) => typeof p === 'string' && p.length >= 1 && p.length <= DATA.FAMILLE.PROFIL.PRENOM_MAX);
   return { perso: un(persos, 1), prenom: un(prenoms, genre === 'f' ? 'Jeanne' : 'Jules'), nom: DATA.DEPART.NOM, compagnon: null, enfants: [], animaux: [] };
 }
 
@@ -119,16 +118,14 @@ export function poserTronconAbri(state) {
 
 /* ---------- le premier jour sans visite ---------- */
 
-// Le plat de la visite de bienvenue, dans une boîte à nourriture posée dans l'abri (la rangée du bas, au fond à
-// droite : le four et la cuisinière gardent leur place à gauche, la case derrière la porte reste le passage). La
-// visite est notée faite, la scène d'arrivée du récit aussi (elle n'a pas lieu). → le plat.
+// Le plat du premier jour (DEPART.PLAT, celui que la visite de bienvenue apportait), dans une boîte à nourriture posée
+// dans l'abri (la rangée du bas, au fond à droite : le four et la cuisinière gardent leur place à gauche, la case
+// derrière la porte reste le passage). La visite est notée faite (state.bienvenue, que la page d'avant lit encore
+// jusqu'à la fiche I7d). Fiche I7c : rien n'est lu du récit ; la scène d'arrivée n'a plus à être notée dite, aucune
+// scène ne se joue sur l'île (recit-muet.js). → le plat.
 function platDansLAbri(state) {
-  const plat = platDuVisiteur(null);
+  const plat = DATA.VILLAGE.DEPART.PLAT;
   state.bienvenue = { etat: 'faite', qui: null, plat, remis: null, jour: state.day };
-  if (state.recit && typeof state.recit === 'object') {
-    if (!state.recit.dites || typeof state.recit.dites !== 'object') state.recit.dites = {};
-    state.recit.dites.arrivee = state.day;
-  }
   const a = state.abriDepart;
   if (!a || !Array.isArray(a.sols) || !plat) return plat;
   const W = farmTerrain(state).LARGEUR, P = DATA.DIDACTICIEL.ABRI;

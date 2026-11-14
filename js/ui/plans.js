@@ -5,6 +5,7 @@ import { setupPending } from '../engine/depart.js';
 import { collection, deNom, PLANS, plansAAnnoncer, trouverPlanBiome } from '../engine/plans.js';
 import { styleDe, styleInfo } from '../engine/styles.js';
 import { state } from './store.js';
+import { villageActif } from '../engine/village.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -55,7 +56,10 @@ export function carnetPlansHtml() {
   return `
     <div class="card carnet-plans">
       <span class="card-title"><span>📜 Carnet de plans</span></span>
-      <span class="muted">Chaque pays a sa collection de meubles de jardin. Explore-le (hors de la ferme) pour trouver un premier plan ; un ami « ${escapeHtml(DATA.RECIT.PALIER_NOMS[PLANS.AMI])} » d'un hameau de ce pays t'offrira le suivant.</span>
+      <span class="muted">${villageActif(state)
+        // (l'île à bâtir, fiche I7d : pas de hameau ; les plans offerts par un ami des hameaux sortent avec eux, I7e)
+        ? 'Chaque pays a sa collection de meubles de jardin. Explore-le (hors de la ferme) pour y trouver ses plans.'
+        : `Chaque pays a sa collection de meubles de jardin. Explore-le (hors de la ferme) pour trouver un premier plan ; un ami « ${escapeHtml(DATA.AMITIE.ECHELLE.NOMS[PLANS.AMI])} » d'un hameau de ce pays t'offrira le suivant.`}</span>
       ${lignes}
     </div>`;
 }

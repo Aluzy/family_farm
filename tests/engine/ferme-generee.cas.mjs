@@ -1649,7 +1649,7 @@ test('ferme générée (essai) : l\'escalier ouvre un étage au-dessus de sa pi�
   // un mur qui couperait la pièce de l'escalier (la paillasse de l'étage serait dehors) : non
   const col = (dr) => (z.r + dr) * z.W + z.c + 2;
   assert(poserBloc(s, 'mur_pierre', col(1)).ok && poserBloc(s, 'mur_pierre', col(2)).ok, 'tant que la pièce reste entière');
-  assert(/couperait la pièce de l'escalier/.test(poserBloc(s, 'mur_pierre', col(3)).error));
+  assert(/couperait la pièce sous l'étage/.test(poserBloc(s, 'mur_pierre', col(3)).error));
   assertEqual(Object.keys(etageBlocs(s)).length, 2);
   reprendreBloc(s, col(1)); reprendreBloc(s, col(2));
   assert(reprendreEtage(s, coin).ok);
@@ -1665,7 +1665,7 @@ test('ferme générée : les meubles du Marché se posent à l\'étage, sur tout
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
   poserPorte(s, p.porte);
   assert(poserBloc(s, 'escalier', p.dedans).ok);
-  assert(ETAGE_BLOCS.includes('meuble_tableau_1') && ETAGE_BLOCS.includes('meuble_table') && !ETAGE_BLOCS.includes('refrigerateur'), 'les meubles, les tableaux (sur les murs de l\'étage), pas le réfrigérateur');
+  assert(ETAGE_BLOCS.includes('meuble_tableau_1') && ETAGE_BLOCS.includes('meuble_table') && ETAGE_BLOCS.includes('refrigerateur'), 'les meubles, les tableaux (sur les murs de l\'étage), le réfrigérateur aussi');
   const t = (z.r + 3) * W + z.c + 1;                       // (la table : 3 cases vers la droite)
   const r = poserEtage(s, 'meuble_table', t);
   assert(r.ok, r.error);

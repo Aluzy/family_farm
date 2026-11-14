@@ -5,7 +5,7 @@ import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
-import { villageActif } from './village.js';
+import { prenomsDuJeu, villageActif } from './village.js';
 import { hourOfDay, nightActive } from './clock.js';
 import { penalite } from './inventory.js';
 import { maisonsMarquees, litsDeLaFamille, piecesCloses } from './blocs.js';
@@ -227,8 +227,10 @@ export function tirerVillageois(state, rang = villageoisDe(state).length + 1) {
   const prenomsPris = new Set([...V, ...F].map((m) => String(m.prenom || '').toLowerCase()));
   const persosPris = new Set([...V.map((v) => v.perso), ...F.filter((m) => !m.enfant).map((m) => m.perso)]);
   const un = (liste) => liste[Math.floor(rnd() * liste.length)];
-  const prenoms = (HABITANTS.PRENOMS[genre] || []).filter((p) => !prenomsPris.has(p.toLowerCase()));
-  const prenom = prenoms.length ? un(prenoms) : `${un(HABITANTS.PRENOMS[genre])} ${rang}`;
+  // (fiche I7d : sans les noms du récit, village.js prenomsDuJeu)
+  const tous = prenomsDuJeu(state, genre);
+  const prenoms = tous.filter((p) => !prenomsPris.has(p.toLowerCase()));
+  const prenom = prenoms.length ? un(prenoms) : `${un(tous)} ${rang}`;
   const persos = (HABITANTS.PERSOS.adulte[genre] || []).filter((p) => !persosPris.has(p));
   const perso = persos.length ? un(persos) : un(HABITANTS.PERSOS.adulte[genre]);
   const deja = new Set(V.filter((v) => objet(v.apparence)).map((v) => cleDiversite(v.apparence)));

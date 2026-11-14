@@ -14,7 +14,7 @@ import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
-import { couchagesEtage, etageEmprise, etageHorsEmprise, rangerEtage } from './etage.js';
+import { couchagesEtage, etageBlocs, etageEmprise, etageHorsEmprise, fenetresHautes, niveauxEtage, rangerEtage, sortePosee } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
 import { tonneletPose, tonneletRepris } from './tonnelets.js';
 import { compostPose, compostRepris } from './compost.js';
@@ -386,7 +386,7 @@ export function rehausseStatus(state, sorte, tile) {
   if (!s || !s.mur) return { ok: false, raison: 'Un mur seulement se pose au-dessus d\'un autre.' };
   if (!h) return { ok: false, raison: 'Touche un mur, une fenêtre ou une porte pour le rehausser.' };
   if (h >= DATA.ATELIER.HAUTEUR_MAX) return { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
-  if (h === 1 && state.etage && state.etage[tile]) return { ok: false, raison: 'Un bloc de l\'étage est posé au-dessus : reprends-le d\'abord.' };
+  if (etageBlocs(state, h)[tile]) return { ok: false, raison: `Un bloc ${h === 1 ? 'de l\'étage' : `du niveau ${h}`} est posé au-dessus : reprends-le d'abord.` };
   const m = matiereDessus(state, tile);
   if (m ? m !== sorte : !murPlein(sorte)) {
     return { ok: false, raison: m ? `Ce mur se rehausse en ${sorteDe(m).nom.toLowerCase()} : prends-en en main.` : 'Au-dessus d\'une fenêtre ou d\'une porte : un mur plein.' };
@@ -536,9 +536,10 @@ function melangeSansMur(state, tile) {
 // Changer les blocs du bas (`blocs`, les blocs posés après le changement) ferait-il perdre des
 // blocs posés à l'étage (la pièce de l'escalier ouverte ou coupée : son emprise rétrécit) ?
 function etageEnPeril(state, blocs) {
-  if (!Object.keys(state.etage || {}).length) return false;
-  const avant = etageHorsEmprise(state).length;
-  const perdus = etageHorsEmprise({ ...state, blocs }).length;
+  if (!niveauxEtage().some((n) => Object.keys(etageBlocs(state, n)).length)) return false;
+  const hors = (st) => niveauxEtage().reduce((t, n) => t + etageHorsEmprise(st, n).length, 0);
+  const avant = hors(state);
+  const perdus = hors({ ...state, blocs });
   piecesCloses(state);   // (le cache revient sur la vraie partie)
   return perdus > avant;
 }
@@ -552,7 +553,8 @@ function etageEnPeril(state, blocs) {
 //     clé (et un plancher au sol, state.sols, qui n'est pas un bloc ; les sols n'ont pas de genre).
 // Un bloc d'un autre genre n'y entre pas (poseStatus) ; un mur ou une porte qui, repris,
 // mêlerait deux enceintes de genres différents ne se reprend pas (reprendreBloc).
-export const GENRES_PIECE = { maison: 'la maison', poulailler: 'le Poulailler', paturage: 'l\'Étable', serre: 'la Serre', silo: 'le Silo', moulin: 'le Moulin' };
+// (fiche I5a, le chantier « l'île à bâtir » : un commerce, l'établi de son métier et son comptoir ; artisans.js)
+export const GENRES_PIECE = { maison: 'la maison', poulailler: 'le Poulailler', paturage: 'l\'Étable', serre: 'la Serre', silo: 'le Silo', moulin: 'le Moulin', commerce: 'un commerce' };
 
 // Le genre d'un bloc : 'maison', l'id d'un bâtiment, ou null (sans genre : la batterie ; ou
 // dehors : les murs, les portes, le puits…).
@@ -562,6 +564,7 @@ export function genreBloc(sorte) {
   if (s.batiment) return s.batiment;
   if (s.ecurie) return 'ecurie';
   if (s.station === 'moulin') return 'moulin';
+  if (s.commerce || s.comptoir) return 'commerce';
   if (sorte === 'paillasse' || s.station || s.meuble) return 'maison';
   return null;
 }
@@ -655,7 +658,7 @@ export function conseilsPieces(state) {
   const trous = candidats.filter((x) => !candidats.some((y) => y !== x && y.ferme2.has(x.c))).map((x) => x.c);
   const portesDe = (e) => [...e.bord].filter((t) => sorteDe(B[t]).porte);
   const sansPorte = enceintes.filter((e) => !portesDe(e).length).map((e) => e.cases.sort((x, y) => x - y));
-  const NOMS = { maison: 'Maison', poulailler: 'Le Poulailler', paturage: 'L\'Étable', serre: 'La Serre', silo: 'Le Silo', moulin: 'Le Moulin', ecurie: 'L\'Écurie' };
+  const NOMS = { maison: 'Maison', poulailler: 'Le Poulailler', paturage: 'L\'Étable', serre: 'La Serre', silo: 'Le Silo', moulin: 'Le Moulin', ecurie: 'L\'Écurie', commerce: 'Un commerce : l\'établi et le comptoir, l\'enseigne dehors' };
   // (fiche I3a : une maison marquée d'une boîte aux lettres est celle d'un villageois)
   const marquees = village ? new Set(maisonsMarquees(state).map((m) => m.piece)) : new Set();
   const pieces = piecesCloses(state).map((p) => {
@@ -681,6 +684,13 @@ export function genrePiece(state, tile) {
 function refusGenre(state, sorte, p) {
   const B = blocsPoses(state), g = genreBloc(sorte), deja = genreDe(B, p);
   const s = sorteDe(sorte);
+  // (I5a : un commerce a deux blocs, l'établi et le comptoir ; un seul établi)
+  if (deja === 'commerce' && g === 'commerce') {
+    const B2 = blocsDe(B, p.cases);
+    if (s.commerce && B2.some((b) => sorteDe(b.sorte).commerce)) return `Ce commerce a déjà son établi. ${s.nom} : dans une autre enceinte.`;
+    if (s.comptoir && B2.some((b) => sorteDe(b.sorte).comptoir)) return 'Ce commerce a déjà son comptoir.';
+    return null;
+  }
   if (deja && deja !== 'maison') return `Cette enceinte est ${GENRES_PIECE[deja]} : on n'y pose que son bloc (et un plancher). ${s.nom} : dans une autre enceinte.`;
   if (g && g !== 'maison') {
     if (deja === 'maison') return `Cette enceinte est la maison : ${GENRES_PIECE[g]} se bâtit dans une autre enceinte.`;
@@ -781,7 +791,7 @@ export function litsDeLaFamille(state) {
 function idCouchage(id) {
   if (Number.isInteger(id)) return id;
   if (typeof id === 'string' && /^\d+$/.test(id)) return Number(id);
-  if (typeof id === 'string' && /^etage:\d+$/.test(id)) return id;
+  if (typeof id === 'string' && /^etage2?:\d+$/.test(id)) return id;
   return null;
 }
 
@@ -989,7 +999,7 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   // (un mur qui couperait la pièce de l'escalier : l'étage perdrait ce qui est posé au-dessus. Seul un
   // bloc posé dans cette pièce peut la couper : ailleurs, la question ne se pose pas, et les pièces ne
   // sont pas recalculées pour chaque case que le mode Construire teste)
-  if (s.ferme && etageEmprise(state).has(tile) && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce de l'escalier, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
+  if (s.ferme && etageEmprise(state).has(tile) && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce sous l'étage, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
   // un bloc de silo au sol : à côté des colonnes déjà posées (un seul silo)
   if (s.silo) {
     const refus = refusSilo(state, tile);
@@ -1164,6 +1174,9 @@ export function reprendreBloc(state, tile, opts) {
   // un mur rehaussé, une colonne du silo : le bloc du dessus d'abord
   // (au-dessus d'une fenêtre ou d'une porte : un bloc de la matière posée au-dessus)
   if (!dessus && bloc && hauteurEmpilee(state, tile) > 1) {
+    // (une fenêtre de l'étage percée dans ce haut : elle d'abord, à l'étage — etage.js fenetresHautes)
+    const hh = hauteurEmpilee(state, tile);
+    if (hh >= 2 && fenetresHautes(state, hh - 1)[tile]) return fail(`Une fenêtre ${hh === 2 ? 'de l\'étage' : `du niveau ${hh - 1}`} est percée dans le haut de ce mur : reprends-la d'abord, à ce niveau.`);
     const haut = rehaussesPosees(state)[tile] || bloc;
     setHauteur(state, tile, hauteurEmpilee(state, tile) - 1);
     addItem(state, sorteDe(haut).objet, 1);
@@ -1223,12 +1236,12 @@ export function reprendreBloc(state, tile, opts) {
   // (un bloc d'une chaîne de production : une chaîne défaite rend ce qu'elle avait reçu, js/engine/chaines.js)
   if (s && (s.chaine || s.botteleuse)) chainesReprise(state);
   // (la boîte à nourriture, le réfrigérateur : ce qu'ils contiennent revient dans l'inventaire)
-  if (s && s.boite) viderBoite(state);
-  if (s && s.frigo) closeFridge(state);
+  if (s && s.boite && !sortePosee(state, sorte)) viderBoite(state);
+  if (s && s.frigo && !sortePosee(state, sorte)) closeFridge(state);
   if (s && s.batiment && state[s.batiment] && !['poulailler', 'paturage'].includes(s.batiment)) state[s.batiment].construit = false;
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)
-  if (s && s.station && s.station !== 'moulin' && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
+  if (s && s.station && s.station !== 'moulin' && state.stations[s.station] && !sortePosee(state, sorte)) state.stations[s.station].construit = false;
   majPoulailler(state);
   rangerEtage(state);   // (l'escalier repris, la pièce ouverte : l'étage s'en va)
   return { ok: true, sorte, case: tile, ...(sens ? { sens } : {}), ...(variante ? { variante } : {}), ...(plante ? { plante } : {}) };

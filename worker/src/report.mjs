@@ -73,6 +73,7 @@ export const GAME_ACTIONS = {
   'chronique-note-ok': 'Écrire une note sur une ligne de la chronique',
   'chronique-note-effacer': 'Effacer sa note sur une ligne de la chronique',
   'noms-ok': 'Nommer l\'île, le village ou une maison',
+  'commerce-nommer': 'Nommer un commerce',
   // (fiche I8a : les vocations de l'île, les fêtes et les projets du village, js/ui/vocations.js)
   'vocation-fete-fixer': 'Fixer la fête du village',
   'evt-fete': 'Fixer la fête du village (depuis le calendrier)',
@@ -108,6 +109,7 @@ export const GAME_ACTIONS = {
   'tonnelet-remplir': 'Mettre une tomme ou un moût dans un tonnelet',
   'compost-jeter': 'Jeter des aliments dans un bac à compost',
   'engrais-many': 'Glisser l\'engrais sur des cultures arrosées',
+  'engrais-toggle': 'Prendre l\'engrais en main ou le ranger',
   'promesse-confier': 'Confier au cocher de quoi tenir une promesse de Maurice (le récit)',
   'carte-monde-but': 'Choisir le but de la boussole (carte du monde)',
   'carte-monde-ferme': 'Ramener la boussole à la ferme',
@@ -194,6 +196,10 @@ export const GAME_ACTIONS = {
   'boite-reprendre': 'Remplir la boîte à nourriture',
   'etal-mettre': 'Tenir l\'étal des villageois',
   'etal-reprendre': 'Tenir l\'étal des villageois',
+  'commerce-ouvrir': 'Ouvrir un commerce',
+  'commerce-acheter': 'Acheter à un commerce',
+  'commerce-commander': 'Commander à un commerce',
+  'commerce-lettres': 'Choisir les lettres de l\'enseigne d\'un commerce',
   'fridge-in-all': 'Utiliser le réfrigérateur',
   'fridge-in-urgent': 'Utiliser le réfrigérateur',
   'frigo-ranger': 'Utiliser le réfrigérateur',
@@ -230,6 +236,8 @@ export const INTERFACE_ACTIONS = new Set([
   'liens-village', 'liens-foyer',
   // (fiche I7g : la chronique, ses notes, nommer)
   'chronique-open', 'chronique-note', 'noms-renommer', 'noms-autre',
+  // (fiche I5a : la fenêtre d'un commerce, ses onglets, un autre nom proposé)
+  'commerce-onglet', 'commerce-nom-autre',
   // (fiche I8a : les onglets de la fenêtre « L'île »)
   'ile-onglet',
   // (les gemmes : js/ui/gemmes.js)

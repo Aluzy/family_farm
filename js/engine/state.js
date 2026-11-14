@@ -9,7 +9,6 @@ import {
 import { makePlot, seedItem, startPlots, zoneTile } from './crops.js';
 import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
-import { remboursementCommerce } from './ile.js';
 import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
 import { nouveauDehors, nouveauPort, villageActif } from './village.js';
@@ -33,9 +32,8 @@ import { genererFerme } from './ferme-generee.js';
 import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
 import { nouvelEquipement } from './equipement.js';
-import { BIENVENUE, nouvelleBienvenue } from './bienvenue.js';
 import { nouveauCompagnon } from './compagnon.js';
-import { nouveauRecit } from './recit.js';
+import { recitDAvant, recitPour } from './recit-aiguillage.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
 import { reparerLiens } from './liens.js';
 import { reparerBourse, reparerEtal } from './bourse.js';
@@ -44,6 +42,7 @@ import { reparerPaliersVocations } from './vocations.js';
 import { reparerFetes } from './fetes-village.js';
 import { reparerProjetsVillage } from './projets-village.js';
 import { reparerProduction } from './production.js';
+import { reparerArtisan, reparerCommerces } from './artisans.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -141,13 +140,16 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     caleche: nouvelleCaleche(), // la calèche (caleche.js, fiche 7c) : son coffre, ses retenues
     equipement: nouvelEquipement(), // fiche 11 : les pièces de chaque membre, le sac (equipement.js)
     litPrincipal: null, // fiche 17 : le lit choisi par le personnage principal (blocs.js choisirLit ; null : le premier)
-    bienvenue: nouvelleBienvenue(), // fiche 18 : la visite de bienvenue du deuxième jour (bienvenue.js)
+    // fiche 18 : la visite de bienvenue du deuxième jour (bienvenue.js) ; fiche I7c : le chantier allumé, déjà faite
+    // (l'aiguillage du récit, recit-aiguillage.js : la partie naissante, le réglage seul décide)
+    bienvenue: recitPour(null).nouvelleBienvenue(),
     // fiche 19 : le compagnon aide à la ferme (compagnon.js) : l'option, ce qu'il a fait aujourd'hui, sa
     // cruche. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
     compagnon: nouveauCompagnon(),
     // le récit de Céron (recit.js, docs/recit/) : les faits, les relations, la confiance des hameaux, les
-    // répliques dites, le carnet. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
-    recit: nouveauRecit(),
+    // répliques dites, le carnet. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas).
+    // Fiche I7c : le chantier allumé, un récit vide que rien n'écrit (recit-muet.js ; la page d'avant le lit encore)
+    recit: recitPour(null).nouveauRecit(),
     amitie: { pnj: {}, visites: {}, porte: [] }, // l'amitié avec les habitants des hameaux (js/engine/amitie.js)
     invitations: { seq: 0, liste: [] },
     plans: { connus: {}, explores: {}, amis: {} },
@@ -535,8 +537,8 @@ export const MIGRATIONS = {
   // v61 → v62 : la visite de bienvenue (bienvenue.js, fiche 18). Une partie qui n'a pas passé le jour
   // de la visite l'attend ; une partie plus avancée ne la reçoit pas (« faite », sans plat).
   61: (state) => {
-    const b = nouvelleBienvenue();
-    if ((Number(state.day) || 1) > BIENVENUE.JOUR) b.etat = 'faite';
+    const b = recitDAvant().nouvelleBienvenue();
+    if ((Number(state.day) || 1) > recitDAvant().jourBienvenue()) b.etat = 'faite';
     return { ...state, bienvenue: b, version: 62 };
   },
   // v62 → v63 : le récit, lot 7 (l'économie de l'île) : les commerces du niveau 10 disparaissent (la veillée à
@@ -544,7 +546,7 @@ export const MIGRATIONS = {
   // compté comme un gain de la journée (compta : remboursement).
   62: (state) => {
     const { commerce, ...reste } = state;
-    const rendu = remboursementCommerce(commerce);
+    const rendu = recitDAvant().remboursementCommerce(commerce);
     const out = { ...reste, version: 63 };
     if (rendu > 0) {
       out.pieces = (Number(state.pieces) || 0) + rendu;
@@ -572,14 +574,14 @@ export const MIGRATIONS = {
     const l = Array.isArray(out.courrier) ? out.courrier.find((x) => x && x.id === 'notaire_legs') : null;
     if (!l) return out;
     if (l.verse) {
-      const r = out.recit && typeof out.recit === 'object' && !Array.isArray(out.recit) ? out.recit : nouveauRecit();
+      const r = out.recit && typeof out.recit === 'object' && !Array.isArray(out.recit) ? out.recit : recitDAvant().nouveauRecit();
       const faits = r.faits && typeof r.faits === 'object' && !Array.isArray(r.faits) ? r.faits : {};
       const j = Math.max(1, Math.floor(Number(state.day) || 1));
       if (!Array.isArray(faits['enveloppe.ouverte'])) faits['enveloppe.ouverte'] = [j, j, 1];
       out.recit = { ...r, faits };
     } else {
       out.courrier = out.courrier.map((x) => (x === l ? { ...x, verse: true } : x));
-      addItem(out, DATA.RECIT.ENVELOPPE.OBJET, 1);
+      addItem(out, recitDAvant().objetEnveloppe(), 1);
     }
     return out;
   },
@@ -998,6 +1000,20 @@ export const MIGRATIONS = {
     if ('production' in state) out.production = reparerProduction(state.production, state.port && Number.isInteger(state.port.passe) ? state.port.passe : 0);
     return out;
   },
+  // v98 → v99 (le chantier « l'île à bâtir », fiche I5a) : les commerces d'artisans (js/engine/artisans.js :
+  // state.commerces, leur boutique, leurs commandes, leur ancienneté et leur journal) ; sur chaque villageois, les jours
+  // de pratique de chaque tâche (v.pratique), ses envies de commerce (v.envies), le commerce qu'il tient (v.commerce),
+  // son achat du jour au comptoir (v.achatCommerce), sa dernière lame (v.entretien). Une partie d'avant n'en a pas et
+  // reste telle quelle ; ce qui est abîmé est réparé (un commerce d'une sorte inconnue s'en va, un artisan sans
+  // commerce reprend « sans tâche », un commerce sans son artisan est fermé).
+  98: (state) => {
+    const out = { ...state, version: 99 };
+    if ('commerces' in state) out.commerces = reparerCommerces(state.commerces, state.villageois);
+    if (Array.isArray(state.villageois) && ('commerces' in state || state.villageois.some((v) => v && typeof v === 'object' && ('pratique' in v || 'envies' in v || 'commerce' in v)))) {
+      out.villageois = state.villageois.map((v) => reparerArtisan(v, out.commerces || []));
+    }
+    return out;
+  },
 };
 
 // Le didacticiel de l'île d'une sauvegarde (la migration v92 → v93) : une étape lisible, sinon fini.
@@ -1136,8 +1152,17 @@ export function decalerPartie(old, sens) {
   const decale = (id, px = 1) => idDuMonde(id, px, [ox, oy]);
   const cles = (o) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [/^\d+$/.test(k) ? String(c(Number(k))) : k, v])) : o);
   const ids = (o, px) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [decale(k, px), v])) : o);
-  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'rehausses', 'fenetres', 'etage', 'fenetresEtage', 'solsEtage', 'ruches', 'distributeurs', 'botteleuses', 'chaines']) {
+  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'rehausses', 'fenetres', 'etage', 'fenetresEtage', 'fenetresHautes', 'sensEtage', 'teintesEtage', 'dessusEtage', 'solsEtage', 'ruches', 'distributeurs', 'botteleuses', 'chaines']) {
     if (state[k]) state[k] = cles(state[k]);
+  }
+  // (les niveaux du dessus : leurs sols, leurs blocs, rangés par niveau, js/engine/etage.js)
+  for (const k of ['solsHauts', 'niveauxHauts']) {
+    if (!state[k] || typeof state[k] !== 'object') continue;
+    for (const n of Object.keys(state[k])) {
+      const N = state[k][n];
+      if (k === 'solsHauts') state[k][n] = cles(N);
+      else if (N && typeof N === 'object') for (const nom of Object.keys(N)) N[nom] = cles(N[nom]);
+    }
   }
   const cases = (l) => (Array.isArray(l) ? l.map((p) => (p && typeof p === 'object' ? { ...p, case: c(p.case) } : p)) : l);
   if (state.potager) state.potager.parcelles = cases(state.potager.parcelles);

@@ -88,7 +88,7 @@ function etage() {
 test('A-1 : à l\'étage, chaque meuble qui s\'y pose tourne ; l\'emprise suit le sens ; reprendre rend le sens', () => {
   const { s, t, W } = etage();
   const meubles = ETAGE_BLOCS.filter((k) => B[k].meuble && B[k].sur !== 'mur');
-  assert(meubles.includes('meuble_lit_adulte') && !meubles.includes('refrigerateur'), 'les lits montent, le réfrigérateur reste en bas');
+  assert(meubles.includes('meuble_lit_adulte') && meubles.includes('refrigerateur'), 'les lits montent, le réfrigérateur aussi');
   for (const sorte of meubles.filter((k) => (B[k].largeur || 1) <= 2 && (B[k].hauteur || 1) <= 2)) {
     addItem(s, B[sorte].objet, 1);
     const p = poserEtage(s, sorte, t);

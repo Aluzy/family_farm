@@ -1,5 +1,8 @@
 // Le moteur du jeu, en un seul point d'entrée : pour les tests, la simulation et la
 // console. Dans le jeu, chaque module importe directement ce dont il a besoin.
+// (fiche I7d, l'île à bâtir : l'index ne ré-exporte plus le récit — recit.js, fil-lune.js, usure.js, secrets.js,
+// ile.js, bienvenue.js — ni son aiguillage ; le moteur l'atteint par js/engine/recit-aiguillage.js, les tests du récit
+// importent ses modules eux-mêmes. La fiche I9h retire ces modules.)
 
 export { RAW_DATA } from '../data.generated.js';
 export * from './catalog.js';
@@ -23,7 +26,6 @@ export * from './monde-recolte.js';
 export * from './monde-hameaux.js';
 export * from './monde-vu.js';
 export * from './habitants.js';
-export * from './bienvenue.js';
 export * from './crops.js';
 export * from './depart.js';
 export * from './cruche.js';
@@ -60,7 +62,6 @@ export * from './testmode.js';
 export * from './state.js';
 export * from './format.js';
 export * from './bot.js';
-export * from './ile.js';
 export * from './meubles.js';
 export * from './compta.js';
 export * from './outils.js';
@@ -76,7 +77,6 @@ export * from './naturaliste.js';
 export * from './meteo.js';
 export * from './voisins.js';
 export * from './fetes.js';
-export * from './secrets.js';
 export * from './demenagement.js';
 export * from './decouverte.js';
 export * from './encyclopedie.js';
@@ -85,14 +85,11 @@ export * from './journal.js';
 export * from './repas.js';
 export * from './caleche.js';
 export * from './equipement.js';
-export * from './recit.js';
 export * from './amitie.js';
 export * from './invitations.js';
 export * from './styles.js';
 export * from './plans.js';
 export * from './projets.js';
-export * from './usure.js';
-export * from './fil-lune.js';
 export * from './village.js';
 export * from './paliers.js';
 export * from './villageois.js';
@@ -106,6 +103,7 @@ export * from './chronique.js';
 export * from './taches.js';
 export * from './tableau.js';
 export * from './bourse.js';
+export * from './artisans.js';
 export * from './port.js';
 export * from './dehors.js';
 export * from './portage.js';

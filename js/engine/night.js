@@ -24,9 +24,8 @@ import { collectLeftovers } from './ramassage.js';
 import { regrowGrass, respawnBushes, respawnRocks, respawnTrees } from './outils.js';
 import { repousseMonde } from './monde-recolte.js';
 import { habitantsNuit } from './habitants.js';
-import { bienvenueNuit } from './bienvenue.js';
 import { majDidacticielIle } from './didacticiel-ile.js';
-import { recitNuit } from './recit.js';
+import { recitPour } from './recit-aiguillage.js';
 import { remplirRuches } from './ruches.js';
 import { affinerTonnelets } from './tonnelets.js';
 import { composter } from './compost.js';
@@ -47,6 +46,7 @@ import './vocation-production.js';   // (fiche I8b : le calcul de la ferme produ
 import { liensFinDeNuit, liensNuit } from './liens.js';
 import { avancerBac } from './bac.js';
 import { achatsNuit } from './bourse.js';
+import { artisansNuit } from './artisans.js';
 import { vocationsNuit } from './vocations.js';
 import './vocation-village.js';   // (la convivialité s'enregistre au socle des vocations)
 import { fetesVillageNuit } from './fetes-village.js';
@@ -323,6 +323,10 @@ export function runNight(state) {
   // (fiche I4, bourse.js : l'achat à l'étal qu'on n'a pas vu se fait)
   const achats = achatsNuit(state);
   if (achats) state.nuit.achatsEtal = achats;
+  // (fiche I5a, artisans.js : l'achat au comptoir qu'on n'a pas vu ; les jours de pratique, l'envie d'un commerce,
+  // l'ancienneté de l'artisan, ce que l'amitié lui a appris)
+  const artisans = artisansNuit(state);
+  if (artisans) state.nuit.artisans = artisans;
   // (I8a, projets-village.js : ceux qui ont travaillé au chantier du village comptent leur journée ; un projet peut finir)
   const chantier = projetsVillageNuit(state);
   if (chantier) state.nuit.chantierVillage = chantier;
@@ -366,10 +370,10 @@ export function runNight(state) {
     state.nuit.plans = plansNuit(state);
     // les projets collectifs des hameaux (projets.js, le lot 5) : la réserve y apporte, un projet complet s'achève
     state.nuit.projets = projetsNuit(state);
-    // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte
-    bienvenueNuit(state);
-    // le récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux
-    recitNuit(state);
+    // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte ; puis le
+    // récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux, les
+    // toits usés. Fiche I7c : par l'aiguillage du récit ; l'île n'en a pas, sa nuit ne fait rien (recit-muet.js)
+    recitPour(state).nuit(state);
   }
   recordNight(state); // Lot 9 : la série de pontes, le jeu libre (nuit encore = state.day)
   state.day += 1;

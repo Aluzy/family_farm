@@ -64,6 +64,7 @@ import { offrirPlan, planConnu } from './plans.js';
 import { niveauPort, portOuvert } from './port.js';
 import { chargeDe, portageDe, volumeDe } from './portage.js';
 import { vendrePaniers } from './bourse.js';
+import { commercesAuBac } from './artisans.js';
 import { chroniqueVente, noterChronique } from './chronique.js';
 import { noterExport } from './production.js';
 import { debloque } from './vocations.js';
@@ -204,6 +205,8 @@ function arriveeDuBac(state, p, jour, tirer) {
   // (fiche I4, bourse.js : le panier de chaque villageois se vend pour lui, et part dans les caisses ; sa commande
   // arrive, qui a de quoi en passe une)
   const vg = vendrePaniers(state, jour, p.vendu);
+  // (fiche I5a, artisans.js : chaque commerce confie au bac ce qui dépasse de sa boutique, pour sa bourse)
+  commercesAuBac(state, jour, p.vendu);
   const ventes = Object.values(vg.ventes).reduce((t, n) => t + n, 0);
   p.avis.push({ quoi: 'bac', jour, livres, rendus, commandes: p.commandes.length, manquees, ...(ventes ? { ventesVillageois: ventes } : {}) });
 }

@@ -338,6 +338,7 @@
       "ACTIVITE": {
         "visite": ["Je rends visite à un ami.", "On cause un peu, devant la porte.", "Je passais dire bonjour."],
         "etal": ["Je fais mes courses à ton étal.", "Je regarde ce que tu vends.", "Ton étal est bien garni !"],
+        "commerce": ["Je fais un tour au comptoir.", "Je viens voir ce que l'artisan a fait aujourd'hui.", "Une petite emplette au commerce."],
         "rdv": ["On se retrouve entre amis.", "On bavarde un peu, ici.", "On refait le monde, sur la place."],
         "promenade": ["On se promène à deux.", "Un petit tour avec un ami.", "On marche un peu ensemble."],
         "eau": ["Je viens puiser de l'eau.", "L'eau du puits est bien fraîche."],
@@ -386,7 +387,7 @@
       "CONFIE": { "PALIER": 2, "CHANCE": 0.35 },
       "TACHE_SANS_HUMEUR": 3,
       "PROPOS_PART": 0.4,
-      "METIERS": { "bois": "bucheron", "pierre": "mineur", "peche": "pecheur", "betes": "berger", "cueillette": "cueilleur", "verger": "cueilleur", "champs": "jardinier", "fauchage": "jardinier", "cuisine": "jardinier", "navette": "jardinier", "*": "jardinier" },
+      "METIERS": { "bois": "bucheron", "pierre": "mineur", "peche": "pecheur", "betes": "berger", "cueillette": "cueilleur", "verger": "cueilleur", "champs": "jardinier", "fauchage": "jardinier", "cuisine": "jardinier", "navette": "jardinier", "forge": "mineur", "*": "jardinier" },
       "DEMANDES": { "CHANCE": 0.35, "MAX": 2, "DEPUIS": 2 },
       "PHRASES": {
         "cadeau": {
@@ -552,6 +553,7 @@
         "palier": { "icone": "🏅", "texte": "Palier {n} franchi : {titre}.", "cle": "palier:{n}" },
         "port": { "icone": "🏗️", "texte": "Le port passe au niveau {niveau}.", "cle": "port:{niveau}" },
         "commerce": { "icone": "🛠️", "texte": "{prenom} ouvre {commerce}.", "cle": "commerce:{id}" },
+        "envie": { "icone": "💭", "texte": "{prenom} rêve d'ouvrir {quoi}.", "cle": "envie:{qui}:{sorte}" },
         "proche": { "icone": "💞", "texte": "{pa} et {pb} deviennent proches.", "cle": "proche:{a}|{b}" },
         "foyer": { "icone": "🏡", "texte": "{pa} et {pb} s'installent ensemble.", "cle": "foyer:{id}" },
         "fete": { "icone": "🎊", "texte": "{Nom} {lieu}.", "cle": "fete:{id}:{jour}" },
@@ -563,6 +565,7 @@
         "palier": ["un palier franchi", "{n} paliers franchis"],
         "port": ["le port agrandi", "le port agrandi {n} fois"],
         "commerce": ["un commerce ouvert", "{n} commerces ouverts"],
+        "envie": ["une envie de commerce", "{n} envies de commerce"],
         "proche": ["deux villageois devenus proches", "{n} paires devenues proches"],
         "foyer": ["un foyer formé", "{n} foyers formés"],
         "fete": ["une fête", "{n} fêtes"],
@@ -844,8 +847,8 @@
       "famille ; gardé dans state.noms.ile). La ferme est une terre vierge : pas de chemin intérieur (monde.js genererMonde) ;",
       "le seul chemin part de la porte de l'abri et va à la sortie de la ferme, où commence le tronçon du port : des blocs de",
       "chemin du joueur (state.sols), tracés le long de l'ancien couloir du chemin (un pas hors de lui coûte HORS_COULOIR",
-      "fois plus), LARGEUR cases de large, trois sur les SORTIE dernières cases. Pas de visite de bienvenue : son plat",
-      "(BIENVENUE.PLATS) attend dans une boîte à nourriture posée dans l'abri. Le didacticiel de l'île : ETAPES, dans",
+      "fois plus), LARGEUR cases de large, trois sur les SORTIE dernières cases. Pas de visite de bienvenue : PLAT (le plat",
+      "qu'elle apportait) attend dans une boîte à nourriture posée dans l'abri (fiche I7c : sans rien lire du récit). Le didacticiel de l'île : ETAPES, dans",
       "l'ordre, une ligne chacune (la bulle, une flèche sur ce qu'il faut toucher) ; une étape faite (ou déjà faite) passe",
       "d'elle-même, chacune se passe (« Passer »), le tout aussi ; rien ne bloque. On porte au port ce qu'on y vend (le",
       "portage, fiche I2) : la récolte se charge sur la ferme avant de partir. PORT : à combien de cases du comptoir on est",
@@ -855,6 +858,7 @@
     "DEPART": {
       "PHRASE": "Une île, un abri, un port. Tout est à bâtir.",
       "PIECES": 450,
+      "PLAT": "gratin_patates",
       "LARGEUR": 2, "SORTIE": 6, "HORS_COULOIR": 4,
       "PORT": 12,
       "ETAPES": [
@@ -874,6 +878,28 @@
         { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, au passage du bac." },
         { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." }
       ]
+    },
+    "//SANS_RECIT": [
+      "Le récit retiré de ce que voit le joueur de l'île (fiche I7d, docs/ile.md « Le récit retiré de l'interface »).",
+      "NOMS : les noms du récit (ses personnages, ses lieux) ; MOTS : ce que l'île ne dit plus (la calèche, son cocher,",
+      "les hameaux). Aucun texte qu'atteint une partie de l'île ne les contient (tests/engine/village-textes.test.mjs) ;",
+      "les prénoms de HABITANTS.PRENOMS qui en sont ne sont pas tirés pour l'île (village.js prenomsDuJeu : les",
+      "villageois, leurs enfants, le joueur « seul », les habitants des hameaux tant qu'ils sont là). NIVEAUX : ce que",
+      "l'écran d'un niveau dit sur l'île à la place du texte du récit : ELEMENTS (un élément remplacé ; null le retire de",
+      "l'écran) et NOTES (la note d'un niveau, par son numéro ; une chaîne vide la retire). La veillée de la ferme (niveau",
+      "10) était celle des voisins des hameaux ; sur l'île, la veillée du village (VOCATIONS.village.FETES) se tient",
+      "d'elle-même, sans niveau : le niveau 10 le dit dans sa note, l'élément n'est plus montré."
+    ],
+    "SANS_RECIT": {
+      "NOMS": ["Maurice", "Philomène", "Adèle", "Odile", "Achille", "Frida", "Basile", "Théo", "Garance", "Lise", "Fernand", "Céron", "Cadolon", "Le Gué", "Bois-Joli", "Les Genêts", "Les Mouettes", "Brumeval"],
+      "MOTS": ["calèche", "cocher", "hameau"],
+      "NIVEAUX": {
+        "ELEMENTS": { "veillee": null },
+        "NOTES": {
+          "9": "",
+          "10": "Le plus haut niveau. Sur l'île, la veillée de pleine lune se tient d'elle-même, sans niveau : deux villageois et une place (le panneau du village, un puits ou une table de jardin) suffisent"
+        }
+      }
     }
   },
   "//TACHES": [
@@ -991,6 +1017,89 @@
         "donne": "un aller-retour au port : PORTEE objets marqués « à vendre », vendus au comptoir",
         "SANS": "Il n'y a pas de port sur l'île.",
         "PHRASES": ["Je descends au port.", "Le panier est lourd aujourd'hui !", "Je vends tout ça au comptoir."]
+      }
+    }
+  },
+  "//ARTISANS": [
+    "Les commerces d'artisans (fiche I5a ; le moteur : js/engine/artisans.js ; la fenêtre : js/ui/commerce.js ; la fiche du",
+    "villageois : js/ui/villageois.js ; le tableau : js/ui/tableau.js). Un commerce est une pièce close (D5 : artisanal, sans",
+    "électricité) où sont posés l'établi de son métier (le bloc clé : etabli de COMMERCES) et un comptoir (COMPTOIR), avec",
+    "son enseigne posée dehors, à ENSEIGNE cases au plus d'une porte de la pièce. Un villageois y est nommé artisan, à la",
+    "place de sa tâche : sa journée de travail se passe à l'établi (la tâche du commerce : nom, icone, geste, emoji, PHRASES).",
+    "Ouvrir un commerce (D15) : trois conditions, puis la décision du joueur, un bouton sur la fiche du villageois. L'affinité :",
+    "l'amitié du villageois avec le joueur atteint le palier AMITIE (2 : « cordial »). L'envie : il la manifeste de lui-même,",
+    "une fois qu'il a fait JOURS jours la tâche de la filière (tache de COMMERCES ; les jours de travail comptés la nuit,",
+    "v.pratique) : sa bulle quand on lui parle (ENVIE), une marque sur sa fiche, une ligne à la chronique ; elle ne",
+    "s'éteint pas. Le local : une pièce close avec l'établi et le comptoir, et l'enseigne dehors. Rien n'est caché : la",
+    "fiche dit ce qui manque. À l'ouverture : son nom (la chronique, js/engine/noms.js), la ligne de la chronique, la fête de",
+    "l'ouverture (js/engine/fetes-village.js).",
+    "Son économie : chaque jour, LOTS lots (un lot : une recette de RECETTES faite une fois) ; un lot de plus tous les",
+    "ANCIENNETE jours de travail, jusqu'à LOTS_MAX (ni l'argent ni une machine ne le font monter). Il achète ses matières",
+    "au coffre de la ferme (l'inventaire du joueur), de sa bourse, au prix de vente de l'île : les pièces vont au joueur.",
+    "Il fait d'abord ce que le joueur lui a commandé (COMMANDES au plus en attente) : une pièce payée d'avance (son prix",
+    "de vente), ou à façon (le joueur apporte la matière et paie FACON % du prix de la pièce, au moins FACON_MIN pièces) ;",
+    "sa bourse vide, il ne travaille plus qu'à façon (et aux commandes payées). Sinon, il garnit son comptoir : la première",
+    "recette connue (dans l'ordre de RECETTES : il fond d'abord) dont il a moins de STOCK, dont il a les matières (son stock d'abord) et de quoi",
+    "les payer ; il garde au coffre GARDE de chaque matière (le joueur en a besoin). Il vend au comptoir : au joueur (la",
+    "fenêtre du commerce, au prix de vente), aux villageois (leur bourse : ce qu'ils aiment, et CLIENTS : ce dont ils ont",
+    "besoin, une lame d'outil tous les ENTRETIEN jours pour qui tient un outil ; un achat par jour, après le travail, au",
+    "comptoir), et au passage du bac, il lui confie ce qui dépasse BAC de chaque pièce qui se vend au port (sa bourse).",
+    "Ce qu'il fait, achète et vend s'écrit dans le journal du commerce (JOURNAL jours) ; le tableau des villageois en fait",
+    "une ligne « commerce ». L'amitié lui apprend de nouvelles pièces : une recette a son palier (palier : celui de",
+    "l'amitié avec le joueur). Ce que la forge fait, l'Atelier du joueur ne le fait plus une fois une forge ouverte (les",
+    "recettes de l'Atelier marquées commerce: forge, data/recipes.json) : sans forge, le joueur reste autonome.",
+    "PHRASES_COMPTOIR : ce que dit un villageois en arrivant au comptoir ({objet}). COMMERCES : chaque sorte, son nom,",
+    "son icône, son métier (métier : pour sa fiche), la tâche de la filière, l'établi et l'enseigne (des blocs de",
+    "data/recipes.json), ce que la tâche du commerce dit et montre, ENVIE (ce qu'il dit de son envie), SANS (ce que la fiche",
+    "dit quand le local n'est plus complet), un (la sorte dans une phrase : « une forge »), LOCAL (l'établi et l'enseigne dans une phrase, ce que la fiche dit qu'il manque), RECETTES ({ entrees, sortie, palier }) et CLIENTS ({ objet: 'outil' } : qui en",
+    "a besoin). La mercerie (I5b), la scierie, la boulangerie et la fromagerie (I5c) n'ajoutent qu'une sorte ici, leurs",
+    "blocs et leurs dessins."
+  ],
+  "ARTISANS": {
+    "AMITIE": 2,
+    "JOURS": 10,
+    "LOTS": 3,
+    "LOTS_MAX": 5,
+    "ANCIENNETE": 20,
+    "STOCK": 4,
+    "GARDE": 2,
+    "BAC": 1,
+    "FACON": 25,
+    "FACON_MIN": 2,
+    "COMMANDES": 3,
+    "JOURNAL": 7,
+    "ENSEIGNE": 2,
+    "ENTRETIEN": 7,
+    "COMPTOIR": "comptoir",
+    "EMOJI": "🏪",
+    "PHRASES_COMPTOIR": [
+      "Pour moi : {objet}, s'il te plaît.",
+      "{objet} ! Voilà les pièces.",
+      "Pour mon outil : {objet}, s'il te plaît."
+    ],
+    "COMMERCES": {
+      "forge": {
+        "nom": "La forge", "un": "une forge", "icone": "⚒️", "metier": "forgeron", "tache": "pierre",
+        "etabli": "enclume_foyer", "enseigne": "enseigne_forge",
+        "LOCAL": { "etabli": "l'enclume et son foyer", "enseigne": "l'enseigne du forgeron" },
+        "geste": "forge", "emoji": "🔨",
+        "donne": "un lot à l'enclume : il fond un lingot, ou forge des clous, des charnières, une lame",
+        "SANS": "Le local de la forge n'est plus complet : l'enclume et le foyer, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "J'aimerais bien ouvrir une forge… le minerai, je le connais.",
+          "Une forge à moi, avec une enclume : j'y pense souvent.",
+          "Tout ce minerai… j'aimerais le fondre moi-même, dans une forge."
+        ],
+        "PHRASES": ["Je bats le fer tant qu'il est chaud !", "Encore un lingot, et je forge des clous.", "Le foyer ronfle bien aujourd'hui."],
+        "RECETTES": {
+          "lingot_fer": { "entrees": { "minerai_fer": 4, "bois": 3 }, "sortie": { "lingot_fer": 1 }, "palier": 2 },
+          "clous": { "entrees": { "lingot_fer": 1 }, "sortie": { "clous": 4 }, "palier": 2 },
+          "charniere": { "entrees": { "lingot_fer": 1 }, "sortie": { "charniere": 2 }, "palier": 3 },
+          "lame": { "entrees": { "lingot_fer": 1, "bois": 1 }, "sortie": { "lame": 1 }, "palier": 2 },
+          "lingot_cuivre": { "entrees": { "minerai_cuivre": 4, "bois": 3 }, "sortie": { "lingot_cuivre": 1 }, "palier": 3 },
+          "lingot_or": { "entrees": { "minerai_or": 4, "bois": 4 }, "sortie": { "lingot_or": 1 }, "palier": 4 }
+        },
+        "CLIENTS": { "lame": "outil" }
       }
     }
   },

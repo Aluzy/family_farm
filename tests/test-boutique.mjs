@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
-import { articlesEnVente, BOUTIQUE, Boutique, enVente, formulaire, modeStripe, recevoirStripe, routeBoutique, signatureValide } from '../worker/src/boutique.mjs';
+import { articlesEnVente, BOUTIQUE, Boutique, dimanchePaques, enVente, formulaire, modeStripe, recevoirStripe, routeBoutique, signatureValide } from '../worker/src/boutique.mjs';
 import { Registre, routeCompte } from '../worker/src/comptes.mjs';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -40,7 +40,7 @@ function faussesApi(id = SESSION) {
 test('boutique : le mode vient de la clé (test, live, clé restreinte) ; sans clé ni secret, fermée', () => {
   eq([modeStripe({ STRIPE_SECRET_KEY: 'sk_test_x' }), modeStripe({ STRIPE_SECRET_KEY: 'rk_live_x' }), modeStripe({ STRIPE_SECRET_KEY: 'pk_test_x' }), modeStripe({})], ['test', 'live', null, null]);
   eq(BOUTIQUE.PACKS, { petit: { gemmes: 200, centimes: 199 }, moyen: { gemmes: 550, centimes: 499 }, grand: { gemmes: 1200, centimes: 999 } }, 'les prix validés');
-  const PRIX = { ensemble_chalet: 220, chalet_lit: 80, chalet_chevet: 40, chalet_tapis: 40, chalet_tableau: 30, sol_meleze: 50, ensemble_cottage: 220, cottage_lit: 80, cottage_chevet: 40, cottage_tapis: 40, cottage_tableau: 30, sol_blanchi: 50, ensemble_mer: 220, mer_lit: 80, mer_chevet: 40, mer_tapis: 40, mer_tableau: 30, sol_flotte: 50, ensemble_fee: 220, fee_lit: 80, fee_chevet: 40, fee_tapis: 40, fee_tableau: 30, sol_pastel: 50, sapin_noel: 120, couronne_noel: 40, bonhomme_neige: 60, citrouille_halloween: 30, tas_citrouilles: 70 };
+  const PRIX = { ensemble_chalet: 220, chalet_lit: 80, chalet_chevet: 40, chalet_tapis: 40, chalet_tableau: 30, sol_meleze: 50, ensemble_cottage: 220, cottage_lit: 80, cottage_chevet: 40, cottage_tapis: 40, cottage_tableau: 30, sol_blanchi: 50, ensemble_mer: 220, mer_lit: 80, mer_chevet: 40, mer_tapis: 40, mer_tableau: 30, sol_flotte: 50, ensemble_fee: 220, fee_lit: 80, fee_chevet: 40, fee_tapis: 40, fee_tableau: 30, sol_pastel: 50, sapin_noel: 120, couronne_noel: 40, bonhomme_neige: 60, citrouille_halloween: 30, tas_citrouilles: 70, panier_oeufs: 40, oeuf_geant: 60 };
   const prixDe = (id) => (PRIX[id] ? PRIX[id] : id.startsWith('papier_peint_') ? 40 : id.startsWith('guirlande_') ? 60 : id.startsWith('cheminee_') || id.startsWith('fontaine_') ? 120 : id.startsWith('ornement_') ? 90 : id.startsWith('enseigne_') ? 50 : 25);
   for (const [id, a] of Object.entries(BOUTIQUE.ARTICLES)) eq(a.prix, prixDe(id), `${id} : ${prixDe(id)} gemmes`);
   eq(Object.keys(BOUTIQUE.ARTICLES).filter((id) => id.startsWith('guirlande_')).length, 4, 'quatre guirlandes');
@@ -75,6 +75,14 @@ test('boutique : les décors de Noël ne sont en vente qu\'en décembre, ceux d\
   maintenant = t(12, 20);
   const r = b.acheter('c-1', 'sapin_noel');
   assert(r.ok && r.solde === 80, 'en décembre : acheté');
+});
+
+test('boutique : Pâques, calculé chaque année ; ses décors en vente des deux semaines avant au lundi de Pâques', () => {
+  const iso = (t) => new Date(t).toISOString().slice(0, 10);
+  eq([2024, 2025, 2026, 2027, 2038].map((an) => iso(dimanchePaques(an))), ['2024-03-31', '2025-04-20', '2026-04-05', '2027-03-28', '2038-04-25']);
+  const a = BOUTIQUE.ARTICLES.panier_oeufs, t = (m, j) => Date.UTC(2026, m - 1, j, 12);
+  eq([enVente(a, t(3, 21)), enVente(a, t(3, 22)), enVente(a, t(4, 5)), enVente(a, t(4, 6)), enVente(a, t(4, 7))], [false, true, true, true, false], '2026 : du 22 mars au 6 avril');
+  eq(BOUTIQUE.ARTICLES.oeuf_geant.fete, 'paques');
 });
 
 test('boutique : la signature de Stripe (v1, HMAC SHA-256 de « t.corps »), l\'horodatage à 5 minutes près', async () => {

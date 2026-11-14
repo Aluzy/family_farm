@@ -1,8 +1,10 @@
 {
   "//AMITIE": [
     "L'amitié avec les habitants des hameaux et les personnages écrits du récit (js/engine/amitie.js).",
-    "Une jauge de 0 à RECIT.RELATION_MAX par personne, lue en paliers (RECIT.PALIERS, RECIT.PALIER_NOMS :",
-    "inconnu, poli, cordial, proche, intime). Pour un personnage écrit, c'est sa relation du récit",
+    "Une jauge de 0 à ECHELLE.MAX par personne, lue en paliers (ECHELLE.PALIERS, ECHELLE.NOMS : inconnu,",
+    "poli, cordial, proche, intime) ; l'échelle est celle du récit (RECIT.RELATION_MAX, PALIERS,",
+    "PALIER_NOMS : build-data vérifie qu'elles sont égales), gardée ici pour les villageois de l'île, qui",
+    "n'ont pas de récit (fiche I7c). Pour un personnage écrit, c'est sa relation du récit",
     "(state.recit.relations) ; pour un autre habitant, state.amitie.pnj[id].pts.",
     "CADEAU : les points d'un cadeau selon le goût de la personne pour l'objet (un par jour et par",
     "personne ; seuls les objets des catégories OFFRABLES s'offrent). PAROLE : la première conversation",
@@ -26,6 +28,7 @@
     "(data/monde.json), jamais de ton absence."
   ],
   "AMITIE": {
+    "ECHELLE": { "MAX": 100, "PALIERS": [0, 10, 25, 45, 70], "NOMS": ["inconnu", "poli", "cordial", "proche", "intime"] },
     "CADEAU": { "adore": 8, "aime": 4, "neutre": 1, "deteste": -4 },
     "PAROLE": 2,
     "VISITE": 1,

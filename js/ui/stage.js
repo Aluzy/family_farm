@@ -1,13 +1,15 @@
 import { DATA } from '../engine/catalog.js';
 import { proposerScene, sceneCarteDepuisCarte, sceneCarteModele } from './scene.js';
 import { positionGardee, positionNoter } from './position.js';
-import { aFait, noterVisite, RECIT, toucherLieu } from '../engine/recit.js';
-import { fermeLuit, geodeLuit, visiteObservatoire } from '../engine/fil-lune.js';
+// (fiche I7c : ce qui ferait paraître du récit passe par l'aiguillage ; l'île à bâtir n'en lit rien. La fiche I7d
+// retire le reste de la page)
+import {
+  fermeLuit, geodeLuit, noterVisite, ouvrirSecret, recitPage, recitPour, toucherLieu, visiteObservatoire,
+} from '../engine/recit-aiguillage.js';   // (fiches I7c, I7d : la page ne lit le récit que par l'aiguillage)
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { arroseesParLaPluie, brume as brumeDuMoment, pleut } from '../engine/meteo.js';
 import { fetesDuJour } from '../engine/fetes.js';
-import { ouvrirSecret } from '../engine/secrets.js';
 import { entreeEncyclopedie } from '../engine/encyclopedie.js';
 import { familyName, mainCharacter, setupPending } from '../engine/depart.js';
 import { nomAffiche } from '../engine/noms.js';
@@ -50,15 +52,13 @@ import { notify } from './toasts.js';
 import { encyclopedieBiome, encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
 import { HAMEAUX, voirHameau } from '../engine/monde-hameaux.js';
 import { garantiDuHameau, HABITANTS, habitantsPourLaCarte } from '../engine/habitants.js';
-import { tousLesToitsUses } from '../engine/usure.js';
-import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
 import { villageActif } from '../engine/village.js';
 import { dessinProjet } from '../engine/projets-village.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
 import {
-  activeTab, axeMode, buildMode, coucher, ecranFerme, enLigne, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
+  activeTab, axeMode, buildMode, coucher, ecranFerme, enLigne, engraisMode, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
 } from './store.js';
 import { telView } from './consent.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
@@ -80,6 +80,7 @@ import { botteFromStage, ramasserFromStage, verserChaineFromStage, verserFromSta
 import { ouvrirDiagnosticChaine } from './chaines-aide.js';
 import { botteleuses } from '../engine/botteleuse.js';
 import { etalGarni } from '../engine/bourse.js';
+import { commercesOuverts, defCommerce, lettresCommerce, localDe, nomCommerce } from '../engine/artisans.js';
 import { chaines } from '../engine/chaines.js';
 import { distributeurDe, distributeurs, grainDans } from '../engine/distributeur.js';
 import { chevalMonte, chevalOu, friandiseGalop, vitesseCheval } from '../engine/cheval.js';
@@ -90,7 +91,7 @@ import { caseDepart, ramassables } from '../engine/atelier.js';
 import { papiersVisibles } from '../engine/papiers.js';
 import { blocAt, blocsPoses, blocsDessusPoses, conseilsPieces, couchages, enLot, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses, couleursVariante, varianteBloc } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable, vueMeuble } from './chantier.js';
-import { dessusEtage, escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
+import { dessusEtage, empriseNiveau, escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, fenetresHautes, niveauxEtage, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.js';
@@ -427,7 +428,7 @@ export function stageModel() {
   batiments.zone.visible = false;
   // le Moulin ne tourne que quand il moud (du blé en cours)
   batiments.moulin.enMarche = !!(state.stations && state.stations.moulin && state.stations.moulin.tache);
-  const hauteurs = hauteursPosees(state), fenetres = fenetresPosees(state), rehausses = rehaussesPosees(state);
+  const hauteurs = hauteursPosees(state), fenetres = fenetresPosees(state), rehausses = rehaussesPosees(state), hautes = niveauxEtage().map((n) => fenetresHautes(state, n));
   const tour = etatMoulin(state);
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
@@ -524,7 +525,7 @@ export function stageModel() {
     // dort (la nuit défile en accéléré), même quand on regarde la carte de la ferme
     coucher: (coucher || asleep(state)) && nightActive(state),
     // le récit, lot 9 : les toits abîmés des hameaux ({ hameau: [maisons] } : js/carte/ferme/hameaux.js les troue)
-    toitsUses: tousLesToitsUses(state),
+    toitsUses: recitPage(state) ? recitPage(state).tousLesToitsUses(state) : {},   // (l'île : aucun toit usé, fiche I7d)
     // le récit, lot 10 : la ferme luit, la pierre de lune posée, les nuits de pleine lune (son centre, son rayon, px)
     // (l'amas d'améthyste de la pierre de lune, les nuits de pleine lune : il luit plus fort, js/carte/ferme/lumineux.js)
     geodeLuit: geodeLuit(state),
@@ -573,7 +574,7 @@ export function stageModel() {
     presents: presentsPourLaCarte(),
     // la visite de bienvenue (js/engine/bienvenue.js, fiche 18) : le visiteur en route, ou son plat qui
     // attend devant la porte (js/carte/ferme/visite.js) ; null le reste du temps
-    visite: bienvenueModele(state),
+    visite: recitPage(state) ? recitPage(state).bienvenueModele(state) : null,   // (l'île : pas de visite de bienvenue)
     // l'île à bâtir (fiche I3a, js/engine/villageois.js) : les villageois (celui qui arrive du port, ceux qui dorment
     // dans leur lit : js/carte/ferme/villageois.js) ; null le chantier éteint ou sans villageois
     villageois: villageoisModele(),
@@ -615,7 +616,7 @@ export function stageModel() {
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
     // (un mur rehaussé, version 1.25 : sa hauteur en blocs)
     // (une fenêtre percée dans un mur : la matière de ce mur)
-    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(sorte === 'compost' ? { niveau: etatCompost(state, Number(c)).niveau } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}) })),
+    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(sorte === 'compost' ? { niveau: etatCompost(state, Number(c)).niveau } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}), ...(hauteurs[c] > 1 && hautes.some((H) => H[c]) ? { fenetresHautes: hautes.map((H) => H[c] || null) } : {}) })),
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)
@@ -629,9 +630,10 @@ export function stageModel() {
     grimpants: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].grimpant).map(([c, sorte]) => ({ case: Number(c), coloris: DATA.ATELIER.BLOCS[sorte].grimpant })),
     // (les guirlandes lumineuses de la boutique : en haut de la face extérieure d'un mur)
     guirlandes: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].guirlande).map(([c, sorte]) => ({ case: Number(c), coloris: DATA.ATELIER.BLOCS[sorte].guirlande })),
-    // les papiers peints posés dans les pièces (js/engine/papiers.js) : [{ case du mur, motif, frame }], en bas et à l'étage
+    // les papiers peints posés dans les pièces (js/engine/papiers.js) : [{ case du mur, motif, frame }], en bas, à l'étage, au niveau 2
     papiers: papiersVisibles(state, 0),
     papiersEtage: papiersVisibles(state, 1),
+    papiersNiveau2: papiersVisibles(state, 2),
     // les sols posés (le plancher, les dalles… : [{ case, sorte }] ; le chemin change les tuiles du sol, ci-dessous)
     sols: Object.entries(solsPoses(state)).filter(([, k]) => k !== 'chemin').map(([c, sorte]) => ({ case: Number(c), sorte })),
     // (les sols posés au niveau 1 : sur l'étage, ou dans une pièce dont les murs y montent)
@@ -665,7 +667,7 @@ export function stageModel() {
     // (fiche I2, le portage : la brouette devant le personnage à pied, la charrette attelée au cheval en selle, quand
     // quelque chose est chargé ; js/carte/portage.js)
     portage: villageActif(state) && volumeCharge(state) > 0 ? { vehicule: vehiculePortage(state), charge: Object.keys(chargeDe(state)).length } : null,
-    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state) * cheminIci, galop: !!friandiseGalop(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? semables() : null, engraissables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? casesEngraissables(state) : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state) * cheminIci, galop: !!friandiseGalop(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? semables() : null, engraissables: engraisMode && !buildMode ? casesEngraissables(state) : null,   // (l'engrais pris en main, js/ui/compost.js) serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -678,6 +680,8 @@ export function stageModel() {
 // jardin, un bloc de la planche : son sens seulement (js/carte/ferme/chantier.js, BLOCS_CARTE.sens).
 function meubleDe(sorte, tile, etage = false) {
   const b = DATA.ATELIER.BLOCS[sorte];
+  // (`etage` : true ou 1, l'étage ; 2, le niveau 2 ; false, en bas)
+  const niv = etage === true ? 1 : etage || 0;
   if (b && b.dessin) {
     // (un bac à fleurs : ce qui y pousse, sa peinture ; js/engine/bacs.js)
     const teinte = b.peinture && Number.isInteger(tile) && !etage ? varianteBloc(state, tile) : null;
@@ -685,16 +689,33 @@ function meubleDe(sorte, tile, etage = false) {
     // (une enseigne de ferme : le nom de la famille, dans la couleur que sa peinture donne au texte ; fiche I7g, le
     // panneau du village : le nom du village, sinon celui de l'île, js/engine/noms.js nomAffiche)
     const enseigne = b.enseigne ? { matiere: b.enseigne, nom: familyName(state), texte: texteEnseigne(b, teinte) }
-      : b.panneau === 'village' ? { matiere: 'village', nom: nomAffiche(state), texte: texteEnseigne(b, teinte) } : null;
+      : b.panneau === 'village' ? { matiere: 'village', nom: nomAffiche(state), texte: texteEnseigne(b, teinte) }
+      // (fiche I5a : l'enseigne d'un commerce, son nom ; I7g, noms.js ; sans commerce ouvert, le nom de sa sorte)
+        : b.enseigneCommerce ? { matiere: 'commerce', nom: nomEnseigne(b, tile), texte: lettresEnseigne(tile) || texteEnseigne(b, teinte) } : null;
     return { meuble: { dessin: dessinBloc(b, tile, sorte), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}), ...(enseigne ? { enseigne } : {}) } };
   }
-  const sens = b && b.tourne && Number.isInteger(tile) ? (etage ? sensEtage(state, tile) : sensBloc(state, tile)) : 0;
+  const sens = b && b.tourne && Number.isInteger(tile) ? (niv ? sensEtage(state, tile, niv) : sensBloc(state, tile)) : 0;
   if (!b || !b.meuble) return sens ? { sens } : {};
   const mes = mesuresMeuble(sorte, sens), v = vueMeuble(sorte, sens);
   // (A-3 : sa variante de couleur, et les couleurs que la carte remplace dans ses images)
-  const teinte = Number.isInteger(tile) ? (etage ? varianteEtage(state, tile) : varianteBloc(state, tile)) : null;
+  const teinte = Number.isInteger(tile) ? (niv ? varianteEtage(state, tile, niv) : varianteBloc(state, tile)) : null;
   const couleurs = teinte ? couleursVariante(sorte, teinte) : null;
   return { meuble: { dessin: b.meuble, largeur: mes.largeur, hauteur: mes.hauteur, bloque: !!b.bloque, plat: !!b.plat, lit: !!b.lit, ...(sens ? { sens, vue: v.vue, miroir: v.miroir } : {}), ...(couleurs ? { variante: teinte, couleurs } : {}) } };
+}
+
+// Le nom écrit sur l'enseigne d'un commerce (fiche I5a) : celui du commerce dont c'est l'enseigne, sinon le nom de sa
+// sorte (« La forge »).
+function nomEnseigne(b, tile) {
+  if (!villageActif(state)) return '';
+  const c = Number.isInteger(tile) ? commercesOuverts(state).find((x) => { const l = localDe(state, x); return l && l.enseigne === tile; }) : null;
+  return c ? nomCommerce(state, c) : ((defCommerce(b.enseigneCommerce) || {}).nom || '');
+}
+
+// Les lettres de l'enseigne d'un commerce (I8a : une couleur débloquée, choisie dans sa fenêtre), ou null.
+function lettresEnseigne(tile) {
+  if (!villageActif(state) || !Number.isInteger(tile)) return null;
+  const c = commercesOuverts(state).find((x) => { const l = localDe(state, x); return l && l.enseigne === tile; });
+  return c ? lettresCommerce(state, c) : null;
 }
 
 // La couleur du nom sur une enseigne de ferme : celle que donne sa peinture (data/meubles.json PEINTURES, `texte`).
@@ -719,6 +740,8 @@ function dessinBloc(b, tile, sorte) {
   if (b.pont) return dessinPont(tile);
   // (I4 : l'étal, garni tant qu'il a quelque chose en vente : assets/meuble_etal_<vide|garni>.png)
   if (b.etal) return etalGarni(state) ? 'etal_garni' : 'etal_vide';
+  // (fiche I5a : l'établi d'un commerce ouvert, sa forge allumée ; ses braises rougeoient, chantier.js stepFires)
+  if (b.commerce && Number.isInteger(tile) && villageActif(state) && commercesOuverts(state).some((c) => c.etabli === tile)) return `${b.dessin}_braise_0`;
   // (fiche I8a : un bâtiment d'un projet du village, en chantier tant qu'il n'est pas fini ; js/engine/projets-village.js)
   if (b.projetVillage) return dessinProjet(state, sorte);
   if (b.bac) return (Number.isInteger(tile) && dessinBac(state, tile)) || `bac_${b.bac}_vide`;
@@ -780,6 +803,16 @@ function sprinklerSpots() {
   return list;
 }
 
+// Les blocs et les tableaux du niveau `n` (≥ 2) pour la carte, ou null s'il n'y a rien.
+function niveauModel(n) {
+  const B = etageBlocs(state, n), D = dessusEtage(state, n), F = fenetresEtage(state, n);
+  if (!Object.keys(B).length && !Object.keys(D).length) return null;
+  return {
+    blocs: Object.entries(B).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c), n), ...(F[c] ? { mur: F[c] } : {}) })),
+    tableaux: Object.entries(D).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
+  };
+}
+
 // L'étage pour la carte : { etage: { emprise, blocs, escaliers, hauts } ou null, niveau, vueNiveau }.
 // hauts : les cases de l'emprise où un mur du bas monte à l'étage (il en est le mur).
 // vueNiveau : en mode Construire, le niveau où l'on construit (la vue le montre), sinon null.
@@ -797,9 +830,12 @@ function etageModel() {
   return {
     etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c), true), ...(fenetresEtage(state)[c] ? { mur: fenetresEtage(state)[c] } : {}) })), escaliers: escaliers(state), hauts: [...emprise].filter((t) => hauteurPile(state, t) >= 2).sort((a, b) => a - b), etage2,
       // (les tableaux accrochés aux murs de l'étage)
-      tableaux: Object.entries(dessusEtage(state)).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })) },
+      tableaux: Object.entries(dessusEtage(state)).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
+      // (le niveau 2 : ses blocs et ses tableaux, posés avec ou sans escalier ; js/carte/ferme/etage.js)
+      n2: niveauModel(2) },
     niveau: etageVue,
-    vueNiveau: buildMode && !stageInterior ? niveauBati() : null,
+    // (au niveau 2, la carte le montre par son rang : chantier.js syncRang)
+    vueNiveau: buildMode && !stageInterior ? (niveauBati() === 1 ? 1 : 0) : null,
   };
 }
 
@@ -843,7 +879,7 @@ function autoDone() {
     }
   }
   const I = state.irrigation;
-  if (I && I.jour === state.day) for (const c of I.faites || I.cases || []) out.push(`arroser:${c}`);
+  if (I && I.jour === state.day) for (const c of (I.faites || I.cases || []).concat(I.serre || [])) out.push(`arroser:${c}`);   // (le potager, et les bacs de la Serre)
   // (le compagnon arrose de lui-même, fiche 19 : il fait son geste, pas le personnage)
   for (const c of arroseesCompagnon(state)) out.push(`arroser:${c}`);
   // (la pluie arrose, G-1 : pas le personnage)
@@ -1099,14 +1135,14 @@ function stageSecret(l) {
     if (r.tresor && r.tresor.pieces) L.push(`+${r.tresor.pieces} pièces.`);
     else if (r.tresor) L.push(`+${r.tresor.n} ${DATA.OBJETS[r.tresor.item].icone} ${DATA.OBJETS[r.tresor.item].nom}.`);
     notify(L.join(' '), { kind: 'info', son: r.deja ? undefined : 'ramasse' });
-    if (r.page) { const e = entreeEncyclopedie(r.page); notify(`📓 Une page du carnet du voyageur : « ${e ? e.terme : r.page} » (dans l'Encyclopédie, « Les secrets du monde »).`, { kind: 'info' }); }
+    if (r.page) { const e = entreeEncyclopedie(r.page, state); notify(`📓 Une page du carnet du voyageur : « ${e ? e.terme : r.page} » (dans l'Encyclopédie, « Les secrets du monde »).`, { kind: 'info' }); }
     if (r.vue) notify(`🔭 Le pays se découvre tout autour : la carte s'agrandit.`, { kind: 'info' });
   }, 0);
 }
 
 // Une page de plus au carnet (le fil de la lune : rien d'autre n'est dit).
 function annoncerPage(id) {
-  const page = id && RECIT.FRAGMENTS[id];
+  const R = recitPage(state), page = id && R && R.RECIT.FRAGMENTS[id];
   if (page) notify(`📓 Une page de plus dans ton carnet : « ${page.titre} ».`, { kind: 'info' });
 }
 
@@ -1114,6 +1150,7 @@ function annoncerPage(id) {
 // nuit, la longue-vue, et une page de son carnet du ciel).
 function stageCabane() {
   const r = visiteObservatoire(state);
+  if (!r) return;   // (fiche I7c : l'île n'a pas d'observatoire qui parle, la cabane est muette)
   persistState();
   setTimeout(() => {
     notify(`🔭 ${r.texte}`, { kind: 'info' });
@@ -1126,7 +1163,7 @@ function stageMaison(m) {
   if (m && m.batisse === 'port') return;
   // (une bâtisse du récit, l'observatoire de Maurice (la « cabane »), l'atelier de Frida : y entrer, c'est la découvrir)
   if (m && m.batisse === 'cabane') { stageCabane(); return; }
-  if (m && m.batisse === 'atelier' && aFait(state, 'lieu.atelier')) {
+  if (m && m.batisse === 'atelier' && recitPour(state).aFait(state, 'lieu.atelier')) {
     setTimeout(() => { if (!proposerScene({ lieu: 'atelier' })) stageLieuRecit({ sorte: 'atelier' }); }, 0);
     return;
   }
@@ -1406,6 +1443,16 @@ export function showHoeHint() {
   setTimeout(() => { if (window.FarmStage && FarmStage.showTiles) FarmStage.showTiles(tiles); }, 50);
 }
 
+// L'engrais en main : sa pastille (combien il en reste) ; la toucher le range. Une bulle dit quoi faire.
+let engraisPris = 0;   // (quand l'engrais a été pris en main : la bulle, les premières secondes)
+function engraisChipHtml() {
+  if (!engraisMode) engraisPris = 0;
+  if (!engraisMode || stageInterior) return '';
+  if (!engraisPris) engraisPris = Date.now();
+  const C = DATA.COMPOST, n = countItem(state, C.ENGRAIS), O = DATA.OBJETS[C.ENGRAIS];
+  return `<button type="button" class="stage-chip hoe" data-action="engrais-toggle" aria-pressed="true" aria-label="Engrais en main : ${n}. Le ranger" title="Glisse sur les cultures arrosées (les cases violettes) pour les engraisser"><span class="stage-chip-pill"><span aria-hidden="true">${O.icone}</span><span class="stage-chip-text">Engrais</span><span class="stage-chip-val num">${n}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>${Date.now() - engraisPris < 5000 ? '<span class="hoe-hint" role="status">Glisse sur les cultures arrosées (violettes)</span>' : ''}`;
+}
+
 function hoeChipHtml() {
   if (!hoeMode) hoeHintUntil = 0;                 // la houe rangée, la bulle ne revient pas
   if (!hoeMode || !state.potager.houe || stageInterior) return '';
@@ -1421,7 +1468,7 @@ function renderStageHud(el) {
   }
   // le mode Construire : son menu prend le haut de l'écran, le HUD du haut s'efface (jeu.css)
   document.body.classList.toggle('construction', !!buildMode && !stageInterior);
-  morph(hud, hoeChipHtml() + axeChipHtml() + pickChipHtml() + scytheChipHtml() + rodChipHtml() + buildChipHtml());
+  morph(hud, hoeChipHtml() + engraisChipHtml() + axeChipHtml() + pickChipHtml() + scytheChipHtml() + rodChipHtml() + buildChipHtml());
   if (!stageView) stageView = FarmStage.view();
   renderStageNav(el);
 }

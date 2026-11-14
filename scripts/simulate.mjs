@@ -230,7 +230,7 @@ if (!parties.applique) {
   verifie(
     `Chapitre 7 atteint avant la nuit ${N}`,
     !!ch7 && ch7.nuit < N,
-    ch7 ? `Chapitre 7 en cours dès la nuit ${ch7.nuit}.` : `Chapitre ${rows[rows.length - 1].chapitre} à la dernière nuit (${rows[rows.length - 1].nuit})${village ? ' (le joueur simulé loge ses villageois, leur confie des tâches, honore les commandes du bac et agrandit le port, fiches I3c et I1c ; le palier 6 attend un commerce ouvert, fiche I5a, et l\'amitié des villageois, fiche I6a)' : ''}.`,
+    ch7 ? `Chapitre 7 en cours dès la nuit ${ch7.nuit}.` : `Chapitre ${rows[rows.length - 1].chapitre} à la dernière nuit (${rows[rows.length - 1].nuit})${village ? ' (le joueur simulé loge ses villageois, leur confie des tâches, honore les commandes du bac et agrandit le port, fiches I3c et I1c ; le palier 6 attend un commerce ouvert (la forge, fiche I5a), l\'amitié d\'un villageois et le port au niveau 3 ; le palier 7, dix villageois et deux commerces)' : ''}.`,
     { constat: village },
   );
 
