@@ -112,3 +112,35 @@ téléphone, avec un village complet toujours à l'écran, et corriger ce qui ne
 ## Vérifications et livraison
 
 Celles du README du chantier. Joindre le tableau des mesures et les parcours filmés.
+
+## Fait (I9g)
+
+Le détail : `docs/ile.md` (« Les performances ») ; les tableaux avant/après : `docs/perf.md` (« L'île à bâtir : un village
+de quinze »).
+
+- **Le protocole, dans le dépôt** : `scripts/cout-performances.mjs` (le moteur et le serveur ; les trois parties de
+  référence : le village de 5, de 9 et de 15 ; `--racine` pour mesurer une autre copie du dépôt, la base, sur les mêmes
+  parties ; l'empreinte de chaque état final) et `scripts/mesure-scene-ile.mjs` (la scène d'une île de 15 dans Chromium,
+  le processeur ralenti ×1, ×4, ×6 : le bureau, le téléphone moyen, le modeste). Les parcours filmés ne sont pas faits
+  (pas d'appareil ici).
+- **Minuit** d'un village de 15 : 64 ms (au plus 68 ; 131 relevé par I9d) → 6 ms ; en solo 65 → 7 ms. Le pas de nuit 1,9 →
+  0,35 ms ; le pas de jour 5,8 → 3,2 ms ; une alarme de 120 pas 775 → 388 ms ; le `tick` solo 7,7 → 1,3 ms (p99 58 →
+  8) ; le contrôle d'un `bloc.reprendre` sur une île 0,95 → 0,11 ms (pas besoin d'un cache par pas : les maisons
+  relevées d'un coup suffisent).
+- **Comment** : le lot d'I9d couvre aussi le `tick`, le pas de la ferme et la nuit (`advanceNight`, `runNight`) ; un lot
+  dans un lot de la même partie garde le premier ; les pièces closes reconnues sans refaire le texte JSON des blocs ;
+  `maisonsMarquees` relève les pièces une fois pour toutes les boîtes ; le quai, le nombre de blocs et de sols, les cases
+  devant un comptoir gardés le temps d'un pas.
+- **Rien du jeu ne change** : les mêmes états octet pour octet (les empreintes de `cout-performances.mjs` ; le CSV et le
+  graphique de `simulate.mjs`, `--village`, la sortie de `--vocations`, comparés par `cmp` à la base 9a646ed) ;
+  `tests/engine/village-lots.test.mjs` le verrouille (avec et sans les calculs gardés, `reglerLots({ sans })` : la même
+  partie, en ligne, en solo, au joueur automatique ; `reglerLots({ verifier })` : aucun calcul gardé ne change pendant son
+  lot). Pas de nouveau format de sauvegarde.
+- **Le test de garde** (`tests/engine/perf-ferme.test.mjs`) : minuit d'un village de 15 sous 30 ms (le moteur d'avant :
+  37 ms au mieux sur cette île) ; sa partie sous le plafond d'un monde.
+- **La sauvegarde** n'a pas eu à être compactée : une île de 15 pèse 143 Ko en ligne (le plafond : 256 Ko).
+- **Ce qui reste** : la scène, ralentie six fois dans le rendu logiciel de Chromium, ne tient pas 30 images par seconde
+  (13, avant comme après) ; la borne est à mesurer sur le téléphone de référence (« Mesurer 30 s »), et les pistes de la
+  scène (les villageois loin de la vue une image sur deux, les bulles en un layer) à suivre si elle ne tient pas. La
+  comparaison avec la branche d'archive (le jeu d'avant) n'est pas refaite : le jeu solo, réglage éteint, est le même octet
+  pour octet et son tick plus rapide.

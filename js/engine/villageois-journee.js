@@ -3,7 +3,7 @@ import { mulberry32 } from './base.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { villageActif } from './village.js';
-import { blocsPoses, casesCouvertes, estCloture, etatEnclos, maisonsMarquees, piecesCloses, solsPoses } from './blocs.js';
+import { blocsPoses, casesCouvertes, estCloture, etatEnclos, maisonsMarquees, memoEnLot, piecesCloses, solsPoses } from './blocs.js';
 import { lieuPort } from './port.js';
 import { meteoDuJour } from './meteo.js';
 import { noterObjectif } from './objectifs-compte.js';
@@ -108,7 +108,9 @@ let lieuxCle = null, lieuxMemo = null;
 // les sols ne changent pas (piecesCloses rend la même liste tant que les blocs sont les mêmes).
 export function lieuxDuVillage(state) {
   const pieces = piecesCloses(state), sols = solsPoses(state), parcelles = state.potager && state.potager.parcelles;
-  const cle = [pieces, Object.keys(sols).length, parcelles ? parcelles.length : 0, graineDe(state), state.abriDepart ? 1 : 0];
+  // (I9g : le nombre de sols compté une fois par pas en lot, blocs.js memoEnLot : les chemins de l'île en font des
+  // milliers, et la journée du village relit les lieux des dizaines de fois par pas)
+  const cle = [pieces, memoEnLot(state, 'nombreDeSols', () => Object.keys(sols).length), parcelles ? parcelles.length : 0, graineDe(state), state.abriDepart ? 1 : 0];
   if (lieuxMemo && lieuxCle && cle.every((x, k) => x === lieuxCle[k])) return lieuxMemo;
   lieuxCle = cle;
   lieuxMemo = calculerLieux(state, pieces, sols);

@@ -516,3 +516,56 @@ deux cas. Décision : `docs/architecture-phaser.md` (« Les objets GPU de Phaser
 Sur le téléphone de référence (Android 10, Chrome 156, qualité « économie », fiche 35), « Mesurer 30 s » en marchant
 dans le grand monde : le sol peint 55,4 images par seconde (0,4 % de plus de 34 ms, la plus longue 898 ms) ; le sol
 GPU 32,4 (4,6 %, 3 226 ms) ; le sol et le décor GPU 30,9 (4,2 %, 3 874 ms). Le sol GPU est écarté.
+
+## L'île à bâtir : un village de quinze (fiche I9g, 2026-11-15)
+
+Le protocole, dans le dépôt : `node scripts/cout-performances.mjs [--racine <une autre copie du dépôt>] [--parties
+<dossier>]` (le moteur et le serveur sur Node : les trois parties de référence, l'empreinte de chaque état final) et
+`node scripts/mesure-scene-ile.mjs [--racine …]` (la scène dans Chromium, le processeur ralenti ×1, ×4, ×6). Les parties
+de référence : l'île du joueur automatique (graine 1, « applique ») à 5 villageois (jour ≈ 41), à 9 (jour 161 : il n'en
+fait pas venir plus, faute de maisons), et 15 (celle de 9 plus six maisons bâties, une tâche et son outil à chacun). Avant :
+la base 9a646ed (I9f) ; après : I9g, sur les mêmes parties, la même machine.
+
+**Le moteur** (ms ; le pas du monde : 720 pas, cinq journées ; le solo : `tick` d'une seconde, trois journées) :
+
+| Villageois | Pas de jour (p99) | Pas de nuit | Minuit (max) | Alarme de 120 pas | Tick solo (p99) | Minuit solo | Contrôle d'un `bloc.reprendre` |
+|---|---|---|---|---|---|---|---|
+| 5, avant | 1,61 (3,2) | 0,48 | 9,6 (10,2) | 208 | 1,47 (6,1) | 14 | 0,30 |
+| 5, I9g | 1,67 (5,0) | **0,20** | **6,6** | 181 | **0,58** (1,8) | **4,7** | **0,09** |
+| 9, avant | 3,35 (6,2) | 0,95 | 23,5 (24,9) | 376 | 3,63 (13,5) | 34,6 | 0,42 |
+| 9, I9g | **2,07** (4,7) | **0,22** | **3,8** (4,7) | **199** | **0,83** (2,7) | **4,0** | **0,09** |
+| 15, avant | 5,82 (28,6) | 1,85 | 64,1 (68,5) | 775 | 7,66 (58,1) | 65,2 | 0,95 |
+| 15, I9g | **3,24** (19,3) | **0,35** | **5,8** (8,3) | **388** | **1,31** (8,2) | **7,1** | **0,11** |
+
+Les mêmes états, octet pour octet : l'empreinte (sha1 du JSON) de chaque partie après les 720 pas, après l'alarme et
+après les trois journées en solo est la même avant et après ; le CSV et le graphique de `node scripts/simulate.mjs`,
+avec et sans `--village`, et la sortie de `--vocations` sont identiques à ceux de la base (`cmp`).
+
+Ce qui a changé (`js/engine/blocs.js`, docs/ile.md « Les performances ») : le lot d'I9d (ce qui parcourt tous les blocs
+posés, relevé une fois par pas) couvre aussi le `tick` de la page, le pas de la ferme (le rattrapage hors ligne) et la
+nuit (`advanceNight`, `runNight`) ; les pièces closes se reconnaissent sans refaire le texte de tous les blocs ; les
+maisons des villageois sont relevées d'un coup, et non une fois par boîte ; le quai, le nombre de blocs et de sols, les
+cases devant un comptoir sont gardés le temps d'un pas.
+
+**Le serveur et la copie** (15 villageois) : la copie remise à jour 6 à 8 ms au serveur (`remplacer`), 3 à 4 ms chez
+le joueur pour refaire la confirmée et la locale (sans la scène) ; la copie du monde 143 Ko après cinq journées (98 Ko
+à 5) ; un monde d'avant mis à jour à son réveil 0,47 à 0,50 s (le lieu du port tiré du plan de la graine en fait
+l'essentiel : une fois par monde, laissé tel quel).
+
+**La scène** (Chromium sans processeur graphique : le rendu logiciel, qui pèse plus qu'un vrai téléphone ; l'île de 15
+ouverte en solo vers 10 h, le village au travail à l'écran, 412 × 860 ; 8 s d'images après le chargement) :
+
+| Appareil émulé | Chargement | Image médiane / p99 | Images par seconde | Tas JS | La copie remise à jour (setState, refresh, l'image suivante) |
+|---|---|---|---|---|---|
+| bureau, avant | 3,0 s | 33 / 67 ms | 35 | 78 Mo | 61 ms |
+| bureau, I9g | 3,0 s | 17 / 50 ms | 46 | 117 Mo | 27 ms |
+| ×4, avant | 7,4 s | 50 / 100 ms | 17 | 104 Mo | 94 ms |
+| ×4, I9g | 7,4 s | 50 / 100 ms | 18 | 104 Mo | 90 ms |
+| ×6, avant | 10,1 s | 67 / 117 ms | 13 | 82 Mo | 127 ms |
+| ×6, I9g | 10,3 s | 67 / 150 ms | 13 | 93 Mo | 183 ms |
+
+11,9 Mo téléchargés. La scène elle-même n'a pas été touchée : ralentie six fois, dans le rendu logiciel, elle ne tient
+pas 30 images par seconde ni avant ni après ; le moteur n'y compte plus guère (le tick d'une seconde : 1,3 ms × 6). La
+borne de la fiche (30 images par seconde sur le téléphone modeste) reste à mesurer sur le téléphone de référence (« Mesurer
+30 s », le mode test), avec une vraie carte graphique ; les pistes de la fiche (les villageois loin de la vue animés une
+image sur deux, les bulles en un layer) sont pour la scène, si la mesure sur l'appareil le demande.

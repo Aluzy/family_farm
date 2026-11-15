@@ -13,7 +13,7 @@ import { recolterRuche, ruchesARecolter, ruchesPosees } from './ruches.js';
 import { pickUp } from './ramassage.js';
 import { botteleuses, sortirBotte, verserFibres } from './botteleuse.js';
 import { recipeStatus, startRecipe } from './kitchen.js';
-import { casesCouvertes, piecesCloses } from './blocs.js';
+import { casesCouvertes, memoEnLot, piecesCloses } from './blocs.js';
 import { comptoirDuPort, lieuPort, portOuvert } from './port.js';
 import { sellItem } from './market.js';
 import { noterVenteBac } from './bac.js';
@@ -219,12 +219,13 @@ function ciblesDe(state, id, L, o) {
 // les plus proches de sa maison d'abord ; [] : pas de poste (la tâche attend). Rien n'est gardé dans la partie.
 // Ce qui change les postes et les cibles, en peu de mots (un texte) : le jour, les arbres abattus, les rochers cassés,
 // l'herbe fauchée, la cueillette du jour, le verger, les blocs, les stations, les bêtes, le port, les parcelles. Rien
-// n'est parcouru : la journée du village et les postes le relisent souvent.
+// n'est parcouru : la journée du village et les postes le relisent souvent. (I9g : le nombre de blocs, compté une fois
+// par pas en lot, blocs.js memoEnLot : la signature est refaite des dizaines de fois par pas)
 export function signatureTaches(state) {
   const O = state.outils || {}, n = (x) => (x && typeof x === 'object' ? Object.keys(x).length : 0);
   const S = state.stations || {}, P = state.poulailler, E = state.paturage;
   return [jourDe(state), n(O.arbres), n(O.rochers), n(O.herbes), state.cueillette && state.cueillette.jour === state.day ? state.cueillette.pris.length : 0,
-    ((state.verger && state.verger.arbres) || []).length, n(state.blocs), !!(S.cuisine && S.cuisine.construit), !!(S.four && S.four.construit),
+    ((state.verger && state.verger.arbres) || []).length, memoEnLot(state, 'nombreDeBlocs', () => n(state.blocs)), !!(S.cuisine && S.cuisine.construit), !!(S.four && S.four.construit),
     P ? P.poules : 0, E ? (E.moutons || []).length + (E.vaches || []).length : 0, foretArbres(state).length, lieuPort(state) ? 1 : 0,
     ((state.potager && state.potager.parcelles) || []).length, !!(S.moulin && S.moulin.construit), signatureGardeManger(state)].join(':');
 }

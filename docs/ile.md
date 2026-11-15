@@ -2949,6 +2949,65 @@ d'avant » des mondes, garde `mettreAJour` (une base d'avant peut se réveiller 
 - **La migration d'un monde publié** n'a lieu qu'à la bascule (I9h) ; pendant le chantier, elle n'est faite que par un
   Durable Object d'essai (les tests).
 
+## Les performances (I9g, fait)
+
+La fiche : `docs/fiches/ile/I9g-performances.md` ; les tableaux avant/après : `docs/perf.md` (« L'île à bâtir : un village
+de quinze »). Le protocole : `node scripts/cout-performances.mjs` (le moteur et le serveur sur les trois parties de
+référence, 5, 9 et 15 villageois ; `--racine` mesure une autre copie du dépôt sur les mêmes parties, et l'empreinte de
+chaque état final prouve que rien du jeu n'a changé) et `node scripts/mesure-scene-ile.mjs` (la scène d'une île de 15
+dans Chromium, le processeur ralenti ×1, ×4, ×6).
+
+### Ce qui est posé
+
+- **Le lot partout où le moteur avance seul** (`js/engine/blocs.js` `enLot`) : le pas du monde d'I9d, et depuis I9g le
+  `tick` de la page (`energy.js`), le pas de la ferme (`farmStep` : le rattrapage hors ligne aussi) et la nuit
+  (`advanceNight`, `runNight` : minuit relevait les pièces closes pour chaque villageois, plusieurs fois). Un lot dans un
+  lot de la même partie garde celui du dehors. Le principe ne change pas : aucun bloc ne se pose ni ne se reprend pendant
+  un pas (les gestes viennent entre deux), et ce qui est gardé ne lit que les blocs posés.
+- **Les pièces closes sans leur texte** (`calculerPieces`) : les mêmes blocs que la dernière fois (les mêmes cases, dans le
+  même ordre, les mêmes sortes) se reconnaissent case par case ; le texte JSON de tous les blocs, la clé d'avant, n'est
+  refait que s'ils semblent avoir changé. La même clé, donc la même liste rendue.
+- **Les maisons des villageois relevées d'un coup** (`maisonsMarquees` : les pièces une fois pour toutes les boîtes) : le
+  contrôle d'un `bloc.reprendre` sur une île (I9e) passe de 0,95 à 0,11 ms à quinze maisons ; un cache par pas n'a pas été
+  utile (chaque reprise change les blocs).
+- **Gardés le temps d'un pas** (`memoEnLot`) : le quai de chargement (la route de la charrette le demandait à chaque
+  signature de la journée du village), le nombre de blocs (`signatureTaches`), le nombre de sols (`lieuxDuVillage` : les
+  chemins de l'île en font des milliers), les cases devant un comptoir (`devantComptoir`, pour un local donné).
+- **Le même jeu** : les mêmes états octet pour octet (les empreintes du protocole ; `simulate.mjs`, `--village`,
+  `--vocations` identiques à la base) ; pas de nouveau format.
+
+### Les mesures (15 villageois ; avant → I9g)
+
+Minuit 64 → 6 ms (en solo 65 → 7) ; un pas de nuit 1,9 → 0,35 ms ; un pas de jour 5,8 → 3,2 ms (p99 29 → 19) ; une
+alarme du serveur de 120 pas 775 → 388 ms (240 pas, le plus gros rattrapage : ≈ 0,8 s) ; le `tick` solo d'une seconde
+7,7 → 1,3 ms (p99 58 → 8). La copie remise à jour : 6 à 8 ms au serveur, 3 à 4 ms chez le joueur (la confirmée et la
+locale refaites), 27 à 180 ms pour la page (setState, refresh, l'image suivante ; du bureau au téléphone modeste émulé).
+Un monde d'avant mis à jour à son réveil : ≈ 0,5 s (le lieu du port tiré du plan de la graine : une fois, laissé tel
+quel). La partie d'une île de 15 : 143 Ko en ligne, sous le plafond (256 Ko) : rien à compacter.
+
+### Les tests
+
+- `tests/engine/village-lots.test.mjs` : la même partie, octet pour octet, avec et sans les calculs gardés
+  (`reglerLots({ sans: true })` : ni lot, ni pièces reconnues sans leur texte) : le pas du monde sur trente heures (jour,
+  nuit, minuit), deux journées de la page en solo, le joueur automatique (25 nuits, `sleep`) ; aucun calcul gardé ne
+  change pendant son lot (`reglerLots({ verifier: true })` : chacun refait et comparé, sur une île de 10 en ligne et en
+  solo ; vérifié aussi sur 120 nuits du joueur automatique, réglage éteint et allumé, et les deux vocations) ; les pièces
+  closes (recopiées, une porte reprise et remise, un mur changé) ; les maisons relevées d'un coup, celles de chaque boîte.
+- `tests/engine/perf-ferme.test.mjs` : la garde : minuit d'un village de 15 sous 30 ms ; sa partie sous le plafond.
+
+### Ce qui reste
+
+- **La scène** : dans le rendu logiciel de Chromium, ralentie six fois, l'île de 15 tourne à 13 images par seconde (avant
+  comme après : le moteur n'y pèse plus guère). La borne de la fiche (30 images par seconde sur le téléphone modeste) est à
+  mesurer sur le téléphone de référence, avec sa carte graphique (« Mesurer 30 s », le mode test) ; si elle ne tient pas,
+  les pistes de la fiche pour la scène (les villageois loin de la vue animés une image sur deux, les bulles et enseignes
+  en un layer). Les parcours filmés ne sont pas faits.
+- **Le pas de jour** reste fait surtout des signatures de la journée du village (`journeeDuVillage` refait sa clé à
+  chaque question, et ce qu'elle lit change pendant le pas : le travail des villageois) ; les garder demanderait de savoir
+  ce qu'une action change.
+- **La route de la charrette** est gardée par partie (`trajetCharrette`, une WeakMap) : une partie refaite chez un joueur
+  (`Synchro.refaire`, à chaque geste d'un autre) la recalcule une fois (quelques ms).
+
 ## Les règles qui ne changent pas
 
 - **Sans pénalité** (B-1) : un villageois mal nourri se repose, il ne part pas ; une commande du bac

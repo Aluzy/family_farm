@@ -19,6 +19,7 @@ import { penalite } from './inventory.js';
 import { avancerTaches } from './taches.js';
 import { avancerAchats } from './bourse.js';
 import { avancerCommerces } from './artisans.js';
+import { enLot } from './blocs.js';
 
 /* ---------- énergie : stockage et prélèvement ---------- */
 
@@ -139,6 +140,11 @@ function runPump(state, dtMs) {
 export function tick(state, dt, horlogeArretee = false) {
   const dtMs = Math.round((Number(dt) || 0) * 1000);
   if (!(dtMs > 0)) return state;
+  // (I9g : en lot, comme le pas du monde (blocs.js enLot) : ce qui parcourt tous les blocs posés n'est relevé qu'une
+  // fois par seconde de jeu ; aucun bloc ne se pose pendant un tick — les gestes viennent entre deux)
+  return enLot(state, () => tickEnLot(state, dtMs, horlogeArretee));
+}
+function tickEnLot(state, dtMs, horlogeArretee) {
   // Version 1.19 : la nuit, seule l'heure avance (la nuit se calcule d'un coup à minuit).
   if (nightActive(state)) {
     if (!horlogeArretee) advanceNight(state, dtMs * nightSpeed(state)); // il dort : en accéléré
@@ -154,8 +160,9 @@ export function tick(state, dt, horlogeArretee = false) {
 // (plafonné à `eveilMax`) et ce qui suit l'horloge : pousse, robot, asperseurs.
 // Enfin le record d'énergie stockée (Lot 9). Ni nuit, ni repas : chaque appelant s'en charge.
 export function farmStep(state, dtMs, opts) {
-  // (fiche 28 : la station du robot cherchée une fois par pas : aucun bloc ne change pendant un pas)
-  figerStation(state, () => pasDeFerme(state, dtMs, opts));
+  // (fiche 28 : la station du robot cherchée une fois par pas : aucun bloc ne change pendant un pas ; I9g : le reste de
+  // ce qui parcourt les blocs aussi, en lot, blocs.js enLot)
+  figerStation(state, () => enLot(state, () => pasDeFerme(state, dtMs, opts)));
 }
 function pasDeFerme(state, dtMs, { usure = true, horloge = true, eveilMax = Infinity } = {}) {
   flowStep(state, dtMs);

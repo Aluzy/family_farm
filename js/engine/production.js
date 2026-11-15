@@ -14,6 +14,7 @@
 import { DATA } from './catalog.js';
 import { villageActif } from './village.js';
 import { sellPrice } from './market.js';
+import { memoEnLot } from './blocs.js';
 
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1));
@@ -21,10 +22,14 @@ const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1
 export const joursDuMois = () => Math.max(1, Math.floor(Number(DATA.LUNE && DATA.LUNE.JOURS_MOIS) || 14));
 
 // Le quai de chargement posé sur la ferme (sa case, celle de gauche), ou null.
+// (I9g : relevé une fois par pas en lot, blocs.js memoEnLot : la route de la charrette le demande à chaque signature de
+// la journée du village, des dizaines de fois par pas)
 export function quaiDeChargement(state) {
   if (!villageActif(state)) return null;
-  for (const [k, sorte] of Object.entries((state && state.blocs) || {})) if (sorte === 'quai_chargement') return Number(k);
-  return null;
+  return memoEnLot(state, 'quai', () => {
+    for (const [k, sorte] of Object.entries((state && state.blocs) || {})) if (sorte === 'quai_chargement') return Number(k);
+    return null;
+  });
 }
 
 // Les contrats d'une partie neuve (ou réparés).
