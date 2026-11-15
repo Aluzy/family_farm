@@ -81,11 +81,14 @@ export function reglagesDuJeu() {
 
 // Le chantier « l'île à bâtir » (docs/ile.md, fiche I0a) : son code se lit quand DATA.VILLAGE.ACTIF vaut true
 // (js/engine/village.js). Les fichiers tests/engine/village-*.test.mjs tournent avec le réglage forcé à true,
-// tout le fichier (leur processus est le leur : tests/run-tests.mjs) ; les autres avec celui du jeu (false
-// tant que le chantier dure), sauf le temps d'un test posé dans avecVillage (ou avecVillage(fn, false)).
+// tout le fichier (leur processus est le leur : tests/run-tests.mjs) ; les autres sont ceux du jeu d'avant : depuis
+// la bascule (fiche I9h : le réglage du jeu allumé), ils le forcent à false (JEU_D_AVANT), jusqu'à leur retrait (la
+// seconde PR d'I9h), sauf le temps d'un test posé dans avecVillage (ou avecVillage(fn, false)). Le réglage du jeu tel
+// qu'il est publié : VILLAGE_DU_JEU.
 const VILLAGE_DU_JEU = DATA.VILLAGE.ACTIF;
 export const FICHIER_DU_VILLAGE = /[\\/]village-[^\\/]*\.test\.mjs$/.test(process.argv[1] || '');
-if (FICHIER_DU_VILLAGE) DATA.VILLAGE.ACTIF = true;
+export const JEU_D_AVANT = !FICHIER_DU_VILLAGE;
+DATA.VILLAGE.ACTIF = FICHIER_DU_VILLAGE;
 export function avecVillage(fn, actif = true) {
   const avant = DATA.VILLAGE.ACTIF;
   DATA.VILLAGE.ACTIF = actif;

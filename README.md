@@ -17,11 +17,13 @@ ville, le chemin de transition, la montagne, la plage, le train, l'école, l'inf
 `archive/jeu-avant-ile` (créée le 14 novembre 2026 depuis `main`, 01f8e5c).
 
 - **Chantier en cours** : « l'île à bâtir » ([`docs/ile.md`](docs/ile.md), fiches dans
-  [`docs/fiches/ile/`](docs/fiches/ile/README.md)) : une île vierge, un port, des villageois. Il avance
-  derrière le réglage `VILLAGE.ACTIF` (`data/village.json`, éteint : le jeu publié ne change pas) ;
-  `jeu.html?village=1` l'allume pour une nouvelle partie d'essai.
+  [`docs/fiches/ile/`](docs/fiches/ile/README.md)) : une île vierge, un port, des villageois. **Allumé
+  depuis la version 2.0.0** (`VILLAGE.ACTIF`, `data/village.json` : la bascule, fiche I9h, première
+  partie) : l'île est le jeu ; une partie d'avant y passe à son ouverture, une fois, sa copie gardée
+  (⚙️ Options) ; un monde en ligne d'avant à son réveil par le serveur. Le jeu d'avant décrit plus bas
+  sort du dépôt avec la seconde partie de la bascule (le retrait).
 
-- **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 70)
+- **Version** : 2.0.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 109)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi, et
   [`docs/carte-generee.md`](docs/carte-generee.md) pour la ferme générée et la construction
   (autres documents : voir « Documentation » plus bas)

@@ -314,6 +314,10 @@ l'île (sans redonner le cadeau).
 d'une nouvelle version, et refuse ensuite les jeux d'avant (« recharge la page ») ; un jeu plus récent que le Worker
 attend (« réessaie dans quelques minutes »). La première ouverture d'une ferme d'avant coûte ≈ 0,9 s (la migration, le lieu
 du port, le tronçon) : **à mesurer au premier déploiement**, comme le premier réveil.
+**I9h, la bascule** (la version 2.0.0, `VILLAGE.ACTIF` allumé, embarqué avec le moteur) : tous les mondes d'avant passent
+sur l'île à leur premier réveil, sans `ILE_ESSAI` (gardé, sans effet, jusqu'au retrait). L'ordre exact du déploiement (le
+Worker, vérifié, puis le site, retenu par une règle de l'environnement `github-pages`) : `docs/fiches/ile/I9h-bascule.md`,
+« Fait : la première PR ». Répéter avant : `node scripts/repetition-monde.mjs <copie du jeu d'avant>`.
 
 ## Les amis
 

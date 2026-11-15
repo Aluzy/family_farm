@@ -7,11 +7,14 @@
    d'essai, un bandeau discret le dit, en bas à gauche.
    ========================================================================== */
 
+import { DATA } from '../engine/catalog.js';
 import { allumerEssaiVillage, essaiVillage } from '../engine/village.js';
 
-// L'adresse demande-t-elle l'essai ?
+// L'adresse demande-t-elle l'essai ? (I9h, la bascule : le réglage allumé pour tous, ?village=1 ne change plus rien : une
+// partie neuve n'est plus une partie d'essai, une partie d'avant passe sur l'île par migrate ; l'adresse s'en ira avec le
+// réglage, la seconde PR d'I9h)
 export function essaiDemande() {
-  if (typeof location === 'undefined') return false;
+  if (typeof location === 'undefined' || (DATA.VILLAGE && DATA.VILLAGE.ACTIF === true)) return false;
   try { return new URLSearchParams(location.search).get('village') === '1'; } catch (e) { return false; }
 }
 

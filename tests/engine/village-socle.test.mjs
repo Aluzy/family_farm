@@ -10,7 +10,7 @@ import { assertEqual, avecVillage, FICHIER_DU_VILLAGE, test, VILLAGE_DU_JEU } fr
 test('un fichier village-* tourne avec le réglage allumé', () => {
   assertEqual(FICHIER_DU_VILLAGE, true, 'le fichier est reconnu');
   assertEqual(DATA.VILLAGE.ACTIF, true, 'VILLAGE.ACTIF forcé');
-  assertEqual(VILLAGE_DU_JEU, false, 'le réglage du jeu, lui, reste éteint');
+  assertEqual(VILLAGE_DU_JEU, true, 'le réglage du jeu, lui aussi, depuis la bascule (I9h)');
   assertEqual(villageActif(createNewGame(11)), true, 'une partie neuve : allumé');
 });
 
