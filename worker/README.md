@@ -137,6 +137,17 @@ I9e (les rôles en ligne) : le monde d'une île est celle d'un propriétaire, qu
 sont des commandes (`villageois.attribuer`, `villageois.outil`, `villageois.vendre`, `villageois.foyer`,
 `villageois.enfant`, `nom.donner`, `chronique.epingler`, `chronique.noter`, `commerce.suggerer`) ; leur bilan va au
 journal (`bilanGeste`). Le protocole gagne `hello.prenom` et le message `reglages` (ci-dessous).
+I9f (mettre son île en ligne, migrer les mondes d'avant) : la copie d'une île l'emporte entière (`MondeRegistre.copie` :
+ce qui est pris dehors, les régions vues, les chemins et les rails, le port, les villageois et leurs liens, la charrette,
+la chronique), vérifiée au plafond de `VILLAGE.EN_LIGNE` (413 et le poids dans le message) ; le brouillard du
+propriétaire reste dans son navigateur. Le propriétaire peut remettre la copie à jour depuis sa partie solo (`POST
+/mondes/<id>/remplacer`). **Un monde se met à jour à sa première ouverture** par un serveur d'une autre version
+(`mettreAJour`, depuis `charger`) : sa partie passe au format du serveur, le journal d'après son instantané se rejoue,
+la partie d'avant est gardée (la table `avant_migration`, et une sauvegarde « avant une mise à jour du jeu » ou « avant le
+passage sur l'île »), une marque `monde.migrer` au journal ; le chantier allumé, une ferme d'avant passe sur l'île (la
+migration d'I7f, l'horloge vivante, le port et le tronçon, le cadeau au coffre commun ; aucun villageois). Pendant le
+chantier, seul un Durable Object d'essai le fait (la variable `ILE_ESSAI` = `1`, que seuls les tests posent : ne pas la
+mettre dans `wrangler.toml`). Le protocole gagne `hello.format` et le message `remplace`.
 
 Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
 monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au
@@ -160,13 +171,20 @@ rejouent chez eux : le moteur est déterministe (F0-4). Décisions du créateur 
 - **F.4 : un monde naît de la copie volontaire d'une partie locale**, qui reste intacte.
 
 Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=` pour la WebSocket) :
-- `POST /mondes` `{ partie, titre }` : mettre sa ferme en ligne (2 Mo au plus) → `{ monde }` ;
+- `POST /mondes` `{ partie, titre }` : mettre sa ferme en ligne (2 Mo au plus) → `{ monde }` ; I9f, une île : sa copie
+  au plafond de `VILLAGE.EN_LIGNE` (256 Ko, dont 64 Ko hors de la ferme), sinon 413 et son poids dans le message ;
+- `POST /mondes/<id>/remplacer` `{ partie }` (I9f, le propriétaire) : la copie remise à jour depuis sa partie solo (une
+  sauvegarde « avant la copie remise à jour » d'abord ; les membres restent, chacun repart de zéro ; à tous, la partie
+  entière, puis `remplace { rev, jour }`) ;
 - `GET /mondes` : ses mondes ;
 - `GET /mondes/<id>/fiche` : titre, révision, membres (membres seulement) ;
 - `GET /mondes/<id>/ws` : la connexion d'un joueur (une WebSocket en hibernation). Messages :
-  - `hello { version, depuis?, pas?, prenom? }` → `bienvenue`, puis `rattrape { evts }` (ce qui manque depuis
+  - `hello { version, format?, depuis?, pas?, prenom? }` → `bienvenue`, puis `rattrape { evts }` (ce qui manque depuis
     `depuis`) ou `instantane { partie }` ; `refus` si le jeu n'a pas la version du monde ou si
-    l'on n'est pas membre. I9a2, une île : `bienvenue.horloge = { pas, reel, sommeil, maintenant, dormait? }`
+    l'on n'est pas membre. I9f : `format`, celui de la partie du jeu (`STATE_VERSION`) ; un jeu plus ancien (sa version,
+    son format, ou sans format dans un monde mis à jour) : « recharge la page » ; plus récent : « réessaie dans quelques
+    minutes ». La connexion garde le jeu de son `hello` : une commande d'un jeu qui ne joue pas la version du monde est
+    refusée (`ack` en erreur). I9a2, une île : `bienvenue.horloge = { pas, reel, sommeil, maintenant, dormait? }`
     (le pas du monde, l'heure réelle de ce pas, l'heure du serveur, depuis combien de ms il dormait) ; `pas`, celui
     de sa partie confirmée : plus de `RETARD_PAS` (60) pas de retard, ou un retard inconnu, et c'est la partie
     entière. I9e : `prenom`, celui du personnage du joueur (sa partie solo), nettoyé (`prenomDuJoueur` : sans balise,
@@ -195,11 +213,15 @@ Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=
 
 Stockage SQLite du Durable Object :
 - `meta` (I9a2 : `horloge`, l'ancre `{ pas, reel, actif, depart }` de l'instantané ; `sauvegarde`, l'heure de la
-  dernière sauvegarde à l'heure ; I9e : `reglages`, ceux du monde) ;
+  dernière sauvegarde à l'heure ; I9e : `reglages`, ceux du monde ; I9f : `format`, celui de la partie, avec `version`, la
+  version du serveur qui l'a écrite ; `migre`, l'heure de sa dernière mise à jour ; `cadeau`, le cadeau d'une ferme passée
+  sur l'île, donné) ;
+- `avant_migration` (I9f) : la partie d'avant la dernière mise à jour du monde ;
 - `instantane` : la partie entière, toutes les 20 révisions (I9a2, une île : tous les 120 pas ou 200 gestes, et au
   départ du dernier joueur ; une alarme toutes les 10 minutes tant qu'un joueur est là) ;
 - `journal` : chaque commande acceptée, son `id` unique (I9a2 : son pas ; I9c : la colonne `bilan`, ajoutée une fois à
-  une base d'avant) ;
+  une base d'avant ; E-12, I9f : les marques, jamais rejouées, `monde.restaurer`, `monde.migrer`, `monde.remplacer` : un
+  joueur qui revient d'avant l'une d'elles reçoit la partie entière) ;
 - `membres` : rôles `proprietaire` et `batisseur`, `revoque`.
 
 Au réveil, la partie se refait : le dernier instantané, puis le journal (I9a2 : chaque commande à son pas, les pas
@@ -281,9 +303,17 @@ restauration ; le portage de la partie devient la charge du propriétaire.
 E-12 : les sauvegardes du monde, dans le bucket `SESSIONS` (déjà lié), sous `mondes/<id du Durable
 Object>/` : une après chaque nuit partagée (I9a2, une île : une par heure de jeu en ligne, et au départ du dernier
 joueur), une à la demande, une avant chaque restauration ; les 14
-dernières gardées (≈ 100 Ko chacune). `GET` et `POST /mondes/<id>/sauvegardes`, `POST
+dernières gardées (≈ 100 Ko chacune ; I9f, une île : 54 à 121 Ko pour celle du joueur automatique, 3,5 Mo au plus par
+monde au plafond, `node scripts/cout-mise-en-ligne.mjs`). `GET` et `POST /mondes/<id>/sauvegardes`, `POST
 /mondes/<id>/restaurer { cle }` (le propriétaire). Une restauration écrit un instantané et une marque
-`monde.restaurer` au journal ; la partie entière est diffusée.
+`monde.restaurer` au journal ; la partie entière est diffusée. I9f : une sauvegarde aussi avant une copie remise à jour
+et avant la mise à jour du monde ; une île restaurée garde sa nuit en cours ; la ferme d'avant restaurée repasse sur
+l'île (sans redonner le cadeau).
+
+**I9f, l'ordre du déploiement** : le Worker avant le site. Un monde se met à jour à sa première ouverture par le Worker
+d'une nouvelle version, et refuse ensuite les jeux d'avant (« recharge la page ») ; un jeu plus récent que le Worker
+attend (« réessaie dans quelques minutes »). La première ouverture d'une ferme d'avant coûte ≈ 0,9 s (la migration, le lieu
+du port, le tronçon) : **à mesurer au premier déploiement**, comme le premier réveil.
 
 ## Les amis
 

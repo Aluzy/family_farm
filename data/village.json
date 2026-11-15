@@ -991,7 +991,10 @@
       "ses lignes ({periode} : les jours entre deux bacs ; {amis} : les candidats ; {rendu} : ce qui est rendu ; {de}, {a} :",
       "ce que gagne ce qu'on fabrique, en %, VILLAGE.PRIX.FOURCHETTE ; {part} : VILLAGE.PART). CHRONIQUE : les lignes",
       "« avant » qui résument la partie d'avant (le type « avant » de CHRONIQUE.TYPES ; sans nom propre) ; LIEUX : où était",
-      "le voisinage, d'après le style de ses maisons (« * » : un autre)."
+      "le voisinage, d'après le style de ses maisons (« * » : un autre). MONDE (fiche I9f) : la fenêtre d'un monde en ligne",
+      "d'avant passé sur l'île (worker/src/monde.mjs, à sa première ouverture) : son intro, l'horloge qui vit, la grille des",
+      "rôles d'une île (ROLES au propriétaire, ROLES_AMI aux autres), la ferme d'avant gardée dans les sauvegardes (au",
+      "propriétaire) ; le cadeau, donné tout de suite au coffre commun, pour tous."
     ],
     "MIGRATION": {
       "AMI": 2,
@@ -1008,6 +1011,14 @@
         "PRIX": "Les prix ont changé : ce qu'on fabrique se vend de {de} à {a} % plus cher que ses matières, et les villageois gardent {part} % de ce qu'ils produisent.",
         "CADEAU": "Un cadeau de bienvenue : {cadeau}.",
         "BOUTON": "Merci, au travail !"
+      },
+      "MONDE": {
+        "INTRO": "Ce monde en ligne est passé sur l'île à bâtir. La ferme et le coffre commun sont intacts ; autour d'eux, l'île a changé :",
+        "HORLOGE": "Le temps passe maintenant dans ce monde tant qu'un joueur au moins y est : la nuit vient seule à 22 h, et sans personne, il dort.",
+        "ROLES": "Les rôles suivent ceux d'une île : tes amis jardiniers fabriquent maintenant à l'Atelier, et c'est toi qui attribues les tâches des villageois, décides des commerces, nommes l'île et agrandis le port (👥).",
+        "ROLES_AMI": "Tu aides le propriétaire à faire grandir son village : ce que ton rôle permet suit maintenant celui d'une île (👥).",
+        "SAUVEGARDE": "La ferme d'avant est gardée dans les sauvegardes du monde (👥 › 💾, « avant le passage sur l'île ») : tu peux y revenir.",
+        "CADEAU": "Un cadeau de bienvenue est au coffre commun, pour tous : {cadeau}."
       },
       "CHRONIQUE": {
         "DEBUT": "La famille {famille} s'installe sur sa terre.",

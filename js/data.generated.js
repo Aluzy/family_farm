@@ -10678,6 +10678,14 @@ export const RAW_DATA = {
         "CADEAU": "Un cadeau de bienvenue : {cadeau}.",
         "BOUTON": "Merci, au travail !"
       },
+      "MONDE": {
+        "INTRO": "Ce monde en ligne est passé sur l'île à bâtir. La ferme et le coffre commun sont intacts ; autour d'eux, l'île a changé :",
+        "HORLOGE": "Le temps passe maintenant dans ce monde tant qu'un joueur au moins y est : la nuit vient seule à 22 h, et sans personne, il dort.",
+        "ROLES": "Les rôles suivent ceux d'une île : tes amis jardiniers fabriquent maintenant à l'Atelier, et c'est toi qui attribues les tâches des villageois, décides des commerces, nommes l'île et agrandis le port (👥).",
+        "ROLES_AMI": "Tu aides le propriétaire à faire grandir son village : ce que ton rôle permet suit maintenant celui d'une île (👥).",
+        "SAUVEGARDE": "La ferme d'avant est gardée dans les sauvegardes du monde (👥 › 💾, « avant le passage sur l'île ») : tu peux y revenir.",
+        "CADEAU": "Un cadeau de bienvenue est au coffre commun, pour tous : {cadeau}."
+      },
       "CHRONIQUE": {
         "DEBUT": "La famille {famille} s'installe sur sa terre.",
         "VENTE": "Première vente de la ferme : le début des affaires.",

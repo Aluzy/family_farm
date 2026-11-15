@@ -60,6 +60,13 @@
 //      fiche, B le voit et son avis dit « Alex a confié à … » ; A confie les tâches aux bâtisseurs (👥), B est prévenu et
 //      donne un ordre ; le journal porte chaque ordre et son auteur. (CAPTURES : la fiche sans droit, le refus, l'avis au
 //      vrai nom, la fiche de l'hôte, la délégation, le journal.)
+//  14. I9f : la mise en ligne d'une île avancée par ⚙️ Options (« Mettre mon île en ligne », les deux îles) ; B y entre par
+//      invitation, va au port, coupe un arbre, parle à un villageois ; A restaure une sauvegarde d'avant ces gestes ; A
+//      remet la copie à jour depuis sa partie solo (avec confirmation), B en est prévenu.
+//  15. I9f : un monde d'avant (une ferme seule, au format d'avant I9c) migre à sa première ouverture (un Durable Object
+//      d'essai) ; un jeu d'avant est refusé ; le propriétaire et l'invité voient chacun leur fenêtre du retour ; la ferme
+//      d'avant est dans 💾 ; ils y jouent à deux. (CAPTURES : la fenêtre « Jeu en ligne », la confirmation, les
+//      sauvegardes, la fenêtre du propriétaire et de l'invité d'un monde migré.)
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
 import { createServer } from 'node:http';
@@ -69,6 +76,7 @@ import { dirname, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { arriverVillageois, attribuer, donnerOutil, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
+import { ilePartagee, objetsDeRegion, poseStatus, solDirect } from '../js/engine/index.js';
 import { addItem, avancerJusqua, caseDansLaFerme, caseMarchable, caseVue, cheminDehorsSur, comptoirDuPort, etatBac, contexteSol, countItem, elementsSol, createNewGame, DATA, empreintePartie, farmTerrain, pasDe, testBatir, testFarmMap, testFermeConstruite, testSetLevel } from '../js/engine/index.js';
 import { avecVillage, garden, plantRipe, reglagesDuJeu } from './engine/aide.mjs';
 import W from '../worker/src/index.js';
@@ -933,6 +941,191 @@ try {
     if (process.env.CAPTURES) { await pa.waitForTimeout(300); await pa.screenshot({ path: process.env.CAPTURES + '/i9e-journal.png' }); }
     await action(pa, 'close-modal');
     await action(pb, 'close-modal');
+  }
+  // 14. I9f : A met son île avancée en ligne (⚙️ Options › Jeu en ligne), B y entre par invitation, va au port, coupe un
+  // arbre, parle à un villageois ; A restaure une sauvegarde d'avant ces gestes ; puis A remet la copie à jour depuis sa
+  // partie solo (avec confirmation), B en est prévenu.
+  {
+    const ile5 = avecVillage(() => createNewGame('31', { nom: 'Île' }));
+    ile5.essais = { ...(ile5.essais || {}), village: true };
+    testSetLevel(ile5, 5);
+    testBatir(ile5, 'foyer');
+    for (let k = 0; k < 3; k++) { testMaisonVillageois(ile5); arriverVillageois(ile5, { direct: true }); }
+    addItem(ile5, 'pain', 80);
+    ile5.outils = { ...(ile5.outils || {}), hache: true, pioche: true, faux: true };
+    villageoisDe(ile5).forEach((v, i) => { const [t, o] = [['bois', 'hache'], ['pierre', 'pioche'], ['fauchage', 'faux']][i]; donnerOutil(ile5, v.id, o); attribuer(ile5, v.id, t); });
+    ile5.outils.hache = true;   // (une seconde hache au coffre, pour l'ami : la première est au bûcheron)
+    ile5.awakeMs = (9 - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
+    Object.assign(ile5.famille.membres.find((m) => m.id === ile5.famille.principal) || ile5.famille.membres[0], { prenom: 'Alex' });
+    const T5 = farmTerrain(ile5), W5 = T5.LARGEUR, sortie5 = T5.MONDE.cadre.SORTIE;
+    const sansAide5 = (p) => p.evaluate(() => { if (document.getElementById('capture-style5')) return; const st = document.createElement('style'); st.id = 'capture-style5'; st.textContent = '#tuto-root, #consent-banner { display: none !important; }'; document.head.appendChild(st); });
+    const sansMessages5 = (p) => p.evaluate(() => document.querySelectorAll('.toast').forEach((e) => e.remove()));
+    // la partie solo de A devient cette île (sur son appareil)
+    // (posée hors du jeu, sur une page du même site : le jeu ouvert garderait sa partie en partant, par-dessus)
+    await pa.goto(`${BASE}/package.json`);
+    await pa.evaluate((v) => { localStorage.setItem('ferme-save', v); localStorage.setItem('ferme-position', JSON.stringify({ graine: '31', x: 0, y: 0 })); }, JSON.stringify({ v: ile5.version, t: Date.now(), s: ile5 }));
+    await pa.goto(`${BASE}/jeu.html`);
+    await attendre(pa, () => window.FarmStage && FarmStage.ready && FarmStage.ready(), null, 30000);
+    const mondesAvant = new Set(mondes.keys());
+    await action(pa, 'open-options');
+    const fenetre = await attendre(pa, () => /Mettre mon île en ligne/.test((document.querySelector('[data-action="monde-creer"]') || {}).innerText || '') && !!document.getElementById('monde-deux-iles'), null, 10000);
+    const texte5 = fenetre !== null ? await pa.evaluate(() => document.getElementById('compte-zone').innerText) : '';
+    if (process.env.CAPTURES) { await sansAide5(pa); await sansMessages5(pa); await pa.evaluate(() => document.getElementById('compte-zone').scrollIntoView()); await pa.waitForTimeout(300); await pa.screenshot({ path: process.env.CAPTURES + '/i9f-mettre-son-ile-en-ligne.png' }); }
+    await action(pa, 'monde-creer');
+    const id5 = await (async () => { const t0 = Date.now(); while (Date.now() - t0 < 20000) { const n = [...mondes.keys()].find((k) => !mondesAvant.has(k)); if (n && mondes.get(n).registre.existe()) return n; await pa.waitForTimeout(50); } return null; })();
+    const reg5 = id5 && mondes.get(id5).registre;
+    const w5 = reg5 && reg5.charger();
+    // (la page pose son brouillard au retour de la route : on l'attend)
+    await attendre(pa, (i) => !!localStorage.getItem('ferme-brouillard-' + i), id5, 8000);
+    const brouillard5 = id5 ? await pa.evaluate((i) => (localStorage.getItem('ferme-brouillard-' + i) || '').length, id5) : 0;
+    verifie(fenetre !== null && /deux îles/.test(texte5) && !!w5 && villageoisDe(w5).length === 3 && !!w5.port.lieu && brouillard5 > 0 && w5.monde.vu !== ile5.monde.vu,
+      `14a. A met son île en ligne par ⚙️ Options (« Mettre mon île en ligne » ; « deux îles, chacune vit sa vie ») : ${id5}, ses trois villageois, le lieu du port ; son brouillard dans son navigateur (${brouillard5} signes), pas dans le monde`);
+    await action(pa, 'close-modal');
+    const inv5 = id5 ? await appel(A, `/mondes/${id5}/invitations`, { role: 'jardinier' }) : {};
+    const entre5 = inv5.ok ? await appel(B, '/rejoindre', { code: inv5.code }) : {};
+    // 14b. B, invité, va au port (on le pose devant le comptoir : la marche jusqu'au port est le 8e, PORT=1) ; A sur sa ferme
+    const comptoir5 = w5 && comptoirDuPort(w5);
+    const pos5 = (t, dx = 0) => ({ graine: '31', x: ((t % W5) + dx) * 16 + 8, y: (Math.floor(t / W5) + 1) * 16 + 15 });
+    await pa.evaluate((v) => localStorage.setItem('ferme-position', JSON.stringify(v)), pos5(sortie5, -6));
+    await pb.evaluate((v) => localStorage.setItem('ferme-position', JSON.stringify(v)), pos5(comptoir5.devant));
+    for (const p of [pa, pb]) await p.goto(`${BASE}/jeu.html?monde=${id5}`);
+    const dedans5 = (await attendre(pa, pret, null, 30000)) !== null && (await attendre(pb, pret, null, 30000)) !== null;
+    const auPort5 = await pb.evaluate(async () => { const P = await import('/js/engine/index.js'); return P.portOuvert(FF.state, FarmStage.persoCase()).ok; });
+    verifie(entre5.ok && dedans5 && auPort5, `14b. B est entré par invitation dans l'île de A ; il est au port, au comptoir (ouvert chez lui)`);
+    if (process.env.CAPTURES) { await pourCapture(pb); await pb.waitForTimeout(600); await pb.screenshot({ path: process.env.CAPTURES + '/i9f-invite-au-port.png' }); }
+    // (la sauvegarde d'avant les gestes de B : celle que A restaurera)
+    const veille = await mondes.get(id5).sauvegarder('main');
+    const emVeille = empreintePartie(reg5.charger());
+    // 14c. B, revenu près d'un arbre de l'île (de plusieurs coups, le plus proche de la sortie de la ferme), le coupe ; il
+    // parle à un villageois
+    const cible5 = (() => {
+      const sol = solDirect(T5), N = T5.MONDE.taille, rx = Math.floor((sortie5 % W5) / N), ry = Math.floor(Math.floor(sortie5 / W5) / N);
+      let best = null, bd = Infinity;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) for (const o of objetsDeRegion(sol.region(rx + dx, ry + dy))) {
+        const c = Math.floor((o.y - 1) / 16) * W5 + Math.floor(o.x / 16);
+        if (o.regle.geste !== 'couper' || (o.regle.coups || 1) < 2 || caseDansLaFerme(ile5, c)) continue;
+        const d = Math.abs((c % W5) - (sortie5 % W5)) + Math.abs(Math.floor(c / W5) - Math.floor(sortie5 / W5));
+        if (d < bd) { bd = d; best = { id: o.id, c }; }
+      }
+      return best;
+    })();
+    await pb.evaluate((v) => localStorage.setItem('ferme-position', JSON.stringify(v)), pos5(cible5 ? cible5.c + W5 : sortie5, 1));
+    await pb.goto(`${BASE}/jeu.html?monde=${id5}`);
+    await attendre(pb, pret, null, 30000);
+    await attendre(pb, (i) => !!(FarmStage.scene().mondeObjets || new Map()).get(i), cible5 && cible5.id, 20000);
+    const arbre5 = await pb.evaluate((i) => {
+      const o = i && (FarmStage.scene().mondeObjets || new Map()).get(i);
+      if (o) return { id: o.id, coups: o.regle.coups || 1 };
+      const sc = FarmStage.scene(), f = sc.fermier.info();
+      let best = null, bd = Infinity;
+      for (const x of (sc.mondeObjets || new Map()).values()) {
+        if (!x.img || !x.img.visible || x.regle.geste !== 'couper') continue;
+        // (un arbre de plusieurs coups d'abord, s'il y en a un près de lui)
+        const d = Math.hypot(x.fx - f.x, x.fy - f.y) + ((x.regle.coups || 1) >= 2 ? 0 : 400);
+        if (d < bd) { bd = d; best = { id: x.id, coups: x.regle.coups || 1 }; }
+      }
+      return best;
+    }, cible5 && cible5.id);
+    const bois5 = countItem(reg5.charger(), 'bois');
+    let coup = null;
+    for (let k = 0; arbre5 && k < arbre5.coups; k++) { coup = await pb.evaluate(async (i) => { const C = await import('/js/ui/commandes.js'); const r = C.executer('monde.recolter', { piece: i, geste: 'couper' }); return { ok: !!r.ok, tombe: !!r.tombe, erreur: r.error || '' }; }, arbre5.id); if (!coup.ok) break; await pb.waitForTimeout(250); }
+    const pris5 = await (async () => { const t0 = Date.now(); while (Date.now() - t0 < 8000) { if (arbre5 && reg5.charger().monde.pris[arbre5.id]) return true; await pb.waitForTimeout(25); } return false; })();
+    const vg5 = villageoisDe(w5)[0].id;
+    const parle5 = await pb.evaluate(async (i) => { const V = await import('/js/ui/villageois.js'); const r = V.villageoisDepuisCarte('parle', i, { n: 0 }); return r ? { ok: true, texte: r.texte } : { ok: false }; }, vg5);
+    const amitieB5 = await (async () => { const t0 = Date.now(); while (Date.now() - t0 < 8000) { const a = reg5.charger().amities[B.id]; if (a && a.pnj && a.pnj[vg5]) return a.pnj[vg5].pts; await pb.waitForTimeout(25); } return null; })();
+    verifie(!!arbre5 && coup && coup.ok && pris5 && countItem(reg5.charger(), 'bois') > bois5 && parle5.ok && amitieB5 !== null && (await memePas(pa, reg5)) && (await memePas(pb, reg5)),
+      `14c. B coupe l'arbre ${arbre5 && arbre5.id} (${arbre5 && arbre5.coups} coups) : le bois au coffre commun ; il parle à ${vg5} (« ${parle5.texte} ») : son amitié à lui (${amitieB5}) ; les parties confirmées sont celle du monde ${JSON.stringify({ coup, pris5, bois: [bois5, countItem(reg5.charger(), 'bois')], parle: parle5.ok, amitieB5 })}`);
+    // 14d. A restaure la sauvegarde d'avant ces gestes (👥 › 💾) : l'arbre revient, l'amitié de B aussi, chez les deux
+    await action(pa, 'monde-sauvegardes');
+    await attendre(pa, (c) => !!document.querySelector(`[data-action="monde-restaurer"][data-cle="${c}"]`), veille.cle, 5000);
+    if (process.env.CAPTURES) { await sansAide5(pa); await sansMessages5(pa); await pa.waitForTimeout(300); await pa.screenshot({ path: process.env.CAPTURES + '/i9f-sauvegardes-ile.png' }); }
+    await action(pa, 'monde-restaurer', { cle: veille.cle });
+    await action(pa, 'monde-restaurer-oui', { cle: veille.cle });
+    const restaure5 = await attendre(pb, (i) => !(FF.state.monde.pris || {})[i] && /restauré une sauvegarde/.test(document.body.innerText), arbre5 && arbre5.id, 8000);
+    const amitieApres = (reg5.charger().amities[B.id] || { pnj: {} }).pnj[vg5];
+    verifie(restaure5 !== null && !!arbre5 && !reg5.charger().monde.pris[arbre5.id] && !amitieApres && empreintePartie(reg5.charger()) === emVeille && (await memePas(pa, reg5)) && (await memePas(pb, reg5)),
+      `14d. A restaure la sauvegarde d'avant les gestes de B : l'arbre est debout chez B (prévenu en ${restaure5} ms), l'amitié de B d'avant revient ; la partie est celle de la sauvegarde ; les parties confirmées sont celle du monde`);
+    await action(pa, 'close-modal');
+    // 14e. A, revenu dans sa partie solo, remet la copie à jour (🔄, avec confirmation) : B, resté dans l'île, en est prévenu
+    await pa.goto(`${BASE}/jeu.html`);
+    await attendre(pa, () => window.FarmStage && FarmStage.ready && FarmStage.ready(), null, 30000);
+    await action(pa, 'open-options');
+    await attendre(pa, (i) => !!document.querySelector(`[data-action="monde-remplacer"][data-monde="${i}"]`), id5, 10000);
+    await action(pa, 'monde-remplacer', { monde: id5 });
+    const confirme = await attendre(pa, () => !!document.getElementById('monde-remplacer-confirmation') && /sauvegardé d'abord/.test(document.getElementById('monde-remplacer-confirmation').innerText), null, 5000);
+    if (process.env.CAPTURES) { await sansAide5(pa); await sansMessages5(pa); await pa.evaluate(() => document.getElementById('monde-remplacer-confirmation').scrollIntoView()); await pa.waitForTimeout(300); await pa.screenshot({ path: process.env.CAPTURES + '/i9f-remettre-a-jour-confirmation.png' }); }
+    const rev5 = reg5.rev;
+    await action(pa, 'monde-remplacer-oui', { monde: id5 });
+    const remplace = await (async () => { const t0 = Date.now(); while (Date.now() - t0 < 15000) { if (reg5.rev > rev5 && reg5.journal(A.id).evts[0].type === 'monde.remplacer') return Date.now() - t0; await pa.waitForTimeout(50); } return null; })();
+    const prevenuB = await attendre(pb, () => /remis son île en ligne à jour/.test(document.body.innerText), null, 8000);
+    const sv5 = (await mondes.get(id5).sauvegardes().liste()).map((x) => x.raison);
+    verifie(confirme !== null && remplace !== null && prevenuB !== null && sv5.includes('avant-remplacement') && (await memePas(pb, reg5)),
+      `14e. A remet la copie à jour depuis sa partie solo (confirmation : « … sauvegardé d'abord … ») en ${remplace} ms ; B, dans l'île, en est prévenu ; l'île d'avant est dans les sauvegardes (${sv5.join(', ')})`);
+    if (process.env.CAPTURES) { await sansMessages5(pa); await pa.waitForTimeout(300); await pa.screenshot({ path: process.env.CAPTURES + '/i9f-remise-a-jour-faite.png' }); }
+    await action(pa, 'close-modal');
+  }
+  // 15. I9f : un monde d'avant (une ferme seule, son serveur d'avant I9c : sa partie au format 103) migre à sa première
+  // ouverture par le serveur d'aujourd'hui (un Durable Object d'essai : ILE_ESSAI) ; un jeu d'avant n'y entre plus ; le
+  // propriétaire et l'invité voient la fenêtre du retour, chacun la sienne ; puis ils y jouent à deux.
+  {
+    const sansAide5 = (p) => p.evaluate(() => { if (document.getElementById('capture-style5')) return; const st = document.createElement('style'); st.id = 'capture-style5'; st.textContent = '#tuto-root, #consent-banner { display: none !important; }'; document.head.appendChild(st); });
+    const sansMessages5 = (p) => p.evaluate(() => document.querySelectorAll('.toast').forEach((e) => e.remove()));
+    await pa.goto(`${BASE}/package.json`);
+    await pa.evaluate((v) => { localStorage.setItem('ferme-save', v); localStorage.removeItem('ferme-position'); }, SAUVEGARDE);
+    const cree6 = await appel(A, '/mondes', { partie: { v: s0.version, t: Date.now(), s: JSON.parse(JSON.stringify(s0)) }, titre: 'La vieille ferme' });
+    const inv6 = cree6.ok ? await appel(A, `/mondes/${cree6.monde}/invitations`, { role: 'batisseur' }) : {};
+    const entre6 = inv6.ok ? await appel(B, '/rejoindre', { code: inv6.code }) : {};
+    const id6 = cree6.monde, ancien = mondes.get(id6);
+    const avant6 = JSON.parse(JSON.stringify(ancien.registre.charger()));
+    // (sa base telle qu'un serveur d'avant I9c l'a laissée ; puis le serveur redémarre, mis à jour : un autre Durable Object sur la même base)
+    const brute6 = JSON.parse(ancien.registre.un('SELECT json FROM instantane ORDER BY rev DESC LIMIT 1').json);
+    for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge']) delete brute6[k];
+    brute6.version = 103;
+    ancien.registre.faire('UPDATE instantane SET json = ?', JSON.stringify(brute6));
+    ancien.registre.faire('DELETE FROM meta WHERE cle = ?', 'format');
+    mondes.set(id6, new Monde(ancien.ctx, { SESSIONS: r2, ILE_ESSAI: '1' }));
+    const reg6 = mondes.get(id6).registre;
+    // 15a. un jeu d'avant (son hello sans format) est refusé : recharger la page
+    await pb.goto(`${BASE}/jeu.html`);
+    await attendre(pb, () => window.FarmStage && FarmStage.ready && FarmStage.ready(), null, 30000);
+    const refus6 = await pb.evaluate(([id, session]) => new Promise((ok) => { const ws = new WebSocket(`ws://127.0.0.1:8787/mondes/${id}/ws?session=${encodeURIComponent(session)}`); ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', version: '1.22.0' })); ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.t === 'refus' || m.t === 'bienvenue') { ok(m); ws.close(); } }; setTimeout(() => ok(null), 8000); }), [id6, B.session]);
+    const w6 = reg6.charger();
+    verifie(cree6.ok && entre6.ok && refus6 && refus6.t === 'refus' && /recharge la page/.test(refus6.erreur || '') && ilePartagee(w6) && !!w6.port.lieu && villageoisDe(w6).length === 0 && JSON.stringify(w6.blocs) === JSON.stringify(avant6.blocs),
+      `15a. la ferme d'avant ${id6} a migré à sa première ouverture (une île, le port, aucun villageois, la ferme intacte) ; un jeu d'avant y est refusé (« ${refus6 && refus6.erreur} »)`);
+    // 15b. A entre : la fenêtre du retour du propriétaire (l'horloge, la grille des rôles d'une île, la ferme d'avant dans 💾)
+    for (const p of [pa, pb]) await p.goto(`${BASE}/jeu.html?monde=${id6}`);
+    const dedans6 = (await attendre(pa, pret, null, 30000)) !== null && (await attendre(pb, pret, null, 30000)) !== null;
+    for (const p of [pa, pb]) await sansAide5(p);
+    const fenetreA = await attendre(pa, () => !!document.getElementById('retour-ile-titre') && /grille|rôles/.test(document.querySelector('.retour-ile-body').innerText) && /sauvegardes du monde/.test(document.querySelector('.retour-ile-body').innerText), null, 15000);
+    const fenetreB = await attendre(pb, () => !!document.getElementById('retour-ile-titre') && /Tu aides le propriétaire/.test(document.querySelector('.retour-ile-body').innerText) && !/sauvegardes du monde/.test(document.querySelector('.retour-ile-body').innerText), null, 15000);
+    if (process.env.CAPTURES) {
+      for (const p of [pa, pb]) await sansMessages5(p);
+      await pa.waitForTimeout(400);
+      await pa.screenshot({ path: process.env.CAPTURES + '/i9f-proprietaire-monde-migre.png' });
+      await pb.screenshot({ path: process.env.CAPTURES + '/i9f-invite-monde-migre.png' });
+    }
+    const planches6 = countItem(reg6.charger(), 'planche');
+    for (const p of [pa, pb]) await action(p, 'retour-ile-ok');
+    await pa.waitForTimeout(500);
+    const fermee = await pa.evaluate((i) => localStorage.getItem('ferme-retour-ile-' + i), id6);
+    verifie(dedans6 && fenetreA !== null && fenetreB !== null && fermee === '1' && countItem(reg6.charger(), 'planche') === planches6,
+      `15b. A et B entrent : chacun voit la fenêtre du retour, la sienne (au propriétaire : la grille d'une île et la ferme d'avant dans 💾) ; la fermer ne change rien au monde (le cadeau était déjà au coffre commun)`);
+    await action(pa, 'monde-sauvegardes');
+    const avantIle = await attendre(pa, () => /avant le passage sur l'île/.test((document.querySelector('.journal-monde') || {}).innerText || ''), null, 5000);
+    if (process.env.CAPTURES) { await sansMessages5(pa); await pa.waitForTimeout(300); await pa.screenshot({ path: process.env.CAPTURES + '/i9f-sauvegarde-avant-ile.png' }); }
+    await action(pa, 'close-modal');
+    // 15c. ils y jouent à deux : B pose un mur, A récolte une carotte ; le temps passe chez les deux
+    await action(pb, 'build-toggle');
+    await attendre(pb, () => document.body.classList.contains('construction'), null, 5000);
+    const libre6 = (() => { for (let t = 0; t < 644 * 400; t += 7) if (poseStatus(reg6.charger(), 'mur_pierre', t).ok) return t; return null; })();
+    const mur6 = await pb.evaluate(async (t) => { const C = await import('/js/ui/commandes.js'); const r = C.executer('bloc.poser', { sorte: 'mur_pierre', case: t }); return { ok: !!r.ok, erreur: r.error || '' }; }, libre6);
+    const vuA6 = await attendre(pa, (t) => import('/js/engine/index.js').then((E) => E.blocAt(FF.state, t) === 'mur_pierre'), libre6, 5000);
+    const pas0 = pasDe(reg6.charger());
+    await pa.waitForTimeout(11000);
+    reg6.avancer();
+    verifie(mur6.ok && vuA6 !== null && pasDe(reg6.charger()) > pas0 && (await memePas(pa, reg6)) && (await memePas(pb, reg6)),
+      `15c. dans le monde migré, B pose un mur, A le voit en ${vuA6} ms ; le temps passe (pas ${pas0} → ${pasDe(reg6.charger())}) ; les parties confirmées sont celle du monde`);
+    await action(pb, 'build-toggle');
   }
 } finally {
   await navigateur.close();

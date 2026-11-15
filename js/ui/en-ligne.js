@@ -39,7 +39,7 @@
 //   d'une tâche, un commerce ouvert ou suggéré, un nom : gesteEnMots avec le bilan de l'événement). Chacun s'appelle du
 //   prénom de son personnage (hello : prenom).
 
-import { clockHours, DATA, empreintePartie, executerCommande, GAME_VERSION, ICONES_ROLES, ilePartagee, memberPerso, NOMS_ROLES, pasDe, refusDuRole, refusFrontiere, reglagesMonde, unirVu, validApparence } from '../engine/index.js';
+import { clockHours, DATA, empreintePartie, executerCommande, GAME_VERSION, STATE_VERSION, ICONES_ROLES, ilePartagee, memberPerso, NOMS_ROLES, pasDe, refusDuRole, refusFrontiere, reglagesMonde, unirVu, validApparence } from '../engine/index.js';
 import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, prenomPersonnage, quandConnecte } from './compte.js';
 import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';
@@ -95,7 +95,7 @@ function connecter() {
     lien.helloT = Date.now();
     // (I9a2 : le pas de sa partie confirmée : trop en retard, le monde envoie la partie entière)
     // (I9e : le prénom de son personnage, le nom que les autres voient)
-    ws.send(JSON.stringify({ t: 'hello', version: GAME_VERSION, prenom: prenomPersonnage(), ...(lien.synchro ? { depuis: lien.synchro.rev, pas: pasDe(lien.synchro.confirmee) } : {}) }));
+    ws.send(JSON.stringify({ t: 'hello', version: GAME_VERSION, format: STATE_VERSION, prenom: prenomPersonnage(), ...(lien.synchro ? { depuis: lien.synchro.rev, pas: pasDe(lien.synchro.confirmee) } : {}) }));
   });
   ws.addEventListener('message', (e) => recevoir(ws, e.data));
   ws.addEventListener('close', (e) => {
@@ -230,6 +230,11 @@ function recevoir(ws, data) {
     notify(`🌐 Le propriétaire a restauré une sauvegarde du monde : jour ${m.jour}.`, { duree: 7000 });
     return;
   }
+  // I9f : le propriétaire a remis la copie à jour depuis sa partie solo (la partie est arrivée juste avant : instantane)
+  if (m.t === 'remplace') {
+    notify(lien.role === 'proprietaire' ? `🌐 Ton île en ligne est remise à jour depuis ta partie solo : jour ${m.jour}.` : `🌐 Le propriétaire a remis son île en ligne à jour depuis sa partie solo : jour ${m.jour}. Tu repars sans sac ni charge, et tes amitiés avec ses villageois recommencent.`, { duree: 9000 });
+    return;
+  }
   if (m.t === 'instantane') {
     lien.rattrapage = false;
     const horloge = m.horloge || lien.horloge;
@@ -361,7 +366,7 @@ export const TEMPS_DU_MONDE = '🕰️ Le temps de ce monde passe quand au moins
 
 // Un trou dans les événements : la partie entière redemandée (un hello sans révision).
 function toutRedemander() {
-  envoyer({ t: 'hello', version: GAME_VERSION });
+  envoyer({ t: 'hello', version: GAME_VERSION, format: STATE_VERSION });
 }
 
 // La partie locale refaite (un geste d'un autre joueur, un refus) : le jeu la reprend.
@@ -505,6 +510,10 @@ const CONSTRUIRE = new Set(['bloc', 'bloc-many', 'build-toggle', 'build-pick', '
 // (E-5 : le potager ; E-6 : les bêtes ; E-7 : la cuisine, le Moulin, le frigo, la boîte, manger ; E-9 : les outils, le verger ; E-10 : la progression, l'Atelier, les appareils, planter un arbre)
 const FERME = new Set(['sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre', 'buy-tech', 'atelier-fabriquer', 'bloc-fabriquer', 'build-station', 'toggle', 'upgrade', 'upgrade-tank', 'robot-autonomie', 'maintain', 'repair', 'arbre-planter', 'arbre-case', 'arbre-oui', 'semis-set', 'silo-agrandir', 'tool-use', 'axe-toggle', 'pick-toggle', 'scythe-toggle', 'rod-toggle', 'harvest-tree', 'start-recipe', 'cancel-queued', 'stop-recipe', 'mill-start', 'mill-cancel', 'eat', 'sac-manger', 'fridge-in', 'fridge-out', 'fridge-in-all', 'fridge-in-urgent', 'frigo-ranger', 'build-fridge', 'upgrade-fridge', 'boite-deposer', 'boite-reprendre', 'feed-hen', 'feed-all', 'shear', 'cow-herbs', 'buy-pasture', 'upgrade-poulailler', 'plant', 'plant-many', 'plant-all', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'hoe', 'hoe-many', 'hoe-toggle', 'hoe-take', 'cruche-remplir', 'tonnelet-remplir', 'compost-jeter', 'engrais-many', 'engrais-toggle']);
 const JAMAIS = /^(test-|do-import|do-new-game|ask-new-game|demarrer|accueil-)/;
+// (I9f : ce qui change la famille de la partie, ses habits, sa tente, ses animaux : à la partie solo ; le choix d'un lit,
+// lit-oui, l'est déjà : SOMMEIL_BLOQUEES)
+const FAMILLE_SOLO = new Set(['member-save', 'member-add', 'member-remove', 'pet-add', 'pet-save', 'pet-remove', 'fiche-case', 'fiche-equiper', 'fiche-tente']);
+export const FAMILLE_EN_LIGNE = 'En ligne, la famille, ses habits et ses animaux ne changent pas : on les change dans sa partie solo.';
 // (I9e : les commerces et l'étal d'une île en ligne : des commandes du monde, js/ui/commerce.js, js/ui/etal.js)
 const PAS_ENCORE_ILE = new Set(['vocation-projet-envoyer', 'vocation-projet-abandonner']);
 const ILE_EN_LIGNE = new Set(['charrette-palier', 'commerce-ouvrir', 'commerce-acheter', 'commerce-commander', 'commerce-lettres', 'commerce-rejoindre', 'etal-mettre', 'etal-reprendre']);
@@ -513,6 +522,10 @@ export function actionPermise(action, bloquees) {
   if (action === 'sleep') return 'En ligne, on se couche par le bandeau (🛏 Se coucher) : la nuit passe quand tout le monde dort.';
   // (I9d : sur une île, offrir un cadeau à un villageois : villageois.offrir, avec son amitié à soi)
   if (action === 'ami-offrir' && ileEnLigne()) return null;
+  // (I9f : la famille de la partie d'un monde est celle de son propriétaire : ses prénoms, son allure, ses habits, sa tente
+  // et ses animaux ne changent pas en ligne, où ils ne s'écriraient que dans la partie locale, effacés au prochain geste
+  // d'un autre ; ils se changent dans la partie solo)
+  if (FAMILLE_SOLO.has(action)) return FAMILLE_EN_LIGNE;
   // (I9e : sur une île, les commerces et l'étal passent par le monde : leurs commandes, avec les rôles ; le chantier d'un
   // projet du village n'a pas encore de commande : refusé plutôt que joué sur la seule page)
   if (ILE_EN_LIGNE.has(action) && ileEnLigne()) return null;
@@ -622,6 +635,8 @@ const GESTES = {
   'nuit.partagee': 'tout le monde a dormi : la nuit est passée',
   'temps.sommeil': 'tous couchés (la nuit file), ou l\'un s\'est levé',
   'monde.restaurer': 'a restauré une sauvegarde',
+  // (I9f : la mise à jour du monde, la copie remise à jour)
+  'monde.migrer': 'est passé à la version du serveur', 'monde.remplacer': 'a remis l\'île en ligne à jour depuis sa partie solo',
   // (I9e : les gestes du village)
   'villageois.attribuer': 'a confié une tâche', 'villageois.outil': 'a confié un outil', 'villageois.vendre': 'a choisi ce qu\'un villageois porte au port',
   'villageois.foyer': 'a proposé un foyer', 'villageois.enfant': 'a proposé un enfant', 'villageois.parler': 'a parlé à un villageois',
@@ -636,6 +651,8 @@ const GESTES = {
 };
 const FAMILLES_GESTES = { mur: 'a bâti un mur', etage: 'a bâti à l\'étage', solEtage: 'a posé un sol à l\'étage' };
 export function gesteEnMots(type, bilan = null, caisse = false) {
+  // (I9f : le monde mis à jour à sa première ouverture par le serveur ; une ferme d'avant, passée sur l'île)
+  if (type === 'monde.migrer' && bilan && typeof bilan === 'object') return bilan.ile ? `est passé sur l'île à bâtir (la ferme d'avant est gardée dans 💾)${bilan.perdus ? ` ; ${bilan.perdus} geste(s) d'avant n'ont pas pu être rejoués` : ''}` : `est passé à la version ${echapper(bilan.vers || '?')} du jeu`;
   if (bilan && typeof bilan === 'object') return villageEnMots(type, bilan) || commerceEnMots(type, bilan, caisse);
   return GESTES[type] || FAMILLES_GESTES[String(type).split('.')[0]] || 'a fait un geste';
 }
@@ -698,7 +715,7 @@ async function ouvrirJournal(suite = false) {
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="journal-titre">📜 Le journal du monde</h2>
-    <p class="muted">Qui a fait quoi dans ta ferme, du plus récent au plus ancien.</p>
+    <p class="muted">Qui a fait quoi dans ${ileEnLigne() ? 'ton île' : 'ta ferme'}, du plus récent au plus ancien.</p>
     <ul class="journal-monde">${lignes}</ul>
     ${(r.evts || []).length >= 50 ? '<div class="row"><button class="btn" type="button" data-action="monde-journal-suite">Plus ancien</button></div>' : ''}
     <div class="row"><button class="btn" type="button" data-action="monde-membres">👥 Les membres</button></div>`, { labelledBy: 'journal-titre' });
@@ -706,7 +723,10 @@ async function ouvrirJournal(suite = false) {
 
 // E-12 : les sauvegardes du monde (le propriétaire) : une après chaque nuit, d'autres à la demande ; en
 // restaurer une remplace la partie du monde pour tous (la partie d'avant est sauvée d'abord).
-const RAISONS = { nuit: '🌙 après la nuit', main: '💾 à la main', 'avant-restauration': '↩️ avant une restauration', heure: '🕰️ une heure de jeu', depart: '👋 au départ du dernier joueur' };
+const RAISONS = { nuit: '🌙 après la nuit', main: '💾 à la main', 'avant-restauration': '↩️ avant une restauration', heure: '🕰️ une heure de jeu', depart: '👋 au départ du dernier joueur',
+  // (I9f)
+  'avant-ile': '🏝️ avant le passage sur l\'île', 'avant-mise-a-jour': '⬆️ avant une mise à jour du jeu', 'avant-remplacement': '🔄 avant la copie remise à jour' };
+const SAUVEGARDES_GARDEES = 14;   // (worker/src/monde.mjs, SAUVEGARDES.GARDER)
 let sauvegardesVues = [], aRestaurer = null;
 async function ouvrirSauvegardes(relire = true) {
   if (!lien) return;
@@ -722,7 +742,7 @@ async function ouvrirSauvegardes(relire = true) {
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="sauvegardes-titre">💾 Les sauvegardes du monde</h2>
-    <p class="muted">Une après chaque nuit, et quand tu veux. Restaurer remet la ferme de tout le monde dans cet état ; la ferme d'avant est sauvée d'abord, tu peux donc revenir en arrière.</p>
+    <p class="muted">${ileEnLigne() ? `Une par heure de jeu en ligne, une quand le dernier joueur part, et quand tu veux (les ${SAUVEGARDES_GARDEES} dernières sont gardées). Restaurer remet l'île de tout le monde dans cet état ; l'île d'avant est sauvée d'abord, tu peux donc revenir en arrière.` : 'Une après chaque nuit, et quand tu veux. Restaurer remet la ferme de tout le monde dans cet état ; la ferme d\'avant est sauvée d\'abord, tu peux donc revenir en arrière.'}</p>
     <ul class="journal-monde">${lignes}</ul>
     <div class="row"><button class="btn primary" type="button" data-action="monde-sauvegarder">Sauvegarder maintenant</button><button class="btn" type="button" data-action="monde-membres">👥 Les membres</button></div>`, { labelledBy: 'sauvegardes-titre' });
 }

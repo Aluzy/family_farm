@@ -15,6 +15,7 @@ import { clockHours, dureeDuPas, energieDe, horlogeVivante, nightActive, pasDe }
 import { cheminDehorsSur, migrate, objetsDeRegion, regionVue, solDirect, STATE_VERSION, surCase } from '../js/engine/index.js';
 import { capacitePortage, chargeDuCompte, COMMANDES_DEHORS, COMMANDES_DU_PORT, comptoirDuPort, enVenteAuPort, lieuPort, prixIle } from '../js/engine/index.js';
 import { arriverVillageois, attribuer, donnerOutil, noterEvenement, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
+import { cheminsDehors, etatTroncon, nouvelleCharrette, poidsDuMonde, poserRails } from '../js/engine/index.js';
 import { atelier, avecVillage, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
 import { empreinteDuMonde } from './engine/monde-de-la-graine.mjs';
 import { spawnSync } from 'node:child_process';
@@ -1514,4 +1515,227 @@ test('I9e : une ferme d\'avant garde la grille d\'E-11 (fabriquer : le bâtisseu
   eq(roleDemande(r.charger(), { type: 'atelier.fabriquer', args: { recette: 'x' } }), 'batisseur', 'une ferme d\'avant');
   const ile = ileAuVillage(1);
   eq(roleDemande(ile, { type: 'atelier.fabriquer', args: { recette: 'x' } }), 'jardinier', 'une île');
+});
+
+/* ---------- I9f : mettre son île en ligne, migrer les mondes d'avant ---------- */
+
+// Une île avancée, en solo : trois villageois au travail (un trait connu, un lien), la charrette du village et des rails,
+// deux arbres abattus et un chemin posé dehors, sa chronique ; son brouillard levé au-delà de la ferme.
+function ileAvancee() {
+  const s = ileAuVillage(3);
+  tireless(s);
+  s.outils = { ...(s.outils || {}), hache: true, pioche: true, faux: true };
+  for (const a of piecesDehors(s, 'couper', 2)) {
+    for (let k = 0; k < a.regle.coups; k++) { const x = executerCommande(s, { id: id(), type: 'monde.recolter', args: { piece: a.id } }); assert(x.ok, x.error); }
+  }
+  addItem(s, DATA.ATELIER.BLOCS.chemin.objet, 3);
+  const T = farmTerrain(s), W = T.LARGEUR, S = T.MONDE.cadre.SORTIE;
+  let t = null;
+  for (let k = 3; k < 60 && t === null; k++) for (const c of [S + k, S + k * W, S - k, S - k * W]) if (t === null && !caseDansLaFerme(s, c) && poseStatus(s, 'chemin', c).ok) t = c;
+  assert(t !== null && executerCommande(s, { id: id(), type: 'bloc.poser', args: { sorte: 'chemin', case: t } }).ok, 'un chemin dehors');
+  s.charrette = { ...nouvelleCharrette(), capacite: 2 };
+  assert(poserRails(s, t + 3 * W), 'des rails');
+  const v = villageoisDe(s)[0];
+  v.traitsConnus = [...(v.traits || []).slice(0, 1)];
+  noterEvenement(s, { sorte: 'visite', qui: villageoisDe(s)[1].id, chez: v.id, jour: s.day });
+  voirAutour(s, S + 40, { biome: 'prairie' });
+  return { s, chemin: t };
+}
+
+test('I9f : la mise en ligne d\'une île avancée emporte toute l\'île (ce qui est pris dehors, les chemins et les rails, le port, les villageois et leurs liens, la charrette, la chronique, les traits connus) dans le plafond ; le brouillard du propriétaire n\'y est pas ; la partie solo reste intacte', () => {
+  const { s, chemin } = ileAvancee();
+  const solo = JSON.stringify(s), r = new MondeRegistre(baseSql());
+  const t0 = performance.now();
+  const c = r.creer({ proprietaire: A, nom: 'Alex', partie: { v: s.version, t: 0, s: JSON.parse(solo) } });
+  const ms = performance.now() - t0;
+  assert(c.ok, c.erreur);
+  eq(JSON.stringify(s), solo, 'la partie solo n\'est pas touchée');
+  const w = r.charger(), P = DATA.VILLAGE.EN_LIGNE, p = poidsDuMonde(w);
+  eq([Object.keys(w.monde.pris).length, JSON.stringify(w.monde.vues), cheminDehorsSur(w, chemin), JSON.stringify(w.dehors.rails), JSON.stringify(w.charrette)],
+    [Object.keys(s.monde.pris).length, JSON.stringify(s.monde.vues), true, JSON.stringify(s.dehors.rails), JSON.stringify(s.charrette)], 'ce qui est pris dehors, les régions vues, le chemin, les rails, la charrette');
+  eq([villageoisDe(w).map((v) => [v.id, v.tache, v.traitsConnus]), w.voisins.evenements.length, w.chronique.lignes.length, w.noms.ile, w.port.niveau],
+    [villageoisDe(s).map((v) => [v.id, v.tache, v.traitsConnus]), s.voisins.evenements.length, s.chronique.lignes.length, s.noms.ile, s.port.niveau], 'les villageois, leurs liens, la chronique, les noms, le port');
+  assert(w.port.lieu && w.amities[A] && w.energies[A] === Math.round(s.energie), 'le lieu du port ; l\'amitié et l\'énergie du propriétaire');
+  assert(w.monde.vu !== s.monde.vu && w.monde.vu.length > 0, 'le brouillard du propriétaire reste dans son navigateur : le monde garde le vu de la ferme');
+  assert(p.partie < P.PARTIE_KO * 1024 && p.dehors < P.DEHORS_KO * 1024, `dans le plafond : ${JSON.stringify(p)}`);
+  assert(ms < 5000, `la mise en ligne : ${Math.round(ms)} ms`);
+  console.log(`  (I9f : une île de trois villageois mise en ligne : ${(p.partie / 1024).toFixed(1)} Ko, dont ${(p.dehors / 1024).toFixed(1)} Ko hors de la ferme, en ${Math.round(ms)} ms)`);
+});
+
+test('I9f : le plafond : une île trop lourde, ou trop changée hors de la ferme, n\'est pas mise en ligne, et le message dit son poids ; une ferme d\'avant garde la limite d\'avant', () => {
+  const lourde = ileAuVillage(1);
+  lourde.carnetEssai = 'x'.repeat(300 * 1024);   // (un champ de la partie, gardé tel quel par la copie)
+  const a = new MondeRegistre(baseSql()).creer({ proprietaire: A, partie: { v: lourde.version, t: 0, s: lourde } });
+  eq([a.ok, a.statut, /Ton île pèse \d+ Ko en ligne : un monde en porte 256 Ko au plus/.test(a.erreur)], [false, 413, true], a.erreur);
+  const changee = ileAuVillage(1);
+  for (let k = 0; k < 2500; k++) changee.monde.pris[`feuillu:${16 * k + 8},${40 + (k % 7) * 16}`] = { retour: changee.day + 9 };
+  const b = new MondeRegistre(baseSql()).creer({ proprietaire: A, partie: { v: changee.version, t: 0, s: changee } });
+  eq([b.ok, b.statut, /hors de la ferme pèse \d+ Ko : un monde en porte 64 Ko au plus/.test(b.erreur)], [false, 413, true], b.erreur);
+  const ferme = partieLocale();
+  ferme.carnetEssai = 'x'.repeat(300 * 1024);
+  assert(new MondeRegistre(baseSql()).creer({ proprietaire: A, partie: { v: ferme.version, t: 0, s: ferme } }).ok, 'une ferme d\'avant (le chantier éteint) : la limite d\'avant');
+});
+
+test('I9f : la copie remise à jour depuis la partie solo : elle remplace l\'île en ligne pour tous (le propriétaire seul), les membres restent, chacun repart de zéro ; le journal le marque, un joueur en retard reçoit tout', () => {
+  const { s } = ileAvancee();
+  const h = { t: 1_700_000_000_000 }, sql = baseSql(), r = new MondeRegistre(sql, () => h.t);
+  assert(r.creer({ proprietaire: A, nom: 'Alex', partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  r.ajouterMembre(B, 'Sam', 'jardinier');
+  r.accueil(A, { version: GAME_VERSION });
+  h.t += 6 * 5000;
+  const v = villageoisDe(r.charger())[0];
+  assert(r.commande(B, { id: id(), type: 'villageois.parler', args: { id: v.id, n: 0 } }).ok, 'B parle à un villageois en ligne');
+  const revB = r.rev;
+  assert(r.charger().amities[B], 'B a son amitié en ligne');
+  // en solo, le propriétaire a continué : un troisième arbre, du bois en plus
+  const [a3] = piecesDehors(s, 'couper', 3).filter((o) => !(o.id in s.monde.pris));
+  for (let k = 0; k < a3.regle.coups; k++) assert(executerCommande(s, { id: id(), type: 'monde.recolter', args: { piece: a3.id } }).ok);
+  addItem(s, 'bois', 50);
+  eq(r.remplacer(B, { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) }).statut, 403, 'l\'invité ne la remplace pas');
+  const x = r.remplacer(A, { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) });
+  assert(x.ok, x.erreur);
+  const w = r.charger(), attendu = new MondeRegistre(baseSql());
+  assert(attendu.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  eq([countItem(w, 'bois'), a3.id in w.monde.pris, B in w.amities, r.membres().map((m) => m.compte).sort()], [countItem(s, 'bois'), true, false, [A, B].sort()], 'la partie solo d\'aujourd\'hui ; B est toujours membre, son amitié recommence');
+  eq(empreintePartie({ ...w, horloge: null }), empreintePartie({ ...attendu.charger(), horloge: null }), 'la même copie qu\'une mise en ligne');
+  eq([r.journal(A).evts[0].type, 'partie' in r.accueil(B, { version: GAME_VERSION, depuis: revB })], ['monde.remplacer', true], 'la marque ; B, en retard, reçoit tout');
+  eq(empreintePartie(new MondeRegistre(sql, () => h.t).charger()), empreintePartie(r.charger()), 'réveillé, le monde refait la copie');
+});
+
+// Un monde d'avant (une ferme seule, horloge figée), tel qu'un serveur d'avant I9c l'a gardé : sa partie au format 105
+// (sans charges, ni amitiés de chacun, ni signature dans la chronique, ni charrette du village), la base sans le format
+// du moteur ; un mur posé par l'ami après le dernier instantané (dans le journal). `sql` : sa base.
+function mondeDAvant() {
+  const { r, sql } = monde();
+  const [t] = casesLibres(r.charger(), 1);
+  assert(r.commande(B, poser(t)).ok, 'le mur de l\'ami, au journal');
+  const vieille = JSON.parse(sql.db.prepare('SELECT json FROM instantane WHERE rev = 0').get().json);
+  for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge']) delete vieille[k];
+  vieille.version = 103;
+  sql.db.prepare('UPDATE instantane SET json = ? WHERE rev = 0').run(JSON.stringify(vieille));
+  sql.db.prepare('DELETE FROM meta WHERE cle = ?').run('format');
+  const avant = JSON.parse(JSON.stringify(r.charger()));
+  return { sql, avant, mur: t };
+}
+
+test('I9f : un monde d\'avant migre à sa première ouverture : la ferme et le coffre intacts, l\'horloge vivante (son jour et son heure gardés), l\'île autour, le port et le tronçon posés, aucun villageois ; la partie d\'avant gardée ; un jeu d\'avant n\'entre plus', () => {
+  const { sql, avant, mur } = mondeDAvant();
+  const h = { t: 1_700_000_000_000 }, r = new MondeRegistre(sql, () => h.t);
+  r.essaiIle = true;   // (pendant le chantier : un Durable Object d'essai ; à la bascule, le réglage allumé)
+  const t0 = performance.now();
+  const w = r.charger();
+  const ms = performance.now() - t0;
+  eq([ilePartagee(w), horlogeVivante(w), w.horloge.pas, w.day, clockHours(w), w.mondePartage], [true, true, 0, avant.day, clockHours(avant), true], 'une île, son horloge vivante au pas 0, le même jour et la même heure');
+  eq([JSON.stringify(w.blocs), JSON.stringify(w.sols), JSON.stringify(w.potager.parcelles.map((p) => [p.case, p.culture]))], [JSON.stringify(avant.blocs), JSON.stringify(avant.sols), JSON.stringify(avant.potager.parcelles.map((p) => [p.case, p.culture]))], 'la ferme intacte (le mur de l\'ami compris)');
+  assert(w.blocs[mur] === 'mur_pierre', 'le geste d\'après l\'instantané, rejoué');
+  const C = DATA.VILLAGE.MIGRATION.CADEAU;
+  for (const k of Object.keys(avant.inventaire || {})) assert(countItem(w, k) >= countItem(avant, k), `le coffre intact : ${k}`);
+  eq([countItem(w, 'planche') - countItem(avant, 'planche'), w.pieces - avant.pieces], [C.objets.planche, C.pieces], 'le cadeau de bienvenue, au coffre commun, une fois');
+  assert(w.port && w.port.lieu && etatTroncon(w) !== 'a_poser' && cheminsDehors(w).size > 0, 'le port, son lieu, le tronçon posé en chemins');
+  eq([villageoisDe(w).length, w.energies[A], Object.keys(w.amities), w.retourIle.monde.jour, w.retourIle.donne], [0, Math.round(avant.energie), [A], avant.day, true], 'aucun villageois ; l\'énergie et l\'amitié du propriétaire ; la fenêtre du retour, son cadeau donné');
+  eq([r.meta('version'), r.meta('format'), r.journal(A).evts[0].type, r.journal(A).evts[0].bilan.ile, r.journal(A).evts[0].nom], [GAME_VERSION, String(STATE_VERSION), 'monde.migrer', true, 'Le monde'], 'la version du serveur, la marque au journal');
+  const g = r.avantMigration();
+  eq([g.partie.blocs[mur], 'port' in g.partie, r.aSauver.raison], ['mur_pierre', false, 'avant-ile'], 'la ferme d\'avant, gardée (et à sauver dans les sauvegardes du monde)');
+  assert(ms < 5000, `la migration : ${Math.round(ms)} ms`);
+  // un jeu d'avant (sans format), plus ancien, plus récent : refusés ; le jeu à jour entre, et reçoit la partie entière
+  const sans = r.accueil(B, { version: GAME_VERSION, depuis: 1 });
+  eq([sans.ok, /recharge la page/.test(sans.erreur)], [false, true], sans.erreur);
+  eq(/recharge la page/.test(r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION - 1 }).erreur), true);
+  eq(/réessaie dans quelques minutes/.test(r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION + 1 }).erreur), true);
+  eq(/réessaie/.test(r.accueil(B, { version: '99.0.0', format: STATE_VERSION }).erreur), true);
+  const ok = r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION, depuis: 1 });
+  assert(ok.ok && ok.partie, 'à jour : la partie entière (la marque est après sa révision)');
+  // le serveur refuse une commande d'une connexion qui joue un moteur plus ancien
+  const recus = [];
+  traiterMessage(r, B, JSON.stringify({ t: 'cmd', ...poser(casesLibres(w, 1)[0]) }), (m) => recus.push(m), () => {}, () => {}, { jeuDe: () => ({ version: GAME_VERSION, format: STATE_VERSION - 1 }) });
+  eq([recus[0].t, recus[0].ok, /recharge la page/.test(recus[0].erreur)], ['ack', false, true], 'la commande d\'un jeu d\'avant');
+  // (par la WebSocket : le hello d'un jeu à jour, son format compris, est accueilli ; sans format, refusé)
+  const hello = (m) => { const out = []; traiterMessage(r, B, JSON.stringify({ t: 'hello', ...m }), (x) => out.push(x), () => {}); return out[0]; };
+  eq([hello({ version: GAME_VERSION, format: STATE_VERSION }).t, hello({ version: GAME_VERSION }).t], ['bienvenue', 'refus'], 'le hello');
+  console.log(`  (I9f : un monde d'avant migré en ${Math.round(ms)} ms)`);
+});
+
+test('I9f : un monde d\'avant migré se joue à deux : les gestes de chacun, le temps qui passe, son énergie à chacun ; la grille d\'une île ; réveillé à froid, la même partie', () => {
+  const { sql } = mondeDAvant();
+  const h = { t: 1_700_000_000_000 }, r = new MondeRegistre(sql, () => h.t);
+  r.essaiIle = true;
+  const w = r.charger();
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
+  r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION });
+  eq([roleDemande(w, { type: 'atelier.fabriquer', args: { recette: 'x' } }), roleDemande(w, { type: 'villageois.attribuer', args: {} })], ['jardinier', 'proprietaire'], 'la grille d\'une île');
+  const [t1, t2] = casesLibres(w, 2);
+  h.t += 3 * 5000;
+  let x = r.commande(B, poser(t1));
+  assert(x.ok && Number.isInteger(x.evt.cmd.pas) && x.evt.cmd.pas >= 3, `B pose un mur, au pas du monde (${x.erreur})`);
+  h.t += 2 * 5000;
+  x = r.commande(A, { id: id(), type: 'potager.recolter', args: { parcelle: 'potager-1' } });
+  assert(x.ok, `A récolte sa carotte (${x.erreur})`);
+  x = r.commande(A, poser(t2));
+  assert(x.ok, x.erreur);
+  const s = r.charger();
+  assert(s.energies[A] !== s.energies[B] || s.energies[B] !== undefined, `chacun son énergie : ${JSON.stringify(s.energies)}`);
+  h.t += 60 * 5000;
+  r.avancer();
+  const froid = new MondeRegistre(sql, () => h.t);
+  froid.essaiIle = true;
+  froid.avancer();
+  eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal d\'après la migration se rejoue, pas à pas');
+  eq(froid.journal(A).evts.filter((e) => e.type === 'monde.migrer').length, 1, 'une seule migration');
+});
+
+test('I9f : le chantier allumé (la bascule), un monde d\'avant migre sans essai ; un monde déjà à jour ne bouge pas ; une île d\'avant I9c reçoit son lieu du port et le portage de son propriétaire', () => {
+  const { sql, avant } = mondeDAvant();
+  avecVillage(() => {
+  const r = new MondeRegistre(sql);
+  const w = r.charger();
+  eq([ilePartagee(w), !!(w.essais && w.essais.village), villageoisDe(w).length, w.blocs[Object.keys(avant.blocs)[0]]], [true, false, 0, avant.blocs[Object.keys(avant.blocs)[0]]], 'une île (le réglage), pas une partie d\'essai');
+  const rev = r.rev, em = empreintePartie(w);
+  const encore = new MondeRegistre(sql);
+  eq([empreintePartie(encore.charger()), encore.rev, encore.aSauver || null], [em, rev, null], 'déjà à jour : rien ne bouge');
+  // une île mise en ligne avant I9c (format 105) : ni lieu de port, ni charges ; son portage à personne
+  const ile = ileAuVillage(1);
+  const ri = new MondeRegistre(baseSql());
+  assert(ri.creer({ proprietaire: A, partie: { v: ile.version, t: 0, s: JSON.parse(JSON.stringify(ile)) } }).ok);
+  const p = JSON.parse(JSON.stringify(ri.charger()));
+  delete p.port.lieu; delete p.charges; delete p.amities;
+  p.portage = { vehicule: 'mains', charge: { bois: [{ qty: 2, nightsLeft: 9, origin: 'produit' }] } };
+  p.version = 105;
+  ri.sql.exec('UPDATE instantane SET json = ?', JSON.stringify(p));
+  ri.sql.exec('DELETE FROM meta WHERE cle = ?', 'format');
+  const w2 = new MondeRegistre(ri.sql).charger();
+  eq([!!w2.port.lieu, w2.charges[A] && w2.charges[A].charge.bois[0].qty, 'portage' in w2, Object.keys(w2.amities)], [true, 2, false, [A]], 'le lieu du port, le portage et l\'amitié du propriétaire');
+  });
+});
+
+test('I9f : le Durable Object : la ferme d\'avant est dans les sauvegardes du monde (« avant le passage sur l\'île ») ; la restaurer refait l\'île autour de la ferme, sans redonner le cadeau ; la sauvegarde d\'une île avancée, son poids et sa restauration', async () => {
+  const { sql, avant } = mondeDAvant();
+  const bucket = fauxBucket(), sockets = [];
+  const ctx = { storage: { sql }, id: { toString: () => 'vieux' }, getWebSockets: () => sockets, getTags: (w) => [w.c], waitUntil: (p) => p };
+  const d = new Monde(ctx, { SESSIONS: bucket, ILE_ESSAI: '1' });
+  const req = (chemin, compte, corps, methode = corps ? 'POST' : 'GET') => d.fetch(new Request('https://monde/monde/' + chemin, { method: methode, headers: { 'X-Compte': compte, 'X-Nom': 'X', 'Content-Type': 'application/json' }, body: corps ? JSON.stringify(corps) : undefined })).then(async (x) => ({ statut: x.status, ...(await x.json()) }));
+  eq((await req('fiche', A)).ok, true);
+  const L = (await req('sauvegardes', A)).sauvegardes;
+  eq(L.map((x) => x.raison), ['avant-ile'], 'la ferme d\'avant, sauvée');
+  const migre = d.registre.charger(), planches = countItem(migre, 'planche');
+  const res = await req('restaurer', A, { cle: L[0].cle });
+  assert(res.ok, res.erreur);
+  const w = d.registre.charger();
+  eq([ilePartagee(w), !!w.port.lieu, JSON.stringify(w.blocs), countItem(w, 'planche'), w.retourIle.donne], [true, true, JSON.stringify(avant.blocs), countItem(avant, 'planche'), true], 'l\'île revient autour de la ferme d\'avant ; le cadeau n\'est pas redonné');
+  assert(planches > countItem(w, 'planche'), 'le cadeau avait été donné une fois');
+  // une île avancée : sa sauvegarde (son poids), restaurée après un geste (son temps)
+  const { s } = ileAvancee();
+  const sql2 = baseSql(), d2 = new Monde({ storage: { sql: sql2 }, id: { toString: () => 'ile' }, getWebSockets: () => [], getTags: (x) => [x.c], waitUntil: (p) => p }, { SESSIONS: bucket });
+  assert(d2.registre.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  d2.registre.ajouterMembre(B, 'Sam', 'jardinier');
+  const veille = await d2.sauvegarder('main');
+  const em = empreintePartie(d2.registre.charger());
+  assert(d2.registre.commande(B, { id: id(), type: 'villageois.parler', args: { id: villageoisDe(s)[0].id, n: 0 } }).ok);
+  const taille = (await d2.sauvegardes().liste())[0].taille;
+  const t0 = performance.now();
+  const rr = d2.registre.restaurer(A, await d2.sauvegardes().lire(veille.cle));
+  const ms = performance.now() - t0;
+  assert(rr.ok, rr.erreur);
+  eq(empreintePartie(d2.registre.charger()), em, 'la partie de la sauvegarde, celle d\'avant le geste');
+  assert(taille < DATA.VILLAGE.EN_LIGNE.PARTIE_KO * 1024 && ms < 3000, `${taille} octets, ${Math.round(ms)} ms`);
+  console.log(`  (I9f : la sauvegarde d'une île de trois villageois : ${(taille / 1024).toFixed(1)} Ko, restaurée en ${Math.round(ms)} ms ; ${SAUVEGARDES.GARDER} gardées : ${(taille * SAUVEGARDES.GARDER / 1024 / 1024).toFixed(2)} Mo)`);
 });

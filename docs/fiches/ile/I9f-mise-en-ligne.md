@@ -115,3 +115,56 @@ jeu, comme I7f l'a fait pour les parties solo.
 ## Vérifications et livraison
 
 Celles du README du chantier, plus les tests du serveur. Mettre à jour `worker/README.md`.
+
+## Fait (I9f)
+
+Le détail et les mesures : `docs/ile.md`, « Mettre son île en ligne et migrer les mondes d'avant (I9f, fait) » ;
+`docs/monde-partage.md` § 13, « Ce que fait I9f » ; `worker/README.md`.
+
+1. **Mettre son île en ligne** (`MondeRegistre.copie`, la même pour la création et la copie remise à jour) : l'élagage
+   d'une île (`elaguer`, `GRAND_MONDE_ILE`) garde `monde.pris`, `monde.vues`, `dehors` (les chemins et les rails),
+   `voisins` ; la charrette, le port et son lieu, les villageois et leurs traits connus, les commerces, la chronique, les
+   noms passent tels quels ; le brouillard du propriétaire part dans son navigateur (`ferme-brouillard-<monde>`, posé par
+   ⚙️ Options › Jeu en ligne) et le monde garde le vu des régions de sa ferme. Le plafond (`VILLAGE.EN_LIGNE`) est vérifié
+   à la copie d'une île, avec son poids dans le message (`poidsDuMonde`, `js/engine/frontiere.js`) ; la route garde 2 Mo
+   à l'envoi (le brouillard et ce que le monde ne garde pas n'y comptent pas) ; une ferme d'avant garde la limite d'avant.
+   La fenêtre du retour d'une partie solo migrée reste au solo.
+2. **Solo et en ligne** : ⚙️ Options › Jeu en ligne dit « 🌐 Mettre mon île en ligne », ce que la copie emporte (et son
+   poids), et que ce sont deux îles qui vivent chacune leur vie ; « 🔄 Remettre à jour » (le propriétaire, avec une
+   confirmation) remplace l'île en ligne par la partie solo du jour (`POST /mondes/<id>/remplacer`, `remplacer`), après
+   une sauvegarde du monde (« avant la copie remise à jour ») ; les membres restent, chacun repart de zéro (énergie, sac,
+   charge, amitiés) ; les autres joueurs sont prévenus.
+3. **Les sauvegardes** portent l'île entière ; mesurées (`node scripts/cout-mise-en-ligne.mjs`) : 54 Ko au jour 41,
+   83 Ko au jour 81, 121 Ko au jour 161 (8 villageois) ; 14 gardées : 0,7 à 1,7 Mo (3,5 Mo au plafond) ; restaurées en
+   2 à 4 ms. On en garde 14, comme avant. Une île restaurée garde sa nuit en cours.
+4. **Les mondes d'avant** sont mis à jour par le serveur à leur première ouverture (`mettreAJour`, depuis `charger`) :
+   le format du serveur (le journal d'après l'instantané rejoué), puis, pour une ferme d'avant le chantier allumé
+   (`ileDue` ; pendant le chantier, un Durable Object d'essai : `env.ILE_ESSAI`), le passage sur l'île par la migration
+   d'I7f (`migrerVersLIle`) : la ferme et le coffre intacts, l'horloge vivante (jour et heure gardés, pas 0), l'énergie,
+   le sac, la charge et l'amitié du propriétaire celles de la partie, le port et son lieu, le tronçon posé, aucun
+   villageois, le cadeau au coffre commun une fois par monde. La partie d'avant est gardée (la table `avant_migration`,
+   et la sauvegarde « avant le passage sur l'île ») ; une marque `monde.migrer` au journal. Une île d'avant I9b, I9c, I9d
+   reçoit ce qui lui manque (le lieu du port, le sac, la charge, l'amitié du propriétaire). Chaque membre voit la
+   fenêtre du retour, une fois (le propriétaire : la grille des rôles d'une île, la ferme d'avant dans 💾).
+5. **Les versions** : le monde prend la version et le format du serveur ; `hello.format` (nouveau) : un jeu plus ancien
+   (ou d'avant I9f, sans format, dans un monde mis à jour) est refusé, « recharge la page » ; un plus récent, « réessaie
+   dans quelques minutes » (le serveur se met à jour) ; une commande d'une connexion dont le jeu ne joue plus la version
+   du monde est refusée.
+6. **Les tests** : `tests/test-monde.mjs` (7 tests I9f), `tests/test-synchro.mjs` (un monde d'avant migré joué à deux,
+   une heure de pas), `tests/deux-joueurs.mjs` (14a à 14e, 15a à 15c).
+
+Ce qui s'écrivait encore dans la partie locale en ligne : la fiche d'un membre de la famille, ses habits, sa tente, un
+animal, l'aide du compagnon sont refusés en ligne (« on les change dans sa partie solo » : la famille de la partie d'un
+monde est celle de son propriétaire, et ces gestes ne s'écrivaient que dans la partie locale, effacés au geste suivant
+d'un autre) ; le choix d'un lit l'était déjà (E-10). Le journal dit « Qui a fait quoi dans ton île » sur une île. Les
+noms (« Voisin ») se corrigent à la première connexion de chacun (`hello.prenom`, I9e) : rien de plus à migrer. Les
+réglages du monde sont au Durable Object : la migration et la copie remise à jour les laissent.
+
+Pas de nouveau format de sauvegarde (109) : `retourIle.monde` et `retourIle.donne` sont dans un champ qui existe ; la
+version et le format du monde sont au Durable Object (`meta`).
+
+**À confirmer par le joueur** : la copie remise à jour remet à zéro ce qui était à chaque invité dans l'île en ligne (son
+sac, sa charge, ses amitiés avec les villageois) plutôt que de le garder (les villageois de la partie solo ne sont plus
+forcément les mêmes) ; le cadeau de bienvenue d'un monde migré va au coffre commun, une fois, pour tous ; pendant le
+chantier, aucun monde publié n'est migré (seul un Durable Object d'essai le fait) ; la famille, ses habits et ses
+animaux ne changent pas en ligne.

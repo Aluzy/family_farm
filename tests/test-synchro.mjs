@@ -5,7 +5,7 @@
 
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
-import { addItem, blocAt, caseVue, createNewGame, DATA, empreintePartie, executerCommande, farmTerrain, GAME_VERSION, HORS_FERME_ILE, ilePartagee, poseStatus, refusFrontiere, testBatir, testSetLevel, unirVu, voirAutour } from '../js/engine/index.js';
+import { addItem, blocAt, caseVue, createNewGame, DATA, empreintePartie, executerCommande, farmTerrain, GAME_VERSION, HORS_FERME_ILE, STATE_VERSION, ilePartagee, poseStatus, refusFrontiere, testBatir, testSetLevel, unirVu, voirAutour } from '../js/engine/index.js';
 import { caseDansLaFerme, cheminDehorsSur, countItem, objetsDeRegion, pasDe, solDirect } from '../js/engine/index.js';
 import { avancerJusqua, clockHours, comptoirDuPort, etatBac } from '../js/engine/index.js';
 import { arriverVillageois, attribuer, donnerOutil, tableauVillage, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
@@ -165,7 +165,7 @@ function ileEnLigne() {
   return { r, h, cases };
 }
 function joueurIle(r, compte, o = {}) {
-  const a = r.accueil(compte, { version: GAME_VERSION });
+  const a = r.accueil(compte, { version: GAME_VERSION, format: STATE_VERSION });
   return new Synchro({ partie: a.partie, rev: a.rev, executerCommande, moi: compte, horloge: a.horloge, ...o });
 }
 // (la partie locale montre l'énergie du joueur : pour la comparer à celle du monde, celle de la partie)
@@ -516,4 +516,39 @@ test('I9e : les gestes de gestion du village chez chacun : l\'ordre d\'une tâch
   a.avancerConfirmee(pasDe(w)); b.avancerConfirmee(pasDe(w));
   const em = empreintePartie(w);
   eq([empreintePartie(a.confirmee), empreintePartie(b.confirmee), commeLeMondeI9d(a.locale, w), commeLeMondeI9d(b.locale, w)], [em, em, em, em], 'la même partie partout');
+});
+
+test('I9f : un monde d\'avant (une ferme seule, au format d\'avant I9c), migré à sa première ouverture, se joue à deux : les gestes de chacun et une heure de pas ; la même partie chez A, chez B et au monde', () => {
+  // le monde d'avant : une ferme seule (le chantier éteint), un mur au journal après son instantané ; sa partie au format 103
+  const { r: vieux, cases } = monde();
+  assert(vieux.commande('B', mur(cases[0])).ok);
+  const sql = vieux.sql, brute = JSON.parse(vieux.un('SELECT json FROM instantane WHERE rev = 0').json);
+  for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge']) delete brute[k];
+  brute.version = 103;
+  sql.exec('UPDATE instantane SET json = ? WHERE rev = 0', JSON.stringify(brute));
+  sql.exec('DELETE FROM meta WHERE cle = ?', 'format');
+  const h = { t: 1_700_000_000_000 }, r = new MondeRegistre(sql, () => h.t);
+  r.essaiIle = true;
+  assert(ilePartagee(r.charger()) && blocAt(r.charger(), cases[0]) === 'mur_pierre', 'migré : une île, la ferme intacte');
+  const a = joueurIle(r, 'A'), b = joueurIle(r, 'B');
+  assert(a.vivante && b.vivante, 'l\'horloge vit chez chacun');
+  let k = 0, n = 1;
+  const debut = h.t;
+  while (h.t < debut + 3600 * 1000) {
+    h.t += 1000;
+    a.avancer(h.t); b.avancer(h.t + 200);
+    if (k % 60 === 0) r.avancer(h.t);   // (l'alarme du monde, toutes les minutes ici)
+    if (++k % 97 || n >= cases.length) continue;
+    const qui = n % 2 ? b : a, compte = n % 2 ? 'B' : 'A', c = mur(cases[n++]);
+    qui.jouer(c);
+    const rep = r.commande(compte, c);
+    if (rep.ok) assert(a.evenement(rep.evt) && b.evenement(rep.evt), 'reçu dans l\'ordre'); else qui.refusee(c.id);
+  }
+  r.avancer(h.t);
+  a.avancer(h.t); b.avancer(h.t);
+  const w = r.charger();
+  a.avancerConfirmee(pasDe(w)); b.avancerConfirmee(pasDe(w));
+  const em = empreintePartie(w);
+  eq([pasDe(w) >= 719, empreintePartie(a.confirmee), empreintePartie(b.confirmee), commeLeMonde(a.locale, w), commeLeMonde(b.locale, w)], [true, em, em, em, em], 'la même partie partout, une heure plus tard');
+  assert(cases.slice(0, n).every((t) => blocAt(w, t) === 'mur_pierre'), 'les murs de chacun');
 });

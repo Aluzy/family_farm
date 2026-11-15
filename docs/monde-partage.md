@@ -13,7 +13,8 @@ nuit partagée. **E-8 a posé la frontière** : M.1, M.2 et M.3 ci-dessous sont 
 > et F.2 (l'horloge figée, `worker/README.md`) pour les mondes du chantier : I9a2 y pose l'horloge vivante (§ 13,
 > « Ce que fait I9a2 »). Tant que le réglage
 > `VILLAGE.ACTIF` est éteint, le jeu publié et les mondes d'avant gardent E-8, tels quels, jusqu'à la bascule
-> (I9h) et la migration des mondes (I9f).
+> (I9h) et la migration des mondes (I9f, faite : un monde d'avant passe sur l'île à sa première ouverture par le
+> serveur, le chantier allumé ; § 13, « Ce que fait I9f »).
 
 ## 1. Le principe
 
@@ -236,6 +237,9 @@ ci-dessus.
   - un instantané est écrit, et le journal porte une marque `monde.restaurer`, jamais rejouée, qui garde l'histoire d'avant ;
   - chaque joueur connecté reçoit la partie entière et un mot ; un joueur en retard d'une restauration la reçoit entière à son retour.
 - **Routes** : `GET` et `POST /mondes/<id>/sauvegardes`, `POST /mondes/<id>/restaurer { cle }`, réservées au propriétaire. Une clé d'un autre monde est refusée.
+- **I9f** : une sauvegarde aussi avant une copie remise à jour (`POST /mondes/<id>/remplacer`) et avant la mise à jour d'un
+  monde par un serveur d'une autre version (une ferme d'avant : « avant le passage sur l'île ») ; une île restaurée garde
+  sa nuit en cours.
 
 ## 12. E-13 : les machines de l'Atelier
 
@@ -312,7 +316,7 @@ Deux règles en découlent :
 
 La note de conception : `docs/fiches/ile/I9a2-note-horloge.md` (validée telle quelle). Pour un monde de l'île
 (`horlogeVivante`, `js/engine/temps-monde.js`), F.2 (l'horloge figée) et E-5 (la nuit partagée d'un coup) ne valent
-plus ; les mondes d'avant les gardent jusqu'à leur migration (I9f).
+plus ; les mondes d'avant les gardent jusqu'à leur migration (I9f : à leur première ouverture, le chantier allumé).
 
 - **Le temps passe tant qu'un joueur au moins est connecté.** Une connexion ouverte compte (sans détection
   d'inactivité). Le dernier qui part endort le monde (un instantané, une sauvegarde) ; le premier qui revient le
@@ -449,6 +453,33 @@ Le détail : `docs/ile.md`, « Les rôles en ligne » ; la grille : § 10.
   pour l'horloge et pour les lits.
 - **La sauvegarde** passe au format 108 (`par` sur une ligne de la chronique d'un monde ; une partie solo n'y gagne rien).
 
+### Ce que fait I9f (mettre son île en ligne, migrer les mondes d'avant)
+
+Le détail et les mesures : `docs/ile.md`, « Mettre son île en ligne et migrer les mondes d'avant ».
+
+- **La copie d'une île emporte l'île** : ce qui est pris dehors et le jour où cela revient, les régions vues du monde, les
+  chemins et les rails, le port et son lieu, les villageois, leurs liens et ce qu'on sait de leurs traits, les commerces,
+  la charrette du village, la chronique et les noms ; l'énergie, le sac, la charge et l'amitié du propriétaire sont celles
+  de sa partie. Ce qui se tire de la graine n'y est jamais. **Le brouillard du propriétaire** part dans son navigateur,
+  comme celui des invités (I9a) ; le monde garde le vu des régions de sa ferme.
+- **Le plafond est vérifié** à la copie d'une île (256 Ko la partie, 64 Ko l'île hors de la ferme), avec le poids dans le
+  message ; la route garde 2 Mo à l'envoi.
+- **Deux îles** : la partie solo et l'île en ligne vivent chacune leur vie après la copie (F.4, comme avant) ; la fenêtre
+  « Jeu en ligne » le dit, et le propriétaire peut **remettre la copie à jour** depuis sa partie solo (avec confirmation :
+  elle remplace l'île en ligne pour tous ; le monde est sauvegardé d'abord ; les membres restent, chacun repart de zéro).
+- **Les sauvegardes** (E-12) portent l'île entière : 54 à 121 Ko pour l'île du joueur automatique ; 14 gardées (3,5 Mo au
+  plafond) ; restaurées en quelques millisecondes.
+- **Un monde d'avant se met à jour** à sa première ouverture par un serveur d'une autre version : sa partie passe au
+  format du serveur, le journal d'après son instantané se rejoue, la partie d'avant est gardée (dans les sauvegardes du
+  monde, et dans sa base) ; le chantier allumé, **une ferme d'avant passe sur l'île** (la migration d'I7f : la ferme et le
+  coffre intacts, l'horloge vivante, son jour et son heure gardés ; le port, son lieu, le tronçon ; aucun villageois ; le
+  cadeau au coffre commun), et chaque membre voit la fenêtre du retour (le propriétaire : la grille des rôles d'une île).
+- **Les versions** : `hello` porte le format du jeu ; un jeu plus ancien que le monde ne peut pas y entrer (« recharge la
+  page ») et sa commande est refusée ; un plus récent attend le serveur.
+- **La famille de la partie** (celle du propriétaire) ne change pas en ligne : sa fiche, ses habits, ses animaux se
+  changent dans la partie solo.
+- **Pas de nouveau format** de sauvegarde (109).
+
 ### Le poids, et le plafond
 
 Mesuré par `node scripts/poids-ile.mjs` : une partie neuve du chantier jouée par le joueur automatique
@@ -497,6 +528,6 @@ Mesuré par `node scripts/poids-ile.mjs` : une partie neuve du chantier jouée p
 - **I9d (les villageois)** : la copie élaguée d'aujourd'hui (`elaguer`) retire `voisins`, qui porte maintenant les
   événements entre villageois (les visites du soir, les repas apportés : 5,7 Ko sur l'île avancée, `liens.js`) : un
   monde de l'île doit le garder. Les fêtes du village sont dans `vocations` (gardé).
-- **I9f (mettre son île en ligne)** : `elaguer` est à refaire pour une île (garder `monde.pris`, les chemins posés,
-  `voisins` ; le brouillard du propriétaire part dans son navigateur) ; le plafond se vérifie à la mise en
+- **I9f (mettre son île en ligne, faite : ci-dessus)** : `elaguer` est à refaire pour une île (garder `monde.pris`, les
+  chemins posés, `voisins` ; le brouillard du propriétaire part dans son navigateur) ; le plafond se vérifie à la mise en
   ligne (aujourd'hui, la route accepte 2 Mo).

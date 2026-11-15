@@ -81,3 +81,21 @@ export function refusFrontiere(state, args, type = null) {
   if (!ilePartagee(state)) return HORS_FERME;
   return type && COMMANDES_DEHORS.has(type) ? null : HORS_FERME_ILE;
 }
+
+// I9f : ce que pèse la partie d'un monde (en octets de JSON) : { partie, dehors } ; dehors, l'île hors de la ferme (ce qui
+// y a été pris et quand cela revient, les chemins et les rails, les blocs posés dehors, les herbes fauchées et la cueillette
+// prise dehors). Le plafond est VILLAGE.EN_LIGNE (PARTIE_KO, DEHORS_KO) ; ce qui se tire de la graine n'y est jamais.
+export function poidsDuMonde(state) {
+  const taille = (v) => (v === undefined ? 0 : JSON.stringify(v).length);
+  const T = farmTerrain(state), W = T.LARGEUR;
+  let dehors = taille(state.monde && state.monde.pris) + taille(state.dehors);
+  for (const k of ['blocs', 'sols', 'hauteurs', 'blocsDessus', 'rehausses', 'sens', 'solsEtage']) {
+    for (const [c, v] of Object.entries(state[k] || {})) if (/^\d+$/.test(c) && !caseDansLaFerme(state, Number(c))) dehors += c.length + taille(v) + 4;
+  }
+  for (const [id, v] of Object.entries((state.outils && state.outils.herbes) || {})) {
+    const [x, y] = String(id).split(',').map(Number);
+    if (Number.isFinite(x) && Number.isFinite(y) && !caseDansLaFerme(state, Math.floor((y - 1) / PX) * W + Math.floor(x / PX))) dehors += id.length + taille(v) + 4;
+  }
+  for (const id of (state.cueillette && state.cueillette.pris) || []) if (!caseDansLaFerme(state, Number(String(id).split(':').pop()))) dehors += String(id).length + 3;
+  return { partie: taille(state), dehors };
+}

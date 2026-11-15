@@ -2061,7 +2061,9 @@ export function migrateToIntegers(old) {
 // qui échoue sur une sauvegarde abîmée (un champ manquant, un type faux) ne fait plus planter la
 // page : la partie est réparée telle qu'elle est (reparerPartie) ; arrivée à la version courante,
 // elle l'est aussi (une partie saine n'y change pas d'un octet).
-export function migrate(save, jusqua = STATE_VERSION) {
+// `o.ile` (I9f) : faux, la partie ne passe pas sur l'île ici même si elle le devrait (migrationIleDue) : le monde en ligne
+// (worker/src/monde.mjs) rejoue d'abord le journal d'un monde d'avant sur sa ferme, puis la fait passer sur l'île lui-même.
+export function migrate(save, jusqua = STATE_VERSION, o = {}) {
   let state = save && typeof save === 'object' && save.s && typeof save.s === 'object' && !Array.isArray(save.s)
     ? { ...save.s }
     : (save && typeof save === 'object' && !Array.isArray(save) && !('s' in save) ? { ...save } : {});
@@ -2082,7 +2084,7 @@ export function migrate(save, jusqua = STATE_VERSION) {
   if (state.version === STATE_VERSION && jusqua === STATE_VERSION) {
     state = reparerPartie(state);
     // (fiche I7f : une partie d'avant ouverte sur l'île y passe : le réglage allumé, ou une partie d'essai)
-    if (migrationIleDue(state)) {
+    if (o.ile !== false && migrationIleDue(state)) {
       // (sur une copie : une partie qui ne passe pas reste telle quelle, jamais à moitié ; jamais d'exception ici)
       try { const ile = structuredClone(state); if (migrerVersLIle(ile)) state = ile; } catch (e) { /* (rien) */ }
     }
