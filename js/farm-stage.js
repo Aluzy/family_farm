@@ -140,6 +140,8 @@
         if (K.chargeCheval) K.chargeCheval(this, v);
         // la brouette et la charrette attelée (l'île à bâtir, fiche I2 : js/carte/portage.js)
         if (K.chargePortage) K.chargePortage(this, v);
+        // la charrette du village et les rails (l'île à bâtir, fiche I2b : js/carte/ferme/charrette-village.js)
+        if (K.chargeCharretteVillage && this.ctx.monde && this.ctx.monde.ile) K.chargeCharretteVillage(this, v);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
         L.json('perso_cases', v('personnages/cases.json'));
@@ -682,6 +684,7 @@
           { nom: 'caleche', cadence: img, actif: () => !fige() && !!this.stepCaleche, pas: (I) => this.stepCaleche(I.s) },   // (la calèche : caleche.js)
           { nom: 'malle', cadence: img, actif: () => !fige() && !!this.stepMalle, pas: () => this.stepMalle() },               // (sa malle : malle.js)
           { nom: 'bac', cadence: img, actif: () => !fige() && !!this.stepBac && !!(this.ctx.lastModel && this.ctx.lastModel.bac), pas: () => this.stepBac() },   // (le bac du port, fiche I1c : bac.js)
+          { nom: 'charretteVillage', cadence: img, actif: () => !fige() && !!this.stepCharretteVillage && !!(this.ctx.lastModel && (this.ctx.lastModel.charretteVillage || this.cvEtat)), pas: () => this.stepCharretteVillage() },   // (la charrette du village, les rails : charrette-village.js, fiche I2b)
           { nom: 'visite', cadence: img, actif: () => !fige() && !!this.stepVisite, pas: (I) => this.stepVisite(I.s) },       // (la visite de bienvenue : visite.js, fiche 18)
           { nom: 'villageois', cadence: img, actif: () => !fige() && !!this.stepVillageois && !!(this.ctx.lastModel && (this.ctx.lastModel.villageois || this.villageoisVus && this.villageoisVus.size)), pas: (I) => this.stepVillageois(I.s) },   // (l'île à bâtir, fiche I3a : villageois.js)
           { nom: 'rencontre', cadence: img, actif: () => !fige() && !!this.stepRencontre, pas: (I) => this.stepRencontre(I.s) },   // (une scène du récit sur la carte : rencontre.js)

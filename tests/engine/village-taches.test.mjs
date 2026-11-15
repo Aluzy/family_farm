@@ -14,7 +14,7 @@
    ========================================================================== */
 
 import {
-  actionsDues, addItem, arriverVillageois, attribuer, avancerTaches, botVillageois, chopsLeft, clockHours, countItem, createNewGame,
+  actionsDues, addItem, arriverVillageois, capaciteCharrette, attribuer, avancerTaches, botVillageois, chopsLeft, clockHours, countItem, createNewGame,
   DATA, donnerOutil, executerCommande, farmSeed, farmTerrain, fishLeft, harvestAll, isMature, journeeDuVillage, listeTaches, migrate,
   maxStage, paroleVillageois, portDuMonde, postesDe, quiFaitQuoi, reprendreOutil, runNight, STATE_VERSION, tacheAttente, tacheDef,
   tacheManque, tachesDuPoste, tachesNuit, tachesPour, testBatir, testMaisonVillageois, tick, treeGone, villageoisDe, waterPlot,
@@ -172,7 +172,9 @@ test('les bêtes : nourrir les poules ; le verger ; la cuisine ; la navette au p
   assert(r[a.id].actions >= 1 && s.poulailler.poules > 0, 'les poules nourries');
   assert(r[b.id].actions >= 1, 'une préparation lancée');
   assert(s.stations.cuisine.tache, 'la cuisinière travaille');
-  const portee = tacheDef('navette').PORTEE;
+  // (fiche I2b : la tournée est celle de la charrette du village, en volumes ; une carotte fait un volume)
+  const portee = capaciteCharrette(s);
+  assert(r[c.id].actions >= 1, 'au moins un voyage');
   assertEqual(carottes - countItem(s, 'carotte'), Math.min(30, portee * r[c.id].actions), 'les carottes portées au port');
   assert(s.pieces > pieces, 'l\'argent au joueur');
   assert(s.campagne.compteurs.ventesPort > 0, 'des ventes au port (les paliers)');

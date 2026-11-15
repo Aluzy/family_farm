@@ -33,7 +33,7 @@ import { bumpCounter } from './campaign.js';
 import { gainXp } from './levels.js';
 import { niveauPort, portOuvert } from './port.js';
 import { avancerBac, noterVenteBac, portDe, savoirProduire } from './bac.js';
-import { portageDe } from './portage.js';
+import { portageDe, volumeDe } from './portage.js';
 import { productionDe } from './production.js';
 import { debloque } from './vocations.js';
 import { chaines } from './chaines.js';
@@ -210,15 +210,17 @@ export function livrerContrat(state, id, ou = null, o = {}) {
 }
 
 // La tournée d'un villageois (taches.js, la navette) livre aux contrats acceptés ce que la ferme a, `max` unités au
-// plus, au comptoir (`ou` : sa case). → { n, gain, livre: { objet: n } }.
+// plus, au comptoir (`ou` : sa case). → { n, gain, livre: { objet: n }, volumes }. Fiche I2b (la charrette du village) :
+// `o.volumes`, `max` est en volumes (VILLAGE.PORTAGE.VOLUMES) ; `o.heure`, le comptoir ouvert à cette heure-là.
 export function livrerDepuisLaFerme(state, max, ou = null, o = {}) {
-  const out = { n: 0, gain: 0, livre: {} };
+  const out = { n: 0, gain: 0, livre: {}, volumes: 0 };
   const C = avancerContrats(state);
   if (!C || !(max > 0)) return out;
   if (!portOuvert(state, ou, o).ok) return out;
+  const vol = (x) => (o.volumes ? volumeDe(x) : 1);
   for (const c of [...C.acceptes]) {
-    if (out.n >= max) break;
-    const voulu = Math.min(c.quantite - c.livre, max - out.n, Math.floor(sellableCount(state, c.objet) + 1e-9));
+    if ((o.volumes ? out.volumes : out.n) >= max) break;
+    const voulu = Math.min(c.quantite - c.livre, Math.floor((max - (o.volumes ? out.volumes : out.n)) / vol(c.objet)), Math.floor(sellableCount(state, c.objet) + 1e-9));
     if (voulu <= 0) continue;
     const v = sellItem(state, c.objet, voulu, 'Contrat');
     if (!v.ok || !(v.sold > 0)) continue;
@@ -226,6 +228,7 @@ export function livrerDepuisLaFerme(state, max, ou = null, o = {}) {
     noterVenteBac(state, c.objet, v.sold);
     const r = livrer(state, C, c, v.sold, true);
     out.n += v.sold;
+    out.volumes += v.sold * volumeDe(c.objet);
     out.gain += v.gain + r.prime;
     out.livre[c.objet] = (out.livre[c.objet] || 0) + v.sold;
   }

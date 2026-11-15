@@ -1602,6 +1602,16 @@ export const RAW_DATA = {
       "rachetable": false,
       "village": true
     },
+    "rails": {
+      "nom": "Rails",
+      "icone": "🛤️",
+      "prix": 6,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "village": true
+    },
     "etal": { "nom": "Étal", "icone": "🛒", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "panneau_village": {
       "nom": "Panneau du village",
@@ -2292,6 +2302,7 @@ export const RAW_DATA = {
       "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 }, "coefPrix": 135 },
       "boite_aux_lettres": { "entrees": { "planche": 2, "bois": 1 }, "sortie": { "boite_aux_lettres": 1 }, "village": true, "coefPrix": 145 },
       "pont_planches": { "entrees": { "planche": 3, "bois": 2 }, "sortie": { "pont_planches": 2 }, "village": true, "coefPrix": 145 },
+      "rails": { "entrees": { "lingot_fer": 1, "planche": 2, "pierre": 1 }, "sortie": { "rails": 8 }, "village": true },
       "etal": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "etal": 1 }, "village": true, "coefPrix": 145 },
       "brouette": { "entrees": { "planche": 4, "lingot_fer": 1, "bois": 2 }, "sortie": { "brouette": 1 }, "village": true, "coefPrix": 150 },
       "charrette": {
@@ -2542,6 +2553,7 @@ export const RAW_DATA = {
         "tourne": true,
         "village": true
       },
+      "rails": { "nom": "Rails", "objet": "rails", "dehors": true, "rails": true, "plat": true, "village": true },
       "etal": {
         "nom": "Étal",
         "objet": "etal",
@@ -3547,6 +3559,7 @@ export const RAW_DATA = {
           "sol_pastel",
           "chemin",
           "pont_planches",
+          "rails",
           "sol_pas_ardoise",
           "sol_pas_pierre",
           "sol_pas_bois",
@@ -5698,7 +5711,12 @@ export const RAW_DATA = {
         { "PALIER": 4, "SORTE": "forge", "MATIERES": { "minerai_fer": 12, "bois": 8 } },
         { "PALIER": 6, "SORTE": "mercerie", "MATIERES": {}, "GARDER": { "laine": 12 }, "AVANCE": 60 }
       ],
-      "GARDE_MANGER": { "CUISINIERS": { "3": 1, "6": 2 }, "GARDE": 6 }
+      "GARDE_MANGER": { "CUISINIERS": { "3": 1, "6": 2 }, "GARDE": 6 },
+      "CHARRETTE": {
+        "RANG": 2,
+        "VENDRE": ["fraise", "poivron", "tomate", "aubergine", "epinard", "oignon", "carotte", "courgette", "pomme", "poire", "baies"],
+        "MARGE": 2
+      }
     },
     "VOCATIONS": {
       "village": { "nom": "Vocation village", "eveilS": 60 },
@@ -10172,6 +10190,7 @@ export const RAW_DATA = {
       "lanterne",
       "candelabre",
       "pont_planches",
+      "rails",
       "barriere",
       "barriere_blanche",
       "barriere_rouge",
@@ -10818,12 +10837,11 @@ export const RAW_DATA = {
         "nom": "La tournée du port",
         "icone": "⚓",
         "ACTIONS": 2,
-        "PORTEE": 10,
         "outil": null,
         "lieu": "port",
         "geste": "ramasse",
         "emoji": "💰",
-        "donne": "un aller-retour au port : PORTEE objets marqués « à vendre », vendus au comptoir",
+        "donne": "mener la charrette du village au port, voyage après voyage : les contrats, puis ce qui est marqué « à vendre »",
         "SANS": "Il n'y a pas de port sur l'île.",
         "PHRASES": ["Je descends au port.", "Le panier est lourd aujourd'hui !", "Je vends tout ça au comptoir."]
       }
@@ -10876,7 +10894,8 @@ export const RAW_DATA = {
           "charniere": { "entrees": { "lingot_fer": 1 }, "sortie": { "charniere": 2 }, "palier": 3 },
           "lame": { "entrees": { "lingot_fer": 1, "bois": 1 }, "sortie": { "lame": 1 }, "palier": 2 },
           "lingot_cuivre": { "entrees": { "minerai_cuivre": 4, "bois": 3 }, "sortie": { "lingot_cuivre": 1 }, "palier": 3 },
-          "lingot_or": { "entrees": { "minerai_or": 4, "bois": 4 }, "sortie": { "lingot_or": 1 }, "palier": 4 }
+          "lingot_or": { "entrees": { "minerai_or": 4, "bois": 4 }, "sortie": { "lingot_or": 1 }, "palier": 4 },
+          "rails": { "entrees": { "lingot_fer": 1, "planche": 2, "pierre": 1 }, "sortie": { "rails": 8 }, "palier": 2, "commande": true }
         },
         "CLIENTS": { "lame": "outil" }
       },
@@ -11557,11 +11576,40 @@ export const RAW_DATA = {
       ]
     },
     "COURANT": { "WH_PAR_PIECE": 250 },
-    "NAVETTE": { "BROUETTE": 25, "CHARRETTE": 60, "QUAI": 200 },
     "QUAI": { "NIVEAU": 2 },
     "MACHINES": { "RESERVOIR": 200 },
     "ROBOT": { "VITESSE": 200 },
     "IMPORT": { "RANG": 2, "LOT": 50, "MARGE": 150 }
+  },
+  "CHARRETTE": {
+    "JOUR": [7, 17],
+    "CHARGE": 0.25,
+    "QUAI": 0.1,
+    "VENTE": 0.25,
+    "MARCHE": 217.5,
+    "HORS_CHEMIN": 50,
+    "ABORDS": 6,
+    "CAPACITES": [20, 40, 80, 160, 320],
+    "PRIX_CAPACITE": [0, 300, 1000, 2500, 6000],
+    "VITESSES": [0.75, 1, 1.4, 2, 3],
+    "PRIX_VITESSE": [0, 400, 1500, 3000, 5000],
+    "CHEVAL": { "PALIER": 3, "RATION": 2, "SANS_CHEVAL": 2 },
+    "WAGONNET": 5,
+    "RAILS": { "BLOC": "rails" },
+    "NOMS_CAPACITE": [
+      "la caisse nue, ridelles basses",
+      "des ridelles plus hautes",
+      "les rehausses à claire-voie",
+      "les rehausses et une bâche",
+      "la longue charrette à quatre roues"
+    ],
+    "NOMS_VITESSE": [
+      "tirée à bras, à petit pas",
+      "roues cerclées de fer, moyeux graissés",
+      "le cheval de trait, au pas",
+      "le cheval ferré, au trot",
+      "le wagonnet sur la voie, au halage"
+    ]
   },
   "CONSERVATION": {
     "carotte": 6,

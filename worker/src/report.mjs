@@ -91,6 +91,8 @@ export const GAME_ACTIONS = {
   'port-importer': 'Commander au catalogue d\'import du bac',
   'port-apporter': 'Apporter des matériaux au chantier du port',
   'port-agrandir': 'Agrandir le port (le niveau suivant)',
+  // (fiche I2b : la charrette du village)
+  'charrette-palier': 'Améliorer la charrette du village (un palier)',
   'portage-charger': 'Charger pour le port (sur la ferme)',
   'portage-recoltes': 'Charger les récoltes pour le port',
   'portage-reprendre': 'Reprendre à la ferme ce qui était chargé',
@@ -235,6 +237,8 @@ export const INTERFACE_ACTIONS = new Set([
   'villageois-liste', 'villageois-fiche',
   // (fiche I3c : la liste des tâches, ce que porte la tournée du port)
   'villageois-taches', 'villageois-vendre',
+  // (fiche I2b : montrer où manquent des rails)
+  'charrette-voie',
   // (fiche I3d : le tableau des villageois : js/ui/tableau.js)
   'tableau-ouvrir', 'tableau-periode', 'tableau-tri', 'tableau-detail',
   // (fiche I6b : la vue d'ensemble des liens, proposer un foyer)

@@ -1,9 +1,9 @@
-import { DATA, recipeOutput, recipeOutputQty } from './catalog.js';
+import { DATA, prixIle, recipeOutput, recipeOutputQty } from './catalog.js';
 import { fail } from './devices.js';
 import { absoluteHours, clockHours, nightActive } from './clock.js';
 import { villageActif } from './village.js';
 import { farmTerrain } from './terrain.js';
-import { inventoryCounts } from './inventory.js';
+import { inventoryCounts, takeItem } from './inventory.js';
 import { canFeedHen, feedAllHens, hensToFeed, wheatTotal, woolReady, shear } from './animals.js';
 import { harvestPlot, isMature, plantPlot, rockGone, seedStock, treeGone, waterCost, waterPlot } from './crops.js';
 import { harvestTree, ripeTrees } from './orchard.js';
@@ -28,7 +28,8 @@ import { ramasserMorceau } from './outils.js';
 import { millPending, startMilling } from './kitchen.js';
 import { contratsAcceptes, livrerDepuisLaFerme } from './contrats.js';
 import { quaiDeChargement } from './production.js';
-import { chevalPossede } from './cheval.js';
+import { capaciteCharrette, charretteDuJour, naitreCharrette, rationCheval, voyagesDuJour } from './charrette.js';
+import { volumeDe } from './portage.js';
 import { commerceDuVillageois, estTacheCommerce, lotCommerce, lotsDuJour, postesCommerce, secondDe, tacheCommerce } from './artisans.js';
 import { cuisineDuVillage, cuisinesDuVillage, deposerDuTravail, platDuVillage, signatureGardeManger } from './garde-manger.js';
 
@@ -271,16 +272,11 @@ export function machinesDeLaFerme(state) {
   return out;
 }
 
-// Ce que porte la tournée du port à chaque aller (des objets) : PORTEE ; (fiche I8b) PRODUCTION.NAVETTE.BROUETTE avec
-// une brouette à la ferme, CHARRETTE avec une charrette et un cheval ; un quai de chargement posé : QUAI % de plus.
+// Ce que porte la tournée du port à chaque voyage, en volumes (fiche I2b) : la capacité de la charrette du village (ses
+// paliers, charrette.js). Avant I2b, PORTEE objets, plus avec la brouette ou la charrette du joueur et le quai : la
+// tournée n'emprunte plus les véhicules du joueur, le quai est le départ de la charrette.
 export function porteeNavette(state) {
-  const def = tacheDef('navette') || {}, N = (DATA.PRODUCTION && DATA.PRODUCTION.NAVETTE) || {};
-  let n = Math.max(1, Number(def.PORTEE) || 10);
-  const a = (o) => (stock(state)[o] || 0) > 0;
-  if (a('charrette') && chevalPossede(state) && N.CHARRETTE) n = Math.max(n, N.CHARRETTE);
-  else if (a('brouette') && N.BROUETTE) n = Math.max(n, N.BROUETTE);
-  if (quaiDeChargement(state) !== null && N.QUAI) n = Math.round((n * N.QUAI) / 100);
-  return n;
+  return capaciteCharrette(state);
 }
 
 function calculerPostes(state, id, v, def, L) {
@@ -405,7 +401,7 @@ export function tacheManque(state, v, id) {
       : `Il lui faut ${unOutil(def.outil)} : fabrique-${une} à l'Atelier, puis donne-${une}-lui.`;
   }
   if (!postesDe(state, id, v).length) return def.SANS || 'Pas de poste pour cette tâche.';
-  if (id === 'navette' && !(Array.isArray(v && v.vendre) && v.vendre.length) && !contratsAcceptes(state).length) return 'Rien n\'est marqué « à vendre » : coche sur sa fiche ce qu\'il doit porter au port.';
+  if (id === 'navette' && !aVendreDeLaTournee(state, v).length && !contratsAcceptes(state).length) return 'Rien n\'est marqué « à vendre » : coche sur sa fiche ce qu\'il doit porter au port.';
   return null;
 }
 
@@ -426,7 +422,8 @@ export function tacheAttente(state, v) {
   if (!v || !tacheDef(v.tache)) return null;
   // (fiche I8b : la tournée part aussi pour un contrat d'export accepté)
   const P = state.production && state.production.contrats, contrats = P && Array.isArray(P.acceptes) ? P.acceptes.length : 0;
-  const cle = `${v.tache}:${v.outil || ''}:${v.maison ?? ''}:${(v.vendre || []).length}:${hasTool(state, tacheDef(v.tache).outil || 'houe') ? 1 : 0}:${contrats}:${signatureTaches(state)}`;
+  const vendre = v.tache === 'navette' ? aVendreDeLaTournee(state, v).length : (v.vendre || []).length;
+  const cle = `${v.tache}:${v.outil || ''}:${v.maison ?? ''}:${vendre}:${hasTool(state, tacheDef(v.tache).outil || 'houe') ? 1 : 0}:${contrats}:${signatureTaches(state)}`;
   const m = attenteMemo.get(v.id);
   if (m && m.cle === cle && m.s === state) return m.r;
   const r = tacheManque(state, v, v.tache);
@@ -475,6 +472,8 @@ export function attribuer(state, id, tache) {
   const avant = v.tache || null;
   v.tache = tache || null;
   if (!Array.isArray(v.vendre)) v.vendre = [];
+  // (fiche I2b : le premier villageois mis à la tournée du port, la charrette du village naît)
+  if (v.tache === 'navette') naitreCharrette(state);
   // (I9e : la tâche d'avant et le prénom, pour le journal du monde : qui a changé quoi)
   return { ok: true, tache: v.tache, avant, prenom: v.prenom, manque: v.tache ? tacheManque(state, v, v.tache) : null };
 }
@@ -486,6 +485,16 @@ export function marquerAVendre(state, id, objets) {
   const l = Array.isArray(objets) ? objets : [];
   v.vendre = [...new Set(l.filter((o) => typeof o === 'string' && DATA.OBJETS[o] && DATA.OBJETS[o].prix > 0))].slice(0, 40);
   return { ok: true, vendre: v.vendre };
+}
+
+// Fiche I2b : ce que porte la charrette du village, marqué « à vendre » sur la fiche de ses charretiers (la réunion des
+// listes des villageois de la tournée, dans l'ordre des id ; `v` : celui qu'on regarde, compté même s'il n'y est pas
+// encore). → [objet].
+export function aVendreDeLaTournee(state, v = null) {
+  const V = villageoisDe(state).filter((x) => x.tache === 'navette' || x === v).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const out = [];
+  for (const x of V) for (const o of Array.isArray(x.vendre) ? x.vendre : []) if (!out.includes(o)) out.push(o);
+  return out;
 }
 
 const outilsJoueur = (state) => {
@@ -710,36 +719,7 @@ function uneAction(state, v, pres) {
       return r;
     }
     case 'chaine': return tourDesMachines(state, def);
-    case 'navette': {
-      const c = comptoirDuPort(state);
-      if (!c) return fail('Pas de port.');
-      let reste = porteeNavette(state), gain = 0;
-      const vendu = {};
-      // (fiche I8b : les contrats d'export acceptés d'abord, livrés au comptoir de ce que la ferme a)
-      if (contratsAcceptes(state).length) {
-        const r = commeLeJoueur(state, null, () => {
-          const l = livrerDepuisLaFerme(state, reste, c.devant);
-          return l.n > 0 ? { ok: true, ...l } : fail('Rien pour les contrats.');
-        });
-        if (r && r.ok) { reste -= r.n; gain += r.gain; for (const [k, n] of Object.entries(r.livre)) vendu[k] = (vendu[k] || 0) + n; }
-      }
-      for (const it of v.vendre || []) {
-        if (reste <= 0) break;
-        const n = Math.min(reste, stock(state)[it] || 0);
-        if (n <= 0) continue;
-        // (il porte lui-même ses objets, sans le portage du joueur (I2) : il vend depuis le stock, au comptoir ouvert)
-        const r = commeLeJoueur(state, null, () => {
-          const ici = portOuvert(state, c.devant);
-          if (!ici.ok) return fail(ici.raison);
-          const v = sellItem(state, it, n, 'Port');
-          if (v.ok) { bumpCounter(state, 'ventesPort', v.gain); noterVenteBac(state, it, v.sold); }   // (les paliers de l'île, paliers.js : ventesPort ; I1c : les caisses du bac)
-          return v;
-        });
-        if (r && r.ok) { reste -= n; gain += r.gain || 0; vendu[it] = n; }
-      }
-      if (!gain) return fail('Rien à porter au port.');
-      return { ok: true, vendu, gain, produit: { pieces: gain } };
-    }
+    case 'navette': return fail('La tournée du port se fait par la charrette du village : avancerCharrette.');
     default: return fail('Tâche inconnue.');
   }
 }
@@ -799,6 +779,8 @@ export function actionsDuJour(state, v) {
   if (!def) return 0;
   // (fiche I5a : un artisan fait ses lots, pas plus : ni à deux ni avec une machine)
   if (def.commerce) { const c = commerceDuVillageois(state, v.id); return c ? lotsDuJour(c) : 0; }
+  // (fiche I2b : un charretier fait les voyages de la charrette qui lui reviennent aujourd'hui, ni plus ni moins)
+  if (v.tache === 'navette' && villageActif(state)) return voyagesDuJour(state).voyages.filter((x) => x.charretier === v.id).length;
   // (fiche I3e : la cuisine du village fait GARDE_MANGER.CUISINE.ACTIONS plats par jour)
   const base = v.tache === 'cuisine' && cuisineDuVillage(state) ? Math.max(1, Number(((DATA.VILLAGE.GARDE_MANGER || {}).CUISINE || {}).ACTIONS) || def.ACTIONS) : def.ACTIONS;
   return base + (villageActif(state) ? travailADeux(state).get(v.id) || 0 : 0);
@@ -862,9 +844,10 @@ export function avancerTaches(state) {
   const t = absoluteHours(state);
   if (t - (derniers.get(state) ?? -Infinity) < 0.1) return 0;
   derniers.set(state, t);
-  let n = 0;
+  // (fiche I2b : la tournée du port, voyage par voyage, par la charrette du village)
+  let n = avancerCharrette(state);
   for (const v of villageoisDe(state)) {
-    if (!v.tache || !travailleAujourdhui(state, v)) continue;
+    if (!v.tache || v.tache === 'navette' || !travailleAujourdhui(state, v)) continue;
     const dues = actionsDues(state, v);
     if (dues > travailDe(state, v).actions) n += travailler(state, v, dues);
   }
@@ -877,13 +860,100 @@ export function avancerTaches(state) {
 export function tachesNuit(state) {
   if (!villageActif(state) || !Array.isArray(state.villageois)) return null;
   const out = {};
+  // (fiche I2b : les voyages de la charrette qui restent, chacun vendu à son heure d'arrivée ; puis la ration du cheval du
+  // village, notée au premier charretier du jour)
+  avancerCharrette(state, true);
+  rationDuCheval(state);
   for (const v of villageoisDe(state)) {
     if (!v.tache) continue;
     const T = travailDe(state, v);
-    if (travailleAujourdhui(state, v)) travailler(state, v, actionsDuJour(state, v), true);
+    if (v.tache !== 'navette' && travailleAujourdhui(state, v)) travailler(state, v, actionsDuJour(state, v), true);
     out[v.id] = { tache: v.tache, actions: T.actions, produit: { ...T.produit } };
   }
   return Object.keys(out).length ? out : null;
+}
+
+/* ---------- fiche I2b : la tournée du port, par la charrette du village ---------- */
+
+// Un voyage de la charrette, vendu au comptoir à l'heure `heure` (son arrivée) : ce qu'elle porte, jusqu'à sa capacité
+// en volumes : les contrats acceptés d'abord (I8b), puis ce qui est marqué « à vendre » (aVendreDeLaTournee), le plus
+// cher au volume d'abord, de ce que la ferme a. Comme la navette d'avant, sans le portage du joueur : elle vend depuis le
+// stock, au comptoir ouvert à cette heure. → { ok, vendu, gain, volumes, produit, utilise } ou un refus (rien à porter).
+function vendreUnVoyage(state, heure) {
+  const c = comptoirDuPort(state);
+  if (!c) return fail('Pas de port.');
+  const o = { heure };
+  let reste = capaciteCharrette(state), gain = 0, volumes = 0;
+  const vendu = {}, utilise = {};
+  const ajoute = (r, vol) => {
+    reste -= vol; volumes += vol; gain += r.gain || 0;
+    for (const [k, n] of Object.entries(r.utilise || {})) utilise[k] = (utilise[k] || 0) + n;
+  };
+  if (contratsAcceptes(state).length) {
+    const r = commeLeJoueur(state, null, () => {
+      const l = livrerDepuisLaFerme(state, reste, c.devant, { volumes: true, heure });
+      return l.n > 0 ? { ok: true, ...l } : fail('Rien pour les contrats.');
+    });
+    if (r && r.ok) { ajoute(r, r.volumes); for (const [k, n] of Object.entries(r.livre)) vendu[k] = (vendu[k] || 0) + n; }
+  }
+  const liste = aVendreDeLaTournee(state).filter((it) => DATA.OBJETS[it]);
+  liste.sort((a, b) => prixIle(b) / volumeDe(b) - prixIle(a) / volumeDe(a) || (a < b ? -1 : 1));
+  for (const it of liste) {
+    const vol = volumeDe(it), n = Math.min(Math.floor(reste / vol), Math.floor((stock(state)[it] || 0) + 1e-9));
+    if (n <= 0) continue;
+    const r = commeLeJoueur(state, null, () => {
+      const ici = portOuvert(state, c.devant, o);
+      if (!ici.ok) return fail(ici.raison);
+      const v = sellItem(state, it, n, 'Port');
+      if (v.ok) { bumpCounter(state, 'ventesPort', v.gain); noterVenteBac(state, it, v.sold); }   // (les paliers de l'île, paliers.js : ventesPort ; I1c : les caisses du bac)
+      return v;
+    });
+    if (r && r.ok) { ajoute(r, r.sold * vol); vendu[it] = (vendu[it] || 0) + r.sold; }
+  }
+  if (!gain) return fail('Rien à porter au port.');
+  return { ok: true, vendu, gain, volumes, produit: { pieces: gain }, utilise };
+}
+
+// La tournée de la charrette à l'heure qu'il est (à chaque pas de la ferme ; `nuit` : la nuit fait ce qui reste) :
+// chaque voyage du jour dont l'heure d'arrivée est passée est vendu à cette heure-là, une fois ; il compte au
+// charretier qui l'a mené (une action, ce qu'il a vendu). → les voyages vendus.
+export function avancerCharrette(state, nuit = false) {
+  const c = charretteDuJour(state);
+  if (!c) return 0;
+  const j = voyagesDuJour(state), h = nuit ? Infinity : clockHours(state);
+  let n = 0;
+  for (const v of j.voyages) {
+    if (v.k < (c.faits || 0)) continue;
+    if (v.arrivee > h + 1e-9) break;
+    c.faits = v.k + 1;
+    const r = vendreUnVoyage(state, v.arrivee);
+    if (!r.ok) continue;
+    c.gain = (c.gain || 0) + r.gain;
+    c.volumes = (c.volumes || 0) + r.volumes;
+    for (const [k, q] of Object.entries(r.vendu)) c.vendu[k] = (c.vendu[k] || 0) + q;
+    const x = trouverVillageois(state, v.charretier);
+    if (x) noterAction(x, travailDe(state, x), r);
+    n++;
+  }
+  return n;
+}
+
+// La nuit : le cheval du village mange sa ration au coffre (charrette.js rationCheval), notée au premier charretier du
+// jour (le tableau la compte dans son coût : « la ration du cheval »).
+function rationDuCheval(state) {
+  const n = rationCheval(state, (q) => {
+    if ((stock(state)[DATA.PATURAGE.NOURRITURE] || 0) + 1e-9 < q) return false;
+    takeItem(state, DATA.PATURAGE.NOURRITURE, q);
+    return true;
+  });
+  if (!n) return;
+  const j = voyagesDuJour(state), id = j.voyages.length ? j.voyages[0].charretier : (villageoisDe(state).find((v) => v.tache === 'navette') || {}).id;
+  const x = id && trouverVillageois(state, id);
+  if (!x) return;
+  const T = travailDe(state, x);
+  if (!objet(T.utilise)) T.utilise = {};
+  T.utilise[DATA.PATURAGE.NOURRITURE] = (T.utilise[DATA.PATURAGE.NOURRITURE] || 0) + n;
+  T.cheval = (Number(T.cheval) || 0) + n;
 }
 
 /* ---------- qui fait quoi ---------- */

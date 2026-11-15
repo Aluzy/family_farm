@@ -1,5 +1,7 @@
 # Fiche I2b — La charrette du village
 
+> **Fait** (voir « Ce qui est fait », en fin de fiche, et docs/ile.md, « La charrette du village »).
+
 ## Objectif
 
 Donner au village un véhicule à lui, que mène le villageois de la tournée du port : **la charrette du
@@ -317,3 +319,27 @@ d'I9e pour le jeu solo : si I9e tarde, elle peut se faire avant, ses rôles pos�
 
 Celles du README du chantier. Captures : la charrette à bras, au cheval, la voie (droite, courbe,
 passage planchéié), le wagonnet au halage, l'onglet de la charrette, le soir (la charrette rangée).
+
+## Ce qui est fait
+
+- Les réglages (`CHARRETTE`), le moteur (`js/engine/charrette.js` ; `taches.js avancerCharrette`, `dehors.js` les rails),
+  le cheval (par le bac, l'Écurie, sa ration, le tableau), les rails (l'Atelier, la forge à la commande, huit images, le
+  passage planchéié, la voie et ce qui manque), l'onglet 🛞 du port, la fiche du charretier, la scène, les dessins, le
+  joueur automatique (il achète un palier ; il ne pose pas de rails), la sauvegarde (109), les rôles en ligne, les tests
+  (`tests/engine/village-charrette.test.mjs`, `village-taches`, `village-production`, `village-roles`, `test-monde`
+  adaptés).
+- **Les décisions du joueur appliquées** : vitesse × 1 = le pas du joueur sur le chemin (MARCHE 217,5 cases par heure) ;
+  des voyages entiers de 7 h à 17 h, le charretier mange au port ; les deux branches libres (« la capacité 160 sans
+  cheval refusée » des tests prévus est donc devenue « acceptée ») ; la charrette du joueur inchangée ; D17, le relais ;
+  les rails à l'Atelier et à la forge ; le wagonnet sur la voie complète seulement ; le cheval au halage.
+- **Choix faits en route** : acheter un palier n'exige pas d'être au port ; la route ne lit que la partie (les chemins, la
+  ferme, les abords du port : 6 cases autour du comptoir, `ABORDS`) pour que le monde et les joueurs trouvent la même ; les
+  rails sont une couche à part pour tous (`state.dehors.rails`, même sur la ferme) et la scène les dessine en images près
+  de la vue plutôt que dans le sol ; la charrette rangée attend devant l'abri (ou le quai), sans cheval ; « ce qui est
+  marqué à vendre » est la réunion des listes des charretiers ; les rehausses au palier 3, la bâche (chargée) aux
+  paliers 4 et 5 ; C2 garde le dessin de C1.
+- **Les dessins** (vue de haut à 45°, d'après les maquettes ; les défauts relevés corrigés : la vue de dos à bras, le
+  charretier devant la charrette, plus loin ; les roues de chant plus légères ; le croissant aux cornes effilées et son
+  étoile ; le charretier au milieu du siège, de face et de dos) : `assets/charrette_bras.png`, `charrette_cheval.png`,
+  `charrette_wagonnet.png`, `rails.png`. Couleurs (une case, ses deux couches) : à bras 385 à 478, au cheval 324 à 499, le
+  wagonnet 334 à 483 ; les rehausses 127, la bâche 260 ; les rails 110 à 174 chacun, 755 les huit.

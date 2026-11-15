@@ -507,7 +507,7 @@ const FERME = new Set(['sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre
 const JAMAIS = /^(test-|do-import|do-new-game|ask-new-game|demarrer|accueil-)/;
 // (I9e : les commerces et l'étal d'une île en ligne : des commandes du monde, js/ui/commerce.js, js/ui/etal.js)
 const PAS_ENCORE_ILE = new Set(['vocation-projet-envoyer', 'vocation-projet-abandonner']);
-const ILE_EN_LIGNE = new Set(['commerce-ouvrir', 'commerce-acheter', 'commerce-commander', 'commerce-lettres', 'commerce-rejoindre', 'etal-mettre', 'etal-reprendre']);
+const ILE_EN_LIGNE = new Set(['charrette-palier', 'commerce-ouvrir', 'commerce-acheter', 'commerce-commander', 'commerce-lettres', 'commerce-rejoindre', 'etal-mettre', 'etal-reprendre']);
 export function actionPermise(action, bloquees) {
   if (JAMAIS.test(action)) return 'Pas dans un monde en ligne : reviens à ta ferme solo (🌐 › Ma ferme solo).';
   if (action === 'sleep') return 'En ligne, on se couche par le bandeau (🛏 Se coucher) : la nuit passe quand tout le monde dort.';
@@ -631,6 +631,8 @@ const GESTES = {
   'etal.mettre': 'a mis à l\'étal', 'etal.reprendre': 'a repris de l\'étal', 'nom.donner': 'a donné un nom',
   'chronique.epingler': 'a épinglé une ligne de la chronique', 'chronique.noter': 'a écrit dans la chronique',
   'village.commun': 'a réglé le garde-manger du village', 'village.reserve': 'a réglé la réserve du village', 'village.cuisine': 'a réglé la cuisine du village',
+  // (I2b : la charrette du village)
+  'charrette.palier': 'a amélioré la charrette du village',
 };
 const FAMILLES_GESTES = { mur: 'a bâti un mur', etage: 'a bâti à l\'étage', solEtage: 'a posé un sol à l\'étage' };
 export function gesteEnMots(type, bilan = null, caisse = false) {
@@ -672,6 +674,7 @@ function villageEnMots(type, b) {
     case 'commerce.ouvrir': return `a décidé : ${quiV(b)} ouvre ${echapper(b.nom || nomSorte(b.sorte))}`;
     case 'commerce.rejoindre': return `a décidé : ${quiV(b)} rejoint un commerce`;
     case 'commerce.suggerer': return `suggère que ${quiV(b)} ouvre ${echapper(nomSorte(b.sorte))}`;
+    case 'charrette.palier': return `a amélioré la charrette du village : ${b.branche === 'capacite' ? 'sa capacité' : 'sa vitesse'}, palier ${Number(b.palier) || '?'}${b.nom ? ` (${echapper(b.nom)})` : ''}, −${pieces(b.prix)} de la caisse commune`;
     case 'nom.donner': return `a nommé ${{ ile: 'l\'île', village: 'le village', maison: 'une maison', commerce: 'un commerce' }[b.quoi] || 'quelque chose'} : ${echapper(b.nom || '—')}`;
     default: return null;
   }

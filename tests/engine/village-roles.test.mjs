@@ -83,6 +83,9 @@ const CAS = (v) => [
   ['commerce.rejoindre', { id: v, commerce: 'forge-1' }, 'proprietaire'],
   ['commerce.lettres', { commerce: 'forge-1' }, 'proprietaire'],
   ['nom.donner', { quoi: 'village', texte: 'Bourg' }, 'proprietaire'],
+  // (I2b : un palier de la charrette du village, au propriétaire ; les rails, des blocs, au bâtisseur)
+  ['charrette.palier', { branche: 'capacite' }, 'proprietaire'],
+  ['bloc.poser', { sorte: 'rails', case: 1 }, 'batisseur'],
   ['port.agrandir', { case: 1 }, 'proprietaire'],
 ];
 

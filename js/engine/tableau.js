@@ -112,6 +112,8 @@ export function bilanJour(J) {
     jour: J.jour, tache, chantier: J.tache === 'chantier' ? chantierDit(J.chantier) || { sorte: null, nom: 'Un projet du village', icone: '🏗️' } : null,
     actions: Math.max(0, entier(J.actions)), sur: tache ? tacheDef(tache).ACTIONS : 0, repos: !!J.repos,
     mange, repas, part, utilise, matieres, courant, electricite, cout, produit, valeur, ventes, solde: valeur - cout,
+    // (fiche I2b : la ration du cheval du village, ses pailles : déjà dans utilise et le coût ; dite à part)
+    cheval: Math.max(0, entier(J.cheval)),
   };
 }
 

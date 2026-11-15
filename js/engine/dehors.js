@@ -125,6 +125,100 @@ export function retirerCheminDehors(state, t) {
   return true;
 }
 
+/* ---------- les rails (fiche I2b, la charrette du village) ----------
+   Les rails sont une couche à part, sur la ferme comme dehors : state.dehors.rails, des segments (encoderSegments),
+   comme les chemins possédés (une voie de 400 cases tient en quelques centaines d'octets). Ils se posent sur l'herbe,
+   sur un chemin (le passage planchéié : la case reste un chemin), sur un pont de planches ; ils ne gênent pas la marche.
+   Le bloc « rails » de l'Atelier (ATELIER.BLOCS.rails) les pose : blocs.js poseStatus, poser, reprendreBloc. */
+
+const railsSets = new WeakMap();   // les segments → leurs cases (un Set, à ne pas changer)
+
+// Les cases des rails posés : un Set (à lire seulement).
+export function railsPoses(state) {
+  const d = dehorsDe(state);
+  if (!d || !Array.isArray(d.rails)) return VIDE;
+  let s = railsSets.get(d.rails);
+  if (!s) { s = decoderSegments(d.rails); railsSets.set(d.rails, s); }
+  return s;
+}
+
+// Des rails sur la case `t` ?
+export function railsSur(state, t) {
+  return railsPoses(state).has(t);
+}
+
+function garderRails(state, set) {
+  const d = dehorsCree(state);
+  d.rails = encoderSegments(set);
+  railsSets.set(d.rails, set);
+}
+
+// Pose (ou retire) les rails de la case `t`. → vrai si la partie a changé.
+export function poserRails(state, t) {
+  if (railsSur(state, t)) return false;
+  const s = new Set(railsPoses(state));
+  s.add(t);
+  garderRails(state, s);
+  return true;
+}
+export function retirerRails(state, t) {
+  const s = new Set(railsPoses(state));
+  if (!s.delete(t)) return false;
+  garderRails(state, s);
+  return true;
+}
+
+// L'image des rails de la case `t` (scripts/carte/charrette_village.py, assets/rails.png) d'après ses voisins : droit
+// ('ns', 'eo'), courbe d'un quart de cercle ('ne', 'no', 'se', 'so' : les deux voisins qu'elle relie), et, posé sur un
+// chemin, le passage planchéié ('ns_chemin', 'eo_chemin'). Seul ou au bout d'une voie : droit, dans le sens du voisin.
+export const IMAGES_RAILS = ['ns', 'eo', 'ne', 'no', 'se', 'so', 'ns_chemin', 'eo_chemin'];
+export function imageRails(state, t, T = farmTerrain(state)) {
+  const R = railsPoses(state), W = T.LARGEUR, c = t % W;
+  const n = R.has(t - W), s = R.has(t + W), e = c < W - 1 && R.has(t + 1), o = c > 0 && R.has(t - 1);
+  let forme;
+  if ((n || s) && !(e || o)) forme = 'ns';
+  else if ((e || o) && !(n || s)) forme = 'eo';
+  else if (n && e && !s && !o) forme = 'ne';
+  else if (n && o && !s && !e) forme = 'no';
+  else if (s && e && !n && !o) forme = 'se';
+  else if (s && o && !n && !e) forme = 'so';
+  else forme = n && s ? 'ns' : e && o ? 'eo' : 'ns';
+  if ((forme === 'ns' || forme === 'eo') && surChemin(state, t, T)) forme += '_chemin';
+  return forme;
+}
+
+// Peut-on poser des rails sur la case `t` ? { ok, raison }. Sur la ferme : une case sans bloc qui la ferme (l'herbe, un
+// sol, un chemin, un pont), hors d'une pièce close ; dehors : comme les blocs du dehors (ni l'eau profonde, ni la
+// falaise, ni l'emprise du port, ni sous un arbre ou un rocher), et sur une rivière, sur un pont de planches seulement.
+export function railsStatus(state, t, sur = {}) {
+  const T = farmTerrain(state);
+  if (!villageActif(state)) return { ok: false, raison: 'Les rails sont de l\'île.' };
+  if (railsSur(state, t)) return { ok: false, raison: 'Il y a déjà des rails ici.' };
+  const B = DATA.ATELIER.BLOCS, b = state.blocs && state.blocs[t], sb = b && B[b];
+  if (sb && !sb.pont) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
+  if (!horsFerme(T, t)) {
+    if (sur.couverte) return { ok: false, raison: 'Un meuble occupe cette case.' };
+    if (sur.piece) return { ok: false, raison: 'Les rails se posent dehors, pas dans une pièce close.' };
+    const S = T.SOMMETS, W = T.LARGEUR, V = W + 1, c = t % W, r = Math.floor(t / W);
+    if (S && [S[r * V + c], S[r * V + c + 1], S[(r + 1) * V + c], S[(r + 1) * V + c + 1]].every((x) => x === 2)) return { ok: false, raison: 'Pas dans l\'eau.' };
+    if (sur.bloque) return { ok: false, raison: sur.bloque };
+    return { ok: true };
+  }
+  const e = empriseDe(T, t);
+  if (e === undefined) return { ok: false, raison: 'Cette partie de l\'île n\'est pas encore dessinée : approche-toi.' };
+  if (e === 'port') return { ok: false, raison: 'Pas dans les abords du port : ils restent libres.' };
+  if (e === 'hameau') return { ok: false, raison: 'Pas dans un hameau.' };
+  const ici = infoCase(T, t);
+  if (!ici) return { ok: false, raison: 'Cette partie de l\'île n\'est pas encore dessinée : approche-toi.' };
+  const bi = ici.biome;
+  if (bi === 'mer' || bi === 'lac') return { ok: false, raison: 'Pas dans l\'eau profonde.' };
+  if (bi === 'falaise' || bi === 'sommet') return { ok: false, raison: 'Pas sur une falaise.' };
+  if (bi === 'riviere') return sb && sb.pont ? { ok: true } : { ok: false, raison: 'Une rivière : pose d\'abord un pont de planches, les rails s\'y posent.' };
+  const ouvertes = casesOuvertesMonde(state);
+  if (!ici.marche && !(ouvertes && ouvertes.has(t)) && !cheminDehorsSur(state, t)) return { ok: false, raison: 'Un arbre, un buisson ou un rocher est là : abats-le ou casse-le d\'abord.' };
+  return { ok: true };
+}
+
 // Le tronçon converti (ses cases : monde-sol.js, tronconDuPort, tiré dans le Web Worker ou ici) devient les
 // chemins du joueur, s'il était à poser. → vrai si la partie a changé.
 export function poserTroncon(state, cases) {
@@ -209,6 +303,17 @@ export function empriseDe(T, t) {
     if (c >= k.x0 - m && c <= k.x1 + m && r >= k.y0 - m && r <= k.y1 + m) return p.batisse === 'port' ? 'port' : 'hameau';
   }
   return null;
+}
+
+// Fiche I2b : l'emprise du port (son cadre et HAMEAUX.RESERVE cases autour) : { x0, y0, x1, y1 } (colonnes et rangées,
+// bornes comprises), null sans port, undefined tant que les plans ne sont pas là.
+export function cadrePort(T) {
+  const plans = plansDe(T);
+  if (!plans) return undefined;
+  const R = (HAMEAUX && HAMEAUX.RESERVE) || 2, p = plans.find((q) => q.batisse === 'port');
+  if (!p) return null;
+  const k = p.cadre;
+  return { x0: k.x0 - R, y0: k.y0 - R, x1: k.x1 + R, y1: k.y1 + R };
 }
 
 // La case t est-elle hors de la ferme (sur le monde de la partie) ?

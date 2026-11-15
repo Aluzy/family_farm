@@ -176,6 +176,8 @@ export function bilanGeste(c, r, s = null) {
     case 'commerce.rejoindre': return { id: a.id, prenom: prenomDe(s, a.id), commerce: a.commerce };
     case 'commerce.suggerer': return { id: a.id, prenom: r.prenom || prenomDe(s, a.id), sorte: a.sorte, nom: r.nom || null };
     case 'nom.donner': return { quoi: a.quoi, nom: r.nom || null, avant: r.avant || null };
+    // (I2b : un palier de la charrette du village : la branche, le palier, son prix)
+    case 'charrette.palier': return { branche: r.branche, palier: r.palier, prix: r.prix, nom: r.nom || null };
     default: return null;
   }
 }

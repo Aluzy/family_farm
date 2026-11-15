@@ -33,7 +33,7 @@ grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'app
 | [I1b — le commerce au port](I1b-commerce-au-port.md) | 1 | I1a | fait |
 | [I1c — le bac, les commandes et le catalogue d'import](I1c-bac-commandes-import.md) | 1 | I1b | fait (le port au niveau 2 à la nuit 31 de la simulation, le palier 6 à la nuit 45 ; voir docs/ile.md) |
 | [I2 — le chemin du port, modifiable, et le portage](I2-chemin-et-portage.md) | 2 | I1b | fait (le port reste loin : 1,5 à 2,3 h de jeu à cheval sur le chemin, voir docs/ile.md) |
-| [I2b — la charrette du village : capacité, vitesse, le cheval, les rails et le wagonnet](I2b-charrette-du-village.md) | 2 | I2, I3c, I8b ; après I9e, avant I9f | à faire (proposée, maquettes à valider) |
+| [I2b — la charrette du village : capacité, vitesse, le cheval, les rails et le wagonnet](I2b-charrette-du-village.md) | 2 | I2, I3c, I8b ; après I9e, avant I9f | fait (une charrette, ses charretiers qui se relaient ; les deux branches libres ; le cheval par le bac ; les rails, la voie, le wagonnet au halage ; l'onglet 🛞 du port ; format 109 ; `charrette.palier` au propriétaire ; voir docs/ile.md) |
 | [I3a — l'arrivée d'un villageois](I3a-arrivee-villageois.md) | 3 | I0a | fait |
 | [I3b — la vie des villageois sur la ferme](I3b-vie-sur-la-ferme.md) | 3 | I3a | fait (réglage « animé » choisi) ; I3b+ (vie sociale : qui se connaît, sorties à but, saluts, causeries) : fait |
 | [I3c — les tâches attribuées](I3c-taches.md) | 3 | I3b | fait |
