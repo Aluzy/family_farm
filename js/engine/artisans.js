@@ -309,6 +309,11 @@ function casesDevantEtabli(state, c, l) {
 export function devantComptoir(state, c) {
   const l = localDe(state, c);
   if (!l || l.comptoir === null) return [];
+  // (I9g : les cases devant un local relevées une fois par pas en lot, blocs.js memoEnLot : les achats du jour les
+  // relisent à chaque signature de la journée du village ; le local, lui, est celui du moment)
+  return memoEnLot(state, `devantComptoir:${c.sorte}:${l.etabli}`, () => casesDevantComptoir(state, l));
+}
+function casesDevantComptoir(state, l) {
   const w = W(state), B = state.blocs || {}, couvertes = casesCouvertes(state), dedans = new Set(l.piece.cases);
   const larg = Math.max(1, entier((DATA.ATELIER.BLOCS[AR().COMPTOIR || 'comptoir'] || {}).largeur) || 1);
   const libre = (q) => dedans.has(q) && B[q] === undefined && !couvertes.has(q) && !blocBloque(state, q);

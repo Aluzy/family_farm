@@ -268,16 +268,34 @@ function rocherOuArbre(T, tile) {
 // pendant ce temps, ce qui parcourt tous les blocs posés (les cases couvertes, les pièces closes) n'est
 // calculé qu'une fois pour cette partie-là (une autre partie, une partie d'essai `{ ...state }` : comme
 // d'habitude). f ne doit pas changer la partie.
-let lotEtat = null, lotMemo = null;
+let lotEtat = null, lotMemo = null, lotVerifie = false, sansLots = false;
 export function enLot(state, f) {
+  if (sansLots) return f();
+  // (I9g : un lot dans un lot de la même partie — la nuit dans le pas du monde, le pas de la ferme dans tick — garde ce
+  // qui est déjà relevé : rien n'a changé entre-temps)
+  if (state === lotEtat && lotMemo) return f();
   const avant = [lotEtat, lotMemo];
   lotEtat = state; lotMemo = new Map();
   try { return f(); } finally { [lotEtat, lotMemo] = avant; }
 }
 function memoLot(state, cle, calcul) {
   if (state !== lotEtat || !lotMemo) return calcul();
-  if (!lotMemo.has(cle)) lotMemo.set(cle, calcul());
-  return lotMemo.get(cle);
+  if (!lotMemo.has(cle)) { const r = calcul(); lotMemo.set(cle, r); return r; }
+  const m = lotMemo.get(cle);
+  if (lotVerifie) verifierMemo(cle, m, calcul());
+  return m;
+}
+// I9g : pour les tests seulement (tests/engine/village-lots.test.mjs), jamais dans le jeu. `verifier` : chaque calcul gardé dans
+// un lot est refait et comparé à celui qui est gardé ; un écart (un bloc posé pendant le lot, un résultat changé par qui
+// le lit) lève une erreur. `sans` : ni lot, ni pièces reconnues sans leur texte (calculerPieces) : le moteur d'avant
+// I9d, pour comparer les parties jouées avec et sans, octet pour octet.
+export function reglerLots({ verifier = false, sans = false } = {}) {
+  lotVerifie = !!verifier;
+  sansLots = !!sans;
+}
+const enClair = (v) => JSON.stringify(v, (k, x) => (x instanceof Map || x instanceof Set ? [x.constructor.name, ...x] : x));
+function verifierMemo(cle, gardee, fraiche) {
+  if (enClair(gardee) !== enClair(fraiche)) throw new Error(`Le lot a gardé « ${cle} », qui a changé pendant le lot.`);
 }
 // (I9d : la même chose, pour ce qui ne lit que les blocs posés ailleurs qu'ici : la boîte à nourriture, l'étal, les
 // locaux des commerces ; hors d'un lot, `calcul` tout simplement)
@@ -481,8 +499,11 @@ export function piecesCloses(state) {
 }
 function calculerPieces(state) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR;
+  // (I9g : les mêmes blocs que la dernière fois, relus case par case sans refaire le texte de tous les blocs, qui coûtait
+  // le quart d'une nuit du village ; le texte, comme avant, seulement quand ils semblent avoir changé)
+  if (memesBlocs(W, B)) return piecesListe;
   const cle = W + ':' + JSON.stringify(B);
-  if (cle === piecesCle) return piecesListe;
+  if (cle === piecesCle) { noterBlocs(W, B); return piecesListe; }
   const F = casesQuiFerment(B), ferme = (t) => F.has(t);
   const faites = new Set(), out = [], max = DATA.ATELIER.PIECE_MAX;
   // une pièce touche forcément un bloc qui ferme : on part des cases voisines des blocs. Chaque
@@ -520,7 +541,25 @@ function calculerPieces(state) {
   }
   piecesCle = cle;
   piecesListe = out;
+  noterBlocs(W, B);
   return out;
+}
+// (les blocs de la dernière pièce relevée, dans l'ordre : leurs cases et leurs sortes. Les mêmes cases, dans le même
+// ordre, avec les mêmes sortes en toutes lettres : le même texte JSON, donc la même clé qu'avant)
+let piecesW = null, piecesK = [], piecesV = [];
+function noterBlocs(W, B) {
+  piecesW = W; piecesK = []; piecesV = [];
+  for (const k in B) { piecesK.push(k); piecesV.push(B[k]); }
+}
+function memesBlocs(W, B) {
+  if (sansLots || W !== piecesW || piecesCle === null || Object.getPrototypeOf(B) !== Object.prototype) return false;
+  let i = 0;
+  for (const k in B) {
+    const v = B[k];
+    if (i >= piecesK.length || k !== piecesK[i] || typeof v !== 'string' || v !== piecesV[i]) return false;
+    i++;
+  }
+  return i === piecesK.length;
 }
 
 // Reprendre le mur (ou la porte) de `tile` mêlerait-il deux genres ? null, ou la raison.
@@ -766,19 +805,21 @@ export function boitesVillage(state) {
 
 // La maison que marque la boîte aux lettres de la case `boite` : la pièce close du genre maison (ou encore
 // vide) dont une porte touche la boîte ; la première dans l'ordre des pièces. null : aucune.
-export function maisonDeBoite(state, boite) {
+export function maisonDeBoite(state, boite, pieces = piecesCloses(state)) {
   const W = farmTerrain(state).LARGEUR, c = boite % W, B = blocsPoses(state);
   const autour = new Set();
   for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if ((dr || dc) && c + dc >= 0 && c + dc < W) autour.add(boite + dr * W + dc);
-  return piecesCloses(state).find((p) => p.portes.some((d) => autour.has(d)) && (genreDe(B, p) || 'maison') === 'maison') || null;
+  return pieces.find((p) => p.portes.some((d) => autour.has(d)) && (genreDe(B, p) || 'maison') === 'maison') || null;
 }
 
 // Les maisons marquées : [{ boite (sa case), piece }], une par pièce (la première boîte d'une pièce la nomme).
 export function maisonsMarquees(state) {
   return memoLot(state, 'maisonsVillage', () => {
-    const out = [], vues = new Set();
+    // (I9g : les pièces relevées une fois pour toutes les boîtes, et non une fois par boîte : le contrôle d'un geste
+    // de retrait sur une île, roles.js, les relevait quinze fois)
+    const out = [], vues = new Set(), pieces = piecesCloses(state);
     for (const b of boitesVillage(state)) {
-      const p = maisonDeBoite(state, b);
+      const p = maisonDeBoite(state, b, pieces);
       if (!p || vues.has(p)) continue;
       vues.add(p);
       out.push({ boite: b, piece: p });

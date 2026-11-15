@@ -76,6 +76,19 @@ documentation.
   **et** de restaurer, monde par monde, la sauvegarde « avant le passage sur l'île » (un Worker d'avant ne lit pas une partie
   de l'île).
 
+## Revu par I9g (les performances)
+
+- **Le lot** (`js/engine/blocs.js` `enLot`) couvre le `tick`, le pas de la ferme, la nuit et le pas du monde : en retirant
+  les branches « éteint » et le récit, garder la règle qu'aucun bloc ne se pose ni ne se reprend pendant un pas ; une
+  machine qui bâtirait seule, ou un pas qui poserait un bloc, devrait sortir du lot. `tests/engine/village-lots.test.mjs`
+  (avec et sans, `reglerLots`) le dirait.
+- **Le protocole des mesures** est dans le dépôt : `node scripts/cout-performances.mjs --racine <la version d'avant>` et
+  `node scripts/mesure-scene-ile.mjs` ; les refaire avant d'allumer le réglage pour tous, et mesurer la scène d'une île de
+  15 sur le téléphone de référence (« Mesurer 30 s ») : la borne de 30 images par seconde n'a pas pu être vérifiée sans
+  appareil (13 dans le rendu logiciel de Chromium ralenti six fois, avant comme après I9g).
+- **Au premier déploiement** : le temps de calcul d'une alarme (≈ 0,4 s pour 120 pas à 15 villageois, ≈ 0,8 s pour 240)
+  et celui d'un monde d'avant mis à jour (≈ 0,5 s) dans les journaux de Cloudflare.
+
 ## Hors périmètre
 
 - Toute nouvelle règle ; la troisième vocation.

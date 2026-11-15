@@ -31,7 +31,7 @@ import { affinerTonnelets } from './tonnelets.js';
 import { composter } from './compost.js';
 import { pousserBacs } from './bacs.js';
 import { pousserMassifs } from './massifs.js';
-import { nuitCouchee, nuitSansCouchage } from './blocs.js';
+import { enLot, nuitCouchee, nuitSansCouchage } from './blocs.js';
 import { distribuerGrain } from './distributeur.js';
 import { chainesDeLaJournee } from './chaines.js';
 import { horlogeVivante } from './temps-monde.js';
@@ -220,6 +220,11 @@ export function startNight(state) {
 // elle vient de finir (les deux à la fois : 'reveil'), sinon null.
 export function advanceNight(state, dtMs) {
   if (!nightActive(state)) return null;
+  // (I9g : en lot, blocs.js enLot : les couchages relus à chaque pas de la nuit, et minuit, qui relevait les pièces
+  // closes pour chaque villageois ; rien ne s'y pose ni ne s'y reprend)
+  return enLot(state, () => avancerLaNuit(state, dtMs));
+}
+function avancerLaNuit(state, dtMs) {
   const n = state.nuitEnCours;
   const avant = n.ms;
   n.ms = Math.min(nightLengthMs(), n.ms + Math.max(0, Number(dtMs) || 0));
@@ -315,6 +320,10 @@ export function skipNight(state) {
 // Les étapes nocturnes dans l'ordre, jour suivant, éveil remis à 0 (l'heure du jour
 // repart à 6 h), rapport de réveil.
 export function runNight(state) {
+  // (I9g : en lot, comme advanceNight ; appelée seule par sleep, le joueur automatique)
+  return enLot(state, () => nuitEnLot(state));
+}
+function nuitEnLot(state) {
   state.nuit = newNightStats();
   for (const step of NIGHT_STEPS) step(state);
   // la ferme générée : qui n'a pas de paillasse dans une pièce close perd du bonheur
