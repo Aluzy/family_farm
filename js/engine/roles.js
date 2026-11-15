@@ -23,7 +23,8 @@
                     du village ; attribuer les tâches si le propriétaire le lui délègue (le réglage du monde `taches`) ;
      proprietaire : en plus, attribuer les tâches, décider qu'un villageois ouvre (ou rejoint) un commerce, former un
                     foyer, accueillir un enfant, nommer (l'île, le village, une maison, un commerce, son enseigne),
-                    agrandir le port, retirer la maison d'un villageois (sa boîte aux lettres, sa porte, ses murs, son lit).
+                    agrandir le port, retirer la maison d'un villageois (sa boîte aux lettres, sa porte, ses murs, son lit),
+                    acheter un palier de la charrette du village (I2b ; les rails, eux, se posent au bâtisseur).
    Un villageois ne se renvoie pas : aucune commande ne le fait. Une ferme d'avant (E-8, sans le chantier) garde la
    grille d'E-11 telle quelle.
 
@@ -75,12 +76,14 @@ export const GRILLE_ILE = Object.freeze({
   // (le bâtisseur : ce qui dépense la caisse ou règle le village au quotidien)
   'commerce.acheter': 'batisseur', 'commerce.commander': 'batisseur',
   'village.commun': 'batisseur', 'village.reserve': 'batisseur', 'village.cuisine': 'batisseur',
-  // (I2b, à venir : les évolutions de la charrette — capacité, vitesse, cheval, rails — s'achètent au bâtisseur ; la
-  // famille `charrette` les prendra par défaut, sans rien ajouter ici)
+  // (I2b : les rails se posent et se reprennent par les blocs, au bâtisseur ; mettre un villageois à la tournée est
+  // l'attribution d'une tâche, plus bas)
   // (le propriétaire : ce qui est structurant pour son village)
   'villageois.attribuer': 'proprietaire', 'villageois.foyer': 'proprietaire', 'villageois.enfant': 'proprietaire',
   'commerce.ouvrir': 'proprietaire', 'commerce.rejoindre': 'proprietaire', 'commerce.lettres': 'proprietaire',
   'nom.donner': 'proprietaire',
+  // (I2b : un palier de la charrette du village, une grosse dépense de la caisse commune, comme agrandir le port)
+  'charrette.palier': 'proprietaire',
 });
 // Les réglages du monde que le propriétaire peut changer (worker/src/monde.mjs, la table meta ; diffusés à tous) :
 // taches : l'attribution des tâches déléguée aux bâtisseurs (éteint par défaut).
@@ -158,6 +161,7 @@ const AU_PROPRIETAIRE = {
   'villageois.foyer': 'Seul le propriétaire de l\'île propose à deux villageois de former un foyer.',
   'villageois.enfant': 'Seul le propriétaire de l\'île propose à un foyer d\'accueillir un enfant.',
   'nom.donner': 'Seul le propriétaire de l\'île nomme l\'île, le village, les maisons et les commerces.',
+  'charrette.palier': 'Seul le propriétaire de l\'île améliore la charrette du village (une grosse dépense de la caisse commune).',
 };
 
 // null si le rôle `role` permet la commande `c`, sinon la raison (à dire au joueur). `reglages` : ceux du monde (I9e).

@@ -2712,8 +2712,10 @@ pendant que le propriétaire n'est pas là. Une ferme d'avant (E-8, sans le chan
 10. **La présence d'un visiteur compte** pour l'horloge (une connexion ouverte fait tourner le monde, D13) et pour les
     lits (il retient la nuit tant qu'il n'est pas couché) : confirmé. Un visiteur qui ne se couche pas retient la nuit
     comme un autre ; le propriétaire peut changer son rôle ou le retirer.
-11. **La charrette (I2b, à venir)** : l'achat de ses évolutions (capacité, vitesse, cheval, rails) sera un geste du
-    bâtisseur (la famille `charrette.*` y tombe par défaut ; le propriétaire le peut aussi), noté dans `GRILLE_ILE`.
+11. **La charrette (I2b, faite)** : la fiche I2b a tranché autrement : acheter un palier (`charrette.palier`) est au
+    **propriétaire** (une grosse dépense de la caisse commune, comme agrandir le port), noté dans `GRILLE_ILE` ; poser et
+    reprendre des rails est au bâtisseur (des blocs, `bloc.*`) ; mettre un villageois à la tournée, à qui attribue les
+    tâches.
 
 ### Ce que l'ami gagne en aidant (des propositions, pas codées)
 
@@ -2763,6 +2765,57 @@ partie solo n'y gagne rien. Les réglages du monde sont au Durable Object, pas d
 - **« La charrette est à moi »** (un réglage du propriétaire, I9c) n'est pas fait : la règle d'I9c (vide, elle passe à
   qui la demande) a suffi dans les essais.
 - **Ce que l'ami gagne** : à décider et à faire dans une fiche à elle.
+
+## La charrette du village (I2b, fait)
+
+La fiche : `docs/fiches/ile/I2b-charrette-du-village.md`. Le moteur : `js/engine/charrette.js` (et `taches.js`
+`avancerCharrette`, `dehors.js` les rails) ; la scène : `js/carte/ferme/charrette-village.js` ; la fenêtre : l'onglet 🛞 du
+port (`js/ui/port.js`) ; les dessins : `scripts/carte/charrette_village.py` ; les réglages : `data/village.json`
+`CHARRETTE` ; les tests : `tests/engine/village-charrette.test.mjs` (14 tests).
+
+- **Une charrette, au village** (D17) : née au premier villageois mis à la tournée du port, aux paliers 1. Les villageois
+  de la tournée sont ses charretiers ; le voyage k revient au charretier de rang k parmi ceux qui travaillent aujourd'hui
+  (ni au repos, ni à l'accueil, ni au chantier) : un jour de repos ne l'arrête plus, le relais ne la rend pas plus
+  rapide. Ce qu'elle porte : la réunion de ce qui est marqué « à vendre » sur la fiche de ses charretiers, les contrats
+  d'abord, le plus cher au volume ensuite, en volumes (I2).
+- **Tout se déduit de l'heure** : la route (Dijkstra à huit voisins du coffre, ou du quai, au comptoir ; au pas de la
+  vitesse sur les chemins possédés, sur la ferme et aux abords du port, à 50 % ailleurs ; elle ne lit que la partie, pas
+  le sol de la page : le monde et chaque joueur trouvent la même), les voyages entiers de 7 h à 17 h, où est la
+  charrette. La vente d'un voyage se fait à l'heure de son arrivée (le port ouvert à cette heure-là), à chaque pas de la
+  ferme ; la nuit vend ce qui reste à leur heure. La journée du charretier porte ses voyages (des segments « travail » au
+  lieu « charrette » : il mange au port) ; la scène le dessine sur la charrette, de sa planche.
+- **Les deux branches sont libres** (décision du joueur) ; le cheval de trait (V3) demande l'Écurie et une place, vient
+  par le bac au passage suivant (`cheval.arrive`), mange 2 pailles la nuit (le tableau : « 🐴 La ration du cheval ») ; le
+  wagonnet (V5) demande la voie complète ; la voie coupée, la charrette reprend le chemin au trot.
+- **Les rails** : un bloc de l'Atelier (1 lingot, 2 planches, 1 pierre → 8), commandé aussi à la forge (6 pièces la case) ;
+  une couche à part, `state.dehors.rails` (des segments), sur la ferme et dehors, sur l'herbe, un chemin (le passage
+  planchéié) ou un pont ; vingt images d'après les voisins (les droites, les quarts de cercle, le passage planchéié ;
+  une voie posée en escalier se lit en diagonale : les cordes et les demi-courbes, `formeRails`, `courbeRails`, que le
+  wagonnet suit, `traceSurRails`). La voie : des rails voisins de la gare (contre le quai, à
+  défaut contre le bord de la ferme) au bord de l'emprise du port ; ce qui manque, compté et montré (« Montre-moi »).
+- **Ce qu'elle remplace** : `PORTEE`, `PRODUCTION.NAVETTE` (retirés : la tournée n'emprunte plus la brouette ni la
+  charrette du joueur, qui restent au joueur, inchangées) ; le quai est le départ de la charrette et la gare de la voie.
+- **La sauvegarde** : format 109 ; la migration 108 → 109 donne à une tournée la charrette au palier de ce qu'elle portait
+  (rien : C1 V1 ; une brouette : C2 V2 ; la charrette et le cheval du joueur : C3 V3 avec son cheval si l'Écurie a la
+  place, sinon V2).
+- **En ligne** : `charrette.palier` au propriétaire (GRILLE_ILE, le bilan au journal), les rails au bâtisseur ; aucune
+  commande n'attelle la charrette du village ; ses voyages se jouent dans le pas du monde.
+
+**Les mesures** (graine 1, 80 nuits ; le jeu éteint : le CSV identique octet pour octet). `--village` : le joueur simulé
+met son deuxième villageois à la tournée (nuit 16) et lui fait porter les récoltes qui s'entassaient au coffre. Joueur
+appliqué : paliers C2@21 V2@23 C3@51 C4@61 (4 200 pièces), 10 000 volumes vendus par la charrette (+18 523 pièces), les
+20 dernières nuits 2 voyages et 320 volumes par jour ; ses ventes de récoltes passent de 7 481 à 24 250 pièces, il gagne
+27 897 pièces au lieu de 13 643, le palier 7 à la nuit 65 (74 avant), 1 336 pièces à la nuit 80 (464). Joueur minimal :
+C2@21 V2@31 C3@73 (1 700), 4 520 volumes (+9 796), 112 volumes par jour à la fin ; mais il finit au palier 6 (le palier 7
+à la nuit 75 avant) : le villageois mis à la tournée n'est plus celui qui ouvrait la forge (à revoir avec le joueur
+automatique). `--vocations` : la ferme productive (sa tournée porte le pain) gagne 12 174 pièces (11 918 avant) et ne vend
+pas 300 volumes par jour : la fiche proposait alors de baisser les prix des paliers 4 et 5 ; c'est laissé au joueur
+(un constat, pas un changement).
+
+**Ce qui reste** : la boussole ne mène pas encore à la charrette ; le joueur automatique ne pose pas de rails (le sol du
+monde, région par région) ; C5 (la longue charrette à quatre roues, le second wagonnet) se dessine comme C4 ; le journal
+du monde ne dit pas encore les ventes de la charrette (elles sont aux Comptes) ; la route traverse les champs sans
+regarder l'eau quand le chemin est coupé.
 
 ## Les règles qui ne changent pas
 

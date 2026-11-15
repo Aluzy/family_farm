@@ -22,7 +22,8 @@ import { migrationIleDue, migrerVersLIle, reparerMigrationIle } from './migratio
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
-import { caseLibreFoyer, elargirFours, majMoulin, majPoulailler, majSerre, poserBloc, rangerPieces, serrePlaces } from './blocs.js';
+import { caseLibreFoyer, elargirFours, etatEcurie, majMoulin, majPoulailler, majSerre, poserBloc, rangerPieces, serrePlaces } from './blocs.js';
+import { nouvelleCharrette, reparerCharrette } from './charrette.js';
 import { closeFridge, FRIGO_OBJET } from './fridge.js';
 import { ETAPES } from './didacticiel.js';
 import { caseDepart } from './atelier.js';
@@ -1114,7 +1115,41 @@ export const MIGRATIONS = {
     if (state.mondePartage === true && state.chronique && typeof state.chronique === 'object') out.chronique = reparerChronique(state.chronique);
     return out;
   },
+  // v108 → v109 (le chantier « l'île à bâtir », fiche I2b) : la charrette du village (state.charrette : ses paliers de
+  // capacité et de vitesse, son cheval, son wagonnet ; js/engine/charrette.js) et les rails (state.dehors.rails, des
+  // segments). Une partie dont un villageois fait la tournée du port reçoit la charrette au palier de ce que la tournée
+  // portait, pour qu'elle ne porte jamais moins qu'avant : rien, C1 V1 ; une brouette à la ferme, C2 V2 ; la charrette et
+  // le cheval du joueur, C3 V3, et son cheval à elle offert, déjà là, si l'Écurie a la place (sinon V2). Une partie sans
+  // tournée ne reçoit rien ; une charrette ou des rails déjà là sont relus.
+  108: (state) => {
+    const out = { ...state, version: 109 };
+    if ('charrette' in state) {
+      const c = reparerCharrette(state.charrette);
+      if (c) out.charrette = c; else delete out.charrette;
+    } else if (Array.isArray(state.villageois) && state.villageois.some((v) => v && v.tache === 'navette')) {
+      out.charrette = charretteDeLaTournee(state);
+    }
+    if (state.dehors && typeof state.dehors === 'object' && !Array.isArray(state.dehors) && 'rails' in state.dehors) {
+      out.dehors = { ...state.dehors, rails: encoderSegments(decoderSegments(state.dehors.rails)) };
+    }
+    return out;
+  },
 };
+
+// La charrette d'une partie d'avant I2b dont un villageois faisait la tournée (la migration v108 → v109) : au palier de
+// ce que la tournée portait (PRODUCTION.NAVETTE d'alors : une brouette à la ferme, la charrette et le cheval du joueur).
+function charretteDeLaTournee(state) {
+  const c = nouvelleCharrette(), a = (o) => countItem(state, o) > 0;
+  const C = DATA.CHARRETTE || {}, palier = (C.CHEVAL || {}).PALIER || 3;
+  if (a('charrette') && state.cheval && typeof state.cheval === 'object') {
+    let place = false;
+    try { const e = etatEcurie(state); place = e.ok && Math.min((DATA.CHEVAL && DATA.CHEVAL.PLACES) || 2, e.places) >= 2; } catch (e) { place = false; }
+    c.capacite = 3;
+    c.vitesse = place ? palier : 2;
+    if (place) c.cheval = { arrive: 0, nourri: true };
+  } else if (a('brouette')) { c.capacite = 2; c.vitesse = 2; }
+  return c;
+}
 
 // Les charges de chacun d'une sauvegarde (la migration v105 → v106) : { compte: { vehicule, charge } }.
 function reparerCharges(charges) {

@@ -141,6 +141,10 @@
      villageois.attribuer { id, tache }        confier une tâche (TACHES.LISTE) au villageois `id` ; « aucune » : plus de tâche
      villageois.outil     { id, outil }        lui donner son outil (hache, pioche, faux, canne) ; « reprendre » : le reprendre
      villageois.vendre    { id, objets }       la navette : ce qu'il porte au port (les objets marqués « à vendre »)
+   La charrette du village (l'île à bâtir, fiche I2b ; js/engine/charrette.js, sans inverse ; les rails se posent et se
+   reprennent par bloc.poser, bloc.reprendre, comme les autres blocs) :
+     charrette.palier     { branche }          acheter le palier suivant de sa capacité (« capacite ») ou de sa vitesse
+                                                (« vitesse »), payé en pièces ; le palier du cheval : il vient par le bac
    Les liens entre villageois (l'île à bâtir, fiche I6b ; js/engine/liens.js, sans inverse) :
      villageois.foyer     { a, b, maison? }     proposer à deux proches de vivre ensemble (la maison : sa boîte aux lettres)
      villageois.enfant    { foyer }             proposer à un foyer d'accueillir un enfant (il viendra par le prochain bac)
@@ -220,6 +224,7 @@ import { agrandirPort, apporterAuChantier, commanderImport, honorerCommande } fr
 import { accepterContrat, livrerContrat } from './contrats.js';
 import { chargerPortage, choisirVehicule, dechargerPortage } from './portage.js';
 import { attribuer, donnerOutil, marquerAVendre, reprendreOutil } from './taches.js';
+import { acheterPalier } from './charrette.js';
 import { accueillirEnfant, formerFoyer } from './liens.js';
 import { accueillirAuVillage, offrirVillageois, parlerAuVillageois } from './villageois-amitie.js';
 import { designerCuisine, designerGardeManger, reglerReserve } from './garde-manger.js';
@@ -717,6 +722,11 @@ export const COMMANDES = {
   'villageois.vendre': {
     args: { id: 'texte', objets: 'objets' },
     executer: (state, { id, objets }) => marquerAVendre(state, id, objets),
+  },
+  // (fiche I2b : la charrette du village, un palier de l'une de ses deux branches)
+  'charrette.palier': {
+    args: { branche: 'mot' },
+    executer: (state, { branche }) => acheterPalier(state, branche),
   },
   // (I9d : parler, offrir, l'accueil d'un nouveau venu ; en ligne, avec l'amitié de l'acteur)
   'villageois.parler': {

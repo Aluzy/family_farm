@@ -727,7 +727,7 @@
       "cassé, sa case se libère), ni dans l'emprise du port (le port, ses abords et une marge : la halle, le quai, la",
       "cale) ou d'un hameau (son cadre), ni sur une région de l'île que la page n'a pas encore dessinée."
     ],
-    "DEHORS": ["chemin", "sol_pas_ardoise", "sol_pas_pierre", "sol_pas_bois", "lanterne", "candelabre", "pont_planches",
+    "DEHORS": ["chemin", "sol_pas_ardoise", "sol_pas_pierre", "sol_pas_bois", "lanterne", "candelabre", "pont_planches", "rails",
       "barriere", "barriere_blanche", "barriere_rouge", "barriere_grise", "barriere_chene", "barriere_verte", "barriere_lavande",
       "banc_jardin", "banc_rondins", "banc_pierre"],
     "//CHEMIN": [
@@ -1071,15 +1071,16 @@
     "la mare de la ferme (le quota du jour du joueur) ; la cueillette : ce que la ferme offre ce matin (baies,",
     "branches, cailloux) ; le fauchage : un coup de faux (la fibre ; une botteleuse posée en fait de la paille) ; la",
     "cuisine : une préparation lancée à la cuisinière ou au four (RECETTES, la première dont les ingrédients sont là) ; la",
-    "navette : un aller-retour au port (PORTEE objets au plus de ce que le joueur a marqué « à vendre » sur sa fiche,",
-    "vendus au comptoir, l'argent au joueur ; la brouette et la charrette viendront avec la fiche I2).",
+    "navette : la tournée du port, faite par la charrette du village (fiche I2b, CHARRETTE) : ses villageois en sont les",
+    "charretiers, qui se relaient ; une action est un voyage entier, la vente au comptoir à l'heure d'arrivée (ACTIONS ne",
+    "sert plus qu'à dire, dans la liste, qu'elle fait plusieurs voyages ; ils se comptent d'après la route et la vitesse).",
     "Les machines (fiche I8b, « conduire une chaîne ») : une action est un tour des machines de la ferme : il ramasse",
     "au coffre le tas au bout de chaque chaîne de production (une chaîne au tas plein repart), il jette dans son",
     "entonnoir les ingrédients du coffre, il verse au Moulin jusqu'à MOULIN blés (ceux qui ne sont pas gardés pour les",
     "semis), il relance au four la FOURNEE dès qu'il est libre. Une chaîne servie tourne tout le jour : un villageois",
     "en tire bien plus que le joueur, qui n'a pas le temps d'y revenir. Le courant que ses machines consomment entre dans",
-    "son coût (PRODUCTION.COURANT, le tableau). La navette (fiche I8b) : elle livre d'abord les contrats d'export acceptés,",
-    "et porte plus avec une brouette, une charrette, un quai de chargement (PRODUCTION.NAVETTE)."
+    "son coût (PRODUCTION.COURANT, le tableau). La tournée du port (fiches I8b, I2b) : elle livre d'abord les contrats",
+    "d'export acceptés, puis ce qui est marqué « à vendre », en volumes, dans la charrette du village (CHARRETTE)."
   ],
   "TACHES": {
     "TRAVAIL": [[8, 11.5], [13.5, 16.5]],
@@ -1152,8 +1153,8 @@
         "PHRASES": ["Je surveille les machines.", "Tout tourne rond !", "Encore une fournée et je vide la chaîne."]
       },
       "navette": {
-        "nom": "La tournée du port", "icone": "⚓", "ACTIONS": 2, "PORTEE": 10, "outil": null, "lieu": "port", "geste": "ramasse", "emoji": "💰",
-        "donne": "un aller-retour au port : PORTEE objets marqués « à vendre », vendus au comptoir",
+        "nom": "La tournée du port", "icone": "⚓", "ACTIONS": 2, "outil": null, "lieu": "port", "geste": "ramasse", "emoji": "💰",
+        "donne": "mener la charrette du village au port, voyage après voyage : les contrats, puis ce qui est marqué « à vendre »",
         "SANS": "Il n'y a pas de port sur l'île.",
         "PHRASES": ["Je descends au port.", "Le panier est lourd aujourd'hui !", "Je vends tout ça au comptoir."]
       }
@@ -1259,7 +1260,8 @@
           "charniere": { "entrees": { "lingot_fer": 1 }, "sortie": { "charniere": 2 }, "palier": 3 },
           "lame": { "entrees": { "lingot_fer": 1, "bois": 1 }, "sortie": { "lame": 1 }, "palier": 2 },
           "lingot_cuivre": { "entrees": { "minerai_cuivre": 4, "bois": 3 }, "sortie": { "lingot_cuivre": 1 }, "palier": 3 },
-          "lingot_or": { "entrees": { "minerai_or": 4, "bois": 4 }, "sortie": { "lingot_or": 1 }, "palier": 4 }
+          "lingot_or": { "entrees": { "minerai_or": 4, "bois": 4 }, "sortie": { "lingot_or": 1 }, "palier": 4 },
+          "rails": { "entrees": { "lingot_fer": 1, "planche": 2, "pierre": 1 }, "sortie": { "rails": 8 }, "palier": 2, "commande": true }
         },
         "CLIENTS": { "lame": "outil" }
       },
@@ -1903,10 +1905,8 @@
     "dernier passage reparti sans qu'il soit complet, il s'efface sans pénalité (ce qui est livré est payé).",
     "COURANT : le tableau des villageois compte l'énergie que consomment les machines qu'un villageois conduit (ce qu'il",
     "y verse) dans son coût, une pièce par WH_PAR_PIECE Wh.",
-    "NAVETTE : la tournée du port en volume. Elle porte TACHES.LISTE.navette.PORTEE objets ; BROUETTE avec une brouette",
-    "à la ferme, CHARRETTE avec une charrette et un cheval ; un quai de chargement posé sur la ferme regroupe les envois :",
-    "QUAI % de plus (la tournée y part et y revient). Elle livre d'abord les contrats acceptés, puis ce qui est marqué",
-    "« à vendre ».",
+    "La tournée du port en volume : depuis la fiche I2b, c'est la charrette du village qui la fait (CHARRETTE) ; le quai",
+    "de chargement en est le point de départ (on y charge plus vite) et la gare de la voie du wagonnet.",
     "QUAI : le quai de chargement (un bloc de l'Atelier, deux cases, dehors sur la ferme ; l'image :",
     "scripts/batiments/quai_chargement.py) se fabrique à partir du port de niveau NIVEAU.",
     "MACHINES, ROBOT, IMPORT : ce que débloquent les paliers de la vocation (VOCATIONS.production) : le réservoir d'une",
@@ -1922,10 +1922,53 @@
         "farine", "lait", "oeuf", "laine"]
     },
     "COURANT": { "WH_PAR_PIECE": 250 },
-    "NAVETTE": { "BROUETTE": 25, "CHARRETTE": 60, "QUAI": 200 },
     "QUAI": { "NIVEAU": 2 },
     "MACHINES": { "RESERVOIR": 200 },
     "ROBOT": { "VITESSE": 200 },
     "IMPORT": { "RANG": 2, "LOT": 50, "MARGE": 150 }
+  },
+  "//CHARRETTE": [
+    "La charrette du village (fiche I2b ; le moteur : js/engine/charrette.js ; la scène : js/carte/ferme/charrette-village.js ;",
+    "la fenêtre : l'onglet « La charrette du village » du port, js/ui/port.js ; les dessins : scripts/carte/charrette_village.py).",
+    "Une seule charrette, au village : elle naît au premier villageois mis à la tournée du port (TACHES.LISTE.navette), aux",
+    "paliers 1 des deux branches. Les villageois de la tournée en sont les charretiers (D17) : un seul la mène à la fois,",
+    "voyage par voyage ; au retour, elle passe au suivant de la tournée qui travaille aujourd'hui (ni au repos, ni à",
+    "l'accueil, ni au chantier du village). Le relais l'empêche de s'arrêter ; il ne la rend pas plus rapide.",
+    "JOUR : sa journée (de 7 h à 17 h) ; elle enchaîne des voyages entiers : charger (CHARGE h au coffre, QUAI h au quai de",
+    "chargement), l'aller, décharger et vendre au comptoir (VENTE h, à l'heure d'arrivée, le port ouvert), le retour. Un",
+    "voyage ne part que s'il revient avant la fin de JOUR. Le charretier mange au port : son repas compte comme les autres.",
+    "MARCHE : le pas d'un personnage à pied sur un chemin, en cases par heure de jeu (58 px/s doublés, 30 s l'heure) : la",
+    "vitesse × 1. La route va du coffre (ou du quai) au comptoir par le plus court, au pas de la vitesse sur les chemins et",
+    "sur la ferme, à HORS_CHEMIN % ailleurs (un chemin coupé) ; le wagonnet sur la voie complète, au pas de son palier.",
+    "CAPACITES, PRIX_CAPACITE : les paliers de la capacité (en volumes par voyage, VILLAGE.PORTAGE.VOLUMES ; le prix en",
+    "pièces, le premier offert) ; VITESSES, PRIX_VITESSE : ceux de la vitesse (en fois MARCHE). Les deux branches sont",
+    "libres : un palier de l'une ne demande aucun palier de l'autre ; on monte chaque branche dans l'ordre. CHEVAL : le",
+    "palier de vitesse qui amène le cheval de trait (par le bac, au passage suivant ; il prend une place à l'Écurie, à",
+    "côté de celui du joueur : CHEVAL.PLACES ; sans Écurie ou sans place, le palier est refusé) ; il mange RATION pailles",
+    "par nuit, du coffre, après le cheval du joueur (le tableau la compte dans le coût du charretier). Tant qu'il n'est pas",
+    "arrivé, la charrette garde le pas d'avant (SANS_CHEVAL, le palier). WAGONNET : le palier du wagonnet, qui demande la",
+    "voie complète ; la voie coupée, la charrette prend le chemin, au palier d'avant.",
+    "RAILS : les rails (un bloc de l'Atelier : 1 lingot de fer, 2 planches, 1 pierre pour 8 cases ; le forgeron les fait",
+    "aussi, à la commande). La voie est complète quand des rails voisins vont de la gare (une case de rails contre le quai",
+    "de chargement, à défaut contre le bord de la ferme) jusqu'au bord des abords du port. ABORDS : à cette distance du",
+    "comptoir (en cases), la route est au pas du chemin (les quais du port)."
+  ],
+  "CHARRETTE": {
+    "JOUR": [7, 17],
+    "CHARGE": 0.25,
+    "QUAI": 0.1,
+    "VENTE": 0.25,
+    "MARCHE": 217.5,
+    "HORS_CHEMIN": 50,
+    "ABORDS": 6,
+    "CAPACITES": [20, 40, 80, 160, 320],
+    "PRIX_CAPACITE": [0, 300, 1000, 2500, 6000],
+    "VITESSES": [0.75, 1, 1.4, 2, 3],
+    "PRIX_VITESSE": [0, 400, 1500, 3000, 5000],
+    "CHEVAL": { "PALIER": 3, "RATION": 2, "SANS_CHEVAL": 2 },
+    "WAGONNET": 5,
+    "RAILS": { "BLOC": "rails" },
+    "NOMS_CAPACITE": ["la caisse nue, ridelles basses", "des ridelles plus hautes", "les rehausses à claire-voie", "les rehausses et une bâche", "la longue charrette à quatre roues"],
+    "NOMS_VITESSE": ["tirée à bras, à petit pas", "roues cerclées de fer, moyeux graissés", "le cheval de trait, au pas", "le cheval ferré, au trot", "le wagonnet sur la voie, au halage"]
   }
 }

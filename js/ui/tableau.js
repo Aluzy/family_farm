@@ -176,12 +176,13 @@ function jourHtml(j) {
   const pris = Object.keys(j.utilise).length ? `<li>🧺 Pris au coffre : ${objetsLong(j.utilise)} · ${pieces(j.matieres)}</li>` : '';
   const part = j.part ? `<li>👛 Sa part : ${pieces(j.part)}</li>` : '';
   // (fiche I8b : le courant des machines qu'il conduit)
+  const ration = j.cheval ? `<li>🐴 La ration du cheval : ${formatNumber(j.cheval)} pailles (dans ce qui est pris au coffre)</li>` : '';
   const courant = j.courant ? `<li>⚡ Le courant des machines : ${formatNumber(j.courant)} Wh · ${pieces(j.electricite)}</li>` : '';
   const prod = j.produit.length ? `${j.produit.map((x) => `${formatNumber(x.n)} ${icone(x.objet)} ${escapeHtml(nom(x.objet))}`).join(', ')} · ${pieces(j.valeur)}` : 'rien';
   return `<li class="tableau-jour">
       <div class="tableau-jour-tete"><strong>Jour ${j.jour}</strong> <span class="muted">${formatDay(j.jour)}</span> <span class="tableau-jour-solde">solde ${formatSigned(j.solde)}</span></div>
       <div>${quoi}</div>
-      <ul><li>🍽️ Mangé : ${mange}</li>${pris}${courant}${part}<li>📦 Produit : ${prod}</li></ul>
+      <ul><li>🍽️ Mangé : ${mange}</li>${pris}${ration}${courant}${part}<li>📦 Produit : ${prod}</li></ul>
     </li>`;
 }
 

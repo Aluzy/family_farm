@@ -179,6 +179,25 @@ for (const id of ids) {
   const fin = rows.find((r) => r.conserves === 0);
   console.log(`Chapitres atteints : ${debutChap.length ? debutChap.join(' ') : 'aucun au-delà du 1'}`);
   console.log(`Conserves épuisées : ${fin ? 'nuit ' + fin.nuit : 'jamais'} · nuits sans repas : ${zero.length ? zero.length + ', dès la nuit ' + zero[0].nuit : 'aucune'} · bonheur final : ${num(rows[rows.length - 1].bonheur, 0)}`);
+  if (village) console.log(charretteEnMots(rows));
+}
+
+// I2b : la charrette du village dans la partie (les lignes de simulatePlay : row.charrette, la journée qui vient de
+// finir) : sa naissance, ses paliers, ses voyages et ce qu'elle a porté par jour (les vingt dernières nuits), ce qui a été
+// dépensé en paliers.
+function charretteEnMots(rows) {
+  const l = rows.filter((r) => r.charrette);
+  if (!l.length) return 'Charrette du village : pas de tournée du port dans cette partie.';
+  const paliers = [];
+  let avant = { capacite: 1, vitesse: 1 };
+  for (const r of l) {
+    for (const b of ['capacite', 'vitesse']) if (r.charrette[b] > avant[b]) paliers.push(`${b === 'capacite' ? 'C' : 'V'}${r.charrette[b]}@${r.nuit}`);
+    avant = r.charrette;
+  }
+  const fin = l.slice(-20), moy = (k) => fin.reduce((t, r) => t + r.charrette[k], 0) / fin.length;
+  const depense = rows.reduce((t, r) => t + (r.depenses.charrette || 0), 0), volumes = l.reduce((t, r) => t + r.charrette.volumes, 0), gain = l.reduce((t, r) => t + r.charrette.gain, 0);
+  return `Charrette du village : née la nuit ${l[0].nuit} ; paliers ${paliers.length ? paliers.join(' ') : 'aucun (C1 V1)'} (${num(depense, 0)} 💰) ; ` +
+    `en tout ${num(volumes, 0)} volumes vendus (+${num(gain, 0)} 💰) ; les 20 dernières nuits : ${num(moy('voyages'), 1)} voyages, ${num(moy('volumes'), 0)} volumes, ${num(moy('gain'), 0)} 💰 par jour.`;
 }
 
 /* ---------- vérifications (joueur appliqué) ---------- */

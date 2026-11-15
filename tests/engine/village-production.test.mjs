@@ -15,7 +15,7 @@
    ========================================================================== */
 
 import {
-  accepterContrat, addItem, arriverVillageois, attribuer, avancerContrats, awakeMsAtHour, bilanJour, buildAtelier, calculProduction,
+  acheterPalier, accepterContrat, addItem, arriverVillageois, attribuer, avancerContrats, awakeMsAtHour, bilanJour, buildAtelier, calculProduction,
   catalogueImport, chargerPortage, choisirVehicule, commanderImport, comptoirDuPort, contratsDuPort, countItem, craftStatus,
   createNewGame, DATA, debloque, etatChaine, executerCommande, farmSeed, farmTerrain, listeVocations, livrerContrat,
   machinesDeLaFerme, migrate, palierVocation, paiementContrat, porteeNavette, portDuMonde, poserBloc, postesDe,
@@ -274,12 +274,12 @@ test('« Conduire les machines » : le Moulin et la fournée ; plus qu\'un joueu
   assert(s.villageois[0].travail.courant >= tacheDef('chaine').MOULIN * DATA.RECETTES.farine.temps * DATA.STATIONS.moulin.whParS, 'le courant du Moulin');
 });
 
-test('la tournée du port en volume : les contrats d\'abord ; la brouette, le quai de chargement', () => {
+test('la tournée du port en volume : les contrats d\'abord ; le quai de chargement, départ de la charrette du village', () => {
   const { s, V: [v], ou } = ile(1, 7);
-  const base = tacheDef('navette').PORTEE, N = DATA.PRODUCTION.NAVETTE;
-  assertEqual(porteeNavette(s), base);
+  // (fiche I2b : la tournée porte la capacité de la charrette du village, en volumes ; elle n'emprunte plus la brouette)
+  assertEqual(porteeNavette(s), DATA.CHARRETTE.CAPACITES[0]);
   addItem(s, 'brouette', 1);
-  assertEqual(porteeNavette(s), N.BROUETTE, 'avec une brouette');
+  assertEqual(porteeNavette(s), DATA.CHARRETTE.CAPACITES[0], 'la brouette du joueur reste au joueur');
   // (le quai de chargement : à partir du port de niveau 2)
   s.port.niveau = 1;
   setInv(s, { planche: 20, pierre: 10, lingot_fer: 4, brouette: 1 });
@@ -289,7 +289,7 @@ test('la tournée du port en volume : les contrats d\'abord ; la brouette, le qu
   const t = rangee(s, 4);
   addItem(s, 'quai_chargement', 1);
   assert(poserBloc(s, 'quai_chargement', t + 1).ok, 'posé');
-  assertEqual(porteeNavette(s), Math.round((N.BROUETTE * N.QUAI) / 100), 'le quai regroupe les envois');
+  assertEqual(porteeNavette(s), DATA.CHARRETTE.CAPACITES[0], 'le quai ne change pas la capacité');
   assert(postesDe(s, 'navette', v).some((p) => p.quai), 'la tournée part du quai');
   // (un contrat accepté : la tournée le livre d'abord, sans rien de marqué)
   s.campagne.compteurs.pains = 1;
@@ -300,13 +300,16 @@ test('la tournée du port en volume : les contrats d\'abord ; la brouette, le qu
   addItem(s, 'pain', 60);
   attribuer(s, v.id, 'navette');
   assertEqual(tacheManque(s, v, 'navette'), null, 'un contrat suffit');
+  // (fiche I2b : la charrette du village, née avec la tournée ; sa capacité au palier 2, quarante pains en un voyage)
+  s.pieces += DATA.CHARRETTE.PRIX_CAPACITE[1];
+  assert(acheterPalier(s, 'capacite').ok, 'le palier C2');
   const pieces = s.pieces;
   tachesNuit(s);
   assertEqual(s.production.contrats.honores, 1, 'le contrat livré par la tournée');
   assert(s.pieces > pieces, 'payé, avec la prime');
 });
 
-test('deux navettes, un boulanger, une chaîne : un contrat de 100 pains honoré en trois passages', () => {
+test('deux charretiers, un boulanger, une chaîne : un contrat de 100 pains honoré en trois passages', () => {
   const { s, V: [cuisinier, conducteur, n1, n2], ou } = ile(4, 8);
   assert(testBatir(s, 'moulin').ok && testBatir(s, 'four').ok, 'le Moulin et le four');
   s.campagne.compteurs.pains = 1;
@@ -324,7 +327,9 @@ test('deux navettes, un boulanger, une chaîne : un contrat de 100 pains honoré
     addItem(s, 'ble', 30);
     testFillBatteries(s);
     testFillTank(s);
-    for (let h = 8; h < 17; h += 0.5) { aller(s, j, h); for (const x of s.villageois) if (x.travail) x.travail.essai = 0; tachesNuit(s); runFor(s, 15); for (const x of s.villageois) if (x.travail) x.travail.actions = 0; }
+    // (pour aller vite, les actions sont remises à zéro à chaque demi-heure ; fiche I2b : la charrette du village refait
+    // de même ses voyages du jour)
+    for (let h = 8; h < 17; h += 0.5) { aller(s, j, h); for (const x of s.villageois) if (x.travail) x.travail.essai = 0; if (s.charrette) s.charrette.faits = 0; tachesNuit(s); runFor(s, 15); for (const x of s.villageois) if (x.travail) x.travail.actions = 0; }
   }
   assertEqual(s.production.contrats.honores, 1, 'honoré avant le départ du troisième bac');
 });

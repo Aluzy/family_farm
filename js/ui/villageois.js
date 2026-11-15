@@ -1,5 +1,6 @@
 import { bourseFicheHtml, direAvisEtal } from './etal.js';
 import { DATA } from '../engine/catalog.js';
+import { capaciteCharrette, etatCharrette } from '../engine/charrette.js';
 import { escapeHtml } from '../engine/format.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { setupPending } from '../engine/depart.js';
@@ -324,12 +325,16 @@ function tacheHtml(id) {
     .map((o) => `<button type="button" class="btn small" data-action="villageois-donner" data-id="${e}" data-outil="${o}">${T(o).ICONE} Donner ${mon(o)} ${escapeHtml(T(o).NOM.toLowerCase())}</button>`).join(' ');
   const liste = (v.vendre || []).filter((o) => DATA.OBJETS[o]);
   const vendre = q.tache === 'navette' ? `<dt>⚓ À vendre</dt><dd>${liste.length ? liste.map((o) => `${icone(o)} ${escapeHtml(DATA.OBJETS[o].nom)}`).join(', ') : '<span class="muted">rien</span>'}${gestePermis('villageois.vendre', { id, objets: [] }) ? ` <button type="button" class="btn small" data-action="villageois-vendre" data-id="${e}">Choisir</button>` : ''}</dd>` : '';
+  // (fiche I2b : un charretier mène la charrette du village ; ses voyages d'aujourd'hui)
+  const ec = q.tache === 'navette' ? etatCharrette(state) : null;
+  const sesVoyages = ec ? ec.voyages.filter((x) => x.charretier === id).length : 0;
+  const charrette = ec ? `<dt>🛞 La charrette</dt><dd>${sesVoyages ? `${sesVoyages} voyage${sesVoyages > 1 ? 's' : ''} aujourd'hui` : 'pas de voyage pour lui aujourd\'hui'}, ${ec.volumes} volumes chacun (la fenêtre du port, 🛞)</dd>` : '';
   // (I5a : l'artisan tient son commerce, c'est sa tâche : pas de liste, la fenêtre du commerce)
   const bouton = def && def.commerce ? '<button type="button" class="btn small" data-action="stage-open" data-window="commerce">Le commerce</button>'
     : tachePermise ? `<button type="button" class="btn small" data-action="villageois-taches" data-id="${e}" id="villageois-tache">Tâche</button>`
     : '<span class="muted villageois-droit" id="villageois-tache-droit">🔒 Le propriétaire de l\'île attribue les tâches.</span>';
   return `<dt>🧺 Tâche</dt><dd>${etat} ${bouton}</dd>
-      <dt>🧰 Outil</dt><dd>${outil}${donner ? ` <span class="villageois-outils">${donner}</span>` : ''}</dd>${vendre}`;
+      <dt>🧰 Outil</dt><dd>${outil}${donner ? ` <span class="villageois-outils">${donner}</span>` : ''}</dd>${vendre}${charrette}`;
 }
 
 // La liste des tâches pour le villageois `id` : celles qu'il peut faire, ce qui manque aux autres.
@@ -363,7 +368,7 @@ function ouvrirAVendre(id) {
   const cases = objets.map((o) => `<label class="villageois-vendre"><input type="checkbox" name="vendre" value="${o}"${marque.has(o) ? ' checked' : ''}> ${icone(o)} ${escapeHtml(DATA.OBJETS[o].nom)}</label>`).join('');
   openModal(`
     <h2 id="villageois-vendre-title">⚓ Ce que ${escapeHtml(v.prenom)} porte au port</h2>
-    <p class="muted">Coche ce qui est « à vendre » : à chaque aller-retour, ${ilElle(v)} en porte ${tacheDef('navette').PORTEE} au comptoir ; l'argent est pour toi.</p>
+    <p class="muted">Coche ce qui est « à vendre » : la charrette du village en porte à chaque voyage jusqu'à sa capacité (${capaciteCharrette(state)} volumes), les contrats d'abord, et ${ilElle(v)} le vend au comptoir ; l'argent est pour toi.</p>
     <form class="villageois-vendre-liste" id="villageois-vendre-form">${cases || '<p class="muted">L\'inventaire n\'a rien qui se vende.</p>'}</form>
     <button type="button" class="btn primary" data-action="villageois-vendre-ok" data-id="${escapeHtml(id)}" id="villageois-vendre-ok">C'est noté</button>`, { labelledBy: 'villageois-vendre-title', className: 'modal bois villageois-modal', focus: '#villageois-vendre-ok', preventScroll: true });
 }

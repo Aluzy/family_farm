@@ -263,6 +263,7 @@
     "boite_nourriture": { "nom": "Boîte à nourriture", "icone": "🧺", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "boite_aux_lettres": { "nom": "Boîte aux lettres", "icone": "📫", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "pont_planches": { "nom": "Pont de planches", "icone": "🌉", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "rails": { "nom": "Rails", "icone": "🛤️", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true, "village": true },
     "etal": { "nom": "Étal", "icone": "🛒", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "panneau_village": { "nom": "Panneau du village", "icone": "🪧", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "quai_chargement": { "nom": "Quai de chargement", "icone": "🏗️", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },

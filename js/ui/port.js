@@ -1,5 +1,6 @@
 import { DATA, prixIle } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
+import { clockHours } from '../engine/clock.js';
 import { countItem } from '../engine/inventory.js';
 import { fridgeCount } from '../engine/fridge.js';
 import { sellableCount } from '../engine/market.js';
@@ -16,7 +17,8 @@ import { avancerContrats, contratsDuPort, prendreAvisContrats } from '../engine/
 import { palierVocation, scoreVocation } from '../engine/vocations.js';
 import '../engine/vocation-production.js';
 import { son } from './son.js';
-import { horsFerme } from '../engine/dehors.js';
+import { horsFerme, imageRails, IMAGES_RAILS, railsPoses, traceSurRails } from '../engine/dehors.js';
+import { charretteDu, etatCharrette, voyagesDuJour } from '../engine/charrette.js';
 import { villageActif } from '../engine/village.js';
 import { choisirBut } from '../engine/monde-vu.js';
 import { farmSeed, farmTerrain } from '../engine/terrain.js';
@@ -68,6 +70,7 @@ export const PORT_TABS = [
   { id: 'contrats', label: 'Contrats d\'export', icon: '📜' },
   { id: 'import', label: 'Import', icon: '🚢' },
   { id: 'niveau', label: 'Le port', icon: '🏗️' },
+  { id: 'charrette', label: 'La charrette du village', icon: '🛞' },
 ];
 
 function currentTab() {
@@ -274,6 +277,45 @@ function niveauHtml(p) {
     <ul class="item-lines chantier-port">${lignes}<li>💰 ${formatCoins(nx.pieces)} pièces, payées au comptoir</li></ul><p class="muted">${aide}</p>${boutons}`;
 }
 
+// Fiche I2b : l'onglet de la charrette du village : sa capacité, sa vitesse, le prochain palier de chaque branche (ce
+// qu'il faut, « Améliorer ») ; ses voyages d'aujourd'hui, ce qu'elle a vendu, où elle est ; la voie du wagonnet.
+const heureEnMots = (h) => { const hh = Math.floor(h + 1e-9), mm = Math.round((h - hh) * 60); return mm >= 60 ? `${hh + 1} h` : mm ? `${hh} h ${String(mm).padStart(2, '0')}` : `${hh} h`; };
+const PHASES = { rangee: 'rangée sur la ferme', charge: 'on la charge', aller: 'en route vers le port, chargée', vente: 'à quai, sous la halle : on vend', retour: 'sur le chemin du retour' };
+function charretteHtml() {
+  const e = etatCharrette(state);
+  if (!e) return `<p><strong>🛞 La charrette du village</strong></p><p class="muted">Le village n'a pas encore de charrette : elle vient avec le premier villageois mis à la tournée du port (sa fiche, « Tâche »). Elle porte au port ce que tu marques « à vendre » sur la fiche de ses charretiers, et le vend au comptoir.</p>`;
+  const C = DATA.CHARRETTE, mot = { bras: 'tirée à bras', cheval: 'attelée au cheval de trait', wagonnet: 'le wagonnet, sur la voie' }[e.mode];
+  const fois = (v) => String(v).replace('.', ',');
+  const tete = `<p><strong>🛞 La charrette du village</strong> : ${formatQty(e.volumes)} volumes par voyage, ${mot} (× ${fois(e.fois)} le pas sur le chemin).</p>`;
+  const branche = (b) => {
+    const nx = e.prochains[b], titre = b === 'capacite' ? '📦 La capacité' : '🐎 La vitesse', actuel = b === 'capacite' ? `${C.CAPACITES[e.capacite - 1]} volumes` : `× ${fois(C.VITESSES[e.vitesse - 1])}`;
+    if (!nx) return `<li><strong>${titre}</strong> : ${actuel}, au plus haut.</li>`;
+    const ok = !nx.refus, quoi = b === 'capacite' ? `${nx.valeur} volumes` : `× ${fois(nx.valeur)}`;
+    return `<li><strong>${titre}</strong> : ${actuel} (palier ${e[b]} sur ${(b === 'capacite' ? C.CAPACITES : C.VITESSES).length}). Ensuite : ${quoi}, ${nx.nom}.
+      <div class="row"><button type="button" class="btn small${ok ? ' primary' : ''}" data-action="charrette-palier" data-branche="${b}"${ok ? '' : ' disabled'}>⬆️ Améliorer (−${formatCoins(nx.prix)} 💰)</button></div>${nx.refus && nx.refus !== 'Pas assez de pièces.' ? `<p class="muted">${nx.refus}</p>` : ''}</li>`;
+  };
+  const ch = e.cheval ? `<p>🐴 Le cheval de trait ${e.cheval.arrive ? `est à l'Écurie${e.cheval.nourri ? '' : ' (il n\'a pas eu sa paille cette nuit)'}` : `arrive par le bac du ${formatDay(e.cheval.jour)}`}.</p>` : '';
+  const r = e.route;
+  const route = r ? `<p>La route : ${formatQty(r.longueur)} cases ${r.quai ? 'depuis le quai de chargement' : 'depuis le coffre'}, ${heureEnMots(r.aller)} à l'aller${r.horsChemin ? ` (${r.horsChemin} cases hors du chemin : elle y va deux fois moins vite)` : ''}${r.rails ? `, dont ${r.rails} sur les rails` : ''}.</p>` : '<p class="muted">Pas de route jusqu\'au port pour l\'instant.</p>';
+  const h = heureDuJourPort();
+  const ou = h !== null && r ? (() => { const v = e.voyages.find((x) => h >= x.depart && h < x.retour); if (!v) return PHASES.rangee; return h < v.charge ? PHASES.charge : h < v.arrivee ? PHASES.aller : h < v.vente ? PHASES.vente : PHASES.retour; })() : null;
+  const qui = (id) => { const v = (state.villageois || []).find((x) => x.id === id); return v ? v.prenom : '?'; };
+  const voyages = e.voyages.length ? `<ul class="item-lines">${e.voyages.map((v, k) => `<li${k < e.faits ? ' class="fait"' : ''}>Voyage ${k + 1} : ${qui(v.charretier)} part à ${heureEnMots(v.depart)}, vend au port à ${heureEnMots(v.arrivee)}, rentre à ${heureEnMots(v.retour)}.</li>`).join('')}</ul>`
+    : '<p class="muted">Aucun voyage aujourd\'hui : pas de charretier au travail (au repos, à l\'accueil, au chantier), rien à porter, ou la route est trop longue pour la journée.</p>';
+  const vendu = Object.keys(e.vendu).length ? `<p>Vendu aujourd'hui : ${Object.entries(e.vendu).map(([k, n]) => `${formatQty(n)} ${DATA.OBJETS[k] ? DATA.OBJETS[k].icone : k}`).join(', ')} (${formatQty(e.porte)} volumes, +${formatCoins(e.gain)} 💰).</p>` : '';
+  const v = e.voie;
+  const voie = v.complete ? `<p>🛤️ La voie est complète : ${formatQty(v.longueur)} cases de rails du quai au port.${e.mode === 'wagonnet' ? ' Le wagonnet y roule.' : ''}</p>`
+    : v.manque ? `<p>🛤️ La voie du wagonnet : il manque ${formatQty(v.manque)} case${v.manque > 1 ? 's' : ''} de rails, de ${quaiDeChargementPose() ? 'le quai de chargement' : 'la ferme'} au port (les rails : l'Atelier, ou à la forge).</p><div class="row"><button type="button" class="btn small" data-action="charrette-voie" data-case="${v.ici}">🔎 Montre-moi</button></div>`
+      : '<p class="muted">🛤️ La voie du wagonnet : pose des rails (l\'Atelier, ou commandés à la forge) du quai de chargement au port.</p>';
+  return `${tete}<ul class="item-lines">${branche('capacite')}${branche('vitesse')}</ul>${ch}<h3 class="section-title">Aujourd'hui${ou ? ` : ${ou}` : ''}</h3>${route}${voyages}${vendu}${voie}`;
+}
+function quaiDeChargementPose() {
+  return Object.values(state.blocs || {}).includes('quai_chargement');
+}
+function heureDuJourPort() {
+  try { return clockHours(state); } catch (e) { return null; }
+}
+
 // La fenêtre (`fenetre` : dans la fenêtre flottante de la carte, les onglets sont dans son en-tête).
 export function renderPort(fenetre = false) {
   const tab = currentTab(), p = presence();
@@ -283,6 +325,7 @@ export function renderPort(fenetre = false) {
         : tab.id === 'contrats' ? contratsHtml(p)
         : tab.id === 'import' ? importHtml(p)
           : tab.id === 'niveau' ? niveauHtml(p)
+            : tab.id === 'charrette' ? charretteHtml()
             : `<h3 class="section-title">🌱 Semences et engrais</h3>${slotsHtml(etalPort(state).map((o) => achatSlot(o, p.ici)), 'Aucune semence en vente.')}`;
   const html = `${bandeauHtml(p)}${body}`;
   return fenetre ? html : `<h2>${PORT.ICONE} ${PORT.NOM}</h2>${portTabsHtml()}${html}`;
@@ -347,6 +390,7 @@ function aideTexte(tab) {
   if (tab === 'commandes') return `${base} À chaque passage (tous les ${DATA.PORT.BAC.PERIODE} jours, ${heuresBac()}), le bac apporte des commandes, tirées de ce que tu sais produire. Porte ce qu'elles demandent (l'onglet Porter, sur la ferme) et honore-les au comptoir : le prix de vente, plus la prime, plus de l'expérience. Elles valent jusqu'au passage suivant ; une commande manquée ne coûte rien. Le bac emporte aussi tout ce que tu vends : tes caisses attendent sur le quai et partent avec lui.`;
   if (tab === 'contrats') return `${base} À partir du port de niveau ${DATA.PRODUCTION.CONTRATS.NIVEAU}, le bac propose à chaque passage des contrats d'export : de grosses commandes (cent pains, trente fromages…) à livrer sur ${DATA.PRODUCTION.CONTRATS.PASSAGES} passages, avec une prime. Accepte-les au comptoir ; livre-les en autant de fois que tu veux, avec ce que tu as porté ou par la tournée du port d'un villageois (elle les livre d'abord). Chaque livraison est payée au prix de vente ; le contrat complet, sa prime. Manqué, il s'efface sans rien coûter. Plus le port est grand, plus les contrats sont gros. Le quai de chargement (l'Atelier) regroupe les envois de la tournée.`;
   if (tab === 'import') return `${base} Le bac importe ce que l'île n'a pas : des jeunes arbres, des plants de vigne, les espèces de la serre, des bêtes, des plans, et les plants sauvages de l'île que tu as rapportés et cultivés. Une commande se paie d'avance et arrive à la ferme au passage suivant. Chaque niveau du port ouvre un rang du catalogue ; ce que ton niveau débloquait le reste.`;
+  if (tab === 'charrette') return `La charrette du village porte au port ce que tu marques « à vendre » sur la fiche de ses charretiers (les villageois de la tournée du port), les contrats d'export d'abord, le plus cher au volume ensuite, et le vend au comptoir. Ses charretiers se relaient : un seul la mène à chaque voyage, de 7 h à 17 h ; au retour, elle passe au suivant qui travaille aujourd'hui. Deux branches à améliorer, libres l'une de l'autre : la capacité (de 20 à 320 volumes par voyage) et la vitesse (à bras, des roues cerclées, le cheval de trait, qui vient par le bac et loge à l'Écurie, le trot, puis le wagonnet). Le wagonnet roule sur une voie de rails complète, du quai de chargement au port : les rails se fabriquent à l'Atelier ou se commandent à la forge, et se posent comme un chemin. Un chemin coupé la ralentit ; un chemin plus court, ou le quai près de la sortie de la ferme, lui fait gagner des voyages.`;
   if (tab === 'niveau') return `${base} Agrandir le port allonge son quai, ouvre un rang du catalogue d'import, fait venir plus de commandes à chaque passage et accueillir plus de villageois. Chaque niveau demande des matériaux, que tu portes au chantier (en une ou plusieurs fois), et des pièces.`;
   if (tab === 'porter') return `Ce que tu vends au port, tu l'y portes. Chaque objet a un volume (un, plus pour le bois, la pierre, les minerais et les lingots). À la main : ${capaciteDe('mains')} volumes ; la brouette (l'Atelier) : ${capaciteDe('brouette')} ; la charrette attelée au cheval (l'Atelier, avec un cheval) : ${capaciteDe('charrette')}. Charge sur la ferme : ce qui ne tient pas reste ici, rien ne se perd. Sur un chemin, tu vas plus vite, à pied comme à cheval.`;
   return `${base} Le port vend les semences que ton niveau a débloquées (et l'engrais) ; leur prix monte un peu à chaque achat : produire les tiennes reste plus rentable. Les outils et les animaux se fabriquent à l'Atelier.`;
@@ -424,6 +468,28 @@ export function bacModele() {
   if (!state || !villageActif(state)) return null;
   const e = etatBac(state);
   return e ? { aQuai: e.aQuai, caisses: caissesAQuai(state), jour: e.jour, heures: e.heures } : null;
+}
+
+// Fiche I2b : la charrette du village pour la scène (js/carte/ferme/charrette-village.js) : { mode ('bras', 'cheval',
+// 'wagonnet'), deco (les rehausses, la bâche, d'après sa capacité, ou null), route ({ cases, heures } : de son départ au
+// comptoir ; au wagonnet, trace : le tracé des rails qu'il suit, dehors.js traceSurRails), voyages (du jour : leurs
+// heures, le charretier), rangee (sa case la nuit) } ; et les rails posés
+// ([[case, image]] : dehors.js imageRails). null le chantier éteint ; rails seuls sans charrette. Gardé tant que la
+// journée de la charrette et les rails ne changent pas : la scène compare l'objet.
+let charretteVue = { cle: null, m: null };
+export function charretteModele() {
+  if (!state || !villageActif(state)) return null;
+  const c = charretteDu(state), R = railsPoses(state), j = c ? voyagesDuJour(state) : null;
+  const ch = state.dehors && state.dehors.chemins, cle = [j, R, ch, c && c.capacite];
+  if (charretteVue.cle && cle.every((x, i) => x === charretteVue.cle[i])) return charretteVue.m;
+  const rails = [...R].sort((a, b) => a - b).map((t) => [t, IMAGES_RAILS.indexOf(imageRails(state, t))]);
+  const deco = c ? (c.capacite >= 4 ? 'bache' : c.capacite >= 3 ? 'rehausses' : null) : null;
+  const m = !c && !rails.length ? null : {
+    rails,
+    charrette: j && j.route ? { mode: j.mode, deco, route: { cases: j.route.cases, heures: j.route.heures, trace: j.mode === 'wagonnet' ? traceSurRails(R, farmTerrain(state).LARGEUR, j.route.cases, j.route.heures) : null }, voyages: j.voyages.map((v) => ({ ...v })), rangee: j.route.cases[0] } : null,
+  };
+  charretteVue = { cle, m };
+  return m;
 }
 
 // Un appui sur le comptoir (le personnage y va) : la fenêtre du port.
@@ -505,6 +571,19 @@ registerActions({
   'port-apporter': () => {
     const r = applyResult(executer('port.apporter', { case: Math.max(0, ouPerso()) }));
     if (r.ok) notify(`🧱 Apporté au chantier du port : ${MATERIAUX(r.apporte)}.${Object.keys(r.manque).length ? ` Il manque encore ${MATERIAUX(r.manque)}.` : ' Tout y est : il reste à payer.'}`, { kind: 'info' });
+  },
+  // (fiche I2b : un palier de la charrette du village ; montrer où manquent des rails)
+  'charrette-palier': (target) => {
+    const b = target.dataset.branche;
+    const r = applyResult(executer('charrette.palier', { branche: b }));
+    if (!r.ok) return;
+    notify(`🛞 La charrette du village : ${r.nom} (−${formatCoins(r.prix)} 💰).${r.cheval ? ` Le cheval de trait arrive par le bac du ${formatDay(r.cheval)}.` : ''}`, { kind: 'info' });
+    refresh();
+  },
+  'charrette-voie': (target) => {
+    const t = Number(target.dataset.case);
+    const S = window.FarmStage;
+    if (Number.isInteger(t) && S && S.showTiles) S.showTiles([t]);
   },
   'port-agrandir': () => {
     const r = applyResult(executer('port.agrandir', { case: Math.max(0, ouPerso()) }));

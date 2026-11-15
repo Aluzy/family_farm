@@ -1483,13 +1483,24 @@ test('I9e : les gestes de gestion du village par le monde, selon le rôle ; refu
   eq([x.evt.bilan.prenom, x.evt.bilan.sorte], [v.prenom, 'forge'], 'l\'avis au propriétaire');
   x = jouer('c-bat', 'commerce.ouvrir', { id: v.id, sorte: 'forge' });
   eq([x.ok, /suggère-le-lui/.test(x.erreur)], [false, true]);
+  // (I2b : la charrette du village, née avec la tournée ; un palier au propriétaire seul, payé de la caisse commune ; le
+  // bâtisseur, même si son jeu envoyait la commande, est refusé)
+  x = jouer(A, 'villageois.attribuer', { id: w.id, tache: 'navette' });
+  assert(x.ok && r.charger().charrette, `la tournée, la charrette (${x.erreur})`);
+  r.charger().pieces = 1000;
+  r.instantane();
+  x = jouer('c-bat', 'charrette.palier', { branche: 'capacite' });
+  eq([x.ok, /améliore la charrette/.test(x.erreur)], [false, true], `le bâtisseur (${x.erreur})`);
+  x = jouer(A, 'charrette.palier', { branche: 'capacite' });
+  assert(x.ok, x.erreur);
+  eq([x.evt.bilan.branche, x.evt.bilan.palier, r.charger().charrette.capacite], ['capacite', 2, 2], 'le bilan au journal');
   // la maison d'un villageois : le propriétaire seul la retire
   x = jouer('c-bat', 'bloc.reprendre', { case: v.maison });
   eq([x.ok, /maison d'un villageois/.test(x.erreur)], [false, true], x.erreur);
   // le journal : chaque ordre et son auteur, nommé du prénom de son personnage ; le monde réveillé à froid refait tout
   const jr = r.journal(A).evts;
   const ordres = jr.filter((e) => e.type === 'villageois.attribuer').map((e) => [e.nom, e.bilan.apres]);
-  eq(ordres, [['Alex', 'bois'], ['Lou', 'pierre']], 'qui a donné quel ordre');
+  eq(ordres, [['Alex', 'navette'], ['Alex', 'bois'], ['Lou', 'pierre']], 'qui a donné quel ordre');
   eq(jr.find((e) => e.type === 'commerce.suggerer').nom, 'Sam b');
   h.t += 30 * 5000;
   r.avancer();

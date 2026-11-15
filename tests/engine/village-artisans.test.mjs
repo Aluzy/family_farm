@@ -192,7 +192,7 @@ test('les matières : son stock d\'abord, puis le coffre, achetées de sa bourse
   v.bourse = 0;
   assert(!lotCommerce(s, v).ok, 'bourse vide : il attend les commandes');
   // (l'amitié lui apprend des pièces)
-  assertEqual(recettesConnues(s, c).map((x) => x.id), ['lingot_fer', 'clous', 'lame'], 'cordial');
+  assertEqual(recettesConnues(s, c).map((x) => x.id), ['lingot_fer', 'clous', 'lame', 'rails'], 'cordial (I2b : les rails, à la commande)');
   ajouterAmitie(s, v.id, DATA.RECIT.PALIERS[3]);
   assert(recettesConnues(s, c).some((x) => x.id === 'charniere') && palierAmitie(s, v.id) >= 3, 'proche : les charnières, le cuivre');
 });

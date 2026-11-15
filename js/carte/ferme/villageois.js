@@ -131,6 +131,17 @@
         m.vite = (md.villageoisHeure && Number(md.villageoisHeure.vitesse)) || 1;
         const J = v.journee;
         c.seg = J && heure !== null ? J.find((s) => heure >= s.de && heure < s.a) || J[J.length - 1] : null;
+        // (fiche I2b : sur la charrette du village, il la mène : charrette-village.js le dessine ; ici, il est caché,
+        // posé à son départ, d'où il repartira)
+        if (c.seg && c.seg.lieu && c.seg.lieu.genre === 'charrette') {
+          m.s.setVisible(false);
+          if (m.bulle) this.villageoisBulleOff(m);
+          if (m.emoji && this.emojiOff) this.emojiOff(m);
+          if (m.couche) this.villageoisLeve(m);
+          if (m.assis) this.villageoisRelever(m);
+          if (m.seg !== c.seg) { const p = this.villageoisPied(c.seg.lieu.case, m); m.x = p.x; m.y = p.y; m.seg = c.seg; m.etat = 'travail'; m.chemin = []; m.but = null; m.demande = null; m.puis = null; }
+          continue;
+        }
         VIE.pas(m, dt, c);
         this.villageoisImage(m, dt, c);
       }

@@ -149,6 +149,7 @@
       "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 }, "coefPrix": 135 },
       "boite_aux_lettres": { "entrees": { "planche": 2, "bois": 1 }, "sortie": { "boite_aux_lettres": 1 }, "village": true, "coefPrix": 145 },
       "pont_planches": { "entrees": { "planche": 3, "bois": 2 }, "sortie": { "pont_planches": 2 }, "village": true, "coefPrix": 145 },
+      "rails": { "entrees": { "lingot_fer": 1, "planche": 2, "pierre": 1 }, "sortie": { "rails": 8 }, "village": true },
       "etal": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "etal": 1 }, "village": true, "coefPrix": 145 },
       "brouette": { "entrees": { "planche": 4, "lingot_fer": 1, "bois": 2 }, "sortie": { "brouette": 1 }, "village": true, "coefPrix": 150 },
       "charrette": { "entrees": { "planche": 10, "lingot_fer": 3, "bois": 6, "corde": 2 }, "sortie": { "charrette": 1 }, "village": true, "debloque": "ecurie", "coefPrix": 150 },
@@ -273,6 +274,7 @@
       "fontaine_village": { "nom": "Fontaine du village", "objet": "fontaine_village", "dehors": true, "bloque": true, "dessin": "fontaine_village", "largeur": 2, "hauteur": 2, "projetVillage": "fontaine", "village": true },
       "four_commun": { "nom": "Four commun", "objet": "four_commun", "dehors": true, "bloque": true, "dessin": "four_commun", "largeur": 2, "hauteur": 2, "projetVillage": "four", "village": true },
       "pont_planches": { "nom": "Pont de planches", "objet": "pont_planches", "dehors": true, "pont": true, "plat": true, "dessin": "pont_planches", "tourne": true, "village": true },
+      "rails": { "nom": "Rails", "objet": "rails", "dehors": true, "rails": true, "plat": true, "village": true },
       "etal": { "nom": "Étal", "objet": "etal", "dehors": true, "bloque": true, "unique": true, "dessin": "etal_vide", "largeur": 2, "etal": true, "village": true },
       "panneau_village": { "nom": "Panneau du village", "objet": "panneau_village", "dehors": true, "bloque": true, "dessin": "panneau_village", "largeur": 2, "panneau": "village", "texte": "#3a2212", "village": true },
       "quai_chargement": { "nom": "Quai de chargement", "objet": "quai_chargement", "dehors": true, "bloque": true, "unique": true, "dessin": "quai_chargement", "largeur": 2, "village": true },
@@ -483,7 +485,7 @@
       "ne se montre que débloqué (blocs.js, blocDebloque), un onglet que s'il en a un."
     ],
     "CATEGORIES": {
-      "batir": { "nom": "Bâtir", "icone": "🧱", "murs": true, "blocs": ["porte", "porte_chene", "porte_vitree", "porte_grange", "porte_bleue", "porte_fer", "porte_ecurie", "porte_blanche", "plancher", "sol_dalles", "sol_carrelage", "sol_tomettes", "sol_chevrons", "sol_marbre", "sol_paves", "sol_mosaique", "sol_meleze", "sol_blanchi", "sol_flotte", "sol_pastel", "chemin", "pont_planches", "sol_pas_ardoise", "sol_pas_pierre", "sol_pas_bois", "barriere", "barriere_blanche", "barriere_rouge", "barriere_grise", "barriere_chene", "barriere_verte", "barriere_lavande", "portail", "escalier"] },
+      "batir": { "nom": "Bâtir", "icone": "🧱", "murs": true, "blocs": ["porte", "porte_chene", "porte_vitree", "porte_grange", "porte_bleue", "porte_fer", "porte_ecurie", "porte_blanche", "plancher", "sol_dalles", "sol_carrelage", "sol_tomettes", "sol_chevrons", "sol_marbre", "sol_paves", "sol_mosaique", "sol_meleze", "sol_blanchi", "sol_flotte", "sol_pastel", "chemin", "pont_planches", "rails", "sol_pas_ardoise", "sol_pas_pierre", "sol_pas_bois", "barriere", "barriere_blanche", "barriere_rouge", "barriere_grise", "barriere_chene", "barriere_verte", "barriere_lavande", "portail", "escalier"] },
       "maison": { "nom": "Maison", "icone": "🏠", "blocs": ["paillasse", "boite_nourriture", "boite_aux_lettres", "etal", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"] },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
       "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "compost", "bloc_silo", "meule"] },

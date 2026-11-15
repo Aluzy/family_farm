@@ -108,6 +108,7 @@ export * from './bourse.js';
 export * from './artisans.js';
 export * from './port.js';
 export * from './dehors.js';
+export * from './charrette.js';
 export * from './portage.js';
 export * from './bac.js';
 export * from './sauvages.js';

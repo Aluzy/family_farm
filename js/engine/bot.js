@@ -45,7 +45,8 @@ import {
   localLibre, locaux, ouvrirCommerce, recettesDe,
 } from './artisans.js';
 import { maisonsLibres, plafondVillageois, trouverVillageois, villageoisDe } from './villageois.js';
-import { attribuer, donnerOutil, marquerAVendre, postesDe, reprendreOutil, tacheDef, tacheManque } from './taches.js';
+import { aVendreDeLaTournee, attribuer, donnerOutil, marquerAVendre, postesDe, reprendreOutil, tacheDef, tacheManque } from './taches.js';
+import { acheterPalier, BRANCHES, charretteDu, etatCharrette } from './charrette.js';
 import { soldeLePlusBas } from './tableau.js';
 import { paliersSuivis } from './paliers.js';
 import { aCruche, crucheCapacite, eauCruche, puitsCases, puitsPose, remplirCruche } from './cruche.js';
@@ -196,7 +197,7 @@ export function botVillageois(state) {
   }
   // (fiche I8b : une stratégie de vocation a sa liste, où une tâche peut revenir : deux navettes)
   const strat = vocationDe.get(state);
-  const liste = strat && strat.TACHES ? Object.entries(strat.TACHES).flatMap(([t, n]) => Array(Math.max(0, n | 0)).fill(t)) : S.TACHES || [];
+  const liste = strat && strat.TACHES ? Object.entries(strat.TACHES).flatMap(([t, n]) => Array(Math.max(0, n | 0)).fill(t)) : tachesVoulues();
   for (const v of V) {
     if (v.tache || v.accueil) continue;
     const prises = {};
@@ -210,6 +211,9 @@ export function botVillageois(state) {
       if (def.outil && v.outil !== def.outil) {
         if (v.outil || !botOutil(state, def.outil) || !donnerOutil(state, v.id, def.outil).ok) continue;
       }
+      // (I2b : la tournée du port porte ce que la charrette du village vend : marqué « à vendre » avant)
+      const CV = (S.CHARRETTE || {}).VENDRE;
+      if (t === 'navette' && !(strat && Array.isArray(strat.VENDRE)) && Array.isArray(CV) && !(v.vendre || []).length) marquerAVendre(state, v.id, CV);
       if (tacheManque(state, v, t)) continue;
       attribuer(state, v.id, t);
       break;
@@ -217,12 +221,33 @@ export function botVillageois(state) {
   }
   // (I8b : la tournée du port de la stratégie « production » porte aussi VENDRE, une fois les contrats livrés)
   if (strat && Array.isArray(strat.VENDRE)) for (const v of V) if (v.tache === 'navette' && !(v.vendre || []).length) marquerAVendre(state, v.id, strat.VENDRE);
+  // (I2b : la charrette du village, ses paliers)
+  botCharrette(state, V, strat);
   // (I3e : le garde-manger commun, la cuisine du village et ses cuisiniers)
   botGardeManger(state, V);
   if (strat && strat.REATTRIBUER === false) return;
   botReattribuer(state, V);
   botEtal(state, V);
   botCommerce(state, V);
+}
+
+// Fiche I2b (charrette.js) : la charrette du village. Ses charretiers portent SIMULATION.VILLAGEOIS.CHARRETTE.VENDRE
+// (la stratégie « production » : la sienne, VENDRE) ; il achète le palier le moins cher des deux branches (les branches
+// sont libres) quand ses pièces valent MARGE fois son prix et que le village a plus à vendre, en volumes, que la
+// charrette n'en porte dans la journée (sa capacité, ses voyages). Le palier du cheval attend l'Écurie (refusPalier).
+// Ce qu'il dépense ainsi : `charretteDepense` (la simulation le dit).
+function botCharrette(state, V, strat) {
+  const C = (DATA.SIMULATION.VILLAGEOIS || {}).CHARRETTE || {};
+  if (!charretteDu(state)) return;
+  if (!(strat && Array.isArray(strat.VENDRE)) && Array.isArray(C.VENDRE)) for (const v of V) if (v.tache === 'navette' && !(v.vendre || []).length) marquerAVendre(state, v.id, C.VENDRE);
+  const e = etatCharrette(state);
+  if (!e || !e.voyages.length) return;
+  const stocks = inventoryCounts(state);
+  const aVendre = aVendreDeLaTournee(state).reduce((t, o) => t + Math.floor(stocks[o] || 0) * volumeDe(o), 0);
+  if (aVendre <= e.volumes * e.voyages.length) return;
+  const marge = Math.max(1, Number(C.MARGE) || 2);
+  const l = BRANCHES.map((b) => e.prochains[b]).filter((nx) => nx && !nx.refus && state.pieces + EPS >= marge * nx.prix).sort((a, b) => a.prix - b.prix);
+  if (l.length) acheterPalier(state, l[0].branche);
 }
 
 // Fiches I5a, I5b (artisans.js) : les commerces (SIMULATION.VILLAGEOIS.COMMERCES, dans l'ordre : la forge, puis la
@@ -315,6 +340,9 @@ function botUnCommerce(state, V, S) {
   const T = tacheDef(d.tache);
   const libre = (x) => !garder.has(x.tache) && (!x.outil || x.outil === T.outil || !hasTool(state, x.outil));
   if (!v) v = [...adultes].reverse().find(libre);
+  // (I2b : personne d'autre de libre : le charretier ; la charrette attend le prochain venu, à qui la tournée revient au
+  // rang CHARRETTE.RANG de TACHES ; le commerce, lui, n'attend pas)
+  if (!v) v = charretierPourCommerce(state, adultes, T);
   if (!v) return null;
   m.id = v.id;
   // (sa tâche : celle de la filière, tant que l'envie n'est pas née)
@@ -353,10 +381,29 @@ function botUnCommerce(state, V, S) {
   return r.ok ? r.commerce.id : null;
 }
 
-// Les tâches qu'il ne retire pas (REATTRIBUER.GARDER : les champs ; I3e : la cuisine du village, qui nourrit le village).
+// Fiche I2b : le charretier que prend un commerce faute d'un autre villageois libre (botUnCommerce) : le dernier arrivé de
+// la tournée du port (son outil, s'il en a un, peut revenir au joueur), quand SIMULATION.VILLAGEOIS.CHARRETTE.COMMERCE
+// le permet. Le commerce (la forge du palier 6) passe avant la charrette : sans lui, le village n'avance plus ; la
+// tournée, elle, revient au prochain venu. → le villageois, ou null.
+export function charretierPourCommerce(state, adultes, T = null) {
+  const C = (DATA.SIMULATION.VILLAGEOIS || {}).CHARRETTE || {};
+  if (!C.COMMERCE) return null;
+  return [...adultes].reverse().find((x) => x.tache === 'navette' && (!x.outil || (T && x.outil === T.outil) || !hasTool(state, x.outil))) || null;
+}
+
+// Les tâches qu'il ne retire pas (REATTRIBUER.GARDER : les champs ; I3e : la cuisine du village, qui nourrit le village ;
+// I2b : la tournée du port, qui mène la charrette du village).
 function tachesGardees(state) {
   const G = ((DATA.SIMULATION.VILLAGEOIS || {}).REATTRIBUER || {}).GARDER || [];
-  return cuisineDuVillage(state) ? [...G, 'cuisine'] : G;
+  return [...G, ...(cuisineDuVillage(state) ? ['cuisine'] : []), ...(charretteDu(state) ? ['navette'] : [])];
+}
+
+// Les tâches qu'il confie, dans l'ordre (SIMULATION.VILLAGEOIS.TACHES) ; I2b : la tournée du port au rang
+// CHARRETTE.RANG (le chantier allumé).
+function tachesVoulues() {
+  const S = DATA.SIMULATION.VILLAGEOIS || {}, l = [...(S.TACHES || [])], r = Number((S.CHARRETTE || {}).RANG);
+  if (Number.isInteger(r) && r > 0 && DATA.TACHES && DATA.TACHES.LISTE && DATA.TACHES.LISTE.navette && !l.includes('navette')) l.splice(Math.min(r - 1, l.length), 0, 'navette');
+  return l;
 }
 
 // Fiche I3e (garde-manger.js) : SIMULATION.VILLAGEOIS.GARDE_MANGER. Dès qu'un villageois est là et qu'il y a une boîte
@@ -1684,6 +1731,8 @@ export function posteSimulation(libelle, montant = 0) {
   if (tete === 'Contrat') tete = 'Vente';
   if (tete === 'Prime du contrat') return 'primes_contrats';
   if (tete.startsWith('Port agrandi')) return 'port';
+  // (I2b : un palier de la charrette du village)
+  if (tete === 'Charrette du village') return 'charrette';
   const nom = reste.join(' : ');
   if (!nomsObjets) nomsObjets = new Map(Object.entries(DATA.OBJETS).map(([id, d]) => [d.nom, id]));
   const id = nomsObjets.get(nom), def = id ? DATA.OBJETS[id] : null;
@@ -1757,6 +1806,8 @@ export function simulatePlay(state, strategyId, nights = DATA.SIMULATION.NUITS, 
         conserves: countItem(state, 'conserve'),
         tuiles: soilCount(state),
         depannage: options.depannage ? options.depannage.dernier : null,
+        // (I2b : la charrette du village, la journée qui vient de finir : ses paliers, ses voyages, ce qu'elle a porté)
+        charrette: state.charrette && typeof state.charrette === 'object' ? { capacite: state.charrette.capacite, vitesse: state.charrette.vitesse, voyages: state.charrette.faits || 0, volumes: state.charrette.volumes || 0, gain: state.charrette.gain || 0 } : null,
         gains: jour.gains,
         depenses: jour.depenses,
         fournis,

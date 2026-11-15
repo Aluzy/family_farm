@@ -17,6 +17,7 @@ import { brefDesTraits, butsDesTraits, horaireDesTraits, soirDesTraits, traitsDe
 import { feteDuJourVillage, presentsALaFete, signatureFetes } from './fetes-village.js';
 import { auChantier, centreDeLaPlace, postesChantier, signatureProjets } from './projets-village.js';
 import { cuisineDuVillage, signatureGardeManger } from './garde-manger.js';
+import { voyagesDuJour } from './charrette.js';
 
 /* ---------- la journée des villageois sur la ferme (le chantier « l'île à bâtir », fiche I3b) ----------
 
@@ -291,11 +292,13 @@ export function journeeDuVillage(state, jour = jourDe(state)) {
     V.map((v) => [v.id, v.maison, v.lit, !!v.repos, v.accueil || 0, v.arrive, v.tache || 0, v.outil || 0, v.tache === 'navette' ? (v.vendre || []).length : 0, v.enfant ? 1 : 0, traitsDe(v).join('+'), v.chantier || 0, auChaud(v) ? 1 : 0]),
     // (I4 : les achats du jour ; I6c : les traits ; I8a : la fête du jour, le chantier du village)
     achatsSignature(state, jour), DATA.TRAITS ? 1 : 0, signatureFetes(state, jour), signatureProjets(state), commercesSignature(state, jour),
-    // (I3e : la cuisine du village, la tablée)
-    signatureGardeManger(state)]);
+    // (I3e : la cuisine du village, la tablée ; I2b : les voyages de la charrette du village, qui les mène)
+    signatureGardeManger(state), voyagesDe(state, jour)]);
   const deja = memoJours.get(cle);
   if (deja && deja.L === L) return deja.J;
   const J = calculerJournee(state, jour, V, L);
+  // (fiche I2b : un charretier passe ses voyages sur la charrette du village, au port, son repas compris)
+  for (const [id, l] of voyagesParCharretier(state, jour)) if (J.has(id)) J.set(id, insererVoyages(J.get(id), l));
   memoJours.clear();
   memoJours.set(cle, { L, J });
   return J;
@@ -512,6 +515,8 @@ function planDuTravail(state, jour, gens, L, prendre, C) {
     // (I8a : celui qui est au chantier du village y travaille, à la place de sa tâche)
     const t = auChantier(state, x.v) ? 'chantier' : x.v.tache;
     if (t !== 'chantier' && (!x.v.tache || !travailleAujourdhui(state, x.v))) continue;
+    // (fiche I2b : la tournée du port n'a pas de poste : ses voyages sont ceux de la charrette, posés après)
+    if (t === 'navette') continue;
     let l = parTache.get(t);
     if (!l) parTache.set(t, (l = []));
     l.push(x);
@@ -868,6 +873,30 @@ function planDeFete(state, jour, gens, L) {
 }
 
 // Les segments `segs` avec la fête `f` ({ de, a, etat, lieu, but }) à la place de ce qu'il faisait de f.de à f.a.
+// Fiche I2b : les voyages de la charrette d'aujourd'hui, par charretier : Map(id → [{ de, a, lieu }]) ; un autre jour, rien.
+function voyagesParCharretier(state, jour) {
+  const out = new Map();
+  if (jour !== Math.max(1, Math.floor(Number(state.day) || 1))) return out;
+  const j = voyagesDuJour(state);
+  if (!j.route) return out;
+  const lieu = { genre: 'charrette', case: j.route.cases[0] };
+  for (const v of j.voyages) {
+    if (!out.has(v.charretier)) out.set(v.charretier, []);
+    out.get(v.charretier).push({ de: v.depart, a: v.retour, lieu });
+  }
+  return out;
+}
+function voyagesDe(state, jour) {
+  return [...voyagesParCharretier(state, jour)].map(([id, l]) => `${id}:${l.map((x) => `${x.de.toFixed(3)}-${x.a.toFixed(3)}`).join('/')}`).join(';');
+}
+// Ses voyages (`l`) coupent sa journée : des segments « travail » au lieu « charrette » (la scène le montre sur elle :
+// js/carte/ferme/charrette-village.js), le reste de sa journée autour.
+function insererVoyages(segs, l) {
+  let out = segs;
+  for (const f of l) out = insererFete(out, { de: f.de, a: f.a, etat: 'travail', lieu: f.lieu, but: null });
+  return out.map((x) => (x.but === null ? { de: x.de, a: x.a, etat: x.etat, lieu: x.lieu } : x));
+}
+
 function insererFete(segs, f) {
   const out = [];
   for (const s of segs) {

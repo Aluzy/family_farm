@@ -404,6 +404,8 @@ function nuitDe(state, v, jour, table = null) {
   if (T && T.jour === jour && objet(T.utilise) && Object.keys(T.utilise).length) J.utilise = { ...T.utilise };
   // (fiche I8b : le courant des machines qu'il a servies, en Wh, s'il en a consommé)
   if (T && T.jour === jour && Number(T.courant) > 0) J.courant = Math.round(Number(T.courant));
+  // (fiche I2b : la ration du cheval du village, notée au premier charretier : ses pailles, déjà dans utilise)
+  if (T && T.jour === jour && Number(T.cheval) > 0) J.cheval = Math.round(Number(T.cheval));
   if (!Array.isArray(v.journal)) v.journal = [];
   v.journal.push(J);
   const max = Math.max(1, Number(ARRIVEE.JOURNAL) || 7);

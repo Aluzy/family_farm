@@ -143,9 +143,10 @@ export function heuresPort() {
   return `de ${heure(a)} à ${heure(b)}`;
 }
 
-// Le port est-il dans ses heures ?
-export function portDansSesHeures(state) {
-  const h = clockHours(state), [a, b] = PORT.HEURES;
+// Le port est-il dans ses heures ? (`h` : à cette heure-là, plutôt que l'heure de la partie : fiche I2b, la vente d'un
+// voyage de la charrette du village, à l'heure de son arrivée)
+export function portDansSesHeures(state, h = clockHours(state)) {
+  const [a, b] = PORT.HEURES;
   return h + EPS >= a && h < b - EPS;
 }
 
@@ -162,7 +163,7 @@ export function portOuvert(state, ou = null, o = {}) {
   if (!marcheOuvert(state)) return { ok: false, raison: marcheFerme(state), dist: Infinity };
   const dist = o.sansPresence ? 0 : distanceAuComptoir(state, ou);
   if (dist > PORT.PORTEE + EPS) return { ok: false, raison: `Tu n'es pas au port. ${ouEstLePort()}`, dist };
-  if (!portDansSesHeures(state)) return { ok: false, raison: `Le comptoir est fermé : il ouvre ${heuresPort()}.`, dist };
+  if (!portDansSesHeures(state, Number.isFinite(o.heure) ? o.heure : clockHours(state))) return { ok: false, raison: `Le comptoir est fermé : il ouvre ${heuresPort()}.`, dist };
   return { ok: true, raison: null, dist };
 }
 

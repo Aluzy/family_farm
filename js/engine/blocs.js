@@ -27,7 +27,7 @@ import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
 import { villageActif } from './village.js';
-import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, retirerCheminDehors } from './dehors.js';
+import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -938,6 +938,16 @@ export function poseStatus(state, sorte, tile, sens = 0) {
     const C = DATA.ATELIER.CONSTRUCTION;
     return { ok: false, raison: `L'Atelier : il faut ${Object.entries(C).map(([o, n]) => `${n} ${DATA.OBJETS[o].nom.toLowerCase()}`).join(' et ')} (ramasse-les sur la carte).` };
   }
+  // (fiche I2b : les rails, une couche à part, sur la ferme comme dehors : dehors.js railsStatus)
+  if (s.rails) {
+    if (!villageActif(state)) return { ok: false, raison: 'Les rails sont de l\'île.' };
+    if (horsFerme(T, tile)) return railsStatus(state, tile);
+    const ch = T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
+    const bloque = arbreSurCase(state, tile) || foretSurCase(state, tile) ? 'Un arbre pousse ici.'
+      : ch === 'o' && rocherOuArbre(T, tile) && !freedRockTiles(state).has(tile) ? 'Un rocher ou un arbre occupe cette case : casse-le ou abats-le d\'abord.'
+        : allPlots(state).some((p) => p.case === tile) ? 'Une terre labourée : rebouche-la d\'abord.' : null;
+    return railsStatus(state, tile, { couverte: casesCouvertes(state).has(tile), piece: !!dansPiece(state, tile), bloque });
+  }
   // (le chantier « l'île à bâtir », fiche I2 : hors de la ferme, sur l'île, les blocs de VILLAGE.DEHORS : dehors.js)
   if (villageActif(state) && horsFerme(T, tile)) return poseDehorsStatus(state, sorte, tile);
   // le même mur posé sur un mur : il se rehausse d'un bloc (jusqu'à HAUTEUR_MAX)
@@ -1081,6 +1091,8 @@ function poser(state, sorte, tile, sens = 0) {
   const s = sorteDe(sorte);
   const ancien = blocAt(state, tile);
   if (s.objet) takeItem(state, s.objet, 1);
+  // (fiche I2b : les rails, dans leur couche : dehors.js)
+  if (s.rails) { poserRails(state, tile); return { ok: true, sorte, case: tile }; }
   if (sorte === 'atelier' && !atelierConstruit(state)) buildAtelier(state);   // (ses matériaux quittent l'inventaire)
   if (s.mur && ancien === sorte) {
     setHauteur(state, tile, hauteurMur(state, tile) + 1);
@@ -1173,6 +1185,12 @@ function poser(state, sorte, tile, sens = 0) {
 // posé dessus d'abord (la pompe sur le puits), puis le bloc, puis le sol (le plancher).
 export function reprendreBloc(state, tile, opts) {
   // (une case couverte par un meuble, un bloc large : lui)
+  // (fiche I2b : des rails sur la case, par-dessus le chemin ou le pont : eux d'abord)
+  if (!blocDessus(state, tile) && villageActif(state) && railsSur(state, tile)) {
+    retirerRails(state, tile);
+    addItem(state, sorteDe('rails').objet, 1);
+    return { ok: true, sorte: 'rails', case: tile };
+  }
   if (!blocDessus(state, tile) && !blocAt(state, tile) && casesCouvertes(state).has(tile)) tile = casesCouvertes(state).get(tile);
   const dessus = blocDessus(state, tile), bloc = blocAt(state, tile);
   const sorte = dessus || bloc || solAt(state, tile);
