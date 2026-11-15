@@ -2122,6 +2122,10 @@ export function reparerPartie(old) {
   };
   const repare = (o, cle, d, chemin, niveau) => {
     if (!juste(o[cle], d)) { o[cle] = JSON.parse(JSON.stringify(d)); remis.add(chemin); return; }
+    // (I9h, la répétition de la bascule : l'inventaire est une liste d'objets, pas une forme ; un objet qui manque y est à
+    // zéro, il n'est pas remis : sinon la partie qui avait mangé toutes ses conserves en retrouvait 160 à chaque
+    // ouverture, et les graines et les patates du départ. Un objet illisible s'en va.)
+    if (chemin === 'inventaire') { for (const k of Object.keys(o[cle])) if (!Array.isArray(o[cle][k])) { delete o[cle][k]; remis.add(`${chemin}.${k}`); } return; }
     if (niveau < 1 && objet(d)) for (const k of Object.keys(d)) repare(o[cle], k, d[k], `${chemin}.${k}`, niveau + 1);
   };
   for (const k of Object.keys(depart)) if (k !== 'version' && k !== 'carte') repare(state, k, depart[k], k, 0);
