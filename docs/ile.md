@@ -90,7 +90,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f (fait), I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
-| 9. L'île en ligne et la bascule | I9a, I9a2, I9b, I9c, I9d, I9e (faits), I9f à I9h | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
+| 9. L'île en ligne et la bascule | I9a, I9a2, I9b, I9c, I9d, I9e, I9f (faits), I9g, I9h | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
 ## L'ordre et les dépendances
 
@@ -1984,7 +1984,7 @@ jeu est le même (le CSV de la simulation octet pour octet ; une partie d'avant 
   encore du jeu d'avant (`caleche.js` pour la malle, `DATA.ILE.ATELIERS`, `DATA.RECIT.ENVELOPPE`, `DATA.COURRIER`,
   `state.monde.habitants`) est à garder pour elle, ou à recopier dans `VILLAGE.MIGRATION`, avant de retirer ces fichiers.
   I9f : un monde en ligne d'avant (E-2) n'est pas migré ici (son état vient du serveur, pas de `migrate`) : sa migration
-  s'écrit avec la sienne, avec les mêmes fonctions.
+  s'écrit avec la sienne, avec les mêmes fonctions. (I9f : fait, `MondeRegistre.mettreAJour`, `migrerVersLIle`.)
 - Reste : la pierre posée (son effet perdu) à confirmer ; les objectifs du jour d'une partie d'avant en pleine semaine
   continuent dans la semaine de l'île au même rang ; le joueur automatique ne ferme pas la fenêtre du retour (le cadeau
   ne vient qu'en la fermant).
@@ -2518,7 +2518,7 @@ chez l'autre en quelques dizaines de millisecondes.
   selle) ; un autre joueur est un avatar relayé (E-4), sans son véhicule. Le cheval est celui de la ferme : « en selle »
   (`cheval.monte`) reste celui de la partie, à personne.
 - **Une île mise en ligne avant I9c n'a pas de lieu de port** dans sa partie : son comptoir reste fermé en ligne
-  jusqu'à sa migration (I9f) ; son portage reste celui de la partie, à personne.
+  jusqu'à sa migration (I9f) ; son portage reste celui de la partie, à personne. (I9f : fait, à la mise à jour du monde.)
 - **La case contrôlée n'est pas une preuve** (le choix 5).
 - **Les avis du port** (l'étal, les commerces) pouvaient encore se redire après une partie refaite : réglé par I9d
   (les avis rangés par pas, `js/ui/avis-en-ligne.js`).
@@ -2632,7 +2632,7 @@ signatures que `journeeDuVillage` refait pour chaque villageois (`signatureTache
 - **La scène** fait marcher chaque villageois chez chacun : au même poste, au même but, mais pas au pixel près (jusqu'à
   une case d'écart mesurée, le temps que les deux cartes l'aient fait partir au même instant).
 - **Une île mise en ligne avant I9d** n'a pas d'amitiés par joueur : chacun y commence à l'accueil (I9f : rendre au
-  propriétaire la sienne).
+  propriétaire la sienne ; fait, à la mise à jour du monde).
 - **Le pas en lot** suppose qu'un pas ne pose ni ne reprend de bloc : vrai aujourd'hui ; une machine qui bâtirait seule
   devrait sortir du lot.
 
@@ -2760,7 +2760,8 @@ partie solo n'y gagne rien. Les réglages du monde sont au Durable Object, pas d
 - **Les fêtes et les projets du village** (I8a) n'ont pas de commandes : en ligne, ils restent refusés (« ne se fait
   pas encore »). Fixer une fête serait au propriétaire, apporter au chantier à l'ami jardinier.
 - **La famille de la partie** (la fiche d'un membre, ses habits, un animal) et le choix d'un lit s'écrivent encore dans la
-  partie locale en ligne (des gestes d'avant I9e, à revoir avec I9f).
+  partie locale en ligne (des gestes d'avant I9e, à revoir avec I9f). (I9f : refusés en ligne, on les change en solo ; le
+  lit l'était déjà.)
 - **La suggestion d'un commerce** n'est gardée qu'au journal : un propriétaire absent la lit dans 📜, pas sur la fiche.
 - **« La charrette est à moi »** (un réglage du propriétaire, I9c) n'est pas fait : la règle d'I9c (vide, elle passe à
   qui la demande) a suffi dans les essais.
@@ -2816,6 +2817,137 @@ pas 300 volumes par jour : la fiche proposait alors de baisser les prix des pali
 monde, région par région) ; C5 (la longue charrette à quatre roues, le second wagonnet) se dessine comme C4 ; le journal
 du monde ne dit pas encore les ventes de la charrette (elles sont aux Comptes) ; la route traverse les champs sans
 regarder l'eau quand le chemin est coupé.
+
+## Mettre son île en ligne et migrer les mondes d'avant (I9f, fait)
+
+La fiche : `docs/fiches/ile/I9f-mise-en-ligne.md`. Le serveur : `worker/src/monde.mjs` (`MondeRegistre.copie`, `remplacer`,
+`mettreAJour`, `refusDuJeu`) et `worker/src/index.js` (la route `remplacer`) ; le jeu : `js/ui/compte.js` (⚙️ Options ›
+Jeu en ligne), `js/ui/en-ligne.js`, `js/ui/retour-ile.js` ; le moteur : `js/engine/migration-ile.js` (`cadeauDuMonde`,
+`lignesRetour` en ligne), `js/engine/frontiere.js` (`poidsDuMonde`), `js/engine/state.js` (`migrate(…, { ile: false })`) ;
+les textes : `VILLAGE.MIGRATION.MONDE`. La mesure : `node scripts/cout-mise-en-ligne.mjs`.
+
+### Ce qui est posé
+
+- **La copie d'une île emporte l'île** (`copie`, la même pour la mise en ligne et la copie remise à jour) : l'élagage d'une
+  île (`elaguer`, `GRAND_MONDE_ILE`) ne retire plus que les hameaux et leurs habitants ; il garde ce qui est pris dehors et
+  le jour où cela revient (`monde.pris`), les régions vues du monde (`monde.vues`), les chemins et les rails (`dehors`), les
+  liens du village (`voisins`) ; la charrette du village, le port et son lieu, les villageois et ce qu'on sait de leurs
+  traits, les commerces, la chronique et les noms passent tels quels ; l'énergie, le sac, la charge et l'amitié du
+  propriétaire sont celles de sa partie (`preparerIle`). Ce qui se tire de la graine n'est pas dans la partie. **Le
+  brouillard du propriétaire** part dans son navigateur (`ferme-brouillard-<monde>`, posé par ⚙️ Options à la mise en
+  ligne, uni à l'ancien à une remise à jour) ; le monde garde le vu des régions de sa ferme (`vuDesRegions`), celui que
+  chacun a en entrant. La fenêtre du retour d'une partie solo migrée (I7f) reste au solo, son cadeau aussi.
+- **Le plafond** (`VILLAGE.EN_LIGNE`) est vérifié à la copie d'une île (`poidsDuMonde` : la partie, et l'île hors de la
+  ferme) ; au-delà, refusé (413) avec le poids, par exemple : « Ton île pèse 312 Ko en ligne : un monde en porte 256 Ko au plus » ;
+  « Ce qui a changé sur ton île hors de la ferme pèse 71 Ko : … Laisse repousser ce que tu as pris dehors ». La route
+  garde 2 Mo à l'envoi (le brouillard et ce que le monde ne garde pas n'y comptent pas) ; une ferme d'avant (le chantier
+  éteint) garde la limite d'avant.
+- **Deux îles** : ⚙️ Options › Jeu en ligne dit, pour une partie de l'île, « 🌐 Mettre mon île en ligne », ce que la copie
+  emporte et son poids à peu près, et : « Ta partie solo et ton île en ligne sont deux îles : après la copie, chacune vit
+  sa vie… ». Le monde prend le nom de l'île.
+- **La copie remise à jour** (« 🔄 Remettre à jour », à côté de chaque île dont on est le propriétaire ; une confirmation
+  qui dit ce qui est remplacé et que le monde est sauvegardé d'abord) : `POST /mondes/<id>/remplacer { partie }` ; le
+  Durable Object fait une sauvegarde (« avant la copie remise à jour »), puis `remplacer` : la copie de la partie solo du
+  jour remplace celle du monde (une révision, la marque `monde.remplacer` au journal, un instantané) ; les membres
+  restent, avec leurs rôles et les réglages du monde ; ce qui était à chacun dans l'île en ligne (énergie, sac, charge,
+  amitiés) repart de zéro ; chacun reçoit la partie et un mot (« Le propriétaire a remis son île en ligne à jour… »).
+- **Les sauvegardes** portent l'île entière (la partie du monde) ; on en garde 14, comme avant (le plafond le permet :
+  3,5 Mo au plus). Une île restaurée garde sa nuit en cours (une ferme d'avant naît de jour) ; une sauvegarde d'une ferme
+  d'avant (celle d'avant le passage sur l'île) restaurée y repasse, sans redonner le cadeau.
+- **La mise à jour d'un monde** (`mettreAJour`, à sa première ouverture par un serveur d'une autre version : `meta`
+  `version`, nouveau `format`) : le dernier instantané passe au format du serveur (`migrate`, sans l'île), le journal
+  d'après se rejoue sur lui (une commande qui ne passe plus est sautée et comptée : `perdus`, dit au journal), la partie
+  d'avant est gardée (la table `avant_migration`, et une sauvegarde du monde « avant une mise à jour du jeu » ou « avant le
+  passage sur l'île », faite par le Durable Object avant toute autre chose) ; la marque `monde.migrer` au journal (un
+  joueur qui revient d'avant elle reçoit la partie entière) ; le monde prend la version et le format du serveur.
+- **Une ferme d'avant passe sur l'île** à sa première ouverture, le chantier allumé (`ileDue`, `versLIle` ; à la bascule,
+  I9h : tous les mondes ; pendant le chantier, seul un Durable Object d'essai, `env.ILE_ESSAI`, en fait une île d'essai,
+  comme `?village=1` en solo) : la migration d'I7f (`migrerVersLIle`), la même qu'en solo — la ferme et le coffre
+  intacts ; l'horloge, figée jusque-là, devient vivante (I9a2 : son jour et son heure gardés, son pas à 0) ; l'énergie de
+  la partie (celle du coffre) au propriétaire, son sac, son portage et son amitié aussi ; le port neuf, son lieu tiré du
+  plan de la graine, le tronçon posé en chemins (`assurerTroncon`) ; aucun villageois (ils arriveront) ; le cadeau de
+  bienvenue donné au coffre commun, une fois par monde (`cadeauDuMonde`). Une île mise en ligne avant I9b, I9c ou I9d reçoit
+  ce qui lui manque : le lieu du port, le sac, le portage et l'amitié du propriétaire.
+- **La fenêtre du retour de chacun** (`js/ui/retour-ile.js`, `lignesRetour(state, { enLigne, proprietaire })`) : chaque
+  membre la voit une fois (gardé dans son navigateur, par monde), avec les lignes d'I7f et celles d'un monde
+  (`MIGRATION.MONDE`) : l'horloge qui vit ; au propriétaire, que **la grille des rôles change** (celle d'une île, I9e :
+  ses amis jardiniers fabriquent à l'Atelier, lui attribue les tâches, décide des commerces, nomme, agrandit le port) et
+  que la ferme d'avant est dans 💾 ; aux autres, que leur rôle suit celui d'une île. La fermer ne change rien à la partie
+  (le cadeau est déjà au coffre commun).
+- **Les versions** (`refusDuJeu`) : `hello` porte maintenant le format du jeu (`format`, `STATE_VERSION`). Un jeu plus
+  ancien que le monde (sa version, son format ; ou sans format, d'avant I9f, dans un monde mis à jour) est refusé :
+  « … recharge la page pour mettre le jeu à jour » ; un plus récent : « le serveur se met à jour, réessaie dans quelques
+  minutes ». La connexion garde le jeu de son `hello` : une commande d'un jeu qui ne joue pas la version du monde est
+  refusée.
+- **Ce qui s'écrivait encore dans la partie locale en ligne** : la fiche d'un membre de la famille (son prénom, son
+  allure), en ajouter ou en retirer un, ses habits, sa tente, un animal, l'aide du compagnon sont refusés en ligne, avec
+  un mot (« En ligne, la famille, ses habits et ses animaux ne changent pas : on les change dans sa partie solo ») : la
+  famille de la partie d'un monde est celle de son propriétaire, et ces gestes ne s'écrivaient que dans la partie locale,
+  effacés au geste suivant d'un autre. Le choix d'un lit l'était déjà (E-10).
+- **Le journal** dit « Qui a fait quoi dans ton île » sur une île, et les marques : « Le monde est passé sur l'île à bâtir
+  (la ferme d'avant est gardée dans 💾) », « … a remis l'île en ligne à jour depuis sa partie solo ».
+- **Les noms** (« Voisin ») se corrigent à la première connexion de chacun (`hello.prenom`, I9e) ; **les réglages du
+  monde** (`meta.reglages`) sont au Durable Object : la mise à jour et la copie remise à jour les laissent.
+- **La sauvegarde du jeu** : pas de nouveau format (109). `retourIle.monde` et `retourIle.donne` vivent dans un champ qui
+  existe (la migration 101 → 102 le relit) ; la version et le format du monde sont au Durable Object (`meta`).
+- **Le jeu solo est le même** : le CSV de `node scripts/simulate.mjs` est identique octet pour octet à celui d'I2b.
+
+### Les mesures (`node scripts/cout-mise-en-ligne.mjs --nuits 40,80,160`)
+
+L'île du joueur automatique (graine 1, « applique ») :
+
+| Moment | Villageois | Envoyée | La copie du monde (gzip) | Hors de la ferme | Mise en ligne | Une sauvegarde | 14 gardées | Restauration |
+|---|---|---|---|---|---|---|---|---|
+| Jour 41 | 3 | 53,0 Ko | 53,5 Ko (10,7) | 0,1 Ko | 5 ms | 53,6 Ko | 0,73 Mo | 2 ms |
+| Jour 81 | 4 | 82,2 Ko | 82,7 Ko (14,3) | 0,1 Ko | 3 ms | 82,8 Ko | 1,13 Mo | 2 ms |
+| Jour 161 | 8 | 120,3 Ko | 120,9 Ko (19,4) | 0,1 Ko | 4 ms | 121,0 Ko | 1,65 Mo | 4 ms |
+
+La mise en ligne d'une partie dont le lieu du port n'est pas encore posé (une partie de Node, une ferme d'avant) tire le
+plan de la graine : ≈ 0,7 à 0,8 s, une fois (une île de test de trois villageois : 0,8 s). Au plafond, 14 sauvegardes
+font 3,5 Mo par monde : on en garde 14.
+
+Un monde d'avant (la partie récente avancée de `tests/engine/anciennes-parties.json` : 45 nuits, le chapitre 7, mise en
+ligne le chantier éteint, sa partie ramenée au format 103) : **870 ms** pour sa mise à jour et son passage sur l'île (le
+format, la migration d'I7f, le lieu du port, le tronçon, la sauvegarde d'avant) ; 45,9 Ko avant, 44,8 Ko après (le
+tronçon : 0,7 Ko) ; sa sauvegarde « avant le passage sur l'île » : 46,1 Ko.
+
+### Les tests
+
+- `tests/test-monde.mjs` (7 tests I9f) : une île avancée mise en ligne (ce qui est pris dehors, les régions vues, le
+  chemin, les rails, la charrette, les villageois et leurs traits connus, leurs liens, la chronique, les noms, le port ;
+  le brouillard reste au navigateur ; la partie solo intacte ; le plafond tenu) ; le plafond dépassé (la partie, l'île
+  hors de la ferme : le message et son poids ; une ferme d'avant garde la limite d'avant) ; la copie remise à jour (le
+  propriétaire seul, les membres gardés, chacun à zéro, la marque, un joueur en retard reçoit tout, réveillé à froid) ; un
+  monde d'avant au format 103 migré (la ferme et le coffre, le mur d'après l'instantané rejoué, l'horloge vivante au même
+  jour et à la même heure, le port, le tronçon, aucun villageois, le cadeau une fois, la marque, la partie d'avant gardée ;
+  un jeu sans format, plus ancien, plus récent : refusés ; une commande d'un jeu d'avant refusée) ; joué à deux (la grille
+  d'une île, chacun son énergie, réveillé à froid) ; le réglage allumé (sans essai ; un monde à jour ne bouge pas ; une île
+  d'avant I9c reçoit son lieu du port, le portage et l'amitié du propriétaire) ; le Durable Object (la sauvegarde « avant le
+  passage sur l'île », sa restauration sans le cadeau ; la sauvegarde d'une île, son poids, sa restauration).
+- `tests/test-synchro.mjs` : un monde d'avant au format 103, migré, joué à deux pendant une heure de pas : la même partie
+  chez A, chez B et au monde.
+- `tests/deux-joueurs.mjs` (Chromium) : 14a à 14e (A met son île avancée en ligne par ⚙️ Options ; B entre par
+  invitation, est au port, coupe un arbre, parle à un villageois ; A restaure la sauvegarde d'avant ces gestes ; A remet la
+  copie à jour depuis sa partie solo, B est prévenu) ; 15a à 15c (un monde d'avant migre à sa première ouverture, un jeu
+  d'avant y est refusé ; chacun voit sa fenêtre du retour ; la ferme d'avant dans 💾 ; ils y jouent à deux).
+
+### Ce que les fiches suivantes en reçoivent
+
+Une section « Revu par I9f » dans I9g et I9h. En bref : I9g mesure le coût d'une mise à jour de monde au réveil (≈ 0,9 s
+pour une ferme d'avant, à suivre au premier déploiement) et la copie remise à jour d'une grande île ; I9h déploie le
+Worker avant le site (un monde mis à jour refuse les jeux d'avant), retire `env.ILE_ESSAI` et la branche « ferme
+d'avant » des mondes, garde `mettreAJour` (une base d'avant peut se réveiller des mois plus tard).
+
+### Ce qui reste
+
+- **La copie remise à jour remet à zéro ce qui était à chaque invité** (sac, charge, amitiés avec les villageois) :
+  garder les amitiés des villageois qui sont restés les mêmes serait possible (le même id et le même prénom), à
+  confirmer.
+- **Un geste d'avant qui ne se rejoue plus** à la mise à jour est sauté et compté (le journal le dit) ; une ferme d'avant
+  écrit un instantané toutes les 20 révisions : au plus 19 gestes à rejouer, avec le moteur d'aujourd'hui.
+- **Le journal d'un monde mis à jour** garde ses lignes d'avant (lisibles) : elles se lisent avec les mots d'aujourd'hui.
+- **La migration d'un monde publié** n'a lieu qu'à la bascule (I9h) ; pendant le chantier, elle n'est faite que par un
+  Durable Object d'essai (les tests).
 
 ## Les règles qui ne changent pas
 

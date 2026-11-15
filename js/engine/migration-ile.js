@@ -282,10 +282,14 @@ const liste = (L) => (L.length > 1 ? `${L.slice(0, -1).join(', ')} et ${L[L.leng
 const enTexte = ({ pieces = 0, objets = {} } = {}) => liste([...(pieces > 0 ? [`${pieces} pièces`] : []), ...Object.entries(objets).map(([k, n]) => nomObjet(k, n))]);
 
 // Les lignes de la fenêtre du retour : { titre, intro, lignes: [{ icone, texte }], cadeau, bouton } (des textes simples,
-// MIGRATION.RETOUR ; la page les échappe), ou null.
-export function lignesRetour(state) {
+// MIGRATION.RETOUR ; la page les échappe), ou null. I9f, `o.enLigne` : la fenêtre d'un monde en ligne passé sur l'île
+// (retourIle.monde : cadeauDuMonde) : ses lignes à elle (MIGRATION.MONDE : l'horloge qui vit ; au propriétaire, la grille
+// des rôles d'une île et la ferme d'avant gardée dans les sauvegardes ; aux autres, leur rôle) ; le cadeau est déjà au
+// coffre commun. `o.proprietaire` : la fenêtre du propriétaire du monde.
+export function lignesRetour(state, o = {}) {
   const r = retourIle(state);
   if (!r) return null;
+  if (o.enLigne && objet(r.monde)) return lignesRetourMonde(state, r, o);
   const T = M().RETOUR || {}, F = (DATA.VILLAGE.PRIX && DATA.VILLAGE.PRIX.FOURCHETTE) || [100, 100];
   const amis = Array.isArray(r.amis) ? r.amis.filter((x) => typeof x === 'string') : [];
   const rendu = objet(r.rendu) ? r.rendu : {};
@@ -304,15 +308,51 @@ export function lignesRetour(state) {
   };
 }
 
-// La fenêtre fermée : le cadeau de bienvenue donné (une fois), la fenêtre oubliée. → le cadeau donné, ou null.
-export function fermerRetourIle(state) {
-  const r = retourIle(state);
-  if (!r) return null;
+// Le cadeau de bienvenue du bilan `r`, donné à la partie : { pieces, objets }.
+function donnerCadeau(state, r) {
   const k = objet(r.cadeau) ? r.cadeau : {}, donne = { pieces: entier(k.pieces), objets: {} };
   if (donne.pieces > 0) earn(state, donne.pieces, 'Cadeau de bienvenue sur l\'île');
   for (const [it, n] of Object.entries(objet(k.objets) ? k.objets : {})) if (DATA.OBJETS[it] && entier(n) > 0) { addItem(state, it, entier(n)); donne.objets[it] = entier(n); }
+  return donne;
+}
+
+// La fenêtre fermée : le cadeau de bienvenue donné (une fois), la fenêtre oubliée. → le cadeau donné, ou null (I9f : un
+// cadeau déjà donné, celui d'un monde en ligne, n'est pas redonné).
+export function fermerRetourIle(state) {
+  const r = retourIle(state);
+  if (!r) return null;
+  const donne = r.donne ? null : donnerCadeau(state, r);
   delete state.retourIle;
   return donne;
+}
+
+/* ---------- I9f : un monde en ligne d'avant, passé sur l'île ---------- */
+
+// Le monde en ligne (worker/src/monde.mjs) a fait passer sa partie sur l'île : le cadeau de bienvenue est donné tout de
+// suite, au coffre commun, une fois pour tous (la page ne change rien à la partie d'un monde : la fenêtre de chacun ne
+// fait que le dire) ; la fenêtre reste dans la partie (retourIle.monde : le jour du passage ; retourIle.donne). `o.donner`
+// faux : le monde l'a déjà donné une fois (une ferme d'avant restaurée, qui y repasse) : la fenêtre seule. → le cadeau
+// donné, ou null (pas de fenêtre, ou déjà donné).
+export function cadeauDuMonde(state, o = {}) {
+  const r = objet(state && state.retourIle) ? state.retourIle : null;
+  if (!r || r.donne) return null;
+  const donne = o.donner === false ? null : donnerCadeau(state, r);
+  r.donne = true;
+  r.monde = { jour: jourDe(state) };
+  return donne;
+}
+
+// Les lignes de la fenêtre d'un monde passé sur l'île (lignesRetour, en ligne).
+function lignesRetourMonde(state, r, o) {
+  const T = M().RETOUR || {}, W = M().MONDE || {}, L = lignesRetour(state);
+  // (ce qui est propre au monde d'abord : l'horloge, les rôles, la ferme d'avant gardée ; puis les lignes d'I7f)
+  const lignes = [{ icone: '🕰️', texte: W.HORLOGE || '' }];
+  if (o.proprietaire) {
+    lignes.push({ icone: '👥', texte: W.ROLES || '' });
+    lignes.push({ icone: '💾', texte: W.SAUVEGARDE || '' });
+  } else lignes.push({ icone: '👥', texte: W.ROLES_AMI || '' });
+  lignes.push(...L.lignes);
+  return { titre: T.TITRE || '', intro: W.INTRO || T.INTRO || '', lignes: lignes.filter((l) => l.texte), cadeau: remplir(W.CADEAU, { cadeau: enTexte(r.cadeau || {}) }), bouton: T.BOUTON || 'OK' };
 }
 
 // La page a gardé la sauvegarde d'avant sur l'appareil (js/ui/storage.js).

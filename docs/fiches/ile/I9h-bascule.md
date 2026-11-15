@@ -57,6 +57,25 @@ documentation.
 - **Le but du jeu en ligne** (aider l'île d'un ami) est dans `docs/monde-partage.md` § 10 et `docs/ile.md` : le reprendre
   dans le README et la page d'accueil.
 
+## Revu par I9f (la mise en ligne, la migration des mondes)
+
+- **Déployer le Worker avant le site** (le point 7) : un monde se met à jour à sa première ouverture par le Worker de la
+  nouvelle version (`MondeRegistre.mettreAJour` : son format, sa ferme passée sur l'île, la partie d'avant gardée dans ses
+  sauvegardes, « avant le passage sur l'île ») et refuse ensuite les jeux d'avant (« recharge la page ») ; un jeu plus
+  récent que le Worker attend (« réessaie dans quelques minutes »). La version du jeu (2.0.0) change la version des
+  mondes : tous se mettent à jour à leur premier réveil.
+- **Ce que la bascule retire** : `env.ILE_ESSAI` et `MondeRegistre.essaiIle` (les tests en font des mondes d'essai : le
+  réglage allumé suffit) ; la branche « ferme d'avant » des mondes (`ilePartagee` faux : l'élagage d'E-8, `GRAND_MONDE`,
+  F.2 et la nuit partagée d'un coup, la grille d'E-11, `HORS_FERME`, la limite de 2 Mo sans plafond) : toute partie d'un
+  monde est une île. **À garder** : `mettreAJour`, `versLIle` et `migrerVersLIle` (une base d'avant peut se réveiller des
+  mois plus tard, une sauvegarde d'avant se restaurer), les marques du journal, `refusDuJeu` et `hello.format`.
+- **Les textes** : `VILLAGE.MIGRATION.MONDE` (la fenêtre d'un monde passé sur l'île) reste tant que des mondes d'avant
+  peuvent se réveiller ; la fenêtre « Jeu en ligne » ne dit plus que « Mettre mon île en ligne ».
+- **Après** : relire, les jours suivants, les journaux des mondes (`monde.migrer` et son bilan : `perdus`, les gestes d'avant
+  qui n'ont pas pu se rejouer) en plus du rapport des sessions ; revenir en arrière demande de republier le Worker d'avant
+  **et** de restaurer, monde par monde, la sauvegarde « avant le passage sur l'île » (un Worker d'avant ne lit pas une partie
+  de l'île).
+
 ## Hors périmètre
 
 - Toute nouvelle règle ; la troisième vocation.

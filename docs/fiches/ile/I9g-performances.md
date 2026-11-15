@@ -86,6 +86,20 @@ téléphone, avec un village complet toujours à l'écran, et corriger ce qui ne
   murs repris en masse le fait sentir.
 - **Le bilan d'un geste du village** ajoute ≈ 60 octets à l'événement diffusé (l'ordre d'une tâche).
 
+## Revu par I9f (la mise en ligne, la migration des mondes)
+
+- **La mise à jour d'un monde à son premier réveil** par un Worker d'une autre version (`MondeRegistre.mettreAJour`) : le
+  format, le journal d'après l'instantané rejoué, la partie d'avant gardée ; pour une ferme d'avant, le passage sur l'île,
+  le lieu du port tiré du plan de la graine et le tronçon posé : ≈ 0,9 s une fois (`node scripts/cout-mise-en-ligne.mjs`,
+  la partie récente avancée de 45 nuits). À suivre dans les journaux de Cloudflare au premier déploiement (le temps de
+  calcul de la requête qui réveille le monde), avec celui du réveil à froid (≈ 0,3 s).
+- **La mise en ligne d'une île** : 3 à 5 ms quand la partie solo a déjà le lieu de son port (le cas d'une page), ≈ 0,8 s
+  sinon. La copie de l'île du joueur automatique pèse 54 Ko au jour 41, 83 Ko au jour 81, 121 Ko au jour 161 (huit
+  villageois) ; une sauvegarde autant (14 gardées : jusqu'à 1,7 Mo) ; une restauration 2 à 4 ms. Le plafond (256 Ko)
+  laisse la place à un village de quinze.
+- **La copie remise à jour** envoie la partie entière à chaque joueur connecté (comme une restauration) : à mesurer sur un
+  téléphone avec une île de 15 villageois (le temps de refaire la partie locale et la scène).
+
 ## Hors périmètre
 
 - Toute règle de jeu ; de nouveaux dessins.

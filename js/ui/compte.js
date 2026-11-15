@@ -10,7 +10,8 @@ import { registerActions } from './actions.js';
 import { morph } from './render.js';
 import { notify } from './toasts.js';
 import { exportSaveJson } from './storage.js';
-import { enLigne, SAVE_KEY } from './store.js';
+import { enLigne, SAVE_KEY, state } from './store.js';
+import { nomDe, unirVu, villageActif } from '../engine/index.js';
 
 const CLE = 'ferme-compte';
 
@@ -110,17 +111,42 @@ export function compteHtml() {
   return `<div class="stack" id="compte-zone"><strong>🌐 Jeu en ligne</strong>${corps}</div>`;
 }
 // E-2 : ses mondes en ligne (GET /mondes, lus à l'ouverture des Options), et mettre sa ferme en ligne (F.4 :
-// une copie de la partie solo, qui reste sur l'appareil).
-let mondes = null, mondesLus = false, miseEnLigne = false;
+// une copie de la partie solo, qui reste sur l'appareil). I9f : une île part en ligne tout entière (la ferme, ce qui est
+// pris dehors, les chemins, le port, les villageois, les commerces, la chronique) ; la fenêtre dit que la partie solo et
+// l'île en ligne sont deux îles qui vivent chacune leur vie, et le propriétaire peut remettre la copie à jour depuis sa
+// partie solo (avec confirmation : elle remplace l'île en ligne pour tous ; le monde se sauvegarde d'abord). Son
+// brouillard part avec elle, dans ce navigateur (le monde ne le garde pas : js/ui/en-ligne.js, ferme-brouillard-<monde>).
+let mondes = null, mondesLus = false, miseEnLigne = false, aRemplacer = null, remplacement = null;
+const ileSolo = () => !!(state && villageActif(state));
+// Ce que pèse la copie, à peu près (le brouillard ne part pas ; le monde dit le poids exact s'il dépasse son plafond).
+function poidsCopieKo() {
+  try { const vu = (state.monde && state.monde.vu) || ''; return Math.max(1, Math.round((JSON.stringify(state).length - String(vu).length) / 1024)); } catch (e) { return null; }
+}
 function mondesHtml() {
   if (!mondesLus) { mondesLus = true; lireMondes(); }
-  const liste = (mondes || []).map((m) => `<div class="row"><span>🏡 ${echapper(m.titre)}${m.role === 'proprietaire' ? '' : ' (invité)'}</span><a class="btn" href="jeu.html?monde=${encodeURIComponent(m.monde)}">Entrer</a></div>`).join('');
+  const ile = ileSolo();
   const enLigneIci = typeof location !== 'undefined' && /[?&]monde=/.test(location.search);
+  const remettre = (m) => (!ile || enLigneIci || m.role !== 'proprietaire' ? ''
+    : aRemplacer === m.monde ? ''
+      : `<button class="btn" type="button" data-action="monde-remplacer" data-monde="${echapper(m.monde)}"${remplacement ? ' disabled' : ''}>🔄 Remettre à jour</button>`);
+  const liste = (mondes || []).map((m) => `<div class="row"><span>🏡 ${echapper(m.titre)}${m.role === 'proprietaire' ? '' : ' (invité)'}</span><a class="btn" href="jeu.html?monde=${encodeURIComponent(m.monde)}">Entrer</a>${remettre(m)}</div>${aRemplacer === m.monde ? confirmationHtml(m) : ''}`).join('');
+  const ko = ile ? poidsCopieKo() : null;
+  const deux = ile ? `<p class="muted" id="monde-deux-iles">🏝️ Ta partie solo et ton île en ligne sont deux îles : après la copie, chacune vit sa vie. Ce que vous faites en ligne ne revient pas dans ta partie solo, et ce que tu fais en solo ne part pas en ligne, sauf si tu remets la copie à jour (🔄).</p>` : '';
+  const creer = enLigneIci ? '' : `<div class="row"><button class="btn primary" type="button" data-action="monde-creer"${miseEnLigne ? ' disabled' : ''}>${miseEnLigne ? 'Mise en ligne…' : ile ? '🌐 Mettre mon île en ligne' : '🌐 Mettre ma ferme en ligne'}</button></div>
+        <p class="muted">${ile ? `Une copie de ton île part en ligne : la ferme, ce que tu as pris et posé dehors, le port, les villageois et leurs liens, les commerces, la chronique${ko ? ` (≈ ${ko} Ko ; un monde en porte 256 au plus)` : ''}. Tes amis y viennent par invitation ; ta partie solo reste sur cet appareil, telle quelle.` : 'Une copie de ta ferme part en ligne, pour y construire à plusieurs ; ta partie solo reste sur cet appareil, telle quelle.'}</p>
+        ${deux}`;
+  // (I9f : sur une île, la mise en ligne et les deux îles d'abord, puis ses mondes ; une ferme d'avant, comme avant)
+  const listeHtml = mondes === null ? '<p class="muted">Tes mondes en ligne…</p>' : liste || '<p class="muted">Pas encore de monde en ligne.</p>';
+  const temps = enLigne && enLigne.vivante ? '<p class="muted">🕰️ Le temps de ce monde passe quand au moins un joueur y est. Sans personne, il dort.</p>' : '';
   return `<div class="stack">
-        ${mondes === null ? '<p class="muted">Tes mondes en ligne…</p>' : liste || '<p class="muted">Pas encore de monde en ligne.</p>'}
-        ${enLigne && enLigne.vivante ? '<p class="muted">🕰️ Le temps de ce monde passe quand au moins un joueur y est. Sans personne, il dort.</p>' : ''}
-        ${enLigneIci ? '' : `<div class="row"><button class="btn primary" type="button" data-action="monde-creer"${miseEnLigne ? ' disabled' : ''}>${miseEnLigne ? 'Mise en ligne…' : '🌐 Mettre ma ferme en ligne'}</button></div>
-        <p class="muted">Une copie de ta ferme part en ligne, pour y construire à plusieurs ; ta partie solo reste sur cet appareil, telle quelle.</p>`}
+        ${ile ? `${creer}${listeHtml}${temps}` : `${listeHtml}${temps}${creer}`}
+      </div>`;
+}
+// I9f : la confirmation de la copie remise à jour.
+function confirmationHtml(m) {
+  return `<div class="stack" id="monde-remplacer-confirmation">
+        <p class="muted">⚠️ Remplacer l'île en ligne « ${echapper(m.titre)} » par une copie de ton île solo d'aujourd'hui ? Tout ce qui y a été fait depuis la copie sera remplacé, pour tous ses membres. Ils restent membres, avec leur rôle ; ils repartent sans sac ni charge, et leurs amitiés avec tes villageois recommencent. Le monde est sauvegardé d'abord : 👥 › 💾 permet d'y revenir.</p>
+        <div class="row"><button class="btn danger" type="button" data-action="monde-remplacer-oui" data-monde="${echapper(m.monde)}"${remplacement ? ' disabled' : ''}>${remplacement ? 'Remise à jour…' : 'Oui, remplacer l\'île en ligne'}</button><button class="btn" type="button" data-action="monde-remplacer-non">Non</button></div>
       </div>`;
 }
 async function lireMondes() {
@@ -128,16 +154,42 @@ async function lireMondes() {
   mondes = r.ok ? r.mondes || [] : [];
   redessiner();
 }
+// I9f : le brouillard de sa partie solo, posé dans ce navigateur pour le monde `monde` (uni à celui qu'il y avait déjà).
+function garderBrouillard(monde) {
+  if (!ileSolo() || !state.monde || typeof state.monde.vu !== 'string' || !state.monde.vu) return;
+  const cle = `ferme-brouillard-${monde}`;
+  try {
+    const avant = localStorage.getItem(cle);
+    const copie = { ...state, monde: { ...state.monde } };
+    if (avant) unirVu(copie, avant);
+    localStorage.setItem(cle, copie.monde.vu);
+  } catch (e) { /* (le navigateur ne garde rien : le brouillard repart de la ferme) */ }
+}
 async function creerMonde() {
   if (miseEnLigne) return;
   miseEnLigne = true;
   redessiner();
-  const r = await appelServeur('/mondes', { corps: { partie: JSON.parse(exportSaveJson()), titre: 'Ma ferme' } });
+  const ile = ileSolo();
+  const r = await appelServeur('/mondes', { corps: { partie: JSON.parse(exportSaveJson()), titre: ile ? String(nomDe(state, 'ile') || 'Mon île').slice(0, 40) : 'Ma ferme' } });
   miseEnLigne = false;
-  if (!r.ok) { notify(`🌐 ${r.erreur || 'La mise en ligne a échoué.'}`); redessiner(); return; }
-  notify('🌐 Ta ferme est en ligne. Entre dedans : tu y construis, ta partie solo t\'attend ici.');
+  if (!r.ok) { notify(`🌐 ${r.erreur || 'La mise en ligne a échoué.'}`, { duree: 9000 }); redessiner(); return; }
+  if (r.monde) garderBrouillard(r.monde);
+  notify(ile ? '🌐 Ton île est en ligne. Entre dedans et invite tes amis (👥) : ta partie solo t\'attend ici.' : '🌐 Ta ferme est en ligne. Entre dedans : tu y construis, ta partie solo t\'attend ici.');
   mondes = null;
   mondesLus = false;
+  redessiner();
+}
+// I9f : remettre la copie à jour (confirmée) : la partie solo remplace l'île en ligne.
+async function remplacerMonde(monde) {
+  if (remplacement) return;
+  remplacement = monde;
+  redessiner();
+  const r = await appelServeur(`/mondes/${monde}/remplacer`, { corps: { partie: JSON.parse(exportSaveJson()) } });
+  remplacement = null;
+  if (!r.ok) { notify(`🌐 ${r.erreur || 'La copie n\'a pas pu être remise à jour.'}`, { duree: 9000 }); redessiner(); return; }
+  aRemplacer = null;
+  garderBrouillard(monde);
+  notify(`🌐 L'île en ligne est remise à jour depuis ta partie solo (jour ${r.jour}). L'ancienne est dans ses sauvegardes (👥 › 💾).`, { duree: 8000 });
   redessiner();
 }
 
@@ -205,6 +257,10 @@ if (typeof window !== 'undefined') window.addEventListener('hashchange', () => {
 
 registerActions({
   'monde-creer': () => { creerMonde(); },
+  // (I9f : remettre la copie à jour, avec confirmation)
+  'monde-remplacer': (target) => { aRemplacer = target.dataset.monde; redessiner(); },
+  'monde-remplacer-non': () => { aRemplacer = null; redessiner(); },
+  'monde-remplacer-oui': (target) => { remplacerMonde(target.dataset.monde); },
   'compte-lien': () => { demanderLien(); },
   'compte-autre': () => { envoye = null; redessiner(); },
   'compte-deconnexion': () => { deconnecter(); },
