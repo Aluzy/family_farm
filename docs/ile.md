@@ -90,7 +90,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f (fait), I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
-| 9. L'île en ligne et la bascule | I9a, I9a2, I9b, I9c, I9d, I9e, I9f (faits), I9g, I9h | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
+| 9. L'île en ligne et la bascule | I9a, I9a2, I9b, I9c, I9d, I9e, I9f, I9g (faits), I9h (la première PR faite : la répétition et l'allumage ; reste le retrait) | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
 ## L'ordre et les dépendances
 
@@ -118,6 +118,9 @@ tableau donne ses coûts.
 publié ne change pas. Chaque fiche écrit son code pour `ACTIF: true` et le teste ainsi ; les tests
 d'avant restent verts avec `false`. I9h le passe à `true`, retire les branches mortes et le réglage
 lui-même. Entre-temps, `?village=1` dans l'adresse du jeu l'allume pour un essai (I0a).
+
+**Depuis I9h (la première PR, la version 2.0.0), il vaut `true`** : l'île est le jeu ; `?village=1` ne change plus rien ;
+les tests du jeu d'avant le forcent à `false` jusqu'au retrait (plus bas, « La bascule »).
 
 Ce qui est posé (I0a) :
 
@@ -3007,6 +3010,27 @@ quel). La partie d'une île de 15 : 143 Ko en ligne, sous le plafond (256 Ko) : 
   ce qu'une action change.
 - **La route de la charrette** est gardée par partie (`trajetCharrette`, une WeakMap) : une partie refaite chez un joueur
   (`Synchro.refaire`, à chaque geste d'un autre) la recalcule une fois (quelques ms).
+
+## La bascule (I9h : la répétition et l'allumage, faits ; le retrait, à faire)
+
+La fiche : `docs/fiches/ile/I9h-bascule.md` (« Fait : la première PR » : le détail, l'ordre du déploiement, ce que la
+seconde PR aura à faire). En bref :
+
+- **`main` fusionné** dans le chantier (un vrai commit de fusion : 01f8e5c, le niveau 2 de la maison, est ancêtre) ; tout
+  y était déjà reporté, l'arbre ne change pas ; pas de nouveau format (109).
+- **La répétition** : `node scripts/repetition-bascule.mjs [sauvegardes exportées…]` (sans argument : les 11 parties
+  gardées dans `tests/engine/`, dont deux faites par le moteur de `main` avec une maison au niveau 2 meublée,
+  `parties-main.json` : toutes passent sur l'île, leur ferme identique, puis jouent) ; `node scripts/repetition-monde.mjs
+  <copie de main>` (un monde du serveur d'avant mis à jour et passé sur l'île par celui d'aujourd'hui, sans essai, puis
+  joué à deux ; `repetition-monde-navigateur.mjs`, le même dans deux onglets de Chromium). Les trois parties réelles du mainteneur restent à faire passer par le premier, avant de fusionner. Elle a
+  trouvé deux défauts, corrigés : l'inventaire « réparé » à chaque ouverture (les objets du départ revenaient : 160
+  conserves) et le site qui ne se construisait plus (`charrette-village.js`).
+- **L'allumage** : `VILLAGE.ACTIF: true`, la version 2.0.0 (le jeu et le Worker, qui embarque le moteur : tous les mondes
+  d'avant passent sur l'île à leur premier réveil, `ILE_ESSAI` n'y sert plus). Les tests du jeu d'avant forcent le réglage
+  éteint (`tests/engine/aide.mjs`) ; `simulate.mjs` joue l'île par défaut (`--eteint` : le jeu d'avant), son CSV est celui
+  de `--village` d'avant, octet pour octet ; le site construit pèse 28,5 Mo (26,9 pour celui de `main`) jusqu'au retrait.
+- **Le déploiement** (fait par le mainteneur) : le Worker avant le site, l'ordre exact dans la fiche ; puis relire le
+  rapport des sessions et les journaux des mondes (`monde.migrer`, `perdus`).
 
 ## Les règles qui ne changent pas
 

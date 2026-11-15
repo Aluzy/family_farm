@@ -99,6 +99,9 @@ const serveur = createServer((req, res) => {
   if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html');
   if (!existsSync(f)) { res.writeHead(404).end(); return; }
   res.writeHead(200, { 'content-type': TYPES[extname(f).toLowerCase()] || 'application/octet-stream', 'cache-control': 'no-store' });
+  // (I9h, la bascule : le réglage du jeu est allumé ; ce test est celui du jeu d'avant, ses îles faites en essai, comme le
+  // moteur et le Worker de ce processus, tests/engine/aide.mjs : la page reçoit le réglage éteint, jusqu'au retrait)
+  if (chemin === '/js/data.generated.js') { res.end(readFileSync(f, 'utf8').replace(/("VILLAGE": \{\n\s*"ACTIF": )true/, '$1false')); return; }
   res.end(readFileSync(f));
 });
 await new Promise((ok) => serveur.listen(0, '127.0.0.1', ok));

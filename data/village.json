@@ -3,11 +3,10 @@
     "Le chantier « l'île à bâtir » (novembre 2026) : on arrive sur une île vierge, on vend au port, des",
     "villageois s'installent sur la ferme et y travaillent. Le plan, les décisions et l'ordre des fiches sont",
     "dans docs/ile.md ; les fiches dans docs/fiches/ile/. ACTIF : le code du chantier est lu quand il vaut",
-    "true (js/engine/village.js, villageActif) ; tant que le chantier dure, il vaut false et le jeu publié ne",
-    "change pas. Pour un essai, jeu.html?village=1 l'allume pour une nouvelle partie (un bandeau le dit) ;",
-    "les tests tests/engine/village-*.test.mjs le forcent (tests/engine/aide.mjs, avecVillage). La fiche",
-    "I9h le passe à true, puis retire le réglage. Les sections PORT, TACHES, ARTISANS et TRAITS viendront",
-    "avec leurs fiches.",
+    "true (js/engine/village.js, villageActif). Depuis la bascule (fiche I9h, la version 2.0.0), il vaut true : l'île",
+    "est le jeu, une partie d'avant y passe à son ouverture (MIGRATION), un monde en ligne d'avant à son réveil par le",
+    "serveur (I9f). Les tests du jeu d'avant le forcent à false (tests/engine/aide.mjs, avecVillage), jusqu'au retrait",
+    "du jeu d'avant et du réglage lui-même (la seconde PR d'I9h) ; jeu.html?village=1 ne change plus rien.",
     "ARRIVEE (fiche I3a, js/engine/villageois.js) : l'arrivée d'un villageois. Il débarque du bac (fiche I1c,",
     "js/engine/bac.js : un jour de bac, PORT.BAC.PERIODE, pendant que le bac est à quai, PORT.BAC.HEURES ; la page le",
     "met en route ; une journée finie avant, la nuit l'installe d'un coup). Il lui faut une maison libre (une pièce",
@@ -21,7 +20,7 @@
     "le salut de l'heure (HABITANTS.PHRASES.salut)."
   ],
   "VILLAGE": {
-    "ACTIF": false,
+    "ACTIF": true,
     "ARRIVEE": {
       "RESERVE_JOURS": 2,
       "PLAFOND": { "1": 2, "2": 5, "3": 10, "4": 12, "5": 14 },

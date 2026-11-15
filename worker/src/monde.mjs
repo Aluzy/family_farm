@@ -451,9 +451,10 @@ export class MondeRegistre {
 
   /* -- I9f : la mise à jour d'un monde (une autre version du jeu ; une ferme d'avant qui passe sur l'île) -- */
 
-  // La ferme d'avant `s` (la partie d'un monde) doit-elle passer sur l'île ? Le chantier allumé pour elle (à la bascule,
-  // I9h : toujours) ; pendant le chantier, `essaiIle` (un Durable Object d'essai, env.ILE_ESSAI : les tests) en fait une
-  // île d'essai, comme jeu.html?village=1 en solo (I7f).
+  // La ferme d'avant `s` (la partie d'un monde) doit-elle passer sur l'île ? Le chantier allumé pour elle (depuis la
+  // bascule, I9h, la version 2.0.0 : toujours, DATA.VILLAGE.ACTIF étant embarqué avec le moteur) ; pendant le chantier,
+  // `essaiIle` (un Durable Object d'essai, env.ILE_ESSAI : les tests) en faisait une île d'essai, comme jeu.html?village=1
+  // en solo (I7f) ; il s'en va avec le réglage (la seconde PR d'I9h).
   ileDue(s) {
     return !!(s && s.mondePartage && partieDAvant(s) && (villageActif(s) || this.essaiIle === true));
   }
@@ -968,8 +969,8 @@ export class Monde {
     this.registre = new MondeRegistre(ctx.storage.sql);
     // (I9a2 : ce que le temps a fait, en avançant : un réveil, un instantané au temps)
     this.registre.quandAvance = (r) => this.apresAvance(r);
-    // (I9f : pendant le chantier, un Durable Object d'essai fait passer une ferme d'avant sur l'île, en essai : les tests ;
-    // à la bascule, I9h, le réglage allumé le fait pour tous les mondes, et cette variable s'en va)
+    // (I9f : pendant le chantier, un Durable Object d'essai faisait passer une ferme d'avant sur l'île, en essai : les tests ;
+    // depuis la bascule, I9h, le réglage allumé le fait pour tous les mondes ; cette variable s'en va avec le réglage)
     this.registre.essaiIle = !!(env && env.ILE_ESSAI === '1');
   }
 

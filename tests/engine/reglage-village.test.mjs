@@ -1,6 +1,8 @@
 /* ==========================================================================
    Tests du réglage de bascule du chantier « l'île à bâtir », éteint (docs/ile.md, fiche I0a) :
    avec VILLAGE.ACTIF à false, le jeu est celui d'avant. Le réglage allumé : tests/engine/village-*.test.mjs.
+   Depuis la bascule (I9h), le jeu publié l'allume ; ce fichier, comme les autres tests du jeu d'avant, le force à
+   false (tests/engine/aide.mjs) ; il s'en ira avec le réglage (la seconde PR d'I9h).
    Lancer seul : node --test tests/engine/reglage-village.test.mjs (ou node tests/run-tests.mjs reglage-village).
    ========================================================================== */
 
@@ -10,9 +12,9 @@ import { assert, assertEqual, avecVillage, test, VILLAGE_DU_JEU } from './aide.m
 
 const json = (s) => JSON.stringify(s);
 
-test('le réglage du jeu publié : VILLAGE.ACTIF vaut false tant que le chantier dure', () => {
-  assertEqual(VILLAGE_DU_JEU, false, 'data/village.json : VILLAGE.ACTIF');
-  assertEqual(DATA.VILLAGE.ACTIF, false, 'le réglage de ce fichier');
+test('le réglage du jeu publié : VILLAGE.ACTIF vaut true depuis la bascule (I9h) ; les tests du jeu d\'avant le forcent à false', () => {
+  assertEqual(VILLAGE_DU_JEU, true, 'data/village.json : VILLAGE.ACTIF');
+  assertEqual(DATA.VILLAGE.ACTIF, false, 'le réglage de ce fichier (un test du jeu d\'avant)');
   assertEqual(villageActif(createNewGame(7)), false, 'une partie neuve : éteint');
   assertEqual(villageActif(null), false, 'sans partie : éteint');
 });

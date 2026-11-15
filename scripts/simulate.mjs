@@ -10,7 +10,9 @@
 //   node scripts/simulate.mjs                       # les deux stratégies, 80 nuits
 //   node scripts/simulate.mjs --nuits 60 --graine 7
 //   node scripts/simulate.mjs --strategie applique  # ou minimal, ou toutes
-//   node scripts/simulate.mjs --village             # le chantier « l'île à bâtir » allumé (VILLAGE.ACTIF)
+//   node scripts/simulate.mjs --village             # le chantier « l'île à bâtir » allumé (VILLAGE.ACTIF ; depuis la
+//                                                   # bascule, I9h, le réglage du jeu : sans option, c'est l'île)
+//   node scripts/simulate.mjs --eteint              # le jeu d'avant (le réglage forcé à false), jusqu'à son retrait
 //
 // Options : --nuits N (80), --graine N (1), --strategie applique|minimal|toutes,
 //           --csv fichier (simulation.csv), --svg fichier (simulation-bonheur.svg),
@@ -50,9 +52,11 @@ try {
   process.exit(2);
 }
 const S = E.DATA.SIMULATION;
-// I1b : --village allume le chantier « l'île à bâtir » (le port remplace la calèche, les paliers les chapitres)
-const village = args.includes('--village');
-if (village) E.DATA.VILLAGE.ACTIF = true;
+// I1b : --village allume le chantier « l'île à bâtir » (le port remplace la calèche, les paliers les chapitres) ; depuis
+// la bascule (I9h), le réglage du jeu l'allume, et --eteint joue le jeu d'avant (jusqu'à son retrait, la seconde PR d'I9h)
+const eteint = args.includes('--eteint');
+const village = !eteint && (args.includes('--village') || E.DATA.VILLAGE.ACTIF === true);
+E.DATA.VILLAGE.ACTIF = village;
 
 const nuits = Math.max(1, Math.floor(Number(option('nuits', S.NUITS))));
 const graine = Math.floor(Number(option('graine', S.GRAINE)));
@@ -161,7 +165,7 @@ writeFileSync(svgPath, svgBonheur(parties));
 
 const pad = (v, n) => String(v).padStart(n);
 const affiche = [1, 5, 8, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80].filter((n) => n <= nuits);
-console.log(`Simulation : ${nuits} nuits, graine ${graine}, moteur de ${racine}${village ? ', le chantier « l\'île à bâtir » allumé (--village)' : ''}`);
+console.log(`Simulation : ${nuits} nuits, graine ${graine}, moteur de ${racine}${village ? ', l\'île à bâtir (VILLAGE.ACTIF)' : ', le jeu d\'avant (--eteint)'}`);
 for (const id of ids) {
   const rows = parties[id];
   console.log(`\n== ${S.STRATEGIES[id].nom} (${S.STRATEGIES[id].eveilS} s d'éveil par jour) ==`);

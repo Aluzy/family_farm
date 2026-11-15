@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Test de fumée du jeu dans un vrai navigateur (Playwright + Chromium), hors CI.
 // Sert le dépôt avec un petit serveur statique Node sur un port libre, ouvre jeu.html, lance une
-// partie (« Partir pour la ferme »), ouvre la Famille, laisse tourner la ferme, puis rouvre le jeu par une
+// partie (depuis la bascule, I9h : le départ de l'île, en famille, puis « Commencer »), ouvre la Famille, laisse tourner la ferme, puis rouvre le jeu par une
 // ancienne adresse de la mine (jeu.html?carte=grotte&…) : la mine n'est plus (docs/gisements.md, lot 4),
 // la page oublie l'adresse et revient sur jeu.html.
 // Échoue sur une erreur de la console, une exception de la page ou une réponse HTTP ≥ 400.
@@ -92,7 +92,9 @@ try {
   const saisir = async (texte) => { await page.locator('#accueil-champ').fill(texte); await clic('[data-action="accueil-suite"]'); };
   // l'écran d'accueil du jeu (js/ui/ecran-titre.js) : Nouvelle partie
   await clic('#ecran-titre [data-titre="nouvelle"]');
-  await clic('[data-action="accueil-suite"]');
+  // (I9h, la bascule : le départ de l'île, js/ui/depart.js, fiche I7b : seul ou en famille ; ici en famille, pour passer
+  // par le personnage et son apparence ; puis le nom de l'île)
+  await clic('[data-action="accueil-famille"]');
   await clic('[data-action="accueil-perso"]');
   await clic('[data-action="accueil-suite"]');
   // (l'écran « Personnaliser », chantier « couches » : une autre peau, le retour au personnage, le hasard, un autre haut)
@@ -104,12 +106,9 @@ try {
   await saisir('Fumée');
   await saisir('Test');
   await clic('[data-action="accueil-oui"]');
-  // (le récit, lot 8 : le compagnon est obligatoire : son personnage, son prénom)
-  await clic('[data-action="accueil-perso"]');
-  await clic('[data-action="accueil-suite"]');
-  await clic('[data-action="accueil-suite"]');
-  await saisir('Hugo');
-  for (let k = 0; k < 2; k++) await clic('[data-action="accueil-non"]');
+  // (le compagnon, les enfants, un animal : non)
+  for (let k = 0; k < 3; k++) await clic('[data-action="accueil-non"]');
+  await clic('[data-action="accueil-vers-ile"]');
   const depart = page.locator('[data-action="setup-start"]');
   await depart.waitFor({ state: 'visible', timeout: 15000 });
   await depart.click();
