@@ -10,7 +10,9 @@
    - le relais des charretiers (D17) : voyage par voyage, le suivant qui travaille ; un jour de repos ne l'arrête pas ;
    - le cheval : par le bac, sa place à l'Écurie, sa ration la nuit, le tableau ;
    - les rails : l'image d'après les voisins, les refus, la voie complète, le wagonnet sur les rails ;
-   - la sauvegarde v108 → v109 ; les commandes et les rôles ; le joueur automatique ; la journée et la scène.
+   - la voie en escalier lue en diagonale (les cordes, les demi-courbes, leurs raccords), le tracé que suit le wagonnet ;
+   - la sauvegarde v108 → v109 ; les commandes et les rôles ; le joueur automatique (ses paliers, le charretier qu'un
+     commerce prend faute d'un autre) ; la journée et la scène.
    Lancer seul : node tests/run-tests.mjs village-charrette
    ========================================================================== */
 
@@ -21,6 +23,7 @@ import {
   modeCharrette, ouEstLaCharrette, palierRoulant, portDuMonde, poserBloc, poserRails, railsPoses, railsSur, refusDuRole,
   refusPalier, reprendreBloc, roleDemande, runNight, STATE_VERSION, tachesNuit, testMaisonVillageois, trajetCharrette,
   voieDe, voyagesDuJour, accepterContrat, avancerContrats, retirerCheminDehors, retirerRails, cheminsDehors, horlogeDe, assurerTroncon,
+  botCommerce, charretierPourCommerce, courbeRails, formeRails, IMAGES_RAILS, traceSurRails,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, avecVillage, boite, partie, setInv, test } from './aide.mjs';
 
@@ -412,4 +415,89 @@ test('le joueur automatique achète un palier quand sa caisse vaut deux fois le 
   s.pieces = 100000;
   botVillageois(s);
   assertEqual([s.charrette.capacite, s.charrette.vitesse], [2, 1], 'rien à vendre de plus : il n\'achète pas');
+});
+
+/* ---------- la voie en diagonale, le charretier du joueur automatique (correctifs d'I2b) ---------- */
+
+// Une voie de pas ('e', 's', 'n', 'o') depuis (x, y), sur une carte de largeur W : ses cases, dans l'ordre.
+function voieDePas(W, x, y, pas) {
+  const D = { e: [1, 0], o: [-1, 0], s: [0, 1], n: [0, -1] }, out = [y * W + x];
+  for (const p of pas) { x += D[p][0]; y += D[p][1]; out.push(y * W + x); }
+  return out;
+}
+const formes = (l) => { const R = new Set(l); return l.map((t) => formeRails(R, 40, t)); };
+
+test('la voie en escalier se lit en diagonale : les cordes, les demi-courbes aux bouts ; droites et vraies courbes gardées', () => {
+  const W = 40;
+  // une droite vers l'est, un escalier vers le sud-est, une droite vers le sud, une vraie courbe vers l'est, une droite
+  const l = voieDePas(W, 1, 1, 'eee' + 'se'.repeat(3) + 'sss' + 'eee');
+  assertEqual(formes(l), ['eo', 'eo', 'eo', 'so_ds', 'ne_d', 'so_d', 'ne_d', 'so_d', 'ne_d', 'so_do', 'ns', 'ns', 'ne', 'eo', 'eo', 'eo']);
+  // l'escalier vers le nord-est : les coins no et se
+  assertEqual(formes(voieDePas(W, 1, 20, 'ee' + 'ne'.repeat(3) + 'e')), ['eo', 'eo', 'no_dn', 'se_d', 'no_d', 'se_d', 'no_d', 'se_ds', 'eo', 'eo']);
+  // des marches de deux cases : de vraies courbes, pas de diagonale ; un U : deux quarts de cercle
+  assertEqual(formes(voieDePas(W, 1, 30, 'eessee')), ['eo', 'eo', 'so', 'ns', 'ne', 'eo', 'eo']);
+  assertEqual(formes(voieDePas(W, 20, 30, 'esssoo')), ['eo', 'so', 'ns', 'ns', 'no', 'eo', 'eo']);
+  // une seule marche entre deux droites : deux demi-courbes qui se rejoignent en diagonale
+  assertEqual(formes(voieDePas(W, 20, 20, 'eesee')), ['eo', 'eo', 'so_ds', 'ne_dn', 'eo', 'eo']);
+  // chaque forme a son image, dans l'ordre du dessin (scripts/carte/charrette_village.py IMAGES_RAILS)
+  assertEqual(IMAGES_RAILS.length, 20);
+  assertEqual(IMAGES_RAILS.slice(8, 11), ['ne_d', 'ne_dn', 'ne_de']);
+  // les tracés se raccordent : d'une case à sa voisine, même point et même tangente au côté commun
+  const R = new Set(l);
+  for (let k = 1; k < l.length; k++) {
+    const a = l[k - 1], b = l[k], fa = courbeRails(formeRails(R, W, a)), fb = courbeRails(formeRails(R, W, b));
+    const ca = b - a === 1 ? 'e' : b - a === -1 ? 'o' : b - a === W ? 's' : 'n', cb = { e: 'o', o: 'e', s: 'n', n: 's' }[ca];
+    const bout = (f, c, x0, y0) => {
+      const i = f.cotes[0] === c ? 0 : 3, j = i === 0 ? 1 : 2;
+      return { p: [x0 + f.p[i][0], y0 + f.p[i][1]], t: [f.p[i][0] - f.p[j][0], f.p[i][1] - f.p[j][1]] };
+    };
+    const A = bout(fa, ca, a % W, Math.floor(a / W)), B = bout(fb, cb, b % W, Math.floor(b / W));
+    assert(Math.hypot(A.p[0] - B.p[0], A.p[1] - B.p[1]) < 1e-9, `le point commun ${k}`);
+    const na = Math.hypot(...A.t), nb = Math.hypot(...B.t);
+    assert(Math.abs(A.t[0] / na + B.t[0] / nb) < 1e-6 && Math.abs(A.t[1] / na + B.t[1] / nb) < 1e-6, `la tangente commune ${k}`);
+  }
+});
+
+test('le wagonnet suit le tracé des rails : la diagonale tout droit, sans sauter de coin, au fil des heures', () => {
+  const W = 40, l = voieDePas(W, 1, 1, 'eee' + 'se'.repeat(3) + 'sss'), R = new Set(l);
+  // la route du moteur saute les coins en diagonale (huit voisins) : (4,1) → (5,2) → (6,3) → (7,4)
+  const route = [l[0], l[1], l[2], l[3], l[5], l[7], l[9], l[10], l[11], l[12]];
+  const heures = route.map((_, i) => i * 0.1);
+  const tr = traceSurRails(R, W, route, heures);
+  for (let i = 1; i < tr.h.length; i++) {
+    assert(Math.hypot(tr.x[i] - tr.x[i - 1], tr.y[i] - tr.y[i - 1]) < 0.2, `pas de saut au point ${i}`);
+    assert(tr.h[i] >= tr.h[i - 1], 'les heures avancent');
+  }
+  assertEqual(tr.h[0], 0);
+  assert(Math.abs(tr.h[tr.h.length - 1] - heures[heures.length - 1]) < 1e-9, 'à l\'heure de la dernière case');
+  // dans l'escalier (ses cordes) : sur la diagonale y = x − 2,5 (en cases), qui passe par le milieu des côtés
+  const dans = [...tr.x.keys()].filter((i) => tr.x[i] > 4.5 && tr.x[i] < 7);
+  assert(dans.length > 10, 'des points dans l\'escalier');
+  for (const i of dans) assert(Math.abs(tr.y[i] - (tr.x[i] - 2.5)) < 1e-6, `sur la diagonale : ${tr.x[i]}, ${tr.y[i]}`);
+  // sur une droite, au milieu de la case (là où se pose la charrette ailleurs) ; hors des rails, de milieu en milieu
+  assertEqual([tr.x[0], tr.y[0]], [1.5, 1.5]);
+  assertEqual(Array.from(traceSurRails(new Set(), W, [0, 1, W + 2], [0, 1, 2]).x), [0.5, 1.5, 2.5]);
+});
+
+test('le joueur automatique : faute d\'un autre villageois libre, la forge prend le charretier ; la tournée revient au prochain venu', () => {
+  const { s, V } = ile(2);
+  assert(attribuer(s, V[1].id, 'champs').ok, 'les champs');
+  const adultes = V.filter((v) => !v.enfant);
+  assertEqual((charretierPourCommerce(s, adultes) || {}).id, V[0].id, 'le charretier');
+  // le réglage éteint : il ne le prend pas
+  const C = DATA.SIMULATION.VILLAGEOIS.CHARRETTE, avant = C.COMMERCE;
+  C.COMMERCE = false;
+  try { assertEqual(charretierPourCommerce(s, adultes), null); } finally { C.COMMERCE = avant; }
+  // au palier de la forge, il lui confie la tâche de la filière (la pierre) ; les champs restent
+  s.palier = Math.max(s.palier || 1, DATA.SIMULATION.VILLAGEOIS.COMMERCES[0].PALIER);
+  addItem(s, 'bois', 30); addItem(s, 'pierre', 30); addItem(s, 'planche', 20); addItem(s, 'lingot_fer', 10); addItem(s, 'fibre', 20);
+  botCommerce(s);
+  const pierre = DATA.ARTISANS.COMMERCES.forge.tache;
+  assertEqual([V[0].tache, V[1].tache], [pierre, 'champs']);
+  // un troisième venu : la tournée du port lui revient (au rang de la charrette)
+  assert(testMaisonVillageois(s).ok, 'la maison');
+  const v3 = arriverVillageois(s, { direct: true }).villageois;
+  botVillageois(s);
+  assertEqual(v3.tache, 'navette');
+  assertEqual(V[0].tache, pierre, 'le futur forgeron garde sa tâche');
 });

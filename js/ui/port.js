@@ -17,7 +17,7 @@ import { avancerContrats, contratsDuPort, prendreAvisContrats } from '../engine/
 import { palierVocation, scoreVocation } from '../engine/vocations.js';
 import '../engine/vocation-production.js';
 import { son } from './son.js';
-import { horsFerme, imageRails, IMAGES_RAILS, railsPoses } from '../engine/dehors.js';
+import { horsFerme, imageRails, IMAGES_RAILS, railsPoses, traceSurRails } from '../engine/dehors.js';
 import { charretteDu, etatCharrette, voyagesDuJour } from '../engine/charrette.js';
 import { villageActif } from '../engine/village.js';
 import { choisirBut } from '../engine/monde-vu.js';
@@ -472,7 +472,8 @@ export function bacModele() {
 
 // Fiche I2b : la charrette du village pour la scène (js/carte/ferme/charrette-village.js) : { mode ('bras', 'cheval',
 // 'wagonnet'), deco (les rehausses, la bâche, d'après sa capacité, ou null), route ({ cases, heures } : de son départ au
-// comptoir), voyages (du jour : leurs heures, le charretier), rangee (sa case la nuit) } ; et les rails posés
+// comptoir ; au wagonnet, trace : le tracé des rails qu'il suit, dehors.js traceSurRails), voyages (du jour : leurs
+// heures, le charretier), rangee (sa case la nuit) } ; et les rails posés
 // ([[case, image]] : dehors.js imageRails). null le chantier éteint ; rails seuls sans charrette. Gardé tant que la
 // journée de la charrette et les rails ne changent pas : la scène compare l'objet.
 let charretteVue = { cle: null, m: null };
@@ -485,7 +486,7 @@ export function charretteModele() {
   const deco = c ? (c.capacite >= 4 ? 'bache' : c.capacite >= 3 ? 'rehausses' : null) : null;
   const m = !c && !rails.length ? null : {
     rails,
-    charrette: j && j.route ? { mode: j.mode, deco, route: { cases: j.route.cases, heures: j.route.heures }, voyages: j.voyages.map((v) => ({ ...v })), rangee: j.route.cases[0] } : null,
+    charrette: j && j.route ? { mode: j.mode, deco, route: { cases: j.route.cases, heures: j.route.heures, trace: j.mode === 'wagonnet' ? traceSurRails(R, farmTerrain(state).LARGEUR, j.route.cases, j.route.heures) : null }, voyages: j.voyages.map((v) => ({ ...v })), rangee: j.route.cases[0] } : null,
   };
   charretteVue = { cle, m };
   return m;

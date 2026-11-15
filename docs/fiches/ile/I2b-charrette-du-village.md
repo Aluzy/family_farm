@@ -343,3 +343,33 @@ passage planchéié), le wagonnet au halage, l'onglet de la charrette, le soir (
   étoile ; le charretier au milieu du siège, de face et de dos) : `assets/charrette_bras.png`, `charrette_cheval.png`,
   `charrette_wagonnet.png`, `rails.png`. Couleurs (une case, ses deux couches) : à bras 385 à 478, au cheval 324 à 499, le
   wagonnet 334 à 483 ; les rehausses 127, la bâche 260 ; les rails 110 à 174 chacun, 755 les huit.
+- **Correctifs après coup** :
+  - *La voie en diagonale.* Une voie posée en escalier (une case vers l'est, une vers le sud…) dessinait une suite de petits
+    quarts de cercle en zigzag. Le tracé de chaque case est désormais une courbe de Bézier d'un milieu de côté à l'autre
+    (`dehors.js courbeRails`), la tangente droite ou, du côté d'un coin voisin de l'escalier (un Z), à 45° : le coin prend
+    la corde (`<coin>_d`, tout droit) ou la demi-courbe (`<coin>_d<côté>`, au bout de l'escalier, vers une droite ou une
+    courbe) — `formeRails` les choisit d'après les voisins des voisins. D'une case à l'autre, point et tangente se
+    raccordent : l'escalier se lit comme une voie droite en diagonale ; les droites, les vraies courbes (des marches de deux
+    cases et plus, un U) et le passage planchéié ne changent pas. En diagonale, la voie passe entre deux coins de case : le
+    ballast s'y arrête (rien ne déborde sur les cases voisines), les rails s'y resserrent un peu (7 px au lieu de 9). Douze
+    images de plus dans `assets/rails.png` (vingt en tout) : 84 à 95 couleurs chaque corde, 121 à 132 chaque demi-courbe,
+    1 185 les vingt (les huit d'avant inchangées, octet pour octet).
+  - *Le wagonnet suit les rails.* La route du moteur (huit voisins) saute les coins en diagonale ; la scène suit à la place
+    le tracé des rails (`dehors.js traceSurRails` : d'un milieu de tracé au suivant, par la case de coin sautée ; les heures
+    réparties à la longueur parcourue ; `js/ui/port.js` le passe au modèle, `charrette-village.js point` le lit). Les
+    heures de la route, elles, ne changent pas.
+  - *Le joueur automatique.* Le deuxième villageois, mis à la tournée, n'ouvrait plus la forge (la tournée est gardée) :
+    le palier 6 attendait un troisième venu. Faute d'un autre villageois libre, un commerce prend désormais le charretier
+    (`bot.js charretierPourCommerce`, `SIMULATION.VILLAGEOIS.CHARRETTE.COMMERCE`) ; la tournée revient au prochain venu
+    (son rang, `RANG`). Avec `--village` (graine 1, 80 nuits), le palier 7 : le joueur appliqué nuit 74 avant I2b, 65 avec
+    I2b, 67 maintenant ; le minimal 75 avant, jamais (palier 6 nuit 65) avec I2b, 72 maintenant ; le palier 6 : 35 / 44 /
+    41 (appliqué), 47 / 65 / 44 (minimal). La charrette vend 7 200 volumes (appliqué) et 5 920 (minimal) sur la partie.
+  - Tests : `village-charrette` (17 : les formes en escalier, les raccords, le tracé du wagonnet, le charretier du joueur
+    automatique).
+
+## Ce qui reste
+
+- Le joueur automatique ne pose pas de rails (le sol du monde, région par région, n'est pas dans la simulation).
+- Une diagonale posée sur un chemin garde le ballast (pas de madriers : seules les droites ont le passage planchéié).
+- Le wagonnet n'a pas de vue en biais : sur une diagonale, il roule de profil ou de face selon le sens dominant.
+- Une pente de deux cases pour une (en escalier de deux) se lit en petites demi-courbes alternées, pas en droite.

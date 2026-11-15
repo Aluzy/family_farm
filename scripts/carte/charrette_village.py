@@ -32,7 +32,9 @@
 #   - assets/rails.png (cases de 16 × 16, le bas de l'image au bas de la case) : les rails, dans l'ordre de
 #     js/engine/dehors.js IMAGES_RAILS : ns, eo, ne, no, se, so (les courbes d'un quart de cercle, nommées des deux
 #     voisins qu'elles relient), ns_chemin, eo_chemin (le passage planchéié : les rails à fleur entre des madriers, la
-#     terre du chemin entre eux). Quatre traverses par case, une tous les 4 px : pas de couture.
+#     terre du chemin entre eux) ; puis la voie en diagonale, pour chaque coin (ne, no, se, so) : <coin>_d (la corde),
+#     <coin>_d<côté> (la demi-courbe, la diagonale de ce côté ; voir « la voie en diagonale »). Quatre traverses par case
+#     droite, une tous les 4 px : pas de couture ; en diagonale, trois par case, une tous les 3,8 px le long de la voie.
 #   python3 scripts/carte/charrette_village.py            écrit les images
 #   python3 scripts/carte/charrette_village.py --apercu   écrit aussi apercu_charrette_village.png (agrandi, avec un
 #                                                          charretier des planches) et compte les couleurs
@@ -886,13 +888,169 @@ def rails_chemin(sens):
     return t.im
 
 
-IMAGES_RAILS = ['ns', 'eo', 'ne', 'no', 'se', 'so', 'ns_chemin', 'eo_chemin']
+# ---- la voie en diagonale (une voie posée en escalier : une case vers l'est, une vers le sud…)
+#
+# Le tracé d'une case est une courbe de Bézier d'un côté à l'autre, de milieu de côté à milieu de côté (js/engine/
+# dehors.js courbeRails : la même géométrie, que suit le wagonnet). À chaque côté, sa tangente : droite (perpendiculaire
+# au côté) ou en diagonale (à 45°, vers l'autre côté de la case). Un coin dont le voisin d'un côté est un coin de
+# l'escalier (ses deux voisins à l'opposé des siens) y prend la diagonale : 'so_d' (les deux côtés en diagonale : la
+# corde, tout droit), 'so_ds', 'so_do' (la demi-courbe : la diagonale au sud, ou à l'ouest, l'autre côté droit, vers un
+# tronçon droit ou une courbe). D'une case à l'autre, la voie est donc continue, sa tangente aussi : l'escalier se lit
+# comme une voie droite en diagonale. En diagonale, la voie passe entre deux coins de case à 4√2 px de son axe : le
+# ballast s'arrête là (sans déborder sur les cases voisines), les traverses un peu avant, et les rails s'y resserrent
+# un peu (7 px d'écartement au lieu de 9 ; la demi-courbe passe de l'un à l'autre) : du ballast se voit encore de part et
+# d'autre, comme le long d'un tronçon droit.
+COTE = {'n': (0, -1), 's': (0, 1), 'e': (1, 0), 'o': (-1, 0)}
+H_ARC, H_CORDE, H_AXE, H_DIAG = 0.2761, 0.2357, 0.32, 0.23     # les poignées (en cases : js/engine/dehors.js POIGNEES)
+DEMI, DEMI_DIAG = 4.5, 3.6   # le demi-écartement des rails (px), droit et en diagonale
+BALLAST_DROIT, BALLAST_DIAG = 7.6, 4 * math.sqrt(2) - 0.05      # le demi-ballast, droit et en diagonale
+TRAVERSE_DROITE, TRAVERSE_DIAG = 6.5, 5.1
+
+
+def courbe_rails(forme):
+    """Les quatre points de la courbe de Bézier de la case (en cases, depuis son coin nord-ouest), du premier côté de la
+    forme au second, et les deux côtés en diagonale ou non (dehors.js courbeRails)."""
+    base, _, suf = forme.partition('_')
+    a, b = base[0], base[1]
+    mid = lambda c: (0.5 + 0.5 * COTE[c][0], 0.5 + 0.5 * COTE[c][1])
+    P0, P3 = mid(a), mid(b)
+    if base in ('ns', 'eo'):
+        return [P0, (P0[0] + (P3[0] - P0[0]) / 3, P0[1] + (P3[1] - P0[1]) / 3), (P0[0] + 2 * (P3[0] - P0[0]) / 3, P0[1] + 2 * (P3[1] - P0[1]) / 3), P3], False, False
+    da = suf == 'd' or suf == 'd' + a
+    db = suf == 'd' or suf == 'd' + b
+    ina, outb = (-COTE[a][0], -COTE[a][1]), COTE[b]
+    r = math.sqrt(0.5)
+    dg = ((ina[0] + outb[0]) * r, (ina[1] + outb[1]) * r)
+    t0, t3 = (dg if da else ina), (dg if db else outb)
+    h0 = H_CORDE if da and db else H_ARC if not (da or db) else (H_DIAG if da else H_AXE)
+    h3 = H_CORDE if da and db else H_ARC if not (da or db) else (H_DIAG if db else H_AXE)
+    return [P0, (P0[0] + h0 * t0[0], P0[1] + h0 * t0[1]), (P3[0] - h3 * t3[0], P3[1] - h3 * t3[1]), P3], da, db
+
+
+def bezier(P, t):
+    u = 1 - t
+    return (u ** 3 * P[0][0] + 3 * u * u * t * P[1][0] + 3 * u * t * t * P[2][0] + t ** 3 * P[3][0],
+            u ** 3 * P[0][1] + 3 * u * u * t * P[1][1] + 3 * u * t * t * P[2][1] + t ** 3 * P[3][1])
+
+
+def lisse(u):
+    u = max(0.0, min(1.0, u))
+    return u * u * (3 - 2 * u)
+
+
+def rails_trace(forme):
+    """Une case de la voie tracée d'après sa courbe (les diagonales et les demi-courbes) : le ballast (sa largeur glisse
+    de celle d'un tronçon droit à celle de la diagonale), les traverses perpendiculaires à la voie, une tous les 4 px
+    environ (leur dessus, leur face au sud, l'ombre au pied), les rails (le champ poli du côté de la lumière, le flanc
+    dans l'ombre, l'ombre portée au pied), les tire-fonds rouillés ; l'occlusion le long des rails et au bord du ballast."""
+    P, da, db = courbe_rails(forme)
+    N = 240
+    pts = [bezier(P, i / N) for i in range(N + 1)]
+    pts = [(x * S, y * S) for x, y in pts]
+    s_ = [0.0]
+    for i in range(N):
+        s_.append(s_[-1] + math.dist(pts[i], pts[i + 1]))
+    L = s_[-1]
+    tg = []
+    for i in range(N + 1):
+        a, b = pts[max(0, i - 1)], pts[min(N, i + 1)]
+        d = math.dist(a, b) or 1
+        tg.append(((b[0] - a[0]) / d, (b[1] - a[1]) / d))
+    # (le ballast, les traverses : leur demi-largeur glisse du bout droit au bout en diagonale)
+    def largeur(s, droit, diag):
+        u = lisse(s / L)
+        w0 = diag if da else droit
+        w1 = diag if db else droit
+        return w0 + (w1 - w0) * u
+
+    def proche(x, y):
+        best, bi = 1e9, 0
+        for i in range(0, N + 1, 2):
+            dd = (pts[i][0] - x) ** 2 + (pts[i][1] - y) ** 2
+            if dd < best:
+                best, bi = dd, i
+        for i in range(max(0, bi - 2), min(N, bi + 2) + 1):
+            dd = (pts[i][0] - x) ** 2 + (pts[i][1] - y) ** 2
+            if dd < best:
+                best, bi = dd, i
+        t = tg[bi]
+        nx, ny = -t[1], t[0]                     # la normale (à gauche du sens de la courbe)
+        off = (x - pts[bi][0]) * nx + (y - pts[bi][1]) * ny
+        return s_[bi], off, (nx, ny), t
+    info = {}
+    for y in range(S):
+        for x in range(S):
+            info[(x, y)] = proche(x + 0.5, y + 0.5)
+    t = Toile(S, S)
+    for (x, y), (s, off, nn, tt) in info.items():
+        hw = largeur(s, BALLAST_DROIT, BALLAST_DIAG)
+        if abs(off) <= hw:
+            t.put(x, y, caillou(x, y))
+            if abs(off) > hw - 1.0:               # (le bord du ballast, ses cailloux plus bas, plus froids)
+                t.assombrit(x, y, 0.16)
+    # les traverses : une tous les 4 px environ, la première à 2 px d'un bout droit, à 1,9 d'un bout en diagonale
+    e0 = 1.885 if da else 2.0
+    e1 = 1.885 if db else 2.0
+    n = max(2, round((L - e0 - e1) / 3.85) + 1)
+    centres = [e0 + k * (L - e0 - e1) / (n - 1) for k in range(n)]
+    dessus = {}
+    for (x, y), (s, off, nn, tt) in info.items():
+        for k, c in enumerate(centres):
+            if abs(s - c) <= 1.0 and abs(off) <= largeur(s, TRAVERSE_DROITE, TRAVERSE_DIAG):
+                dessus[(x, y)] = k
+    teinte = sum(ord(ch) for ch in forme)
+    for (x, y), k in dessus.items():
+        s, off, nn, tt = info[(x, y)]
+        rr = CHENE[(k * 3 + teinte) % 8]
+        w = largeur(s, TRAVERSE_DROITE, TRAVERSE_DIAG)
+        # (le biseau : le bord vers la lumière plus clair ; un dégradé le long de la traverse, plus sombre vers l'est)
+        v = 0.6 + (0.08 if (s - centres[k]) * tt[1] + (s - centres[k]) * tt[0] < 0 else -0.02) - 0.1 * ((off * nn[0] + w) / (2 * w)) + bruit(x, y, 150 + k) * 0.05
+        t.put(x, y, ton(rr, v))
+    for (x, y), k in dessus.items():
+        if (x, y + 1) not in dessus and y + 1 < S:
+            t.put(x, y + 1, ton(CHENE[(k * 3 + teinte) % 8], 0.3 + bruit(x, y, 151) * 0.03))
+            if y + 2 < S and (x, y + 2) not in dessus:
+                t.assombrit(x, y + 2, 0.22)
+    # les rails
+    rails = {}
+    for (x, y), (s, off, nn, tt) in info.items():
+        for sg in (-1, 1):
+            e = off - sg * largeur(s, DEMI, DEMI_DIAG)
+            if abs(e) <= 0.72:
+                rails[(x, y)] = (e, nn, sg)
+    for (x, y), (e, nn, sg) in rails.items():
+        sx, sy = (nn[0], nn[1]) if e >= 0 else (-nn[0], -nn[1])
+        lum = -(sx + sy) * math.sqrt(0.5)
+        t.put(x, y, ton(ACIER, 0.66 + 0.2 * lum * min(1.0, abs(e) / 0.4) + bruit(x, y, 160) * 0.03))
+    for (x, y) in rails:
+        if (x, y + 1) not in rails and y + 1 < S:
+            t.put(x, y + 1, ton(ACIER, 0.3 + bruit(x, y, 161) * 0.03))
+            if y + 2 < S and (x, y + 2) not in rails:
+                t.assombrit(x, y + 2, 0.3)
+        if (x + 1, y) not in rails and x + 1 < S:
+            t.assombrit(x + 1, y, 0.18)
+    # les tire-fonds : au milieu de chaque traverse, contre chaque rail, côté intérieur
+    for c in centres:
+        i = min(range(N + 1), key=lambda j: abs(s_[j] - c))
+        (px, py), (tx, ty) = pts[i], tg[i]
+        nx, ny = -ty, tx
+        dm = largeur(c, DEMI, DEMI_DIAG) - 1.5
+        for sg, v in ((-1, 0.52), (1, 0.3)):
+            t.put(math.floor(px + nx * sg * dm), math.floor(py + ny * sg * dm), ton(ROUILLE, v))
+    return t.im
+
+
+COINS_RAILS = ('ne', 'no', 'se', 'so')
+IMAGES_RAILS = ['ns', 'eo', 'ne', 'no', 'se', 'so', 'ns_chemin', 'eo_chemin'] + [
+    f for c in COINS_RAILS for f in (c + '_d', c + '_d' + c[0], c + '_d' + c[1])]
 
 
 def rails_images():
     out = {'ns': rails_droit('ns'), 'eo': rails_droit('eo')}
-    for c in ('ne', 'no', 'se', 'so'):
+    for c in COINS_RAILS:
         out[c] = rails_courbe(c)
+        for f in (c + '_d', c + '_d' + c[0], c + '_d' + c[1]):
+            out[f] = rails_trace(f)
     out['ns_chemin'] = rails_chemin('ns')
     out['eo_chemin'] = rails_chemin('eo')
     return [out[n] for n in IMAGES_RAILS]
@@ -1064,7 +1222,7 @@ def apercu(fe, rails):
     for d, deco in enumerate(DECOS):
         print(f'  {deco} (à bras, de profil) : {couleurs(case(B, BRAS["w"], BRAS["h"], 24 + d * 3, 0))}')
     print(f'  la charrette rangée : {couleurs(case(B, BRAS["w"], BRAS["h"], 30, 0))} ; le wagonnet à la gare : {couleurs(case(Wg, ATTELAGE["w"], ATTELAGE["h"], 30, 0))}')
-    print('  les rails :', ', '.join(f'{n} {couleurs(im)}' for n, im in zip(IMAGES_RAILS, rails)), '; les huit :', couleurs(fe['rails']))
+    print('  les rails :', ', '.join(f'{n} {couleurs(im)}' for n, im in zip(IMAGES_RAILS, rails)), '; les vingt :', couleurs(fe['rails']))
     for nom, im in fe.items():
         print(f'  la planche {nom} : {im.width} × {im.height}, {couleurs(im)} couleurs')
 

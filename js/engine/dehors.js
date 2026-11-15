@@ -171,20 +171,141 @@ export function retirerRails(state, t) {
 // L'image des rails de la case `t` (scripts/carte/charrette_village.py, assets/rails.png) d'après ses voisins : droit
 // ('ns', 'eo'), courbe d'un quart de cercle ('ne', 'no', 'se', 'so' : les deux voisins qu'elle relie), et, posé sur un
 // chemin, le passage planchéié ('ns_chemin', 'eo_chemin'). Seul ou au bout d'une voie : droit, dans le sens du voisin.
-export const IMAGES_RAILS = ['ns', 'eo', 'ne', 'no', 'se', 'so', 'ns_chemin', 'eo_chemin'];
+// Une voie posée en escalier (une case vers l'est, une vers le sud…) se lit comme une voie diagonale : un coin dont le
+// voisin d'un côté est lui aussi un coin de l'escalier (ses deux voisins à l'opposé des siens : un Z) prend la diagonale
+// de ce côté-là : '<coin>_d' (des deux côtés : la corde, tout droit d'un milieu de côté à l'autre), '<coin>_d<côté>' (de
+// ce côté seulement : la demi-courbe, qui rejoint un tronçon droit ou une courbe de l'autre côté). Voir courbeRails.
+export const COINS_RAILS = ['ne', 'no', 'se', 'so'];
+export const IMAGES_RAILS = ['ns', 'eo', 'ne', 'no', 'se', 'so', 'ns_chemin', 'eo_chemin',
+  ...COINS_RAILS.flatMap((c) => [`${c}_d`, `${c}_d${c[0]}`, `${c}_d${c[1]}`])];
 export function imageRails(state, t, T = farmTerrain(state)) {
-  const R = railsPoses(state), W = T.LARGEUR, c = t % W;
-  const n = R.has(t - W), s = R.has(t + W), e = c < W - 1 && R.has(t + 1), o = c > 0 && R.has(t - 1);
-  let forme;
-  if ((n || s) && !(e || o)) forme = 'ns';
-  else if ((e || o) && !(n || s)) forme = 'eo';
-  else if (n && e && !s && !o) forme = 'ne';
-  else if (n && o && !s && !e) forme = 'no';
-  else if (s && e && !n && !o) forme = 'se';
-  else if (s && o && !n && !e) forme = 'so';
-  else forme = n && s ? 'ns' : e && o ? 'eo' : 'ns';
-  if ((forme === 'ns' || forme === 'eo') && surChemin(state, t, T)) forme += '_chemin';
-  return forme;
+  const forme = formeRails(railsPoses(state), T.LARGEUR, t);
+  return (forme === 'ns' || forme === 'eo') && surChemin(state, t, T) ? `${forme}_chemin` : forme;
+}
+
+// (les côtés d'une case : le pas vers le voisin, en cases ; l'opposé)
+const COTES = { n: [0, -1], s: [0, 1], e: [1, 0], o: [-1, 0] };
+const OPPOSE = { n: 's', s: 'n', e: 'o', o: 'e' };
+const voisinRails = (R, W, t, c) => {
+  const x = t % W;
+  if ((c === 'e' && x >= W - 1) || (c === 'o' && x <= 0)) return null;
+  const v = t + COTES[c][0] + COTES[c][1] * W;
+  return v >= 0 && R.has(v) ? v : null;
+};
+
+// Le coin de la case `t` des rails `R` (un Set, W la largeur de la carte) : 'ne', 'no', 'se', 'so' si elle a exactement
+// deux voisins de rails, l'un au nord ou au sud, l'autre à l'est ou à l'ouest ; sinon null.
+export function coinRails(R, W, t) {
+  const n = voisinRails(R, W, t, 'n') !== null, s = voisinRails(R, W, t, 's') !== null;
+  const e = voisinRails(R, W, t, 'e') !== null, o = voisinRails(R, W, t, 'o') !== null;
+  if (n + s + e + o !== 2 || n === s || e === o) return null;
+  return (n ? 'n' : 's') + (e ? 'e' : 'o');
+}
+
+// La forme des rails de la case `t` (sans le passage planchéié) : une des IMAGES_RAILS, d'après les voisins et, pour un
+// coin, les voisins de ses voisins (la diagonale).
+export function formeRails(R, W, t) {
+  const coin = coinRails(R, W, t);
+  if (coin) {
+    const [a, b] = coin;
+    // (le côté `x` est en diagonale si son voisin est un coin de l'escalier : ses côtés, l'opposé de x et l'opposé de y)
+    const diag = (x, y) => {
+      const v = voisinRails(R, W, t, x), k = v === null ? null : coinRails(R, W, v);
+      return !!k && k.includes(OPPOSE[x]) && k.includes(OPPOSE[y]);
+    };
+    const da = diag(a, b), db = diag(b, a);
+    return coin + (da && db ? '_d' : da ? `_d${a}` : db ? `_d${b}` : '');
+  }
+  const n = voisinRails(R, W, t, 'n') !== null, s = voisinRails(R, W, t, 's') !== null;
+  const e = voisinRails(R, W, t, 'e') !== null, o = voisinRails(R, W, t, 'o') !== null;
+  if ((n || s) && !(e || o)) return 'ns';
+  if ((e || o) && !(n || s)) return 'eo';
+  return n && s ? 'ns' : e && o ? 'eo' : 'ns';
+}
+
+// Le tracé des rails d'une forme : { cotes: [a, b] (du premier côté au second), p: les quatre points d'une courbe de
+// Bézier (en cases, depuis le coin nord-ouest de la case) }. Les deux bouts sont au milieu de leur côté ; la tangente y
+// est droite (perpendiculaire au côté) ou, du côté d'une diagonale, à 45° (vers l'autre côté). POIGNEES : la longueur
+// des poignées (un quart de cercle ; la corde ; la demi-courbe, du côté droit et du côté diagonal) ; les mêmes que
+// scripts/carte/charrette_village.py (H_ARC, H_CORDE, H_AXE, H_DIAG), qui dessine d'après elles.
+export const POIGNEES = { ARC: 0.2761, CORDE: 0.2357, AXE: 0.32, DIAG: 0.23 };
+export function courbeRails(forme) {
+  const [base, suf = ''] = String(forme).split('_');
+  const a = base[0], b = base[1];
+  const mil = (c) => [0.5 + COTES[c][0] / 2, 0.5 + COTES[c][1] / 2];
+  const P0 = mil(a), P3 = mil(b);
+  if (base === 'ns' || base === 'eo') {
+    return { cotes: [a, b], p: [P0, [P0[0] + (P3[0] - P0[0]) / 3, P0[1] + (P3[1] - P0[1]) / 3], [P0[0] + 2 * (P3[0] - P0[0]) / 3, P0[1] + 2 * (P3[1] - P0[1]) / 3], P3] };
+  }
+  const da = suf === 'd' || suf === `d${a}`, db = suf === 'd' || suf === `d${b}`;
+  const ina = [-COTES[a][0], -COTES[a][1]], outb = COTES[b], r = Math.SQRT1_2;
+  const dg = [(ina[0] + outb[0]) * r, (ina[1] + outb[1]) * r];
+  const t0 = da ? dg : ina, t3 = db ? dg : outb, P = POIGNEES;
+  const h0 = da && db ? P.CORDE : !(da || db) ? P.ARC : da ? P.DIAG : P.AXE;
+  const h3 = da && db ? P.CORDE : !(da || db) ? P.ARC : db ? P.DIAG : P.AXE;
+  return { cotes: [a, b], p: [P0, [P0[0] + h0 * t0[0], P0[1] + h0 * t0[1]], [P3[0] - h3 * t3[0], P3[1] - h3 * t3[1]], P3] };
+}
+
+const bezier = (p, u) => {
+  const v = 1 - u, a = v * v * v, b = 3 * v * v * u, c = 3 * v * u * u, d = u * u * u;
+  return [a * p[0][0] + b * p[1][0] + c * p[2][0] + d * p[3][0], a * p[0][1] + b * p[1][1] + c * p[2][1] + d * p[3][1]];
+};
+
+// Le chemin que suit le wagonnet sur la route `cases` (de case en case, huit voisins : charrette.js trajetCharrette),
+// `heures` l'heure où il atteint chaque case : sur les rails, il suit leur tracé (courbeRails), d'un milieu de tracé au
+// suivant, par la case de coin qu'un pas en diagonale saute ; ailleurs, d'un milieu de case à l'autre. → { x, y, h }
+// (Float64Array : en cases, x vers l'est, y vers le sud, depuis le coin nord-ouest de la carte ; l'heure de chaque
+// point, répartie dans chaque pas selon la longueur parcourue), ou null.
+export function traceSurRails(R, W, cases, heures, PAS = 6) {
+  if (!Array.isArray(cases) || !cases.length) return null;
+  const formes = new Map();
+  const forme = (t) => { if (!formes.has(t)) formes.set(t, R.has(t) ? formeRails(R, W, t) : null); return formes.get(t); };
+  const cote = (t, v) => { const d = v - t; return d === -W ? 'n' : d === W ? 's' : d === 1 ? 'e' : d === -1 ? 'o' : null; };
+  const relie = (t, c) => { const f = forme(t); return !!f && courbeRails(f).cotes.includes(c); };
+  const lie = (t, v) => { const c = cote(t, v); return !!c && R.has(t) && R.has(v) && relie(t, c) && relie(v, OPPOSE[c]); };
+  const coin = (t) => [t % W, Math.floor(t / W)];
+  // (des points du tracé de `t`, de son milieu jusqu'à son côté `c` ; versCote = false : du côté `c` jusqu'à son milieu)
+  const demi = (t, c, versCote) => {
+    const k = courbeRails(forme(t)), [x, y] = coin(t), u1 = k.cotes[0] === c ? 0 : 1, out = [];
+    for (let i = 1; i <= PAS; i++) { const f = versCote ? i / PAS : 1 - i / PAS; const q = bezier(k.p, 0.5 + (u1 - 0.5) * f); out.push([x + q[0], y + q[1]]); }
+    return out;
+  };
+  // (tout le tracé de `t`, depuis son côté `de`)
+  const entier = (t, de) => {
+    const k = courbeRails(forme(t)), [x, y] = coin(t), sens = k.cotes[0] === de, out = [];
+    for (let i = 1; i <= 2 * PAS; i++) { const q = bezier(k.p, sens ? i / (2 * PAS) : 1 - i / (2 * PAS)); out.push([x + q[0], y + q[1]]); }
+    return out;
+  };
+  const pos = (t) => {
+    const f = forme(t), [x, y] = coin(t);
+    if (!f) return [x + 0.5, y + 0.5];
+    const q = bezier(courbeRails(f).p, 0.5);
+    return [x + q[0], y + q[1]];
+  };
+  const X = [], Y = [], H = [];
+  const p0 = pos(cases[0]);
+  X.push(p0[0]); Y.push(p0[1]); H.push(heures ? heures[0] : 0);
+  for (let k = 1; k < cases.length; k++) {
+    const a = cases[k - 1], b = cases[k];
+    let pts = null;
+    if (lie(a, b)) pts = [...demi(a, cote(a, b), true), ...demi(b, cote(b, a), false)];
+    else {
+      const dx = (b % W) - (a % W), dy = Math.floor(b / W) - Math.floor(a / W);
+      if (Math.abs(dx) === 1 && Math.abs(dy) === 1) {
+        for (const m of [a + dx, a + dy * W]) {
+          if (lie(a, m) && lie(m, b)) { pts = [...demi(a, cote(a, m), true), ...entier(m, cote(m, a)), ...demi(b, cote(b, m), false)]; break; }
+        }
+      }
+    }
+    if (!pts) pts = [pos(b)];
+    // (les heures : de celle de a à celle de b, selon la longueur parcourue)
+    const L = [0];
+    let px = X[X.length - 1], py = Y[Y.length - 1];
+    for (const [x, y] of pts) { L.push(L[L.length - 1] + Math.hypot(x - px, y - py)); px = x; py = y; }
+    const h0 = heures ? heures[k - 1] : k - 1, h1 = heures ? heures[k] : k, tot = L[L.length - 1] || 1;
+    pts.forEach(([x, y], i) => { X.push(x); Y.push(y); H.push(h0 + (h1 - h0) * (L[i + 1] / tot)); });
+  }
+  return { x: Float64Array.from(X), y: Float64Array.from(Y), h: Float64Array.from(H) };
 }
 
 // Peut-on poser des rails sur la case `t` ? { ok, raison }. Sur la ferme : une case sans bloc qui la ferme (l'herbe, un

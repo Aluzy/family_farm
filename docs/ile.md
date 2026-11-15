@@ -2789,7 +2789,9 @@ port (`js/ui/port.js`) ; les dessins : `scripts/carte/charrette_village.py` ; le
   wagonnet (V5) demande la voie complète ; la voie coupée, la charrette reprend le chemin au trot.
 - **Les rails** : un bloc de l'Atelier (1 lingot, 2 planches, 1 pierre → 8), commandé aussi à la forge (6 pièces la case) ;
   une couche à part, `state.dehors.rails` (des segments), sur la ferme et dehors, sur l'herbe, un chemin (le passage
-  planchéié) ou un pont ; huit images d'après les voisins. La voie : des rails voisins de la gare (contre le quai, à
+  planchéié) ou un pont ; vingt images d'après les voisins (les droites, les quarts de cercle, le passage planchéié ;
+  une voie posée en escalier se lit en diagonale : les cordes et les demi-courbes, `formeRails`, `courbeRails`, que le
+  wagonnet suit, `traceSurRails`). La voie : des rails voisins de la gare (contre le quai, à
   défaut contre le bord de la ferme) au bord de l'emprise du port ; ce qui manque, compté et montré (« Montre-moi »).
 - **Ce qu'elle remplace** : `PORTEE`, `PRODUCTION.NAVETTE` (retirés : la tournée n'emprunte plus la brouette ni la
   charrette du joueur, qui restent au joueur, inchangées) ; le quai est le départ de la charrette et la gare de la voie.

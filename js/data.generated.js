@@ -5715,7 +5715,8 @@ export const RAW_DATA = {
       "CHARRETTE": {
         "RANG": 2,
         "VENDRE": ["fraise", "poivron", "tomate", "aubergine", "epinard", "oignon", "carotte", "courgette", "pomme", "poire", "baies"],
-        "MARGE": 2
+        "MARGE": 2,
+        "COMMERCE": true
       }
     },
     "VOCATIONS": {

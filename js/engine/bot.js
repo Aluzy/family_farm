@@ -340,6 +340,9 @@ function botUnCommerce(state, V, S) {
   const T = tacheDef(d.tache);
   const libre = (x) => !garder.has(x.tache) && (!x.outil || x.outil === T.outil || !hasTool(state, x.outil));
   if (!v) v = [...adultes].reverse().find(libre);
+  // (I2b : personne d'autre de libre : le charretier ; la charrette attend le prochain venu, à qui la tournée revient au
+  // rang CHARRETTE.RANG de TACHES ; le commerce, lui, n'attend pas)
+  if (!v) v = charretierPourCommerce(state, adultes, T);
   if (!v) return null;
   m.id = v.id;
   // (sa tâche : celle de la filière, tant que l'envie n'est pas née)
@@ -376,6 +379,16 @@ function botUnCommerce(state, V, S) {
   if (!C || !C.ok) return null;
   const r = ouvrirCommerce(state, v.id, S.SORTE);
   return r.ok ? r.commerce.id : null;
+}
+
+// Fiche I2b : le charretier que prend un commerce faute d'un autre villageois libre (botUnCommerce) : le dernier arrivé de
+// la tournée du port (son outil, s'il en a un, peut revenir au joueur), quand SIMULATION.VILLAGEOIS.CHARRETTE.COMMERCE
+// le permet. Le commerce (la forge du palier 6) passe avant la charrette : sans lui, le village n'avance plus ; la
+// tournée, elle, revient au prochain venu. → le villageois, ou null.
+export function charretierPourCommerce(state, adultes, T = null) {
+  const C = (DATA.SIMULATION.VILLAGEOIS || {}).CHARRETTE || {};
+  if (!C.COMMERCE) return null;
+  return [...adultes].reverse().find((x) => x.tache === 'navette' && (!x.outil || (T && x.outil === T.outil) || !hasTool(state, x.outil))) || null;
 }
 
 // Les tâches qu'il ne retire pas (REATTRIBUER.GARDER : les champs ; I3e : la cuisine du village, qui nourrit le village ;

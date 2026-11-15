@@ -53,7 +53,20 @@
   K.CHARRETTE_VILLAGE = { PL, PLACE, RAILS };
 
   // Le point de la route à `h` heures de son départ : { x, y (px : le pied, au milieu de la case), dx, dy }.
+  // Au wagonnet, le tracé des rails (route.trace : dehors.js traceSurRails, en cases ; le point de la route est 6 px sous
+  // l'axe de la voie, comme au milieu d'une case : (T / 2 - 2)).
   function point(route, h, W) {
+    const tr = route.trace;
+    if (tr && tr.h && tr.h.length > 1) {
+      const H = tr.h, n = H.length, dy = T / 2 - 2;
+      const px = (i) => ({ x: tr.x[i] * T, y: tr.y[i] * T + dy });
+      if (h <= H[0]) return { ...px(0), dx: 0, dy: 0 };
+      if (h >= H[n - 1]) return { ...px(n - 1), dx: 0, dy: 0 };
+      let lo = 0, hi = n - 1;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (H[m] <= h) lo = m; else hi = m; }
+      const u = (h - H[lo]) / Math.max(1e-9, H[hi] - H[lo]), a = px(lo), b = px(hi);
+      return { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u, dx: b.x - a.x, dy: b.y - a.y };
+    }
     const C = route.cases, H = route.heures, n = C.length;
     const px = (t) => ({ x: (t % W) * T + T / 2, y: (Math.floor(t / W) + 1) * T - 2 });
     if (n < 2 || h <= 0) return { ...px(C[0]), dx: 0, dy: 0 };
