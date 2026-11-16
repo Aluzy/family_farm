@@ -22,7 +22,7 @@
 //   chacun joue chez lui à l'heure du serveur (horlogeEnLigne, à chaque image : js/ui/loop.js ; la synchro :
 //   js/ui/synchro.js) ; la nuit vient seule à 22 h ; tous couchés, elle file dix fois plus vite ; sans joueur, le
 //   monde dort, et le dit au retour. Chacun a son énergie (la partie du monde la range par compte).
-// - I9a, l'île partagée (le chantier allumé pour la partie du monde : ilePartagee, js/engine/frontiere.js) : le
+// - I9a, l'île partagée (js/engine/frontiere.js) : le
 //   personnage sort de la ferme et la vue le suit (js/ui/stage.js) ; chacun voit le relief de l'île, tiré chez
 //   lui de la graine ; son brouillard est à lui (gardé dans son navigateur, par monde : brouillard).
 // - I9b, les changements de l'île : hors de la ferme, on récolte (monde.recolter), on pêche et l'on pose des chemins
@@ -39,7 +39,7 @@
 //   d'une tâche, un commerce ouvert ou suggéré, un nom : gesteEnMots avec le bilan de l'événement). Chacun s'appelle du
 //   prénom de son personnage (hello : prenom).
 
-import { clockHours, DATA, empreintePartie, executerCommande, GAME_VERSION, STATE_VERSION, ICONES_ROLES, ilePartagee, memberPerso, NOMS_ROLES, pasDe, refusDuRole, refusFrontiere, reglagesMonde, unirVu, validApparence } from '../engine/index.js';
+import { clockHours, DATA, empreintePartie, executerCommande, GAME_VERSION, STATE_VERSION, ICONES_ROLES, memberPerso, NOMS_ROLES, pasDe, refusDuRole, refusFrontiere, reglagesMonde, unirVu, validApparence } from '../engine/index.js';
 import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, prenomPersonnage, quandConnecte } from './compte.js';
 import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';
@@ -391,8 +391,8 @@ export function jouerEnLigne(cmd) {
   const refus = lien.role ? refusDuRole(lien.role, lien.synchro.locale, cmd, lien.reglages) : null;
   if (refus) return { ok: false, error: `🌐 ${refus}` };
   // (I9a, I9b : l'île partagée ; hors de la ferme, seuls les gestes du dehors passent : un autre est refusé ici,
-  // comme le monde le refuserait. Le chantier éteint, le monde seul le refuse, comme avant.)
-  const frontiere = ilePartagee(lien.synchro.locale) ? refusFrontiere(lien.synchro.locale, cmd.args, cmd.type) : null;
+  // comme le monde le refuserait)
+  const frontiere = refusFrontiere(lien.synchro.locale, cmd.args, cmd.type);
   if (frontiere) return { ok: false, error: `🌐 ${frontiere}` };
   const r = lien.synchro.jouer(cmd);
   if (r.ok) { marquerChangement('local'); envoyer({ t: 'cmd', id: cmd.id, type: cmd.type, args: cmd.args }); }
@@ -416,9 +416,9 @@ export function nomDuMembre(compte) {
 
 /* ---------- I9a : l'île partagée ---------- */
 
-// Le monde partagé est-il l'île entière (le chantier allumé pour la partie du monde) ? Sinon, la ferme (E-8).
+// Le monde partagé est-il là (l'île entière : la ferme seule d'E-8 est retirée) ?
 export function ileEnLigne() {
-  return !!(lien && lien.synchro && ilePartagee(lien.synchro.locale));
+  return !!(lien && lien.synchro);
 }
 
 // Le brouillard de chacun : ce que SON personnage a vu de l'île. Il n'est pas dans la partie du monde (elle
@@ -438,7 +438,7 @@ function brouillardDuMonde() {
   return brouillard;
 }
 function poserBrouillard(partie) {
-  if (!partie || !ilePartagee(partie)) return;
+  if (!partie) return;
   const b = brouillardDuMonde();
   if (b && b.vu) unirVu(partie, b.vu);
 }

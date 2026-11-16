@@ -88,10 +88,9 @@ export function styleBonheur(state) {
   return styleMaison(state).bonus;
 }
 
-// Le style préféré d'une personne : celui de son personnage écrit (ECRITS[cle]), sinon tiré de son id parmi
-// ceux du style de son hameau (BIOMES ; un hameau sans style connu : tous).
+// Le style préféré d'une personne : tiré de son id parmi ceux de son style de lieu (BIOMES ; sans style connu : tous).
+// (`cle` : son personnage écrit du jeu d'avant, retiré avec le récit à la bascule, I9h)
 export function stylePrefere(cle, membreId, styleHameau) {
-  if (STYLES.ECRITS[cle]) return STYLES.ECRITS[cle];
   const L = STYLES.BIOMES[styleHameau] || Object.keys(STYLES.LISTE);
   const rnd = mulberry32(hache(`style:${membreId}`));
   return L[Math.floor(rnd() * L.length)];

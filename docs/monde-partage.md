@@ -8,13 +8,13 @@ reste à la partie solo de son propriétaire.
 le retrait d'un membre, l'avatar des autres joueurs, Construire, le potager, les bêtes, la cuisine et la
 nuit partagée. **E-8 a posé la frontière** : M.1, M.2 et M.3 ci-dessous sont faits (§ 7). Le code est dans `worker/src/monde.mjs`, `js/ui/en-ligne.js` et `js/engine/commandes.js`.
 
-> **Le chantier « l'île à bâtir » change cette frontière** (décision D9 de `docs/ile.md`). Sa nouvelle
-> frontière est au § 13, **« L'île partagée »** (fiche I9a, 14 novembre 2026) : elle remplace E-8 (§ 1 à § 7)
-> et F.2 (l'horloge figée, `worker/README.md`) pour les mondes du chantier : I9a2 y pose l'horloge vivante (§ 13,
-> « Ce que fait I9a2 »). Tant que le réglage
-> `VILLAGE.ACTIF` est éteint, le jeu publié et les mondes d'avant gardent E-8, tels quels, jusqu'à la bascule
-> (I9h) et la migration des mondes (I9f, faite : un monde d'avant passe sur l'île à sa première ouverture par le
-> serveur, le chantier allumé ; § 13, « Ce que fait I9f »).
+> **Depuis la bascule (I9h, version 2.0.0), la frontière est celle de l'île** (décision D9 de `docs/ile.md`) : le
+> § 13, **« L'île partagée »** (fiche I9a), remplace E-8 (§ 1 à § 7) et F.2 (l'horloge figée, `worker/README.md`) ;
+> I9a2 y pose l'horloge vivante (§ 13, « Ce que fait I9a2 »). Un monde d'avant passe sur l'île à sa première
+> ouverture par le serveur (I9f ; § 13, « Ce que fait I9f »). Le réglage `VILLAGE.ACTIF`, l'essai `ILE_ESSAI` et la
+> nuit de la ferme seule du Worker sont retirés (I9h, le retrait) ; le moteur garde la commande `nuit.partagee`
+> pour rejouer le journal d'un monde d'avant. Les § 1 à § 12 disent l'histoire d'E-8 : les hameaux, la calèche
+> et le récit qu'ils citent ont quitté le jeu.
 
 ## 1. Le principe
 

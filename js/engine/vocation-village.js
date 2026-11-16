@@ -1,5 +1,4 @@
 import { DATA } from './catalog.js';
-import { villageActif } from './village.js';
 import { farmTerrain } from './terrain.js';
 import { blocsPoses } from './blocs.js';
 import { villageoisDe } from './villageois.js';
@@ -30,7 +29,6 @@ const borne = (n, max) => Math.max(0, Math.min(Number.isFinite(Number(max)) ? Nu
 
 // Le repas partagé (invitations.js servirRepas) avec au moins un villageois à table : compté pour la convivialité.
 export function noterRepasPartage(state) {
-  if (!villageActif(state)) return;
   const V = vocationsEtat(state);
   if (!objet(V.village)) V.village = {};
   V.village.repas = (Number.isInteger(V.village.repas) ? V.village.repas : 0) + 1;

@@ -178,9 +178,9 @@ function pasDeFerme(state, dtMs, { usure = true, horloge = true, eveilMax = Infi
     distribuerGrain(state); // le distributeur de grain nourrit les poules (distributeur.js)
     pluieSurLaFerme(state); // G-1 : l'averse arrose les cultures de la ferme (meteo.js)
     repasStep(state); // la famille mange à la boîte quand elle a faim (repas.js)
-    avancerTaches(state); // I3c : les villageois font les actions que l'heure leur doit (taches.js ; éteint : rien)
-    avancerAchats(state); // I4 : qui est à l'étal y achète (bourse.js ; éteint : rien)
-    avancerCommerces(state); // I5a : qui est au comptoir d'un commerce y achète (artisans.js ; éteint : rien)
+    avancerTaches(state); // I3c : les villageois font les actions que l'heure leur doit (taches.js)
+    avancerAchats(state); // I4 : qui est à l'étal y achète (bourse.js)
+    avancerCommerces(state); // I5a : qui est au comptoir d'un commerce y achète (artisans.js)
   }
   noteEnergyRecord(state); // Lot 9 : record d'énergie stockée
 }

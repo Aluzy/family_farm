@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : la scierie, la boulangerie, la fromagerie (docs/ile.md, fiche I5c ;
-   js/engine/artisans.js, data/village.json ARTISANS). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne
-   avec VILLAGE.ACTIF forcé à true.
+   js/engine/artisans.js, data/village.json ARTISANS).
    - les trois sortes sur le socle d'I5a (leurs données, leurs blocs, leurs noms) ; leurs recettes dans la fourchette
      d'I4 ;
    - la scierie : des planches, les 36 meubles au menuisier (sur commande ou au comptoir), un meuble commandé entre
@@ -12,25 +11,25 @@
    - le plafond : le nombre de commerces suit les villageois et le port ; trois commerces dans un village de huit, trois
      lignes au tableau ;
    - la carte (avec I5b) : une seule table d'animation des établis, BLOCS_CARTE.commerces : la forge, le four, le rouet ;
-   - la sauvegarde (99 → 100 : la cave) ; éteint, rien.
+   - la sauvegarde (99 → 100 : la cave).
    Lancer seul : node tests/run-tests.mjs village-commerces
    ========================================================================== */
 
 import {
   acheterAuCommerce, acheterAuComptoir, achatsCommercesDuJour, addItem, arriverVillageois, commanderAuCommerce,
-  commercesDe, conditionsCommerce, countItem, craftStatus, createNewGame, DATA, etatCommerce, farmSeed, lotCommerce, migrate,
-  ouvrirCommerce, plafondCommerces, portDuMonde, prixArtisan, recetteDebloquee, recettesConnues, recettesDe, runNight,
-  STATE_VERSION, tableauVillage, tacheDef, testMaisonVillageois,
+  commercesDe, conditionsCommerce, countItem, craftStatus, DATA, etatCommerce, farmSeed, lotCommerce, migrate,
+  ouvrirCommerce, plafondCommerces, portDuMonde, prixArtisan, recetteDebloquee, recettesConnues, recettesDe,
+  runNight, STATE_VERSION, tableauVillage, tacheDef, testMaisonVillageois,
 } from '../../js/engine/index.js';
 import { ajouterAmitie } from '../../js/engine/amitie.js';
 import { platsBonheur } from '../../js/engine/bonheur.js';
 import { testLocalCommerce } from '../../js/engine/testmode.js';
 import { existsSync, readFileSync } from 'node:fs';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const AR = DATA.ARTISANS;
-const SEUIL = DATA.RECIT.PALIERS[AR.AMITIE];
+const SEUIL = DATA.AMITIE.ECHELLE.PALIERS[AR.AMITIE];
 const SORTES = ['scierie', 'boulangerie', 'fromagerie'];
 
 // L'île de test : le port au niveau `port`, `n` villageois dans leurs maisons, la boîte pleine.
@@ -247,7 +246,7 @@ test('trois commerces ouverts dans un village de huit ; trois lignes « commerce
   assertEqual(tableauVillage(s, 'hier').commerces.length, 3, 'trois lignes');
 });
 
-/* ---------- la sauvegarde, éteint ---------- */
+/* ---------- la sauvegarde ---------- */
 
 // (I5b + I5c : une seule table d'animation des établis, BLOCS_CARTE.commerces, js/carte/ferme/config.js, chargée comme
 // la page la charge)
@@ -286,17 +285,4 @@ test('la sauvegarde : v99 → v100 ; la cave gardée, réparée', () => {
   const abime = copie(s);
   abime.commerces[0].cave = [{ objet: 'licorne', n: 1, recette: 'x' }, { objet: 'tomme_cave', n: -2, recette: 'tomme_cave' }, 'x', { objet: 'tomme_cave', n: 1, nuits: 'a', recette: 'tomme_cave' }];
   assertEqual(migrate({ ...abime, version: 99 }).commerces[0].cave, [{ objet: 'tomme_cave', n: 1, nuits: 0, recette: 'tomme_cave', pour: null }], 'réparée');
-  const avant = avecVillage(() => createNewGame(5), false);
-  assert(!('commerces' in migrate({ ...copie(avant), version: 99 })), 'une partie d\'avant : rien d\'ajouté');
-});
-
-test('éteint : ni scierie, ni boulangerie, ni fromagerie', () => {
-  avecVillage(() => {
-    const s = createNewGame(2);
-    s.commerces = [{ id: 'scierie-1', sorte: 'scierie', qui: 'x' }];
-    assertEqual([commercesDe(s), achatsCommercesDuJour(s).size], [[], 0]);
-    assert(!ouvrirCommerce(s, 'x', 'boulangerie').ok, 'refusé');
-    runNight(s);
-    assert(!s.nuit.artisans, 'rien la nuit');
-  }, false);
 });

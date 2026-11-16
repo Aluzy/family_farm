@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : la vie sociale des villageois (I3b+, après la fiche I3b ; docs/ile.md ;
-   js/engine/villageois-liens.js, js/engine/villageois-journee.js). Comme tous les fichiers
-   tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
+   js/engine/villageois-liens.js, js/engine/villageois-journee.js).
    - qui se connaît (connaissance) : déduit des jours passés ensemble, des maisons voisines, de la table commune et
      d'une affinité tirée de la graine ; symétrique ; la famille, connue dès l'arrivée, amie ensuite ; déterministe ;
    - les sorties ont un but : visite, rendez-vous, promenade à deux, eau, voir ; ceux qui le font ensemble partagent
@@ -19,7 +18,7 @@ import {
   journeeDuVillage, liensDuVillage, liensPourLaCarte, lieuxDuVillage, maisonsMarquees, meteoDuJour, paroleVillageois, piecesCloses,
   poserBloc, testMaisonVillageois, BUTS_VILLAGEOIS,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 
@@ -85,7 +84,7 @@ const avecBut = (J) => [...J].flatMap(([id, segs]) => segs.filter((x) => x.but).
 /* ---------- qui se connaît ---------- */
 
 test('connaissance : les jours ensemble, les maisons voisines, la table, l\'affinité ; symétrique ; la famille', () => {
-  avecVillage(() => {
+  {
     const { s } = ile(1, 4, { il_y_a: 0 });
     const [a, b, c] = s.villageois.map((v) => v.id);
     // (arrivés le même jour : l'affinité seule)
@@ -118,17 +117,17 @@ test('connaissance : les jours ensemble, les maisons voisines, la table, l\'affi
     assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'connaissance', 'connue dès l\'arrivée');
     t.day += 30;
     assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'connaissance', 'les jours seuls n\'en font pas une amie');
-    t.amitie.pnj[t.villageois[0].id].pts = DATA.RECIT.PALIERS[DATA.VILLAGE.AMITIE.FAMILLE_AMI];
+    t.amitie.pnj[t.villageois[0].id].pts = DATA.AMITIE.ECHELLE.PALIERS[DATA.VILLAGE.AMITIE.FAMILLE_AMI];
     assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'ami', 'amie avec l\'amitié');
     // la carte : les deux sens
     const C = liensPourLaCarte(s);
     assertEqual(C.paires[a][b], C.paires[b][a]);
     assertEqual(C.paires[a][b], connaissance(s, a, b).degre);
-  });
+  }
 });
 
 test('connaissance : déterministe (la même partie, le même degré), une autre graine, une autre affinité', () => {
-  avecVillage(() => {
+  {
     const { s } = ile(3, 5);
     const t = copie(s);
     for (const v of s.villageois) for (const w of s.villageois) assertEqual(connaissance(t, v.id, w.id), connaissance(s, v.id, w.id), `${v.id}, ${w.id}`);
@@ -139,13 +138,13 @@ test('connaissance : déterministe (la même partie, le même degré), une autre
     // (I6b remplacera le calcul : la forme de ce qu'on lit ne change pas)
     const Lk = liensDuVillage(s);
     assertEqual(Lk.paires.size, 10, 'une paire par couple de villageois');
-  });
+  }
 });
 
 /* ---------- des sorties qui ont un but ---------- */
 
 test('les sorties ont un but : visites, rendez-vous, promenades, eau, voir ; ceux qui le font ensemble, ensemble', () => {
-  avecVillage(() => {
+  {
     const { s } = ile(5, 6);
     const vus = new Set();
     for (let j = 0; j < 4; j++) {
@@ -196,11 +195,11 @@ test('les sorties ont un but : visites, rendez-vous, promenades, eau, voir ; ceu
       }
     }
     for (const b of ['visite', 'rdv', 'eau', 'ouvrage']) assert(vus.has(b), `des sorties « ${b} » (${[...vus]})`);
-  });
+  }
 });
 
 test('pas de sortie à deux avec un inconnu ni avec un villageois au repos ; la journée est déterministe', () => {
-  avecVillage(() => {
+  {
     // (arrivés le jour même : la plupart s'ignorent encore)
     const { s } = ile(6, 5, { il_y_a: 0 });
     jourSec(s);
@@ -218,13 +217,13 @@ test('pas de sortie à deux avec un inconnu ni avec un villageois au repos ; la 
     assertEqual(copie([...journeeDuVillage(t)]), copie([...J]), 'la même journée');
     t.day += 1;
     assert(JSON.stringify(copie([...journeeDuVillage(t)])) !== JSON.stringify(copie([...J])), 'le lendemain change');
-  });
+  }
 });
 
 /* ---------- jamais dans un mur ---------- */
 
 test('jamais dans un mur : les lieux des sorties sont des cases libres, hors des pièces, tournées vers un voisin', () => {
-  avecVillage(() => {
+  {
     let n = 0;
     for (let seed = 1; seed <= 6; seed++) {
       const { s } = ile(seed * 7, 5, { place: seed % 3 !== 0 });
@@ -256,13 +255,13 @@ test('jamais dans un mur : les lieux des sorties sont des cases libres, hors des
       }
     }
     assert(n > 100, `des lieux vérifiés (${n})`);
-  });
+  }
 });
 
 /* ---------- les répliques ---------- */
 
 test('les répliques : tirées de la graine, selon le degré ; le salut au personnage du joueur ; plusieurs dizaines', () => {
-  avecVillage(() => {
+  {
     const R = DATA.VILLAGE.SOCIAL.REPLIQUES;
     const paires = Object.values(R).flat();
     assert(paires.length >= 60, `plusieurs dizaines de paires (${paires.length})`);
@@ -288,17 +287,5 @@ test('les répliques : tirées de la graine, selon le degré ; le salut au perso
     const p = paroleVillageois(s, a, { heure: 9, activite: 'dehors', but: 'eau', n: 0 });
     assert(DATA.VILLAGE.SOCIAL.ACTIVITE.eau.includes(p.texte), 'il puise de l\'eau');
     assertEqual(echangeVillageois(s, 'vg-99', b, {}), null, 'personne');
-  });
-});
-
-test('éteint : ni liens ni échanges', () => {
-  avecVillage(() => {
-    const { s } = ile(10, 2);
-    avecVillage(() => {
-      assertEqual(liensPourLaCarte(s), null, 'rien pour la carte');
-      assertEqual(connaissance(s, 'vg-1', 'vg-2'), null);
-      assertEqual(echangeVillageois(s, 'vg-1', 'vg-2', {}), null);
-    }, false);
-    assert(liensPourLaCarte(s).paires['vg-1'], 'allumé : les liens');
-  });
+  }
 });

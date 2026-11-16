@@ -849,7 +849,6 @@
       if (this.stepLumineux) this.stepLumineux(out, nuit, time);         // (les champignons et les cristaux du monde : lumineux.js)
       if (this.stepFete) this.stepFete(out, nuit, time);                 // (I8a : les lampions de la fête du village : fete.js)
       this.stepEauLumiere(out, nuit, time);
-      if (this.lumiereCaleche) this.lumiereCaleche(out, nuit, time);   // (la lanterne de la calèche : caleche.js)
       // (le récit, lot 10 : la pierre de lune posée, les nuits de pleine lune, la ferme luit faiblement : une
       // grande lueur bleutée, à peine, qui respire ; model.fermeLuit : son centre et son rayon, px)
       if (luit) {
@@ -1193,7 +1192,6 @@
       // les arbres plantés dans le sol : leur tronc (ceux du Verger, ceux d'une graine : foret.js)
       for (const e of (this.trees || new Map()).values()) if (e.a && e.a.sol) out.push(e.a.case);
       out.push(...this.foretCells());
-      if (this.malleCells) out.push(...this.malleCells());   // (la malle de la calèche : malle.js)
       return out;
     },
 

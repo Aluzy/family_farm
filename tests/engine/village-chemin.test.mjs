@@ -1,24 +1,25 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : le chemin du port, modifiable, et le portage (docs/ile.md, fiche I2).
-   Comme tous les fichiers tests/engine/village-*.test.mjs, ils tournent avec VILLAGE.ACTIF forcé à true
-   (tests/engine/aide.mjs).
+  
    - le tronçon devient des blocs : une partie neuve le convertit (dans Node : assurerTroncon ; dans le Web
      Worker du sol : le même calcul, tronconDuPort), le sol ne peint plus que les chemins possédés ;
    - poser et retirer hors de la ferme (le chemin, une lanterne, un pont), les refus (un mur, l'eau, une falaise,
      la rivière sans pont, l'emprise du port) ;
    - la vitesse sur chemin ; les capacités de portage (à la main, la brouette, la charrette) ;
-   - la forme compacte de la sauvegarde, la migration v87 → v88 ; éteint, rien ne change.
+   - la forme compacte de la sauvegarde, la migration v87 → v88.
    Lancer seul : node tests/run-tests.mjs village-chemin
    ========================================================================== */
 
 import {
-  addItem, awakeMsAtHour, BIOME, bonusChemin, capacitePortage, chargeDe, chargerPortage, cheminDehorsSur, cheminsDehors,
-  cheminsPourLeSol, choisirVehicule, comptoirDuPort, contexteSol, countItem, createNewGame, DATA, dechargerAuPort,
-  dechargerPortage, decoderSegments, elementsSol, empriseDe, encoderSegments, etatTroncon, farmSeed, farmTerrain, horsFerme,
-  majCheminsSol, migrate, poseStatus, poserBloc, poserCheminsSol, portDuMonde, reprendreBloc, solDirect, STATE_VERSION,
-  surChemin, tronconDuPort, vendreAuPort, vitesseSurCase, volumeCharge, volumeDe, assurerTroncon, casesPonts,
+  decoderSegments,
+  addItem, awakeMsAtHour, BIOME, bonusChemin, capacitePortage, chargeDe, chargerPortage, cheminDehorsSur,
+  cheminsDehors, cheminsPourLeSol, choisirVehicule, comptoirDuPort, contexteSol, countItem, createNewGame, DATA,
+  dechargerAuPort, dechargerPortage, elementsSol, empriseDe, encoderSegments, etatTroncon, farmSeed, farmTerrain,
+  horsFerme, majCheminsSol, migrate, poseStatus, poserBloc, poserCheminsSol, portDuMonde, reprendreBloc, solDirect,
+  STATE_VERSION, surChemin, tronconDuPort, vendreAuPort, vitesseSurCase, volumeCharge, volumeDe, assurerTroncon,
+  casesPonts,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, reach, setInv, test } from './aide.mjs';
+import { assert, assertEqual, reach, setInv, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 
@@ -154,7 +155,7 @@ test('les refus hors de la ferme : l\'eau profonde, la falaise, la rivière sans
   assertEqual(poseStatus(s, 'chemin', comptoirDuPort(s).devant).ok, false, 'sous la halle : refusé');
 });
 
-test('la vitesse sur chemin : le bonus sur un chemin possédé, un chemin posé, celui de la ferme ; rien ailleurs ni éteint', () => {
+test('la vitesse sur chemin : le bonus sur un chemin possédé, un chemin posé, celui de la ferme ; rien ailleurs', () => {
   const { s, T } = ileGardee();
   const B = 1 + DATA.VILLAGE.CHEMIN.VITESSE / 100;
   assertEqual(bonusChemin(s), B);
@@ -167,7 +168,6 @@ test('la vitesse sur chemin : le bonus sur un chemin possédé, un chemin posé,
   let ferme = null;
   for (let r = F.Y; r < F.Y + F.HAUTEUR && ferme === null; r++) for (let x = F.X; x < F.X + F.LARGEUR; x++) { const k = r * V + x; if (S[k] === 1 && S[k + 1] === 1 && S[k + V] === 1 && S[k + V + 1] === 1) { ferme = r * W + x; break; } }
   assert(ferme !== null && surChemin(s, ferme), 'le chemin de la ferme');
-  avecVillage(() => { assertEqual(bonusChemin(s), 1); assertEqual(surChemin(s, c), false); }, false);
 });
 
 test('le portage : MAINS à la main, la brouette, la charrette attelée ; ce qui ne tient pas reste à la ferme ; sous la halle tout se vend', () => {
@@ -261,19 +261,4 @@ test('la sauvegarde : la forme compacte (des segments), 600 cases mesurées ; v8
   const pv = poserBloc(v, 'chemin', t);
   assert(pv.ok, pv.error);
   assertEqual(cheminsPourLeSol(v), { troncon: 'genere', cases: [t] });
-});
-
-test('éteint : rien ne se pose hors de la ferme, comme avant ; pas de dehors dans une partie neuve', () => {
-  avecVillage(() => {
-    const s = createNewGame('chemin-eteint');
-    assert(!('dehors' in s) && !('portage' in s), 'une partie neuve : ni dehors ni portage');
-    const T = farmTerrain(s);
-    setInv(s, { chemin: 2 });
-    const t = T.MONDE.cadre.SORTIE + 4;
-    const r = poseStatus(s, 'chemin', t);
-    assertEqual(r.ok, false);
-    assert(/On ne bâtit que sur l'herbe/.test(r.raison), r.raison);
-    assertEqual(cheminsPourLeSol(s), null);
-    assertEqual(capacitePortage(s), DATA.VILLAGE.PORTAGE.MAINS);
-  }, false);
 });

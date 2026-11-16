@@ -1,8 +1,7 @@
 // Le moteur du jeu, en un seul point d'entrée : pour les tests, la simulation et la
 // console. Dans le jeu, chaque module importe directement ce dont il a besoin.
-// (fiche I7d, l'île à bâtir : l'index ne ré-exporte plus le récit — recit.js, fil-lune.js, usure.js, secrets.js,
-// ile.js, bienvenue.js — ni son aiguillage ; le moteur l'atteint par js/engine/recit-aiguillage.js, les tests du récit
-// importent ses modules eux-mêmes. La fiche I9h retire ces modules.)
+// (le récit, les hameaux, leurs habitants et la calèche sont retirés à la bascule, fiche I9h ; ce que les migrations des
+// parties d'avant en gardent : migration-avant.js, qui n'est lu que par elles)
 
 export { RAW_DATA } from '../data.generated.js';
 export * from './catalog.js';
@@ -25,7 +24,6 @@ export * from './monde-sol.js';
 export * from './monde-recolte.js';
 export * from './monde-hameaux.js';
 export * from './monde-vu.js';
-export * from './habitants.js';
 export * from './crops.js';
 export * from './depart.js';
 export * from './cruche.js';
@@ -76,20 +74,17 @@ export * from './demandes.js';
 export * from './naturaliste.js';
 export * from './meteo.js';
 export * from './voisins.js';
-export * from './fetes.js';
 export * from './demenagement.js';
 export * from './decouverte.js';
 export * from './encyclopedie.js';
 export * from './plantation.js';
 export * from './journal.js';
 export * from './repas.js';
-export * from './caleche.js';
 export * from './equipement.js';
 export * from './amitie.js';
 export * from './invitations.js';
 export * from './styles.js';
 export * from './plans.js';
-export * from './projets.js';
 export * from './village.js';
 export * from './paliers.js';
 export * from './villageois.js';

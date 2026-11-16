@@ -32,8 +32,7 @@ COTE = 2048
 BORD = 1
 
 # (pas dans un atlas : les planches lues pixel par pixel à leurs coordonnées propres (les tuiles, les sols,
-# crops, terre_bords, terre_serre), les grandes (blocs, murs, clôtures) et les personnages, chargés à part ; la
-# calèche et sa malle, que l'île ne charge pas (le chantier « l'île à bâtir », fiche I7e : js/farm-stage.js), seules)
+# crops, terre_bords, terre_serre), les grandes (blocs, murs, clôtures) et les personnages, chargés à part)
 FERME = [
     'chat.png', 'chat_2.png', 'chat_3.png', 'chien.png', 'chien_2.png', 'chien_3.png',
     'cheval.png', 'cheval_monte.png', 'poteau_attache.png',

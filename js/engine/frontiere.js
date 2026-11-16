@@ -1,5 +1,4 @@
 import { farmTerrain } from './terrain.js';
-import { villageActif } from './village.js';
 
 /* ---------- la frontière d'un monde en ligne (docs/monde-partage.md) ----------
 
@@ -8,7 +7,7 @@ import { villageActif } from './village.js';
    fasse aussi avant d'envoyer (le geste refusé tout de suite, sans aller-retour) : le même code des deux
    côtés.
 
-   I9a (l'île partagée, le chantier allumé : villageActif) : le monde partagé devient l'île entière. Le
+   I9a (l'île partagée) : le monde partagé devient l'île entière. Le
    personnage en sort et la vue le suit ; chacun voit le relief de l'île, tiré chez lui de la graine.
 
    I9b (les changements du monde) : sur une île, les gestes du dehors passent (COMMANDES_DEHORS : récolter une
@@ -50,12 +49,6 @@ export function commandeHorsDeLaFerme(state, args) {
   return EAUX_DU_MONDE.has(args.eau);
 }
 
-// I9a : le monde partagé est-il l'île entière (le chantier allumé pour la partie du monde) ? Sinon, la ferme
-// seule (E-8).
-export function ilePartagee(state) {
-  return villageActif(state);
-}
-
 // I9c : les commandes du port et du portage (commandes.js ; elles portent toutes `case`).
 export const COMMANDES_DU_PORT = Object.freeze([
   'port.vendre', 'port.acheter', 'port.honorer', 'port.importer', 'port.contrat', 'port.livrer', 'port.apporter', 'port.agrandir', 'port.decharger',
@@ -72,13 +65,12 @@ export const COMMANDES_DEHORS = new Set([
   ...COMMANDES_DU_PORT,
 ]);
 
-// Le mot d'un refus à la frontière (la commande vise hors de la ferme).
-export const HORS_FERME = 'Hors de la ferme : en ligne, le monde partagé, c\'est la ferme.';
+// Le mot d'un refus à la frontière (la commande vise hors de la ferme ; I9h : la ferme seule d'E-8 est retirée, le monde
+// partagé est l'île entière).
 export const HORS_FERME_ILE = 'Hors de la ferme, ce geste ne se fait pas : dehors, on récolte, on pêche, on commerce au port et l\'on pose des chemins, des ponts, des barrières, des bancs et des lumières.';
 // `type` (I9b) : celui de la commande ; sur une île, une commande du dehors passe (le moteur la vérifie ensuite).
 export function refusFrontiere(state, args, type = null) {
   if (!commandeHorsDeLaFerme(state, args)) return null;
-  if (!ilePartagee(state)) return HORS_FERME;
   return type && COMMANDES_DEHORS.has(type) ? null : HORS_FERME_ILE;
 }
 

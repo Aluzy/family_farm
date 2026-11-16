@@ -5,11 +5,11 @@
 
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
-import { addItem, blocAt, caseVue, createNewGame, DATA, empreintePartie, executerCommande, farmTerrain, GAME_VERSION, HORS_FERME_ILE, STATE_VERSION, ilePartagee, poseStatus, refusFrontiere, testBatir, testSetLevel, unirVu, voirAutour } from '../js/engine/index.js';
+import { addItem, blocAt, caseVue, createNewGame, DATA, empreintePartie, executerCommande, farmTerrain, GAME_VERSION, HORS_FERME_ILE, STATE_VERSION, poseStatus, refusFrontiere, testBatir, testSetLevel, unirVu, voirAutour } from '../js/engine/index.js';
 import { caseDansLaFerme, cheminDehorsSur, countItem, objetsDeRegion, pasDe, solDirect } from '../js/engine/index.js';
 import { avancerJusqua, clockHours, comptoirDuPort, etatBac } from '../js/engine/index.js';
 import { arriverVillageois, attribuer, donnerOutil, tableauVillage, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
-import { avecVillage, partie } from './engine/aide.mjs';
+import { partie } from './engine/aide.mjs';
 import { MondeRegistre } from '../worker/src/monde.mjs';
 import { Synchro } from '../js/ui/synchro.js';
 
@@ -30,7 +30,7 @@ function monde() {
 }
 // Un joueur : sa synchro, depuis l'accueil du monde.
 function joueur(r, compte) {
-  const a = r.accueil(compte, { version: GAME_VERSION });
+  const a = r.accueil(compte, { version: GAME_VERSION, format: STATE_VERSION });
   let refaites = 0;
   const s = new Synchro({ partie: a.partie, rev: a.rev, executerCommande, quandRefaite: () => { refaites += 1; } });
   return { s, refaites: () => refaites };
@@ -99,7 +99,7 @@ test('synchro : coupé, le joueur continue ; à la reconnexion, ses commandes re
   // la première était partie avant la coupure : le monde l'a jouée, mais A n'a rien reçu
   r.commande('A', cs[0]);
   // reconnexion : ce qui manque depuis sa révision, puis ses commandes en attente renvoyées
-  const acc = r.accueil('A', { version: GAME_VERSION, depuis: a.s.rev });
+  const acc = r.accueil('A', { version: GAME_VERSION, format: STATE_VERSION, depuis: a.s.rev, pas: pasDe(a.s.confirmee) });
   for (const e of acc.evts) a.s.evenement(e);
   eq(a.s.enAttente.map((c) => c.id), [cs[1].id], 'la première confirmée');
   for (const c of [...a.s.enAttente, cs[0]]) {   // (la première aussi, renvoyée par erreur : doublon)
@@ -112,7 +112,7 @@ test('synchro : coupé, le joueur continue ; à la reconnexion, ses commandes re
 test('I9a : l\'île partagée : chacun garde son brouillard sur sa partie locale (posé à chaque fois qu\'elle est refaite) ; la confirmée reste celle du monde ; hors de la ferme, le geste est refusé avant d\'être envoyé', () => {
   const db = new DatabaseSync(':memory:');
   const r = new MondeRegistre({ exec(q, ...v) { const x = db.prepare(q).all(...v); return { toArray: () => x }; } });
-  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  const ile = createNewGame('17', { nom: 'Île' });
   ile.essais = { ...(ile.essais || {}), village: true };
   addItem(ile, DATA.ATELIER.BLOCS.mur_pierre.objet, 20);
   assert(r.creer({ proprietaire: 'A', partie: ile }).ok);
@@ -127,7 +127,7 @@ test('I9a : l\'île partagée : chacun garde son brouillard sur sa partie locale
   const a = r.accueil('B', { version: GAME_VERSION });
   const b = new Synchro({ partie: a.partie, rev: a.rev, executerCommande, quandRefaite: (locale) => unirVu(locale, brouillard) });
   unirVu(b.locale, brouillard);
-  eq([ilePartagee(b.locale), caseVue(b.locale, loin), caseVue(b.confirmee, loin)], [true, true, false]);
+  eq([caseVue(b.locale, loin), caseVue(b.confirmee, loin)], [true, false]);
   // un geste de A (dans la ferme) : la partie de B est refaite, son brouillard reposé ; la confirmée, celle du monde
   const cases = [];
   for (let t = 0; t < 644 * 400 && cases.length < 2; t += 7) if (poseStatus(w, 'mur_pierre', t).ok) cases.push(t);
@@ -149,7 +149,7 @@ test('I9a : l\'île partagée : chacun garde son brouillard sur sa partie locale
 // Une île du chantier en ligne (une partie d'essai), la Cuisine bâtie, des murs et de quoi faire des omelettes ; le
 // monde a son horloge (h.t, en ms), un joueur aussi (son décalage : `avance` ms d'avance sur le serveur).
 function ileEnLigne() {
-  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  const ile = createNewGame('17', { nom: 'Île' });
   ile.essais = { ...(ile.essais || {}), village: true };
   testSetLevel(ile, 5);
   for (const st of ['foyer', 'cuisine']) if (!testBatir(ile, st).ok) throw new Error(st);
@@ -360,7 +360,7 @@ test('I9b : le conflit dans la partie de chacun : A et B abattent le même buiss
 
 // Une île au port : le jour 3 (un jour de bac), à `heure` ; au coffre, des carottes, du bois ; A et B sur la ferme.
 function ilePortee(heure = 8.5) {
-  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  const ile = createNewGame('17', { nom: 'Île' });
   ile.essais = { ...(ile.essais || {}), village: true };
   testSetLevel(ile, 5);
   ile.day = 3;
@@ -424,7 +424,7 @@ test('I9c : le bac vu par les deux à la même heure : il accoste au même pas c
 
 // I9d : une île à trois villageois au travail (le bois, la pierre, le fauchage), en ligne à 6 h ; A propriétaire, B ami.
 function villageEnLigne() {
-  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  const ile = createNewGame('17', { nom: 'Île' });
   ile.essais = { ...(ile.essais || {}), village: true };
   testSetLevel(ile, 5);
   if (!testBatir(ile, 'foyer').ok) throw new Error('foyer');
@@ -519,17 +519,16 @@ test('I9e : les gestes de gestion du village chez chacun : l\'ordre d\'une tâch
 });
 
 test('I9f : un monde d\'avant (une ferme seule, au format d\'avant I9c), migré à sa première ouverture, se joue à deux : les gestes de chacun et une heure de pas ; la même partie chez A, chez B et au monde', () => {
-  // le monde d'avant : une ferme seule (le chantier éteint), un mur au journal après son instantané ; sa partie au format 103
+  // le monde d'avant : une ferme seule (sans port), un mur au journal après son instantané ; sa partie au format 103
   const { r: vieux, cases } = monde();
   assert(vieux.commande('B', mur(cases[0])).ok);
   const sql = vieux.sql, brute = JSON.parse(vieux.un('SELECT json FROM instantane WHERE rev = 0').json);
-  for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge']) delete brute[k];
+  for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge', 'port', 'dehors', 'palier', 'noms', 'chronique']) delete brute[k];
   brute.version = 103;
   sql.exec('UPDATE instantane SET json = ? WHERE rev = 0', JSON.stringify(brute));
   sql.exec('DELETE FROM meta WHERE cle = ?', 'format');
   const h = { t: 1_700_000_000_000 }, r = new MondeRegistre(sql, () => h.t);
-  r.essaiIle = true;
-  assert(ilePartagee(r.charger()) && blocAt(r.charger(), cases[0]) === 'mur_pierre', 'migré : une île, la ferme intacte');
+  assert(!!r.charger().port && blocAt(r.charger(), cases[0]) === 'mur_pierre', 'migré : une île, la ferme intacte');
   const a = joueurIle(r, 'A'), b = joueurIle(r, 'B');
   assert(a.vivante && b.vivante, 'l\'horloge vit chez chacun');
   let k = 0, n = 1;

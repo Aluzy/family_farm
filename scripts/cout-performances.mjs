@@ -37,7 +37,8 @@ const SEUL = opt('seul', null);
 const E = await import(engineUrl(RACINE));
 const { MondeRegistre, Monde } = await import(pathToFileURL(join(RACINE, 'worker', 'src', 'monde.mjs')).href);
 const { Synchro } = await import(pathToFileURL(join(RACINE, 'js', 'ui', 'synchro.js')).href);
-E.DATA.VILLAGE.ACTIF = true;
+// (une copie d'avant la bascule, --racine : son réglage de l'île allumé, VILLAGE.ACTIF, retiré depuis I9h)
+if (E.DATA.VILLAGE && 'ACTIF' in E.DATA.VILLAGE) E.DATA.VILLAGE.ACTIF = true;
 const cloner = (v) => JSON.parse(JSON.stringify(v));
 const hache = (s) => createHash('sha1').update(JSON.stringify(s)).digest('hex').slice(0, 12);
 const st = (L) => {
@@ -144,24 +145,23 @@ function mesurerRoles(p) {
 
 // Un monde d'avant mis à jour à son premier réveil (comme scripts/cout-mise-en-ligne.mjs).
 async function mesurerMiseAJour() {
-  E.DATA.VILLAGE.ACTIF = false;
   const vieille = JSON.parse(readFileSync(join(RACINE, 'tests', 'engine', 'anciennes-parties.json'), 'utf8')).recente_avancee;
   const sql = baseSql();
   const r = new MondeRegistre(sql);
   const c = r.creer({ proprietaire: 'proprio', nom: 'Alex', partie: vieille });
   if (!c.ok) throw new Error(c.erreur);
   const brute = JSON.parse(r.un('SELECT json FROM instantane WHERE rev = 0').json);
-  for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge']) delete brute[k];
+  // (une ferme seule : sans ce qu'une île a, son port compris)
+  for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge', 'port', 'dehors', 'palier', 'noms', 'chronique']) delete brute[k];
   brute.version = 103;
   r.faire('UPDATE instantane SET json = ? WHERE rev = 0', JSON.stringify(brute));
   r.faire('DELETE FROM meta WHERE cle = ?', 'format');
   const m = new Map();
   const b = { async put(k, v, o = {}) { m.set(k, { v, o }); }, async get(k) { const x = m.get(k); return x ? { text: async () => x.v } : null; }, async delete(k) { m.delete(k); }, async list({ prefix }) { return { objects: [...m.keys()].filter((k) => k.startsWith(prefix)).map((k) => ({ key: k, size: m.get(k).v.length, customMetadata: m.get(k).o.customMetadata })), truncated: false }; } };
-  const d = new Monde({ storage: { sql }, id: { toString: () => 'vieux' }, getWebSockets: () => [], getTags: () => [], waitUntil: (p) => p }, { SESSIONS: b, ILE_ESSAI: '1' });
+  const d = new Monde({ storage: { sql }, id: { toString: () => 'vieux' }, getWebSockets: () => [], getTags: () => [], waitUntil: (p) => p }, { SESSIONS: b, ILE_ESSAI: '1' });   // (ILE_ESSAI : pour une copie d'avant la bascule ; sans effet depuis)
   const t0 = performance.now();
   await d.charger();
   const ms = performance.now() - t0;
-  E.DATA.VILLAGE.ACTIF = true;
   return { ms, empreinte: hache(d.registre.charger()) };
 }
 

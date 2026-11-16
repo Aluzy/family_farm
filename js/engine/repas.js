@@ -6,7 +6,6 @@ import { cibleBonheur, dishHappiness, memberHappiness, setHappiness, versCible }
 import { noter } from './journal.js';
 import { faimAidePct, faimMarchePct } from './equipement.js';
 import { clockHours, nightActive } from './clock.js';
-import { villageActif } from './village.js';
 import { memoEnLot } from './blocs.js';
 
 /* ---------- la boîte à nourriture et la faim de la famille (FAMILLE.FAIM) ---------- */
@@ -195,7 +194,7 @@ function rangement(state, source) {
 // null sinon (ou le chantier éteint).
 export function rangementCommun(state) {
   const g = state && state.gardeManger;
-  if (!g || typeof g !== 'object' || !g.commun || !villageActif(state)) return null;
+  if (!g || typeof g !== 'object' || !g.commun) return null;
   if (g.sorte === 'frigo') return state.frigo && state.frigo.construit ? 'frigo' : null;
   if (g.sorte === 'boite') return boitePosee(state) ? 'boite' : null;
   return null;

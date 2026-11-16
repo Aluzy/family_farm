@@ -5,7 +5,6 @@
    l'appareil, la musique continue, par moments ou coupée, la voix des habitants : G-2). Sans FermeSon, rien ne se passe. */
 
 import { ecouterJournal } from '../engine/journal.js';
-import { villageActif } from '../engine/village.js';
 import { state } from './store.js';
 
 // Joue un bruit du jeu (voir les clés de js/son.js), s'il y a du son.
@@ -43,14 +42,14 @@ export function sonHtml() {
   return `<div class="stack son-reglages">
     <strong>Son</strong>
     <label class="row check-row"><input type="checkbox" id="son-muet" ${r.muet ? 'checked' : ''}> 🔇 Couper tout le son</label>
-    <label class="row check-row"><input type="checkbox" id="son-voix" ${r.voix !== false ? 'checked' : ''}> 🗣️ La voix des habitants (un petit babil quand ils parlent)</label>
+    <label class="row check-row"><input type="checkbox" id="son-voix" ${r.voix !== false ? 'checked' : ''}> 🗣️ La voix des villageois (un petit babil quand ils parlent)</label>
     ${CURSEURS.map(([id, nom]) => `<label class="son-curseur" for="son-${id}"><span>${nom}</span>
       <input type="range" id="son-${id}" name="son-volume" data-son="${id}" min="0" max="100" step="5" value="${Math.round(r[id] * 100)}"></label>`).join('')}
     <div class="stack" role="radiogroup" aria-labelledby="son-mode-titre">
       <span id="son-mode-titre">🎼 Musique</span>
       <div class="row">${MODES.map(([id, nom]) => `<label class="row check-row"><input type="radio" name="son-mode" value="${id}" ${r.mode === id ? 'checked' : ''}> ${nom}</label>`).join('')}</div>
     </div>
-    <p class="muted">« Par moments » : la musique revient de temps en temps, et la ferme s'entend seule entre deux. Chaque lieu a la sienne (${villageActif(state) ? 'la ferme, la forêt, la montagne, la côte, une fête' : 'la ferme, un hameau, la forêt, la montagne, la côte, une fête'}), et chaque moment (le soir, la nuit). Réglage de cet appareil ; la partie n'en dépend pas.</p>
+    <p class="muted">« Par moments » : la musique revient de temps en temps, et la ferme s'entend seule entre deux. Chaque lieu a la sienne (la ferme, la forêt, la montagne, la côte, une fête), et chaque moment (le soir, la nuit). Réglage de cet appareil ; la partie n'en dépend pas.</p>
   </div>`;
 }
 
@@ -63,7 +62,7 @@ document.addEventListener('change', (e) => {
   const S = window.FermeSon, t = e.target;
   if (!S || !t) return;
   if (t.id === 'son-muet') S.regle({ muet: t.checked });
-  else if (t.id === 'son-voix') { S.regle({ voix: t.checked }); if (t.checked && S.babil) S.babil('Bonjour, tout le monde !', S.voixDe(state && villageActif(state) ? { id: 'villageoise', genre: 'f' } : { recit: 'odile' })); }   // (l'île à bâtir, fiche I7d : une voix de villageoise, pas celle d'un personnage du récit)
+  else if (t.id === 'son-voix') { S.regle({ voix: t.checked }); if (t.checked && S.babil) S.babil('Bonjour, tout le monde !', S.voixDe(state ? { id: 'villageoise', genre: 'f' } : { recit: 'odile' })); }   // (l'île à bâtir, fiche I7d : une voix de villageoise, pas celle d'un personnage du récit)
   else if (t.name === 'son-mode') S.regle({ mode: t.value });
   else if (t.name === 'son-volume') son(t.dataset.son === 'musique' ? 'reussite' : t.dataset.son === 'ambiance' ? 'oiseau' : t.dataset.son === 'effets' ? 'hache' : 'info');
 });

@@ -3,15 +3,13 @@ import { dayOfMonth, monthIndex, monthName, moonPhase, yearNumber } from '../eng
 import { escapeHtml, formatDay, weekdayName } from '../engine/format.js';
 import { state } from './store.js';
 import { evenementsParJour, jourInvitable, renderEvenements } from './invitations.js';
-import { fetesParJour } from './fetes.js';
 import { jourDeBac } from '../engine/bac.js';
-import { villageActif } from '../engine/village.js';
 import { fetesDuMoisVillage } from '../engine/fetes-village.js';
 
 /* ---------- le calendrier lunaire (carte en haut à droite › Calendrier) ----------
    Ses évènements (js/ui/invitations.js) : un jour à venir se touche pour en créer un (inviter à un repas) ;
-   un jour qui en a un est marqué 🍽️ ; dessous, la liste des évènements prévus. Les fêtes des hameaux (V-4,
-   js/ui/fetes.js) : le jour est marqué 🎉, et elles sont dites sous la grille. L'île à bâtir (fiche I1c, js/engine/bac.js) :
+   un jour qui en a un est marqué 🍽️ ; dessous, la liste des évènements prévus. Les fêtes du village (fiche I8a) : le
+   jour est marqué de leur icône, et elles sont dites sous la grille. L'île à bâtir (fiche I1c, js/engine/bac.js) :
    les jours du bac sont marqués ⛴️, et ses heures dites sous la grille. */
 
 // Ce que fait une phase de la lune aux cultures, en mots (valeurs de data/crops.json, LUNE).
@@ -35,8 +33,7 @@ export function renderCalendrier() {
   const phase = moonPhase(today);
   const tetes = Array.from({ length: 7 }, (_, k) => `<span class="cal-head" aria-hidden="true">${weekdayName(debut + k, true).slice(0, 1)}</span>`).join('');
   const evts = evenementsParJour();
-  const fetes = fetesParJour(today);
-  const bac = villageActif(state) ? (d) => jourDeBac(state, d) : () => false;
+  const bac = (d) => jourDeBac(state, d);
   // (fiche I8a : les fêtes du village, la veillée de pleine lune)
   const fetesV = {};
   for (const f of fetesDuMoisVillage(state, today)) (fetesV[f.jour] = fetesV[f.jour] || []).push(f);
@@ -44,8 +41,8 @@ export function renderCalendrier() {
     const d = debut + k;
     const p = moonPhase(d);
     const cls = d === today ? ' today' : d < today ? ' past' : '';
-    const evt = (evts[d] ? '<span class="cal-evt" aria-hidden="true">🍽️</span>' : '') + (fetes[d] ? '<span class="cal-evt" aria-hidden="true">🎉</span>' : '') + (fetesV[d] ? `<span class="cal-evt" aria-hidden="true">${fetesV[d][0].icone}</span>` : '');
-    const dit = `${weekdayName(d)}, ${p.nom}${bac(d) ? ', jour du bac' : ''}${evts[d] ? ', un repas prévu' : ''}${fetes[d] ? `, ${fetes[d].map((f) => `${f.nom} ${f.aHameau}`).join(', ')}` : ''}${fetesV[d] ? `, ${fetesV[d].map((f) => f.nom.toLowerCase()).join(', ')}` : ''}`;
+    const evt = (evts[d] ? '<span class="cal-evt" aria-hidden="true">🍽️</span>' : '') + (fetesV[d] ? `<span class="cal-evt" aria-hidden="true">${fetesV[d][0].icone}</span>` : '');
+    const dit = `${weekdayName(d)}, ${p.nom}${bac(d) ? ', jour du bac' : ''}${evts[d] ? ', un repas prévu' : ''}${fetesV[d] ? `, ${fetesV[d].map((f) => f.nom.toLowerCase()).join(', ')}` : ''}`;
     const marqueBac = bac(d) ? '<span class="cal-bac" aria-hidden="true">⛴️</span>' : '';
     const dedans = `<span class="num">${k + 1}</span><span aria-hidden="true">${p.icone}</span>${evt}${marqueBac}<span class="visually-hidden">${dit}</span>`;
     // (un jour à venir : il se touche, pour créer un évènement)
@@ -61,9 +58,8 @@ export function renderCalendrier() {
       <span>Aujourd'hui : <strong>${formatDay(today)}</strong>, ${phase.icone} ${phase.nom.toLowerCase()}.</span>
       <div class="cal-grid" role="group" aria-label="${monthName(today)}">${tetes}${cases}</div>
       ${renderEvenements()}
-      ${renderFetes(fetes)}
       ${renderFetesVillage(fetesV)}
-      ${villageActif(state) ? `<span class="muted cal-bac-dit">⛴️ Le bac accoste au port tous les ${DATA.PORT.BAC.PERIODE} jours, de ${DATA.PORT.BAC.HEURES[0]} h à ${DATA.PORT.BAC.HEURES[1]} h : il emporte ce que tu as vendu, apporte les commandes, les imports et les nouveaux villageois.</span>` : ''}
+      <span class="muted cal-bac-dit">⛴️ Le bac accoste au port tous les ${DATA.PORT.BAC.PERIODE} jours, de ${DATA.PORT.BAC.HEURES[0]} h à ${DATA.PORT.BAC.HEURES[1]} h : il emporte ce que tu as vendu, apporte les commandes, les imports et les nouveaux villageois.</span>
       <ul class="cal-phases">${phases}</ul>
       <span class="muted">Un mois dure ${L.JOURS_MOIS} jours, une lunaison. ${suivant} commence ${reste > 1 ? `dans ${reste} jours` : 'demain'}.</span>
     </div>`;
@@ -72,17 +68,8 @@ export function renderCalendrier() {
 // Fiche I8a : les fêtes du village ce mois-ci (js/engine/fetes-village.js) ; passées en grisé.
 function renderFetesVillage(fetesV) {
   const L = Object.values(fetesV).flat().sort((a, b) => a.jour - b.jour);
-  if (!villageActif(state)) return '';
   const h = (x) => { const m = Math.round((x % 1) * 60); return `${Math.floor(x)} h${m ? ` ${String(m).padStart(2, '0')}` : ''}`; };
   const lignes = L.map((f) => `<li${f.jour < state.day ? ' class="muted"' : ''}><span aria-hidden="true">${f.icone}</span> <strong>${escapeHtml(f.nom)}</strong> : ${f.jour === state.day ? 'aujourd\'hui' : formatDay(f.jour)}, de ${h(f.debut)} à ${h(f.fin)}${f.tenue ? ' ✅' : ''}</li>`).join('');
   return `<div class="cal-fetes"><strong>🎉 Les fêtes du village</strong>${lignes ? `<ul class="journal-monde">${lignes}</ul>` : ''}<span class="muted">Touche un jour à venir pour fixer la fête du village (une par mois de lune ; il faut des plats cuisinés).</span></div>`;
 }
 
-// Les fêtes des hameaux ce mois-ci (V-4) : 🎉, le hameau, le jour ; passées en grisé.
-function renderFetes(fetes) {
-  if (villageActif(state)) return '';   // (l'île, fiche I7e : pas de hameau, pas de fête des hameaux)
-  const L = Object.values(fetes).flat().sort((a, b) => a.jour - b.jour);
-  if (!L.length) return '';
-  const lignes = L.map((f) => `<li${f.jour < state.day ? ' class="muted"' : ''}><span aria-hidden="true">${f.icone}</span> <strong>${escapeHtml(f.nom.charAt(0).toUpperCase() + f.nom.slice(1))}</strong> ${escapeHtml(f.aHameau)} : ${f.jour === state.day ? 'ce soir' : formatDay(f.jour)}, de ${f.debut} h à ${f.fin} h</li>`).join('');
-  return `<div class="cal-fetes"><strong>🎉 Les fêtes des hameaux</strong><ul class="journal-monde">${lignes}</ul><span class="muted">Va sur la place pendant la fête : tout le hameau t'accueille.</span></div>`;
-}

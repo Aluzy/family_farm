@@ -1,5 +1,4 @@
 import { DATA } from './catalog.js';
-import { villageActif } from './village.js';
 import { debloque, quiDebloque } from './vocations.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
@@ -237,8 +236,6 @@ function refusNiveau(state, r) {
 // Une recette « debloque » (le bloc de silo) : à partir du niveau de cet élément (NIVEAUX).
 export function recetteDebloquee(state, id) {
   const r = DATA.ATELIER.RECETTES[id];
-  // (une recette du chantier « l'île à bâtir », la boîte aux lettres des villageois : le chantier allumé)
-  if (r && r.village && !villageActif(state)) return false;
   // (fiche I8b : une recette qui attend un niveau du port, le quai de chargement)
   if (r && r.port && portAuMoins(state) < r.port) return false;
   // (fiche I5a : ce que fait un commerce ouvert, l'Atelier ne le fait plus ; sans lui, le joueur reste autonome)
@@ -248,7 +245,7 @@ export function recetteDebloquee(state, id) {
 // Le commerce ouvert de la sorte `sorte` qui sait faire la recette `id` (state.commerces, fiche I5a : c.connues, tenu
 // par js/engine/artisans.js ; lu ici sans l'importer, pour ne pas faire de boucle entre les modules), ou null.
 export function commerceQuiLeFait(state, sorte, id) {
-  const C = state && villageActif(state) && Array.isArray(state.commerces) ? state.commerces : [];
+  const C = state && Array.isArray(state.commerces) ? state.commerces : [];
   return C.find((c) => c && c.sorte === sorte && c.ouvert !== false && Array.isArray(c.connues) && c.connues.includes(id)) || null;
 }
 // Le niveau du port de la partie (fiche I1c : state.port.niveau ; lu ici sans importer bac.js), 0 sans port.
@@ -269,12 +266,12 @@ export function craftStatus(state, id) {
   if (!r) return { ok: false, raison: 'Recette inconnue.', manque: {} };
   if (r.plan && !planTrouve(state, id)) {
     // (le chantier de l'île : un palier de vocation l'offre)
-    const q = villageActif(state) ? quiDebloque(`plan:${id}`) : null;
+    const q = quiDebloque(`plan:${id}`);
     return { ok: false, raison: q ? `Il te faut d'abord son plan : ${q.vocation.toLowerCase()} l'offre au palier ${q.rang} (${q.score} points).` : 'Il te faut d\'abord son plan : explore le pays de sa collection, ou attends qu\'un ami de là-bas te l\'offre.', manque: {} };
   }
   if (!atelierConstruit(state)) return { ok: false, raison: 'Il faut d\'abord construire l\'Atelier.', manque: {} };
   if (r.outil && r.niveau) { const refusN = refusNiveau(state, r); if (refusN) return { ok: false, raison: refusN, manque: {} }; } else if (r.outil && aDejaOutil(state, r.outil)) return { ok: false, raison: 'Tu as déjà cet outil.', manque: {} };
-  if (r.port && villageActif(state) && portAuMoins(state) < r.port) return { ok: false, raison: `Il faut d'abord le port de niveau ${r.port}.`, manque: {} };
+  if (r.port && portAuMoins(state) < r.port) return { ok: false, raison: `Il faut d'abord le port de niveau ${r.port}.`, manque: {} };
   if (r.commerce && commerceQuiLeFait(state, r.commerce, id)) {
     const d = ((DATA.ARTISANS || {}).COMMERCES || {})[r.commerce] || {};
     return { ok: false, raison: `${d.nom || 'Le commerce'} le fait désormais : achète-le à son comptoir, ou commande-le (à façon, avec ta matière).`, manque: {} };

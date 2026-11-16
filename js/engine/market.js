@@ -1,5 +1,4 @@
 import { DATA, prixIle } from './catalog.js';
-import { villageActif } from './village.js';
 import { EPS } from './base.js';
 import { fail, marcheFerme, marcheOuvert, NO_COINS, pay, percentCeil } from './devices.js';
 import { earn } from './compta.js';
@@ -42,10 +41,10 @@ export function isBuyable(item) {
   return !!def && def.rachetable !== false && !def.retire && (isGraineComptoir(item) || def.comptoir === true);
 }
 
-// Le prix de vente d'une unité. Fiche I4 : sur l'île (`state` allumé, villageActif), le prix de l'île (catalog.js
+// Le prix de vente d'une unité. Fiche I4 : une partie donnée (`state`), le prix de l'île (catalog.js
 // prixIle : des filières qui paient) ; le jeu d'avant, le prix écrit.
 export function sellPrice(item, state = null) {
-  return state && villageActif(state) ? prixIle(item) : DATA.OBJETS[item].prix;
+  return state ? prixIle(item) : DATA.OBJETS[item].prix;
 }
 
 // Prix de la prochaine unité achetée.

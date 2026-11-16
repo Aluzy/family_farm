@@ -1,8 +1,6 @@
 import { DATA } from './catalog.js';
 import { mulberry32 } from './base.js';
 import { hache } from './ferme-generee.js';
-import { habitantsDe } from './habitants.js';
-import { cleDe, palierAmitie } from './amitie.js';
 
 /* ---------- les plans des meubles de collection (data/plans.json, PLANS ; le lot 4) ----------
 
@@ -11,11 +9,11 @@ import { cleDe, palierAmitie } from './amitie.js';
    [].plan, js/engine/atelier.js recetteDebloquee). On les trouve :
      - en explorant : la première fois qu'on passe dans un biome du pays, hors de la ferme, le plan du premier
        meuble de la collection qu'on n'a pas encore (trouverPlanBiome ; la page l'annonce, js/ui/plans.js) ;
-     - par l'amitié : la nuit, un ami (palier AMI ou plus) d'un hameau de ce pays offre le plan suivant
-       (plansNuit), annoncé au matin.
+     - une récompense de palier ou de vocation (offrirPlan), annoncée au matin.
+   (Le plan qu'offrait un ami d'un hameau de ce pays est retiré à la bascule, I9h.)
 
    state.plans = { connus: { [meuble]: { jour, de (le prénom de qui l'a offert, ou null : trouvé), annonce } },
-     explores: { [collection]: le jour où l'on y a trouvé un plan }, amis: { [collection]: le jour d'un plan offert } } */
+     explores: { [collection]: le jour où l'on y a trouvé un plan }, amis: (une clé d'avant, gardée vide) } */
 
 export const PLANS = DATA.PLANS;
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -95,26 +93,6 @@ export function deNom(nom) {
   const n = String(nom || '');
   const f = /^(Table|Chaise|Jarre|Lanterne|Jardinière|Pergola)\b/.test(n);
   return `${f ? 'de la' : 'du'} ${n.charAt(0).toLowerCase()}${n.slice(1)}`;
-}
-
-// La nuit (runNight) : un ami (palier AMI ou plus) d'un hameau d'un pays offre le plan suivant de sa
-// collection (un par pays et par nuit au plus). → [{ id, collection, de }]
-export function plansNuit(state) {
-  const P = plansDe(state), out = [], H = habitantsDe(state);
-  for (const [cid, c] of Object.entries(PLANS.COLLECTIONS)) {
-    const id = prochain(state, c);
-    if (!id || P.amis[cid] === jourDe(state)) continue;
-    let ami = null;
-    for (const h of Object.values(H)) {
-      if (!h || !c.hameaux.includes(h.style)) continue;
-      for (const f of h.foyers || []) for (const m of f.membres || []) if (!ami && palierAmitie(state, cleDe(m)) >= PLANS.AMI) ami = m;
-    }
-    if (!ami) continue;
-    apprendre(state, id, ami.prenom);
-    P.amis[cid] = jourDe(state);
-    out.push({ id, collection: cid, de: ami.prenom });
-  }
-  return out;
 }
 
 // Les plans offerts pas encore annoncés (au matin) : [{ id, collection, de }] ; ils sont marqués annoncés.

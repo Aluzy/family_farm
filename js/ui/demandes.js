@@ -8,10 +8,8 @@ import { DATA } from '../engine/catalog.js';
 import { escapeHtml, formatQty } from '../engine/format.js';
 import { countItem } from '../engine/inventory.js';
 import { asleep } from '../engine/night.js';
-import { habitantsDe } from '../engine/habitants.js';
 import { annonceDemande, demandeDe, demandesDe, demandesOuvertes, rendreDemande, texteDemande } from '../engine/demandes.js';
 import { HAMEAU_VILLAGE } from '../engine/amitie.js';
-import { villageActif } from '../engine/village.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { state } from './store.js';
@@ -20,9 +18,8 @@ import { refresh } from './render.js';
 import { notify } from './toasts.js';
 
 const nom = (it) => (DATA.OBJETS[it] ? `${DATA.OBJETS[it].icone} ${escapeHtml(DATA.OBJETS[it].nom)}` : escapeHtml(it));
-const hameauNom = (hid) => { const h = habitantsDe(state)[hid]; return h ? escapeHtml(h.nom) : 'un hameau'; };
 // (I6a : une demande d'un villageois est « du village »)
-const deQui = (d) => (d.hameau === HAMEAU_VILLAGE ? 'du village' : `de ${hameauNom(d.hameau)}`);
+const deQui = () => 'du village';
 const reste = (d) => { const j = d.fin - state.day + 1; return j <= 1 ? 'dernier jour' : `encore ${j} jours`; };
 
 // Au matin : les demandes de la nuit, annoncées une fois.
@@ -57,7 +54,7 @@ function ouvrirCarnet() {
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="demandes-titre">📜 Les demandes</h2>
-    <p class="muted">${villageActif(state) ? 'Tes voisins te demandent un coup de main.' : 'Des habitants des hameaux te demandent un coup de main.'} Rien ne presse : une demande que tu ne fais pas s'oublie, sans rien coûter. Pour en rendre une, va voir la personne : sa bulle › 🎁 Offrir › Donner.</p>
+    <p class="muted">Tes voisins te demandent un coup de main. Rien ne presse : une demande que tu ne fais pas s'oublie, sans rien coûter. Pour en rendre une, va voir la personne : sa bulle › 🎁 Offrir › Donner.</p>
     <ul class="journal-monde">${lignes}</ul>
     <p class="muted">Demandes rendues : ${demandesDe(state).faites}.</p>`, { labelledBy: 'demandes-titre' });
 }

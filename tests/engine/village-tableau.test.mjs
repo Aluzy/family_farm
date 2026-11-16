@@ -1,6 +1,5 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : le tableau des villageois (docs/ile.md, fiche I3d ; js/engine/tableau.js).
-   Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
    - coût, produit et solde sur une semaine écrite à la main (des entiers, au prix du port) ; le jour de repos (son
      repas, aucun produit) ; ce que son travail a pris au coffre ; le total du village ; le rendement ;
    - sept jours glissants, et « hier » ; le tri ; ce qui manque, en quelques mots ;
@@ -11,11 +10,11 @@
    ========================================================================== */
 
 import {
-  addItem, arriverVillageois, attribuer, bilanJour, bilanVillageois, botReattribuer, DATA, donnerOutil, entreesPeriode,
-  farmSeed, manqueCourt, portDuMonde, runNight, soldeLePlusBas, tableauVillage, tachesNuit, testBatir,
-  testMaisonVillageois, trierTableau, valeurPort, villageoisDe, prixIle,
+  addItem, arriverVillageois, attribuer, bilanJour, bilanVillageois, botReattribuer, DATA, donnerOutil,
+  entreesPeriode, farmSeed, manqueCourt, portDuMonde, runNight, soldeLePlusBas, tableauVillage, testBatir,
+  testMaisonVillageois, trierTableau, valeurPort, prixIle,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 // (I4 : le prix de l'île, celui du port et du tableau)
 const P = (o) => prixIle(o);
@@ -228,17 +227,3 @@ test('le joueur automatique réattribue la tâche dont le solde est le plus bas,
   }
 });
 
-/* ---------- éteint ---------- */
-
-test('éteint : pas de tableau', () => {
-  const { s, V: [v] } = ile();
-  semaine(s, v, 1, [{ mange: { pain: 1 } }]);
-  assert(tableauVillage(s, 'semaine'), 'allumé : le tableau');
-  avecVillage(() => {
-    assertEqual(tableauVillage(s, 'semaine'), null, 'éteint : rien');
-    assertEqual(soldeLePlusBas(s), null, 'rien pour le joueur automatique');
-    assertEqual(botReattribuer(s), null, 'rien à réattribuer');
-  }, false);
-  assertEqual(villageoisDe(s).length, 1, 'rien n\'a bougé');
-  assert(tachesNuit, 'les tâches restent');
-});

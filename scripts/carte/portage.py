@@ -12,7 +12,7 @@
 #     pied, chargée (des légumes, un sac, une caisse). Trois vues, quatre temps de la roue chacune : 'cote' (vers la
 #     droite : la scène la retourne pour la gauche), 'bas' (elle vient vers nous : devant lui), 'haut' (elle s'en va :
 #     devant lui, plus haut). La case de la vue v, du temps k : v × 4 + k (v : cote 0, bas 1, haut 2).
-#   - la charrette attelée au cheval (assets/charrette.png, cases de 96 × 64, d'après scripts/carte/caleche.py : les
+#   - la charrette attelée au cheval (assets/charrette.png, cases de 96 × 64, d'après la calèche d'avant la bascule : les
 #     roues et les sabots sur la rangée 60, le milieu de l'attelage au milieu de la case) : un plateau de planches à
 #     ridelles basses sur un essieu, chargé (des caisses, des sacs, des citrouilles, des choux), le banc où s'assied le
 #     personnage (la scène le pose dans ses cases assis_<vue> : PLACE), le cheval harnaché (scripts/personnage/

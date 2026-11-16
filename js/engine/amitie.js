@@ -2,52 +2,32 @@ import { DATA } from './catalog.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { hache } from './ferme-generee.js';
-import { addItem, countItem, takeItem } from './inventory.js';
-import { habitantsDe } from './habitants.js';
-import { cleEcrite, recitPour } from './recit-aiguillage.js';
+import { countItem, takeItem } from './inventory.js';
 import { STYLES, styleInfo, stylePrefere } from './styles.js';
-import { villageActif } from './village.js';
 
-/* ---------- l'amitié avec les habitants des hameaux (data/amitie.json) ----------
+/* ---------- l'amitié (data/amitie.json) ----------
 
-   Chaque habitant d'un hameau a une jauge d'amitié de 0 à ECHELLE.MAX, lue en paliers (ECHELLE.PALIERS :
-   inconnu, poli, cordial, proche, intime). Un personnage écrit du récit (Odile, Basile, Théo… : m.recit)
-   garde sa relation du récit (state.recit.relations), que les scènes font déjà bouger ; les autres ont la
-   leur ici. Elle monte :
-     - à la première conversation du jour (PAROLE) ;
-     - au premier passage du jour dans son hameau (VISITE) ;
-     - avec un cadeau, un par jour (CADEAU, selon son goût pour l'objet : adoré, aimé, neutre, détesté).
-   Elle ne baisse jamais avec l'absence (un jeu sans pression) : une personne qui te connaît, revue après
-   RETROUVAILLES.JOURS jours sans échange (parole ou cadeau), est joyeuse de te retrouver (RETROUVAILLES.BONUS
-   de plus à la première conversation).
-
-   Chacun a ses goûts (goutsDe) : quelques objets adorés, aimés, détestés, tirés de son id dans la liste de
-   son métier, complétée par la liste commune (ou fixés, pour un personnage écrit). Ils se découvrent en
-   offrant.
-
-   Ce que l'amitié apporte : la confiance du hameau monte vers l'amitié moyenne de ses habitants ; un ami
-   proche laisse parfois un présent devant la porte de la ferme (la nuit, RETOUR) ; l'amitié avec qui tient
-   un atelier de hameau baisse le prix et le délai de ses commandes (remiseAmitie, delaiAmitie : ile.js).
-
-   L'humeur (humeurPnj) : la joie (un ami proche), la tristesse (son foyer est malheureux, HABITANTS.TRISTE) ;
-   jamais de colère (le récit cosy). Elle ne teinte plus le personnage sur la carte : seules les
-   réactions d'un instant (un cadeau : joie ou dégoût ; la surprise d'un arbre abattu ou d'un cheval tout près ;
-   la joie des retrouvailles, d'un repas) colorent tout son corps, dites par la scène.
+   L'amitié du joueur avec les villageois de l'île (fiche I6a, js/engine/villageois-amitie.js : ce qui la fait vivre).
+   Chacun a une jauge d'amitié de 0 à ECHELLE.MAX, lue en paliers (ECHELLE.PALIERS : inconnu, poli, cordial, proche,
+   intime). Elle monte à la première conversation du jour (PAROLE) et avec un cadeau, un par jour (CADEAU, selon son goût
+   pour l'objet : adoré, aimé, neutre, détesté). Elle ne baisse jamais avec l'absence (un jeu sans pression) : une
+   personne qui te connaît, revue après RETROUVAILLES.JOURS jours sans échange, est joyeuse de te retrouver
+   (RETROUVAILLES.BONUS de plus à la première conversation). Les goûts d'un villageois sont les siens (goutsTires, à son
+   arrivée) ; ceux d'un habitant d'un hameau d'avant (goutsDe : de son id, dans la liste de son métier) ne servent plus
+   qu'à la migration de ses amis (migration-ile.js).
 
    state.amitie = {
-     pnj: { [clé : l'id du personnage écrit, ou celui du membre]: { pts (pas pour un écrit), parle (le jour
-       de la dernière conversation), cadeau (le jour du dernier cadeau), vu (le jour du dernier échange),
-       gouts: { objet: 'adore' | 'aime' | 'neutre' | 'deteste' } (ceux qu'on a découverts) } },
-     visites: { [hameau]: le jour du dernier passage },
-     porte: [{ de (le prénom), objet, n }] (les présents laissés devant la porte, à ramasser) } */
+     pnj: { [l'id du villageois]: { pts, parle (le jour de la dernière conversation), cadeau (le jour du dernier cadeau),
+       vu (le jour du dernier échange), gouts: { objet: 'adore' | 'aime' | 'neutre' | 'deteste' } (ceux qu'on a
+       découverts), souvenirs… } },
+     visites, porte : des clés d'avant (le passage dans un hameau, les présents devant la porte), gardées vides. }
+   Les hameaux, leurs habitants, la confiance et les ateliers du récit sont retirés à la bascule (I9h). */
 
 export const AMITIE = DATA.AMITIE;
 const SORTES = ['adore', 'aime', 'deteste'];
 
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const jourDe = (state) => Math.max(1, Math.floor(Number(state.day) || 1));
-// (fiche I7c : l'échelle de l'amitié, data/amitie.json ECHELLE, la même que celle du récit ; le récit lui-même, ses
-// personnages écrits, leurs relations et la confiance des hameaux, passent par l'aiguillage : recit-aiguillage.js)
 const ECHELLE = AMITIE.ECHELLE;
 const borne = (v) => Math.max(0, Math.min(ECHELLE.MAX, Math.round(v)));
 
@@ -61,31 +41,25 @@ export function amitieDe(state) {
   return a;
 }
 
-// Le chantier « l'île à bâtir » (fiche I6a, js/engine/villageois-amitie.js) : les villageois ont leur amitié ici,
-// comme les habitants, sous le « hameau » HAMEAU_VILLAGE (la clé : l'id du villageois, « vg-1 »). Ses goûts sont les
-// siens (v.gouts, tirés à son arrivée : goutsTires). Le chantier éteint, il n'y a pas de villageois : rien ne change.
+// L'île à bâtir (fiche I6a, js/engine/villageois-amitie.js) : les villageois ont leur amitié ici, sous le « hameau »
+// HAMEAU_VILLAGE (la clé : l'id du villageois, « vg-1 »). Ses goûts sont les siens (v.gouts, tirés à son arrivée :
+// goutsTires).
 export const HAMEAU_VILLAGE = 'village';
 const VILLAGE_H = Object.freeze({ nom: 'le village', foyers: [], style: null });
 const estVillageois = (m) => !!m && typeof m.id === 'string' && /^vg-\d+$/.test(m.id) && objet(m.gouts);
 
-// L'habitant `membreId` du hameau `hameauId` : { h, f, m, cle } ou null (un villageois : { h, f: null, m (le
-// villageois), cle (son id), villageois: true }).
+// Le villageois `membreId` (`hameauId` : HAMEAU_VILLAGE) : { h, f: null, m (le villageois), cle (son id),
+// villageois: true }, ou null.
 export function trouverPnj(state, hameauId, membreId) {
   if (hameauId === HAMEAU_VILLAGE) {
-    const v = villageActif(state) && Array.isArray(state.villageois) ? state.villageois.find((x) => x && x.id === membreId) : null;
+    const v = Array.isArray(state.villageois) ? state.villageois.find((x) => x && x.id === membreId) : null;
     return v ? { h: VILLAGE_H, f: null, m: v, cle: v.id, villageois: true } : null;
-  }
-  const h = habitantsDe(state)[hameauId];
-  for (const f of (h && h.foyers) || []) {
-    const m = (f.membres || []).find((x) => x.id === membreId);
-    if (m) return { h, f, m, cle: cleDe(m) };
   }
   return null;
 }
 
-// La clé d'un membre : le personnage écrit qu'il est, ou son id.
-export const cleDe = (m) => cleEcrite(m) || m.id;
-const ecrit = (state, cle) => recitPour(state).ecrit(state, cle);
+// La clé d'une personne : son id (les personnages écrits du récit d'avant sont retirés, I9h).
+export const cleDe = (m) => m.id;
 
 // La fiche d'amitié d'une personne (créée au besoin) : { pts, parle, cadeau, vu, gouts, souvenirs… }.
 export function fiche(state, cle) {
@@ -98,7 +72,6 @@ export function fiche(state, cle) {
 
 // Les points d'amitié (0 à RELATION_MAX).
 export function pointsAmitie(state, cle) {
-  if (ecrit(state, cle)) return recitPour(state).relation(state, cle);
   const p = amitieDe(state).pnj[cle];
   const v = p && Number(p.pts);
   return Number.isFinite(v) ? borne(v) : 0;
@@ -106,7 +79,6 @@ export function pointsAmitie(state, cle) {
 
 // Ajoute (ou retire) des points : la nouvelle valeur.
 export function ajouterAmitie(state, cle, points) {
-  if (ecrit(state, cle)) return recitPour(state).ajouterRelation(state, cle, points).valeur;
   const p = fiche(state, cle);
   p.pts = borne(pointsAmitie(state, cle) + points);
   return p.pts;
@@ -126,17 +98,13 @@ export function palierAmitieNom(state, cle) {
 // Le métier qui fait ses goûts et ses présents : enfant, son métier, ou jardinier.
 const sorteDe = (m) => (m.enfant ? 'enfant' : AMITIE.METIERS[m.metier] ? m.metier : 'jardinier');
 
-// Ses goûts : { objet: 'adore' | 'aime' | 'deteste' } (les autres objets : neutres). Un personnage écrit a
-// les siens (ECRITS) ; un autre les tire de son id dans la liste de son métier, puis la liste commune.
+// Ses goûts : { objet: 'adore' | 'aime' | 'deteste' } (les autres objets : neutres). Un villageois a les siens ; un
+// habitant d'un hameau d'avant (la migration de ses amis, migration-ile.js) les tire de son id dans la liste de son
+// métier, puis la liste commune.
 export function goutsDe(m) {
   // (un villageois : les siens, tirés à son arrivée)
   if (estVillageois(m)) return { ...m.gouts };
-  const cle = cleDe(m);
   const out = {};
-  if (AMITIE.ECRITS[cle]) {
-    for (const s of SORTES) for (const it of AMITIE.ECRITS[cle][s] || []) if (!out[it]) out[it] = s;
-    return out;
-  }
   const rnd = mulberry32(hache(`gouts:${m.id}`));
   const L = AMITIE.METIERS[sorteDe(m)] || {};
   for (const s of SORTES) {
@@ -237,18 +205,6 @@ export function parlerAmitie(state, hameauId, membreId) {
   return { gain: apres - avant, premiere, retrouvailles, pts: apres, palier: rangDe(apres), nom: ECHELLE.NOMS[rangDe(apres)], monte: rangDe(apres) > rangDe(avant) };
 }
 
-// Le premier passage du jour dans le hameau : +VISITE pour chacun de ses habitants. → true si c'est le
-// premier aujourd'hui.
-export function visiterHameau(state, hameauId) {
-  const h = habitantsDe(state)[hameauId];
-  if (!h || !Array.isArray(h.foyers)) return false;
-  const a = amitieDe(state), jour = jourDe(state);
-  if (a.visites[hameauId] === jour) return false;
-  a.visites[hameauId] = jour;
-  for (const f of h.foyers) for (const m of f.membres || []) ajouterAmitie(state, cleDe(m), AMITIE.VISITE);
-  return true;
-}
-
 // Offrir `item` à l'habitant : un cadeau par jour et par personne. → { ok, gout, points, emotion ('joie',
 // 'degout' ou null), pts, palier, nom, monte } ou un refus.
 export function offrir(state, hameauId, membreId, item) {
@@ -268,94 +224,4 @@ export function offrir(state, hameauId, membreId, item) {
   const apres = pointsAmitie(state, t.cle);
   const emotion = gout === 'adore' || gout === 'aime' ? 'joie' : gout === 'deteste' ? 'degout' : null;
   return { ok: true, gout, points: apres - avant, emotion, pts: apres, palier: rangDe(apres), nom: ECHELLE.NOMS[rangDe(apres)], monte: rangDe(apres) > rangDe(avant), prenom: t.m.prenom };
-}
-
-// L'humeur durable d'un habitant (sa teinte sur la carte) : 'tristesse' (son foyer est malheureux),
-// 'joie' ou null. `foyer` : le sien (cherché s'il n'est pas donné).
-export function humeurPnj(state, hameauId, m, foyer = null) {
-  const H = AMITIE.HUMEUR, cle = cleDe(m);
-  const f = foyer || ((habitantsDe(state)[hameauId] || {}).foyers || []).find((x) => (x.membres || []).includes(m));
-  if (f && Number.isFinite(f.bonheur) && f.bonheur < DATA.HABITANTS.TRISTE) return 'tristesse';
-  if (palierAmitie(state, cle) >= H.JOIE) return 'joie';
-  return null;
-}
-
-// Pour la carte : { [id du membre]: humeur } (ceux qui en ont une).
-export function humeursPourLaCarte(state) {
-  const out = {};
-  for (const [id, h] of Object.entries(habitantsDe(state))) {
-    for (const f of (h && h.foyers) || []) for (const m of f.membres || []) {
-      const e = humeurPnj(state, id, m, f);
-      if (e) out[m.id] = e;
-    }
-  }
-  return out;
-}
-
-/* -- ce que l'amitié apporte -- */
-
-// La remise (%) et le délai gagné (jours) des commandes à l'atelier tenu par `qui` (un personnage écrit).
-export function remiseAmitie(state, qui) {
-  return qui && ecrit(state, qui) ? AMITIE.REMISE[palierAmitie(state, qui)] || 0 : 0;
-}
-export function delaiAmitie(state, qui) {
-  return qui && ecrit(state, qui) ? AMITIE.DELAI[palierAmitie(state, qui)] || 0 : 0;
-}
-// Un prix après la remise de l'amitié avec `qui` (arrondi au-dessus, jamais négatif).
-export function prixAmitie(state, qui, prix) {
-  const p = Math.max(0, Number(prix) || 0);
-  return Math.ceil((p * (100 - remiseAmitie(state, qui))) / 100);
-}
-
-// Les présents laissés devant la porte (à ramasser).
-export function presentsPorte(state) {
-  return amitieDe(state).porte.slice();
-}
-// Le personnage passe devant la porte : il prend les présents. → [{ de, objet, n }] (vide : rien).
-export function ramasserPresents(state) {
-  const a = amitieDe(state);
-  const pris = a.porte.filter((x) => DATA.OBJETS[x.objet] && x.n > 0);
-  for (const x of pris) addItem(state, x.objet, x.n);
-  a.porte = [];
-  return pris;
-}
-
-// La nuit (runNight, avant que le jour change) : les amis proches laissent parfois un présent devant la
-// porte ; la confiance de chaque hameau monte vers l'amitié moyenne de ses habitants (l'absence ne fait rien
-// perdre). → { presents: [{ de, objet, n }], confiance: { hameau: +n } }.
-export function amitieNuit(state) {
-  const a = amitieDe(state), jour = jourDe(state), R = AMITIE.RETOUR;
-  const out = { presents: [], confiance: {} };
-  for (const [hid, h] of Object.entries(habitantsDe(state))) {
-    if (!h || !Array.isArray(h.foyers)) continue;
-    let total = 0, n = 0;
-    for (const f of h.foyers) for (const m of f.membres || []) {
-      const cle = cleDe(m);
-      // le présent d'un ami proche
-      const rang = palierAmitie(state, cle);
-      if (rang >= R.PALIER) {
-        const rnd = mulberry32(hache(`present:${cle}:${jour}`));
-        if (rnd() * 100 < (R.CHANCE[String(rang)] || 0)) {
-          const table = Object.entries(R.PRESENTS[sorteDe(m)] || {});
-          if (table.length) {
-            const [it, [de, aa]] = table[Math.floor(rnd() * table.length)];
-            const q = de + Math.floor(rnd() * (aa - de + 1));
-            const x = { de: m.prenom, objet: it, n: q };
-            a.porte.push(x);
-            out.presents.push(x);
-          }
-        }
-      }
-      total += pointsAmitie(state, cle);
-      n += 1;
-    }
-    // la confiance du hameau monte vers l'amitié de ses habitants (jamais ne baisse par elle)
-    if (n) {
-      const cible = AMITIE.CONFIANCE.BASE + ((total / n) * AMITIE.CONFIANCE.PART) / 100;
-      // (le récit d'avant seulement : l'île n'a pas de confiance des hameaux, recit-muet.js)
-      const R = recitPour(state);
-      if (R.confiance(state, hid) < Math.floor(cible) && R.ajouterConfiance(state, hid, 1).ok) out.confiance[hid] = 1;
-    }
-  }
-  return out;
 }

@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : la mercerie (docs/ile.md, fiche I5b ; js/engine/artisans.js, la sorte
-   « mercerie » de data/village.json ARTISANS.COMMERCES). Comme tous les fichiers tests/engine/village-*.test.mjs, il
-   tourne avec VILLAGE.ACTIF forcé à true.
+   « mercerie » de data/village.json ARTISANS.COMMERCES).
    - la filière de bout en bout : la laine de la tonte devient fil, tissu, puis un manteau (teint s'il y a un colorant),
      en trois jours d'artisan ; chaque étape vaut plus que la précédente, chaque recette dans la fourchette d'I4 ;
    - la teinture : un colorant existant, la pièce teinte gardée avec sa couleur, son prix ; le joueur achète les pièces
@@ -11,25 +10,26 @@
    - ce qu'elle garde pour son travail (le fil, le tissu) : le bac ne l'emporte pas ;
    - les deux artisans : quand le village a grandi, un second la rejoint ; chacun ses lots (le double), ses étapes ;
    - l'Atelier : sans mercerie, le joueur tisse et coud lui-même ; une mercerie qui sait le faire le remplace ;
-   - la sauvegarde (100 → 101) ; la commande du moteur ; le joueur automatique (la mercerie après la forge) ; éteint, rien.
+   - la sauvegarde (100 → 101) ; la commande du moteur ; le joueur automatique (la mercerie après la forge).
    Lancer seul : node tests/run-tests.mjs village-mercerie.
    ========================================================================== */
 
 import {
-  achatsCommercesDuJour, acheterAuCommerce, acheterAuComptoir, actionsDuJour, addItem, arriverVillageois, attribuer, botCommerce,
-  commercesAuBac, commercesDe, conditionsSecond, couleursTeinture, countItem, craftStatus, createNewGame, DATA, donnerOutil,
-  enVenteAuCommerce, etapesDe, executerCommande, farmSeed, journeeDuVillage, lotCommerce, lotsDuJour, meteoDuJour, migrate,
-  ouvrirCommerce, portDuMonde, postesDe, prixArtisan, prixIle, prixTeint, recettesDe, rejoindreCommerce, runNight,
-  STATE_VERSION, teintesDe, testMaisonVillageois, trouverVillageois,
+  etapesDe,
+  achatsCommercesDuJour, acheterAuCommerce, acheterAuComptoir, actionsDuJour, addItem, arriverVillageois, attribuer,
+  botCommerce, commercesAuBac, commercesDe, conditionsSecond, couleursTeinture, countItem, craftStatus, DATA,
+  donnerOutil, enVenteAuCommerce, executerCommande, farmSeed, journeeDuVillage, lotCommerce, lotsDuJour, meteoDuJour,
+  migrate, ouvrirCommerce, portDuMonde, postesDe, prixArtisan, prixIle, prixTeint, recettesDe, rejoindreCommerce,
+  runNight, STATE_VERSION, teintesDe, testMaisonVillageois, trouverVillageois,
 } from '../../js/engine/index.js';
 import { ajouterAmitie } from '../../js/engine/amitie.js';
 import { testLocalCommerce } from '../../js/engine/testmode.js';
 import { auChaud } from '../../js/engine/villageois-journee.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const AR = DATA.ARTISANS, M = AR.COMMERCES.mercerie;
-const SEUIL = DATA.RECIT.PALIERS[AR.AMITIE];
+const SEUIL = DATA.AMITIE.ECHELLE.PALIERS[AR.AMITIE];
 
 // L'île de test : le port, `n` villageois dans leurs maisons, la boîte pleine, les outils du joueur.
 function ile(n = 2, seed = 1) {
@@ -239,10 +239,9 @@ test('l\'Atelier : sans mercerie, le joueur tisse et coud lui-même ; une mercer
   const st = craftStatus(s, 'manteau_chaud');
   assert(!st.ok && /mercerie/.test(st.raison), st.raison);
   assert(!craftStatus(s, 'salopette').ok || !commercesDe(s)[0].connues.includes('salopette'), 'la salopette : quand elle la sait');
-  avecVillage(() => assert(!craftStatus(createNewGame(3), 'manteau_chaud').ok, 'éteint : pas à l\'Atelier (le jeu d\'avant)'), false);
 });
 
-/* ---------- la sauvegarde, le joueur automatique, éteint ---------- */
+/* ---------- la sauvegarde, le joueur automatique ---------- */
 
 test('la sauvegarde : v100 → v101 ; le second et les teintes gardés, réparés ; une partie d\'avant laissée telle quelle', () => {
   assertEqual(STATE_VERSION >= 101, true, 'le format 101 (ou après)');
@@ -261,9 +260,6 @@ test('la sauvegarde : v100 → v101 ; le second et les teintes gardés, réparé
   const a = migrate({ ...abime, version: 100 });
   assertEqual([a.commerces[0].second, a.commerces[0].teintes], [undefined, { manteau_chaud: { rouge: 2 } }], 'réparé : borné par le stock');
   assertEqual([a.villageois[1].tache, a.villageois[1].commerce], [null, undefined], 'un second sans commerce reprend sans tâche');
-  const avant = avecVillage(() => createNewGame(5), false);
-  const x = migrate({ ...copie(avant), version: 100 });
-  assert(!('commerces' in x), 'une partie d\'avant : rien d\'ajouté');
 });
 
 test('le joueur automatique : la forge ouverte, il prépare la mercerie (la bergère, le local, les clous de la forge), puis l\'ouvre', () => {
@@ -296,14 +292,4 @@ test('le joueur automatique : la forge ouverte, il prépare la mercerie (la berg
   }
   const mc = commercesDe(s).find((c) => c.sorte === 'mercerie');
   assert(mc && mc.qui === b.id && id === mc.id, `la mercerie ouverte : ${id}`);
-});
-
-test('éteint : pas de mercerie, la page et les nuits d\'avant', () => {
-  avecVillage(() => {
-    const s = createNewGame(2);
-    s.commerces = [{ id: 'mercerie-1', sorte: 'mercerie', qui: 'x', second: 'y' }];
-    assertEqual(commercesDe(s), [], 'rien ne se lit');
-    runNight(s);
-    assert(!ouvrirCommerce(s, 'x', 'mercerie').ok && !rejoindreCommerce(s, 'y', 'mercerie-1').ok, 'refusé');
-  }, false);
 });

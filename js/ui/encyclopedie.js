@@ -13,7 +13,6 @@ import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
 import { livre } from './livre.js';
 import { familyLabelHtml } from './depart.js';
-import { HAMEAUX, hameauxVus } from '../engine/monde-hameaux.js';
 
 /* ---------- l'Encyclopédie, un livre qui se remplit au fil de la partie ----------
    Comme le Livre de recette (js/ui/livre.js) : une couverture, une page à la fois. Les pages,
@@ -102,16 +101,7 @@ function entreeHtml(id) {
     <p class="encyclo-categorie"><button type="button" class="encyclo-lien-texte" data-action="book-goto" data-page="${numero('categorie', c.id)}">${c.icone} ${escapeHtml(c.nom)}</button></p>
     <h2 class="book-title">${escapeHtml(e.terme)}</h2>
     <p class="encyclo-texte">${escapeHtml(e.description)}</p>
-    ${id === 'hameaux' ? hameauxHtml() : ''}
     ${liens ? `<h3 class="book-h3">Voir aussi</h3><div class="encyclo-liens">${liens}</div>` : ''}`;
-}
-
-// La page « Les hameaux » : ceux où l'on est allé (state.monde.hameaux), dans l'ordre de leur découverte.
-function hameauxHtml() {
-  const vus = Object.values(hameauxVus(state)).sort((a, b) => a.jour - b.jour);
-  if (!vus.length) return '';
-  const li = vus.map((h) => `<li><strong>${escapeHtml(h.nom)}</strong>, un hameau ${escapeHtml((HAMEAUX.STYLES[h.style] || HAMEAUX.STYLES.prairie).nom)} <span class="muted">(jour ${h.jour})</span></li>`).join('');
-  return `<h3 class="book-h3">Ceux qu'on a vus</h3><ul class="encyclo-hameaux">${li}</ul>`;
 }
 
 // Fiche 14 : le dessin d'une bête, celui de la carte (une case de sa planche : e.visuels, tirés des
@@ -218,13 +208,6 @@ export function encyclopedieBiome(biome) {
   const e = state.encyclopedie && state.encyclopedie.evenements;
   if (e && e[`biome:${biome}`]) return;
   noterEncyclopedie(state, `biome:${biome}`);
-  majDecouvertes(true);
-}
-
-// Un hameau du grand monde vu pour la première fois (js/ui/stage.js) : la page « Les hameaux » se
-// découvre (la condition « hameau » lit state.monde.hameaux), ou se complète.
-export function encyclopedieHameau() {
-  if (!state) return;
   majDecouvertes(true);
 }
 

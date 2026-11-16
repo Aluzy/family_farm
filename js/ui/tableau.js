@@ -1,6 +1,5 @@
 import { DATA } from '../engine/catalog.js';
 import { escapeHtml, formatDay, formatNumber, formatSigned } from '../engine/format.js';
-import { villageActif } from '../engine/village.js';
 import { nombreVillageois } from '../engine/villageois.js';
 import { COLONNES, tableauVillage } from '../engine/tableau.js';
 import { tacheDef } from '../engine/taches.js';
@@ -38,7 +37,7 @@ const objetsLong = (m) => Object.entries(m).map(([o, n]) => `${formatNumber(n)} 
 
 // Le bouton de la carte du joueur (à côté des pièces) : '' sans villageois, ou le chantier éteint.
 export function tableauCarteHtml() {
-  if (!state || !villageActif(state) || !nombreVillageois(state)) return '';
+  if (!state || !nombreVillageois(state)) return '';
   const t = 'Le tableau des villageois : ce que chacun coûte et produit';
   return `<button type="button" class="player-tableau" data-action="tableau-ouvrir" title="${t}" aria-label="${t}"><span aria-hidden="true">📊</span></button>`;
 }

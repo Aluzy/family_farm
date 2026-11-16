@@ -1,14 +1,13 @@
 /* ==========================================================================
    Les paliers de l'île (le chantier « l'île à bâtir », docs/ile.md, fiche I7a).
-   Avec le réglage allumé (villageActif, js/engine/village.js), les sept chapitres de la campagne
+   Les sept chapitres de la campagne
    deviennent sept paliers de l'île (data/village.json, VILLAGE.PALIERS) : des objectifs courts et une
    récompense, sans introduction ni personnage. La mécanique reste celle des chapitres (campaign.js :
    chapterProgress, updateChapters, completeChapter) : le palier n tient la place du chapitre n, et ce qui
    s'y accroche (les points de technologie, l'XP, les paliers de l'arbre, les plans) tombe comme avant.
 
    La partie : state.palier, le numéro du palier en cours (1 à 7 : la forme de state.campagne.chapitre,
-   que campaign.js tient égal) ; il n'existe que dans une partie neuve faite le réglage allumé (ou une
-   partie d'essai, allumerEssaiVillage). Une partie d'avant n'en a pas : elle garde ses chapitres tant qu'elle
+   que campaign.js tient égal) ; il naît avec toute partie neuve. Une partie d'avant n'en a pas : elle garde ses chapitres tant qu'elle
    n'est pas passée sur l'île ; sa migration (fiche I7f, migration-ile.js) lui donne le palier du rang de son
    chapitre. Les compteurs restent ceux de state.campagne.
 
@@ -27,7 +26,6 @@
    ========================================================================== */
 
 import { DATA } from './catalog.js';
-import { villageActif } from './village.js';
 import { palierAmitie } from './amitie.js';
 
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -35,7 +33,7 @@ const entier = (v) => (Number.isFinite(Number(v)) ? Math.max(0, Math.floor(Numbe
 
 // La partie suit-elle les paliers de l'île (et non les chapitres) ?
 export function paliersSuivis(state) {
-  return !!state && Number.isInteger(state.palier) && villageActif(state) && Array.isArray(DATA.VILLAGE && DATA.VILLAGE.PALIERS);
+  return !!state && Number.isInteger(state.palier) && Array.isArray(DATA.VILLAGE && DATA.VILLAGE.PALIERS);
 }
 
 // La liste que la partie suit : les paliers de l'île, ou les chapitres de la campagne.
@@ -43,7 +41,7 @@ export function listeDesChapitres(state) {
   return paliersSuivis(state) ? DATA.VILLAGE.PALIERS : DATA.CHAPITRES.liste;
 }
 
-// Une partie neuve, le réglage allumé : elle commence au premier palier. (Une partie déjà commencée, ou
+// Une partie neuve : elle commence au premier palier. (Une partie déjà commencée, ou
 // faite pour réparer une sauvegarde, n'est pas touchée.)
 export function commencerPaliers(state) {
   const c = state && state.campagne;

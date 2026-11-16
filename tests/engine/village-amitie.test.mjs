@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : l'amitié avec les villageois (fiche I6a ; docs/ile.md ;
-   js/engine/villageois-amitie.js, posé sur amitie.js, demandes.js, invitations.js et propos.js). Comme tous les
-   fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
+   js/engine/villageois-amitie.js, posé sur amitie.js, demandes.js, invitations.js et propos.js).
    - l'arrivée : ACCUEIL points, des goûts tirés (de tous les métiers), qui ne suivent pas la tâche ;
    - parler : les mêmes gains que chez les habitants (la première conversation du jour, les retrouvailles) ;
    - les cadeaux : un par jour, selon son goût, un palier passé, il confie un goût ; l'objectif du jour ;
@@ -16,18 +15,18 @@
    ========================================================================== */
 
 import {
-  addItem, amitieAvec, amitieVillageois, amitieVillageoisNuit, arriverVillageois, attribuer, confierGout, connaissance, countItem,
-  createNewGame, DATA, demandesDe, demandesNuit, demandesOuvertes, demandesVillageoisNuit, donnerPresent, echangeVillageois, farmSeed,
-  HAMEAU_VILLAGE, invitationDuMoment, invitationsNuit, invitesModele, inviter, liensPourLaCarte, migrate, offrirVillageois,
-  palierAmitie, parlerVillageois, paroleVillageois, proposVillageois, relationsInvitables, rendreDemande, servirRepas,
-  souvenirParole, STATE_VERSION, sujetsVillageois, tacheSansHumeur, tachesNuit, testMaisonVillageois, trouverPnj, villageoisDe,
-  donnerOutil,
+  addItem, amitieAvec, amitieVillageois, amitieVillageoisNuit, arriverVillageois, attribuer, confierGout,
+  connaissance, countItem, createNewGame, DATA, demandesDe, demandesNuit, demandesOuvertes, demandesVillageoisNuit,
+  donnerPresent, echangeVillageois, HAMEAU_VILLAGE, invitationDuMoment, invitationsNuit, invitesModele, inviter,
+  liensPourLaCarte, migrate, offrirVillageois, palierAmitie, parlerVillageois, paroleVillageois, proposVillageois,
+  relationsInvitables, rendreDemande, servirRepas, souvenirParole, STATE_VERSION, sujetsVillageois, tacheSansHumeur,
+  tachesNuit, testMaisonVillageois, trouverPnj, villageoisDe, donnerOutil,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const A = () => DATA.VILLAGE.AMITIE;
-const P = DATA.RECIT.PALIERS;
+const P = DATA.AMITIE.ECHELLE.PALIERS;
 
 // Une île : n maisons, n villageois installés (de quoi manger dans la boîte commune).
 function ile(n = 2, seed = 1) {
@@ -356,19 +355,3 @@ test('la sauvegarde : v90 → v91 ; l\'amitié des villageois réparée, les ham
   assertEqual(z.amitie, sans.amitie, 'l\'amitié telle quelle');
 });
 
-/* ---------- éteint ---------- */
-
-test('éteint : pas de villageois dans l\'amitié, ni présent, ni demande ; la partie n\'est pas touchée', () => {
-  const { s, V: [v] } = ile();
-  avecVillage(() => {
-    assertEqual(trouverPnj(s, HAMEAU_VILLAGE, v.id), null, 'pas de villageois');
-    const avant = JSON.stringify(s);
-    assertEqual(amitieVillageoisNuit(s), null);
-    assertEqual(demandesVillageoisNuit(s, s.villageois), null);
-    assert(!relationsInvitables(s).some((r) => r.hameau === HAMEAU_VILLAGE), 'on ne les invite pas');
-    assertEqual(JSON.stringify(s), avant, 'rien n\'a bougé');
-    const t = createNewGame(5);
-    assert(!t.amitie || !Object.keys(t.amitie.pnj || {}).some((k) => /^vg-/.test(k)), 'une partie neuve : rien');
-    assertEqual(farmSeed(t) !== undefined, true);
-  }, false);
-});

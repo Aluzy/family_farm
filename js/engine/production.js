@@ -2,17 +2,15 @@
    Ce que la ferme productive garde de ses jours (le chantier « l'île à bâtir », docs/ile.md, fiche I8b ; les
    réglages : data/village.json PRODUCTION, VOCATIONS.production).
 
-   state.production (né au premier besoin, le chantier allumé ; productionDe) = {
+   state.production (né au premier besoin ; productionDe) = {
      ventes ({ jour: pièces } : la valeur de ce qui a été vendu au port ce jour-là, au prix de vente : la valeur
        exportée ; noterExport, appelé par bac.js noterVenteBac, que toute vente au port appelle),
      energie ({ jour: Wh } : l'énergie que la ferme a produite ce jour-là, notée la nuit : productionNuit),
      contrats ({ tire, proposes, acceptes, honores, primes, avis } : les contrats d'export, js/engine/contrats.js) }.
    Les jours gardés : les LUNE.JOURS_MOIS derniers (un mois de lune) ; ce qui est plus vieux s'efface.
-   Le chantier éteint (villageActif), rien ici ne se lit ni ne s'écrit.
    ========================================================================== */
 
 import { DATA } from './catalog.js';
-import { villageActif } from './village.js';
 import { sellPrice } from './market.js';
 import { memoEnLot } from './blocs.js';
 
@@ -25,7 +23,6 @@ export const joursDuMois = () => Math.max(1, Math.floor(Number(DATA.LUNE && DATA
 // (I9g : relevé une fois par pas en lot, blocs.js memoEnLot : la route de la charrette le demande à chaque signature de
 // la journée du village, des dizaines de fois par pas)
 export function quaiDeChargement(state) {
-  if (!villageActif(state)) return null;
   return memoEnLot(state, 'quai', () => {
     for (const [k, sorte] of Object.entries((state && state.blocs) || {})) if (sorte === 'quai_chargement') return Number(k);
     return null;
@@ -37,9 +34,8 @@ export function nouveauxContrats(passe = 0) {
   return { tire: passe, proposes: [], acceptes: [], honores: 0, primes: 0, avis: [] };
 }
 
-// Ce que la ferme productive garde (créé s'il manque), ou null le chantier éteint.
+// Ce que la ferme productive garde (créé s'il manque).
 export function productionDe(state) {
-  if (!villageActif(state)) return null;
   if (!objet(state.production) || !objet(state.production.ventes) || !objet(state.production.energie) || !objet(state.production.contrats)) {
     state.production = reparerProduction(state.production, state.port && Number.isInteger(state.port.passe) ? state.port.passe : 0);
   }
@@ -69,13 +65,13 @@ function duMois(o, jour) {
 
 // La valeur exportée sur le mois de lune (pièces, un entier).
 export function exporteDuMois(state) {
-  const P = villageActif(state) && objet(state.production) ? state.production : null;
+  const P = objet(state.production) ? state.production : null;
   return P ? Math.round(duMois(P.ventes, jourDe(state))) : 0;
 }
 
 // L'énergie produite sur le mois de lune (Wh, un entier) : les jours notés, et aujourd'hui jusqu'ici.
 export function energieDuMois(state) {
-  const P = villageActif(state) && objet(state.production) ? state.production : null;
+  const P = objet(state.production) ? state.production : null;
   if (!P) return 0;
   const j = jourDe(state), auj = P.energie[j] === undefined ? Math.floor((Number(state.jour && state.jour.produite) || 0) / 1000) : 0;
   return Math.round(duMois(P.energie, j) + auj);

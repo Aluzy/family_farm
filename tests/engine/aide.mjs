@@ -10,16 +10,15 @@
 
 import { test } from 'node:test';
 import {
-  addItem, awakeMsAtHour, boitePosee, buildFridge, buildStation, decalerPartie, FERME_DANS_MONDE, FERME_GENEREE, MONDE,
-  buyCow, buySheep, countItem, createInitialState, DATA, defaultOrigin, findPlot, grantTech,
-  farmTerrain, growDue, irrigate, makePlot, migrate, maxStage, startPlots, openStation, plant, plotAtTile, robotStep, shelfLife,
-  depenserMembre, mangeurs, repasStep, sleep, takeItem, testBatir, testFillBatteries, testGoToChapter, testSetBuildingLevel5, tick, unlockLevel,
-  zoneTile,
+  makePlot,
+  addItem, awakeMsAtHour, boitePosee, buildFridge, decalerPartie, FERME_DANS_MONDE, FERME_GENEREE, MONDE, buyCow,
+  buySheep, countItem, createInitialState, DATA, defaultOrigin, findPlot, grantTech, farmTerrain, growDue, irrigate,
+  migrate, maxStage, startPlots, openStation, plant, plotAtTile, robotStep, shelfLife, depenserMembre, mangeurs,
+  repasStep, sleep, takeItem, testBatir, testFillBatteries, testGoToChapter, testSetBuildingLevel5, tick,
+  unlockLevel, zoneTile,
 } from '../../js/engine/index.js';
 import { noterEncyclopedie, toutVoir } from '../../js/engine/index.js';
 import { ETAPES } from '../../js/engine/didacticiel.js';
-import { habitantsDe, peuplerHameau } from '../../js/engine/habitants.js';
-import { ajouterAmitie } from '../../js/engine/amitie.js';
 
 // Le calendrier lunaire change la pousse, l'eau et les récoltes selon le jour. Les tests écrits
 // avant lui tournent lune neutre (un stade par nuit, rendements et eau de base) ; ceux de la
@@ -47,7 +46,6 @@ const reglagesPenalites = () => ({
   REVEIL_REPAS: DATA.PERSONNAGE.REVEIL_REPAS,
   FAIM: DATA.BONHEUR.CIBLE.FAIM,
   SANS_COUCHAGE: DATA.ATELIER.BONHEUR_SANS_COUCHAGE,
-  DERIVE: DATA.RECIT.DERIVE.POINTS.haute,
   CHEVAL: DATA.CHEVAL.VITESSE_FAIM,
 });
 function poserPenalites(r) {
@@ -56,13 +54,12 @@ function poserPenalites(r) {
   DATA.PERSONNAGE.REVEIL_REPAS = r.REVEIL_REPAS;
   DATA.BONHEUR.CIBLE.FAIM = r.FAIM;
   DATA.ATELIER.BONHEUR_SANS_COUCHAGE = r.SANS_COUCHAGE;
-  DATA.RECIT.DERIVE.POINTS.haute = r.DERIVE;
   DATA.CHEVAL.VITESSE_FAIM = r.CHEVAL;
 }
 const PENALITES_DU_JEU = reglagesPenalites();
 const PENALITES_D_AVANT = {
   PENALITES: Object.fromEntries(Object.keys(DATA.PENALITES).map((k) => [k, true])),
-  REVEIL_BASE: 60, REVEIL_REPAS: 40, FAIM: -8, SANS_COUCHAGE: -32, DERIVE: -1, CHEVAL: 1.3,
+  REVEIL_BASE: 60, REVEIL_REPAS: 40, FAIM: -8, SANS_COUCHAGE: -32, CHEVAL: 1.3,
 };
 poserPenalites(PENALITES_D_AVANT);
 export function sansPenalite(fn) {
@@ -78,27 +75,6 @@ export { PENALITES_DU_JEU };
 export function reglagesDuJeu() {
   poserPenalites(PENALITES_DU_JEU);
 }
-
-// Le chantier « l'île à bâtir » (docs/ile.md, fiche I0a) : son code se lit quand DATA.VILLAGE.ACTIF vaut true
-// (js/engine/village.js). Les fichiers tests/engine/village-*.test.mjs tournent avec le réglage forcé à true,
-// tout le fichier (leur processus est le leur : tests/run-tests.mjs) ; les autres sont ceux du jeu d'avant : depuis
-// la bascule (fiche I9h : le réglage du jeu allumé), ils le forcent à false (JEU_D_AVANT), jusqu'à leur retrait (la
-// seconde PR d'I9h), sauf le temps d'un test posé dans avecVillage (ou avecVillage(fn, false)). Le réglage du jeu tel
-// qu'il est publié : VILLAGE_DU_JEU.
-const VILLAGE_DU_JEU = DATA.VILLAGE.ACTIF;
-export const FICHIER_DU_VILLAGE = /[\\/]village-[^\\/]*\.test\.mjs$/.test(process.argv[1] || '');
-export const JEU_D_AVANT = !FICHIER_DU_VILLAGE;
-DATA.VILLAGE.ACTIF = FICHIER_DU_VILLAGE;
-export function avecVillage(fn, actif = true) {
-  const avant = DATA.VILLAGE.ACTIF;
-  DATA.VILLAGE.ACTIF = actif;
-  try {
-    return fn();
-  } finally {
-    DATA.VILLAGE.ACTIF = avant;
-  }
-}
-export { VILLAGE_DU_JEU };
 
 // Un test : test(nom, () => { … }), celui de node:test tel quel (pour que chaque test soit
 // rattaché à son fichier). Tous les tests du moteur sont des fonctions synchrones sans
@@ -397,13 +373,8 @@ export const OBJECTIFS_MONDE = ['caleche', 'hameaux', 'monde', 'pecheMer', 'acha
 export function vieFaite(s) {
   const k = s.campagne.compteurs;
   k.repasInvites = Math.max(k.repasInvites || 0, 5);
-  // un ami intime, dans un hameau peuplé pour l'occasion
-  const plan = { id: 'h_vie', nom: 'Les Amis', metier: 'berger', style: 'prairie', case: 3,
-    maisons: [{ id: 'h_vie_m1', lits: [{ case: 0, sorte: 'lit_adulte' }] }], jardins: [], travail: [], place: { cases: [] } };
-  if (!habitantsDe(s).h_vie) peuplerHameau(s, plan);
-  for (const f of habitantsDe(s).h_vie.foyers) for (const m of f.membres) ajouterAmitie(s, m.id, 1000);
-  // un projet achevé, tous les plans, trois styles mêlés (des sols loin de tout)
-  s.projets = { ...(s.projets || {}), h_vie: { rang: 1, recu: {}, don: null, faits: [{ sorte: 'place', jour: 1 }] } };
+  // (les amis et les projets des hameaux sont retirés à la bascule, I9h) tous les plans, trois styles mêlés (des sols
+  // loin de tout)
   s.plans = { connus: Object.fromEntries(Object.values(DATA.PLANS.COLLECTIONS).flatMap((c) => c.plans).map((id) => [id, { jour: 1, de: null, annonce: true }])), explores: {}, amis: {} };
   s.sols = { ...(s.sols || {}) };
   ['sol_tomettes', 'sol_dalles', 'plancher', 'sol_chevrons', 'sol_carrelage', 'sol_mosaique'].forEach((sorte, i) => { s.sols[1 + i] = sorte; });

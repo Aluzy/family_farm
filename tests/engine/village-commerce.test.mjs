@@ -1,16 +1,14 @@
 /* ==========================================================================
-   Tests du chantier « l'île à bâtir » : le commerce au port (docs/ile.md, fiche I1b). Comme tous les fichiers
-   tests/engine/village-*.test.mjs, ils tournent avec VILLAGE.ACTIF forcé à true (tests/engine/aide.mjs).
+   Tests du chantier « l'île à bâtir » : le commerce au port (docs/ile.md, fiche I1b).
    Lancer seul : node tests/run-tests.mjs village-commerce
    ========================================================================== */
 
 import {
-  acheterAuPort, acheterCaleche, awakeMsAtHour, buyItem, buyPrice, calecheIci, comptoirDuPort, commanderCaleche, commencerObjectifs,
-  createNewGame, DATA, deposerMalle, distanceAuComptoir, enVenteAuPort, etalPort, executerCommande, farmSeed, isBuyable, lieuPort,
-  marcheFerme, objectiveValue, portDuMonde, portOuvert, sellItem, sellPrice, simulateGame, unlockLevel, vendreAuPort, vendreCaleche,
-  chargerPortage,
+  acheterAuPort, awakeMsAtHour, buyItem, buyPrice, comptoirDuPort, commencerObjectifs, createNewGame, DATA,
+  distanceAuComptoir, enVenteAuPort, etalPort, executerCommande, farmSeed, isBuyable, lieuPort, marcheFerme,
+  objectiveValue, portDuMonde, portOuvert, sellPrice, simulateGame, unlockLevel, vendreAuPort, chargerPortage,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, reach, setInv, test } from './aide.mjs';
+import { assert, assertEqual, reach, setInv, test } from './aide.mjs';
 
 const P = DATA.PORT;
 
@@ -117,42 +115,6 @@ test('les commandes port.vendre et port.acheter', () => {
   const a = executerCommande(s, { id: 'a1', type: 'port.acheter', args: { objet: 'graine_carotte', quantite: 1, case: ou } });
   assert(a.ok, a.error);
   assertEqual(executerCommande(s, { type: 'port.vendre', args: { objet: 'patate', quantite: 1 } }).ok, false, 'il faut la case');
-});
-
-test('la calèche inerte : elle ne vend ni n\'achète plus, sa malle non plus', () => {
-  const { s } = auPort();
-  setInv(s, { carotte: 5 });
-  s.pieces = 200;
-  const avant = JSON.stringify([s.pieces, s.inventaire]);
-  for (const r of [
-    vendreCaleche(s, 'carotte', 1, null, { sansPresence: true }),
-    acheterCaleche(s, 'graine_carotte', 1, null, { sansPresence: true }),
-    deposerMalle(s, 'carotte', 1),
-    commanderCaleche(s, 'graine_carotte', 1),
-  ]) {
-    assertEqual(r.ok, false, 'refusé');
-    assert(/port/.test(r.error), r.error);
-  }
-  assertEqual(calecheIci(s, 0).ok, false, 'pas de commerce à côté d\'elle');
-  assertEqual(JSON.stringify([s.pieces, s.inventaire]), avant, 'rien n\'a bougé');
-});
-
-test('le réglage éteint : pas de port, la calèche et market.js comme avant', () => {
-  avecVillage(() => {
-    const s = reach(createNewGame('commerce'), 'marche');
-    s.awakeMs = awakeMsAtHour(9);
-    setInv(s, { carotte: 5 });
-    assertEqual(lieuPort(s), null, 'pas de lieu de port');
-    assertEqual(vendreAuPort(s, 'carotte', 1, 0, { sansPresence: true }).ok, false, 'pas de vente au port');
-    const r = sellItem(s, 'carotte', 1);
-    assert(r.ok, r.error);
-    assertEqual(s.compta[s.compta.length - 1].libelle, `Vente : ${DATA.OBJETS.carotte.nom}`, 'les Comptes d\'avant');
-    s.pieces = 100;
-    assert(buyItem(s, 'graine_carotte', 1).ok);
-    assertEqual(s.compta[s.compta.length - 1].libelle, `Achat : ${DATA.OBJETS.graine_carotte.nom}`);
-    assert(vendreCaleche(s, 'carotte', 1, null, { sansPresence: true }).ok, 'la calèche commerce');
-    assertEqual(marcheFerme(s), `La calèche commerce avec toi à partir du niveau ${unlockLevel('marche')}.`);
-  }, false);
 });
 
 test('le joueur automatique va au port : 25 nuits sans nuit sans repas, des ventes au port, des graines achetées', () => {

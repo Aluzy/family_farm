@@ -22,12 +22,11 @@
        absent), note (le texte du joueur, ou absent), par (I9e, dans un monde de l'île : le compte du joueur qui l'a
        épinglée ou y a écrit sa note ; la page montre son prénom) }], dans l'ordre des jours,
      faits: [les clés des lignes qui ont été résumées : elles ne se réécrivent pas] }.
-   Il ne naît qu'avec le chantier allumé (une partie neuve, une partie d'essai ou le premier moment noté) ; éteint, rien
+   Il naît avec la partie (une partie neuve, une partie d'avant passée sur l'île ou le premier moment noté)
    ne s'écrit. La page : js/ui/chronique.js ; les villageois s'en souviennent (villageois-amitie.js, souvenir_<type>). Les
    tests : tests/engine/village-chronique.test.mjs. */
 
 import { DATA } from './catalog.js';
-import { villageActif } from './village.js';
 import { monthIndex, yearNumber } from './lune.js';
 import { commerceEnPhrase, ileEnPhrase, nettoyerNom, nomAffiche, nomDe, nommerCommerce, nommerVillageSiBesoin, renommer } from './noms.js';
 import { acteurEnCours } from './temps-monde.js';
@@ -99,7 +98,7 @@ export function chroniqueAEcrit(state, cle) {
 // La famille qui débarque : la première ligne, écrite dès que la famille est configurée (le départ : setupPending),
 // datée du jour 1. Les autres lignes l'écrivent d'abord s'il le faut. → la ligne, ou null.
 export function assurerArrivee(state) {
-  if (!villageActif(state) || (state.famille && state.famille.configuree === false)) return null;
+  if ((state.famille && state.famille.configuree === false)) return null;
   if (chroniqueAEcrit(state, 'arrivee')) return null;
   return ecrire(state, 'arrivee', {}, 1);
 }
@@ -128,9 +127,9 @@ function ecrire(state, type, donnees, jour) {
 }
 
 // Le point d'entrée : note le moment `type` (VILLAGE.CHRONIQUE.TYPES) avec ses `donnees` (les prénoms, les ids : qui, a,
-// b, avec ; les noms). Rien le chantier éteint ; une ligne de même clé ne s'écrit qu'une fois. → la ligne, ou null.
+// b, avec ; les noms). Une ligne de même clé ne s'écrit qu'une fois. → la ligne, ou null.
 export function noterChronique(state, type, donnees = {}) {
-  if (!state || !villageActif(state) || !TYPES()[type]) return null;
+  if (!state || !TYPES()[type]) return null;
   if (type !== 'avant') assurerArrivee(state);
   if (type === 'arrivee') return null;   // (assurerArrivee l'a écrite, ou elle l'était déjà)
   return ecrire(state, type, donnees, jourDe(state));
@@ -139,7 +138,7 @@ export function noterChronique(state, type, donnees = {}) {
 // Fiche I7f (la migration d'une partie d'avant : migration-ile.js) : une ligne datée du jour `jour` (pas après
 // aujourd'hui), sans écrire l'arrivée de la famille sur l'île (une partie d'avant n'a pas débarqué). → la ligne, ou null.
 export function noterChroniqueLe(state, type, donnees, jour) {
-  if (!state || !villageActif(state) || !TYPES()[type]) return null;
+  if (!state || !TYPES()[type]) return null;
   return ecrire(state, type, donnees, Math.max(1, Math.min(jourDe(state), Math.floor(Number(jour) || 1))));
 }
 
@@ -147,14 +146,14 @@ export function noterChroniqueLe(state, type, donnees, jour) {
 
 // La première récolte (campaign.js, noteCropHarvested).
 export function chroniqueRecolte(state, culture) {
-  if (!villageActif(state) || chroniqueAEcrit(state, 'recolte')) return null;
+  if (chroniqueAEcrit(state, 'recolte')) return null;
   const c = DATA.CULTURES[culture];
   return noterChronique(state, 'recolte', { culture: c ? c.nom.toLowerCase() : String(culture) });
 }
 
 // La première vente au port (portage.js vendreCharge, bac.js honorerCommande).
 export function chroniqueVente(state, item) {
-  if (!villageActif(state) || chroniqueAEcrit(state, 'vente')) return null;
+  if (chroniqueAEcrit(state, 'vente')) return null;
   const o = DATA.OBJETS[item];
   return noterChronique(state, 'vente', { objet: o ? o.nom.toLowerCase() : String(item) });
 }
@@ -162,7 +161,7 @@ export function chroniqueVente(state, item) {
 // Un villageois s'installe (villageois.js arriverVillageois ; un enfant : liens.js arriverEnfant) : sa ligne, puis le
 // village prend un nom (le NOMS.VILLAGE_A-ième adulte), puis le dixième villageois. → les lignes écrites.
 export function chroniqueArrivee(state, v, parents = null) {
-  if (!villageActif(state) || !objet(v)) return [];
+  if (!objet(v)) return [];
   const out = [];
   if (v.enfant) out.push(noterChronique(state, 'enfant', { qui: v.id, prenom: v.prenom, a: parents && parents[0] ? parents[0].id : undefined, b: parents && parents[1] ? parents[1].id : undefined, pa: parents && parents[0] ? parents[0].prenom : undefined, pb: parents && parents[1] ? parents[1].prenom : undefined }));
   else out.push(noterChronique(state, 'villageois', { qui: v.id, prenom: v.prenom, village: nomDe(state, 'village') || undefined, ile: nomDe(state, 'ile') || undefined }));
@@ -177,7 +176,7 @@ export function chroniqueArrivee(state, v, parents = null) {
 // son nom (nommerCommerce : proposé à la graine s'il n'en a pas) et sa ligne, « Léa ouvre la forge du Vieux Chêne ».
 // → la ligne, ou null.
 export function commerceOuvert(state, { id, sorte = null, qui = null } = {}) {
-  if (!villageActif(state) || id === null || id === undefined) return null;
+  if (id === null || id === undefined) return null;
   const nom = nommerCommerce(state, id, { sorte });
   const v = (Array.isArray(state.villageois) ? state.villageois : []).find((x) => objet(x) && x.id === qui);
   return noterChronique(state, 'commerce', { id: String(id), sorte: sorte || '', qui: qui || undefined, prenom: v ? v.prenom : 'On', nom, commerce: commerceEnPhrase(nom, sorte) });

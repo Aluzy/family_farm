@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : la vie des villageois sur la ferme (docs/ile.md, fiche I3b ;
-   js/engine/villageois-journee.js). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec
-   VILLAGE.ACTIF forcé à true.
+   js/engine/villageois-journee.js).
    - la journée : des segments de 0 à 24 h, sans trou, les états de la fiche ; dormir la nuit dans son lit, se lever,
      sortir, manger assis à midi et le soir, rentrer à la veillée ;
    - la position déduite de l'heure est déterministe : la même partie (une copie, rechargée) donne la même position à
@@ -16,11 +15,11 @@
    ========================================================================== */
 
 import {
-  addItem, arriverVillageois, blocsPoses, caseBatissable, casesCouvertes, DATA, farmTerrain, journeeDuVillage, journeesPourLaCarte,
-  lieuxDuVillage, maisonsMarquees, meteoDuJour, paroleVillageois, piecesCloses, poserBloc, positionVillageois, testMaisonVillageois,
-  ETATS_VILLAGEOIS,
+  addItem, arriverVillageois, blocsPoses, caseBatissable, casesCouvertes, DATA, farmTerrain, journeeDuVillage,
+  lieuxDuVillage, maisonsMarquees, meteoDuJour, paroleVillageois, piecesCloses, poserBloc, positionVillageois,
+  testMaisonVillageois, ETATS_VILLAGEOIS,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 
@@ -99,7 +98,7 @@ function jourOu(s, pluie) {
 /* ---------- la journée ---------- */
 
 test('la journée : de 0 à 24 h sans trou, les états de la fiche ; dormir, se lever, sortir, manger, rentrer', () => {
-  avecVillage(() => {
+  {
     const { s } = ile(1, 3);
     // (l'horaire commun : sans les décalages des traits, fiche I6c, que village-traits.test.mjs vérifie)
     for (const v of s.villageois) v.traits = [];
@@ -121,11 +120,11 @@ test('la journée : de 0 à 24 h sans trou, les états de la fiche ; dormir, se 
       assertEqual(a(H.SOUPER + 0.6).etat, 'repas', `${id} : à table le soir`);
       assertEqual(a(H.VEILLEE + H.DECALE + 0.1).etat, 'rentrer', `${id} : rentré à la veillée`);
     }
-  });
+  }
 });
 
 test('la position déduite de l\'heure est déterministe : la même partie, la même place ; une autre graine, une autre journée', () => {
-  avecVillage(() => {
+  {
     const { s } = ile(2, 3);
     const t = copie(s);
     for (const h of [0.5, 6.8, 8.1, 9.6, 12.4, 14.2, 16.9, 18.9, 20.2, 22.9]) {
@@ -143,13 +142,13 @@ test('la position déduite de l\'heure est déterministe : la même partie, la m
     const { s: u } = ile(5, 3);
     u.day = s.day;
     assert(JSON.stringify(copie([...journeeDuVillage(u)])) !== JSON.stringify(avant), 'une autre graine');
-  });
+  }
 });
 
 /* ---------- les lieux ---------- */
 
 test('les repas : la table de sa maison d\'abord, sinon la table commune ; un siège chacun, assis', () => {
-  avecVillage(() => {
+  {
     const { s, G } = ile(3, 3, { grande: true });
     jourOu(s, false);
     const L = lieuxDuVillage(s);
@@ -168,11 +167,11 @@ test('les repas : la table de sa maison d\'abord, sinon la table commune ; un si
     const P = t.villageois.map((v) => positionVillageois(t, v.id, H.SOUPER + 0.6));
     assertEqual(P.filter((p) => p.lieu.genre === 'siege').length, 4, 'quatre à la table commune');
     assert(P.filter((p) => p.lieu.genre !== 'siege').every((p) => p.lieu.genre === 'maison'), 'les autres chez eux');
-  });
+  }
 });
 
 test('flâner : un banc libre (un par créneau), sinon la place ; dehors sans but : les chemins posés et la place', () => {
-  avecVillage(() => {
+  {
     const { s, P } = ile(6, 5);
     jourOu(s, false);
     const L = lieuxDuVillage(s), J = journeeDuVillage(s);
@@ -192,11 +191,11 @@ test('flâner : un banc libre (un par créneau), sinon la place ; dehors sans bu
       const B = [...J.keys()].map((id) => positionVillageois(s, id, h)).filter((p) => p.etat === 'flaner' && p.lieu.genre === 'siege').map((p) => p.lieu.case);
       assertEqual(new Set(B).size, B.length, `un par banc à ${h.toFixed(1)} h`);
     }
-  });
+  }
 });
 
 test('sous la pluie, il s\'abrite chez lui (repas du dehors compris) ; au repos, il reste chez lui', () => {
-  avecVillage(() => {
+  {
     const { s } = ile(7, 3);
     const m = jourOu(s, true);
     for (const v of s.villageois) {
@@ -214,13 +213,13 @@ test('sous la pluie, il s\'abrite chez lui (repas du dehors compris) ; au repos,
     const segs = journeeDuVillage(t).get(t.villageois[0].id);
     assert(segs.some((x) => x.etat === 'repos') && !segs.some((x) => x.etat === 'dehors' || x.etat === 'flaner'), 'il se repose');
     assert(journeeDuVillage(t).get(t.villageois[1].id).some((x) => x.etat === 'dehors' || x.etat === 'flaner'), 'l\'autre sort');
-  });
+  }
 });
 
 /* ---------- jamais dans un mur ---------- */
 
 test('jamais dans un mur : sur un lot de fermes générées, chaque lieu de la journée est une case où se tenir', () => {
-  avecVillage(() => {
+  (() => {
     let lieux = 0;
     for (let seed = 1; seed <= 8; seed++) {
       const { s } = ile(seed * 11, 4, { grande: seed % 2 === 0, place: seed % 3 !== 0 });
@@ -249,13 +248,13 @@ test('jamais dans un mur : sur un lot de fermes générées, chaque lieu de la j
       }
     }
     assert(lieux > 500, `des lieux vérifiés (${lieux})`);
-  });
+  })();
 });
 
 /* ---------- parler ---------- */
 
 test('parler : sa bulle (le salut de l\'heure, ce qu\'il fait, son humeur), tirée de la graine ; l\'objectif « parler »', () => {
-  avecVillage(() => {
+  {
     const { s } = ile(9, 2);
     s.objectifs = { faits: {} };
     const id = s.villageois[0].id;
@@ -273,17 +272,5 @@ test('parler : sa bulle (le salut de l\'heure, ce qu\'il fait, son humeur), tir�
     // (sans activité dite : celle de son horaire)
     assertEqual(paroleVillageois(s, id, { heure: 3 }).etat, 'dormir');
     assertEqual(paroleVillageois(s, 'vg-99', {}), null, 'personne');
-  });
-});
-
-test('éteint : ni journée ni lieux pour la carte', () => {
-  avecVillage(() => {
-    const { s } = ile(10, 1, { place: false });
-    avecVillage(() => {
-      assertEqual(journeesPourLaCarte(s), null, 'rien sur la carte');
-      assertEqual(journeeDuVillage(s).size, 0, 'pas de journée');
-      assertEqual(positionVillageois(s, 'vg-1', 12), null);
-    }, false);
-    assert(journeesPourLaCarte(s)['vg-1'].length > 5, 'allumé : sa journée');
-  });
+  }
 });

@@ -5,7 +5,6 @@ import {
 } from '../engine/depart.js';
 import { cleanFirstName, validFirstName } from '../engine/family.js';
 import { commencerObjectifs } from '../engine/objectifs.js';
-import { villageActif } from '../engine/village.js';
 import { familleSeule, nomIlePropose, nommerIle } from '../engine/depart-ile.js';
 import { levelBlock } from '../engine/levels.js';
 import { escapeHtml } from '../engine/format.js';
@@ -106,12 +105,12 @@ const accueil = {
   // y revient. modif : null, ou { ajout: 'enfant' | 'animal' | null } ; animalI : l'animal qu'on nomme.
   modif: null,
   animalI: -1,
-  seul: false,                     // (le chantier allumé) « Seul » : un adulte tiré de la graine
-  ile: '',                         // (le chantier allumé) le nom de l'île, tel qu'il est saisi
+  seul: false,                     // « Seul » : un adulte tiré de la graine
+  ile: '',                         // le nom de l'île, tel qu'il est saisi
 };
 
 // Le chantier « l'île à bâtir » est-il allumé pour la partie qu'on commence ?
-const surIle = () => !!(state && villageActif(state));
+const surIle = () => !!(state);
 
 const ORDINAUX = ['premier', 'deuxième', 'troisième', 'quatrième', 'cinquième', 'sixième'];
 
@@ -361,7 +360,7 @@ function suiteAccueil() {
 function reponseAccueil(oui) {
   const A = accueil;
   switch (A.etape) {
-    // (le récit, lot 8 : le compagnon est obligatoire, docs/recit/personnages.md : il garde la ferme
+    // (le récit, lot 8 : le compagnon est obligatoire, archive/jeu-avant-ile:docs/recit/personnages.md : il garde la ferme
     // quand le joueur explore ; plus de question, on le choisit tout de suite)
     case 'confirme':
       if (!oui) return allerA('perso');

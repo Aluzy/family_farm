@@ -1,7 +1,6 @@
 import { DATA } from './catalog.js';
-import { nouvelleCaleche } from './caleche.js';
 import { GENERATEUR_VERSION, STATE_VERSION } from './base.js';
-import { allDevices, batteryCapacity, newDayStats, startFarm } from './devices.js';
+import { newDayStats, allDevices, batteryCapacity, startFarm } from './devices.js';
 import { addItem, countItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
@@ -11,7 +10,7 @@ import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
 import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
-import { nouveauDehors, nouveauPort, villageActif } from './village.js';
+import { nouveauDehors, nouveauPort } from './village.js';
 import { reparerPort } from './bac.js';
 import { decoderSegments, encoderSegments } from './dehors.js';
 import { VEHICULES } from './portage.js';
@@ -35,17 +34,17 @@ import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
 import { nouvelEquipement, sacDef } from './equipement.js';
 import { nouveauCompagnon } from './compagnon.js';
-import { recitDAvant, recitPour } from './recit-aiguillage.js';
+import { bienvenueDAvant, bienvenueFaite, calecheVide, poserEnveloppe, recitVide, remboursementCommerce } from './migration-avant.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
 import { reparerLiens } from './liens.js';
 import { reparerBourse, reparerEtal } from './bourse.js';
 import { reparerGardeManger } from './garde-manger.js';
 import { reparerTraits } from './traits.js';
-import { reparerPaliersVocations } from './vocations.js';
-import { reparerFetes } from './fetes-village.js';
 import { reparerProjetsVillage } from './projets-village.js';
 import { reparerProduction } from './production.js';
 import { reparerArtisan, reparerCommerces } from './artisans.js';
+import { reparerPaliersVocations } from './vocations.js';
+import { reparerFetes } from './fetes-village.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -140,19 +139,16 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     energie: energyMax(), // version 1.8 : l'énergie du personnage (millièmes)
     compta: [], // les Comptes : gains et dépenses récents (voir compta.js)
     meubles: {}, // meubles de la maison (fabriqués à l'Atelier ; absent dans une ancienne sauvegarde : aucun)
-    caleche: nouvelleCaleche(), // la calèche (caleche.js, fiche 7c) : son coffre, ses retenues
+    caleche: calecheVide(), // la calèche d'avant (fiche 7c), vide : une clé de la sauvegarde (migration-avant.js)
     equipement: nouvelEquipement(), // fiche 11 : les pièces de chaque membre, le sac (equipement.js)
     litPrincipal: null, // fiche 17 : le lit choisi par le personnage principal (blocs.js choisirLit ; null : le premier)
-    // fiche 18 : la visite de bienvenue du deuxième jour (bienvenue.js) ; fiche I7c : le chantier allumé, déjà faite
-    // (l'aiguillage du récit, recit-aiguillage.js : la partie naissante, le réglage seul décide)
-    bienvenue: recitPour(null).nouvelleBienvenue(),
+    // fiche 18 : la visite de bienvenue d'avant ; sur l'île, déjà faite (une clé de la sauvegarde : migration-avant.js)
+    bienvenue: bienvenueFaite(),
     // fiche 19 : le compagnon aide à la ferme (compagnon.js) : l'option, ce qu'il a fait aujourd'hui, sa
     // cruche. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
     compagnon: nouveauCompagnon(),
-    // le récit de Céron (recit.js, docs/recit/) : les faits, les relations, la confiance des hameaux, les
-    // répliques dites, le carnet. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas).
-    // Fiche I7c : le chantier allumé, un récit vide que rien n'écrit (recit-muet.js ; la page d'avant le lit encore)
-    recit: recitPour(null).nouveauRecit(),
+    // le récit d'avant (retiré à la bascule, I9h) : vide, que rien n'écrit (une clé de la sauvegarde : migration-avant.js)
+    recit: recitVide(),
     amitie: { pnj: {}, visites: {}, porte: [] }, // l'amitié avec les habitants des hameaux (js/engine/amitie.js)
     invitations: { seq: 0, liste: [] },
     plans: { connus: {}, explores: {}, amis: {} },
@@ -180,8 +176,8 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
   }
   s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s), caseDepart(farmTerrain(s))), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
-  // le chantier « l'île à bâtir » allumé : la partie suit les paliers de l'île (paliers.js, fiche I7a)
-  if (villageActif(s)) { commencerPaliers(s); s.dehors = nouveauDehors(); s.port = nouveauPort(s.day); s.noms = nouveauxNoms(s); s.chronique = nouvelleChronique(); }
+  // l'île à bâtir : la partie suit les paliers de l'île (paliers.js, fiche I7a)
+  commencerPaliers(s); s.dehors = nouveauDehors(); s.port = nouveauPort(s.day); s.noms = nouveauxNoms(s); s.chronique = nouvelleChronique();
   return s;
 }
 
@@ -509,7 +505,7 @@ export const MIGRATIONS = {
   // retenues du jour, l'heure de ses derniers arrêts, les ventes du jour). Rien d'autre ne change :
   // l'argent, l'inventaire (ce qui a été acheté au Marché reste au joueur), les outils, les animaux, les
   // meubles et les cours du Marché (state.marche : ceux des semences comptent encore) restent.
-  56: (state) => ({ ...state, caleche: nouvelleCaleche(), version: 57 }),
+  56: (state) => ({ ...state, caleche: calecheVide(), version: 57 }),
   // v57 → v58 : s'orienter (monde-vu.js, fiche 8) : ce qui a été vu du grand monde, plus fin que les
   // régions (state.monde.vu : un bit par cellule de 8 × 8 cases, en base64), le but de la boussole
   // (state.monde.but, null : la ferme) et si elle se montre (state.monde.boussole). Une partie existante
@@ -537,19 +533,17 @@ export const MIGRATIONS = {
   // v60 → v61 : choisir son lit (blocs.js choisirLit, fiche 17) : le personnage principal n'en a pas
   // encore choisi, il garde le premier couchage (l'ordre des pièces), comme avant.
   60: (state) => ({ ...state, litPrincipal: null, version: 61 }),
-  // v61 → v62 : la visite de bienvenue (bienvenue.js, fiche 18). Une partie qui n'a pas passé le jour
+  // v61 → v62 : la visite de bienvenue (fiche 18 ; migration-avant.js). Une partie qui n'a pas passé le jour
   // de la visite l'attend ; une partie plus avancée ne la reçoit pas (« faite », sans plat).
   61: (state) => {
-    const b = recitDAvant().nouvelleBienvenue();
-    if ((Number(state.day) || 1) > recitDAvant().jourBienvenue()) b.etat = 'faite';
-    return { ...state, bienvenue: b, version: 62 };
+    return { ...state, bienvenue: bienvenueDAvant(state.day), version: 62 };
   },
   // v62 → v63 : le récit, lot 7 (l'économie de l'île) : les commerces du niveau 10 disparaissent (la veillée à
-  // la ferme les remplace) ; ce qui y avait été mis est rendu (remboursementCommerce, js/engine/ile.js),
+  // la ferme les remplace) ; ce qui y avait été mis est rendu (remboursementCommerce, js/engine/migration-avant.js),
   // compté comme un gain de la journée (compta : remboursement).
   62: (state) => {
     const { commerce, ...reste } = state;
-    const rendu = recitDAvant().remboursementCommerce(commerce);
+    const rendu = remboursementCommerce(commerce);
     const out = { ...reste, version: 63 };
     if (rendu > 0) {
       out.pieces = (Number(state.pieces) || 0) + rendu;
@@ -577,14 +571,14 @@ export const MIGRATIONS = {
     const l = Array.isArray(out.courrier) ? out.courrier.find((x) => x && x.id === 'notaire_legs') : null;
     if (!l) return out;
     if (l.verse) {
-      const r = out.recit && typeof out.recit === 'object' && !Array.isArray(out.recit) ? out.recit : recitDAvant().nouveauRecit();
+      const r = out.recit && typeof out.recit === 'object' && !Array.isArray(out.recit) ? out.recit : recitVide();
       const faits = r.faits && typeof r.faits === 'object' && !Array.isArray(r.faits) ? r.faits : {};
       const j = Math.max(1, Math.floor(Number(state.day) || 1));
       if (!Array.isArray(faits['enveloppe.ouverte'])) faits['enveloppe.ouverte'] = [j, j, 1];
       out.recit = { ...r, faits };
     } else {
       out.courrier = out.courrier.map((x) => (x === l ? { ...x, verse: true } : x));
-      addItem(out, recitDAvant().objetEnveloppe(), 1);
+      poserEnveloppe(out);
     }
     return out;
   },
@@ -714,7 +708,7 @@ export const MIGRATIONS = {
     if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 1) out.carte = { ...c, generateur: 2 };
     return out;
   },
-  // v72 → v73 (le récit cosy, docs/recit/bible.md) : Maurice et Philomène sont partis en voyage (plus de notaire),
+  // v72 → v73 (le récit cosy, archive/jeu-avant-ile:docs/recit/bible.md) : Maurice et Philomène sont partis en voyage (plus de notaire),
   // Johnny n'existe plus (son carnet devient celui du ciel de Maurice, à son observatoire), Théo reste sur l'île
   // (chez Frida, s'il voulait partir : il revient à Bois-Joli), Odile tutoie dès la rencontre, la fin « riche »
   // s'appelle « genereuse ». Les noms changent dans la partie (RECIT_RENOMMAGES) ; rien ne se perd.
@@ -919,7 +913,7 @@ export const MIGRATIONS = {
   // v88 → v89 (le chantier « l'île à bâtir », fiche I3c) : les tâches attribuées (js/engine/taches.js). Chaque villageois
   // gagne sa tâche (v.tache, null), l'outil qu'on lui a confié (v.outil, null), ce que la navette porte au port (v.vendre,
   // []), ce qu'il ressèmera (v.semis, {}) et sa journée de travail (v.travail, null) ; une valeur abîmée est remise à vide.
-  // Sans villageois (le réglage éteint), rien ne change.
+  // Sans villageois, rien ne change.
   88: (state) => {
     const out = { ...state, version: 89 };
     if (Array.isArray(state.villageois)) out.villageois = state.villageois.map(reparerTaches);
@@ -938,18 +932,18 @@ export const MIGRATIONS = {
   // gardée dans state.amitie.pnj[l'id du villageois] comme celle des habitants. Chaque villageois a ses goûts (tirés
   // s'ils manquent ou sont abîmés) et sa fiche d'amitié (ACCUEIL points s'il n'en avait pas : la famille l'avait
   // accueilli) ; un présent illisible s'en va ; la demande d'un villageois qui n'est plus là s'oublie. Les amitiés des
-  // habitants des hameaux ne sont pas touchées (I7f). Sans villageois (le réglage éteint), rien ne change.
+  // habitants des hameaux ne sont pas touchées (I7f). Sans villageois, rien ne change.
   90: (state) => reparerAmitieVillageois({ ...state, version: 91 }),
   // v91 → v92 (le chantier « l'île à bâtir », fiche I6b) : les liens entre villageois (js/engine/liens.js : state.liens,
   // l'affinité de chaque paire dans une demi-matrice compacte, les foyers, les repas apportés prévus). Une partie d'avant
   // n'en a pas : ses paires partent, à leur première nuit, de l'estimation d'I3b+ (ce que la partie montrait) ; ce qui
-  // est abîmé est réparé (un foyer dont un membre n'est plus là s'en va). Sans villageois (le réglage éteint), rien.
+  // est abîmé est réparé (un foyer dont un membre n'est plus là s'en va). Sans villageois, rien.
   91: (state) => reparerLiens({ ...state, version: 92 }),
   // v92 → v93 (le chantier « l'île à bâtir », fiche I4) : la part et la bourse des villageois (js/engine/bourse.js :
   // v.panier, ce qui attend le bac ; v.reste ; v.achat, son achat du jour ; v.achats, les derniers ; v.affaires, ses
   // vêtements et ses meubles ; v.commande, ce qu'il attend du bac ; v.plaisir ; v.vente), et l'étal du joueur
   // (state.etal : ce qui y est en vente). Une partie d'avant n'en a pas : chacun part d'un panier vide, sa bourse
-  // gardée ; ce qui est abîmé est remis à vide. Sans villageois ni étal (le réglage éteint), rien ne change.
+  // gardée ; ce qui est abîmé est remis à vide. Sans villageois ni étal, rien ne change.
   92: (state) => {
     const out = { ...state, version: 93 };
     if (Array.isArray(state.villageois)) out.villageois = state.villageois.map(reparerBourse);
@@ -959,7 +953,7 @@ export const MIGRATIONS = {
   // v93 → v94 (le chantier « l'île à bâtir », fiche I6c) : les traits de personnalité des villageois (js/engine/traits.js :
   // v.traits, v.traitsConnus, v.indices). Un villageois arrivé avant la fiche reçoit les siens, tirés de la graine de la
   // partie et de son rang (deux villageois n'ont pas la même liste) ; aucun n'est encore connu ; ce qui est abîmé est
-  // réparé. Un enfant n'en a pas. Sans villageois (le réglage éteint), rien.
+  // réparé. Un enfant n'en a pas. Sans villageois, rien.
   93: (state) => reparerTraits({ ...state, version: 94 }),
   // v94 → v95 (le chantier « l'île à bâtir », fiche I7b) : le nouveau départ. Une partie neuve du chantier a le nom de
   // son île (state.noms.ile, borné comme le nom de famille), une terre vierge (state.dehors.ferme : 'vierge') et le
@@ -978,12 +972,10 @@ export const MIGRATIONS = {
   },
   // v95 → v96 (le chantier « l'île à bâtir », fiche I7g) : les noms (js/engine/noms.js : state.noms, l'île, le village, les
   // commerces, les maisons) et la chronique (js/engine/chronique.js : state.chronique, ses lignes, ses épingles et les notes
-  // du joueur). Une partie du chantier (allumé, ou une partie d'essai) qui n'a pas de nom d'île en reçoit un, tiré de sa
-  // graine ; ses noms abîmés sont effacés (le village redevient sans nom) ; sa chronique est réparée (une ligne
-  // illisible s'en va, une note est bornée). Une partie d'avant le chantier n'est pas touchée.
+  // du joueur). Une partie qui n'a pas de nom d'île en reçoit un, tiré de sa graine ; ses noms abîmés sont effacés (le
+  // village redevient sans nom) ; sa chronique est réparée (une ligne illisible s'en va, une note est bornée).
   95: (state) => {
     const out = { ...state, version: 96 };
-    if (!villageActif(out) && !('noms' in out) && !('chronique' in out)) return out;
     reparerNoms(out);
     out.chronique = reparerChronique(out.chronique);
     return out;
@@ -992,7 +984,7 @@ export const MIGRATIONS = {
   // state.vocations, les paliers atteints ; state.vocations.village, les fêtes et les projets du village) et le chantier
   // où un villageois est envoyé (v.chantier). Une partie d'avant n'en a pas : rien n'est ajouté ; ce qui est abîmé est
   // réparé (un palier d'une vocation inconnue, une fête illisible, un projet inconnu ; un villageois envoyé à un projet
-  // qui n'est plus en cours reprend sa tâche). Sans vocations ni villageois (le réglage éteint), rien.
+  // qui n'est plus en cours reprend sa tâche). Sans vocations ni villageois, rien.
   96: (state) => reparerVocations({ ...state, version: 97 }),
   // v97 → v98 (le chantier « l'île à bâtir », fiche I8b) : la ferme productive (js/engine/production.js :
   // state.production, la valeur exportée et l'énergie produite des derniers jours, les contrats d'export proposés et
@@ -2083,7 +2075,7 @@ export function migrate(save, jusqua = STATE_VERSION, o = {}) {
   if (typeof state.version !== 'number') state.version = version;
   if (state.version === STATE_VERSION && jusqua === STATE_VERSION) {
     state = reparerPartie(state);
-    // (fiche I7f : une partie d'avant ouverte sur l'île y passe : le réglage allumé, ou une partie d'essai)
+    // (fiche I7f : une partie d'avant ouverte sur l'île y passe)
     if (o.ile !== false && migrationIleDue(state)) {
       // (sur une copie : une partie qui ne passe pas reste telle quelle, jamais à moitié ; jamais d'exception ici)
       try { const ile = structuredClone(state); if (migrerVersLIle(ile)) state = ile; } catch (e) { /* (rien) */ }

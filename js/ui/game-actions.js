@@ -11,15 +11,14 @@ import { makeSeed, persistState } from './storage.js';
 import { setPendingAbsence, setSimulatedAt, syncJobs } from './loop.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
-import { registerActions, sameHandler } from './actions.js';
+import { sameHandler, registerActions } from './actions.js';
 import { closeModal } from './modal.js';
 import { sonMatin } from './son.js';
-import { partieNeuve } from './village.js';
 
 /* ---------- actions du moteur (jamais d'accès direct à state depuis l'UI) ---------- */
 
 function actionNewGame() {
-  setState(partieNeuve(newGameFrom(state, makeSeed())));
+  setState(newGameFrom(state, makeSeed()));
   setSimulatedAt(Date.now());
   setPendingAbsence(null);
   syncJobs();

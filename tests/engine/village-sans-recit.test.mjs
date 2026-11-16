@@ -1,216 +1,86 @@
 /* ==========================================================================
-   Tests du chantier « l'île à bâtir » : le récit retiré du moteur (docs/ile.md, fiche I7c ; l'aiguillage :
-   js/engine/recit-aiguillage.js, ses deux implémentations : recit-ancien.js et recit-muet.js). Comme tous les
-   fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
-   - la lecture des imports : aucun module du moteur n'importe le récit (recit.js, fil-lune.js, usure.js,
-     secrets.js, ile.js, bienvenue.js), sauf ces modules entre eux et recit-ancien.js (que seul l'aiguillage importe) ;
-     l'index ne les ré-exporte plus (fiche I7d) ; depuis village.js, et depuis tout autre module, on n'atteint pas le
-     récit sans passer par l'aiguillage ; aucun fichier de la page (js/ui, js/carte, js/*.js) n'importe un module du
-     récit : elle passe par l'aiguillage (recitPage pour ce que la page d'avant lit encore, null sur l'île) ;
-   - le moteur allumé, le récit vidé (DATA.RECIT, et les secrets, les ateliers, le courrier) : 30 nuits du joueur
-     automatique, sans erreur, et les hameaux du récit n'y naissent pas (fiche I7e) ; ni personnage écrit, ni fait, ni relation, ni
-     confiance, ni courrier, ni carnet ; aucune scène, aucun lieu ni secret qui parle, aucun atelier ;
-   - éteint, l'aiguillage rend le récit d'avant.
+   Tests de la bascule (fiche I9h, docs/ile.md D16) : le récit, les hameaux et la calèche retirés du jeu.
+   - les fichiers : les modules du récit, des hameaux et de la calèche n'existent plus, et aucun fichier du jeu
+     (js/, worker/src/) ne les importe ; les données n'ont plus leurs sections ;
+   - une partie neuve de l'île, 30 nuits du joueur automatique : sans erreur, rien du récit (ni fait, ni courrier),
+     la pousse de toujours (plus de pierre de lune), l'amitié des seuls villageois, à son échelle.
+   Ce qui reste du jeu d'avant pour les anciennes parties est dans js/engine/migration-avant.js et
+   js/engine/migration-ile.js (les tests : migrations, temoins, village-migration, village-bascule).
    Lancer seul : node tests/run-tests.mjs village-sans-recit
    ========================================================================== */
 
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  commencerObjectifs, composeFamily, createNewGame, DATA, elementsSol, familleSeule, finishSetup, genererMonde, moonPhase,
-  simulatePlay, solDirect,
-} from '../../js/engine/index.js';
-import { habitantsDe, peuplerHameau } from '../../js/engine/habitants.js';
-import { amitieNuit, palierAmitieNom, pointsAmitie } from '../../js/engine/amitie.js';
+import { commencerObjectifs, composeFamily, createNewGame, DATA, familleSeule, finishSetup, moonPhase, simulatePlay } from '../../js/engine/index.js';
+import { palierAmitieNom, pointsAmitie } from '../../js/engine/amitie.js';
 import { relationsInvitables } from '../../js/engine/invitations.js';
 import { heuresPousse } from '../../js/engine/crops.js';
-import {
-  ateliersDuHameau, fermeLuit, geodeLuit, jouerScene, noterVisite, ouvrirSecret, paroleHameau, recitPage, recitPour,
-  scenesPossibles, toucherLieu, visiteObservatoire,
-} from '../../js/engine/recit-aiguillage.js';
-import { RECIT_ANCIEN } from '../../js/engine/recit-ancien.js';
-import { RECIT_MUET } from '../../js/engine/recit-muet.js';
-import { assert, assertEqual, avecVillage, test } from './aide.mjs';
+import { assert, assertEqual, test } from './aide.mjs';
 
 const ICI = dirname(fileURLToPath(import.meta.url));
-const JS = join(ICI, '..', '..', 'js');
-const MOTEUR = join(JS, 'engine');
+const RACINE = join(ICI, '..', '..');
 
-/* ---------- la lecture des imports ---------- */
+// Les modules retirés à la bascule.
+const RETIRES = [
+  'engine/recit.js', 'engine/recit-aiguillage.js', 'engine/recit-ancien.js', 'engine/recit-muet.js', 'engine/fil-lune.js',
+  'engine/secrets.js', 'engine/ile.js', 'engine/bienvenue.js', 'engine/usure.js', 'engine/habitants.js', 'engine/caleche.js',
+  'engine/caleche-tournee.js', 'engine/projets.js', 'engine/fetes.js',
+  'ui/caleche.js', 'ui/habitants.js', 'ui/bienvenue.js', 'ui/carnet.js', 'ui/scene.js', 'ui/fetes.js', 'ui/village.js',
+  'carte/ferme/caleche.js', 'carte/ferme/malle.js', 'carte/ferme/visite.js', 'carte/ferme/rencontre.js',
+];
 
-const RETIRES = ['recit.js', 'fil-lune.js', 'usure.js', 'secrets.js', 'ile.js', 'bienvenue.js'];
-const ANCIEN = 'recit-ancien.js', AIGUILLAGE = 'recit-aiguillage.js', INDEX = 'index.js';
-
-// Les modules qu'importe (ou ré-exporte) le fichier `f` du dossier `dossier`, nommés comme dans ce dossier
-// (« recit.js » ; ceux d'un autre dossier : « ../engine/recit.js »). Les commentaires sont ôtés d'abord.
-function importsDe(dossier, f) {
-  const src = readFileSync(join(dossier, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/[^\n]*/g, '$1');
-  const out = new Set();
-  for (const re of [/\b(?:import|export)\s[^;'"]*?\bfrom\s*['"]([^'"]+)['"]/g, /\bimport\s*['"]([^'"]+)['"]/g, /\bimport\(\s*['"]([^'"]+)['"]\s*\)/g]) {
-    for (const m of src.matchAll(re)) out.add(m[1].replace(/^\.\//, ''));
+// Tous les fichiers .js et .mjs de `dossier` (récursivement, sans les générés).
+function fichiers(dossier, out = []) {
+  for (const e of readdirSync(dossier, { withFileTypes: true })) {
+    const p = join(dossier, e.name);
+    if (e.isDirectory()) fichiers(p, out);
+    else if (/\.m?js$/.test(e.name) && !e.name.endsWith('.generated.js')) out.push(p);
   }
-  return [...out];
+  return out;
 }
 
-const fichiersMoteur = () => readdirSync(MOTEUR).filter((f) => f.endsWith('.js'));
-const graphe = () => new Map(fichiersMoteur().map((f) => [f, importsDe(MOTEUR, f)]));
-
-test('lecture des imports : seuls le récit lui-même et recit-ancien.js importent le récit ; l\'index ne le ré-exporte pas', () => {
-  const G = graphe(), fautifs = [];
-  // (fiche I7d : l'index ne ré-exporte plus le récit)
-  assertEqual(G.get(INDEX).filter((i) => RETIRES.includes(i)), [], 'l\'index ré-exporte le récit');
-  for (const [f, imp] of G) {
-    if (RETIRES.includes(f) || f === ANCIEN) continue;
-    for (const i of imp) if (RETIRES.includes(i)) fautifs.push(`${f} → ${i}`);
+test('les modules du récit, des hameaux et de la calèche sont retirés, et rien ne les importe', () => {
+  for (const f of RETIRES) assert(!existsSync(join(RACINE, 'js', f)), `js/${f} existe encore`);
+  const fautifs = [];
+  const L = [...fichiers(join(RACINE, 'js')), ...fichiers(join(RACINE, 'worker', 'src'))];
+  assert(L.length > 150, `les fichiers du jeu (${L.length})`);
+  const retires = new Set(RETIRES.map((r) => join(RACINE, 'js', r)));
+  for (const f of L) {
+    const src = readFileSync(f, 'utf8');
+    for (const m of src.matchAll(/(?:\bfrom\s*|\bimport\s*\(?\s*)['"](\.[^'"]+)['"]/g)) if (retires.has(join(dirname(f), m[1]))) fautifs.push(`${f} → ${m[1]}`);
   }
-  assertEqual(fautifs, [], 'un module du moteur importe le récit sans passer par l\'aiguillage');
-  // (recit-ancien.js : seul l'aiguillage l'importe ; recit-muet.js n'importe rien du récit)
-  const ancien = [...G].filter(([f, imp]) => imp.includes(ANCIEN) && f !== INDEX).map(([f]) => f);
-  assertEqual(ancien, [AIGUILLAGE], 'seul l\'aiguillage importe le récit d\'avant');
-  assert(!G.get('recit-muet.js').some((i) => RETIRES.includes(i) || i === ANCIEN), 'le récit muet n\'importe pas le récit');
-  // (l'index ne ré-exporte ni l'aiguillage ni ses deux implémentations : leurs noms sont ceux du récit)
-  assert(!G.get(INDEX).some((i) => [ANCIEN, AIGUILLAGE, 'recit-muet.js'].includes(i)), 'l\'index ne ré-exporte pas l\'aiguillage');
-});
-
-test('lecture des imports : depuis village.js (et tout autre module), le récit ne s\'atteint que par l\'aiguillage', () => {
-  const G = graphe();
-  // (le parcours ne passe ni par l'index, ni de l'aiguillage au récit d'avant : le seul fil, choisi par recitPour)
-  const atteints = (depart) => {
-    const vus = new Set([depart]), file = [depart];
-    while (file.length) {
-      const f = file.shift();
-      for (const i of G.get(f) || []) {
-        if (i === INDEX || (f === AIGUILLAGE && i === ANCIEN) || vus.has(i) || !G.has(i)) continue;
-        vus.add(i); file.push(i);
-      }
-    }
-    return vus;
-  };
-  const depuisVillage = atteints('village.js');
-  for (const m of ['night.js', 'state.js', 'paliers.js', 'villageois.js', 'bac.js', 'fetes-village.js', 'chronique.js', AIGUILLAGE, 'recit-muet.js']) {
-    assert(depuisVillage.has(m), `${m} est atteint depuis village.js`);
-  }
-  assertEqual(RETIRES.filter((r) => depuisVillage.has(r)), [], 'le récit est atteint depuis village.js');
-  assert(!depuisVillage.has(ANCIEN), 'le récit d\'avant n\'est atteint que par l\'aiguillage');
-  for (const f of G.keys()) {
-    if (RETIRES.includes(f) || f === ANCIEN) continue;
-    const r = RETIRES.filter((x) => atteints(f).has(x));
-    assertEqual(r, [], `depuis ${f}`);
+  assertEqual(fautifs, [], 'un fichier importe un module retiré');
+  for (const s of ['<script src="js/carte/ferme/caleche.js"', '<script src="js/carte/ferme/malle.js"', '<script src="js/carte/ferme/visite.js"', '<script src="js/carte/ferme/rencontre.js"']) {
+    assert(!readFileSync(join(RACINE, 'jeu.html'), 'utf8').includes(s), `jeu.html charge encore ${s}`);
   }
 });
 
-test('lecture des imports : aucun fichier de la page n\'importe le récit (fiche I7d : par l\'aiguillage)', () => {
-  // (la page : js/ui, js/carte et ses sous-dossiers, les fichiers de js/ ; tout import, nommé, global ou dynamique, d'un
-  // module du récit ; les modules du moteur et les fichiers générés n'en sont pas)
-  const fautifs = [], vus = [];
-  const parcourir = (dossier) => {
-    for (const e of readdirSync(join(JS, dossier), { withFileTypes: true })) {
-      const rel = dossier === '.' ? e.name : `${dossier}/${e.name}`;
-      if (e.isDirectory()) { if (dossier !== '.' || ['ui', 'carte'].includes(e.name)) parcourir(rel); continue; }
-      if (!e.name.endsWith('.js') || e.name.endsWith('.generated.js')) continue;
-      vus.push(rel);
-      for (const i of importsDe(JS, rel)) if (RETIRES.includes(i.split('/').pop()) && /(^|\/)engine\//.test(i)) fautifs.push(`${rel} → ${i}`);
-    }
-  };
-  parcourir('.');
-  assert(vus.length > 150 && vus.includes('ui/loop.js') && vus.includes('ui/caleche.js') && vus.includes('carte/ferme/habitants.js'), `les fichiers de la page (${vus.length})`);
-  assertEqual(fautifs, [], 'la page importe le récit sans l\'aiguillage');
+test('les données n\'ont plus le récit, le courrier, les hameaux d\'avant ni la calèche', () => {
+  for (const k of ['RECIT', 'ILE', 'SECRETS', 'COURRIER', 'CALECHE', 'BIENVENUE', 'PROJETS', 'FETES']) assertEqual(DATA[k], undefined, k);
+  for (const o of ['enveloppe_maurice', 'cloche_maurice', 'pierre_lune']) assertEqual(DATA.OBJETS[o], undefined, o);
+  assertEqual(DATA.AMITIE.ECRITS, undefined, 'les goûts des personnages écrits');
+  assertEqual(DATA.STYLES.ECRITS, undefined, 'les styles des personnages écrits');
+  assertEqual(DATA.VILLAGE.ACTIF, undefined, 'le réglage de bascule');
 });
 
-test('allumé, la page n\'a rien du récit à lire (recitPage) ; éteint, ce que la page d\'avant lisait', () => {
+test('une partie neuve de l\'île : 30 nuits du joueur automatique, sans rien du récit', () => {
   const s = createNewGame(4);
-  assertEqual(recitPage(s), null, 'l\'île : rien');
-  const t = avecVillage(() => createNewGame(4), false);
-  avecVillage(() => {
-    const R = recitPage(t);
-    assert(R && R.RECIT === DATA.RECIT && R.ILE === DATA.ILE, 'le récit d\'avant');
-    for (const k of ['carnet', 'acteEnCours', 'aFait', 'tousLesToitsUses', 'toitsUses', 'reparerToit', 'bienvenueDe', 'bienvenueDonne', 'bienvenueDue', 'bienvenueEnRoute', 'bienvenueModele', 'bienvenuePose', 'bienvenuePrepare', 'parler', 'promesses', 'livrerPromesse', 'ateliersConnus', 'commander', 'commandesDe', 'retirerToutes', 'ouvrirEnveloppe', 'poserPierre', 'veilleeFerme', 'veilleeFermePossible']) {
-      assert(typeof R[k] === 'function', `la page d'avant lit ${k}`);
-    }
-    assertEqual(R.carnet(t), [], 'un carnet vide au départ');
-  }, false);
-});
-
-/* ---------- le moteur allumé, sans récit ---------- */
-
-// Le récit vidé, le temps de `fn` : DATA.RECIT, les secrets, les ateliers des hameaux, le courrier (les objets
-// restent : leurs clés sont ôtées, puis remises).
-function sansRecit(fn) {
-  const cles = ['RECIT', 'SECRETS', 'ILE', 'COURRIER'];
-  const gardes = cles.map((k) => [k, { ...DATA[k] }]);
-  for (const k of cles) for (const c of Object.keys(DATA[k])) delete DATA[k][c];
-  try {
-    return fn();
-  } finally {
-    for (const [k, g] of gardes) Object.assign(DATA[k], g);
-  }
-}
-
-// Une partie neuve de l'île (seul), commencée comme à l'accueil. Les hameaux du récit (ceux du monde d'avant : les
-// garantis, et un autre) n'y naissent pas (fiche I7e : l'île n'a pas de hameau ; peuplerHameau refuse, habitantsDe
-// ne rend rien).
-function partie(graine = 4) {
-  const s = createNewGame(graine);
   assert(composeFamily(s, familleSeule(s)).ok, 'la famille');
   assert(finishSetup(s).ok, 'installée');
   commencerObjectifs(s);
-  const sol = solDirect(genererMonde(s.carte.graine).terrain);
-  elementsSol(sol.ctx);
-  const plans = sol.ctx.hameaux.plans.filter((p) => !p.batisse);
-  const peuples = [...plans.filter((p) => p.garanti), plans.find((p) => !p.garanti)].filter(Boolean);
-  assert(peuples.length > 0, 'le monde d\'avant a ses hameaux du récit');
-  for (const p of peuples) assertEqual(peuplerHameau(s, p), null, `${p.nom} ne naît pas sur l'île`);
-  assertEqual(habitantsDe(s), {}, 'aucun habitant de hameau');
-  return { s, peuples, lieux: sol.ctx.lieux || null };
-}
-
-const RECIT_VIDE = { faits: {}, relations: {}, confiance: {}, dites: {}, carnet: [], promesses: {} };
-
-test('allumé, le récit vidé : 30 nuits du joueur automatique, aucun hameau, sans rien du récit', () => {
-  sansRecit(() => {
-    const { s, peuples } = partie();
-    assert(recitPour(s) === RECIT_MUET, 'l\'île prend le récit muet');
-    assertEqual(s.bienvenue.etat, 'faite', 'pas de visite de bienvenue');
-    // (ni personnage écrit, ni habitant : aucun hameau ; une parole d'un hameau ne se dit pas)
-    for (const x of peuples) assertEqual(paroleHameau(s, x.id, 'personne', { heure: 10, n: 0 }), null, 'pas de parole d\'un hameau');
-    for (const x of peuples) for (const g of [x.garanti, x.id]) for (const lieu of ['ferme', 'monde', g]) {
-      assertEqual(scenesPossibles(s, { lieu, hameau: x.id }), [], `aucune scène (${lieu})`);
-    }
-    assertEqual(jouerScene(s, 'arrivee', { lieu: 'ferme' }).ok, false, 'une scène ne se joue pas');
-    for (const sorte of ['cabane', 'atelier', 'epave', 'cale', 'geode']) assertEqual(toucherLieu(s, sorte, { lieu: 'monde' }), null, `le lieu ${sorte} est muet`);
-    assertEqual([visiteObservatoire(s), ouvrirSecret(s, { id: 'cairn_0', sorte: 'cairn', case: 0 }), noterVisite(s, 'gue')], [null, null, false]);
-    for (const x of peuples) assertEqual(ateliersDuHameau(s, x.id), [], 'aucun atelier de personnage');
-
-    // 30 nuits (une pleine lune au moins : la veillée du récit ne se joue pas, celle du village est à fetes-village.js)
-    let pleine = false;
-    const rows = simulatePlay(s, 'applique', 30);
-    assertEqual(rows.length, 30, '30 nuits');
-    for (let j = 1; j <= s.day; j++) if (moonPhase(j).id === 'pleine') pleine = true;
-    assert(pleine, 'une pleine lune passée');
-    amitieNuit(s);
-    for (const lieu of ['ferme', 'gue', 'place']) assertEqual(scenesPossibles(s, { lieu }), [], 'pas de veillée du récit');
-    assertEqual(s.recit, RECIT_VIDE, 'rien n\'est écrit au récit : ni fait, ni relation, ni confiance, ni carnet');
-    assertEqual(s.courrier, [], 'aucun courrier');
-    assertEqual([geodeLuit(s), fermeLuit(s)], [false, false], 'ni la pierre ni l\'amas ne luisent');
-    assertEqual(heuresPousse(s), DATA.TEMPS.POUSSE_HEURES, 'la pousse de toujours (pas de pierre de lune)');
-    assert(s.day >= 31 && s.palier >= 3, `la partie avance (jour ${s.day}, palier ${s.palier})`);
-    // (l'amitié a son échelle à elle : data/amitie.json ECHELLE ; les villageois seuls, aucun habitant de hameau)
-    assertEqual(habitantsDe(s), {}, 'toujours aucun habitant de hameau');
-    const v = (s.villageois || [])[0];
-    if (v) assert(DATA.AMITIE.ECHELLE.NOMS.includes(palierAmitieNom(s, v.id)) && pointsAmitie(s, v.id) <= DATA.AMITIE.ECHELLE.MAX, 'le palier d\'amitié d\'un villageois');
-    assert(relationsInvitables(s).every((r) => r.villageois), 'on n\'invite que des villageois');
-    assert(relationsInvitables(s).every((r) => DATA.AMITIE.ECHELLE.NOMS.includes(r.nomPalier)), 'les noms des paliers d\'amitié');
-  });
-});
-
-test('éteint, l\'aiguillage rend le récit d\'avant ; les deux récits ont la même interface', () => {
-  const s = avecVillage(() => createNewGame(4), false);
-  avecVillage(() => assert(recitPour(s) === RECIT_ANCIEN, 'le jeu d\'avant'), false);
-  assertEqual(s.bienvenue.etat, 'attendue', 'la visite viendra');
-  assert(recitPour(s) === RECIT_MUET, 'allumé, le muet');
-  assertEqual(Object.keys(RECIT_MUET).filter((k) => k !== 'nom').sort(),
-    Object.keys(RECIT_ANCIEN).filter((k) => !['nom', 'jourBienvenue', 'remboursementCommerce', 'objetEnveloppe'].includes(k)).sort(),
-    'la même interface (sauf les migrations, qui ne lisent que le récit d\'avant)');
-  assertEqual([DATA.AMITIE.ECHELLE.MAX, DATA.AMITIE.ECHELLE.PALIERS, DATA.AMITIE.ECHELLE.NOMS], [DATA.RECIT.RELATION_MAX, DATA.RECIT.PALIERS, DATA.RECIT.PALIER_NOMS], 'l\'échelle de l\'amitié est celle du récit');
+  const rows = simulatePlay(s, 'applique', 30);
+  assertEqual(rows.length, 30, '30 nuits');
+  let pleine = false;
+  for (let j = 1; j <= s.day; j++) if (moonPhase(j).id === 'pleine') pleine = true;
+  assert(pleine, 'une pleine lune passée');
+  assertEqual((s.courrier || []).length, 0, 'aucun courrier');
+  assertEqual(Object.keys((s.recit && s.recit.faits) || {}), [], 'aucun fait du récit');
+  assertEqual(heuresPousse(s), DATA.TEMPS.POUSSE_HEURES, 'la pousse de toujours (pas de pierre de lune)');
+  assert(s.day >= 31 && s.palier >= 3, `la partie avance (jour ${s.day}, palier ${s.palier})`);
+  // (l'amitié a son échelle : data/amitie.json ECHELLE ; les villageois seuls)
+  const v = (s.villageois || [])[0];
+  if (v) assert(DATA.AMITIE.ECHELLE.NOMS.includes(palierAmitieNom(s, v.id)) && pointsAmitie(s, v.id) <= DATA.AMITIE.ECHELLE.MAX, 'le palier d\'amitié d\'un villageois');
+  assert(relationsInvitables(s).every((r) => r.villageois), 'on n\'invite que des villageois');
+  assert(relationsInvitables(s).every((r) => DATA.AMITIE.ECHELLE.NOMS.includes(r.nomPalier)), 'les noms des paliers d\'amitié');
 });

@@ -1,5 +1,4 @@
 import { DATA, prixIle } from './catalog.js';
-import { villageActif } from './village.js';
 import { humeurVillageois, trouverVillageois, villageoisDe } from './villageois.js';
 import { tacheAttente, tacheDef } from './taches.js';
 import { goutTache } from './traits.js';
@@ -213,9 +212,8 @@ export function trierTableau(lignes, colonne = 'solde', sens = 0) {
 
 // Le tableau du village sur la période : { periode, jours (sa longueur), du, au (les jours couverts), lignes (un bilan
 // par villageois, son rendement compris, triées par `tri` : { colonne, sens }), moyenne (moyenneTaches), total
-// ({ cout, repas, part, matieres, valeur, ventes, solde, produit }) } ; null le chantier éteint ou sans villageois.
+// ({ cout, repas, part, matieres, valeur, ventes, solde, produit }) } ; null sans villageois.
 export function tableauVillage(state, periode = 'semaine', tri = {}) {
-  if (!villageActif(state)) return null;
   const V = villageoisDe(state);
   if (!V.length) return null;
   const p = PERIODES[periode] ? periode : 'semaine';

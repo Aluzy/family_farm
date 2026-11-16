@@ -3,6 +3,8 @@
 // Durable Objects (Comptes, Monde) sur des bases node:sqlite, derrière les routes du navigateur (HTTP et
 // WebSocket vers http://127.0.0.1:8787, l'adresse locale du jeu en ligne : js/ui/compte.js).
 // Ce qu'il vérifie :
+//   (depuis la bascule, I9h, toute partie est une île : la ferme seule d'E-8 et la nuit partagée d'un coup d'E-5, 4a et 4c
+//   d'avant, sont retirées ; l'horloge commune est au 9)
 //   1. le joueur A met sa ferme en ligne (⚙️ Options › Jeu en ligne) et y entre ;
 //   2. E-3 : A crée un lien d'invitation (👥 › Inviter un ami) ; B l'ouvre et entre dans le monde :
 //      les deux y sont, bandeau « à jour » ; ils ouvrent le mode Construire ;
@@ -15,13 +17,9 @@
 //   4. la partie confirmée de chacun est celle du monde (la même empreinte) ;
 //   4b. E-5 : B récolte une carotte mûre : elle va au coffre commun, A voit la parcelle vide ;
 //   4b'. E-6 : B nourrit les poules : A les voit nourries ;
-//   4a. E-8 : le monde partagé est la ferme : la copie n'a plus le grand monde ; B envoie son personnage
-//       hors de la ferme : il s'arrête au bord, le jeu le dit, et sa vue reste sur la ferme ;
 //   4b''. E-7 : B mange une carotte sur le pouce : elle quitte le coffre commun, chez A aussi ;
 //   4b'''. E-9 : B donne un coup de hache à un arbre de la ferme : le bois arrive au coffre commun chez A ;
 //   4b''''. E-10 : B éteint (ou allume) un appareil de la ferme : chez A aussi ;
-//   4c. E-5 : A se couche, la nuit attend B ; B se couche : la nuit passe chez les deux (le jour suivant),
-//       et les parties confirmées sont encore celle du monde ;
 //   5. la partie solo de A, sur l'appareil, n'est jamais touchée en ligne ;
 //   6. une action pas encore en ligne (vendre au Marché) est refusée (un message, rien ne change) ;
 //   6b. E-11 : A fait de B un visiteur (👥) : B le voit au bandeau, son mur est refusé tout de suite ; A lit le
@@ -29,7 +27,7 @@
 //   6c. E-12 : A sauvegarde (💾), mange une carotte, puis restaure : la carotte revient chez les deux, et B
 //       est prévenu ;
 //   7. E-3 : A retire B : la connexion de B est coupée, B revient à sa ferme solo ;
-//   8. I9a : l'île partagée. A met en ligne une île du chantier (une partie d'essai : villageActif), y invite B ;
+//   8. I9a : l'île partagée. A met en ligne une île, y invite B ;
 //      les deux sortent de la ferme (pas de borne, la vue les suit) et se voient dehors ; le bandeau dit que rien
 //      d'autre n'est encore synchronisé ; le brouillard de B se lève chez lui seul (la partie confirmée reste
 //      celle du monde) ; un mur posé dehors est refusé avant d'être envoyé. (I9b : le bandeau est retiré ; le mur
@@ -63,8 +61,7 @@
 //  14. I9f : la mise en ligne d'une île avancée par ⚙️ Options (« Mettre mon île en ligne », les deux îles) ; B y entre par
 //      invitation, va au port, coupe un arbre, parle à un villageois ; A restaure une sauvegarde d'avant ces gestes ; A
 //      remet la copie à jour depuis sa partie solo (avec confirmation), B en est prévenu.
-//  15. I9f : un monde d'avant (une ferme seule, au format d'avant I9c) migre à sa première ouverture (un Durable Object
-//      d'essai) ; un jeu d'avant est refusé ; le propriétaire et l'invité voient chacun leur fenêtre du retour ; la ferme
+//  15. I9f : un monde d'avant (une ferme seule, au format d'avant I9c) migre à sa première ouverture ; un jeu d'avant est refusé ; le propriétaire et l'invité voient chacun leur fenêtre du retour ; la ferme
 //      d'avant est dans 💾 ; ils y jouent à deux. (CAPTURES : la fenêtre « Jeu en ligne », la confirmation, les
 //      sauvegardes, la fenêtre du propriétaire et de l'invité d'un monde migré.)
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
@@ -76,9 +73,9 @@ import { dirname, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { arriverVillageois, attribuer, donnerOutil, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
-import { ilePartagee, objetsDeRegion, poseStatus, solDirect } from '../js/engine/index.js';
+import { objetsDeRegion, poseStatus, solDirect } from '../js/engine/index.js';
 import { addItem, avancerJusqua, caseDansLaFerme, caseMarchable, caseVue, cheminDehorsSur, comptoirDuPort, etatBac, contexteSol, countItem, elementsSol, createNewGame, DATA, empreintePartie, farmTerrain, pasDe, testBatir, testFarmMap, testFermeConstruite, testSetLevel } from '../js/engine/index.js';
-import { avecVillage, garden, plantRipe, reglagesDuJeu } from './engine/aide.mjs';
+import { garden, plantRipe, reglagesDuJeu } from './engine/aide.mjs';
 import W from '../worker/src/index.js';
 import { Comptes } from '../worker/src/comptes.mjs';
 import { Monde } from '../worker/src/monde.mjs';
@@ -99,9 +96,6 @@ const serveur = createServer((req, res) => {
   if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html');
   if (!existsSync(f)) { res.writeHead(404).end(); return; }
   res.writeHead(200, { 'content-type': TYPES[extname(f).toLowerCase()] || 'application/octet-stream', 'cache-control': 'no-store' });
-  // (I9h, la bascule : le réglage du jeu est allumé ; ce test est celui du jeu d'avant, ses îles faites en essai, comme le
-  // moteur et le Worker de ce processus, tests/engine/aide.mjs : la page reçoit le réglage éteint, jusqu'au retrait)
-  if (chemin === '/js/data.generated.js') { res.end(readFileSync(f, 'utf8').replace(/("VILLAGE": \{\n\s*"ACTIF": )true/, '$1false')); return; }
   res.end(readFileSync(f));
 });
 await new Promise((ok) => serveur.listen(0, '127.0.0.1', ok));
@@ -302,11 +296,6 @@ try {
   const parSens = {};
   for (const n of noms) { const m = /^marche_(bas|haut|cote)_\d$/.exec(n || ''); if (m) parSens[m[1]] = (parSens[m[1]] || 0) + 1; }
   verifie(Math.max(0, ...Object.values(parSens)) >= 3 && sauts === 0, `3c. B fait quelques pas : chez A, son avatar marche (${JSON.stringify(parSens)} images de marche par sens, ${sauts} à-coup)`);
-  // 4a. E-8 : la frontière
-  const F = await pb.evaluate(async () => { const E = await import('/js/engine/index.js'); return { ...E.farmTerrain(FF.state).FERME, cols: FarmStage.scene().grid.cols, W: E.farmTerrain(FF.state).LARGEUR }; });
-  await pb.evaluate((f) => FarmStage.scene().goHere((f.X - 30) * 16, (f.Y + f.HAUTEUR / 2) * 16), F);
-  const bord = await pb.evaluate((f) => { const sc = FarmStage.scene(), i = sc.fermier.info(), v = sc.cameras.main.worldView; return { c: Math.floor(i.x / 16), dit: /reste du monde/.test(document.body.innerText), vueX: v.x }; }, F);
-  verifie(F.cols === F.W && reg.charger().mondePartage === true && JSON.stringify(reg.charger().monde.habitants) === '{}' && bord.c >= F.X && bord.dit && bord.vueX >= (F.X - 6) * 16 - 1, `4a. le monde est la ferme : B, envoyé dehors, s'arrête au bord (colonne ${bord.c}, la ferme commence à ${F.X}), le jeu le dit, la vue reste sur la ferme`);
   const carottes = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'carotte'); });
   const avantCarottes = await carottes(pa);
   await action(pb, 'harvest', { id: 'potager-1' });
@@ -343,21 +332,12 @@ try {
   await action(pb, 'toggle', { id: app });
   const msApp = await attendre(pa, async (o) => { const E = await import('/js/engine/index.js'); const d = E.allDevices(FF.state).find((x) => x.id === o.id); return !!d && !!d.allume !== o.avant; }, { id: app, avant: avantApp }, 5000);
   verifie(avantApp !== null && msApp !== null, `4b''''. B a basculé l'appareil ${app} : chez A aussi en ${msApp} ms`);
-  // 4c. E-5 : la nuit partagée
-  const jour = await pa.evaluate(() => FF.state.day);
-  await action(pa, 'monde-coucher');
-  await attendre(pb, () => /1\/2/.test(document.getElementById('en-ligne-bandeau').innerText), null, 5000);
-  await pa.waitForTimeout(300);
-  const attend = (await pa.evaluate(() => FF.state.day)) === jour && /1\/2/.test(await pb.evaluate(() => document.getElementById('en-ligne-bandeau').innerText));
-  await action(pb, 'monde-coucher');
-  const msNuit = await attendre(pa, (j) => FF.state.day === j + 1, jour, 5000);
-  const jourB = await pb.evaluate(() => FF.state.day);
-  const em2 = empreintePartie(reg.charger());
-  verifie(attend && msNuit !== null && jourB === jour + 1 && (await confirmee(pa)) === em2 && (await confirmee(pb)) === em2, `4c. A couché, la nuit attend B (1/2) ; B couché : le jour ${jour + 1} chez les deux en ${msNuit} ms, les parties confirmées sont celle du monde`);
   await pa.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   verifie((await pa.evaluate(() => localStorage.getItem('ferme-save'))) === soloA, '5. la partie solo de A n\'est pas touchée en ligne');
   const avant = reg.rev;
-  await action(pa, 'sell-item', { item: 'carotte' });
+  // (un geste de l'île pas encore en ligne : abandonner le projet du village ; la vente à la calèche, qui servait ici, est
+  // retirée à la bascule, I9h)
+  await action(pa, 'vocation-projet-abandonner', {});
   await pa.waitForTimeout(300);
   verifie(reg.rev === avant && /viendra bientôt/.test(await pa.evaluate(() => document.body.innerText)), '6. un geste pas encore en ligne est refusé');
   // 6b. E-11 : les rôles et le journal
@@ -376,7 +356,7 @@ try {
   await action(pa, 'monde-journal');
   await attendre(pa, () => !!document.getElementById('journal-titre'), null, 5000);
   const journal = await pa.evaluate(() => document.querySelector('.journal-monde').innerText);
-  verifie(msRole !== null && refuseB && /sam/i.test(journal) && /a posé un bloc/.test(journal) && /tout le monde a dormi/.test(journal), `6b. B devenu visiteur (en ${msRole} ms) : son mur refusé ; le journal de A dit qui a fait quoi`);
+  verifie(msRole !== null && refuseB && /sam/i.test(journal) && /a posé un bloc/.test(journal), `6b. B devenu visiteur (en ${msRole} ms) : son mur refusé ; le journal de A dit qui a fait quoi`);
   await action(pa, 'close-modal');
   // 6c. E-12 : les sauvegardes
   await action(pa, 'monde-sauvegardes');
@@ -403,8 +383,7 @@ try {
   const revenu = await attendre(pb, () => location.pathname.endsWith('jeu.html') && !/monde=/.test(location.search) && !document.getElementById('en-ligne-bandeau'), null, 15000);
   verifie(revenu !== null && !mondes.get(idMonde).registre.membre(B.id), '7. A a retiré B : sa connexion coupée, B est revenu à sa ferme solo');
   // 8. I9a : l'île partagée
-  const ile = avecVillage(() => createNewGame('29', { nom: 'Île' }));
-  ile.essais = { ...(ile.essais || {}), village: true };
+  const ile = createNewGame('29', { nom: 'Île' });
   addItem(ile, DATA.ATELIER.BLOCS.mur_pierre.objet, 10);
   addItem(ile, DATA.ATELIER.BLOCS.chemin.objet, 10);   // (I9b : des chemins à poser dehors)
   ile.outils = { ...(ile.outils || {}), hache: true, pioche: true, faux: true, canne: true };   // (I9b : la hache, dehors)
@@ -422,7 +401,7 @@ try {
   for (const [p, dx] of [[pa, 0], [pb, -2]]) await p.evaluate((v) => localStorage.setItem('ferme-position', JSON.stringify(v)), pres(dx));
   for (const p of [pa, pb]) await p.goto(`${BASE}/jeu.html?monde=${idIle}`);
   const dedans = await attendre(pa, pret, null, 30000) !== null && await attendre(pb, pret, null, 30000) !== null;
-  const ileVue = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); return E.ilePartagee(FF.state); });
+  const ileVue = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); return !!(FF.state && FF.state.mondePartage && E.horlogeVivante(FF.state)); });
   verifie(cree.ok && entre.ok && dedans && buts.length === 2 && (await ileVue(pa)) && (await ileVue(pb)) && !caseDansLaFerme(ile, buts[0]),
     `8a. A a mis une île du chantier en ligne, B y est entré : les deux sont dans l'île partagée (${idIle})`);
   // B, puis A, marchent dehors (la région doit être faite : on redemande tant qu'il n'y est pas)
@@ -553,8 +532,7 @@ try {
   }
   // 11. I9c : le port et la caisse en ligne (une île de 29, le jour 3 : un jour de bac ; à 7 h 30, il accoste à 9 h)
   {
-    const ile3 = avecVillage(() => createNewGame('29', { nom: 'Île' }));
-    ile3.essais = { ...(ile3.essais || {}), village: true };
+    const ile3 = createNewGame('29', { nom: 'Île' });
     testSetLevel(ile3, 5);   // (le commerce du port s'ouvre au niveau 3)
     ile3.day = 3;
     ile3.awakeMs = Math.round((7.5 - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000);
@@ -676,8 +654,7 @@ try {
   }
   // 9. I9a2 : l'horloge commune d'une île
   {
-    const ile2 = avecVillage(() => createNewGame('31', { nom: 'Île' }));
-    ile2.essais = { ...(ile2.essais || {}), village: true };
+    const ile2 = createNewGame('31', { nom: 'Île' });
     testSetLevel(ile2, 5);
     for (const st of ['foyer', 'cuisine']) testBatir(ile2, st);
     for (const ing of DATA.RECETTES.omelette.ingredients) addItem(ile2, ing.item, ing.qte * 10);
@@ -757,8 +734,7 @@ try {
   }
   // 12. I9d : les villageois en ligne
   {
-    const ile3 = avecVillage(() => createNewGame('31', { nom: 'Île' }));
-    ile3.essais = { ...(ile3.essais || {}), village: true };
+    const ile3 = createNewGame('31', { nom: 'Île' });
     testSetLevel(ile3, 5);
     testBatir(ile3, 'foyer');
     for (let k = 0; k < 3; k++) { testMaisonVillageois(ile3); arriverVillageois(ile3, { direct: true }); }
@@ -863,8 +839,7 @@ try {
   }
   // 13. I9e : les rôles en ligne (une île à trois villageois au travail ; B invité comme bâtisseur)
   {
-    const ile4 = avecVillage(() => createNewGame('31', { nom: 'Île' }));
-    ile4.essais = { ...(ile4.essais || {}), village: true };
+    const ile4 = createNewGame('31', { nom: 'Île' });
     testSetLevel(ile4, 5);
     testBatir(ile4, 'foyer');
     for (let k = 0; k < 3; k++) { testMaisonVillageois(ile4); arriverVillageois(ile4, { direct: true }); }
@@ -949,8 +924,7 @@ try {
   // arbre, parle à un villageois ; A restaure une sauvegarde d'avant ces gestes ; puis A remet la copie à jour depuis sa
   // partie solo (avec confirmation), B en est prévenu.
   {
-    const ile5 = avecVillage(() => createNewGame('31', { nom: 'Île' }));
-    ile5.essais = { ...(ile5.essais || {}), village: true };
+    const ile5 = createNewGame('31', { nom: 'Île' });
     testSetLevel(ile5, 5);
     testBatir(ile5, 'foyer');
     for (let k = 0; k < 3; k++) { testMaisonVillageois(ile5); arriverVillageois(ile5, { direct: true }); }
@@ -1068,7 +1042,7 @@ try {
     await action(pa, 'close-modal');
   }
   // 15. I9f : un monde d'avant (une ferme seule, son serveur d'avant I9c : sa partie au format 103) migre à sa première
-  // ouverture par le serveur d'aujourd'hui (un Durable Object d'essai : ILE_ESSAI) ; un jeu d'avant n'y entre plus ; le
+  // ouverture par le serveur d'aujourd'hui ; un jeu d'avant n'y entre plus ; le
   // propriétaire et l'invité voient la fenêtre du retour, chacun la sienne ; puis ils y jouent à deux.
   {
     const sansAide5 = (p) => p.evaluate(() => { if (document.getElementById('capture-style5')) return; const st = document.createElement('style'); st.id = 'capture-style5'; st.textContent = '#tuto-root, #consent-banner { display: none !important; }'; document.head.appendChild(st); });
@@ -1082,18 +1056,18 @@ try {
     const avant6 = JSON.parse(JSON.stringify(ancien.registre.charger()));
     // (sa base telle qu'un serveur d'avant I9c l'a laissée ; puis le serveur redémarre, mis à jour : un autre Durable Object sur la même base)
     const brute6 = JSON.parse(ancien.registre.un('SELECT json FROM instantane ORDER BY rev DESC LIMIT 1').json);
-    for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge']) delete brute6[k];
+    for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge', 'port', 'dehors', 'palier', 'noms', 'chronique']) delete brute6[k];
     brute6.version = 103;
     ancien.registre.faire('UPDATE instantane SET json = ?', JSON.stringify(brute6));
     ancien.registre.faire('DELETE FROM meta WHERE cle = ?', 'format');
-    mondes.set(id6, new Monde(ancien.ctx, { SESSIONS: r2, ILE_ESSAI: '1' }));
+    mondes.set(id6, new Monde(ancien.ctx, { SESSIONS: r2 }));
     const reg6 = mondes.get(id6).registre;
     // 15a. un jeu d'avant (son hello sans format) est refusé : recharger la page
     await pb.goto(`${BASE}/jeu.html`);
     await attendre(pb, () => window.FarmStage && FarmStage.ready && FarmStage.ready(), null, 30000);
     const refus6 = await pb.evaluate(([id, session]) => new Promise((ok) => { const ws = new WebSocket(`ws://127.0.0.1:8787/mondes/${id}/ws?session=${encodeURIComponent(session)}`); ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', version: '1.22.0' })); ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.t === 'refus' || m.t === 'bienvenue') { ok(m); ws.close(); } }; setTimeout(() => ok(null), 8000); }), [id6, B.session]);
     const w6 = reg6.charger();
-    verifie(cree6.ok && entre6.ok && refus6 && refus6.t === 'refus' && /recharge la page/.test(refus6.erreur || '') && ilePartagee(w6) && !!w6.port.lieu && villageoisDe(w6).length === 0 && JSON.stringify(w6.blocs) === JSON.stringify(avant6.blocs),
+    verifie(cree6.ok && entre6.ok && refus6 && refus6.t === 'refus' && /recharge la page/.test(refus6.erreur || '') && !!w6.port.lieu && villageoisDe(w6).length === 0 && JSON.stringify(w6.blocs) === JSON.stringify(avant6.blocs),
       `15a. la ferme d'avant ${id6} a migré à sa première ouverture (une île, le port, aucun villageois, la ferme intacte) ; un jeu d'avant y est refusé (« ${refus6 && refus6.erreur} »)`);
     // 15b. A entre : la fenêtre du retour du propriétaire (l'horloge, la grille des rôles d'une île, la ferme d'avant dans 💾)
     for (const p of [pa, pb]) await p.goto(`${BASE}/jeu.html?monde=${id6}`);

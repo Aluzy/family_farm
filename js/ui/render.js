@@ -1,7 +1,6 @@
 import {
   activeTab, FERME_LINKS, RENDER_THROTTLE_MS, setActiveTab, setEcranFerme, state, tabAvailable,
 } from './store.js';
-import { bandeauVillage } from './village.js';
 import { objectifsARevoir } from '../engine/campaign.js';
 import { renderTestPanel } from './testmode.js';
 import { renderStage, stageUsable } from './stage.js';
@@ -15,9 +14,8 @@ import { renderDidacticiel } from './didacticiel.js';
 import { renderObjectifs } from './objectifs.js';
 import { renderDidacticielIle } from './didacticiel-ile.js';
 import { renderItemModal } from './inventaire.js';
-import { renderShopModal } from './caleche.js';
 import { renderPortModal } from './port.js';
-import { pixelize, watch } from './pixel-emoji.js';
+import { pixelize } from './pixel-emoji.js';
 import { renderRecipeBook } from './livre.js';
 import { renderEncyclopedie } from './encyclopedie.js';
 import { renderPlantation } from './plantation.js';
@@ -81,10 +79,8 @@ function rendre() {
   renderEncyclopedie();
   renderPlantation();
   renderItemModal();
-  renderShopModal();
   renderPortModal();   // (le port, fiche I1b)
   renderTestPanel();
-  bandeauVillage(state);
 }
 
 // Rafraîchit tout de suite (après une action du joueur).

@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : les commerces d'artisans et la forge (docs/ile.md, fiche I5a ;
-   js/engine/artisans.js). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé
-   à true.
+   js/engine/artisans.js).
    - l'envie : JOURS jours à la tâche de la filière (comptés la nuit), une ligne de la chronique, sa bulle ; elle ne
      s'éteint pas ; l'affinité (le palier d'amitié) ; le local (l'établi et le comptoir dans une pièce close, l'enseigne
      dehors près de la porte) ; la décision du joueur, ce qui manque dit sans détour ; à l'ouverture, le nom, la
@@ -12,27 +11,27 @@
    - la vente : au joueur, aux villageois (leur créneau au comptoir, ce dont ils ont besoin), au bac ; le travail à
      façon ; les commandes payées ;
    - l'Atelier du joueur : ce que la forge fait, il ne le fait plus, seulement si une forge est ouverte ;
-   - le journal et le tableau ; la sauvegarde (98 → 99) ; les commandes du moteur ; le joueur automatique ; éteint,
+   - le journal et le tableau ; la sauvegarde (98 → 99) ; les commandes du moteur ; le joueur automatique
      rien.
    Lancer seul : node tests/run-tests.mjs village-artisans.
    ========================================================================== */
 
 import {
-  achatsCommercesDuJour, acheterAuCommerce, acheterAuComptoir, actionsDuJour, addItem, arriverVillageois, attribuer, avancerBac,
+  achatsCommercesDuJour, acheterAuCommerce, acheterAuComptoir, actionsDuJour, addItem, arriverVillageois, attribuer,
   awakeMsAtHour, bilanCommerce, botCommerce, chroniqueDe, commanderAuCommerce, commercesAuBac, commercesDe,
-  conditionsCommerce, countItem, craftStatus, createNewGame, DATA, donnerOutil, executerCommande, farmSeed, farmTerrain, journeeDuVillage,
-  locaux, lotCommerce, lotsDuJour, migrate, nomDe, ouvrirCommerce, parlerVillageois, paroleVillageois, portDuMonde, postesDe,
-  prixArtisan, recetteDebloquee, recettesConnues, runNight, STATE_VERSION, tableauVillage, tacheDef, testMaisonVillageois,
-  lettresCommerce, travailleAujourdhui, trouverVillageois, villageoisDe,
+  conditionsCommerce, countItem, craftStatus, DATA, donnerOutil, executerCommande, farmSeed, farmTerrain,
+  journeeDuVillage, locaux, lotCommerce, lotsDuJour, migrate, nomDe, ouvrirCommerce, parlerVillageois,
+  paroleVillageois, portDuMonde, postesDe, prixArtisan, recetteDebloquee, recettesConnues, runNight, STATE_VERSION,
+  tableauVillage, tacheDef, testMaisonVillageois, lettresCommerce, travailleAujourdhui,
 } from '../../js/engine/index.js';
 import { ajouterAmitie, palierAmitie } from '../../js/engine/amitie.js';
 import { testLocalCommerce } from '../../js/engine/testmode.js';
 import { feteDuJourVillage, villageVocation } from '../../js/engine/fetes-village.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const AR = DATA.ARTISANS;
-const SEUIL = DATA.RECIT.PALIERS[AR.AMITIE];
+const SEUIL = DATA.AMITIE.ECHELLE.PALIERS[AR.AMITIE];
 
 // L'île de test : le port, `n` villageois dans leurs maisons, la boîte pleine, les outils du joueur.
 function ile(n = 2, seed = 1) {
@@ -193,7 +192,7 @@ test('les matières : son stock d\'abord, puis le coffre, achetées de sa bourse
   assert(!lotCommerce(s, v).ok, 'bourse vide : il attend les commandes');
   // (l'amitié lui apprend des pièces)
   assertEqual(recettesConnues(s, c).map((x) => x.id), ['lingot_fer', 'clous', 'lame', 'rails'], 'cordial (I2b : les rails, à la commande)');
-  ajouterAmitie(s, v.id, DATA.RECIT.PALIERS[3]);
+  ajouterAmitie(s, v.id, DATA.AMITIE.ECHELLE.PALIERS[3]);
   assert(recettesConnues(s, c).some((x) => x.id === 'charniere') && palierAmitie(s, v.id) >= 3, 'proche : les charnières, le cuivre');
 });
 
@@ -275,11 +274,9 @@ test('l\'Atelier : sans forge, le joueur fait ses clous, ses charnières, ses la
   assert(/forge/.test(craftStatus(s, 'clous').raison), craftStatus(s, 'clous').raison);
   assert(recetteDebloquee(s, 'charniere'), 'les charnières, tant qu\'il ne les sait pas : le joueur n\'est pas bloqué');
   assert(recetteDebloquee(s, 'comptoir') && recetteDebloquee(s, 'enseigne_forge'), 'ce qui n\'est pas à la forge reste');
-  // (sans forge, rien ne change pour le jeu éteint)
-  avecVillage(() => { const t = createNewGame(3); assert(!recetteDebloquee(t, 'clous'), 'éteint : pas de recette du chantier'); }, false);
 });
 
-/* ---------- le tableau, la sauvegarde, les commandes, le joueur automatique, éteint ---------- */
+/* ---------- le tableau, la sauvegarde, les commandes, le joueur automatique ---------- */
 
 test('le tableau : une ligne par commerce ; l\'artisan rapporte ce qu\'il paie à la ferme', () => {
   const { s, v, c } = forge(2);
@@ -312,9 +309,6 @@ test('la sauvegarde : v98 → v99 ; les commerces et les artisans gardés, répa
   const a = migrate({ ...abime, version: 98 });
   assertEqual([a.commerces.length, a.commerces[0].stock, a.commerces[0].commandes, a.commerces[0].journal], [1, {}, [], []], 'réparé');
   assertEqual([a.villageois[1].tache, a.villageois[1].envies], [null, {}], 'pas d\'artisan sans commerce');
-  const avant = avecVillage(() => createNewGame(5), false);
-  const x = migrate({ ...copie(avant), version: 98 });
-  assert(!('commerces' in x), 'une partie d\'avant : rien d\'ajouté');
 });
 
 test('les commandes du moteur : commerce.ouvrir, commerce.acheter, commerce.commander', () => {
@@ -351,16 +345,4 @@ test('le joueur automatique : un mineur, une conversation par jour, le local, la
   assert(id && commercesDe(s)[0].qui === v.id, `ouvert : ${id}`);
   botCommerce(s);
   assert(countItem(s, 'minerai_fer') >= DATA.SIMULATION.VILLAGEOIS.COMMERCES[0].MATIERES.minerai_fer, 'du minerai au coffre');
-});
-
-test('éteint : ni envie, ni commerce, ni lot ; la nuit ne change rien', () => {
-  avecVillage(() => {
-    const s = createNewGame(2);
-    assertEqual([commercesDe(s), tacheDef('forge') && tacheDef('forge').commerce, achatsCommercesDuJour(s).size], [[], 'forge', 0]);
-    s.commerces = [{ id: 'forge-1', sorte: 'forge', qui: 'x' }];
-    assertEqual(commercesDe(s), [], 'rien ne se lit');
-    runNight(s);
-    assert(!s.nuit.artisans, 'rien la nuit');
-    assert(!ouvrirCommerce(s, 'x', 'forge').ok, 'refusé');
-  }, false);
 });

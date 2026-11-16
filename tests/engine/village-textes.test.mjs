@@ -1,12 +1,12 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : le contrôle des textes (fiche I7d, docs/ile.md « Le récit retiré de
-   l'interface »). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
+   l'interface »).
    Aucun texte qu'atteint une partie de l'île ne contient un nom du récit (VILLAGE.SANS_RECIT.NOMS : Maurice,
    Philomène, Adèle, Odile, Achille, Frida, Basile, Théo, Garance, Lise, Fernand, Céron, Cadolon, Le Gué, Bois-Joli,
    Les Genêts, Les Mouettes, Brumeval) ni « calèche », « cocher », « hameau » (VILLAGE.SANS_RECIT.MOTS) :
    - les données compilées que lit l'île (les sections du chantier, ses objectifs tirés, l'écran des niveaux, les
      phrases et les propos de ses villageois) ;
-   - l'aide de l'île (js/ui/aide-ile.js) et le livre de l'île (encyclopedie_ile.json, js/encyclopedie-ile.generated.js) ;
+   - l'aide de l'île (js/ui/aide-ile.js) et le livre (encyclopedie_ferme_familiale.json, js/encyclopedie.generated.js) ;
    - les noms proposés (l'île, le village, les commerces, les maisons) et les prénoms tirés (les villageois, leurs
      enfants, le joueur « seul ») : aucun prénom du récit ;
    - une partie de l'île de 30 nuits (le joueur automatique) : ses villageois, ses noms, sa chronique, son livre ;
@@ -24,10 +24,11 @@ import { listeTiree, semaineDe } from '../../js/engine/objectifs.js';
 import { proposerNom } from '../../js/engine/noms.js';
 import { tirerVillageois } from '../../js/engine/villageois.js';
 import { categoriesDe, entreeEncyclopedie, majEncyclopedie, nombreEntrees, pagesConnues } from '../../js/engine/encyclopedie.js';
-import { ENCYCLOPEDIE_ILE } from '../../js/encyclopedie-ile.generated.js';
-import { ficheIle, mondeIle, reglesIle, sourceEquipementIle } from '../../js/ui/aide-ile.js';
+import { ENCYCLOPEDIE as ENCYCLOPEDIE_ILE } from '../../js/encyclopedie.generated.js';
+import { readFileSync } from 'node:fs';
+import { ficheIle, reglesIle, sourceEquipementIle } from '../../js/ui/aide-ile.js';
 import { chroniqueHtml, nomsHtml } from '../../js/ui/chronique-html.js';
-import { assert, assertEqual, avecVillage, test } from './aide.mjs';
+import { assert, assertEqual, test } from './aide.mjs';
 
 // Les chaînes de `o` (un objet de données : ses clés « // » sont des commentaires) qui citent le récit, avec leur chemin.
 function fautes(o, chemin = '', out = []) {
@@ -89,11 +90,14 @@ test('l\'aide de l\'île : sa fiche, le grand monde, les règles ; aucune trace 
   assertEqual(fautes(f, 'ficheIle'), [], 'la fiche de l\'île');
   assertEqual(fautes(reglesIle(s), 'reglesIle'), [], 'les règles');
   assertEqual(fautes(sourceEquipementIle, 'equipement'), []);
-  // (le grand monde : les lignes d'avant qui parlent des hameaux sortent, celles qui citent la calèche sont réécrites)
-  const avant = [['Le pays', 'Des prés.'], ['Chemins et gués', 'de hameau en hameau : la calèche les suit.'], ['La carte du monde', 'les hameaux, la calèche'], ['Les hameaux', '…'], ['Les habitants', '…'], ['L\'amitié', '…'], ['La visite de bienvenue', '…'], ['Inviter à un repas', 'Achille'], ['La calèche', '…'], ['L\'Atelier', 'par la calèche'], ['Les styles d\'aménagement', 'Aucun n\'est plus beau. Chaque habitant a son style préféré.'], ['Les projets des hameaux', '…'], ['Les plans de collection', `${DATA.PLANS ? 'Leur recette' : ''} : la première fois que tu passes dans un pays, un ami d'un hameau. Le carnet de plans, sous l'Atelier.`], ['Pêche', 'Des poissons.']];
-  const m = mondeIle(avant);
-  assertEqual(m.map(([t]) => t), ['Le pays', 'Chemins et gués', 'La carte du monde', 'L\'Atelier', 'Les styles d\'aménagement', 'Les plans de collection', 'Pêche'], 'les lignes gardées');
-  assertEqual(fautes(m, 'monde'), [], 'le grand monde de l\'île');
+  // (le grand monde, js/ui/aide.js : sans les hameaux, leurs habitants, la visite, les invitations ni la calèche ;
+  // la fiche lit la page, on en lit le texte)
+  const src = readFileSync(new URL('../../js/ui/aide.js', import.meta.url), 'utf8');
+  const monde = src.slice(src.indexOf('  monde: () => {'), src.indexOf('  gisements: () => {'));
+  const titres2 = [...monde.matchAll(/^        \['((?:[^'\\]|\\.)*)'/gm)].map((x) => x[1]);
+  for (const t of ['Chemins et gués', 'La carte du monde', 'L\\\'Atelier', 'Pêche']) assert(titres2.includes(t), `le grand monde dit « ${t} »`);
+  for (const t of ['Les hameaux', 'Les habitants', 'La calèche', 'La visite de bienvenue']) assert(!titres2.includes(t), `« ${t} » sort`);
+  assertEqual(texteDuRecit(monde.replace(/\/\/.*$/gm, '')), null, 'le grand monde de l\'île');
 });
 
 test('le livre de l\'île : sans le récit ni les hameaux ; les entrées neuves ; chaque lien vers une entrée du livre', () => {
@@ -168,7 +172,7 @@ test('la carte du monde de l\'île (fiche I7e) : ni hameau ni nom du récit, ni 
     // (le plan de l'île : aucun hameau ; ses noms, ceux de ses lieux)
     assertEqual(lieux.hameaux, [], `${g} : aucun hameau dans le plan`);
     const L = lieuxDeLaCarte(s, lieux, T);
-    assertEqual(L.hameaux, [], `${g} : aucun hameau sur la carte, tout vu`);
+    assertEqual(L.hameaux, undefined, `${g} : aucun hameau sur la carte, tout vu`);
     assertEqual(fautes(L, 'carte'), [], `${g} : les lieux de la carte`);
     // (ce que le monde bâtit et nomme : le port, les bâtisses muettes du récit)
     assertEqual(fautes(sol.ctx.hameaux.plans.map((p) => ({ id: p.id, nom: p.nom })), 'plans'), [], `${g} : les plans bâtis`);
@@ -186,15 +190,4 @@ test('la carte du monde de l\'île (fiche I7e) : ni hameau ni nom du récit, ni 
     assertEqual([b.sorte, texteDuRecit(b.nom)], ['ferme', null], `${g} : la boussole vers la ferme`);
     assert(Math.abs(b.x - ((T.MONDE.cadre.SORTIE % W) + 0.5)) < 1e-9, 'au bout du chemin');
   }
-});
-
-test('éteint, rien ne change : les prénoms, le livre et les niveaux d\'avant', () => {
-  avecVillage(() => {
-    const s = createNewGame(3);
-    for (const g of ['f', 'm']) assert(prenomsDuJeu(s, g) === DATA.HABITANTS.PRENOMS[g], `la liste de toujours (${g})`);
-    assert(categoriesDe(s) !== ENCYCLOPEDIE_ILE.categories && categoriesDe(s).some((c) => c.id === 'ile'), 'le livre d\'avant');
-    assert(entreeEncyclopedie('maurice', s) && !entreeEncyclopedie('villageois', s), 'ses pages');
-    assertEqual(elementDuNiveau(s, 'veillee'), DATA.NIVEAUX.ELEMENTS.veillee, 'la veillée du niveau 10');
-    assertEqual(noteDuNiveau(s, 9, levelUnlocks(9).note), levelUnlocks(9).note, 'la note du niveau 9');
-  }, false);
 });

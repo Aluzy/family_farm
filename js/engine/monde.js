@@ -75,7 +75,7 @@ const mondes = new Map();
 const MONDES_GARDES = 5;
 
 // `port` (le chantier « l'île à bâtir », fiche I1a) : le niveau du port de la partie (1 à 5), ou 0 : pas de
-// port (le jeu publié, VILLAGE.ACTIF faux : le monde d'avant, le même objet). Le monde d'un port est celui de
+// port (le monde de la graine, celui d'avant l'île : le même objet). Le monde d'un port est celui de
 // la graine, sa carte et son terrain les mêmes, seul son cadre porte PORT (le plan y place le port : monde-gen.js,
 // elementsDuMonde) et MONDE.cle le distingue (les sols gardés par monde : monde-sol.js solDirect,
 // js/ui/monde-sol.js).

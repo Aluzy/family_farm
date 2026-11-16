@@ -1,6 +1,5 @@
 import { energyMax } from './stamina.js';
 import { DATA } from './catalog.js';
-import { villageActif } from './village.js';
 import { unlockTab } from './base.js';
 import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './devices.js';
 import { noteCompta } from './compta.js';
@@ -8,7 +7,7 @@ import { awakeMsAtHour } from './clock.js';
 import { addItem, countItem, spoil, takeItem } from './inventory.js';
 import { blocAt, blocsPoses, casesBaties, caseLibreFoyer, couchages, herbesSur, majPoulailler, poserBloc, serrePlaces } from './blocs.js';
 import { poserEtage, poserSolEtage } from './etage.js';
-import { allPlots, makePlot, maxStage, seedItem, serreCap, zoneTile } from './crops.js';
+import { makePlot, allPlots, maxStage, seedItem, serreCap, zoneTile } from './crops.js';
 import { farmTerrain } from './terrain.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
 import { arbreProche, openVerger } from './orchard.js';
@@ -282,11 +281,11 @@ export function testFillEnergy(state) {
   return { ok: true };
 }
 
-// Lot 3 : 20 unités de chaque aliment (à conservation pleine) ; ceux du chantier de l'île (village : la faisselle, la
-// tomme de cave du fromager, I5c), seulement le réglage allumé.
+// Lot 3 : 20 unités de chaque aliment (à conservation pleine), ceux de l'île compris (village : la faisselle, la tomme
+// de cave du fromager, I5c).
 export function testAddFood(state) {
   for (const item of Object.keys(DATA.OBJETS)) {
-    if (DATA.OBJETS[item].mangeable && (!DATA.OBJETS[item].village || villageActif(state))) addItem(state, item, 20);
+    if (DATA.OBJETS[item].mangeable) addItem(state, item, 20);
   }
   return { ok: true };
 }

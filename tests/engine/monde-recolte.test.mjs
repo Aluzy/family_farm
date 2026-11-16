@@ -15,9 +15,9 @@ import {
   mondePris, morceauxDe, noterIci, objetPris, objetsDeRegion, ramasserMonde, ramasserMorceau, RECOLTE, recolterMonde,
   regionDeCase, regionsVues, repousseMonde, solDeRegion, solDirect, STATE_VERSION, testSetEnergyZero, TIRED,
 } from '../../js/engine/index.js';
-import { SORTES_ROCHES } from '../../js/engine/monde-roches.js';
-import { SORTES } from '../../js/engine/monde-vegetation.js';
 import { assert, assertEqual, garden, sleepOnce, test } from './aide.mjs';
+import { SORTES } from '../../js/engine/monde-vegetation.js';
+import { SORTES_ROCHES } from '../../js/engine/monde-roches.js';
 
 const W = MONDE.LARGEUR, N = MONDE.REGION;
 
@@ -210,7 +210,8 @@ test('migration v53 → v54 : rien de pris dans le monde, rien d\'autre ne chang
   assertEqual(m.version, STATE_VERSION);
   // (le vu : refait par la migration v57 → v58, la ferme et sa prairie d'une partie d'avant la fiche 8)
   assertEqual({ ...m.monde, vu: undefined }, { ...monde, pris: {}, vu: undefined });
-  assertEqual({ ...m, monde: undefined }, { ...JSON.parse(JSON.stringify(s)), monde: undefined });
+  // (la visite de bienvenue d'une partie d'avant, v61 → v62 : attendue au jour 1 ; la partie neuve, une île, n'en a pas)
+  assertEqual({ ...m, monde: undefined, bienvenue: undefined }, { ...JSON.parse(JSON.stringify(s)), monde: undefined, bienvenue: undefined });
   assert(sleepOnce(m) !== null, 'la partie continue');
   // ce qui est pris passe la sauvegarde
   const a = trouve(m, 'feuillu');

@@ -10,15 +10,12 @@
 //   node scripts/simulate.mjs                       # les deux stratégies, 80 nuits
 //   node scripts/simulate.mjs --nuits 60 --graine 7
 //   node scripts/simulate.mjs --strategie applique  # ou minimal, ou toutes
-//   node scripts/simulate.mjs --village             # le chantier « l'île à bâtir » allumé (VILLAGE.ACTIF ; depuis la
-//                                                   # bascule, I9h, le réglage du jeu : sans option, c'est l'île)
-//   node scripts/simulate.mjs --eteint              # le jeu d'avant (le réglage forcé à false), jusqu'à son retrait
 //
 // Options : --nuits N (80), --graine N (1), --strategie applique|minimal|toutes,
 //           --csv fichier (simulation.csv), --svg fichier (simulation-bonheur.svg),
 //           --racine dossier/du/jeu (une autre copie du dépôt), --lissage N (nuits de la moyenne mobile),
-//           --village (fiche I1b : le réglage VILLAGE.ACTIF allumé ; le joueur simulé commerce au port, la
-//           partie suit les paliers de l'île ; le chapitre 7 et le dépannage n'y sont que des constats).
+//           (l'île à bâtir : le joueur simulé commerce au port, la partie suit les paliers de l'île ; le chapitre 7 et
+//           le dépannage n'y sont que des constats).
 // Code de sortie : 0 si toutes les vérifications sont OK, 1 sinon ; « l'argent qui s'empile » n'est qu'un
 // constat (fiche I0b) : son échec est dit, sans changer le code de sortie.
 // Le CSV porte aussi les comptes de chaque nuit, par poste (gain_*, depense_* : fiche I0b) ; la fin de la
@@ -37,7 +34,7 @@ function option(name, fallback) {
   return i >= 0 && i + 1 < args.length ? args[i + 1] : fallback;
 }
 if (args.includes('--aide') || args.includes('--help')) {
-  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 23).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 22).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
   process.exit(0);
 }
 
@@ -52,11 +49,9 @@ try {
   process.exit(2);
 }
 const S = E.DATA.SIMULATION;
-// I1b : --village allume le chantier « l'île à bâtir » (le port remplace la calèche, les paliers les chapitres) ; depuis
-// la bascule (I9h), le réglage du jeu l'allume, et --eteint joue le jeu d'avant (jusqu'à son retrait, la seconde PR d'I9h)
-const eteint = args.includes('--eteint');
-const village = !eteint && (args.includes('--village') || E.DATA.VILLAGE.ACTIF === true);
-E.DATA.VILLAGE.ACTIF = village;
+// (l'île à bâtir, le jeu depuis la bascule, I9h : le port remplace la calèche, les paliers les chapitres ; les options
+// --village et --eteint d'avant sont retirées)
+const village = true;
 
 const nuits = Math.max(1, Math.floor(Number(option('nuits', S.NUITS))));
 const graine = Math.floor(Number(option('graine', S.GRAINE)));
@@ -76,7 +71,6 @@ for (const id of ids) {
 // les liens, le score de la ferme productive, les contrats honorés ; rien d'autre n'est écrit (le CSV d'avant ne
 // change pas).
 if (args.includes('--vocations')) {
-  E.DATA.VILLAGE.ACTIF = true;
   const V = S.VOCATIONS || {};
   const somme = (o) => Object.values(o).reduce((t, v) => t + v, 0);
   const res = {};
@@ -165,7 +159,7 @@ writeFileSync(svgPath, svgBonheur(parties));
 
 const pad = (v, n) => String(v).padStart(n);
 const affiche = [1, 5, 8, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80].filter((n) => n <= nuits);
-console.log(`Simulation : ${nuits} nuits, graine ${graine}, moteur de ${racine}${village ? ', l\'île à bâtir (VILLAGE.ACTIF)' : ', le jeu d\'avant (--eteint)'}`);
+console.log(`Simulation : ${nuits} nuits, graine ${graine}, moteur de ${racine}, l'île à bâtir`);
 for (const id of ids) {
   const rows = parties[id];
   console.log(`\n== ${S.STRATEGIES[id].nom} (${S.STRATEGIES[id].eveilS} s d'éveil par jour) ==`);

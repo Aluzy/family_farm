@@ -1,6 +1,6 @@
 // La répétition de la bascule, en ligne : un monde fait par le serveur de main (01f8e5c, la version 1.22.0, une ferme
 // seule, sa partie au format 86 : une partie de main avec un niveau 2 meublé), deux joueurs y jouent ; puis le serveur de
-// la bascule (2.0.0, le réglage allumé, sans ILE_ESSAI) l'ouvre sur la même base : la mise à jour et le passage sur l'île
+// la bascule (2.0.0) l'ouvre sur la même base : la mise à jour et le passage sur l'île
 // (I9f), puis deux joueurs y jouent (le temps passe) ; réveillé à froid, la même partie. La fiche I9h, la répétition.
 //   git worktree add ../jeu-avant origin/archive/jeu-avant-ile   (une copie du jeu d'avant, le serveur d'avant)
 //   node scripts/repetition-monde.mjs ../jeu-avant [partie.json]
@@ -28,7 +28,7 @@ const A = 'c-proprio', B = 'c-ami';
 let n = 0; const id = () => `cmd-${++n}-main`;
 const poser = (sorte, t) => ({ id: id(), type: 'bloc.poser', args: { sorte, case: t } });
 
-console.log(`Serveur de main : ${EM.GAME_VERSION} (format ${EM.STATE_VERSION}) ; serveur de la bascule : ${EB.GAME_VERSION} (format ${EB.STATE_VERSION}), VILLAGE.ACTIF = ${EB.DATA.VILLAGE.ACTIF}`);
+console.log(`Serveur de main : ${EM.GAME_VERSION} (format ${EM.STATE_VERSION}) ; serveur de la bascule : ${EB.GAME_VERSION} (format ${EB.STATE_VERSION})`);
 const sauve = fichier ? JSON.parse(readFileSync(fichier, 'utf8')) : JSON.parse(readFileSync(join(ROOT, 'tests', 'engine', 'parties-main.json'), 'utf8')).main_niveau2;
 const s0 = sauve.s;
 EM.addItem(s0, EM.DATA.ATELIER.BLOCS.mur_pierre.objet, 40);
@@ -54,7 +54,7 @@ const rb = new WB.MondeRegistre(sql, () => h.t);
 const t0 = performance.now();
 const w = rb.charger();
 const ms = Math.round(performance.now() - t0);
-assert(EB.ilePartagee(w) && EB.horlogeVivante(w), `bascule : le monde est une île, son horloge vivante (mis à jour en ${ms} ms)`);
+assert(!!w.port && EB.horlogeVivante(w), `bascule : le monde est une île, son horloge vivante (mis à jour en ${ms} ms)`);
 assert(!(w.essais && w.essais.village), 'bascule : par le réglage, pas un essai');
 assert(w.day === avant.day, `bascule : le même jour (${w.day})`);
 const ferme = (s) => JSON.stringify(['blocs', 'hauteurs', 'rehausses', 'etage', 'niveauxHauts', 'papiersNiveau2', 'sols'].map((k) => s[k] || null));

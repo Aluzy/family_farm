@@ -4,17 +4,20 @@
    ========================================================================== */
 
 import {
-  absoluteHours, addItem, AUTO_TACHES, awakeMsAtHour, awakeRequired, buyTech, canSleep,
-  checkMastery, completeChapter, coopCapacity, countItem, createInitialState, DATA, farmTerrain,
-  findPlot, grantTech, inventoryCounts, irrigate, isAutomated, isUnlocked, makePlot, maxStage,
-  migrateCropZone, migrateToIntegers, newAutoReport, newNightStats, plant, plantableCropsFor,
-  prepTimeMult, recipeTime, recordNight, robotBattery, robotCapacity, robotChargePct, robotNight,
-  figerStation, robotStation, robotStep, robotTaskCapacity, robotTrip, runRobotCharge, sellItem, setSeedReserve,
-  setSemis, siloCapacity, sleep, soilCap, spend, startFarm, startHousehold, startLot4, startLot5,
-  startLot6, startRecipe, STATE_VERSION, takeItem, techPoints, techPrereqs, techProgress,
-  techStatus, testAddHens, testAddPieces, testAddWheat, testBatir, testEmptyBatteries,
-  testFillBatteries, testSetBuildingLevel5, testUnlockAllTechs, tick, unlockLevel,
-  upgradeRobotBattery, water, wheatTotal, zoneTile,
+  startLot4,
+  startFarm,
+  startLot5,
+  startHousehold,
+  startLot6,
+  absoluteHours, addItem, AUTO_TACHES, awakeMsAtHour, awakeRequired, buyTech, canSleep, checkMastery,
+  completeChapter, coopCapacity, countItem, createInitialState, DATA, farmTerrain, findPlot, grantTech,
+  inventoryCounts, irrigate, isAutomated, isUnlocked, makePlot, maxStage, migrateCropZone, migrateToIntegers,
+  newAutoReport, newNightStats, plant, plantableCropsFor, prepTimeMult, recipeTime, recordNight, robotBattery,
+  robotCapacity, robotChargePct, robotNight, figerStation, robotStation, robotStep, robotTaskCapacity, robotTrip,
+  runRobotCharge, sellItem, setSeedReserve, setSemis, siloCapacity, sleep, soilCap, spend, startRecipe,
+  STATE_VERSION, takeItem, techPoints, techPrereqs, techProgress, techStatus, testAddHens, testAddPieces,
+  testAddWheat, testBatir, testEmptyBatteries, testFillBatteries, testSetBuildingLevel5, testUnlockAllTechs, tick,
+  unlockLevel, upgradeRobotBattery, water, wheatTotal, zoneTile,
 } from '../../js/engine/index.js';
 import {
   assert, assertEqual, atelier, auto5, AVANT_DEMENAGEMENT, chapter1StepsDone, farm, garden, sansCompteurs68,
@@ -38,6 +41,7 @@ function robotJour(s) {
 // Arbre v2 : état de test où tous les paliers sont ouverts et les PT abondants.
 function techReady(s, pt = 99) {
   s.campagne.chapitre = 7;
+  s.palier = 7;   // (l'île : le palier tient la place du chapitre)
   techPoints(s).solde = pt;
   return s;
 }
@@ -545,6 +549,7 @@ test('prérequis : palier, bâtiment, nœud précédent, PT et pièces', () => {
   assertEqual(techStatus(s, 'cu_recolte_auto'), 'verrouille');
   assertEqual(techPrereqs(s, 'cu_recolte_auto').map((p) => p.ok), [false, false, false]);
   s.campagne.chapitre = 4;
+  s.palier = 4;   // (l'île : le palier tient la place du chapitre, paliers.js)
   techPoints(s).solde = 10;
   assertEqual(techPrereqs(s, 'cu_recolte_auto').map((p) => p.ok), [true, false, false]);
   const refus = buyTech(s, 'cu_recolte_auto');
@@ -799,7 +804,7 @@ test('points de technologie : chapitres, jalons de maîtrise, mode libre', () =>
   // chapitre terminé : 2 PT pour le chapitre 1
   completeChapter(s);
   assertEqual([techPoints(s).solde, techPoints(s).gagnes], [2, 2]);
-  assertEqual(techPoints(s).annonces[0], { pt: 2, raison: 'Chapitre 1 terminé' });
+  assertEqual(techPoints(s).annonces[0], { pt: 2, raison: 'Palier 1 franchi' });
   // jalon : 50 pains cuits → 1 PT, une seule fois
   s.campagne.compteurs.pains = 50;
   assertEqual(checkMastery(s), 1);

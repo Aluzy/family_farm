@@ -2,7 +2,6 @@ import { gemmesHtml } from './gemmes-solde.js';
 import { DATA } from '../engine/catalog.js';
 import { brume as brumeMeteo, pleut } from '../engine/meteo.js';
 import { demandesBouton } from './demandes.js';
-import { pagesDuCarnet } from './carnet.js';
 import { energyLevel, energyMax, enduranceBonus } from '../engine/stamina.js';
 import { allDevices, isOwned, marcheFerme, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
@@ -27,9 +26,7 @@ import { actionSleep } from './game-actions.js';
 import { artHtml, pxText } from './pixel-art.js';
 import { averageHappiness } from '../engine/bonheur.js';
 import { morph, morphSlots, refresh, setLastRenderAt } from './render.js';
-import {
-  cibleAttrs, heureDuJour, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
-} from './stage.js';
+import { heureDuJour, setStagePan, STAGE_LIEUX, stageActive, stageUsable } from './stage.js';
 import {
   backToFerme, deviceName, renderDeviceFenetre, renderDeviceScreen, renderEauFenetre, renderEnergieFenetre, renderFerme,
   renderInstallationsMaison, renderPotager, renderRobotCard,
@@ -48,11 +45,10 @@ import { renderAtelier } from './atelier.js';
 import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
 import { farmTerrain } from '../engine/terrain.js';
-import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js';
+import { comptoirTabAOuvrir } from './comptoir.js';
 import { portTabsHtml, renderPort } from './port.js';
 import { chroniqueBouton } from './chronique.js';
-import { villageActif } from '../engine/village.js';
-import { renderChapterBanner, ongletsIle, corpsIle } from './chapitres.js';
+import { ongletsIle, corpsIle } from './chapitres.js';
 import { paliersSuivis } from '../engine/paliers.js';
 import { renderBoite } from './boite.js';
 import { carteCuisineVillage, carteGardeManger } from './garde-manger.js';
@@ -261,11 +257,11 @@ export const STAGE_WINDOWS = {
   // en-tête : les onglets en icônes seules et le « ? » de l'onglet ouvert. Le chantier « l'île à bâtir »
   // allumé (fiche I1b), c'est la fenêtre du port (js/ui/port.js) : la calèche ne commerce plus.
   comptoir: {
-    get nom() { return villageActif(state) ? DATA.PORT.NOM : 'La calèche'; },
-    get icone() { return villageActif(state) ? DATA.PORT.ICONE : '🐴'; },
+    get nom() { return DATA.PORT.NOM; },
+    get icone() { return DATA.PORT.ICONE; },
     ok: () => tabAvailable('comptoir'), bois: true, flottante: true,
-    enTete: () => (villageActif(state) ? portTabsHtml() : marketTabsHtml()),
-    corps: () => (villageActif(state) ? renderPort(true) : renderComptoir(true)),
+    enTete: () => portTabsHtml(),
+    corps: () => renderPort(true),
   },
   // Notifications (menu latéral) : fenêtre flottante dans le cadre bois, comme l'Inventaire.
   notifications: {
@@ -300,7 +296,7 @@ export const STAGE_WINDOWS = {
   // La boîte à nourriture posée dans le foyer : ce qu'elle contient, la remplir.
   boite: {
     // (fiche I3e : sur l'île, la boîte rendue commune au village sert encore, le réfrigérateur acheté ; sa carte en tête)
-    nom: 'Boîte à nourriture', icone: '🧺', ok: () => boitePosee(state) && (!state.frigo.construit || villageActif(state)), bois: true,
+    nom: 'Boîte à nourriture', icone: '🧺', ok: () => boitePosee(state), bois: true,
     corps: () => renderBoite(carteGardeManger('boite')),
   },
   // Les tonnelets posés dehors (un appui sur l'un d'eux) : ce qui s'y affine, y mettre une tomme ou un moût.
@@ -310,7 +306,7 @@ export const STAGE_WINDOWS = {
   },
   // L'étal du joueur (l'île à bâtir, fiche I4 ; un appui sur lui) : ce qui y est en vente aux villageois, y mettre.
   etal: {
-    nom: 'Étal', icone: '🛒', ok: () => villageActif(state) && caseEtal(state) !== null, bois: true,
+    nom: 'Étal', icone: '🛒', ok: () => caseEtal(state) !== null, bois: true,
     corps: () => renderEtal(),
   },
   // Un commerce d'artisan (l'île à bâtir, fiche I5a ; un appui sur son établi, son comptoir, son enseigne, ou la fiche
@@ -403,9 +399,9 @@ export const STAGE_WINDOWS = {
   chapitres: {
     get nom() { return paliersSuivis(state) ? 'L\'île' : 'Chapitres'; },
     get icone() { return paliersSuivis(state) ? '🏝️' : '📜'; },
-    // (fiche I8a : le chantier allumé, deux onglets, les paliers de l'île et les vocations : chapitres.js)
-    get onglets() { return villageActif(state) && paliersSuivis(state) ? ongletsIle : undefined; },
-    get haute() { return villageActif(state) && paliersSuivis(state); },
+    // (fiche I8a : deux onglets, les paliers de l'île et les vocations : chapitres.js)
+    get onglets() { return paliersSuivis(state) ? ongletsIle : undefined; },
+    get haute() { return paliersSuivis(state); },
     ok: () => true, corps: () => corpsIle(),
   },
   // Le Silo : sur la carte dès qu'il est débloqué (comme le Poulailler) ; on le construit,
@@ -554,7 +550,7 @@ export function renderIndicators() {
       (tableau ? `${tableau}</span>` : '') +
       // (connecté au jeu en ligne : le solde de gemmes, qui ouvre ses achats : js/ui/gemmes.js)
       gemmesHtml() +
-      // (l'île à bâtir, fiche I3a : le compte des villageois, qui ouvre leur liste ; rien le chantier éteint)
+      // (l'île à bâtir, fiche I3a : le compte des villageois, qui ouvre leur liste)
       villageoisCarteHtml() +
     `</span>`;
   if (html !== playerHtml) {
@@ -677,14 +673,6 @@ function carteMondeBouton() {
   return '<button type="button" class="nav-btn" data-action="carte-monde-open" title="Carte du monde (touche M)" aria-label="Carte du monde" aria-keyshortcuts="M"><span class="nav-icon" aria-hidden="true">🧭</span><span class="nav-label">Carte du monde</span></button>';
 }
 
-// Le récit : le carnet du joueur (js/ui/carnet.js), dès sa première page (l'île à bâtir n'en a pas, fiche I7d : la
-// chronique est à sa place).
-function carnetBouton() {
-  const n = pagesDuCarnet().length;
-  if (!n) return '';
-  return `<button type="button" class="nav-btn" data-action="carnet-open" title="Carnet" aria-label="Carnet (${n > 1 ? `${n} pages` : '1 page'})"><span class="nav-icon" aria-hidden="true">📓</span><span class="nav-label">Carnet</span></button>`;
-}
-
 export function renderTabbar() {
   const current = ['inventaire', 'atelier', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
@@ -721,8 +709,7 @@ export function renderTabbar() {
       .join('') +
       // L'Encyclopédie, un livre qui se remplit au fil de la partie (js/ui/encyclopedie.js)
       encyclopedieBouton() +
-      // (l'île à bâtir, fiches I7g et I7d : la chronique à la place du carnet ; chacun ne paraît que dans sa partie)
-      carnetBouton() +
+      // (fiche I7g : la chronique, à la place du carnet du récit d'avant)
       chroniqueBouton() +
       demandesBouton() +
       carteMondeBouton() +
@@ -740,7 +727,7 @@ const TAB_RENDERERS = {
   ferme: () => (ecranFerme === 'panneaux' || ecranFerme === 'batteries' ? [renderDeviceScreen(ecranFerme)] : stageActive() ? [''] : renderFerme()),
   famille: () => [backToFerme() + renderFamille()],
   inventaire: () => [renderInventaire()],
-  comptoir: () => [renderComptoir()],
+  comptoir: () => [renderPort()],
   recettes: () => [backToFerme() + renderRecettes()],
   techno: () => [backToFerme() + renderTechno()],
   notifications: () => [renderNotifications()],

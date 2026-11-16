@@ -1,6 +1,5 @@
 import { DATA, ingredientOptions, recipeOutput, recipeOutputQty } from './catalog.js';
 import { fail } from './devices.js';
-import { villageActif } from './village.js';
 import { countItem, freshLot, isFridgeable, keepLots, lotList, lotRank, pullLots, pushLots } from './inventory.js';
 import { boiteCounts, boitePosee, deposerBoite, placeBoite, rangementCommun, rangementDe, reprendreBoite } from './repas.js';
 import { fridgeCounts, fridgeRoom, moveToFridge } from './fridge.js';
@@ -55,7 +54,7 @@ const SORTES_CUISINE = { cuisiniere: 'cuisine', four: 'four' };
 
 // La partie a-t-elle un garde-manger désigné (même si son rangement a disparu) ?
 function gm(state) {
-  return villageActif(state) && objet(state.gardeManger) ? state.gardeManger : null;
+  return objet(state.gardeManger) ? state.gardeManger : null;
 }
 
 // Le garde-manger commun : { sorte ('boite' | 'frigo'), store (ses lots) }, ou null (pas commun, ou son rangement
@@ -113,7 +112,6 @@ export function reserveVisee(state) {
 // l'autre. Le réfrigérateur acheté, une boîte commune reste (repas.js rangerBoite) : le village y mange, la famille au
 // réfrigérateur. → { ok, commun, sorte }.
 export function designerGardeManger(state, oui = true, sorte = null) {
-  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
   const g = assurer(state);
   if (!oui) {
     g.commun = false;
@@ -129,7 +127,6 @@ export function designerGardeManger(state, oui = true, sorte = null) {
 
 // La réserve visée, en jours (un choix de GARDE_MANGER.RESERVES, ou un entier de 0 à 10). → { ok, reserve }.
 export function reglerReserve(state, jours) {
-  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
   const n = Math.floor(Number(jours));
   if (!Number.isFinite(n) || n < 0 || n > 10) return fail('Une réserve de 0 à 10 jours.');
   assurer(state).reserve = n;
@@ -286,7 +283,6 @@ export function estCuisineDuVillage(state, t) {
 
 // Le joueur désigne la cuisinière (ou le four) de la case `t` « du village », ou la reprend (oui : false). → { ok }.
 export function designerCuisine(state, t, oui = true) {
-  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
   const B = state.blocs || {};
   if (oui && !SORTES_CUISINE[B[t]]) return fail('Seuls une cuisinière ou un four posés font la cuisine du village.');
   const g = assurer(state);
@@ -463,9 +459,8 @@ export function signatureGardeManger(state) {
 }
 
 // La fenêtre : { commun, sorte, contenu, energie, besoin, jours, reserve, reserves, cuisines, menu, manque, aujourdhui,
-// hier, posee } ; null le chantier éteint.
+// hier, posee }.
 export function etatGardeManger(state) {
-  if (!villageActif(state)) return null;
   const g = gm(state) || { commun: false, cuisines: [] };
   return {
     commun: !!g.commun, sorte: g.sorte || null, possibles: rangementsPossibles(state), actif: gardeMangerCommun(state),

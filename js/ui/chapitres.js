@@ -11,11 +11,9 @@ import { accord } from './common.js';
 import { son } from './son.js';
 import { escapeHtml } from '../engine/format.js';
 import { PLANS } from '../engine/plans.js';
-import { projetsFaits } from '../engine/projets.js';
 import { styleDe, styleInfo, styleMaison } from '../engine/styles.js';
 import { listeDesChapitres, paliersSuivis } from '../engine/paliers.js';
 import { notify } from './toasts.js';
-import { villageActif } from '../engine/village.js';
 import { subtabsHtml } from './inventaire.js';
 import { renderVocations } from './vocations.js';
 
@@ -67,16 +65,13 @@ function recompenseHtml(r) {
 
 // Le jeu libre (la campagne finie) : ce qui reste à faire, à son rythme.
 function jeuLibreHtml() {
-  const H = state.projets && typeof state.projets === 'object' ? Object.keys(state.projets) : [];
-  const projets = H.reduce((n, hid) => n + projetsFaits(state, hid).length, 0);
   const connus = state.plans && state.plans.connus ? Object.keys(state.plans.connus).length : 0;
   const total = Object.values(PLANS.COLLECTIONS).reduce((n, c) => n + c.plans.length, 0);
   const m = styleMaison(state);
   const styles = m.complet ? `un style complet (${styleInfo(m.complet).nom})` : m.varies.length ? `${m.varies.length} ${accord(m.varies.length, 'style')} ${accord(m.varies.length, 'mis', 'mis')} en valeur` : 'mêle les styles qui te plaisent';
   return `<ul class="jeu-libre">
     <li>🪑 Aménage la ferme à ton idée : ${styles}.</li>
-    <li>📅 Invite tes amis à un repas, depuis le calendrier.</li>
-    <li>🏘️ Aide les hameaux dans leurs projets : ${formatNumber(projets)} ${accord(projets, 'projet')} ${accord(projets, 'achevé')}.</li>
+    <li>📅 Invite les villageois à un repas, depuis le calendrier.</li>
     <li>📜 Complète les collections de plans : ${formatNumber(connus)} / ${formatNumber(total)}.</li>
   </ul>`;
 }
@@ -129,7 +124,7 @@ function annoncerPaliers() {
   refresh();
 }
 
-// Fiche I8a : la fenêtre « L'île » a deux onglets (le chantier allumé) : les paliers de l'île, puis les vocations
+// Fiche I8a : la fenêtre « L'île » a deux onglets : les paliers de l'île, puis les vocations
 // (js/ui/vocations.js : chaque vocation, son score, ses paliers, ce qui la fait monter ; les fêtes et les projets du
 // village).
 const ILE_ONGLETS = [
@@ -141,7 +136,7 @@ export function ongletsIle() {
   return subtabsHtml(ILE_ONGLETS, ileOnglet, 'ile-onglet');
 }
 export function corpsIle() {
-  return villageActif(state) && paliersSuivis(state) && ileOnglet === 'vocations' ? renderVocations() : renderChapterBanner();
+  return paliersSuivis(state) && ileOnglet === 'vocations' ? renderVocations() : renderChapterBanner();
 }
 // (une notification qui mène aux vocations : l'onglet s'ouvre)
 export function ouvrirOngletIle(id) {

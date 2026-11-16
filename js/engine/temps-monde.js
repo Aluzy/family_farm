@@ -11,13 +11,12 @@ import { arriveeEnfantRefus, arriverEnfant } from './liens.js';
 import { assurerArrivee } from './chronique.js';
 import { energyMax } from './stamina.js';
 import { penalite } from './inventory.js';
-import { ilePartagee } from './frontiere.js';
 import { chargesDe } from './portage.js';
 import { enLot } from './blocs.js';
 
 /* ---------- I9a2 : l'horloge commune d'un monde de l'île (docs/fiches/ile/I9a2-note-horloge.md) ----------
 
-   Un monde en ligne de l'île (le chantier allumé pour sa partie : ilePartagee) a une horloge vivante : le temps
+   Un monde en ligne (une île) a une horloge vivante : le temps
    y passe tant qu'un joueur au moins est connecté, pour tous en même temps. Il avance par PAS de 5 s d'horloge
    (VILLAGE.EN_LIGNE.PAS_MS : 10 minutes de jeu), toujours un pas après l'autre : le moteur ne donne pas le même
    état pour un pas de 60 s et pour 12 pas de 5 s (l'énergie, le Moulin, les villageois), mais deux machines qui
@@ -47,9 +46,9 @@ export const ACTEUR_DU_MONDE = 'monde';
 const EL = () => DATA.VILLAGE.EN_LIGNE;
 export const pasMs = () => EL().PAS_MS;
 
-// La partie d'un monde en ligne dont l'horloge vit (I9a2) ? Celle d'une île partagée ; une ferme d'avant : non.
+// La partie d'un monde en ligne dont l'horloge vit (I9a2) ? Celle de tout monde (une île partagée).
 export function horlogeVivante(state) {
-  return !!(state && state.mondePartage && ilePartagee(state));
+  return !!(state && state.mondePartage);
 }
 
 // L'horloge d'une partie (posée s'il le faut : une partie du monde d'avant la version 104 n'en a pas).

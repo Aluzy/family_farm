@@ -30,7 +30,6 @@ const APPAREILS = String(opt('appareils', '1,4,6')).split(',').map(Number);
 const NOMS = { 1: 'bureau', 4: 'téléphone moyen (×4)', 6: 'téléphone modeste (×6)' };
 
 /* ---------- la partie ---------- */
-E.DATA.VILLAGE.ACTIF = true;
 const cloner = (v) => JSON.parse(JSON.stringify(v));
 let s10;
 if (opt('partie', null)) s10 = JSON.parse(readFileSync(opt('partie'), 'utf8'));

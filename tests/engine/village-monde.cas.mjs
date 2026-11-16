@@ -1,6 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : l'île sans hameau, sans calèche ni boucle de chemins (docs/ile.md, fiche
-   I7e). Comme tous les fichiers tests/engine/village-*.test.mjs, ils tournent avec VILLAGE.ACTIF forcé à true.
+   I7e).
    Joués en quatre parties, en parallèle (village-monde-<k>.test.mjs posent globalThis.PARTIE_TESTS = [k, n]) ; le
    lot de 50 graines y est réparti.
    - sur 50 graines (celles de tests/engine/ile-monde-temoins.json, relevées sur le plan d'avant I7e) : le plan de
@@ -10,7 +10,6 @@
    - le Web Worker et le calcul direct donnent le même monde (les lieux, les plans bâtis, le tronçon, les régions),
      sans tournée de calèche ;
    - là où se tenait un hameau, la nature de son biome a repris (des plantes, comme autour) ;
-   - éteint, le monde d'avant : ses hameaux, ses boucles, sa calèche.
    Lancer : node tests/run-tests.mjs village-monde
    ========================================================================== */
 
@@ -20,12 +19,11 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  BIOME, biomesDeRegion, champsDuMonde, contexteSol, createNewGame, elementsDuMonde, elementsSol, farmTerrain, genererMonde,
-  lieuxDeLaCarte, MONDE, planDuMonde, poserCheminsSol, solDirect, solDeRegion, toutVoir, tronconDuPort,
+  biomesDeRegion,
+  BIOME, champsDuMonde, contexteSol, createNewGame, elementsDuMonde, elementsSol, farmTerrain, genererMonde,
+  lieuxDeLaCarte, MONDE, planDuMonde, poserCheminsSol, solDirect, solDeRegion, toutVoir,
 } from '../../js/engine/index.js';
-import { tourneeDe, tourneeDuMonde } from '../../js/engine/caleche.js';
-import { habitantsDe } from '../../js/engine/habitants.js';
-import { assert, assertEqual, avecVillage } from './aide.mjs';
+import { assert, assertEqual } from './aide.mjs';
 
 const PARTIE = globalThis.PARTIE_TESTS;
 let rangTest = 0;
@@ -117,7 +115,7 @@ test('le Web Worker et le calcul direct : le même monde de l\'île, sans tourn�
     await attendre(() => recus.some((r) => r.type === 'region'));
     const pret = recus.find((r) => r.type === 'pret');
     assert(pret, 'le Worker est prêt');
-    assertEqual(pret.tournee, null, 'pas de tournée de calèche');
+    assertEqual(pret.tournee, undefined, 'pas de tournée de calèche (retirée à la bascule, I9h)');
     assertEqual(JSON.stringify(structuredClone(pret.lieux)), JSON.stringify(direct.el.lieux), 'les lieux');
     assertEqual(JSON.stringify(structuredClone(pret.hameaux)), JSON.stringify(direct.ctx.hameaux.plans), 'les plans bâtis : le port et les bâtisses');
     assertEqual(pret.troncon, direct.troncon, 'le tronçon du joueur');
@@ -185,21 +183,8 @@ test('une partie de l\'île : ni hameau sur la carte du monde, ni calèche, ni h
   toutVoir(s);
   const T = farmTerrain(s), lieux = planDuMonde(s.carte.graine, 1).lieux;
   const L = lieuxDeLaCarte(s, lieux, T);
-  assertEqual(L.hameaux, [], 'aucun hameau sur la carte, tout vu');
+  assertEqual(Object.keys(L).sort(), ['peche', 'port'], 'ni hameau ni rien d\'autre sur la carte, tout vu');
   assert(L.port && L.port.length === 1 && L.peche.length > 0, 'le port et les coins de pêche, eux, y sont');
-  tourneeDuMonde(s.carte.graine);   // (même posée par un monde d'avant de la même graine)
-  assertEqual(tourneeDe(s), null, 'pas de calèche');
-  assertEqual(habitantsDe(s), {}, 'aucun habitant de hameau');
-});
-
-test('éteint : le monde d\'avant, ses hameaux, ses boucles, sa calèche', () => {
-  avecVillage(() => {
-    const s = createNewGame(GRAINES[4]);
-    const plan = planDuMonde(s.carte.graine);
-    assert(plan.lieux.hameaux.length >= 3, 'des hameaux');
-    assert(plan.chemins.length >= 3, 'des boucles');
-    assertEqual(plan.lieux.port, undefined, 'pas de port');
-    tourneeDuMonde(s.carte.graine);
-    assert(tourneeDe(s) && tourneeDe(s).arrets.some((a) => a.sorte === 'hameau'), 'la calèche fait sa tournée');
-  }, false);
+  // (la calèche et les habitants des hameaux sont retirés à la bascule, I9h : la partie n'en garde que la forme vide)
+  assertEqual([Object.keys(s.caleche.coffre).length, s.caleche.haltes.length, s.habitants], [0, 0, undefined], 'ni calèche ni habitant');
 });

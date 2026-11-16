@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : la migration des parties en cours (fiche I7f ; docs/ile.md ;
-   js/engine/migration-ile.js). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF
-   forcé à true.
+   js/engine/migration-ile.js).
    - chaque partie d'avant (tests/engine/anciennes-parties.json : les deux d'avant la ferme générée, format 46, et deux
      récentes, format 101, jouées le réglage éteint ; tests/engine/temoins.json : une par époque du format, v50 à v57,
      la dernière avec un voisinage vu, ses habitants, la calèche) passe sur l'île sans erreur, une seule fois, puis joue
@@ -22,11 +21,12 @@
 import { readFileSync } from 'node:fs';
 import {
   arriverVillageois, assurerTroncon, candidatsDAvant, chroniqueAEcrit, copieRetourGardee, countItem, createInitialState, DATA,
-  essayerSurLIle, fermerRetourIle, lignesRetour, migrate, migrationIleDue, partieDAvant, pointsAmitie, retourIle,
+  fermerRetourIle, lignesRetour, migrate, migrationIleDue, partieDAvant, pointsAmitie, retourIle,
   simulatePlay, STATE_VERSION, testMaisonVillageois, texteLigne,
 } from '../../js/engine/index.js';
 import { texteDuRecit } from '../../js/engine/village.js';
-import { assert, assertEqual, avecVillage, boite, test } from './aide.mjs';
+import { ENVELOPPE } from '../../js/engine/migration-avant.js';
+import { assert, assertEqual, boite, test } from './aide.mjs';
 
 const lire = (f) => JSON.parse(readFileSync(new URL(f, import.meta.url), 'utf8'));
 const ANCIENNES = lire('./anciennes-parties.json');
@@ -37,7 +37,8 @@ const PARTIES = {
 };
 const copie = (o) => structuredClone(o);
 const migre = (s) => migrate({ v: s.version, t: 0, s: copie(s) });
-const eteint = (s) => avecVillage(() => migre(s), false);
+// (la partie d'avant mise au format, sans passer sur l'île : la ferme d'où elle part)
+const eteint = (s) => migrate({ v: s.version, t: 0, s: copie(s) }, STATE_VERSION, { ile: false });
 // (l'empreinte de la ferme : ses blocs, ses sols, ses hauteurs, ses fenêtres, ce qui est posé dessus, ses parcelles)
 const empreinte = (s) => JSON.stringify(['blocs', 'sols', 'hauteurs', 'fenetres', 'blocsDessus', 'meubles'].map((k) => s[k] || null).concat([(s.potager && s.potager.parcelles) || []]));
 const avant = (s) => (s.chronique ? s.chronique.lignes : []).filter((l) => l.type === 'avant');
@@ -115,22 +116,17 @@ test('les amis d\'avant deviennent candidats, puis débarquent les premiers', ()
   try { DATA.VILLAGE.MIGRATION.AMI = 3; assert(candidatsDAvant({ ...copie(p), essais: { village: true } }).length < amis.length, 'AMI 3'); } finally { DATA.VILLAGE.MIGRATION.AMI = AMI; }
 });
 
-test('les remboursements : le marchand ambulant, la malle, l\'atelier, le projet, la lettre, l\'enveloppe', () => {
+test('les remboursements : le marchand ambulant, la malle, l\'atelier, le projet, l\'enveloppe', () => {
   const p = copie(PARTIES.recente_avancee);
-  // (une lettre jamais ouverte, qui porterait des pièces — aucune n'en porte plus depuis le lot 9 : on lui en donne le
-  // temps du test — ; une enveloppe jamais ouverte)
-  const lettre = Object.keys(DATA.COURRIER)[0], piecesLettre = DATA.COURRIER[lettre].pieces;
-  DATA.COURRIER[lettre].pieces = 40;
-  p.courrier.push({ id: lettre, nuit: p.day, lu: false });
+  // (une enveloppe jamais ouverte ; les lettres ne portaient plus de pièces depuis le lot 9 : le courrier se vide)
   p.inventaire.enveloppe_maurice = [{ qty: 1, nightsLeft: null, origin: 'produit' }];
-  let off, m;
-  try { off = eteint(p); m = migre(p); } finally { if (piecesLettre === undefined) delete DATA.COURRIER[lettre].pieces; else DATA.COURRIER[lettre].pieces = piecesLettre; }
+  const off = eteint(p), m = migre(p);
   const malle = p.caleche.malle;
   assert(malle.commande.graine_tomate && malle.vente.oeuf, 'la malle porte une commande et un dépôt');
-  const cmd = malle.commande.graine_tomate.cout, lettrePieces = 40, env = DATA.RECIT.ENVELOPPE.PIECES;
-  assertEqual(m.pieces, off.pieces + cmd + lettrePieces + env, 'les pièces : la commande, la lettre, l\'enveloppe');
-  assertEqual(m.retourIle.rendu.pieces, cmd + lettrePieces + env, 'dans la fenêtre');
-  for (const l of ['Commande annulée : ', 'Lettre jamais ouverte', 'Enveloppe ouverte']) assert(m.compta.some((x) => x.libelle.startsWith(l)), `dans les comptes : ${l}`);
+  const cmd = malle.commande.graine_tomate.cout, env = ENVELOPPE.PIECES;
+  assertEqual(m.pieces, off.pieces + cmd + env, 'les pièces : la commande, l\'enveloppe');
+  assertEqual(m.retourIle.rendu.pieces, cmd + env, 'dans la fenêtre');
+  for (const l of ['Commande annulée : ', 'Enveloppe ouverte']) assert(m.compta.some((x) => x.libelle.startsWith(l)), `dans les comptes : ${l}`);
   const atelier = Object.values(p.monde.habitants).flatMap((h) => h.commandes || []);
   assert(atelier.length, 'une commande à l\'atelier');
   const projet = Object.values(p.projets)[0].recu;
@@ -197,17 +193,7 @@ test('le tronçon converti est celui d\'une partie neuve de la même terre', () 
   }
 });
 
-test('éteint, une partie d\'avant n\'est pas touchée ; la partie d\'essai ; le format 102', () => {
-  avecVillage(() => {
-    const p = PARTIES.recente_avancee, off = migre(p);
-    for (const k of ['port', 'dehors', 'palier', 'noms', 'chronique', 'candidats', 'retourIle']) assertEqual(k in off, false, `éteint : pas de ${k}`);
-    assertEqual([off.monde.hameaux, off.caleche, off.recit], [p.monde.hameaux, p.caleche, p.recit], 'éteint : le monde d\'avant');
-    // (jeu.html?village=1 : la partie d'avant devient une partie d'essai et passe sur l'île)
-    const e = migre(p);
-    assert(essayerSurLIle(e), 'l\'essai');
-    assertEqual([e.essais.village, e.palier, !!e.port, e.candidats.length], [true, 7, true, 7], 'une partie d\'essai, sur l\'île');
-    assertEqual(essayerSurLIle(e), null, 'une seule fois');
-  }, false);
+test('le format 102 : les candidats et la fenêtre du retour réparés', () => {
   // (le format 102 : une partie de l'île au format 101 ; ses candidats et sa fenêtre, réparés)
   const m = migre(PARTIES.recente_avancee);
   const v101 = { ...copie(m), version: 101, candidats: [m.candidats[0], { prenom: 3 }, null, { ...m.candidats[1], pts: 900, gouts: { inconnu: 'aime' } }], retourIle: 'abîmée' };

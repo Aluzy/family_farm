@@ -1,8 +1,14 @@
-# L'île à bâtir — le plan du chantier
+# L'île à bâtir — la conception de référence
 
-Ce document fait foi pour le chantier « l'île à bâtir » (novembre 2026). Il remplace, quand il sera
-fini, ce que `docs/grand-monde.md` dit des hameaux, des habitants et de la calèche, et tout
-`docs/recit/`. Les fiches sont dans [`docs/fiches/ile/`](fiches/ile/README.md).
+Ce document fait foi pour le jeu depuis la bascule (fiche I9h, version 2.0.0, novembre 2026) : l'île à bâtir est
+le jeu. Il remplace ce que `docs/grand-monde.md` disait des hameaux, des habitants et de la calèche, et
+`docs/recit/` (retiré ; il reste sur la branche `archive/jeu-avant-ile`, avec le jeu d'avant). Pour le reste
+(la ferme, l'énergie, les cultures, les bêtes, la cuisine, la construction), `docs/conception.md` fait foi. Les
+fiches du chantier sont dans [`docs/fiches/ile/`](fiches/ile/README.md) ; les réglages de l'île, dans
+`data/village.json`.
+
+**L'état du chantier** : terminé. Toutes les fiches sont faites, I9h comprise (l'allumage en 2.0.0, puis le
+retrait du jeu d'avant : plus bas, « La bascule »). Il reste au mainteneur le déploiement (la fiche I9h).
 
 ## Le jeu visé
 
@@ -31,7 +37,7 @@ son île et son village ; une chronique note ce qui s'y passe.
 | D4 | Un tableau suit ce que chaque villageois coûte et produit par jour. | Journal de 7 jours par villageois, lu par une nouvelle fenêtre. |
 | D5 | Les commerces restent artisanaux : un établi, un artisan, peu de pièces par jour, pas d'électricité. | Le volume est réservé à la vocation productive (chaînes, robot). |
 | D6 | Des traits de personnalité, sans mimiques. | Les traits pèsent sur les horaires, les phrases, les postes préférés et les affinités. |
-| D7 | C'est le jeu par défaut, avec migration des parties en cours. | Pas de mode à côté. Le chantier avance derrière un réglage (`VILLAGE.ACTIF`), basculé à la fin. |
+| D7 | C'est le jeu par défaut, avec migration des parties en cours. | Pas de mode à côté. Le chantier a avancé derrière un réglage (`VILLAGE.ACTIF`), allumé puis retiré à la bascule (I9h). |
 | D8 | Le tronçon de chemin qui sort de la ferme reste ; les boucles vers les anciens hameaux sont retirées ; le joueur modifie le chemin. | Le chemin généré devient des blocs de chemin que le joueur possède, posés et retirés hors de la ferme aussi. |
 | D9 | En ligne, le monde partagé est l'île entière du joueur : les invités y co-construisent et y produisent. | La frontière E-8 de `docs/monde-partage.md` est levée ; la synchronisation est à optimiser. |
 | D10 | Le grand monde reste (biomes, grottes, pêche, faune, brouillard) : on y récolte. | Rien ne change dans `monde-sol.js`, `monde-vegetation.js`, `monde-roches.js`, `monde-recolte.js`, `monde-faune.js`. |
@@ -90,7 +96,7 @@ Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
 | 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
 | 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f (fait), I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
 | 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
-| 9. L'île en ligne et la bascule | I9a, I9a2, I9b, I9c, I9d, I9e, I9f, I9g (faits), I9h (la première PR faite : la répétition et l'allumage ; reste le retrait) | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
+| 9. L'île en ligne et la bascule | I9a, I9a2, I9b, I9c, I9d, I9e, I9f, I9g (faits), I9h (fait : la répétition, l'allumage, le retrait) | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
 
 ## L'ordre et les dépendances
 
@@ -119,8 +125,9 @@ publié ne change pas. Chaque fiche écrit son code pour `ACTIF: true` et le tes
 d'avant restent verts avec `false`. I9h le passe à `true`, retire les branches mortes et le réglage
 lui-même. Entre-temps, `?village=1` dans l'adresse du jeu l'allume pour un essai (I0a).
 
-**Depuis I9h (la première PR, la version 2.0.0), il vaut `true`** : l'île est le jeu ; `?village=1` ne change plus rien ;
-les tests du jeu d'avant le forcent à `false` jusqu'au retrait (plus bas, « La bascule »).
+**Depuis I9h (la première PR, la version 2.0.0), il valait `true`** ; **la seconde PR (le retrait) l'a retiré**, avec
+`villageActif`, l'essai (`?village=1`, `js/ui/village.js`, son bandeau), les branches du jeu d'avant et leurs tests.
+Ce qui suit dit ce qu'il était pendant le chantier.
 
 Ce qui est posé (I0a) :
 
@@ -3011,7 +3018,7 @@ quel). La partie d'une île de 15 : 143 Ko en ligne, sous le plafond (256 Ko) : 
 - **La route de la charrette** est gardée par partie (`trajetCharrette`, une WeakMap) : une partie refaite chez un joueur
   (`Synchro.refaire`, à chaque geste d'un autre) la recalcule une fois (quelques ms).
 
-## La bascule (I9h : la répétition et l'allumage, faits ; le retrait, à faire)
+## La bascule (I9h, faite : la répétition, l'allumage, le retrait)
 
 La fiche : `docs/fiches/ile/I9h-bascule.md` (« Fait : la première PR » : le détail, l'ordre du déploiement, ce que la
 seconde PR aura à faire). En bref :
@@ -3029,6 +3036,25 @@ seconde PR aura à faire). En bref :
   d'avant passent sur l'île à leur premier réveil, `ILE_ESSAI` n'y sert plus). Les tests du jeu d'avant forcent le réglage
   éteint (`tests/engine/aide.mjs`) ; `simulate.mjs` joue l'île par défaut (`--eteint` : le jeu d'avant), son CSV est celui
   de `--village` d'avant, octet pour octet ; le site construit pèse 28,5 Mo (26,9 pour celui de `main`) jusqu'au retrait.
+- **Le retrait** (la seconde PR) : le réglage (`VILLAGE.ACTIF`, `villageActif`, l'essai `?village=1` et son bandeau,
+  `ILE_ESSAI` du Worker, `--eteint` et `--village` de `simulate.mjs`) ; le récit (`recit.js`, son aiguillage,
+  `fil-lune.js`, `secrets.js`, `ile.js`, `bienvenue.js`, `usure.js`, `data/recit.json`, `ile.json`, `secrets.json`,
+  le courrier, `docs/recit/` ; D16 : la pierre de lune et la lueur de la ferme) ; les hameaux et la calèche
+  (`habitants.js` du moteur, `caleche.js`, `caleche-tournee.js`, `projets.js`, `fetes.js`, leurs fenêtres, leurs
+  dessins, `data/projets.json`) ; les tests du jeu d'avant. **Ce qui reste pour les anciennes parties** :
+  `js/engine/migration-avant.js` (ce que les migrations lisaient du jeu d'avant, figé : le récit, la visite et la
+  calèche vides, l'enveloppe et ses 15 000 pièces, les souvenirs, la malle à vider, ce que rendaient les ateliers
+  des hameaux, le remboursement du commerce) et `js/engine/migration-ile.js` (le passage sur l'île) ; la commande
+  `nuit.partagee` du moteur, pour rejouer le journal d'un monde d'avant ; leurs tests (`migrations`, `temoins`,
+  `village-migration`, `village-bascule`, la répétition). **Ce qui garde son nom** : les clés des sauvegardes
+  (`state.monde.hameaux`, `state.caleche`, `state.recit`, `state.courrier`, `state.bienvenue`, les compteurs
+  `calecheVentes` et `achatsHameaux`), le générateur du monde (`lieux.hameaux`, `DATA.HAMEAUX`, `monde-hameaux.js` :
+  le port et les bâtisses en sont faits ; le monde de l'île est tiré du monde d'avant), le moteur des personnages
+  de la scène (`js/carte/ferme/habitants.js`, que les villageois reprennent). L'encyclopédie n'a plus qu'une source
+  (`encyclopedie_ferme_familiale.json`, le livre de l'île). Le jeu n'a pas changé : le CSV de `simulate.mjs` est le
+  même octet pour octet, les parties migrées aussi (au rapport de la nuit près : `nuit.amitie`, `nuit.plans`,
+  `nuit.projets`, qui ne rapportaient que la vie des hameaux). Le site construit pèse 29,0 Mo (29,9 avant le
+  retrait), le paquet du jeu 1 853 Ko (2 192).
 - **Le déploiement** (fait par le mainteneur) : le Worker avant le site, l'ordre exact dans la fiche ; puis relire le
   rapport des sessions et les journaux des mondes (`monde.migrer`, `perdus`).
 

@@ -2,7 +2,6 @@ import { DATA } from './catalog.js';
 import { mulberry32 } from './base.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
-import { villageActif } from './village.js';
 import { trouverVillageois, villageoisDe } from './villageois.js';
 import { positionVillageois } from './villageois-journee.js';
 import { tacheSansHumeur } from './villageois-amitie.js';
@@ -183,7 +182,7 @@ export function tachesDesTraits(v, o = {}) {
 // la tâche qu'il aime ; −POSTES.BOUDE à celle qu'il boude (rien pour un ami proche du joueur : tacheSansHumeur). Sans
 // travail aujourd'hui, rien.
 export function bonheurDesTraits(state, v) {
-  if (!villageActif(state) || !v) return 0;
+  if (!v) return 0;
   const W = v.travail, jour = jourDe(state);
   const tache = W && W.jour === jour && Number(W.actions) > 0 ? W.tache || v.tache : null;
   const g = goutTache(v, tache), P = T().POSTES || {};
@@ -285,7 +284,7 @@ export function signeVu(trait, seg, heure) {
 // fait ce que montre un de ses traits pas encore connus compte un indice (un par jour). → [{ id, trait }] : ceux qui
 // viennent de se révéler.
 export function observerTraits(state, ids, heure) {
-  if (!villageActif(state) || !Array.isArray(ids)) return [];
+  if (!Array.isArray(ids)) return [];
   const out = [];
   for (const id of ids) {
     const v = trouverVillageois(state, id);

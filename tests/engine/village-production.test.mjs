@@ -1,8 +1,7 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : la vocation « ferme productive » (docs/ile.md, fiche I8b ;
    js/engine/vocation-production.js, contrats.js, production.js, taches.js « Conduire les machines », le socle minimal
-   des vocations : vocations.js). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec
-   VILLAGE.ACTIF forcé à true.
+   des vocations : vocations.js).
    - le score et chacune de ses causes ; les paliers notés la nuit, ce qu'ils débloquent ;
    - un contrat d'export proposé, accepté, livré en trois passages du bac, sa prime ; un contrat manqué s'efface sans
      pénalité ; la taille suit le niveau du port ;
@@ -10,19 +9,20 @@
      dans le coût du tableau ;
    - la tournée du port en volume : les contrats d'abord, la brouette, le quai de chargement ;
    - les paliers : les contrats gros, le réservoir double, le vrac de plein champ, le second robot ;
-   - la sauvegarde v97 → v98 ; les commandes ; éteint, rien.
+   - la sauvegarde v97 → v98 ; les commandes.
    Lancer seul : node tests/run-tests.mjs village-production
    ========================================================================== */
 
 import {
-  acheterPalier, accepterContrat, addItem, arriverVillageois, attribuer, avancerContrats, awakeMsAtHour, bilanJour, buildAtelier, calculProduction,
-  catalogueImport, chargerPortage, choisirVehicule, commanderImport, comptoirDuPort, contratsDuPort, countItem, craftStatus,
-  createNewGame, DATA, debloque, etatChaine, executerCommande, farmSeed, farmTerrain, listeVocations, livrerContrat,
-  machinesDeLaFerme, migrate, palierVocation, paiementContrat, porteeNavette, portDuMonde, poserBloc, postesDe,
-  prendreAvisContrats, productionNuit, prixIle, robotTrip, runNight, scoreVocation, sellPrice, STATE_VERSION, tacheDef, tacheManque, tachesDuPoste,
-  tachesNuit, testBatir, testFillBatteries, testFillTank, testMaisonVillageois, tirerContrats, valeurContrat, vocationsNuit,
+  acheterPalier, accepterContrat, addItem, arriverVillageois, attribuer, avancerContrats, awakeMsAtHour, bilanJour,
+  buildAtelier, calculProduction, catalogueImport, chargerPortage, choisirVehicule, commanderImport, comptoirDuPort,
+  contratsDuPort, countItem, craftStatus, DATA, debloque, etatChaine, executerCommande, farmSeed, farmTerrain,
+  listeVocations, livrerContrat, machinesDeLaFerme, migrate, palierVocation, paiementContrat, porteeNavette,
+  portDuMonde, poserBloc, postesDe, prendreAvisContrats, productionNuit, prixIle, robotTrip, scoreVocation,
+  STATE_VERSION, tacheDef, tacheManque, tachesDuPoste, tachesNuit, testBatir, testFillBatteries, testFillTank,
+  testMaisonVillageois, tirerContrats, valeurContrat, vocationsNuit,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, runFor, setInv, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, runFor, setInv, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const PER = DATA.PORT.BAC.PERIODE;
@@ -358,7 +358,7 @@ test('les paliers débloquent : des contrats plus gros, un réservoir double, le
   assert(Math.abs(avec.travail * DATA.PRODUCTION.ROBOT.VITESSE / 100 - sans.travail) < 1e-9, 'robot_second : la tournée à deux');
 });
 
-/* ---------- la sauvegarde, les commandes, éteint ---------- */
+/* ---------- la sauvegarde, les commandes ---------- */
 
 test('la sauvegarde : v97 → v98 ; la production et les paliers gardés, réparés ; une partie d\'avant laissée telle quelle', () => {
   assert(STATE_VERSION >= 98, 'le format 98 ou plus');
@@ -377,24 +377,6 @@ test('la sauvegarde : v97 → v98 ; la production et les paliers gardés, répar
   assertEqual([m.production.contrats.acceptes[0].livre, m.production.ventes[s.day], m.vocations.paliers.production], [10, 120, 1], 'gardé');
   const abime = migrate({ ...copie(s), version: 92, production: { ventes: { 3: -4 }, contrats: { acceptes: [{ objet: 'licorne', quantite: 3 }], honores: 'x' } }, vocations: { paliers: { production: -2 } } });
   assertEqual([abime.production.ventes, abime.production.contrats.acceptes, abime.production.contrats.honores, abime.vocations.paliers], [{}, [], 0, {}], 'réparé');
-  const avant = avecVillage(() => createNewGame(5), false);
-  const v = migrate({ ...copie(avant), version: 92 });
-  assert(!('production' in v) && !('vocations' in v), 'une partie d\'avant : rien d\'ajouté');
-});
-
-test('éteint : ni score, ni contrat, ni machine conduite, ni nuit qui change', () => {
-  avecVillage(() => {
-    const s = createNewGame(5);
-    assertEqual(scoreVocation(s, 'production'), { score: 0, causes: [] });
-    assertEqual(listeVocations(s), []);
-    assertEqual(debloque(s, 'contrats_gros'), false);
-    assertEqual(contratsDuPort(s), null);
-    assertEqual(productionNuit(s), null);
-    assertEqual(vocationsNuit(s), null);
-    runNight(s);
-    assert(!('production' in s) && !('vocations' in s), 'rien d\'écrit');
-    assertEqual(recetteQuai(s), false, 'pas de quai de chargement');
-  }, false);
 });
 
 function recetteQuai(s) {

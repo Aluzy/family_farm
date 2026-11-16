@@ -3,7 +3,6 @@ import { escapeHtml, formatDay, formatNumber } from '../engine/format.js';
 import { asleep } from '../engine/night.js';
 import { setupPending } from '../engine/depart.js';
 import { countItem } from '../engine/inventory.js';
-import { villageActif } from '../engine/village.js';
 import { villageoisDe, trouverVillageois } from '../engine/villageois.js';
 import { listeVocations, texteDeblocage, quiDebloque } from '../engine/vocations.js';
 import '../engine/vocation-village.js';
@@ -32,8 +31,7 @@ import { itemsText } from './common.js';
      (js/ui/invitations.js) ;
    - les projets du village (js/engine/projets-village.js) : le projet en cours (les matériaux, les journées, le
      chantier à poser, qui y travaille), les autres (à lancer, fermés, finis) ;
-   - au matin (watchVocations, js/ui/loop.js) : la fête d'hier, le chantier, les paliers passés, les fêtes qui viennent.
-   Le chantier éteint, rien ici ne se montre. */
+   - au matin (watchVocations, js/ui/loop.js) : la fête d'hier, le chantier, les paliers passés, les fêtes qui viennent. */
 
 const objetHtml = (it, n) => { const o = DATA.OBJETS[it] || { nom: it, icone: '' }; return `${n !== undefined ? `${formatNumber(n)} ` : ''}<span aria-hidden="true">${o.icone || ''}</span> ${escapeHtml(o.nom.toLowerCase())}`; };
 const leJour = (jour) => (jour === state.day ? 'aujourd\'hui' : jour === state.day + 1 ? 'demain' : formatDay(jour).toLowerCase().replace(/^(\S+)/, 'le $1'));
@@ -155,7 +153,6 @@ const SECTIONS = { village: () => fetesHtml() + projetsHtml() };
 
 // L'onglet « Vocations » de la fenêtre « L'île ».
 export function renderVocations() {
-  if (!villageActif(state)) return '';
   const L = listeVocations(state);
   return `<p class="muted vocation-intro">L'île prend une vocation de ce que tu y bâtis : on peut les suivre toutes à la fois.</p>${L.map(vocationHtml).join('')}`;
 }
@@ -165,7 +162,7 @@ export function renderVocations() {
 // À chaque image (js/ui/loop.js) : une fois par jour, au réveil, ce que la nuit a fait (la fête, le chantier, les
 // paliers) et les fêtes qui viennent.
 export function watchVocations() {
-  if (!state || !villageActif(state) || setupPending(state) || asleep(state)) return;
+  if (!state || setupPending(state) || asleep(state)) return;
   if (!villageoisDe(state).length) return;
   const V = villageVocation(state);
   if (V.annonce === state.day) return;

@@ -1,5 +1,4 @@
 import { DATA } from './catalog.js';
-import { villageActif } from './village.js';
 
 /* ---------- le socle des vocations de l'île (le chantier « l'île à bâtir », fiches I8a et I8b) ----------
 
@@ -69,7 +68,7 @@ export function vocationsEtat(state) {
 // chantier éteint, une vocation inconnue : 0, sans cause.
 export function scoreVocation(state, id) {
   const f = calculs().get(id);
-  if (!f || !villageActif(state)) return { score: 0, causes: [] };
+  if (!f) return { score: 0, causes: [] };
   const r = f(state) || {};
   const causes = (Array.isArray(r.causes) ? r.causes : []).filter(objet).map((c) => ({ ...c, id: String(c.id), nom: String(c.nom || c.id), valeur: entier(c.valeur) }));
   return { score: Math.max(0, entier(r.score)), causes };
@@ -98,9 +97,8 @@ export function palierVocation(state, id) {
 }
 
 // Les vocations de la partie : [{ id, nom, icone, texte, score, causes, palier, paliers: [{ rang, score, nom, icone,
-// debloque, atteint }], suivant, debloque }] ; [] le chantier éteint.
+// debloque, atteint }], suivant, debloque }].
 export function listeVocations(state) {
-  if (!villageActif(state)) return [];
   return idsVocations().map((id) => {
     const d = donneesVocation(id), { score, causes } = scoreVocation(state, id), p = palierVocation(state, id);
     return {
@@ -114,7 +112,6 @@ export function listeVocations(state) {
 // (jamais moins que celui qu'elle avait). → [{ id, palier, nom, icone, debloque }] (les paliers passés cette nuit) ;
 // null le chantier éteint.
 export function vocationsNuit(state) {
-  if (!villageActif(state)) return null;
   const ids = idsVocations();
   if (!ids.length) return null;
   const out = [];
@@ -131,7 +128,7 @@ export function vocationsNuit(state) {
 // Le déblocage `cle` (« plan:banc_pierre », « fete:seconde »…) est-il acquis ? Il l'est quand un palier gardé d'une
 // vocation le donne. Le chantier éteint : jamais.
 export function debloque(state, cle) {
-  if (!state || !villageActif(state) || !objet(state.vocations) || !objet(state.vocations.paliers)) return false;
+  if (!state || !objet(state.vocations) || !objet(state.vocations.paliers)) return false;
   for (const id of Object.keys(state.vocations.paliers)) {
     const n = palierGarde(state, id);
     if (paliersDe(id).slice(0, n).some((p) => (p.debloque || []).includes(cle))) return true;

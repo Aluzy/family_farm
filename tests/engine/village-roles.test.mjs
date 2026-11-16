@@ -18,7 +18,7 @@
 
 import {
   arriverVillageois, attribuer, chroniqueDe, COMMANDES, DATA, empreintePartie, executerCommande, farmSeed, farmTerrain,
-  GRILLE_ILE, horlogeDe, ilePartagee, migrate, nomDe, noterChronique, portDuMonde, refusDuRole, reglagesMonde, reparerChronique,
+  GRILLE_ILE, horlogeDe, migrate, nomDe, noterChronique, portDuMonde, refusDuRole, reglagesMonde, reparerChronique,
   roleDemande, ROLES_MONDE, STATE_VERSION, testMaisonVillageois, trouverVillageois, villageoisDe,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, boite, partie, test } from './aide.mjs';
@@ -91,7 +91,7 @@ const CAS = (v) => [
 
 test('I9e : la grille des rôles d\'une île, commande par commande (le rôle minimal ; refusé en dessous, permis au-dessus)', () => {
   const { s } = ile(1);
-  assert(ilePartagee(s), 'une île');
+  assert(!!s.port, 'une île');
   const v = villageoisDe(s)[0].id;
   const lignes = [];
   for (const [type, args, minimal] of CAS(v)) {

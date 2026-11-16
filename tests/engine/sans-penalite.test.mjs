@@ -34,7 +34,7 @@ function journeeSansRien(s) {
 
 test('B-1 : les réglages du jeu coupent chaque pénalité', () => {
   assertEqual(PENALITES_DU_JEU.PENALITES, { PEREMPTION: false, USURE: false, BONHEUR_BAISSE: false, NUIT_SANS_DORMIR: false, SERIE_REMISE: false, RATION_PERDUE: false });
-  assertEqual([PENALITES_DU_JEU.FAIM, PENALITES_DU_JEU.SANS_COUCHAGE, PENALITES_DU_JEU.DERIVE, PENALITES_DU_JEU.REVEIL_REPAS], [0, 0, 0, 0]);
+  assertEqual([PENALITES_DU_JEU.FAIM, PENALITES_DU_JEU.SANS_COUCHAGE, PENALITES_DU_JEU.REVEIL_REPAS], [0, 0, 0]);
   assertEqual(PENALITES_DU_JEU.CHEVAL, DATA.CHEVAL.VITESSE, 'un cheval pas nourri va aussi vite');
 });
 

@@ -24,7 +24,7 @@
 #   piquets         deux piquets de bois plantés sur la rive, une nasse d'osier et un filet qui sèche
 #                   entre eux (au bord d'une rivière, ou d'une eau trop étroite pour un ponton).
 #
-# Le lieu du récit qui est un dessin (docs/recit/bible.md ; lieux.recit du plan, monde-gen.js ; la cabane de
+# Le lieu du récit qui est un dessin (archive/jeu-avant-ile:docs/recit/bible.md ; lieux.recit du plan, monde-gen.js ; la cabane de
 # Johnny et l'atelier de Frida sont bâtis en blocs, comme les maisons des hameaux : monde-hameaux.js) :
 #   epave           l'épave de Johnny : la coque d'un voilier couchée sur le sable, ses membrures à nu,
 #                   le mât cassé, un lambeau de voile.

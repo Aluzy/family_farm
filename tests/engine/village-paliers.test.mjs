@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : les objectifs sans récit, les paliers de l'île (docs/ile.md,
-   fiche I7a ; js/engine/paliers.js, data/village.json VILLAGE.PALIERS). Comme tous les fichiers
-   tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true (tests/engine/aide.mjs).
+   fiche I7a ; js/engine/paliers.js, data/village.json VILLAGE.PALIERS).
    Lancer seul : node --test tests/engine/village-paliers.test.mjs (ou node tests/run-tests.mjs village-paliers).
 
    Le port, les villageois, leurs tâches, les commerces et l'amitié avec eux n'existent pas encore (fiches
@@ -16,9 +15,8 @@ import {
   plant, semaineDe, shear, SI_OBJECTIFS, startRecipe, techPoints, testAddWheat, testBatir, testGoToChapter, testSetLevel,
   testWoolReady, updateChapters, water, zoneTile,
 } from '../../js/engine/index.js';
-import { allumerEssaiVillage } from '../../js/engine/village.js';
 import {
-  affamer, assert, assertEqual, atChapter, atelier, avecVillage, boite, fillSheep, ml, partie, pature, plantRipe, reach,
+  affamer, assert, assertEqual, atChapter, atelier, boite, fillSheep, ml, partie, pature, plantRipe, reach,
   runFor, setInv, sleepOnce, test, tireless,
 } from './aide.mjs';
 
@@ -68,13 +66,6 @@ test('VILLAGE.PALIERS : sept paliers, comme les chapitres, sans texte d\'introdu
     assertEqual(P()[i].recompense.plans || [], (ch.recompense || {}).plans || [], `palier ${i + 1} : les plans du chapitre`);
     for (const [id, n] of Object.entries((ch.recompense || {}).objets || {})) assertEqual(P()[i].recompense.objets[id], n, `palier ${i + 1} : ${id}`);
   });
-  // ce que le courrier offrait (les objets de ses lettres, hors souvenirs du récit) est dans un palier
-  for (const l of Object.values(DATA.COURRIER)) {
-    for (const id of Object.keys(l.cadeaux || {})) {
-      if (DATA.OBJETS[id] && DATA.OBJETS[id].categorie === 'souvenir') continue;
-      assert(P().some((p) => (p.recompense.objets || {})[id] > 0), `le cadeau ${id} du courrier`);
-    }
-  }
 });
 
 test('une partie neuve suit les paliers : state.palier, la forme de state.campagne.chapitre', () => {
@@ -83,24 +74,16 @@ test('une partie neuve suit les paliers : state.palier, la forme de state.campag
   assertEqual(chapterCount(s), 7);
   const p = chapterProgress(s);
   assertEqual([p.palier, p.titre, p.icone, p.intro], [true, P()[0].titre, P()[0].icone, '']);
-  // éteint : pas de palier (la partie d'avant, au pixel près : reglage-village.test.mjs)
-  const avant = avecVillage(() => createNewGame(5), false);
-  assertEqual(['palier' in avant, paliersSuivis(avant)], [false, false]);
-  // la partie d'essai (jeu.html?village=1) : allumée après coup, elle suit les paliers aussi
-  const essai = avecVillage(() => allumerEssaiVillage(createNewGame(6)), false);
-  assertEqual(essai.palier, 1);
-  avecVillage(() => assertEqual([paliersSuivis(essai), chapterProgress(essai).titre], [true, P()[0].titre]), false);
-  // une partie d'avant, rouverte le réglage allumé, garde ses chapitres (sa migration : fiche I7f)
-  assertEqual([paliersSuivis(avant), chapterProgress(avant).titre], [false, DATA.CHAPITRES.liste[0].titre]);
   // rechargée, la partie garde son palier (pas de nouveau format : le champ n'existe que dans une partie neuve)
   const relue = migrate(JSON.parse(JSON.stringify(s)));
   assertEqual([relue.palier, paliersSuivis(relue)], [1, true]);
-  const vieille = avecVillage(() => migrate(JSON.parse(JSON.stringify(avant))), false);
-  assertEqual('palier' in vieille, false, 'la réparation n\'ajoute pas de palier à une partie d\'avant');
-  // (rechargée le réglage allumé, elle passe sur l'île : son chapitre devient son palier, fiche I7f, migration-ile.js)
+  // une partie d'avant (sans palier ni port) : sans palier, elle garde ses chapitres ; rechargée, elle passe sur l'île et
+  // son chapitre devient son palier (fiche I7f, migration-ile.js)
+  const { palier: _p, port: _q, ...avant } = JSON.parse(JSON.stringify(s));
+  avant.campagne.chapitre = 3;
+  assertEqual([paliersSuivis(avant), chapterProgress(avant).titre], [false, DATA.CHAPITRES.liste[2].titre]);
   const passee = migrate(JSON.parse(JSON.stringify(avant)));
-  assertEqual([passee.palier, paliersSuivis(passee)], [avant.campagne.chapitre, true], 'une partie d\'avant passée sur l\'île');
-  assertEqual(allumerEssaiVillage(avant).palier, 1, '(une partie neuve rendue d\'essai, elle, les suit)');
+  assertEqual([passee.palier, paliersSuivis(passee)], [3, true], 'une partie d\'avant passée sur l\'île');
 });
 
 test('chaque objectif du chantier se compte, et un champ absent compte 0', () => {
@@ -265,7 +248,7 @@ test('palier 6 « Le premier commerce » : un lingot fondu ; le commerce, l\'ami
   runFor(s, 25);
   assertEqual([countItem(s, 'lingot_fer'), okDe(s, 'objet'), s.palier], [1, true, 6]);
   villageois(s, 1);
-  amis(s, 1, DATA.RECIT.PALIERS[2]);
+  amis(s, 1, DATA.AMITIE.ECHELLE.PALIERS[2]);
   s.commerces = [{ id: 'forge' }]; // (fiche I5a)
   s.port = { niveau: 3 };
   const avant = countItem(s, 'cacao');
@@ -279,7 +262,7 @@ test('palier 7 « Un village de dix » : trois styles mêlés ; dix villageois, 
   s.sols = { 3: 'plancher', 4: 'sol_chevrons', 5: 'sol_carrelage', 6: 'sol_mosaique' };
   assertEqual(okDe(s, 'styles'), true, 'trois styles mêlés');
   villageois(s, 10);
-  amis(s, 3, DATA.RECIT.PALIERS[3]);
+  amis(s, 3, DATA.AMITIE.ECHELLE.PALIERS[3]);
   s.commerces = { forge: {}, mercerie: {} };
   updateChapters(s);
   assertEqual([s.campagne.fini, s.palier, chapterReached(s)], [true, 7, 8]);
@@ -289,7 +272,9 @@ test('palier 7 « Un village de dix » : trois styles mêlés ; dix villageois, 
 test('les points de technologie, l\'XP et les plans tombent comme avec les chapitres', () => {
   const finir = (s) => { for (let i = 0; i < 7; i++) assert(completeChapter(s).ok, `palier ${i + 1}`); return s; };
   const ile = finir(partie(4));
-  const chap = avecVillage(() => finir(partie(4)), false);
+  const chap = partie(4);
+  delete chap.palier;
+  finir(chap);
   assertEqual([paliersSuivis(ile), paliersSuivis(chap)], [true, false]);
   assertEqual(techPoints(ile).gagnes, techPoints(chap).gagnes, 'les points de technologie');
   assertEqual(ile.progression.xp, chap.progression.xp, 'l\'XP');
@@ -320,9 +305,6 @@ test('aucun texte des chapitres ni du courrier n\'est lu avec ACTIF', () => {
     chapterProgress(s);
     assertEqual(lus, [], 'aucune intro lue');
     assertEqual(s.courrier, [], 'aucune lettre, aucune carte postale');
-    // (éteint, la même partie lit ses chapitres et reçoit ses lettres)
-    const t = avecVillage(() => { const x = createNewGame(2, { nom: 'Martin' }); updateChapters(x); chapterProgress(x); return x; }, false);
-    assert(lus.length > 0 && t.courrier.length > 0, 'éteint : les chapitres et le courrier d\'avant');
   } finally {
     L.forEach((ch, i) => { for (const k of ['intro', 'introSauvage', 'etape']) if (k in avant[i]) Object.defineProperty(ch, k, { configurable: true, enumerable: true, writable: true, value: avant[i][k] }); });
   }
@@ -332,7 +314,6 @@ test('les objectifs du jour : la semaine du nouveau départ, sans phrase d\'ambi
   const S = DATA.VILLAGE.OBJECTIFS.SEMAINE;
   const s = createNewGame(3, { nom: 'Martin' });
   assertEqual(semaineDe(s), S);
-  assertEqual(avecVillage(() => semaineDe(createNewGame(3)), false), DATA.OBJECTIFS.SEMAINE, 'éteint : la semaine d\'avant');
   for (const J of S) {
     assert(!J.intro, `${J.titre} : pas d'intro`);
     for (const b of J.objectifs) for (const t of b.taches) assert(!['caleche', 'hameau', 'boussole_hameau', 'parler'].includes(t.quoi), `${J.titre} : ${t.quoi}`);
@@ -347,7 +328,6 @@ test('les objectifs du jour : la semaine du nouveau départ, sans phrase d\'ambi
     assert(!d.si || SI_OBJECTIFS.includes(d.si), `${d.id} : si ${d.si}`);
   }
   assertEqual(L.filter((d) => d.id === 'vendre').map((d) => d.libelle), ['Gagner {n} pièce{s} au port'], 'la vente : au port, une fois');
-  assertEqual(avecVillage(() => listeTiree(createNewGame(3)), false), DATA.OBJECTIFS.TIRES.LISTE, 'éteint : la liste d\'avant');
   const ids = () => objectifsPossibles(s).map((d) => d.id);
   assert(!ids().includes('parler') && !ids().includes('cadeau') && !ids().includes('commande'), 'sans villageois ni bac');
   villageois(s, 1);

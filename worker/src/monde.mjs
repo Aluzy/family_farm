@@ -4,16 +4,14 @@
 // rejouent chez eux (le moteur est déterministe : F0-4). Décisions du créateur :
 //   F.1 : un coffre commun (l'inventaire de la partie du monde est à tous ses membres) ; D14 (I9c) : la caisse aussi
 //         (ses pièces) : une vente de n'importe quel joueur l'alimente, un achat y puise ; chacun porte sa charge ;
-//   F.2 : le temps du monde est figé quand personne n'y joue (rien ne tourne sans joueur) ; les
-//         commandes ne font pas avancer l'horloge ; E-5 : la nuit est partagée : quand tous les joueurs
-//         connectés sont couchés, le monde joue lui-même la nuit (nuit.partagee, acteur « monde ») ;
-//   D13 (I9a2, l'horloge commune : docs/fiches/ile/I9a2-note-horloge.md) : un monde de l'île (horlogeVivante,
-//         js/engine/temps-monde.js) a une horloge vivante, qui remplace F.2 pour lui : le temps y passe tant qu'un
+//   D13 (I9a2, l'horloge commune : docs/fiches/ile/I9a2-note-horloge.md) : un monde (une île, horlogeVivante,
+//         js/engine/temps-monde.js) a une horloge vivante, qui remplace F.2 (le temps figé, la nuit partagée d'un
+//         coup : retirés avec la ferme d'avant à la bascule, I9h) : le temps y passe tant qu'un
 //         joueur au moins est connecté, par pas de 5 s d'horloge déduits de l'heure du serveur (ils ne sont pas des
 //         révisions : avant chaque geste, le monde rejoue les pas dus, et le geste porte son numéro de pas) ; la
 //         nuit vient seule à 22 h et défile dix fois plus vite quand tous les joueurs connectés sont couchés
 //         (temps.sommeil, acteur « monde ») ; l'énergie est celle de chaque joueur ; le dernier qui part endort le
-//         monde, le premier qui revient le réveille là où il s'était arrêté. Les mondes d'avant gardent F.2 ;
+//         monde, le premier qui revient le réveille là où il s'était arrêté ;
 //   F.3 : un compte pour jouer en ligne (comptes.mjs) : un membre est un compte ;
 //   F.4 : un monde est créé par copie volontaire d'une partie locale, qui reste intacte.
 //
@@ -23,7 +21,6 @@
 //                                       heure réelle, le monde éveillé ou non, l'heure du dernier départ),
 //                                       sauvegarde (l'heure de la dernière sauvegarde à l'heure) ;
 //   instantane(rev, json)             : la partie complète à la révision `rev` (refait toutes les
-//                                       INSTANTANE_TOUS révisions ; I9a2, un monde de l'île : toutes les
 //                                       INSTANTANE_PAS pas ou INSTANTANE_GESTES gestes, et au départ du dernier) ;
 //   journal(rev, id, acteur, cmd, ts, bilan) : chaque commande acceptée, dans l'ordre (id unique : un doublon
 //                                       n'est jamais rejoué) ; I9a2 : cmd.pas, le pas où elle s'est jouée ; I9c : bilan,
@@ -54,8 +51,8 @@
 //                                                   { t: 'lot', pos: [les dernières positions des joueurs proches] })
 //   → { t: 'coucher', oui }                       ← à tous : { t: 'couches', comptes, connectes } (E-5 : qui est
 //                                                   couché ; gardé sur sa connexion, jamais écrit) ; tous
-//                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: nuit.partagee }
-//                                                   (I9a2, un monde de l'île : cmd: temps.sommeil { oui }, la nuit file)
+//                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: temps.sommeil
+//                                                   { oui } } (I9a2 : la nuit file)
 //   I9e : hello porte le prénom du personnage du joueur (prenom : le nom montré aux autres, au journal, dans les avis ;
 //         sans lui, celui de l'adresse de la WebSocket) ; changé, la liste des membres est rediffusée.
 //   → { t: 'reglages', taches }                   (I9e, le propriétaire seul) ← à tous : { t: 'reglages', reglages }
@@ -66,13 +63,12 @@
 
 import {
   avancerJusqua, caseDansLaFerme, commandeHorsDeLaFerme, COMMANDES, DATA, farmTerrain, dureeDuPas, empreintePartie, energiesDe, executerCommande, GAME_VERSION, horlogeDe, horlogeVivante,
-  ilePartagee, limiterSolDirect, migrate, pasDe, pasDuMonde, pickUpAll, ramasserMorceau, refusDuRole, refusFrontiere,
+  limiterSolDirect, migrate, pasDe, pasDuMonde, pickUpAll, ramasserMorceau, refusDuRole, refusFrontiere,
   chargeVide, COMMANDES_DU_PORT, poserLieuDuPort, reglagesMonde,
-  assurerTroncon, cadeauDuMonde, etatTroncon, migrerVersLIle, partieDAvant, poidsDuMonde, regionsFerme, STATE_VERSION, villageActif, vuDesRegions,
+  assurerTroncon, cadeauDuMonde, etatTroncon, migrerVersLIle, partieDAvant, poidsDuMonde, regionsFerme, STATE_VERSION, vuDesRegions,
 } from '../../js/engine/index.js';
 
 export const MONDE = {
-  INSTANTANE_TOUS: 20,      // révisions entre deux instantanés
   JOURNAL_GARDE: 500,       // révisions gardées dans le journal avant le dernier instantané (le rattrapage)
   COMMANDES_PAR_MINUTE: 120,// commandes acceptées au plus par membre et par minute
   NOM_MAX: 40,
@@ -98,9 +94,9 @@ export const MONDE = {
 // (I9b : le sol d'une île, tiré de la graine pour un bloc posé dehors : ses dernières régions seulement)
 limiterSolDirect(MONDE.REGIONS_SOL);
 
-// Les commandes que le monde partagé accepte d'un joueur. La nuit ne se demande pas : le monde la joue
-// quand tous sont couchés (E-5 : nuit.partagee) ; nuit.dormir (la nuit qui défile, en solo) n'a pas cours.
-// I9a2 : temps.sommeil non plus (le monde la joue quand tous sont couchés, ou plus).
+// Les commandes que le monde partagé accepte d'un joueur. La nuit ne se demande pas : nuit.dormir (la nuit qui défile, en
+// solo) n'a pas cours ; temps.sommeil (I9a2) non plus : le monde la joue quand tous sont couchés, ou plus ; nuit.partagee
+// (E-5, la nuit d'un coup d'avant la bascule) ne se rejoue que dans le journal d'un monde d'avant, à son réveil.
 export const COMMANDES_MONDE = new Set(Object.keys(COMMANDES).filter((t) => t !== 'nuit.dormir' && t !== 'nuit.partagee' && t !== 'temps.sommeil'));
 export const ACTEUR_MONDE = 'monde';
 
@@ -241,26 +237,20 @@ export async function empreinteSecret(s) {
 }
 const SECRET_RE = /^[A-Za-z0-9_-]{32}$/;
 
-// E-8 : le monde partagé est la ferme (docs/monde-partage.md, M.2) : la copie perd le grand monde (les
-// habitants et les hameaux, les régions vues et ce qu'on y a pris ; la partie solo les garde), la
-// migration lui redonne des valeurs neuves, et `mondePartage` dit au moteur que sa nuit ne fait que la
-// ferme (M.3). Le personnage, s'il était dehors, revient sur la ferme.
-// I9f, une île : la copie garde ce qui a été pris dehors (et le jour où cela revient) et les régions vues du monde (là où
-// l'on repousse) ; les chemins et les rails posés (dehors), les liens du village (voisins) restent aussi. Le brouillard du
-// propriétaire (monde.vu) part dans son navigateur (js/ui/compte.js, comme celui des invités, I9a) : la copie garde le vu
-// des régions de sa ferme, celui que chacun a en entrant.
-export const GRAND_MONDE = ['habitants', 'hameaux', 'vues', 'vu', 'pris'];
+// La copie d'une île (I9f ; la ferme seule d'E-8 est retirée depuis la bascule, I9h) : elle garde ce qui a été pris
+// dehors (et le jour où cela revient) et les régions vues du monde (là où l'on repousse) ; les chemins et les rails posés
+// (dehors), les liens du village (voisins) restent aussi. Le brouillard du propriétaire (monde.vu) part dans son
+// navigateur (js/ui/compte.js, comme celui des invités, I9a) : la copie garde le vu des régions de sa ferme, celui que
+// chacun a en entrant. Ce qu'une partie d'avant gardait des voisinages d'avant (state.monde.habitants, hameaux, les
+// fêtes, les secrets) ne part pas en ligne. Le personnage, s'il était hors de la ferme, y revient.
 export const GRAND_MONDE_ILE = ['habitants', 'hameaux'];
 export function elaguer(s) {
   const m = s.monde && typeof s.monde === 'object' ? s.monde : {};
-  const ile = ilePartagee(s);
-  for (const k of ile ? GRAND_MONDE_ILE : GRAND_MONDE) delete m[k];
-  if (ile) { const T = farmTerrain(s); m.vu = vuDesRegions(T, regionsFerme(T)); }
-  // (V-3 : les liens entre les habitants des hameaux, eux aussi au grand monde ; I9d : sur une île, state.voisins porte les
-  // liens entre villageois et ce qui se passe entre eux, liens.js : ils sont du monde, gardés)
-  if (!ilePartagee(s)) delete s.voisins;
-  delete s.fetes;     // (V-4 : les fêtes des hameaux)
-  delete s.secrets;   // (D-2 : les secrets du monde, hors de la ferme)
+  for (const k of GRAND_MONDE_ILE) delete m[k];
+  const T = farmTerrain(s);
+  m.vu = vuDesRegions(T, regionsFerme(T));
+  delete s.fetes;     // (V-4 : les fêtes des hameaux d'avant)
+  delete s.secrets;   // (D-2 : les secrets du monde d'avant)
   m.but = null;
   const t = migrate({ v: s.version, t: 0, s });
   t.mondePartage = true;
@@ -271,7 +261,7 @@ export function elaguer(s) {
 // La case `c` est-elle dans le rectangle de la ferme ? Une commande qui vise une case hors de la ferme : M.1,
 // le contrôle du monde (ses arguments case, de, vers ; E-9 : arbre, rocher, touffe, touffes, eau ; E-13 :
 // cueillette). I9a : le contrôle est au moteur (js/engine/frontiere.js), pour que le jeu le fasse aussi
-// avant d'envoyer ; l'île partagée (le chantier allumé) le garde, avec un autre mot : hors de la ferme, rien
+// avant d'envoyer ; l'île partagée le garde, avec un autre mot : hors de la ferme, rien
 // d'autre n'est encore synchronisé.
 export const dansLaFerme = caseDansLaFerme;
 export const horsDeLaFerme = commandeHorsDeLaFerme;
@@ -360,9 +350,7 @@ export class MondeRegistre {
     let s;
     try { s = migrate(partie && partie.s ? partie : { v: partie && partie.version, t: 0, s: partie }); } catch (e) { s = null; }
     if (!s || typeof s !== 'object' || !s.carte) return { ok: false, erreur: 'Cette partie ne peut pas être mise en ligne (illisible).' };
-    // (le monde ne connaît pas de nuit en cours : il naît de jour, son horloge figée là où elle était ; I9a2 : une île
-    // garde sa nuit en cours, que ses pas feront défiler)
-    if (!ilePartagee(s)) s.nuitEnCours = null;
+    // (I9a2 : une île garde sa nuit en cours, que ses pas feront défiler)
     s.reveil = false;
     // (E-6 : le monde ne ramasse pas, il n'a pas de personnage à lui : ce qui attendait entre au coffre
     // commun, et désormais tout y va droit : les œufs, le lait, la laine, la récolte)
@@ -451,12 +439,10 @@ export class MondeRegistre {
 
   /* -- I9f : la mise à jour d'un monde (une autre version du jeu ; une ferme d'avant qui passe sur l'île) -- */
 
-  // La ferme d'avant `s` (la partie d'un monde) doit-elle passer sur l'île ? Le chantier allumé pour elle (depuis la
-  // bascule, I9h, la version 2.0.0 : toujours, DATA.VILLAGE.ACTIF étant embarqué avec le moteur) ; pendant le chantier,
-  // `essaiIle` (un Durable Object d'essai, env.ILE_ESSAI : les tests) en faisait une île d'essai, comme jeu.html?village=1
-  // en solo (I7f) ; il s'en va avec le réglage (la seconde PR d'I9h).
+  // La ferme d'avant `s` (la partie d'un monde) doit-elle passer sur l'île ? Toujours, depuis la bascule (I9h, la version
+  // 2.0.0) : une partie d'un monde sans port.
   ileDue(s) {
-    return !!(s && s.mondePartage && partieDAvant(s) && (villageActif(s) || this.essaiIle === true));
+    return !!(s && s.mondePartage && partieDAvant(s));
   }
   // La partie du monde (`s`, telle que lue) est-elle d'une autre version que celle du serveur (sa version du jeu, le
   // format de son moteur), ou une ferme d'avant à faire passer sur l'île ?
@@ -468,7 +454,7 @@ export class MondeRegistre {
   // fois par monde (cadeauDuMonde). Vrai si elle y est passée.
   versLIle(s) {
     if (!this.ileDue(s)) return false;
-    if (!migrerVersLIle(s, { essai: !villageActif(s) })) return false;
+    if (!migrerVersLIle(s)) return false;
     s.mondePartage = true;
     s.nuitEnCours = null;
     s.reveil = false;
@@ -739,38 +725,29 @@ export class MondeRegistre {
   refusDeLaCase(compte, c) {
     if (!c || !PORT_ET_PORTAGE.has(c.type) || !c.args || !Number.isInteger(c.args.case)) return null;
     const pos = this.dernieresPos.get(compte), s = this.charger();
-    if (!pos || !ilePartagee(s)) return null;
+    if (!pos) return null;
     const W = farmTerrain(s).LARGEUR, x = Math.floor(pos.x / 16), y = Math.floor((pos.y - 1) / 16);
     const dx = (c.args.case % W) - x, dy = Math.floor(c.args.case / W) - y;
     if (dx * dx + dy * dy <= MONDE.ECART_CASES * MONDE.ECART_CASES) return null;
     return 'Ton personnage n\'est pas là où ce geste se fait (le monde l\'a vu ailleurs) : approche-toi.';
   }
 
-  // E-5 : la nuit partagée (tous les joueurs connectés sont couchés), jouée par le monde lui-même.
-  nuit() {
-    const t = this.maintenant();
-    return this.jouer(ACTEUR_MONDE, { id: `nuit-${this.rev + 1}-${t.toString(36)}`, type: 'nuit.partagee', args: {} }, t);
-  }
-
-  // Joue la commande `cmd` au nom d'`acteur` ; acceptée, elle prend la révision suivante et va au journal. I9a2 (un
-  // monde de l'île) : elle prend aussi le pas du monde (cmd.pas) et se joue avec l'énergie de son acteur ; l'événement
-  // dit l'heure réelle de ce pas (reel).
+  // Joue la commande `cmd` au nom d'`acteur` ; acceptée, elle prend la révision suivante et va au journal. I9a2 : elle
+  // prend aussi le pas du monde (cmd.pas) et se joue avec l'énergie de son acteur ; l'événement dit l'heure réelle de ce
+  // pas (reel).
   jouer(acteur, cmd, t) {
     const s = this.charger();
-    const vivante = horlogeVivante(s);
-    const c = vivante ? { ...cmd, pas: pasDe(s) } : cmd;
-    const r = executerCommande(s, c, vivante && acteur !== ACTEUR_MONDE ? { acteur } : {});
+    const c = { ...cmd, pas: pasDe(s) };
+    const r = executerCommande(s, c, acteur !== ACTEUR_MONDE ? { acteur } : {});
     if (!r.ok) return { ok: false, erreur: r.error || 'Refusé.' };
     this.rev += 1;
     // (I9c : ce qu'a fait un geste du commerce, en peu de mots : au journal, et à tous avec l'événement ; I9e : un geste du
     // village aussi, l'ordre d'une tâche par exemple)
     const bilan = bilanGeste(c, r, s);
     this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts, bilan) VALUES (?, ?, ?, ?, ?, ?)', this.rev, c.id, acteur, JSON.stringify(c), t, bilan ? JSON.stringify(bilan) : null);
-    if (vivante) {
-      this.gestes += 1;
-      if (this.gestes >= MONDE.INSTANTANE_GESTES) this.instantane();
-    } else if (this.rev % MONDE.INSTANTANE_TOUS === 0) this.instantane();
-    return { ok: true, rev: this.rev, evt: { t: 'evt', rev: this.rev, acteur, cmd: c, ...(vivante ? { reel: this.reel } : {}), ...(bilan ? { bilan } : {}) } };
+    this.gestes += 1;
+    if (this.gestes >= MONDE.INSTANTANE_GESTES) this.instantane();
+    return { ok: true, rev: this.rev, evt: { t: 'evt', rev: this.rev, acteur, cmd: c, reel: this.reel, ...(bilan ? { bilan } : {}) } };
   }
 
   // Un instantané de la partie à la révision courante ; le journal plus ancien que JOURNAL_GARDE
@@ -780,12 +757,10 @@ export class MondeRegistre {
     this.faire('INSERT OR REPLACE INTO instantane (rev, json) VALUES (?, ?)', this.rev, JSON.stringify(s));
     this.faire('DELETE FROM instantane WHERE rev < ?', this.rev);
     this.faire('DELETE FROM journal WHERE rev <= ?', this.rev - MONDE.JOURNAL_GARDE);
-    if (horlogeVivante(s)) {
-      if (!Number.isFinite(this.reel)) this.reel = this.maintenant();
-      this.poserHorloge();
-      this.pasInstantane = pasDe(s);
-      this.gestes = 0;
-    }
+    if (!Number.isFinite(this.reel)) this.reel = this.maintenant();
+    this.poserHorloge();
+    this.pasInstantane = pasDe(s);
+    this.gestes = 0;
   }
 
   /* -- I9b : l'intérêt par région (les positions relayées) -- */
@@ -872,9 +847,7 @@ export class MondeRegistre {
     if (!s || typeof s !== 'object' || !s.carte) return { ok: false, statut: 400, erreur: 'Cette sauvegarde est illisible.' };
     s.mondePartage = true;
     s.ramassage = false;
-    // (I9f : une île garde sa nuit en cours, que ses pas feront défiler, comme à la mise en ligne ; une ferme d'avant naît
-    // de jour)
-    if (!horlogeVivante(s)) s.nuitEnCours = null;
+    // (I9f : une île garde sa nuit en cours, que ses pas feront défiler, comme à la mise en ligne)
     this.charger();
     // (I9f : la sauvegarde d'une ferme d'avant, celle d'avant le passage sur l'île, y repasse : sa ferme revient, l'île
     // autour, sans redonner le cadeau)
@@ -884,7 +857,8 @@ export class MondeRegistre {
     const t = this.maintenant();
     // (I9a2 : une île repart du pas de sa sauvegarde, à l'heure de la restauration ; I9c : avec le lieu de son port ;
     // I9d : avec l'amitié de chacun, et celle du propriétaire si la sauvegarde n'en a aucune)
-    if (horlogeVivante(s)) { preparerIle(s, par, { troncon: ile }); this.reel = t; }
+    preparerIle(s, par, { troncon: ile });
+    this.reel = t;
     const marque = { id: `restaure-${this.rev}-${t.toString(36)}`, type: RESTAURER, args: { rev: save.rev, jour: save.jour } };
     this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, marque.id, par, JSON.stringify(marque), t);
     this.instantane();
@@ -904,7 +878,7 @@ export class MondeRegistre {
     this.charger();
     this.partie = s;
     this.rev += 1;
-    if (horlogeVivante(s)) this.reel = t;
+    this.reel = t;
     const marque = { id: `remplace-${this.rev}-${t.toString(36)}`, type: REMPLACER, args: { jour: s.day } };
     this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts, bilan) VALUES (?, ?, ?, ?, ?, ?)', this.rev, marque.id, par, JSON.stringify(marque), t, JSON.stringify({ jour: s.day }));
     this.poserMeta('version', GAME_VERSION);
@@ -969,9 +943,6 @@ export class Monde {
     this.registre = new MondeRegistre(ctx.storage.sql);
     // (I9a2 : ce que le temps a fait, en avançant : un réveil, un instantané au temps)
     this.registre.quandAvance = (r) => this.apresAvance(r);
-    // (I9f : pendant le chantier, un Durable Object d'essai faisait passer une ferme d'avant sur l'île, en essai : les tests ;
-    // depuis la bascule, I9h, le réglage allumé le fait pour tous les mondes ; cette variable s'en va avec le réglage)
-    this.registre.essaiIle = !!(env && env.ILE_ESSAI === '1');
   }
 
   // I9f : la partie lue (et mise à jour s'il le faut, MondeRegistre.mettreAJour) ; la partie d'avant une mise à jour, gardée
@@ -1186,34 +1157,16 @@ export class Monde {
     if (r && st && typeof st.deleteAlarm === 'function') { try { const p = st.deleteAlarm(); if (p && p.catch) p.catch(() => null); } catch (e) { /* (rien) */ } }
   }
 
-  // E-5 : qui est couché, dit à tous ; tous couchés, la nuit passe (et chacun se relève). `sauf` : une
-  // connexion qui se ferme. I9a2, un monde de l'île : tous couchés, la nuit file (temps.sommeil) ; un seul debout,
-  // elle reprend son pas.
+  // E-5, I9a2 : qui est couché, dit à tous ; tous couchés, la nuit file (temps.sommeil) ; un seul debout, elle reprend son
+  // pas. `sauf` : une connexion qui se ferme.
   lits(sauf = null) {
     const ws = this.connexions(sauf);
-    if (this.registre.existe() && this.registre.vivante()) {
-      const e = this.etatDesLitsVivants(ws);
-      const s = this.registre.charger();
-      if (e.nuit !== !!(s.horloge && s.horloge.sommeil)) {
-        const r = this.registre.sommeil(e.nuit);
-        if (r.ok && r.evt) this.diffuser(r.evt);
-      }
-      this.diffuser({ t: 'couches', comptes: e.couches, connectes: e.connectes });
-      return;
-    }
-    const e = etatDesLits(ws.map((w) => ({ compte: (this.ctx.getTags(w) || [])[0], couche: !!(lireAttache(w) || {}).couche })));
-    if (e.nuit) {
-      for (const w of ws) attacher(w, { couche: false });
-      const r = this.registre.nuit();
-      if (r.ok) {
-        this.diffuser(r.evt);
-        // (E-12 : une sauvegarde après chaque nuit ; elle ne retient pas la nuit)
-        const p = this.sauvegarder('nuit').catch(() => null);
-        if (this.ctx.waitUntil) this.ctx.waitUntil(p);
-      }
-      else this.diffuser({ t: 'erreur', erreur: `La nuit n'a pas pu passer : ${r.erreur}` });
-      this.diffuser({ t: 'couches', comptes: [], connectes: e.connectes });
-      return;
+    if (!this.registre.existe() || !this.registre.vivante()) return;
+    const e = this.etatDesLitsVivants(ws);
+    const s = this.registre.charger();
+    if (e.nuit !== !!(s.horloge && s.horloge.sommeil)) {
+      const r = this.registre.sommeil(e.nuit);
+      if (r.ok && r.evt) this.diffuser(r.evt);
     }
     this.diffuser({ t: 'couches', comptes: e.couches, connectes: e.connectes });
   }
@@ -1307,10 +1260,10 @@ export function traiterMessage(registre, compte, message, repondre, diffuser, di
     let look;
     try { look = m.look && typeof m.look === 'object' && JSON.stringify(m.look).length <= 1000 ? m.look : undefined; } catch (e) { look = undefined; }
     const pos = { t: 'pos', acteur: compte, nom: membre.nom, x: Math.round(x), y: Math.round(y), h: Number.isFinite(h) ? Math.max(0, Math.min(200, Math.round(h))) : 0, img, flip: m.flip === true };
-    // (I9b, une île : l'intérêt par région ; une ferme d'avant n'a pas de régions, tout est relayé comme avant)
-    const ile = ilePartagee(registre.charger());
-    const g = ile ? registre.noterRegion(compte, x, y) : { region: null, entre: false };
-    if (ile) { const prec = registre.dernieresPos.get(compte), lk = look || (prec && prec.look); registre.dernieresPos.set(compte, lk ? { ...pos, look: lk } : pos); }
+    // (I9b : l'intérêt par région)
+    registre.charger();
+    const g = registre.noterRegion(compte, x, y);
+    { const prec = registre.dernieresPos.get(compte), lk = look || (prec && prec.look); registre.dernieresPos.set(compte, lk ? { ...pos, look: lk } : pos); }
     diffuserAutres({ ...pos, ...(look ? { look } : {}) }, g.region ? (dest) => registre.relayer(compte, dest, t) : null);
     // (il entre dans une région : les joueurs qui y sont près de lui, en un lot, tout de suite)
     if (g.entre) { const lot = registre.lotDeRegion(compte); if (lot.length) repondre({ t: 'lot', pos: lot }); }

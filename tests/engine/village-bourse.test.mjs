@@ -1,6 +1,5 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : la part, la bourse et l'étal (docs/ile.md, fiche I4 ; js/engine/bourse.js).
-   Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
    - la part : prise sur le produit, jamais sur la caisse (B-1 : pas de dette) ; ce qui ne se mange pas d'abord, les
      graines en dernier ; le reste attend le lendemain ; la tournée du port ne prend rien ; la nuit l'écrit (J.part) ;
    - le bac : le panier se vend pour lui (sa bourse), part dans les caisses ; l'import à lui (l'argent quitte l'île),
@@ -8,7 +7,7 @@
    - l'étal : poser, mettre en vente, reprendre, les refus ; qui y va (ses goûts, ce qui lui manque, sa bourse), son
      créneau devant l'étal, l'achat au milieu de son créneau, puis la nuit ; un achat par jour ; jamais ce qu'il
      déteste ; son plaisir ; des entiers partout ;
-   - le joueur automatique pose un étal et le garnit ; la sauvegarde (92 → 93) et les commandes ; éteint, rien.
+   - le joueur automatique pose un étal et le garnit ; la sauvegarde (92 → 93) et les commandes.
    Lancer seul : node tests/run-tests.mjs village-bourse.
    ========================================================================== */
 
@@ -18,7 +17,7 @@ import {
   mettreALEtal, migrate, partDue, poserEtalLibre, portDe, portDuMonde, prendreAvisEtal, prendrePart, prixIle, prixImport,
   reparerBourse, reprendreDeLEtal, runNight, STATE_VERSION, testMaisonVillageois, valeurIle, vendrePaniers, villageoisDe,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const BO = DATA.VILLAGE.BOURSE;
@@ -239,7 +238,7 @@ test('la nuit fait l\'achat qu\'on n\'a pas vu ; son plaisir monte sa cible ; ce
   assert(villageoisDe(u)[0].bonheur >= villageoisDe(sans)[0].bonheur, 'le plaisir d\'un achat');
 });
 
-/* ---------- le joueur automatique, la sauvegarde, éteint ---------- */
+/* ---------- le joueur automatique, la sauvegarde ---------- */
 
 test('le joueur automatique pose un étal et y met ce que les villageois aiment', () => {
   const { s, V: [v] } = ile();
@@ -270,18 +269,4 @@ test('la sauvegarde : v92 → v93 (la bourse et l\'étal réparés ; sans villag
   sans.version = 92;
   const m2 = migrate({ v: 1, t: 0, s: sans });
   assert(!('etal' in m2) && !('villageois' in m2), 'rien sans villageois ni étal');
-});
-
-test('éteint : ni part, ni étal, ni achat ; les prix écrits', () => {
-  avecVillage(() => {
-    const s = partie(5);
-    addItem(s, 'laine', 5);
-    const v = { id: 'vg-1', gouts: {}, bourse: 0 };
-    assertEqual(prendrePart(s, v, { jour: 1, produit: { laine: 5 } }), 0, 'pas de part');
-    assertEqual(countItem(s, 'laine'), 5);
-    assert(!mettreALEtal(s, 'laine', 1).ok, 'pas d\'étal');
-    assertEqual(achatsDuJour(s).size, 0);
-    assertEqual(achatsNuit(s), 0);
-    assert(!('etal' in s), 'rien d\'écrit');
-  }, false);
 });

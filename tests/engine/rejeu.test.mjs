@@ -11,7 +11,7 @@ import {
   avancerJusqua, buildAtelier, caseDansLaFerme, createNewGame, DATA, defaire, empreintePartie, executerCommande, farmTerrain, mulberry32,
   objetsDeRegion, poserBloc, poseStatus, solDirect, testFarmMap,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, garden, setInv, test, tireless } from './aide.mjs';
+import { assert, assertEqual, garden, setInv, test, tireless } from './aide.mjs';
 
 const N = 1000;              // commandes par journal
 const GRAINE = 20261107;     // le hasard du tirage (pas celui de la partie) ; choisi pour que le journal
@@ -183,7 +183,7 @@ test('rejeu : l\'empreinte change avec la partie, pas avec l\'ordre de ses clés
 // Une île du chantier, partie d'un monde en ligne (son horloge vit : temps-monde.js), outillée, des chemins et un sac
 // en main, de quoi manger ; deux joueurs (A, le propriétaire, son sac ; B, sans).
 function ileDuMonde() {
-  const s = avecVillage(() => createNewGame('rejeu-ile', { nom: 'Île' }));
+  const s = createNewGame('rejeu-ile', { nom: 'Île' });
   s.essais = { ...(s.essais || {}), village: true };
   s.mondePartage = true;
   s.outils = { ...(s.outils || {}), hache: true, pioche: true, faux: true, canne: true };

@@ -5,7 +5,7 @@ import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
-import { prenomsDuJeu, villageActif } from './village.js';
+import { prenomsDuJeu } from './village.js';
 import { hourOfDay, nightActive } from './clock.js';
 import { penalite } from './inventory.js';
 import { maisonsMarquees, litsDeLaFamille, piecesCloses } from './blocs.js';
@@ -30,8 +30,8 @@ import { cuisineDuVillage, desservirLaTable, gardeMangerCommun, noterMange, serv
    (bonheur.js). Il laisse le reste (le métier, le garde-manger, la réserve du hameau) : un villageois mange à la
    boîte commune de la ferme. Un villageois est un adulte (fiche I6b, liens.js : deux proches peuvent former un foyer
    sous le même toit, et un foyer accueillir un enfant, v.enfant, venu par le bac) ; son
-   travail est ailleurs (ses tâches : taches.js, fiche I3c). Tout est derrière le réglage du chantier (village.js, villageActif) : éteint, rien ici ne se
-   lit, et une partie n'a pas de state.villageois (le champ naît avec le premier villageois).
+   travail est ailleurs (ses tâches : taches.js, fiche I3c). Une partie n'a pas de
+   state.villageois (le champ naît avec le premier villageois).
 
    state.villageois = [{
      id (« vg-1 », « vg-2 »… : son rang d'arrivée), prenom, genre ('f' | 'm'), perso (son personnage du catalogue),
@@ -71,7 +71,6 @@ const besoinAdulte = () => DATA.FAMILLE.AJ.adulte;
 
 // Les villageois de la partie (une liste ; [] sans eux, ou le chantier éteint). Ne crée rien.
 export function villageoisDe(state) {
-  if (!villageActif(state)) return [];
   return Array.isArray(state.villageois) ? state.villageois : [];
 }
 
@@ -91,7 +90,6 @@ export function nombreVillageois(state) {
 // couchages de la pièce que la famille ne prend pas) }], dans l'ordre des boîtes. Une maison où habite un
 // villageois n'est pas libre (un villageois par maison : les foyers viendront avec I6b).
 export function maisonsLibres(state) {
-  if (!villageActif(state)) return [];
   const prises = new Set(villageoisDe(state).map((v) => v.maison).filter((m) => m !== null && m !== undefined));
   const famille = litsDeLaFamille(state);
   const out = [];
@@ -192,7 +190,6 @@ export function reserveSuffit(state, bouches) {
 // Un nouveau venu peut-il débarquer ? null, ou la raison (un texte pour le joueur). `o.jour` : false pour ne
 // pas regarder le jour (ce qu'il manque, hors du bac : la fiche de la maison).
 export function arriveeRefus(state, o = {}) {
-  if (!villageActif(state)) return 'Le chantier de l\'île n\'est pas allumé.';
   const V = villageoisDe(state), n = V.length, jour = jourDe(state);
   if (o.jour !== false) {
     if (!jourDeBac(state, jour)) return `Le bac ne passe pas aujourd'hui (prochain passage : jour ${prochainBac(state)}).`;
@@ -211,7 +208,7 @@ export function arriveeRefus(state, o = {}) {
 // Est-ce l'heure qu'un nouveau venu débarque (la page le met en route) ? Le jour de bac, de HEURE à FIN h, de
 // jour, la famille installée, s'il peut venir (arriveeRefus).
 export function arriveeDue(state) {
-  if (!villageActif(state) || nightActive(state)) return false;
+  if (nightActive(state)) return false;
   if (!state.famille || state.famille.configuree === false) return false;
   const h = hourOfDay(state), [debut, fin] = DATA.PORT.BAC.HEURES;
   if (h < debut || h >= fin) return false;
@@ -274,7 +271,6 @@ function prendreCandidat(state, rang) {
 // fait). `o.direct` : il y est d'un coup (la nuit, loin de la vue) ; sinon il marche du port à sa maison
 // (accueil « en_route » : la scène le montre, puis accueillirVillageois). → { ok, villageois } ou un refus.
 export function arriverVillageois(state, o = {}) {
-  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
   const libre = maisonsLibres(state)[0];
   if (!libre) return fail('Pas de maison libre.');
   if (!Array.isArray(state.villageois)) state.villageois = [];
@@ -454,9 +450,8 @@ function tablee(state, V) {
 // La nuit (runNight, avant le jour suivant) : les maisons vérifiées ; un jour de bac où personne n'est venu
 // (la journée finie avant l'heure, la page fermée), le nouveau venu qui pouvait venir est là d'un coup ; celui
 // qui marchait encore est chez lui ; puis chacun vit sa nuit. → { arrive (son id, ou null), repas (combien ont
-// mangé à leur faim), sansLit (leurs id) } ; null le chantier éteint ou sans villageois.
+// mangé à leur faim), sansLit (leurs id) } ; null sans villageois.
 export function villageoisNuit(state) {
-  if (!villageActif(state)) return null;
   verifierMaisons(state);
   let arrive = null;
   if (arriveeRefus(state) === null) {
@@ -535,7 +530,7 @@ export function ficheVillageois(state, id) {
 // Pour la scène (le modèle de la carte) : [{ id, prenom, genre, perso, apparence, accueil, porte (une case d'une
 // porte de sa maison, ou null), lit (son couchage, ou null), piece (une case de sa maison, ou null : la lumière de
 // ses fenêtres, fiche I3b), depart (la case d'où il arrive), toc, phrase }] ;
-// null le chantier éteint ou sans villageois. `plan` : celui du monde (caseArrivee).
+// null sans villageois. `plan` : celui du monde (caseArrivee).
 // (fiche I3b : la page refait ce modèle à chaque rendu ; gardé tant que les pièces, les villageois, la famille et
 // l'heure de leur arrivée ne changent pas, sinon les maisons et les lits de la famille relevés une fois pour tous)
 let carteCle = null, carteMemo = null;

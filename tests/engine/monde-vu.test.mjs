@@ -17,8 +17,8 @@
 
 import { readFileSync } from 'node:fs';
 import {
-  caseDepart, createInitialState, createNewGame, DATA, elementsSol, farmTerrain, migrate, regionDeCase, regionsFerme, regionVue, solDirect,
-  STATE_VERSION, voirHameau,
+  caseDepart, createInitialState, createNewGame, DATA, elementsSol, farmTerrain, migrate, regionDeCase, regionsFerme,
+  regionVue, solDirect, STATE_VERSION,
 } from '../../js/engine/index.js';
 import {
   boussoleMontree, butBoussole, caseVue, cellulesAutour, cellulesFerme, choisirBut, deBase64, DECOUVERTE, directionVers, etatBoussole, grilleVu,
@@ -213,27 +213,20 @@ const MONDE_ESSAI = (() => {
 test('la carte n\'expose rien de non vu : les lieux pas encore vus en sont absents', () => {
   const { s: s0, lieux } = MONDE_ESSAI();
   const s = copie(s0);
-  const total = lieux.hameaux.length + lieux.peche.length;
-  assert(lieux.hameaux.length >= 3 && total > lieux.hameaux.length, 'des lieux dans le plan');
+  assert(lieux.peche.length >= 3, 'des lieux dans le plan');
   const vide = lieuxDeLaCarte(s, lieux);
-  assertEqual(vide.hameaux.length + vide.peche.length, [...lieux.hameaux, ...lieux.peche].filter((l) => caseVue(s, l.case)).length);
-  for (const l of [...vide.hameaux, ...vide.peche]) assert(caseVue(s, l.case), `${l.id} est vu`);
-  // un hameau vu de loin : sans nom (sauf le Gué, le récit : on en parle avant d'y aller) ; visité : son nom
-  const h = lieux.hameaux.find((q) => !q.gue && !caseVue(s, q.case));
-  voirAutour(s, h.case, { biome: 'prairie' });
-  const vu = lieuxDeLaCarte(s, lieux).hameaux.find((q) => q.id === h.id);
-  assertEqual([vu.nom, vu.connu], ['Un hameau', false]);
-  voirHameau(s, { id: h.id, nom: h.nom, style: 'foret' });
-  assertEqual(lieuxDeLaCarte(s, lieux).hameaux.find((q) => q.id === h.id).nom, h.nom);
-  const gue = lieux.hameaux.find((q) => q.gue);
-  voirAutour(s, gue.case, { biome: 'prairie' });
-  assertEqual(lieuxDeLaCarte(s, lieux).hameaux.find((q) => q.id === gue.id).nom, 'Le Gué');
-  // les autres hameaux pas vus restent absents
-  for (const q of lieux.hameaux) if (!caseVue(s, q.case)) assert(!lieuxDeLaCarte(s, lieux).hameaux.some((x) => x.id === q.id), `${q.id} absent`);
+  assertEqual(vide.peche.length, lieux.peche.filter((l) => caseVue(s, l.case)).length);
+  for (const l of vide.peche) assert(caseVue(s, l.case), `${l.id} est vu`);
+  // un coin de pêche vu : sur la carte, avec son nom ; ceux pas vus restent absents
+  const p = lieux.peche.find((q) => !caseVue(s, q.case));
+  voirAutour(s, p.case, { biome: 'prairie' });
+  assert(/^Un coin de pêche/.test(lieuxDeLaCarte(s, lieux).peche.find((q) => q.id === p.id).nom), 'son nom');
+  for (const q of lieux.peche) if (!caseVue(s, q.case)) assert(!lieuxDeLaCarte(s, lieux).peche.some((x) => x.id === q.id), `${q.id} absent`);
+  // le port, lui, est connu dès le départ
+  assertEqual(lieuxDeLaCarte(s, lieux).port.map((x) => x.id), [lieux.port.id]);
   // tout vu : tous les lieux
   toutVoir(s);
-  const tout = lieuxDeLaCarte(s, lieux);
-  assertEqual(tout.hameaux.length + tout.peche.length, total);
+  assertEqual(lieuxDeLaCarte(s, lieux).peche.length, lieux.peche.length);
 });
 
 test('l\'image du monde : la même d\'un coup ou par morceaux de rangées, sans la partie', () => {
@@ -271,17 +264,18 @@ test('la boussole : direction et distance ; cachée sur la ferme sans but ; la f
 test('la boussole : le lieu choisi sur la carte (s\'il est vu), jusqu\'à l\'atteindre', () => {
   const { s: s0, T, lieux } = MONDE_ESSAI();
   const s = copie(s0), W = T.LARGEUR, F = T.FERME, sortie = (F.Y + 40) * W + F.X + F.LARGEUR;
-  const h = lieux.hameaux.find((q) => !q.gue && !caseVue(s, q.case));
+  const h = lieux.peche.find((q) => !caseVue(s, q.case));
   // pas vu : il ne se choisit pas
-  assertEqual(choisirBut(s, { sorte: 'hameau', id: h.id }, lieux).ok, false);
+  assertEqual(choisirBut(s, { sorte: 'peche', id: h.id }, lieux).ok, false);
   assertEqual(butBoussole(s), null);
   voirAutour(s, h.case, { biome: 'prairie' });
-  assert(choisirBut(s, { sorte: 'hameau', id: h.id }, lieux).ok, 'vu : il se choisit');
-  assertEqual(butBoussole(s), { sorte: 'hameau', id: h.id });
-  // sur la ferme, la boussole montre le hameau, à sa distance
+  assert(choisirBut(s, { sorte: 'peche', id: h.id }, lieux).ok, 'vu : il se choisit');
+  assertEqual(butBoussole(s), { sorte: 'peche', id: h.id });
+  // sur la ferme, la boussole montre le coin de pêche, à sa distance
   const hx = (h.case % W) + 0.5, hy = Math.floor(h.case / W) + 0.5, px = F.X + 20.5, py = F.Y + 20.5;
   const e = etatBoussole(s, px, py, lieux, sortie);
-  assertEqual([e.sorte, e.id, e.nom, e.distance, e.arrive], ['hameau', h.id, 'Un hameau', Math.round(Math.hypot(hx - px, hy - py)), false]);
+  assertEqual([e.sorte, e.id, e.distance, e.arrive], ['peche', h.id, Math.round(Math.hypot(hx - px, hy - py)), false]);
+  assert(/^Un coin de pêche/.test(e.nom), e.nom);
   assert(Math.abs(e.angle - Math.atan2(hy - py, hx - px)) < 1e-9, 'sa direction');
   // tout près : atteint
   assert(etatBoussole(s, hx + DECOUVERTE.ARRIVEE - 1, hy, lieux, sortie).arrive, 'atteint');

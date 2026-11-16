@@ -18,7 +18,6 @@ import { MondeRegistre } from '../worker/src/monde.mjs';
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : d; };
-DATA.VILLAGE.ACTIF = true;
 const cloner = (v) => JSON.parse(JSON.stringify(v));
 const travailleurs = (s) => (s.villageois || []).filter((v) => !v.enfant && v.tache).length;
 

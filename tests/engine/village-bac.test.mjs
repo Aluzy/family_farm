@@ -1,19 +1,19 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : le bac, ses commandes, le catalogue d'import et les niveaux du port
-   (docs/ile.md, fiche I1c ; js/engine/bac.js). Comme tous les fichiers tests/engine/village-*.test.mjs, ils
-   tournent avec VILLAGE.ACTIF forcé à true (tests/engine/aide.mjs).
+   (docs/ile.md, fiche I1c ; js/engine/bac.js).
    Lancer seul : node tests/run-tests.mjs village-bac
    ========================================================================== */
 
 import {
   acheterAuPort, agrandirPort, apporterAuChantier, articleDe, avancerBac, awakeMsAtHour, bacAQuai, caissesAQuai,
-  catalogueImport, chargerPortage, choisirVehicule, commanderImport, commandesDuBac, comptoirDuPort, contenuPort, countItem, createNewGame, DATA,
-  enVenteAuPort, etalPort, etatBac, executerCommande, farmSeed, honorerCommande, importsAttendus, inscrireSauvage, jourDeBac,
-  migrate, niveauPort, nouveauPort, paiementCommande, plafondVillageois, planConnu, portDe, portDuMonde, prendreAvisBac, prochainBac,
-  prochainNiveau, runNight, savoirProduire, sellPrice, STATE_VERSION, testBatir, tirerCommandes, unlockLevel, vendreAuPort,
+  catalogueImport, chargerPortage, choisirVehicule, commanderImport, commandesDuBac, comptoirDuPort, contenuPort,
+  countItem, createNewGame, DATA, enVenteAuPort, etalPort, etatBac, executerCommande, farmSeed, honorerCommande,
+  importsAttendus, inscrireSauvage, jourDeBac, migrate, niveauPort, nouveauPort, paiementCommande, plafondVillageois,
+  planConnu, portDe, portDuMonde, prendreAvisBac, prochainBac, prochainNiveau, runNight, savoirProduire, sellPrice,
+  STATE_VERSION, testBatir, tirerCommandes, vendreAuPort,
 } from '../../js/engine/index.js';
 import { jourDeBac as jourDuVillageois } from '../../js/engine/villageois.js';
-import { assert, assertEqual, avecVillage, reach, setInv, test } from './aide.mjs';
+import { assert, assertEqual, reach, setInv, test } from './aide.mjs';
 
 const B = DATA.PORT.BAC;
 const copie = (o) => JSON.parse(JSON.stringify(o));
@@ -307,7 +307,7 @@ test('les niveaux : les matériaux apportés au chantier, les pièces payées ; 
   assertEqual(prochainNiveau(s), null, 'le dernier niveau');
 });
 
-/* ---------- la sauvegarde, le réglage éteint ---------- */
+/* ---------- la sauvegarde ---------- */
 
 test('la sauvegarde : v89 → v90 ; le port gardé, un port abîmé réparé, une partie d\'avant sans port laissée telle quelle', () => {
   assert(STATE_VERSION >= 90, 'le format 90 ou plus');
@@ -322,25 +322,9 @@ test('la sauvegarde : v89 → v90 ; le port gardé, un port abîmé réparé, un
   assertEqual([m.port.niveau, m.port.imports.length, m.port.vendu, m.port.chantier], [1, 1, { carotte: 7 }, { planche: 3 }], 'gardé');
   const abime = migrate({ ...copie(s), version: 89, port: { niveau: 'x', commandes: 'non', imports: [{ cle: 'objet:licorne', quantite: 1 }], vendu: { carotte: -2, inconnu: 4 } } });
   assertEqual([abime.port.niveau, abime.port.commandes, abime.port.imports, abime.port.vendu], [1, [], [], {}], 'réparé');
-  const avant = avecVillage(() => createNewGame(5), false);
-  assert(!('port' in avant), 'le réglage éteint : pas de port');
-  // (la migration v89 → v90 n'ajoute rien à une partie d'avant ; ouverte le réglage allumé, elle passe ensuite sur l'île,
-  // avec un port neuf : fiche I7f, migration-ile.js)
-  assert(!('port' in avecVillage(() => migrate({ ...copie(avant), version: 89 }), false)), 'une partie d\'avant, éteint : rien d\'ajouté');
-  const v = migrate({ ...copie(avant), version: 89 });
+  // (une partie d'avant, sans port, passe ensuite sur l'île avec un port neuf : fiche I7f, migration-ile.js)
+  const { port: _p, ...avant } = copie(s);
+  const v = migrate({ ...avant, version: 89 });
   assertEqual(v.port, nouveauPort(v.day), 'une partie d\'avant, sur l\'île : un port neuf (fiche I7f)');
-});
-
-test('le réglage éteint : rien ne se lit ni ne s\'écrit', () => {
-  avecVillage(() => {
-    const s = createNewGame(5);
-    assertEqual(avancerBac(s), null);
-    assertEqual(portDe(s), null);
-    assertEqual(commandesDuBac(s), []);
-    assertEqual(etatBac(s), null);
-    assertEqual(bacAQuai(s), false);
-    runNight(s);
-    assert(!('port' in s), 'la nuit n\'ajoute rien');
-  }, false);
 });
 

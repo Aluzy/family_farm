@@ -1,6 +1,12 @@
 # Moon Bloom Village — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
+> **Depuis la bascule (version 2.0.0, fiche I9h), le jeu est « l'île à bâtir »** : [`ile.md`](ile.md) fait foi pour
+> ce qu'elle a changé (le port, le bac, les villageois, le village, les paliers à la place des chapitres). Ce que ce
+> document dit des hameaux, de leurs habitants, de la calèche, du courrier et du récit est l'histoire du jeu d'avant
+> (gardé sur la branche `archive/jeu-avant-ile`) ; le reste (la ferme, l'énergie, les cultures, les bêtes, la
+> cuisine, la construction) fait toujours foi.
+
 > **v2 en préparation** : [`conception-v2.md`](conception-v2.md) propose une refonte
 > (niveaux d'XP, jauge d'énergie à la place de la santé, houe, saisons retirées, un seul
 > panneau et une seule batterie). Tant qu'elle n'est pas validée et codée, ce document-ci

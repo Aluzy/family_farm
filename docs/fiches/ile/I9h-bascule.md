@@ -197,3 +197,56 @@ des tests et de `cout-mise-en-ligne.mjs`, `cout-performances.mjs`, `deux-joueurs
 d'avant qui le forcent (garder ceux des migrations : `migrations`, `temoins`, `village-migration`, `village-bascule`),
 `--eteint` et `--village` de `simulate.mjs`, `essaiDemande`, `allumerEssaiVillage`, le bandeau, `reglage-village.test.mjs`,
 la branche « ferme d'avant » des mondes (Revu par I9f) ; refaire les tailles du site.
+
+## Fait : la seconde PR (le retrait)
+
+Les points 3 à 6, en commits lisibles (294 fichiers, ≈ 25 000 lignes retirées). Le détail : `docs/ile.md`, « La bascule ».
+
+3. **Retiré** : le réglage (`VILLAGE.ACTIF`, `villageActif`, l'essai `?village=1` et son bandeau, `essaiDemande`,
+   `allumerEssaiVillage`, `reglage-village.test.mjs`, `JEU_D_AVANT` et les tests du jeu d'avant, `--eteint`/`--village`
+   de `simulate.mjs`, `ILE_ESSAI`/`essaiIle` et la ferme d'avant des mondes du Worker) ; le récit (`recit.js`, son
+   aiguillage, `recit-ancien.js`, `recit-muet.js`, `fil-lune.js`, `secrets.js`, `ile.js`, `bienvenue.js`, `usure.js`,
+   `data/recit.json`, `ile.json`, `secrets.json`, `COURRIER`, `docs/recit/` ; D16 : `pierre_lune`, `facteurPousse`, la
+   lueur de la ferme, l'enveloppe et la cloche) ; les hameaux et la calèche (`habitants.js` du moteur, `caleche.js`,
+   `caleche-tournee.js`, `projets.js`, `fetes.js`, `data/projets.json`, `CALECHE`, `BIENVENUE`, les fêtes des hameaux,
+   les fenêtres de la calèche, des hameaux, de la visite, du carnet et des scènes, `caleche.js`, `malle.js`, `visite.js`,
+   `rencontre.js` de la carte, `assets/caleche.png`, `malle.png` et leurs scripts ; aucun n'était dans un atlas) ;
+   `voisins.js` réduit à ce que lisent les villageois ; les tests du jeu d'avant. **Gardé pour les migrations** :
+   `js/engine/migration-avant.js` (ce que les migrations lisaient du jeu d'avant, figé), `migration-ile.js`, la commande
+   `nuit.partagee` (le journal d'un monde d'avant), les tests `migrations`, `temoins`, `village-migration`,
+   `village-bascule`, la répétition. L'encyclopédie n'a plus qu'une source (le livre de l'île).
+4. **Renommé** : les textes qui parlaient de la calèche ou des habitants disent le port et les villageois ; le bandeau
+   du port quitte les classes de la calèche ; le joueur automatique va au port (`botAuPort`). **Reste** (sans risque à
+   changer) : les clés des sauvegardes (`state.monde.hameaux`, `state.caleche`, `state.recit`, `state.courrier`,
+   `state.bienvenue`, les compteurs `calecheVentes`, `achatsHameaux`, l'amitié rangée par hameau, `HAMEAU_VILLAGE`) ;
+   le générateur du monde (`lieux.hameaux`, `DATA.HAMEAUX`, `monde-hameaux.js`, le sol des bâtisses : le port et les
+   bâtisses en sont faits, les empreintes du générateur en dépendent) ; le moteur des personnages de la scène
+   (`js/carte/ferme/habitants.js`) ; les étapes du didacticiel d'avant (`caleche`, `hameau_*` : leur rang est noté
+   dans les parties). `grep -rE "recit|caleche|hameau" js/` : 560 lignes dans 90 fichiers, toutes de ces familles
+   (les migrations 62, le générateur et le sol du monde 120, la carte 176, le reste : ces clés et des commentaires).
+5. **La documentation** : `README.md` (les textes préparés de `docs/ile/readme.md`), `docs/ile.md` (la conception de
+   référence), les notes de `docs/conception.md` et `docs/grand-monde.md`, `docs/monde-partage.md`, `worker/README.md`,
+   `CLAUDE.md` (les habitudes du dépôt).
+6. **Le site** : `index.html` (les textes préparés de `docs/ile/accueil.md` ; la capture de l'en-tête, une ferme du jeu,
+   gardée), `encyclopedie.html` régénérée ; les CGV ne citent pas le jeu d'avant.
+
+**Le jeu n'a pas changé** : `node scripts/simulate.mjs` (80 nuits) donne le même CSV et le même graphique qu'ad8a6b0
+(4 OK, 0 échec, le même constat) ; les 11 parties gardées migrées, puis jouées 5 nuits, et les parties fabriquées
+(enveloppe, souvenirs, legs, commerce, visite, calèche) sont identiques, au rapport de la nuit près (`nuit.amitie`,
+`nuit.plans`, `nuit.projets`, qui ne rapportaient que la vie des hameaux). `generateur.test` mesure désormais les
+régions du monde de l'île (inchangées) : le monde sans port, que plus rien ne joue, ne dessine plus les maisons des
+hameaux.
+
+**Les vérifications** : `npm run build && npm test` « Tout est vert » (1 538 tests, dont les 41 fichiers `village-*`) ;
+le site construit pèse 29 047 618 octets (29 861 930 avant, 28 236 018 pour `main`), le paquet du jeu 1 853 Ko (2 192) ;
+`node scripts/repetition-bascule.mjs` 11 sur 11 ; `node scripts/repetition-monde.mjs <copie de main>` (le monde de
+`main` passe sur l'île et se joue à deux) ; `node tests/smoke.mjs` ; `node tests/test-monde.mjs` (56) ;
+`node tests/test-synchro.mjs` (15) ; `node tests/deux-joueurs.mjs` deux fois, 55 sur 55 ; le test utilisateur dans
+Chromium (l'accueil, l'encyclopédie, une partie neuve jusqu'à la ferme, l'aide de l'île et du grand monde, une partie
+d'avant migrée et sa fenêtre du retour) : sans erreur de la page, aucun texte du récit, de la calèche ni des hameaux.
+
+**À confirmer par le joueur** : les clés des sauvegardes et le générateur gardent leurs noms ; les étapes du
+didacticiel d'avant restent dans la liste ; la capture de l'en-tête de l'accueil (une ferme sans villageois) gardée ;
+les objets `enveloppe_maurice`, `cloche_maurice`, `pierre_lune` retirés du jeu (une partie d'avant les perd au passage
+sur l'île, l'enveloppe remboursée, comme avant) ; les libellés du rapport quotidien des actions retirées enlevés (une
+session d'une vieille version les montre « non répertoriées »).

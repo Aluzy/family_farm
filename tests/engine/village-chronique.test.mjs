@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : la chronique et les noms (fiche I7g ; docs/ile.md ; js/engine/chronique.js,
-   js/engine/noms.js, js/ui/chronique-html.js). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec
-   VILLAGE.ACTIF forcé à true.
+   js/engine/noms.js, js/ui/chronique-html.js).
    - les noms : l'île nommée à la graine, bornés comme le nom de famille, proposés à la graine (« un autre nom »), le
      village nommé au troisième villageois, un commerce à son ouverture, une maison ;
    - chaque moment écrit sa ligne une seule fois : l'arrivée (une fois la famille configurée), la première récolte, la
@@ -11,18 +10,19 @@
    - renommer met à jour l'affichage, pas les lignes passées (le baptême du jour, lui, est corrigé) ;
    - les épingles et les notes (bornées, échappées à l'affichage) ;
    - les souvenirs des villageois (VILLAGE.PROPOS, souvenir_<type>) ;
-   - la sauvegarde (v95 → v96) ; éteint : rien.
+   - la sauvegarde (v95 → v96).
    Lancer seul : node tests/run-tests.mjs village-chronique.
    ========================================================================== */
 
 import {
-  agrandirPort, arriverVillageois, awakeMsAtHour, assurerArrivee, bornerChronique, chroniqueAEcrit, chroniqueArrivee, chroniqueDe, chroniqueParMois,
-  chroniqueVente, commerceEnPhrase, commerceOuvert, completeChapter, DATA, epinglerLigne, lignesEpinglees, migrate, noteCropHarvested,
-  nomAffiche, nomDe, nomRefus, nommerCommerce, nomsDe, noterChronique, noterLigne, proposerNom, renommer, renommerEtNoter,
-  reparerChronique, runNight, souvenirsDe, STATE_VERSION, sujetsVillageois, testMaisonVillageois, texteLigne,
+  agrandirPort, arriverVillageois, awakeMsAtHour, assurerArrivee, bornerChronique, chroniqueArrivee,
+  chroniqueParMois, chroniqueVente, commerceEnPhrase, commerceOuvert, completeChapter, DATA, epinglerLigne,
+  lignesEpinglees, migrate, noteCropHarvested, nomAffiche, nomDe, nomRefus, nommerCommerce, noterChronique,
+  noterLigne, proposerNom, renommer, renommerEtNoter, reparerChronique, runNight, souvenirsDe, STATE_VERSION,
+  sujetsVillageois, testMaisonVillageois, texteLigne,
 } from '../../js/engine/index.js';
 import { chroniqueHtml, noteHtml, renommerHtml } from '../../js/ui/chronique-html.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const CH = DATA.VILLAGE.CHRONIQUE;
@@ -334,30 +334,4 @@ test('la sauvegarde : v95 → v96 (les noms et la chronique réparés ; une part
   assertEqual(m3.chronique.faits, ['palier:1']);
   assertEqual(m3.chronique.seq, 5);
   assertEqual(reparerChronique(null), { seq: 0, lignes: [], faits: [] });
-  // (une partie d'avant le chantier : rien)
-  avecVillage(() => {
-    const sans = copie(partie(11));
-    sans.version = 92;
-    const m4 = migrate({ v: 1, t: 0, s: sans });
-    assert(!('noms' in m4) && !('chronique' in m4), 'rien hors du chantier');
-  }, false);
-});
-
-test('éteint : ni noms, ni chronique, rien ne s\'écrit', () => {
-  avecVillage(() => {
-    const s = partie(12);
-    assert(!('noms' in s) && !('chronique' in s), 'une partie neuve d\'avant');
-    assertEqual(noterChronique(s, 'palier', { n: 1 }), null);
-    assertEqual(assurerArrivee(s), null);
-    noteCropHarvested(s, 'carotte');
-    chroniqueVente(s, 'carotte');
-    completeChapter(s);
-    assertEqual(nommerCommerce(s, 'c', { sorte: 'forge' }), null);
-    assertEqual(commerceOuvert(s, { id: 'c', sorte: 'forge' }), null);
-    runNight(s);
-    assert(!('noms' in s) && !('chronique' in s), 'toujours rien');
-    assert(!renommer(s, 'ile', 'Île Neuve').ok);
-    assertEqual(chroniqueAEcrit(s, 'arrivee'), false);
-    void chroniqueDe; void nomsDe;
-  }, false);
 });

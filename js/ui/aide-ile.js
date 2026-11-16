@@ -1,7 +1,7 @@
 /* ==========================================================================
    L'aide de l'île à bâtir (fiche I7d, docs/ile.md « Le récit retiré de l'interface »).
 
-   Les textes de l'aide pour une partie de l'île (villageActif) : des règles, pas d'histoire, dans le ton de l'aide
+   Les textes de l'aide de l'île : des règles, pas d'histoire, dans le ton de l'aide
    d'avant (js/ui/aide.js, qui les montre). Ce module ne lit que le moteur et les données (aucun élément de la page) :
    tests/engine/village-textes.test.mjs les lit dans Node et vérifie qu'aucun ne cite un nom du récit, la calèche,
    son cocher ni les hameaux (VILLAGE.SANS_RECIT).
@@ -9,8 +9,6 @@
                               commandes, l'import, le chemin et le portage, les villageois, leurs tâches, le tableau,
                               l'amitié, les liens, les traits, la part, l'étal, les vocations, les fêtes, les projets,
                               la chronique et les noms, les commerces ;
-     mondeIle(lignes)         la fiche « Le grand monde » de l'île : celle d'avant, sans les hameaux, leurs habitants,
-                              la visite, les invitations ni la calèche, ses lignes réécrites (MONDE_ILE) ;
      reglesIle(state)         les règles principales d'À propos qui changent sur l'île (le port, les paliers) ;
      sourceEquipementIle      ce que dit une pièce d'équipement qui ne se fabrique pas à l'Atelier.
    ========================================================================== */
@@ -84,23 +82,6 @@ export function ficheIle(state) {
       ['La chronique et les noms', `Le menu 📜 « Chronique » note de lui-même les moments qui comptent (une ligne datée) ; 📌 en épingle une, ✏️ y écrit ta note. Tu nommes ton île au départ, le village quand le ${n(V.NOMS.VILLAGE_A)}e villageois s'installe, les commerces et les maisons (« ✏️ Renommer », à tout moment ; ${n(DATA.DEPART.NOM_MIN)} à ${n(DATA.DEPART.NOM_MAX)} signes). Le panneau du village (Atelier) porte son nom.`],
     ],
   };
-}
-
-// La fiche « Le grand monde » de l'île : ses lignes d'avant, `lignes` ([titre, texte]), sans ce qui sort avec le
-// récit et les hameaux, les autres réécrites ici.
-const RETIREES = ['Les hameaux', 'Les habitants', 'L\'amitié', 'La visite de bienvenue', 'Inviter à un repas', 'Le port', 'La calèche', 'Les projets des hameaux'];
-const MONDE_ILE = {
-  'Chemins et gués': 'Ton chemin part de la porte de l\'abri et sort de la ferme à l\'est ; de là, un chemin mène au port. Ils sont à toi : pose-les, reprends-les, déplace-les (le mode Construire). On ne passe ni la mer, ni un lac, ni les falaises, ni les sommets ; une rivière se traverse à gué, là où un chemin la croise (des pierres plates sur l\'eau), ou sur un pont de planches.',
-  'La carte du monde': 'Le menu « Carte du monde » (ou la touche M, ou un appui sur la boussole) montre tout ce que tu as vu : les biomes, tes chemins, ta ferme, le port et les coins de pêche découverts. Fais-la glisser, zoome, touche un lieu : son nom, sa distance, et « Y mener la boussole ».',
-  'L\'Atelier': 'Seules les semences s\'achètent (au port) : les outils, les bêtes (un nid garni pour une poule, une pierre à sel et du foin pour un mouton ou une vache, un licol et des friandises pour le cheval), la ruche et le bac à fleurs se fabriquent à l\'Atelier, avec ce que tu récoltes à la ferme et dans le monde ; les meubles de la maison se commandent au menuisier, dès qu\'un villageois ouvre la scierie. Ce que l\'île ne donne pas se commande au port.',
-};
-export function mondeIle(lignes) {
-  return lignes.filter(([t]) => !RETIREES.includes(t)).map(([t, texte]) => {
-    if (MONDE_ILE[t]) return [t, MONDE_ILE[t]];
-    if (t === 'Les styles d\'aménagement') return [t, texte.replace(/ Chaque habitant a son style préféré.*$/, '')];
-    if (t === 'Les plans de collection') return [t, texte.replace(/ : la première fois que tu passes dans un pays.*?Le carnet de plans/, ' : explore le pays, hors de la ferme, pour y trouver ses plans ; d\'autres se commandent au port, et les paliers de l\'île en offrent. Le carnet de plans')];
-    return [t, texte];
-  });
 }
 
 // Les règles principales d'À propos qui changent sur l'île : { commerce, paliers }.

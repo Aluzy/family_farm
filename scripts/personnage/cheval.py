@@ -24,7 +24,7 @@
 # les cases 0 (au repos) et 5 (il broute), que ce dessin redonne au pixel près : leurs têtes sont des motifs recopiés lettre pour lettre
 # (TETE_HAUTE, ENCOLURE_BASSE, TETE_BASSE), le reste suit les règles qu'on en a tirées, appliquées
 # aussi aux cases qu'il n'a pas touchées (les quatre temps du pas, de face, de dos), au cheval sellé
-# et à l'attelage de la calèche (scripts/carte/caleche.py) :
+# et à l'attelage de la calèche (la calèche d'avant la bascule ; la charrette, scripts/carte/portage.py) :
 #   - la tête haute : le chanfrein droit, d'un pixel plus étroit (le contour suit la pente du front
 #     au nez, sans marche) ; l'oreille de 2 px, pointue (sa pointe d'un pixel, ombrée 's'), détachée
 #     du front par le contour ; le toupet noir sur le front, le reflet 'c' au-dessus de l'œil ;
@@ -57,7 +57,7 @@
 # à sa place (TETE_BROUTE) ; de dos (10 à 13), pas de visage : rien à reporter. Le cheval sellé
 # (assets/cheval_monte.png) est fait de ces cases : la selle, la bride et les rênes du dessin d'avant (profil, face,
 # dos, plus bas) y sont reportées, et de face (dos) la tête (la croupe) passe devant le cavalier comme avant.
-# L'attelage de la calèche (scripts/carte/caleche.py : case_redessinee, harnache_redessine, le harnais du dessin
+# L'attelage de la calèche (la calèche d'avant la bascule, la charrette de scripts/carte/portage.py : case_redessinee, harnache_redessine, le harnais du dessin
 # d'avant reporté) et l'icône 🐴 (icone : assets/icones/horse_face.png) sont aussi ce cheval.
 #
 #   python3 scripts/personnage/cheval.py            écrit les images
@@ -230,7 +230,7 @@ PAS = [(0, 3, 3, 0), (0, 0, 0, 0), (3, 0, 0, 3), (0, 0, 0, 0)]
 def profil(pose='idle', k=0, selle=False, harnais=False):
     """De profil, tourné vers la droite : 'idle', 'marche' (temps k) ou 'broute' ; sellé et bridé
     (selle) sous le cavalier ; harnais : bridé, le collier et la sellette de l'attelage (la
-    calèche, scripts/carte/caleche.py, qui tire les rênes jusqu'aux mains du cocher)."""
+    calèche d'avant la bascule, qui tire les rênes jusqu'aux mains du cocher)."""
     t = Toile()
     lev = PAS[k] if pose == 'marche' else (0, 0, 0, 0)
     u = 1 if pose == 'marche' and k % 2 == 1 else 0
@@ -493,7 +493,7 @@ def case_redessinee(vue, k):
 
 
 def harnache_redessine(k):
-    """Le cheval redessiné harnaché pour l'attelage de la calèche (scripts/carte/caleche.py), de profil, temps k du
+    """Le cheval redessiné harnaché pour l'attelage de la calèche (la calèche d'avant la bascule ; la charrette, scripts/carte/portage.py), de profil, temps k du
     pas (4 : au repos) : sa case et, par-dessus, le harnais du dessin d'avant (la bride, le collier, la sellette, le
     trait), à la même place. None sans la planche du joueur."""
     n = case_redessinee('cote', k)

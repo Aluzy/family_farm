@@ -19,7 +19,6 @@ import '../engine/vocation-production.js';
 import { son } from './son.js';
 import { horsFerme, imageRails, IMAGES_RAILS, railsPoses, traceSurRails } from '../engine/dehors.js';
 import { charretteDu, etatCharrette, voyagesDuJour } from '../engine/charrette.js';
-import { villageActif } from '../engine/village.js';
 import { choisirBut } from '../engine/monde-vu.js';
 import { farmSeed, farmTerrain } from '../engine/terrain.js';
 import { formatCoins, formatDay, formatQty } from '../engine/format.js';
@@ -35,11 +34,11 @@ import { morph, refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
-import { lotBtn, shopSlot, slotsHtml } from './caleche.js';
+import { lotBtn, shopSlot, slotsHtml } from './comptoir.js';
 
 /* ---------- le port : la fenêtre du commerce (l'île à bâtir, fiche I1b) ----------
 
-   Le chantier allumé (villageActif), la fenêtre du commerce (la fenêtre « comptoir », menu latéral ; js/ui/
+   La fenêtre du commerce (la fenêtre « comptoir », menu latéral ; js/ui/
    stage-windows.js) est celle du port : sous la halle, au comptoir, on vend ce que la ferme produit et ce qu'on
    trouve sur l'île (Vendre, au prix de vente et au cours de market.js), on achète les semences débloquées
    (Acheter, à leur cours, qui monte). Le moteur : js/engine/port.js (portOuvert, les commandes port.vendre et
@@ -114,20 +113,20 @@ export function portTabsHtml() {
 
 function bandeauHtml(p) {
   const bouton = p.boussole ? '<button type="button" class="btn primary small" data-action="port-boussole">🧭 Y mener la boussole</button>' : '';
-  return `<div class="caleche-bandeau port-bandeau${p.ici ? ' ici' : ''}" role="status"><span aria-hidden="true" class="caleche-ico">${PORT.ICONE}</span><span class="caleche-texte">${p.texte}</span>${bouton}</div>`;
+  return `<div class="port-bandeau${p.ici ? ' ici' : ''}" role="status"><span aria-hidden="true" class="port-ico">${PORT.ICONE}</span><span class="port-texte">${p.texte}</span>${bouton}</div>`;
 }
 
 function venteSlot(item, ici) {
   const it = DATA.OBJETS[item], n = charge(item), prix = prixIle(item);
   return shopSlot(it.icone, it.nom, `data-item="${item}"`, prix, pxText(String(n), 'light'), n < 1 || !ici,
-    `${it.nom} : ${formatCoins(prix)} pièces l'unité, ${formatQty(n)} chargé${n > 1 ? 's' : ''}`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="vendre"');
+    `${it.nom} : ${formatCoins(prix)} pièces l'unité, ${formatQty(n)} chargé${n > 1 ? 's' : ''}`).replace('data-action="port-fiche"', 'data-action="port-fiche" data-mode="vendre"');
 }
 
 // Une case à charger (l'onglet Porter) : son volume au lieu du prix.
 function chargeSlot(item, ferme) {
   const it = DATA.OBJETS[item], n = vendable(item);
   return shopSlot(it.icone, it.nom, `data-item="${item}"`, prixIle(item), pxText(String(n), 'light'), n < 1 || !ferme,
-    `${it.nom} : ${formatQty(n)} à la ferme, ${volumeDe(item)} volume${volumeDe(item) > 1 ? 's' : ''} l'unité`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="charger"');
+    `${it.nom} : ${formatQty(n)} à la ferme, ${volumeDe(item)} volume${volumeDe(item) > 1 ? 's' : ''} l'unité`).replace('data-action="port-fiche"', 'data-action="port-fiche" data-mode="charger"');
 }
 
 // L'onglet Porter : le véhicule, la place, le chargement.
@@ -161,7 +160,7 @@ function achatSlot(o, ici) {
   const it = DATA.OBJETS[o.item], n = Math.floor(countItem(state, o.item) + EPS);
   const ok = ici && devisPort(state, o.item, 1).quantite >= 1;
   return shopSlot(it.icone, it.nom, `data-item="${o.item}"`, o.prix, n > 0 ? pxText(String(n), 'light') : '', !ok,
-    `${it.nom} : ${formatCoins(o.prix)} pièces, ${formatQty(n)} en stock`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="acheter"');
+    `${it.nom} : ${formatCoins(o.prix)} pièces, ${formatQty(n)} en stock`).replace('data-action="port-fiche"', 'data-action="port-fiche" data-mode="acheter"');
 }
 
 /* -- le bac (fiche I1c) -- */
@@ -401,7 +400,6 @@ function aideTexte(tab) {
 // À chaque veille (js/ui/loop.js) : le lieu du port posé dans le moteur dès que le Web Worker a tiré les éléments ;
 // le bac (fiche I1c : watchBac).
 export function watchPort() {
-  if (!villageActif(state)) return;
   watchBac();
   watchSauvages();
   // (I9a2 : en ligne, le lieu du port est posé à la mise en ligne, I9f : la page n'écrit pas dans la partie du monde)
@@ -463,9 +461,9 @@ function nouvelAvis(a) {
   return true;
 }
 
-// Le bac pour la scène (js/carte/ferme/bac.js) : { aQuai, caisses, jour, heures } ; null le chantier éteint.
+// Le bac pour la scène (js/carte/ferme/bac.js) : { aQuai, caisses, jour, heures }.
 export function bacModele() {
-  if (!state || !villageActif(state)) return null;
+  if (!state) return null;
   const e = etatBac(state);
   return e ? { aQuai: e.aQuai, caisses: caissesAQuai(state), jour: e.jour, heures: e.heures } : null;
 }
@@ -478,7 +476,7 @@ export function bacModele() {
 // journée de la charrette et les rails ne changent pas : la scène compare l'objet.
 let charretteVue = { cle: null, m: null };
 export function charretteModele() {
-  if (!state || !villageActif(state)) return null;
+  if (!state) return null;
   const c = charretteDu(state), R = railsPoses(state), j = c ? voyagesDuJour(state) : null;
   const ch = state.dehors && state.dehors.chemins, cle = [j, R, ch, c && c.capacite];
   if (charretteVue.cle && cle.every((x, i) => x === charretteVue.cle[i])) return charretteVue.m;
@@ -494,7 +492,6 @@ export function charretteModele() {
 
 // Un appui sur le comptoir (le personnage y va) : la fenêtre du port.
 export function portComptoirDepuisCarte() {
-  if (!villageActif(state)) return;
   openStageWindow('comptoir');
 }
 

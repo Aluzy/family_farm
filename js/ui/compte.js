@@ -11,7 +11,7 @@ import { morph } from './render.js';
 import { notify } from './toasts.js';
 import { exportSaveJson } from './storage.js';
 import { enLigne, SAVE_KEY, state } from './store.js';
-import { nomDe, unirVu, villageActif } from '../engine/index.js';
+import { nomDe, unirVu } from '../engine/index.js';
 
 const CLE = 'ferme-compte';
 
@@ -117,7 +117,7 @@ export function compteHtml() {
 // partie solo (avec confirmation : elle remplace l'île en ligne pour tous ; le monde se sauvegarde d'abord). Son
 // brouillard part avec elle, dans ce navigateur (le monde ne le garde pas : js/ui/en-ligne.js, ferme-brouillard-<monde>).
 let mondes = null, mondesLus = false, miseEnLigne = false, aRemplacer = null, remplacement = null;
-const ileSolo = () => !!(state && villageActif(state));
+const ileSolo = () => !!(state);
 // Ce que pèse la copie, à peu près (le brouillard ne part pas ; le monde dit le poids exact s'il dépasse son plafond).
 function poidsCopieKo() {
   try { const vu = (state.monde && state.monde.vu) || ''; return Math.max(1, Math.round((JSON.stringify(state).length - String(vu).length) / 1024)); } catch (e) { return null; }

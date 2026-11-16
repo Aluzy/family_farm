@@ -1,5 +1,8 @@
 # La page d'accueil de l'île à bâtir (textes préparés, fiche I7d)
 
+> **Mis en place à la bascule (I9h, le retrait)** : `index.html` reprend ces textes (la capture de l'en-tête,
+> `assets/accueil_ferme.webp`, une ferme du jeu, n'a rien du récit : gardée). Ce document reste pour l'histoire.
+
 Les textes de `index.html` pour le jeu de l'île à bâtir, prêts pour la bascule : **la fiche I9h les met en place**
 (le site publié ne change pas avant). Chaque section reprend celle de la page d'aujourd'hui (son `id`, sa forme,
 ses icônes) ; seul le texte change. Aucun ne cite un nom du récit (Maurice, Philomène, Adèle, Odile, Achille, Frida,
