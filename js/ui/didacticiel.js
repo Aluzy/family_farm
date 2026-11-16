@@ -131,7 +131,7 @@ export const ETAPES_UI = {
   endurance: { texte: () => 'L\'éclair, c\'est ton <b>endurance</b> : plus tu montes de niveau, plus ta jauge d\'énergie est grande.', cible: () => '.player-gauge:nth-child(2)' },
   bonheur: { texte: () => 'Le sourire, c\'est le <b>bonheur</b> de ta famille : de bons repas, un lit pour chacun, et il grimpe.', cible: () => '.player-gauge:nth-child(3)' },
   xp: { texte: () => 'L\'étoile, c\'est ton <b>niveau</b> ; l\'anneau doré autour de ton portrait, ton <b>expérience</b> (XP) : chaque action t\'en rapporte. Anneau plein, tu passes au niveau suivant et de nouvelles choses se débloquent.', cible: () => '.player-level' },
-  argent: { texte: () => 'Et voici ton <b>argent</b>, pour commercer avec la calèche quand elle passera à la ferme.', cible: () => '.player-money' },
+  argent: { texte: () => 'Et voici ton <b>argent</b>, pour commercer au port, au bout du chemin.', cible: () => '.player-money' },
   deplacement: { texte: () => 'Pour <b>te déplacer</b>, pose ton doigt sur la carte et fais-le glisser : ton personnage marche dans cette direction tant que ton doigt reste posé, et la carte le suit.' },
   pierres: { texte: () => 'Pour <b>ramasser</b>, touche simplement l\'objet : ton personnage va le chercher. Commence par les <b>petites pierres</b> (elles brillent sur la carte) : il en faut pour l\'Atelier.', carte: () => ({ ramassables: 'petite_pierre' }) },
   bois: { texte: () => 'Parfait ! Maintenant, ramasse des <b>morceaux de bois</b>.', carte: () => ({ ramassables: 'morceau_bois' }) },
@@ -272,7 +272,7 @@ export function surbrillanceDidacticiel() {
 // (des compteurs qui ne sont pas des objets : les terres labourées ; fiche 9b, ce qui se coche)
 const AUTRES = {
   terre: ['🟫', 'terres labourées'], sortie: ['🛤️', 'sortie de la ferme'], prise: ['🪓', 'prise dans le monde'],
-  cocher: ['🐴', 'calèche rencontrée'], vente: ['🐴', 'vente à la calèche'], hameau: ['🏘️', 'hameau découvert'],
+  vente: ['⚓', 'vente au port'],
 };
 const icone = (o) => (AUTRES[o] ? AUTRES[o][0] : DATA.OBJETS[o] ? DATA.OBJETS[o].icone : '');
 const libelle = (o) => (AUTRES[o] ? AUTRES[o][1] : nomObjet(o));

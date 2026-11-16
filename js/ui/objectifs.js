@@ -62,7 +62,7 @@ const GUIDES = {
     texte: () => (carteOuverte() ? 'Voici le <b>grand monde</b> : ta ferme au milieu, le reste sous le brouillard.' : menuOpen ? 'Touche 🧭 <b>Carte du monde</b>.' : 'Ouvre la <b>carte du monde</b> : le menu (la flèche), puis 🧭 Carte du monde.'),
     cible: () => (carteOuverte() ? null : menuCarte()),
   }),
-  parler: () => ({ texte: () => 'Au hameau, touche un <b>habitant</b> pour lui parler.' }),
+  parler: () => ({ texte: () => 'Touche un <b>villageois</b> pour lui parler.' }),
   // l'île à bâtir (fiche I1b) : vendre au port (l'objectif du jour « vendre », la commande du bac)
   port: () => ({
     texte: () => {

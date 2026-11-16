@@ -113,7 +113,7 @@ export function portTabsHtml() {
 
 function bandeauHtml(p) {
   const bouton = p.boussole ? '<button type="button" class="btn primary small" data-action="port-boussole">🧭 Y mener la boussole</button>' : '';
-  return `<div class="caleche-bandeau port-bandeau${p.ici ? ' ici' : ''}" role="status"><span aria-hidden="true" class="caleche-ico">${PORT.ICONE}</span><span class="caleche-texte">${p.texte}</span>${bouton}</div>`;
+  return `<div class="port-bandeau${p.ici ? ' ici' : ''}" role="status"><span aria-hidden="true" class="port-ico">${PORT.ICONE}</span><span class="port-texte">${p.texte}</span>${bouton}</div>`;
 }
 
 function venteSlot(item, ici) {

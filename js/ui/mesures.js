@@ -155,7 +155,7 @@ function afficher() {
 function lieuCourant() {
   if (buildMode) return 'Construire';
   const l = lieuDuPerso();
-  return !l ? 'hors de la carte' : l.hameau ? 'un hameau' : l.lieu === 'ferme' ? 'la ferme' : 'le grand monde';
+  return !l ? 'hors de la carte' : l.hameau ? 'un lieu bâti' : l.lieu === 'ferme' ? 'la ferme' : 'le grand monde';
 }
 
 function mesurer() {

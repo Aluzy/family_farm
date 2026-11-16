@@ -2030,10 +2030,6 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
 .carnet-plans .plans-pays { margin-top: 6px; }
 .plans-liste { list-style: none; margin: 2px 0 0; padding: 0 0 0 4px; display: flex; flex-direction: column; gap: 2px; }
 .plan.inconnu { opacity: 0.8; }
-/* le projet d'un hameau (js/ui/habitants.js) */
-.projet-besoin { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.projet-ligne { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.projet-bar { flex: 1 1 80px; min-width: 80px; }
 .build-slot.epuise { opacity: 0.55; }
 .build-slot-img { max-width: 30px; max-height: 30px; image-rendering: pixelated; pointer-events: none; }
 /* une machine des chaînes de production : son dessin de la carte (une case de 16 × 24 de blocs.png,
@@ -3406,64 +3402,8 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .tonnelet-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .tonnelet-actions .btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 10px; }
 
-/* La bannière d'un hameau du grand monde découvert (js/ui/stage.js, banniereHameau : fiche 7a) : son
-   nom, en haut de la carte, quelques secondes ; un panneau de bois clair au liseré sombre. */
-.hameau-banniere {
-  position: fixed;
-  top: calc(64px + env(safe-area-inset-top, 0px));
-  left: 50%;
-  transform: translate(-50%, -12px);
-  z-index: var(--z-toast);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 10px 28px 12px;
-  max-width: calc(100vw - 32px);
-  background: #cdb3dc;
-  color: #2a1c32;
-  border: 3px solid #412a4e;
-  border-radius: 6px;
-  box-shadow: 0 0 0 2px #cdb3dc, 0 6px 18px rgba(0, 0, 0, 0.35);
-  text-align: center;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-.hameau-banniere.visible { opacity: 1; transform: translate(-50%, 0); }
-.hameau-banniere strong { font-size: 1.5rem; letter-spacing: 0.02em; }
-.hameau-banniere-sous { font-size: 0.85rem; opacity: 0.8; }
-@media (prefers-reduced-motion: reduce) { .hameau-banniere { transition: none; } }
-.encyclo-hameaux { margin: 0 0 12px; padding-left: 20px; }
-/* Les habitants des hameaux (fiche 7b, js/carte/ferme/habitants.js) : la bulle d'un habitant
-   qu'on touche, au-dessus de sa tête (son prénom, son métier, sa phrase), dans le calque des
-   étiquettes ; la fiche du hameau (js/ui/habitants.js : ses familles, sa réserve). */
-/* Le récit : la fenêtre d'une scène (js/ui/scene.js) — un portrait, un nom, une réplique, « Suite ». */
-.scene-modal { max-width: 420px; }
-.scene-ligne { display: flex; gap: 12px; align-items: flex-start; }
-.scene-portrait { flex: none; display: block; }
-.scene-parole { min-width: 0; }
-.scene-nom { margin: 0 0 4px; font-size: 1.05rem; }
-.scene-texte { margin: 0; font-size: 1.05rem; line-height: 1.5; min-height: 3em; }
-.scene-pied { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
-.scene-pied .btn { min-height: 44px; min-width: 44px; }
-
-/* Le carnet du joueur (js/ui/carnet.js) : les pages trouvées, dans l'ordre, chacune son titre et son texte. */
-.carnet-modal { max-width: 440px; }
-.carnet-pages { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; }
-.carnet-page h3 { margin: 0 0 4px; font-size: 1.15rem; }
-.carnet-page + .carnet-page { border-top: 1px dashed currentColor; padding-top: 10px; }
-.carnet-page p { margin: 0; line-height: 1.5; font-style: italic; }
-.carnet-modal .btn { min-height: 44px; }
-/* Les promesses de Maurice (le récit, lot 6 : js/ui/caleche.js), en haut de l'onglet Vendre de la calèche. */
-.promesses { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.promesse { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.promesse-titre { flex: 1 1 100%; font-weight: 600; }
-.promesse-besoins { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 0.9rem; }
-.promesse-besoin.ok { opacity: 0.6; text-decoration: line-through; }
-.promesse .btn { min-height: 44px; }
-.promesse.tenue .promesse-titre { opacity: 0.7; }
-
+/* La bulle d'un personnage qu'on touche (js/carte/ferme/habitants.js, le moteur des personnages que reprennent les
+   villageois) : au-dessus de sa tête (son prénom, sa phrase), dans le calque des étiquettes. */
 .habitant-bulle {
   position: absolute;
   left: 0;
@@ -3578,28 +3518,8 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   pointer-events: none;
   will-change: transform;
 }
-.hameau-familles, .hameau-reserve { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
-.hameau-famille { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.35); }
-.hameau-portraits { display: flex; flex-shrink: 0; }
-.hameau-portraits .perso-px { --s: var(--portrait-64, 64px); margin-right: -22px; }
-.hameau-portraits .perso-px:last-child { margin-right: 0; }
-.hameau-famille-texte { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.hameau-noms .muted { font-size: 0.85em; }
-.hameau-bonheur { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; flex-wrap: wrap; }
-.hameau-bonheur .bar { width: 70px; }
-.hameau-reserve { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; }
-.hameau-reserve li { display: flex; align-items: center; gap: 6px; }
-/* Le récit, lot 7 : les ateliers d'un hameau garanti (js/ui/habitants.js) — une ligne par recette ou par meuble,
-   le texte à gauche, les boutons à droite (ils passent dessous sur un téléphone étroit). */
-.ile-atelier-titre { margin: 10px 0 4px; font-size: 1rem; }
-.ile-liste { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
-.ile-recette, .ile-meuble { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; }
-.ile-recette .row { gap: 6px; margin: 0; }
-.ile-liste .btn { min-height: 44px; }
-.hameau-reserve .num { margin-left: auto; font-weight: 700; }
-.hameau-reserve .gain { margin-left: 4px; color: #2f6b3a; font-size: 0.8rem; }
 /* Le bandeau du port, en tête de sa fenêtre (js/ui/port.js : là, ou ses heures). */
-.caleche-bandeau {
+.port-bandeau {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3612,13 +3532,13 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   font-size: 0.85rem;
   line-height: 1.3;
 }
-.caleche-bandeau.ici { background: rgba(190, 226, 140, 0.55); }
+.port-bandeau.ici { background: rgba(190, 226, 140, 0.55); }
 /* le portage (l'île à bâtir, fiche I2 : js/ui/port.js, l'onglet Porter) : la place prise */
 .portage-vehicules { flex-wrap: wrap; gap: 0.3rem; }
 .portage-place { height: 0.6rem; border-radius: 0.3rem; background: rgba(60, 40, 20, 0.18); overflow: hidden; margin: 0.5rem 0 0.2rem; }
 .portage-place span { display: block; height: 100%; background: #b98a4a; }
-.caleche-bandeau .caleche-ico { font-size: 1.5rem; flex: none; }
-.caleche-bandeau .caleche-texte { flex: 1 1 180px; }
+.port-bandeau .port-ico { font-size: 1.5rem; flex: none; }
+.port-bandeau .port-texte { flex: 1 1 180px; }
 /* S'orienter (fiche 8). La boussole (js/carte/ferme/boussole.js) : sous l'horloge, à droite de la carte ;
    son cadran en gros pixels (un canevas de 30 px agrandi deux fois, sans lissage), dessous le but et sa
    distance sur une plaque de bois. Un appui ouvre la carte du monde. Son haut suit le bas de l'horloge (.hud :

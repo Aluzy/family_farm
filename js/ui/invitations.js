@@ -24,7 +24,7 @@ import { fixerFeteDuJour } from './vocations.js';
    - le calendrier (js/ui/calendrier.js) : un jour à venir se touche (« Créer un évènement ») ; ses
      évènements sont marqués 🍽️, et listés dessous (annulables) ;
    - la fenêtre « Créer un évènement » : inviter à un repas, le jour, le moment, les personnes (celles à qui
-     l'on a déjà parlé) ; Achille, le cocher, porte le message ;
+     l'on a déjà parlé) ;
    - au matin, les réponses (watchInvitations) ; le jour dit, l'annonce des invités en route ;
    - la carte (js/carte/ferme/invites.js) : le modèle (invitesPourLaCarte), le pont (invitesDepuisCarte) : le
      personnage vient à table, la fenêtre « Servir le repas » s'ouvre.

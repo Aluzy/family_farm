@@ -42,7 +42,7 @@ export function sonHtml() {
   return `<div class="stack son-reglages">
     <strong>Son</strong>
     <label class="row check-row"><input type="checkbox" id="son-muet" ${r.muet ? 'checked' : ''}> 🔇 Couper tout le son</label>
-    <label class="row check-row"><input type="checkbox" id="son-voix" ${r.voix !== false ? 'checked' : ''}> 🗣️ La voix des habitants (un petit babil quand ils parlent)</label>
+    <label class="row check-row"><input type="checkbox" id="son-voix" ${r.voix !== false ? 'checked' : ''}> 🗣️ La voix des villageois (un petit babil quand ils parlent)</label>
     ${CURSEURS.map(([id, nom]) => `<label class="son-curseur" for="son-${id}"><span>${nom}</span>
       <input type="range" id="son-${id}" name="son-volume" data-son="${id}" min="0" max="100" step="5" value="${Math.round(r[id] * 100)}"></label>`).join('')}
     <div class="stack" role="radiogroup" aria-labelledby="son-mode-titre">

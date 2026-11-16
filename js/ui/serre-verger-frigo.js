@@ -82,7 +82,7 @@ export function renderVerger() {
       <h3>${artIcon('verger')}Arbres fruitiers · ${v.arbres.length}</h3>
       <span class="chips">${auto ? autoChip('verger', 'Les arbres en fruits sont cueillis la nuit (Récolte du verger)') : ''}${helpBtn('verger')}</span>
     </div>
-    <p class="muted">Achète de jeunes arbres à la calèche (onglet Acheter, les semences), puis plante-les dans le sol, dehors, avec la case ${DATA.ATELIER.ICONE}. Un appui sur un arbre en fruits le cueille.</p>
+    <p class="muted">Commande de jeunes arbres au port (l'import du bac), puis plante-les dans le sol, dehors, avec la case ${DATA.ATELIER.ICONE}. Un appui sur un arbre en fruits le cueille.</p>
     ${v.arbres.length ? `<div class="plots">${v.arbres.map(treeCard).join('')}</div>` : ''}`;
 }
 

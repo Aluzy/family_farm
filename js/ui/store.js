@@ -185,12 +185,12 @@ export function setInvTab(value) {
   invTab = value;
   return value;
 }
-export let comptoirTab = 'vendre'; // la calèche : 'vendre' ou 'acheter'
+export let comptoirTab = 'vendre'; // le comptoir du port : 'vendre' ou 'acheter'
 export function setComptoirTab(value) {
   comptoirTab = value;
   return value;
 }
-export let comptoirTabChoisi = 'vendre'; // FLU-13 : le dernier onglet de la calèche choisi par le joueur
+export let comptoirTabChoisi = 'vendre'; // FLU-13 : le dernier onglet du comptoir choisi par le joueur
 export function setComptoirTabChoisi(value) {
   comptoirTabChoisi = value;
   return value;
