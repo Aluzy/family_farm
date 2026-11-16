@@ -231,7 +231,7 @@ if (process.argv.includes('--check')) {
     console.error(`${vieux.join(', ')} : pas à jour ; lancer « node scripts/build-encyclopedie.mjs ».`);
     process.exit(1);
   }
-  console.log(`encyclopedie.html et js/encyclopedie.generated.js sont à jour (${total} termes, ${data.categories.length} catégories)).`);
+  console.log(`encyclopedie.html et js/encyclopedie.generated.js sont à jour (${total} termes, ${data.categories.length} catégories).`);
 } else {
   writeFileSync(htmlPath, out);
   if (jeuActuel !== jeuSource) writeFileSync(jeuPath, jeuSource);
