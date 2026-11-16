@@ -18,6 +18,7 @@ import {
 import { assert, assertEqual, garden, sleepOnce, test } from './aide.mjs';
 import { SORTES } from '../../js/engine/monde-vegetation.js';
 import { SORTES_ROCHES } from '../../js/engine/monde-roches.js';
+import { poserCheminDehors, retirerCheminDehors } from '../../js/engine/dehors.js';
 
 const W = MONDE.LARGEUR, N = MONDE.REGION;
 
@@ -200,6 +201,19 @@ test('le monde : ce qui est pris ne revient pas avant son jour, revient ensuite 
   assertEqual(repousseMonde(s), [], 'pas vue : il attend');
   s.monde.vues.push(loin.cle);
   assertEqual(repousseMonde(s), [loin.id], 'vue : il revient');
+});
+
+test('la repousse : rien ne revient sur un chemin posé ; le chemin retiré, la pièce repousse', () => {
+  const s = partie();
+  const vue = (o) => regionsVues(s).has(regionDeCase(Math.floor((o.y - 1) / 16) * W + Math.floor(o.x / 16)));
+  const r = trouve(s, 'rocher', vue);
+  const o = lireIdMonde(r.id), pied = o.Y * W + o.X;
+  s.monde.pris[r.id] = { retour: s.day };
+  poserCheminDehors(s, pied);
+  assertEqual(repousseMonde(s), [], 'un chemin sur sa case : il ne revient pas');
+  assert(objetPris(s, r.id), 'toujours pris');
+  retirerCheminDehors(s, pied);
+  assertEqual(repousseMonde(s), [r.id], 'le chemin retiré : il revient');
 });
 
 test('migration v53 → v54 : rien de pris dans le monde, rien d\'autre ne change', () => {
