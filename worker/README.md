@@ -313,8 +313,10 @@ d'une nouvelle version, et refuse ensuite les jeux d'avant (« recharge la page 
 attend (« réessaie dans quelques minutes »). La première ouverture d'une ferme d'avant coûte ≈ 0,9 s (la migration, le lieu
 du port, le tronçon) : **à mesurer au premier déploiement**, comme le premier réveil.
 **I9h, la bascule** (la version 2.0.0) : tous les mondes d'avant passent sur l'île à leur premier réveil ; la seconde PR
-retire le réglage (`VILLAGE.ACTIF`, `ILE_ESSAI`) et la ferme d'avant des mondes (l'élagage d'E-8, le temps figé de F.2 et la
-nuit partagée d'un coup, la grille d'E-11, `HORS_FERME`) : toute partie d'un monde est une île. L'ordre exact du déploiement (le
+(le retrait, faite) a retiré le réglage (`VILLAGE.ACTIF`, `ILE_ESSAI`) et la ferme d'avant des mondes (l'élagage d'E-8, le
+temps figé de F.2 et la nuit partagée d'un coup, `HORS_FERME`) : toute partie d'un monde est une île. Le moteur garde la
+commande `nuit.partagee` pour rejouer le journal d'un monde d'avant ; ce qui est dit plus haut d'E-8 et de F.2 est
+l'histoire des mondes d'avant. L'ordre exact du déploiement (le
 Worker, vérifié, puis le site, retenu par une règle de l'environnement `github-pages`) : `docs/fiches/ile/I9h-bascule.md`,
 « Fait : la première PR ». Répéter avant : `node scripts/repetition-monde.mjs <copie du jeu d'avant>`.
 

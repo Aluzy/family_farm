@@ -1,30 +1,27 @@
 # 🌾 Moon Bloom Village
 
-Un jeu de gestion agricole familiale en pixel art : une famille (quatre personnes au départ)
-s'installe sur une **terre sauvage** et doit, à terme, se nourrir de ce que la ferme produit.
-On y ramasse des pierres et du bois, on fauche l'herbe haute (des fibres, des bottes de paille par la botteleuse), on fabrique à l'Atelier, on **construit bloc
-par bloc** (murs, portes, fenêtres, étage, toits), on cultive, on élève poules, moutons, vaches
-et abeilles, on cuisine, et l'on brise à la pioche les gisements veinés de métal. La ferme
-est au centre du **grand monde**, une seule carte de biomes (prairie, forêt profonde, marais,
-lande, montagne, côte, mer) cachée au départ et découverte en marchant ou à cheval : des
-hameaux et leurs habitants, des gisements et des cristaux qui luisent la nuit, de quoi ramasser, pêcher et chasser des yeux, et la
-**calèche** de son cocher qui fait le tour des hameaux (voir
-[`docs/grand-monde.md`](docs/grand-monde.md)). Un récit, celui de l'île de Céron, se découvre
-au fil des rencontres ([`docs/recit/`](docs/recit/README.md)). Les anciennes autres cartes (la
-ville, le chemin de transition, la montagne, la plage, le train, l'école, l'infra-monde) ont
-été retirées pour faire place au grand monde ; le jeu d'avant est gardé tel quel sur la branche
-`archive/jeu-avant-grand-monde`. Le jeu d'avant l'île à bâtir (ci-dessous) est gardé tel quel sur la branche
-`archive/jeu-avant-ile` (créée le 14 novembre 2026 depuis `main`, 01f8e5c).
-
-- **Chantier en cours** : « l'île à bâtir » ([`docs/ile.md`](docs/ile.md), fiches dans
-  [`docs/fiches/ile/`](docs/fiches/ile/README.md)) : une île vierge, un port, des villageois. **Allumé
-  depuis la version 2.0.0** (`VILLAGE.ACTIF`, `data/village.json` : la bascule, fiche I9h, première
-  partie) : l'île est le jeu ; une partie d'avant y passe à son ouverture, une fois, sa copie gardée
-  (⚙️ Options) ; un monde en ligne d'avant à son réveil par le serveur. Le jeu d'avant décrit plus bas
-  sort du dépôt avec la seconde partie de la bascule (le retrait).
+Un jeu de gestion et de village en pixel art : on débarque **seul ou en famille** sur une **île vierge**, avec un
+abri sur la terre de la ferme et un **port** au bout du chemin. Tout le reste est à bâtir. On y ramasse des pierres
+et du bois, on fauche l'herbe haute (des fibres, des bottes de paille par la botteleuse), on fabrique à l'Atelier, on
+**construit bloc par bloc** (murs, portes, fenêtres, étage, toits), on cultive, on élève poules, moutons, vaches et
+abeilles, on cuisine, et l'on brise à la pioche les gisements veinés de métal. Ce qu'on a en trop, on le **porte au
+port** : on y vend sans limite (le bac emporte tout), on y achète des graines, on y honore les commandes du bac, on
+y fait venir ce que l'île ne donne pas. Des **villageois** débarquent du bac : on leur bâtit une maison, on leur
+donne une tâche, on se lie d'amitié avec eux ; ils se lient entre eux, ouvrent des **commerces d'artisans**, et l'île
+prend une **vocation** (un village convivial, une ferme productive). La ferme est au centre du **grand monde**, une
+seule carte de biomes (prairie, forêt profonde, marais, lande, montagne, côte, mer) cachée au départ et découverte en
+marchant ou à cheval : des gisements et des cristaux qui luisent la nuit, de quoi ramasser, pêcher et chasser des
+yeux. Il n'y a pas d'histoire écrite : le joueur nomme son île et son village, et une **chronique** note ce qui s'y
+passe ([`docs/ile.md`](docs/ile.md)). Le jeu d'avant l'île à bâtir (son récit, ses hameaux, sa calèche) est gardé tel
+quel sur la branche `archive/jeu-avant-ile` (créée le 14 novembre 2026 depuis `main`, 01f8e5c) ; les anciennes
+autres cartes (la ville, le chemin de transition, la montagne, la plage, le train, l'école, l'infra-monde), sur
+`archive/jeu-avant-grand-monde`. Ce qu'il faut pour qu'une partie d'avant passe sur l'île, une fois, à son
+ouverture (sa copie gardée dans ⚙️ Options), est dans `js/engine/migration-ile.js` et `js/engine/migration-avant.js` ;
+les réglages de l'île sont dans `data/village.json`.
 
 - **Version** : 2.0.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 109)
-- **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi, et
+- **Conception** : [`docs/ile.md`](docs/ile.md) pour l'île (le port, les villageois, le village), qui fait foi pour
+  ce qu'elle a changé, [`docs/conception.md`](docs/conception.md), qui fait foi pour le reste, et
   [`docs/carte-generee.md`](docs/carte-generee.md) pour la ferme générée et la construction
   (autres documents : voir « Documentation » plus bas)
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
@@ -105,16 +102,22 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   repousse pas, mais une graine se plante sur n'importe quelle case d'herbe libre) ; la
   **pioche** casse les rochers et les gisements (leur minerai) ; la **faux** fauche l'herbe haute
   (la paille des bêtes) ; la **canne à pêche** pêche dans l'étang, la mare, le lac et la mer.
-- **Le grand monde** : le brouillard se lève autour du personnage ; la carte du monde et la
-  boussole montrent ce qui a été vu. Le **cheval** (l'Écurie) va plus vite. Dans les **hameaux**
-  vivent des familles qui ont leurs métiers ; certains ont un atelier qui travaille sur commande.
-  La **calèche** passe par les chemins : on la hèle pour acheter graines et produits des
-  habitants, vendre ceux de la ferme et passer commande au cocher. Loin de la ferme, le
-  personnage ne mange que ce que contient son **sac à provisions**.
-- **La famille** : chaque membre a son **équipement** (casque à lampe, chapeau, bottes, gants,
-  tablier, salopette, manteau, fabriqués à l'Atelier) : des gestes moins fatigants, une vue
-  plus loin la nuit, une marche plus rapide dans le marais et la montagne ; le
-  second adulte, le **compagnon**, aide aux tâches de la ferme (bêtes, ruches, arrosage).
+- **Le grand monde** : le brouillard se lève autour du personnage ; la carte du monde et la boussole montrent ce qui
+  a été vu. Le **cheval** (l'Écurie) va plus vite, et le **chemin** du port, que le joueur pose et déplace, plus
+  vite encore. Loin de la ferme, le personnage ne mange que ce que contient son **sac à provisions**.
+- **Le port** : le seul commerce de l'île. On y **porte** ce qu'on vend (à la main, à la brouette, à la charrette
+  attelée) ; le **bac** accoste tous les trois jours, emporte ce qui a été vendu, apporte ses **commandes** (une
+  prime), livre l'**import** (jeunes arbres, épices, bêtes, plans) et amène les villageois. Le port grandit en cinq
+  niveaux.
+- **Les villageois** : ils s'installent dans une maison libre (un lit, une boîte aux lettres), vivent leur journée
+  (travail, repas, sorties, causeries), font la **tâche** que le joueur leur donne (les champs, les bêtes, le bois,
+  la pierre, la pêche, la cuisine, les machines, la tournée du port…) et gardent une **part** de ce qu'ils
+  produisent, qu'ils dépensent à l'**étal** du joueur. Un **tableau** dit ce que chacun coûte et produit. Ils ont
+  leurs goûts et leurs **traits**, une **amitié** avec le joueur et des **liens** entre eux (un foyer, un enfant).
+- **La famille** : seul, ou de un à six membres. Chaque membre a son **équipement** (casque à lampe, chapeau, bottes,
+  tablier, et les gants, la salopette et le manteau des commerces de l'île) : des gestes moins fatigants, une vue
+  plus loin la nuit, une marche plus rapide dans le marais et la montagne ; un **compagnon**, s'il y en a un, aide
+  aux tâches de la ferme.
 - **Le temps** : la journée commence à 6 h, une heure dure 30 s ; la famille mange à 19 h et
   se couche à 22 h ; à minuit, la nuit passe (ponte, laine, lait).
   La nuit, « Zzz » envoie le personnage au lit : endormi, une heure passe en 3 s et son
@@ -132,10 +135,10 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
 - **Dix niveaux d'expérience** (⭐) débloquent cultures, bâtiments et ateliers ; un **arbre
   des technologies** (37 technologies, 7 branches) les automatisations (arrosage, robot de
   récolte et de semis, nourrissage…), payées en points, en pièces et en ressources.
-- **Sept chapitres** racontent un foyer qui prend vie, jusqu'à **un petit coin de paradis** :
-  Notre nouveau chez-nous, Une maison à notre image, Les premiers animaux, Les plaisirs de la
-  cuisine, Une ferme pleine de vie, Au rythme de la nature, Notre petit coin de paradis. Ils
-  mènent vers les voisins (amitiés, projets des hameaux), les repas partagés et les styles.
+- **Sept paliers de l'île**, sans texte à lire : S'installer, La première vente au port, Le premier villageois, Les
+  bêtes, Trois villageois au travail, Le premier commerce, Un village de dix. Chacun a ses objectifs et sa
+  récompense ; le dernier ouvre le jeu libre. Puis les **vocations** : un village convivial (fêtes, veillées de
+  pleine lune, projets bâtis ensemble, une jolie place) ou une ferme productive.
 - **Pas de saisons** : les cultures, l'eau, le soleil et les arbres donnent la même chose
   chaque nuit de l'année.
 
@@ -149,33 +152,15 @@ Le jeu solo fonctionne sans compte, sur l'appareil. Pour le jeu en ligne, ⚙️
 ligne » : on donne son adresse e-mail et on reçoit un lien de connexion, sans mot de passe. Le compte
 se supprime au même endroit. Côté serveur et mise en service : `worker/README.md`.
 
-Connecté, on peut **mettre sa ferme en ligne**. C'est une copie : la partie solo reste sur l'appareil,
-intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un monde en ligne :
-- le monde est figé (son horloge ne tourne pas) ;
-- on y **construit ensemble** (le mode Construire) et l'on y **cultive le potager** : labourer, semer,
-  arroser (aussi en glissant, et « tout »), récolter, remplir la cruche ; l'on s'y **occupe des bêtes** :
-  nourrir les poules, tondre, les herbes des vaches, une place à l'Étable, agrandir le Poulailler, la
-  ruche pleine. Le monde ne ramasse pas : la récolte, les œufs, le lait et la laine vont droit au coffre
-  commun. La famille n'y fait pas les corvées seule. Les **outils** aussi : la hache, la pioche, la faux,
-  la canne (l'étang, la mare) et le verger ; ce qu'un coup lâche va droit au coffre. Les **machines de
-  l'Atelier** aussi : la botteleuse sort sa botte dès qu'elle est pleine ; les chaînes et le distributeur de
-  grain font leur journée pendant la nuit partagée. La **progression**
-  est commune : l'arbre des technologies, l'Atelier, les appareils de la ferme. L'on y **cuisine** : lancer une recette, le
-  Moulin, le frigo (ranger, sortir, acheter, agrandir), la boîte à nourriture, manger sur le pouce. Une
-  préparation finit pendant la nuit partagée (l'horloge est figée). Les autres gestes (le Marché, les
-  outils, les hameaux…) viendront ensuite ;
-- **la nuit est partagée** : « 🛏 Se coucher » dans le bandeau. Quand tous les joueurs connectés sont
-  couchés, toute la nuit passe d'un coup : les plantes arrosées poussent, et chacun se réveille au jour
-  suivant. Le bandeau dit combien sont couchés (« 1/2 ») ;
-- chaque geste est joué tout de suite, puis envoyé au monde, et ceux des autres arrivent en moins
-  d'une seconde ;
-- les autres joueurs sont dessinés là où ils regardent : leur personnage et leur prénom ;
-- le bandeau « 🌐 » dit si l'on est à jour et ramène à sa ferme solo.
-
-**Le monde partagé, c'est la ferme** (`docs/monde-partage.md`) : le rectangle de la ferme, ce qu'on y
-bâtit, cultive, élève et cuisine. Le grand monde (les routes, les hameaux, le récit) reste à
-la partie solo de son propriétaire. En ligne, le personnage ne sort pas de la ferme et la vue reste sur
-elle ; la copie mise en ligne n'emporte pas le grand monde, et sa nuit ne fait que la ferme (E-8).
+Connecté, on peut **mettre son île en ligne**. C'est une copie : la partie solo reste sur l'appareil,
+intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). **Le monde partagé, c'est l'île entière**
+(`docs/monde-partage.md`, § 13) : ses amis y viennent, co-construisent, cultivent, élèvent, cuisinent, portent au port
+et font travailler les villageois ; chacun sort de la ferme et voit le même grand monde, tiré de la graine. L'horloge
+est commune et vivante : le serveur fait avancer le temps tant qu'un joueur est connecté ; la nuit vient seule à 22 h,
+et file plus vite quand tous les joueurs connectés sont couchés (« 🛏 Se coucher », « 1/2 »). Chaque geste est joué
+tout de suite, puis envoyé au monde, et ceux des autres arrivent en moins d'une seconde ; les autres joueurs sont
+dessinés là où ils regardent ; le bandeau « 🌐 » dit si l'on est à jour et ramène à sa partie solo. Un monde d'avant
+(la ferme seule, E-8) passe sur l'île à sa première ouverture par le serveur.
 
 Chacun a un **rôle** (E-11) : 👀 visiteur, 🌱 ami jardinier (le potager, les bêtes, la cuisine, les
 outils), 🔨 bâtisseur (en plus, Construire et la progression), 🏡 propriétaire (seul à retirer un
@@ -330,8 +315,8 @@ des emojis (`js/icones-page.js`). Thème sombre et téléphone compris.
   (`scripts/build-encyclopedie.mjs`) n'en réécrit que le compte des entrées (le ruban de
   l'en-tête), le menu des catégories et les sections, à partir de
   `encyclopedie_ferme_familiale.json`.
-- **`cookies.html`, la politique de cookies** : le texte dans une lettre crème, comme le courrier
-  du jeu. Changer sa mise en forme ne demande rien ; changer son texte, si ce qui est collecté
+- **`cookies.html`, la politique de cookies** : le texte dans une lettre crème.
+  Changer sa mise en forme ne demande rien ; changer son texte, si ce qui est collecté
   change, demande de changer `POLICY_VERSION` (voir « Suivi de session »).
 
 ### Données
@@ -347,11 +332,10 @@ Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
 | `meubles.json` | meubles de la maison, objets du dehors (bac à fleurs) |
 | `equipement.json` | l'équipement de la famille et le sac à provisions |
 | `terrain.json` | le terrain de la carte de Tiled et la génération de la ferme |
-| `monde.json` | le grand monde : les biomes (`BIOMES`), les réglages de son générateur (`PLAN_MONDE`), sa végétation, ses roches, ce qui s'y ramasse, sa faune, les hameaux, leurs habitants et la calèche |
-| `recit.json` | le récit de Céron : personnages, répliques, scènes, carnet (voir `docs/recit/`) |
-| `ile.json` | l'économie de l'île : les ateliers des hameaux, la veillée, le remboursement |
+| `monde.json` | le grand monde : les biomes (`BIOMES`), les réglages de son générateur (`PLAN_MONDE`), sa végétation, ses roches, ce qui s'y ramasse, sa faune |
+| `village.json` | l'île à bâtir : le port, le bac, les villageois, leurs tâches, leurs liens et leurs traits, les paliers, les vocations, la chronique |
 | `techtree.json` | arbre des technologies |
-| `campaign.json` | chapitres et courrier |
+| `campaign.json` | chapitres (les paliers de l'île les reprennent : `village.json`) |
 | `niveaux.json` | niveaux d'expérience : seuils, déblocages, XP des actions et des chapitres |
 | `energy.json` | panneau, batterie, pompe, réservoir, soleil, usure, réfrigérateur |
 | `general.json` | départ, horloge, famille, compagnon, bonheur, prix de vente, absence, didacticiel |
@@ -374,7 +358,7 @@ recettes s'utilisent l'une l'autre, si une recette n'est ni libre ni débloquée
 Le message dit où (`recipes.pain.ingredients[0] : « farinee » n'est ni un objet…`).
 
 **Ajouter une recette** : une entrée dans `recipes.json` suffit pour qu'elle existe en jeu
-(objet, Livre de recette, prix à la calèche). Quelques tests du moteur comptent les recettes ou en
+(objet, Livre de recette, prix au port). Quelques tests du moteur comptent les recettes ou en
 fixent la liste : ils échouent tant qu'on ne les a pas mis à jour, c'est voulu.
 L'encyclopédie se complète à part.
 
@@ -568,9 +552,9 @@ copier le rapport ; le téléphone de référence, les budgets et la marche à s
 | [`docs/perf.md`](docs/perf.md) | performances : téléphone de référence, budgets, mesures et résultats |
 | [`docs/chantier-allegement.md`](docs/chantier-allegement.md) | chantier à venir : six pistes mesurées pour alléger le jeu (processeur, mémoire, chargement) sans rien changer pour le joueur |
 | [`docs/personnage.md`](docs/personnage.md) | le personnage et ses gestes sur la carte |
+| [`docs/ile.md`](docs/ile.md) | l'île à bâtir : le document de l'île, la conception de référence depuis la bascule (le port, le bac, les villageois, le village, les paliers, les vocations) |
 | [`docs/grand-monde.md`](docs/grand-monde.md) | le grand monde : une seule carte de biomes, ses neuf étapes (terminées) et ce qui a suivi |
 | [`docs/fiches/`](docs/fiches/README.md) | les fiches de tâches du grand monde et d'après (une fiche, une PR) |
-| [`docs/recit/`](docs/recit/README.md) | le récit de Céron : la bible, les personnages, l'aventure, les dialogues et le plan (moteur : `js/engine/recit.js`, textes : `data/recit.json`) |
 | [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
 | [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |
 | [`docs/son.md`](docs/son.md) | le son : musique, ambiances, bruits, où chacun est joué, réglages, comment en ajouter |

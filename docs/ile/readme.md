@@ -1,5 +1,7 @@
 # Le README de l'île à bâtir (textes préparés, fiche I7d)
 
+> **Mis en place à la bascule (I9h, le retrait)** : `README.md` reprend ces textes. Ce document reste pour l'histoire.
+
 Les passages de `README.md` qui parlent du récit, de la calèche et des hameaux, réécrits pour l'île à bâtir : **la
 fiche I9h les met en place** à la bascule (le README ne change pas avant). Pour chaque passage : ce qu'il remplace,
 puis le texte neuf. Le reste du README (la technique, la sauvegarde, le jeu en ligne, la documentation) n'est pas
