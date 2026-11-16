@@ -1,6 +1,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem } from './inventory.js';
+import { cheminsDehors } from './dehors.js';
 import { noter } from './journal.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
@@ -398,11 +399,13 @@ export function recolterPieceMonde(state, id, o = {}) {
 
 // Au réveil (runNight) : les coups reçus s'oublient ; ce qui est pris ou cueilli et dont le jour est
 // venu revient, si sa région est vue et qu'aucune de ses cases fermées n'est sous le personnage
-// (state.monde.ici) : son entrée s'efface. Renvoie les identifiants revenus.
+// (state.monde.ici) ni sur un chemin posé (state.dehors.chemins) : son entrée s'efface. Renvoie les identifiants
+// revenus.
 export function repousseMonde(state) {
   const P = state.monde && state.monde.pris;
   if (!P) return [];
   const Tr = farmTerrain(state), W = Tr.LARGEUR, ici = state.monde.ici, out = [];
+  const chemins = cheminsDehors(state); // les chemins posés hors de la ferme
   for (const id of Object.keys(P)) {
     const e = P[id];
     if (typeof e !== 'object' || e === null) { ecrire(state, id, undefined); continue; }
@@ -411,6 +414,9 @@ export function repousseMonde(state) {
     if (!o) { ecrire(state, id, undefined); continue; }
     if (!regionVue(state, o.Y * W + o.X, Tr)) continue;
     if (Number.isInteger(ici) && !e.cueilli && casesFermees(o, W).includes(ici)) continue;
+    // Rien ne repousse sur un chemin posé : la pièce reste prise tant que le chemin est là.
+    const pied = o.Y * W + o.X;
+    if (chemins.has(pied) || casesFermees(o, W).some((c) => chemins.has(c))) continue;
     ecrire(state, id, undefined);
     out.push(id);
   }
