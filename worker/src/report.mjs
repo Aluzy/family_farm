@@ -56,9 +56,6 @@ export const GAME_ACTIONS = {
   'shear': 'Tondre les moutons',
   'cow-herbs': 'Nourrir les vaches aux herbes de montagne',
   'start-recipe': 'Cuisiner (préparer une recette)',
-  'sell-item': 'Vendre',
-  'buy-item': 'Acheter à la calèche (une semence, un produit des hameaux)',
-  'caleche-heler': 'Héler la calèche',
   'port-vendre': 'Vendre au port',
   // (l'île à bâtir, fiche I3c : les tâches des villageois, js/ui/villageois.js)
   'villageois-attribuer': 'Confier une tâche à un villageois',
@@ -98,11 +95,6 @@ export const GAME_ACTIONS = {
   'portage-reprendre': 'Reprendre à la ferme ce qui était chargé',
   'portage-vehicule': 'Choisir comment porter au port (à la main, la brouette, la charrette)',
   'port-boussole': 'Mener la boussole au port',
-  'deposer-item': 'Déposer dans la malle ce que la calèche vendra',
-  'malle-reprendre': 'Reprendre de la malle ce qui attendait d\'être vendu',
-  'commander-item': 'Commander à la calèche (livré dans la malle)',
-  'malle-annuler': 'Annuler une commande à la calèche',
-  'malle-prendre': 'Prendre dans la malle ce que la calèche a livré',
   'bac-semer': 'Semer une graine de fleur dans un bac à fleurs',
   'galop-pomme': 'Lancer ou arrêter le galop du cheval (une pomme de la sacoche)',
   'cheval-fiche': 'Ouvrir la fiche du cheval',
@@ -113,7 +105,6 @@ export const GAME_ACTIONS = {
   'compost-jeter': 'Jeter des aliments dans un bac à compost',
   'engrais-many': 'Glisser l\'engrais sur des cultures arrosées',
   'engrais-toggle': 'Prendre l\'engrais en main ou le ranger',
-  'promesse-confier': 'Confier au cocher de quoi tenir une promesse de Maurice (le récit)',
   'carte-monde-but': 'Choisir le but de la boussole (carte du monde)',
   'carte-monde-ferme': 'Ramener la boussole à la ferme',
   'plant-all': 'Planter partout',
@@ -121,15 +112,9 @@ export const GAME_ACTIONS = {
   'water-many': 'Arroser en glissant',
   'plant-many': 'Semer en glissant',
   'ami-offrir': 'Offrir un cadeau à un habitant (l\'amitié)',
-  'projet-apporter': 'Apporter des matériaux au projet d\'un hameau',
   'evt-inviter': 'Inviter des amis à un repas (le calendrier)',
   'evt-annuler': 'Annuler une invitation à un repas',
   'repas-servir': 'Servir le repas aux invités',
-  'ile-commander': 'Commander à un atelier de hameau (la scierie, le tissage, la couture : le récit)',
-  'ile-meuble': 'Acheter un meuble dans un hameau (l\'ébéniste, les tapis)',
-  'toit-reparer': 'Réparer le toit abîmé d\'une maison de hameau (le récit)',
-  'enveloppe-ouvrir': 'Ouvrir l\'enveloppe de Maurice et garder ses pièces (le récit)',
-  'pierre-poser': 'Poser la pierre de lune sur la ferme (le récit)',
   'harvest-tree': 'Cueillir un arbre',
   'buy-pasture': 'Acheter une place à l\'Étable',
   'mill-start': 'Moudre du blé au Moulin',
@@ -257,7 +242,6 @@ export const INTERFACE_ACTIONS = new Set([
   'open-feedback', 'send-feedback', 'help', 'chaine-mode-emploi', 'tuto-next', 'plant-open', 'semis-open',
   'cancel-queued', 'stop-recipe', 'recette-choisir', 'recette-qte', 'recettes-deplier', 'ack-chapter',
   'frigo-tiroir', 'frigo-choisir', 'frigo-qte', // la fenêtre du frigo : le tiroir « Ranger au frais », l'aliment, la quantité
-  'scene-suite', 'scene-fermer', 'carnet-open', // le récit : la réplique suivante d'une scène, la fermer ; ouvrir le carnet
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'compte-lien', 'compte-autre', 'compte-deconnexion', 'compte-supprimer', 'compte-supprimer-non', 'compte-supprimer-oui', 'monde-creer', 'monde-quitter', 'monde-membres', 'monde-inviter', 'monde-copier', 'monde-partager', 'monde-retirer', 'monde-retirer-non', 'monde-retirer-oui', 'monde-role', 'monde-journal', 'monde-journal-suite', 'monde-deleguer', 'monde-sauvegardes', 'monde-sauvegarder', 'monde-restaurer', 'monde-restaurer-non', 'monde-restaurer-oui', 'monde-remplacer', 'monde-remplacer-non', 'monde-remplacer-oui', 'demandes-open', // E-0, E-2, E-3, E-11, E-12, I9f ; V-2 : le compte du jeu en ligne, les mondes
   'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-apparence', 'accueil-apparence-hasard', 'accueil-apparence-retour', 'accueil-espece', 'accueil-retour', 'accueil-modifier', 'accueil-retirer', 'accueil-ajouter', 'accueil-seul', 'accueil-famille', 'accueil-vers-ile', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier', 'ile-passer', 'ile-arreter', 'objectifs-carnet', 'objectifs-montrer', 'objectifs-arreter', 'objectifs-changer',
@@ -273,9 +257,7 @@ export const INTERFACE_ACTIONS = new Set([
   'arbre-planter', 'arbre-annuler', 'arbre-case', // planter un arbre depuis l'Inventaire : choisir la case // l'Encyclopédie, un livre qui se remplit au fil de la partie
   'inv-item', // Inventaire : fiche d'un objet
   'port-fiche', 'port-aide', // le port (fiche I1b) : fiche d'un article, aide de l'onglet
-  'shop-item', 'market-help', // la calèche : fiche d'un article, aide de l'onglet // Famille : mode modification, aide de la ration quotidienne
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
-  'mail-open', // version 1.3 : ouvrir une lettre du courrier
   'toolbar-toggle', // la barre d'outils de la carte : la ranger, la sortir
   'lit-choisir', // fiche 17 : un lit touché sur la carte, la question « Tu veux choisir ce lit ? »
 ]);

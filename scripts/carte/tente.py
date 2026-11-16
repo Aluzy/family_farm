@@ -1,4 +1,4 @@
-# La tente du bivouac (le récit, lot 8 : docs/recit/plan.md) : quand le personnage dort loin de la ferme
+# La tente du bivouac (le récit, lot 8 : archive/jeu-avant-ile:docs/recit/plan.md) : quand le personnage dort loin de la ferme
 # avec sa tente, elle est plantée là où il est et le couvre (js/carte/ferme/chantier.js bedSpot, comme la
 # couverture d'une paillasse). Une toile verte en A, vue de face un peu de haut (comme les maisons), son
 # entrée sombre au milieu, la toile du flanc droit plus claire (la lumière vient d'en haut à gauche), la

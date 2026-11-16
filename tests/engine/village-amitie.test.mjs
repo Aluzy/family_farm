@@ -15,18 +15,18 @@
    ========================================================================== */
 
 import {
-  addItem, amitieAvec, amitieVillageois, amitieVillageoisNuit, arriverVillageois, attribuer, confierGout, connaissance, countItem,
-  createNewGame, DATA, demandesDe, demandesNuit, demandesOuvertes, demandesVillageoisNuit, donnerPresent, echangeVillageois, farmSeed,
-  HAMEAU_VILLAGE, invitationDuMoment, invitationsNuit, invitesModele, inviter, liensPourLaCarte, migrate, offrirVillageois,
-  palierAmitie, parlerVillageois, paroleVillageois, proposVillageois, relationsInvitables, rendreDemande, servirRepas,
-  souvenirParole, STATE_VERSION, sujetsVillageois, tacheSansHumeur, tachesNuit, testMaisonVillageois, trouverPnj, villageoisDe,
-  donnerOutil,
+  addItem, amitieAvec, amitieVillageois, amitieVillageoisNuit, arriverVillageois, attribuer, confierGout,
+  connaissance, countItem, createNewGame, DATA, demandesDe, demandesNuit, demandesOuvertes, demandesVillageoisNuit,
+  donnerPresent, echangeVillageois, HAMEAU_VILLAGE, invitationDuMoment, invitationsNuit, invitesModele, inviter,
+  liensPourLaCarte, migrate, offrirVillageois, palierAmitie, parlerVillageois, paroleVillageois, proposVillageois,
+  relationsInvitables, rendreDemande, servirRepas, souvenirParole, STATE_VERSION, sujetsVillageois, tacheSansHumeur,
+  tachesNuit, testMaisonVillageois, trouverPnj, villageoisDe, donnerOutil,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const A = () => DATA.VILLAGE.AMITIE;
-const P = DATA.RECIT.PALIERS;
+const P = DATA.AMITIE.ECHELLE.PALIERS;
 
 // Une île : n maisons, n villageois installés (de quoi manger dans la boîte commune).
 function ile(n = 2, seed = 1) {

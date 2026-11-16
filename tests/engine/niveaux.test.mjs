@@ -4,20 +4,18 @@
    ========================================================================== */
 
 import {
-  acknowledgeChapter, acknowledgeLevel, actionXp, addItem, awakeMsAtHour,
-  countItem, createInitialState, cropUnlocked,
-  DATA, deliverMail, feedAllHens, findPlot, gainXp, harvest, ingredientOptions, isUnlocked,
-  levelForXp, levelProgress, levelReached, levelUnlocks, lotsOf, mailReceived, makeDevice,
-  maxStage, migrate, newCampaignCounters, openFridge, openSerre, plant, plantableCropsFor,
-  readMail, sellItem, shear, startMilling, startRecipe, STATE_VERSION,
-  tankCapacity, testBatir, testCompleteChapter, testGoToChapter, testSetLevel, testWoolReady, tick,
-  unlockLevel, updateChapters, water,
+  makeDevice,
+  newCampaignCounters,
+  acknowledgeChapter, acknowledgeLevel, actionXp, addItem, awakeMsAtHour, countItem, createInitialState,
+  cropUnlocked, DATA, feedAllHens, findPlot, gainXp, harvest, ingredientOptions, isUnlocked, levelForXp,
+  levelProgress, levelReached, levelUnlocks, maxStage, migrate, openFridge, openSerre, plant,
+  plantableCropsFor, sellItem, shear, startMilling, startRecipe, STATE_VERSION, tankCapacity, testBatir,
+  testCompleteChapter, testGoToChapter, testSetLevel, testWoolReady, tick, unlockLevel, updateChapters, water,
 } from '../../js/engine/index.js';
-import { aFait, ouvrirEnveloppe } from '../../js/engine/recit.js';   // (fiche I7d : l'index ne ré-exporte plus le récit)
 import {
-  affamer, assert, assertEqual, atChapter, atelier, auto5, AVANT_DEMENAGEMENT, boite, farm, sansCompteurs68,
-  fillCows, fillSheep, garden, holdNights, kwh, matin, migreAvant, ml, pature, plantRipe, ranch,
-  reach, runFor, setInv, setStraw, sleepOnce, test,
+  assert, assertEqual, atChapter, atelier, auto5, AVANT_DEMENAGEMENT, farm, sansCompteurs68, fillCows, fillSheep,
+  garden, holdNights, kwh, matin, migreAvant, ml, pature, plantRipe, ranch, reach, runFor, setInv, setStraw,
+  sleepOnce, test,
 } from './aide.mjs';
 
 /* ---------- version 1.7 : niveaux d'expérience ---------- */
@@ -341,27 +339,11 @@ function atLevel10() {
   return s;
 }
 
-// Le récit, lot 9 : la carte postale de Maurice (maurice_enveloppe) apporte l'enveloppe de Maurice (un objet) au lieu des 15 000
-// pièces (version 1.14) ; l'ouvrir les garde, une fois, sans XP (js/engine/recit.js ouvrirEnveloppe).
-test('version 1.14, le récit lot 9 : au niveau 9, Maurice envoie l\'enveloppe ; l\'ouvrir donne 15 000 pièces, une fois, sans XP', () => {
-  const s = farm();
-  testSetLevel(s, 8);
-  deliverMail(s);
-  assert(!mailReceived(s, 'maurice_enveloppe'), 'pas avant le niveau 9');
-  testSetLevel(s, 9);
-  deliverMail(s);
-  assert(mailReceived(s, 'maurice_enveloppe'));
-  assertEqual(countItem(s, 'enveloppe_maurice'), 1, 'l\'enveloppe est dans l\'inventaire');
-  const p = s.pieces, xp = s.progression.xp;
-  assertEqual(readMail(s, 'maurice_enveloppe').pieces, 0, 'la lettre ne verse rien');
-  assertEqual(ouvrirEnveloppe(s).pieces, 15000);
-  assertEqual([s.pieces - p, s.progression.xp - xp, countItem(s, 'enveloppe_maurice'), aFait(s, 'enveloppe.ouverte')], [15000, 0, 0, true]);
-  assertEqual(ouvrirEnveloppe(s).ok, false, 'une fois');
-  assertEqual(s.pieces - p, 15000);
-});
+// (l'enveloppe de Maurice, au niveau 9, est retirée avec le récit à la bascule, I9h : une partie d'avant qui la
+// garde est remboursée à la migration, js/engine/migration-avant.js ; test : village-migration)
 
-// Le récit, lot 7 (docs/recit/plan.md) : les commerces du niveau 10 disparaissent ; la veillée à la ferme les
-// remplace (js/engine/ile.js, data/ile.json).
+// Le récit, lot 7 (archive/jeu-avant-ile:docs/recit/plan.md) : les commerces du niveau 10 disparaissent ; la veillée à la ferme les
+// remplace (le jeu d'avant ; sur l'île, la veillée du village : js/engine/fetes-village.js).
 test('le récit, lot 7 : au niveau 10, la veillée à la ferme ; plus de commerce', () => {
   const s = farm();
   testSetLevel(s, 9);

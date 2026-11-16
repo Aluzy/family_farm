@@ -7,9 +7,9 @@
    ========================================================================== */
 
 import { craftStatus, DATA, recetteDebloquee } from '../../js/engine/index.js';
-import { ajouterAmitie, parlerAmitie } from '../../js/engine/amitie.js';
-import { habitantsDe, peuplerHameau } from '../../js/engine/habitants.js';
-import { collection, collectionDe, deNom, planConnu, PLANS, plansAAnnoncer, plansNuit, trouverPlanBiome } from '../../js/engine/plans.js';
+import {
+  collection, collectionDe, deNom, planConnu, PLANS, plansAAnnoncer, trouverPlanBiome,
+} from '../../js/engine/plans.js';
 import { styleDe } from '../../js/engine/styles.js';
 import { assert, assertEqual, garden, test } from './aide.mjs';
 

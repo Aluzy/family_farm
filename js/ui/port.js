@@ -34,7 +34,7 @@ import { morph, refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
-import { lotBtn, shopSlot, slotsHtml } from './caleche.js';
+import { lotBtn, shopSlot, slotsHtml } from './comptoir.js';
 
 /* ---------- le port : la fenêtre du commerce (l'île à bâtir, fiche I1b) ----------
 
@@ -119,14 +119,14 @@ function bandeauHtml(p) {
 function venteSlot(item, ici) {
   const it = DATA.OBJETS[item], n = charge(item), prix = prixIle(item);
   return shopSlot(it.icone, it.nom, `data-item="${item}"`, prix, pxText(String(n), 'light'), n < 1 || !ici,
-    `${it.nom} : ${formatCoins(prix)} pièces l'unité, ${formatQty(n)} chargé${n > 1 ? 's' : ''}`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="vendre"');
+    `${it.nom} : ${formatCoins(prix)} pièces l'unité, ${formatQty(n)} chargé${n > 1 ? 's' : ''}`).replace('data-action="port-fiche"', 'data-action="port-fiche" data-mode="vendre"');
 }
 
 // Une case à charger (l'onglet Porter) : son volume au lieu du prix.
 function chargeSlot(item, ferme) {
   const it = DATA.OBJETS[item], n = vendable(item);
   return shopSlot(it.icone, it.nom, `data-item="${item}"`, prixIle(item), pxText(String(n), 'light'), n < 1 || !ferme,
-    `${it.nom} : ${formatQty(n)} à la ferme, ${volumeDe(item)} volume${volumeDe(item) > 1 ? 's' : ''} l'unité`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="charger"');
+    `${it.nom} : ${formatQty(n)} à la ferme, ${volumeDe(item)} volume${volumeDe(item) > 1 ? 's' : ''} l'unité`).replace('data-action="port-fiche"', 'data-action="port-fiche" data-mode="charger"');
 }
 
 // L'onglet Porter : le véhicule, la place, le chargement.
@@ -160,7 +160,7 @@ function achatSlot(o, ici) {
   const it = DATA.OBJETS[o.item], n = Math.floor(countItem(state, o.item) + EPS);
   const ok = ici && devisPort(state, o.item, 1).quantite >= 1;
   return shopSlot(it.icone, it.nom, `data-item="${o.item}"`, o.prix, n > 0 ? pxText(String(n), 'light') : '', !ok,
-    `${it.nom} : ${formatCoins(o.prix)} pièces, ${formatQty(n)} en stock`).replace('data-action="shop-item"', 'data-action="port-fiche" data-mode="acheter"');
+    `${it.nom} : ${formatCoins(o.prix)} pièces, ${formatQty(n)} en stock`).replace('data-action="port-fiche"', 'data-action="port-fiche" data-mode="acheter"');
 }
 
 /* -- le bac (fiche I1c) -- */

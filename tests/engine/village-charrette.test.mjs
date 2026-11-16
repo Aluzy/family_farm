@@ -17,12 +17,13 @@
 
 import {
   acheterPalier, addItem, arriverVillageois, attribuer, avancerCharrette, awakeMsAtHour, bilanJour, botVillageois,
-  buildAtelier, capaciteCharrette, charretiersDuJour, charretteDu, comptoirDuPort, countItem, DATA, dureeDuVoyage, etatCharrette,
-  etatEcurie, executerCommande, farmSeed, farmTerrain, horaireDesVoyages, imageRails, journeeDuVillage, marquerAVendre, migrate,
-  modeCharrette, ouEstLaCharrette, palierRoulant, portDuMonde, poserBloc, poserRails, railsPoses, railsSur, refusDuRole,
-  refusPalier, reprendreBloc, roleDemande, runNight, STATE_VERSION, tachesNuit, testMaisonVillageois, trajetCharrette,
-  voieDe, voyagesDuJour, accepterContrat, avancerContrats, retirerCheminDehors, retirerRails, cheminsDehors, horlogeDe, assurerTroncon,
-  botCommerce, charretierPourCommerce, courbeRails, formeRails, IMAGES_RAILS, traceSurRails,
+  buildAtelier, capaciteCharrette, charretiersDuJour, charretteDu, comptoirDuPort, countItem, DATA, dureeDuVoyage,
+  etatEcurie, executerCommande, farmSeed, farmTerrain, horaireDesVoyages, imageRails, journeeDuVillage,
+  marquerAVendre, migrate, modeCharrette, ouEstLaCharrette, palierRoulant, portDuMonde, poserBloc, poserRails,
+  railsPoses, railsSur, refusDuRole, refusPalier, reprendreBloc, roleDemande, runNight, STATE_VERSION,
+  testMaisonVillageois, trajetCharrette, voieDe, voyagesDuJour, accepterContrat, avancerContrats,
+  retirerCheminDehors, retirerRails, cheminsDehors, horlogeDe, assurerTroncon, botCommerce, charretierPourCommerce,
+  courbeRails, formeRails, IMAGES_RAILS, traceSurRails,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, boite, partie, setInv, test } from './aide.mjs';
 

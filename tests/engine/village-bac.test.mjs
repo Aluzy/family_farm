@@ -6,10 +6,11 @@
 
 import {
   acheterAuPort, agrandirPort, apporterAuChantier, articleDe, avancerBac, awakeMsAtHour, bacAQuai, caissesAQuai,
-  catalogueImport, chargerPortage, choisirVehicule, commanderImport, commandesDuBac, comptoirDuPort, contenuPort, countItem, createNewGame, DATA,
-  enVenteAuPort, etalPort, etatBac, executerCommande, farmSeed, honorerCommande, importsAttendus, inscrireSauvage, jourDeBac,
-  migrate, niveauPort, nouveauPort, paiementCommande, plafondVillageois, planConnu, portDe, portDuMonde, prendreAvisBac, prochainBac,
-  prochainNiveau, runNight, savoirProduire, sellPrice, STATE_VERSION, testBatir, tirerCommandes, unlockLevel, vendreAuPort,
+  catalogueImport, chargerPortage, choisirVehicule, commanderImport, commandesDuBac, comptoirDuPort, contenuPort,
+  countItem, createNewGame, DATA, enVenteAuPort, etalPort, etatBac, executerCommande, farmSeed, honorerCommande,
+  importsAttendus, inscrireSauvage, jourDeBac, migrate, niveauPort, nouveauPort, paiementCommande, plafondVillageois,
+  planConnu, portDe, portDuMonde, prendreAvisBac, prochainBac, prochainNiveau, runNight, savoirProduire, sellPrice,
+  STATE_VERSION, testBatir, tirerCommandes, vendreAuPort,
 } from '../../js/engine/index.js';
 import { jourDeBac as jourDuVillageois } from '../../js/engine/villageois.js';
 import { assert, assertEqual, reach, setInv, test } from './aide.mjs';

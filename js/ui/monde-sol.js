@@ -6,7 +6,6 @@ import { idObjetMonde, RECOLTE } from '../engine/monde-recolte.js';
 import { SORTES_LIEUX } from '../engine/monde-lieux.js';
 import { ESPECES_FAUNE, FAUNE } from '../engine/monde-faune.js';
 import { HAMEAUX, SORTES_HAMEAUX } from '../engine/monde-hameaux.js';
-import { tourneeDuPlan } from '../engine/caleche-tournee.js';
 import { imageDuMonde } from '../engine/monde-carte.js';
 import { DATA } from '../engine/catalog.js';
 
@@ -42,8 +41,6 @@ import { DATA } from '../engine/catalog.js';
 //     (HAMEAUX.STYLES : le toit de chaque style), hameauEnclos (HAMEAUX.ENCLOS : la taille de l'enclos
 //     du berger, où les habitants mènent ses moutons : fiche 7b) ; portLanterne (PORT.LANTERNE : la lumière des
 //     lanternes du port, le soir, fiche I1a ; le port est un plan parmi ceux des hameaux) ;
-//   - la calèche (fiche 7c) : tournee() (sa tournée, js/engine/caleche-tournee.js : tirée avec les
-//     éléments ; null avant), que la page pose dans le moteur (js/ui/caleche.js, poserTournee) ;
 //   - la carte du monde (fiche 8) : carte(f) (l'image du monde, un pixel par case : js/engine/monde-carte.js ;
 //     { l, h, px }), ou null tant qu'elle n'est pas faite : elle est alors demandée (au Worker, ou faite
 //     ici par morceaux de rangées), et f(carte) est appelée quand elle arrive.
@@ -96,7 +93,7 @@ export function solDuMonde(T) {
 function client(T, M) {
   const regions = new Map(), demandees = new Set(), abonnes = [];
   const mesures = { elements: null, regions: [], mode: 'worker' };
-  let apercu = null, direct = null, worker = nouveauWorker(), fini = false, lieux = null, hameaux = null, tournee = null;
+  let apercu = null, direct = null, worker = nouveauWorker(), fini = false, lieux = null, hameaux = null;
   let carte = null, carteVoulue = false, carteRangs = null;
   // (les chemins possédés envoyés : leur clé)
   let cheminsCle = chemins ? chemins.cle() : null;
@@ -127,8 +124,6 @@ function client(T, M) {
       if (fini) return;
       if (!direct.ctx.elements) {
         elementsSol(direct.ctx); mesures.elements = direct.ctx.mesures.elements; lieux = direct.ctx.elements.lieux; hameaux = direct.ctx.hameaux.plans;
-        const cd = direct.ctx.cadre;
-        tournee = cd.PORT ? null : tourneeDuPlan({ W: cd.LARGEUR, chemins: direct.ctx.elements.chemins, hameaux: lieux.hameaux, sortie: cd.SORTIE, ferme: cd.FERME });
         if (direct.ctx.tronconPose && chemins) chemins.troncon(direct.ctx.tronconPose);
       }
       const cle = direct.file.shift();
@@ -151,7 +146,7 @@ function client(T, M) {
       const m = ev.data || {};
       if (fini || m.graine !== M.graine) return;
       if (m.type === 'apercu') apercu = m.apercu;
-      else if (m.type === 'pret') { mesures.elements = m.ms; lieux = m.lieux || null; hameaux = m.hameaux || null; tournee = m.tournee || null; if (m.troncon && chemins) chemins.troncon(m.troncon); }
+      else if (m.type === 'pret') { mesures.elements = m.ms; lieux = m.lieux || null; hameaux = m.hameaux || null; if (m.troncon && chemins) chemins.troncon(m.troncon); }
       else if (m.type === 'region') recu(m.region);
       else if (m.type === 'carte') carteFaite(m.carte);
       else if (m.type === 'erreur') { console.warn('[monde] le Worker n\'a pas pu faire la région ' + m.cle + ' : ' + m.message); enDirect(); }
@@ -167,7 +162,7 @@ function client(T, M) {
     regles: RECOLTE.SORTES, idObjet: idObjetMonde, ouvertes: null,
     lieux: () => lieux, lieuxSortes: SORTES_LIEUX, coins: (DATA.CANNE.COINS && DATA.CANNE.COINS.RAYON) || 0,
     faune: { especes: ESPECES_FAUNE.map((cle) => ({ cle, ...FAUNE.ESPECES[cle] })), PRES: FAUNE.PRES, LOIN: FAUNE.LOIN, RAYON: FAUNE.RAYON },
-    hameaux: () => hameaux, tournee: () => tournee, hameauSortes: SORTES_HAMEAUX, hameauxStyles: HAMEAUX.STYLES, hameauEnclos: HAMEAUX.ENCLOS,
+    hameaux: () => hameaux, hameauSortes: SORTES_HAMEAUX, hameauxStyles: HAMEAUX.STYLES, hameauEnclos: HAMEAUX.ENCLOS,
     portLanterne: (DATA.PORT && DATA.PORT.LANTERNE) || null,
     portBac: (DATA.PORT && DATA.PORT.BAC) || null,   // (le bac, fiche I1c : js/carte/ferme/bac.js)
     region(rx, ry) {

@@ -2,8 +2,8 @@ import { caseEtal, envieDe, mettreALEtal, vendableALEtal } from './bourse.js';
 import { DATA, dishPrice, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
 import {
-  allDevices, batteryCapacity, canPay, farmOpen, isBroken, isOwned, maintainDevice, needsService, panelOutput, pay, pumpFlow,
-  repairDevice, starterOf, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
+  allDevices, batteryCapacity, canPay, farmOpen, isBroken, isOwned, maintainDevice, needsService, panelOutput,
+  pumpFlow, repairDevice, starterOf, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from './devices.js';
 import { awakeHours, awakeRequired } from './clock.js';
 import { marcheOuvert } from './devices.js';
@@ -30,7 +30,6 @@ import { millPending, recipeUnlocked, startMilling, startRecipe } from './kitche
 import { buyTech, hasTech, techPoints, techResources, techStatus } from './techtree.js';
 import {
   chapterCount, chapterProgress, chapterReached, cropUnlocked, isUnlocked, objectiveChapter, objectiveDef, plantableCropsFor,
-  readMail, unreadMail,
 } from './campaign.js';
 import { isAutomated } from './automation.js';
 import { grassCut, hasTool, scytheGrass } from './outils.js';
@@ -50,22 +49,10 @@ import { acheterPalier, BRANCHES, charretteDu, etatCharrette } from './charrette
 import { soldeLePlusBas } from './tableau.js';
 import { paliersSuivis } from './paliers.js';
 import { aCruche, crucheCapacite, eauCruche, puitsCases, puitsPose, remplirCruche } from './cruche.js';
-import { acheterCaleche, vendreCaleche, poserTournee, tourneeDuPlan } from './caleche.js';
-import { genererMonde, regionDeCase } from './monde.js';
-import { elementsSol, solDirect } from './monde-sol.js';
-import { hameauxVus, voirHameau } from './monde-hameaux.js';
-import { peuplerHameau } from './habitants.js';
-import { caseVue, voirAutour } from './monde-vu.js';
-import { castLine } from './outils.js';
 import { atelierConstruit, buildAtelier, commerceQuiLeFait, craft, craftStatus, ramassables, ramasser } from './atelier.js';
 import { commencerObjectifs, majObjectifs } from './objectifs.js';
-import { majCaleche } from './caleche.js';
-import { goutPour, HAMEAU_VILLAGE, offrable, offrir, parlerAmitie, visiterHameau } from './amitie.js';
-import { habitantsDe } from './habitants.js';
+import { HAMEAU_VILLAGE, offrir, parlerAmitie } from './amitie.js';
 import { invitationDuMoment, invitationsDe, inviter, platsServables, relationsInvitables, servirRepas } from './invitations.js';
-import { apporterAuProjet, projetDuHameau } from './projets.js';
-import { noterEncyclopedie } from './encyclopedie.js';
-import { ESPECES_FAUNE } from './monde-faune.js';
 import { buildFridge, FRIGO_OBJET } from './fridge.js';
 import { takeItem } from './inventory.js';
 import { acheterAuPort, dechargerAuPort, niveauPort, PORT, portDuMonde, vendreAuPort } from './port.js';
@@ -593,9 +580,9 @@ function botCropScore(culture) {
 }
 
 // Achète une unité de graine si le prix reste raisonnable ; renvoie true si elle est là.
-// (à la calèche, à son passage : botCalecheLa)
+// (au port, pendant sa sortie : botAuComptoir)
 function botBuySeed(state, item) {
-  if (!isBuyable(item) || !botCalecheLa(state)) return false;
+  if (!isBuyable(item) || !botAuComptoir(state)) return false;
   const price = buyPrice(state, item);
   if (price > DATA.SIMULATION.PRIX_GRAINE_MAX + EPS || !canPay(state, price)) return false;
   return botAcheter(state, item, 1).ok === true;
@@ -725,7 +712,7 @@ export function botHoe(state) {
 function botHens(state) {
   const p = state.poulailler;
   if (!p.construit || p.poules <= 0) return;
-  // pas de blé pour les poules : un dépannage à la calèche (le blé se sème : elle en vend)
+  // pas de blé pour les poules : un dépannage au port (le blé se sème : il s'y achète)
   while (hensToFeed(state) > 0 && !canFeedHen(state) && botBuySeed(state, DATA.SILO.ITEM)) {
     if (canFeedHen(state)) break;
   }
@@ -751,10 +738,6 @@ function botOrchard(state) {
 }
 
 // Version 1.14 : le joueur ouvre son courrier (l'héritage du niveau 9 est versé à l'ouverture).
-function botMail(state) {
-  for (const l of unreadMail(state)) readMail(state, l.id);
-}
-
 // La paille vient des fibres de la faux (FAUX), bottelées (BOTTELEUSE) : dès qu'il a des
 // moutons ou des vaches, il fabrique la faux et fauche les touffes de son pré (botPre : il
 // n'a pas de carte) pour PAILLE_NUITS nuits d'avance, tant qu'il en reste et qu'il a de
@@ -945,7 +928,7 @@ function botBatir(state, id) {
   };
 }
 
-// Un jeune arbre du Verger : acheté à la calèche (son prix), puis planté. { cost, buy }.
+// Un jeune arbre du Verger : acheté au port (son prix), puis planté. { cost, buy }.
 // (I1c : il vient par le bac ; commandé au port, payé d'avance, il est planté à sa livraison)
 function botArbre(state, espece) {
   const item = DATA.ATELIER.BLOCS[espece] && DATA.ATELIER.BLOCS[espece].objet;
@@ -959,7 +942,7 @@ function botArbre(state, espece) {
   return {
     cost,
     buy: () => {
-      if (!botCalecheLa(state)) return { ok: false, error: 'La calèche n\'est pas là.' };
+      if (!botAuComptoir(state)) return { ok: false, error: 'Pas au port.' };
       if (countItem(state, item) < 1 && !botAcheter(state, item, 1).ok) return { ok: false, error: 'Pas assez de pièces.' };
       const r = testBatir(state, espece);
       if (r.ok) takeItem(state, item, 1);
@@ -979,7 +962,7 @@ function botImport(state, cle, utiliser) {
   if (articleRefus(state, a)) return { locked: true };
   return {
     cost: a.prix,
-    buy: () => (botCalecheLa(state) ? commanderImport(state, cle, 1, null, { sansPresence: true }) : { ok: false, error: 'Pas au port.' }),
+    buy: () => (botAuComptoir(state) ? commanderImport(state, cle, 1, null, { sansPresence: true }) : { ok: false, error: 'Pas au port.' }),
   };
 }
 
@@ -992,7 +975,7 @@ function botPort(state, niveau) {
   // (il économise pour lui : tant que les pièces manquent, botBuy s'arrête là ; ses pièces réunies, il attend d'être
   // au port, ses matériaux apportés, sans les dépenser ailleurs : `attendre`)
   if (!canPay(state, nx.pieces + DATA.SIMULATION.CAISSE)) return { cost: nx.pieces, buy: () => ({ ok: false }) };
-  if (!botCalecheLa(state)) return { attendre: true };
+  if (!botAuComptoir(state)) return { attendre: true };
   apporterAuChantier(state, null, { sansPresence: true });
   if (!prochainNiveau(state).pret) return { attendre: true };
   return { cost: nx.pieces, buy: () => agrandirPort(state, null, { sansPresence: true }) };
@@ -1152,30 +1135,28 @@ export function botBuy(state, eveilS) {
 
 /* ---------- ventes et rangement du soir ---------- */
 
-// Fiche 9b : il vend à la calèche ; ses ventes comptent pour la campagne (« Vendre pour 100 pièces à la
-// calèche »). I0b : elle passe à la ferme une fois par jour (vers 10 h) : le joueur simulé, qui n'a pas de
-// carte, la retrouve à son passage (la série d'actions du soir, botActions : botPassageCaleche) et ne
-// commerce qu'à ce moment-là, et seulement quand elle commerce avec lui (son niveau, marcheOuvert).
-const aLaCaleche = new WeakSet();
-function botCalecheLa(state) {
-  return aLaCaleche.has(state) && marcheOuvert(state);
+// Fiche I1b : il commerce au port, où le mène sa sortie du soir (botSortiePort) : le joueur simulé, qui n'a pas de
+// carte, n'y vend et n'y achète que pendant sa sortie (botAuComptoir), et seulement quand le port commerce avec lui (son
+// niveau, marcheOuvert). Fiche I2 : avant de partir, sur la ferme, ce qu'il vendrait est noté pour être chargé
+// (botChargement).
+const auComptoir = new WeakSet();
+function botAuComptoir(state) {
+  return auComptoir.has(state) && marcheOuvert(state);
 }
-// Joue `fn` pendant le passage de la calèche (le commerce est possible). → ce que `fn` renvoie.
-export function botPassageCaleche(state, fn) {
-  const deja = aLaCaleche.has(state);
-  aLaCaleche.add(state);
-  try { return fn(); } finally { if (!deja) aLaCaleche.delete(state); }
+// Joue `fn` au comptoir du port (le commerce est possible). → ce que `fn` renvoie.
+export function botAuPort(state, fn) {
+  const deja = auComptoir.has(state);
+  auComptoir.add(state);
+  try { return fn(); } finally { if (!deja) auComptoir.delete(state); }
 }
-// (le chantier « l'île à bâtir » allumé, fiche I1b : au port, où le mène sa sortie, botSortiePort ; fiche I2 : avant
-// de partir, sur la ferme, ce qu'il vendrait est noté pour être chargé, botChargement)
 const aCharger = new WeakMap();   // la partie → ce que le joueur simulé vendrait : [{ item, qty }] (le chargement)
 const sellItem = (state, item, qty) => {
   if (aCharger.has(state)) { if (qty >= 1) aCharger.get(state).push({ item, qty: Math.floor(qty) }); return { ok: true, sold: 0, gain: 0 }; }
-  if (!botCalecheLa(state)) return { ok: false };
+  if (!botAuComptoir(state)) return { ok: false };
   return vendreAuPort(state, item, qty, null, { sansPresence: true });
 };
 function botAcheter(state, item, qty) {
-  if (!botCalecheLa(state)) return { ok: false };
+  if (!botAuComptoir(state)) return { ok: false };
   return acheterAuPort(state, item, qty, null, { sansPresence: true });
 }
 
@@ -1348,7 +1329,7 @@ export function botSortiePort(state, fn) {
   sortiesPort.set(state, state.day);
   const charge = botChargement(state);
   botMarche(state, aller);
-  botPassageCaleche(state, () => { botAuBac(state); if (charge) dechargerAuPort(state, null, { sansPresence: true }); fn(); });
+  botAuPort(state, () => { botAuBac(state); if (charge) dechargerAuPort(state, null, { sansPresence: true }); fn(); });
   botMarche(state, aller);
   return true;
 }
@@ -1459,138 +1440,13 @@ function botGarnir(state, reserve) {
   }
 }
 
-/* ---------- fiche 9b : sortir dans le grand monde ---------- */
-
-// Les objectifs de la campagne qui se font dans le monde, et que le joueur simulé sait faire.
-const OBJECTIFS_MONDE = new Set(['hameaux', 'monde', 'pecheMer', 'faune']);
-
-// Ce qu'il sait du monde de sa graine : la tournée de la calèche (le fil des chemins, ses arrêts dans
-// l'ordre), les plans des hameaux, les coins de pêche. Tiré une fois par graine
-// (les éléments du plan : quelques centaines de ms), seulement le jour où un objectif le demande.
-const mondes = new Map();
-function mondeDuBot(state) {
-  const T = farmTerrain(state), g = farmSeed(state);
-  if (!T.MONDE || g === null) return null;
-  if (!mondes.has(g)) {
-    const sol = solDirect(T), el = elementsSol(sol.ctx), cadre = sol.ctx.cadre;
-    const tour = cadre.PORT ? null : poserTournee(g, tourneeDuPlan({ W: cadre.LARGEUR, chemins: el.chemins, hameaux: el.lieux.hameaux, sortie: cadre.SORTIE, ferme: cadre.FERME }));
-    const plans = new Map(sol.ctx.hameaux.plans.map((p) => [p.id, p]));
-    mondes.set(g, { W: cadre.LARGEUR, tour, plans, lieux: el.lieux, sortie: cadre.SORTIE });
-    while (mondes.size > 3) mondes.delete(mondes.keys().next().value);
-  }
-  return mondes.get(g);
-}
-
-// La case du point k du tour.
-const caseDuTour = (m, k) => Math.floor(m.tour.y[k]) * m.W + Math.floor(m.tour.x[k]);
-const distCases = (m, a, b) => Math.hypot((a % m.W) - (b % m.W), Math.floor(a / m.W) - Math.floor(b / m.W));
-
-// Une excursion par jour, le soir, quand le chapitre en cours demande d'aller dans le monde : il suit
-// le chemin de la calèche jusqu'au prochain hameau qu'il ne connaît pas (ce qu'il voit en route devient
-// vu, le hameau découvert et peuplé) ; une fois tous vus, il fait le tour entier ; il pêche dans la mer, à son
-// coin le plus proche. Ce sont les
-// actions du moteur (voirAutour, voirHameau, peuplerHameau, castLine), sans carte : le trajet n'est pas
-// marché pas à pas, et ne coûte que l'énergie de la pêche.
-export function botMonde(state) {
-  const c = state.campagne;
-  if (!c || c.fini) return false;
-  const restants = chapterProgress(state).objectifs.filter((o) => !o.ok && OBJECTIFS_MONDE.has(o.type)).map((o) => o.type);
-  if (!restants.length) return false;
-  const m = mondeDuBot(state);
-  if (!m || !m.tour) return false;
-  const voirJusqua = (k1) => {
-    for (let k = 0; k <= k1; k += 4) voirAutour(state, caseDuTour(m, k));
-  };
-  if (restants.includes('hameaux') || restants.includes('monde') || restants.includes('faune')) {
-    const vus = hameauxVus(state);
-    const suivant = m.tour.arrets.find((a) => a.sorte === 'hameau' && !vus[a.id] && m.plans.has(a.id));
-    if (suivant) {
-      voirJusqua(suivant.k);
-      const plan = m.plans.get(suivant.id);
-      voirHameau(state, plan);
-      peuplerHameau(state, plan);
-    } else voirJusqua(m.tour.x.length - 1);
-  }
-  // I0b : les bêtes du monde qu'il croise : celles des régions du chemin dont la place est dans ce qu'il a
-  // vu (leur page de l'encyclopédie se découvre, comme quand la scène en montre une)
-  if (restants.includes('faune')) botFaune(state, m);
-  if (restants.includes('pecheMer')) {
-    const coin = [...(m.lieux.peche || [])].filter((p) => p.eau === 'mer').sort((a, b) => distCases(m, a.case, m.sortie) - distCases(m, b.case, m.sortie))[0];
-    if (coin) {
-      voirAutour(state, coin.case, { biome: 'plage' });
-      if (!botOutil(state, 'canne')) return true;
-      for (let k = 0; k < DATA.SIMULATION.LANCERS_MER && (c.compteurs.pecheMer || 0) < 1; k++) if (!castLine(state, 'mer', coin.id).ok) break;
-    }
-  }
-  return true;
-}
-
-// Les bêtes des régions que traverse la tournée, vues si leur place l'a été (caseVue).
-function botFaune(state, m) {
-  const T = farmTerrain(state), sol = solDirect(T);
-  if (!sol) return;
-  const regions = new Set();
-  for (let k = 0; k < m.tour.x.length; k += 4) regions.add(regionDeCase(caseDuTour(m, k), m.W));
-  for (const cle of [...regions].sort()) {
-    const [rx, ry] = cle.split(',').map(Number);
-    const f = sol.region(rx, ry).faune;
-    for (let i = 0; i + 3 < f.length; i += 4) {
-      const t = Math.floor(f[i + 2] / 16) * m.W + Math.floor(f[i + 1] / 16);
-      const e = `faune:${ESPECES_FAUNE[f[i]]}`;
-      if (!(state.encyclopedie && state.encyclopedie.evenements && state.encyclopedie.evenements[e]) && caseVue(state, t, T)) noterEncyclopedie(state, e);
-    }
-  }
-}
-
-/* ---------- I0b : les habitants des hameaux (l'amitié, les projets, le repas partagé) ---------- */
+/* ---------- I0b : le repas partagé ---------- */
 
 // Les objectifs du chapitre en cours pas encore remplis, par type.
 function restantsDuChapitre(state) {
   const c = state.campagne;
   if (!c || c.fini) return new Set();
   return new Set(chapterProgress(state).objectifs.filter((o) => !o.ok).map((o) => o.type));
-}
-
-// Le hameau où il va voir les habitants : le premier peuplé de la tournée de la calèche (le plus proche).
-function botHameauVoisin(state) {
-  const m = mondeDuBot(state), H = habitantsDe(state);
-  if (!m || !m.tour) return null;
-  const a = m.tour.arrets.find((x) => x.sorte === 'hameau' && H[x.id] && Array.isArray(H[x.id].foyers) && H[x.id].foyers.length);
-  return a ? a.id : null;
-}
-
-// Le cadeau pour l'habitant `mb` : ce qu'il adore, sinon ce qu'il aime, parmi ce qui s'offre (hors semences
-// gardées) ; null s'il n'y a rien qui lui plaise.
-function botCadeau(state, mb) {
-  const garde = botSemences(state);
-  const rang = { adore: 2, aime: 1 };
-  const choix = Object.keys(state.inventaire || {}).filter((it) => offrable(it) && countItem(state, it) - (garde[it] || 0) >= 1 && rang[goutPour(mb, it)])
-    .sort((a, b) => rang[goutPour(mb, b)] - rang[goutPour(mb, a)] || DATA.OBJETS[a].prix - DATA.OBJETS[b].prix || (a < b ? -1 : 1));
-  return choix[0] || null;
-}
-
-// Une visite au hameau voisin, le soir, quand le chapitre demande un ami, un repas partagé ou un projet : il
-// passe (visiterHameau), parle à chacun (parlerAmitie), offre à chacun ce qu'il aime s'il l'a (offrir), et
-// apporte au projet du hameau ce qui lui manque (apporterAuProjet : du bois, des pierres, des fibres, fournis
-// comme les autres matériaux bruts). Le trajet n'est pas marché, comme les sorties de botMonde.
-export function botVoisins(state) {
-  const restants = restantsDuChapitre(state);
-  if (!['amis', 'repas', 'projets'].some((t) => restants.has(t))) return false;
-  const hid = botHameauVoisin(state);
-  if (!hid) return false;
-  visiterHameau(state, hid);
-  for (const f of habitantsDe(state)[hid].foyers) {
-    for (const mb of f.membres || []) {
-      parlerAmitie(state, hid, mb.id);
-      const cadeau = botCadeau(state, mb);
-      if (cadeau) offrir(state, hid, mb.id, cadeau);
-    }
-  }
-  if (restants.has('projets')) {
-    const pr = projetDuHameau(state, hid);
-    if (pr && !pr.fait && botReunir(state, pr.manque)) apporterAuProjet(state, hid);
-  }
-  return true;
 }
 
 // Le repas partagé (objectif « repas ») : il invite pour le déjeuner du lendemain les habitants qu'il
@@ -1618,31 +1474,13 @@ function botServir(state) {
   servirRepas(state, inv.id, platsServables(state).slice(0, DATA.AMITIE.INVITATION.REPAS.PLATS_MAX), false);
 }
 
-// Les produits des hameaux (objectif « achatsHameaux ») : à son passage, il achète au coffre de la calèche ce
-// qui coûte le moins, jusqu'au compte.
-function botAchatsHameaux(state) {
-  const o = state.campagne && !state.campagne.fini && chapterProgress(state).objectifs.find((x) => x.type === 'achatsHameaux' && !x.ok);
-  if (!o || !botCalecheLa(state)) return;
-  const coffre = (state.caleche && state.caleche.coffre) || {};
-  const items = Object.keys(coffre).filter((it) => coffre[it] > 0 && DATA.OBJETS[it]).sort((a, b) => DATA.OBJETS[a].prix - DATA.OBJETS[b].prix || (a < b ? -1 : 1));
-  let reste = o.cible - o.valeur;
-  for (const it of items) {
-    if (reste <= 0) break;
-    const r = acheterCaleche(state, it, Math.min(reste, coffre[it]), null, { sansPresence: true });
-    if (r.ok) reste -= r.bought;
-  }
-}
-
 /* ---------- une journée, une partie ---------- */
 
 // Série d'actions du joueur. `soir` : dernière série avant de dormir.
 function botActions(state, strat, options, soir) {
-  // (ce que l'écran fait en jeu à chaque rendu : la tournée de la calèche avance, les objectifs du jour se
-  // valident et donnent leur récompense)
-  majCaleche(state);
+  // (ce que l'écran fait en jeu à chaque rendu : les objectifs du jour se valident et donnent leur récompense)
   majObjectifs(state);
   botMaintenance(state);
-  botMail(state);
   botSnack(state);
   botRamasser(state); // I0b : les pierres, le bois et les baies que la ferme offre ce matin
   botBuy(state, strat.eveilS);
@@ -1668,14 +1506,11 @@ function botActions(state, strat, options, soir) {
   botVillageois(state); // I3c : une maison de villageois, leurs tâches
   if (vocationDe.has(state)) botQuai(state); // I8b : la stratégie « production »
   if (!soir) return;
-  botMonde(state); // fiche 9b : une sortie dans le grand monde, si le chapitre la demande
-  botVoisins(state); // I0b : le hameau voisin, si le chapitre demande un ami, un repas, un projet
   botInviter(state);
-  // I0b : la calèche à son passage (le seul moment où il commerce) ; I1b : sa sortie au port
+  // I1b : sa sortie au port (le seul moment où il commerce)
   botSortiePort(state, () => {
     botStore(state); // version 1.10 : ranger d'abord, vendre ce qui n'a pas tenu au frais
     botSell(state);
-    botAchatsHameaux(state);
     botFarm(state); // (les graines achetées : semées tout de suite)
     botBuy(state, strat.eveilS);
     if (options.depannage) {

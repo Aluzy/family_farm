@@ -17,9 +17,9 @@
 
 import {
   acheterAuCommerce, acheterAuComptoir, achatsCommercesDuJour, addItem, arriverVillageois, commanderAuCommerce,
-  commercesDe, conditionsCommerce, countItem, craftStatus, createNewGame, DATA, etatCommerce, farmSeed, lotCommerce, migrate,
-  ouvrirCommerce, plafondCommerces, portDuMonde, prixArtisan, recetteDebloquee, recettesConnues, recettesDe, runNight,
-  STATE_VERSION, tableauVillage, tacheDef, testMaisonVillageois,
+  commercesDe, conditionsCommerce, countItem, craftStatus, DATA, etatCommerce, farmSeed, lotCommerce, migrate,
+  ouvrirCommerce, plafondCommerces, portDuMonde, prixArtisan, recetteDebloquee, recettesConnues, recettesDe,
+  runNight, STATE_VERSION, tableauVillage, tacheDef, testMaisonVillageois,
 } from '../../js/engine/index.js';
 import { ajouterAmitie } from '../../js/engine/amitie.js';
 import { platsBonheur } from '../../js/engine/bonheur.js';
@@ -29,7 +29,7 @@ import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const AR = DATA.ARTISANS;
-const SEUIL = DATA.RECIT.PALIERS[AR.AMITIE];
+const SEUIL = DATA.AMITIE.ECHELLE.PALIERS[AR.AMITIE];
 const SORTES = ['scierie', 'boulangerie', 'fromagerie'];
 
 // L'île de test : le port au niveau `port`, `n` villageois dans leurs maisons, la boîte pleine.

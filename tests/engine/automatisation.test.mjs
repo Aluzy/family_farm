@@ -4,17 +4,20 @@
    ========================================================================== */
 
 import {
-  absoluteHours, addItem, AUTO_TACHES, awakeMsAtHour, awakeRequired, buyTech, canSleep,
-  checkMastery, completeChapter, coopCapacity, countItem, createInitialState, DATA, farmTerrain,
-  findPlot, grantTech, inventoryCounts, irrigate, isAutomated, isUnlocked, makePlot, maxStage,
-  migrateCropZone, migrateToIntegers, newAutoReport, newNightStats, plant, plantableCropsFor,
-  prepTimeMult, recipeTime, recordNight, robotBattery, robotCapacity, robotChargePct, robotNight,
-  figerStation, robotStation, robotStep, robotTaskCapacity, robotTrip, runRobotCharge, sellItem, setSeedReserve,
-  setSemis, siloCapacity, sleep, soilCap, spend, startFarm, startHousehold, startLot4, startLot5,
-  startLot6, startRecipe, STATE_VERSION, takeItem, techPoints, techPrereqs, techProgress,
-  techStatus, testAddHens, testAddPieces, testAddWheat, testBatir, testEmptyBatteries,
-  testFillBatteries, testSetBuildingLevel5, testUnlockAllTechs, tick, unlockLevel,
-  upgradeRobotBattery, water, wheatTotal, zoneTile,
+  startLot4,
+  startFarm,
+  startLot5,
+  startHousehold,
+  startLot6,
+  absoluteHours, addItem, AUTO_TACHES, awakeMsAtHour, awakeRequired, buyTech, canSleep, checkMastery,
+  completeChapter, coopCapacity, countItem, createInitialState, DATA, farmTerrain, findPlot, grantTech,
+  inventoryCounts, irrigate, isAutomated, isUnlocked, makePlot, maxStage, migrateCropZone, migrateToIntegers,
+  newAutoReport, newNightStats, plant, plantableCropsFor, prepTimeMult, recipeTime, recordNight, robotBattery,
+  robotCapacity, robotChargePct, robotNight, figerStation, robotStation, robotStep, robotTaskCapacity, robotTrip,
+  runRobotCharge, sellItem, setSeedReserve, setSemis, siloCapacity, sleep, soilCap, spend, startRecipe,
+  STATE_VERSION, takeItem, techPoints, techPrereqs, techProgress, techStatus, testAddHens, testAddPieces,
+  testAddWheat, testBatir, testEmptyBatteries, testFillBatteries, testSetBuildingLevel5, testUnlockAllTechs, tick,
+  unlockLevel, upgradeRobotBattery, water, wheatTotal, zoneTile,
 } from '../../js/engine/index.js';
 import {
   assert, assertEqual, atelier, auto5, AVANT_DEMENAGEMENT, chapter1StepsDone, farm, garden, sansCompteurs68,

@@ -3598,39 +3598,7 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .ile-liste .btn { min-height: 44px; }
 .hameau-reserve .num { margin-left: auto; font-weight: 700; }
 .hameau-reserve .gain { margin-left: 4px; color: #2f6b3a; font-size: 0.8rem; }
-/* La calèche (fiche 7c, js/carte/ferme/caleche.js, js/ui/caleche.js) : l'icône au bord de l'écran
-   quand elle est proche (sa flèche tournée vers elle ; « Héler » quand elle passe tout près), le
-   bouton Héler au-dessus d'elle, la bulle de son arrivée à la ferme ; dans sa fenêtre, le bandeau
-   (là, ou où elle est et quand elle passe à la ferme). */
-.caleche-signe, .caleche-heler {
-  position: absolute;
-  left: 0;
-  top: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background: #e6d7ef;
-  color: #2a1c32;
-  border: 2px solid #412a4e;
-  border-radius: 999px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
-  font: inherit;
-  font-size: 0.8rem;
-  line-height: 1.1;
-  pointer-events: auto;
-  cursor: pointer;
-  will-change: transform;
-}
-.caleche-signe[hidden], .caleche-heler[hidden] { display: none; }
-.caleche-signe-ico { font-size: 1.15rem; }
-.caleche-signe-fleche { display: inline-block; transform: rotate(var(--angle, 0rad)); color: #412a4e; }
-.caleche-signe-heler { display: none; font-weight: bold; }
-.caleche-signe.helable .caleche-signe-heler { display: inline; }
-.caleche-signe.helable, .caleche-heler { background: #d8c1e6; animation: caleche-pouls 1.2s ease-in-out infinite; }
-@keyframes caleche-pouls { 50% { box-shadow: 0 0 0 4px rgba(255, 200, 80, 0.55), 0 3px 8px rgba(0, 0, 0, 0.3); } }
-@media (prefers-reduced-motion: reduce) { .caleche-signe.helable, .caleche-heler { animation: none; } }
-.caleche-bulle { font-weight: bold; }
+/* Le bandeau du port, en tête de sa fenêtre (js/ui/port.js : là, ou ses heures). */
 .caleche-bandeau {
   display: flex;
   align-items: center;
@@ -3651,20 +3619,6 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .portage-place span { display: block; height: 100%; background: #b98a4a; }
 .caleche-bandeau .caleche-ico { font-size: 1.5rem; flex: none; }
 .caleche-bandeau .caleche-texte { flex: 1 1 180px; }
-/* La malle de la calèche (js/ui/caleche.js, malleHtml) : son image (assets/malle.png, la case fermée) dans le
-   bandeau ; les titres de ses sections, leur bouton à droite ; le titre des lots d'une fiche (Déposer, Commander). */
-.caleche-bandeau .malle-ico {
-  flex: none;
-  width: 50px;
-  height: 44px;
-  background-repeat: no-repeat;
-  background-size: 100px 44px;
-  background-position: 0 0;
-  image-rendering: pixelated;
-}
-.section-title.malle-titre { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.section-title.malle-titre .btn { margin-left: auto; }
-.lot-titre { margin: 6px 0 2px; }
 /* S'orienter (fiche 8). La boussole (js/carte/ferme/boussole.js) : sous l'horloge, à droite de la carte ;
    son cadran en gros pixels (un canevas de 30 px agrandi deux fois, sans lissage), dessous le but et sa
    distance sur une plaque de bois. Un appui ouvre la carte du monde. Son haut suit le bas de l'horloge (.hud :

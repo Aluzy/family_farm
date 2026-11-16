@@ -26,7 +26,7 @@
    ========================================================================== */
 
 import { DATA } from './catalog.js';
-import { farmSeed, farmTerrain } from './terrain.js';
+import { farmTerrain } from './terrain.js';
 import { BIOMES } from './monde-gen.js';
 import { elementsSol, solDirect, tronconDuPort } from './monde-sol.js';
 import { casesOuvertesMonde } from './monde-recolte.js';

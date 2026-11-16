@@ -4,10 +4,11 @@
    ========================================================================== */
 
 import {
-  addItem, buyItem, buyPrice, countItem, createInitialState, DATA, depenserMembre, expiringSoon,
-  harvest, inventoryCounts, isBuyable, isPerishable, lotsOf, mangerMembre, mangeurs, marketCoef,
-  marketFloor, migrate, sellItem, setSeedReserve, shelfLife, sleep, spoil, startFarm,
-  startHousehold, takeItem, testAddFood, testAgeInventory, testBatir, tick,
+  startFarm,
+  startHousehold,
+  addItem, buyItem, buyPrice, countItem, createInitialState, DATA, depenserMembre, expiringSoon, harvest,
+  inventoryCounts, isBuyable, isPerishable, lotsOf, mangerMembre, mangeurs, marketCoef, marketFloor, migrate,
+  sellItem, setSeedReserve, shelfLife, sleep, spoil, takeItem, testAddFood, testAgeInventory, testBatir, tick,
 } from '../../js/engine/index.js';
 import {
   affamer, assertEqual, AVANT_DEMENAGEMENT, garden, migreAvant, plantRipe, reach, setInv, test,

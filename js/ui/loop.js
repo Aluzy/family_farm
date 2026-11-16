@@ -1,11 +1,10 @@
 import { DATA, recipeOutput } from '../engine/catalog.js';
 import { setupPending } from '../engine/depart.js';
 import { watchSetup } from './depart.js';
-import { absoluteHours, bedtimeDue, nightActive } from '../engine/clock.js';
+import { bedtimeDue, nightActive } from '../engine/clock.js';
 import { tick } from '../engine/energy.js';
 import { memberName } from '../engine/family.js';
 import { ecouterJournal } from '../engine/journal.js';
-import { mailbox } from '../engine/campaign.js';
 import { PRESSE_RENDU } from '../engine/state.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
@@ -21,19 +20,10 @@ import {
 import { mesurer } from './chrono.js';
 import { watchChapters } from './chapitres.js';
 import { watchLevels } from './niveaux.js';
-import { sceneCaleche, watchCaleche } from './caleche.js';
 import { watchPort } from './port.js';
-import { proposerScene } from './scene.js';
-import { lieuDuPerso } from './stage.js';
-import { recitPage } from '../engine/recit-aiguillage.js';   // (fiche I7d : la veillée et les annonces du récit, partie d'avant)
-import { deHameau } from '../engine/fetes.js';
-import { moonPhase } from '../engine/lune.js';
-import { watchBienvenue } from './bienvenue.js';
 import { watchVillageois } from './villageois.js';
 import { watchChronique } from './chronique.js';
-import { watchPresents } from './amitie.js';
 import { watchDemandes } from './demandes.js';
-import { watchFetes } from './fetes.js';
 import { pleut } from '../engine/meteo.js';
 import { watchInvitations } from './invitations.js';
 import { watchVocations } from './vocations.js';
@@ -105,14 +95,6 @@ function watchPreparations() {
   }
 }
 
-// Version 1.3 : annonce une lettre qui vient d'arriver (un appui mène aux Notifications).
-// `mailSeen` : les lettres déjà annoncées ; il est rempli au chargement de la partie.
-let mailSeen = null;
-export function setMailSeen(value) {
-  mailSeen = value;
-  return value;
-}
-
 // Le robot a fini sa liste du jour : une annonce (ce qu'il a récolté et semé), une fois.
 // Batterie vide en pleine liste : une annonce par panne (il rentre se recharger).
 function watchRobot() {
@@ -131,26 +113,12 @@ function watchRobot() {
   persistState();
 }
 
-// Le récit (docs/recit/, js/ui/scene.js) : une scène qui peut se jouer s'ouvre quand l'écran est calme,
-// après la famille composée et le bandeau des cookies, au lieu où est le personnage (lieuDuPerso :
-// l'arrivée, Frida à la ferme, la veillée au Gué), puis la calèche garée à la ferme, le joueur à côté (la
-// clé, la fortune de Maurice). La maison de Maurice a son déclencheur (stage.js).
-function watchRecit() {
+// Les annonces des migrations des parties d'avant (une fois, quand l'écran est calme).
+function watchMigrations() {
   if (setupPending(state) || consentBannerShown() || consentBannerPending() || !uiCalm()) return;
-  const ici = lieuDuPerso();
-  // (l'île à bâtir, fiche I7d : ni scène, ni calèche qui parle, ni veillée du récit — celle du village se tient seule,
-  // js/engine/fetes-village.js ; recitPage rend null)
-  const R = recitPage(state);
-  if (R && !proposerScene(ici || {})) sceneCaleche();
-  if (R) inviterVeillee(R);
-  // le récit, lot 7 : la veillée à la ferme, une fois par pleine lune (la première est une scène)
-  if (R && ici && ici.lieu === 'ferme' && R.veilleeFermePossible(state) && R.veilleeFerme(state).ok) {
-    persistState();
-    notify('🌕 Les voisins des hameaux sont venus veiller à la ferme, sous la pleine lune. Ils s\'en souviendront.', { kind: 'info' });
-  }
   // une partie d'avant le lot 7 : ce que son commerce valait lui a été rendu (la migration 62 → 63)
   if (state.remboursementCommerce) {
-    notify(`🏪 Les commerces de la ferme ferment : les veillées de pleine lune les remplacent. ${formatNumber(state.remboursementCommerce)} 💰 te sont rendus.`, { kind: 'info' });
+    notify(`🏪 Les commerces de la ferme d'avant ferment : ${formatNumber(state.remboursementCommerce)} 💰 te sont rendus.`, { kind: 'info' });
     delete state.remboursementCommerce;
     persistState();
   }
@@ -171,48 +139,6 @@ function watchRecit() {
     notify(`🏡 La Serre n'a plus de niveaux : toutes les cases de sa pièce vitrée se cultivent, et une plus grande pièce fait une plus grande Serre. Ses agrandissements te sont rendus : ${formatNumber(state.serreRendue)} 💰.`, { kind: 'info' });
     delete state.serreRendue;
     persistState();
-  }
-}
-
-// La veillée (le récit, lot 6) : un soir de pleine lune, à partir de 17 h, une seule annonce par pleine
-// lune, tant que la première veillée n'a pas eu lieu et que l'acte II est ouvert. Le récit, lot 9 : de même
-// pour la seconde (l'acte III) et pour la fête des premiers arrivants à Brumeval (annoncée par Achille).
-let veilleeAnnoncee = null;
-function inviterVeillee(R) {
-  if (moonPhase(state.day).id !== 'pleine' || veilleeAnnoncee === state.day) return;
-  const h = absoluteHours(state) % 24;
-  if (h < 17 || h >= 22) return;
-  const acte = R.acteEnCours(state), aFait = R.aFait;
-  let texte = null;
-  if (aFait(state, 'fete.annonce') && !aFait(state, 'fete') && acte >= 4) {
-    const brumeval = (DATA.PLAN_MONDE.HAMEAUX.GARANTIS || []).find((g) => g.id === 'brumeval');
-    texte = `🌕 Pleine lune : ce soir, la fête des premiers arrivants, à ${brumeval ? brumeval.nom : 'Brumeval'}, de 19 h à 23 h.`;
-  } else if (aFait(state, 'odile.rencontre') && ((!aFait(state, 'veillee.1') && acte >= 2) || (aFait(state, 'veillee.1') && !aFait(state, 'veillee.2') && acte >= 3))) {
-    texte = `🌕 Pleine lune : ce soir, on veille sur la place ${deHameau(DATA.PLAN_MONDE.HAMEAUX.GUE)}, de 19 h à 22 h.`;
-  }
-  if (!texte) return;
-  veilleeAnnoncee = state.day;
-  notify(texte, { kind: 'info' });
-}
-
-function watchMail() {
-  const box = mailbox(state);
-  // FLU-18 : une lettre s'annonce quand l'écran est calme (pas sur l'histoire, ni sur le
-  // bandeau des cookies) ; elle n'est annoncée que si elle n'est pas déjà lue
-  if (mailSeen !== null && (!uiCalm() || consentBannerShown() || consentBannerPending())) return;
-  // Première fois, ou partie remplacée (nouvelle partie, import) : rien à annoncer.
-  if (mailSeen === null || box.length < mailSeen.size) {
-    mailSeen = new Set(box.map((l) => l.id));
-    return;
-  }
-  for (const l of box) {
-    if (mailSeen.has(l.id)) continue;
-    mailSeen.add(l.id);
-    const def = DATA.COURRIER[l.id];
-    if (!def || l.lu) continue;
-    notify(`${def.icone} ${def.objet} est arrivée ! Elle t'attend dans les Notifications.`, { kind: 'lettre', cible: { page: 'notifications' } });
-    persistState();
-    scheduleRender();
   }
 }
 
@@ -341,23 +267,18 @@ export function frame(now) {
 }
 let derniereVeille = -Infinity;
 function veiller(ticked) {
-  watchRecit(); // le récit : ses scènes, avant les lettres (une fenêtre à la fois)
+  watchMigrations(); // les annonces des migrations d'une partie d'avant
   watchTechPoints();
   watchDay();
-  watchMail();
-  watchCaleche(); // fiche 7c : la tournée posée, les arrêts aux hameaux, son arrivée à la ferme
   watchPort(); // l'île à bâtir (fiche I1b) : le lieu du port posé dans le moteur
-  watchBienvenue(); // fiche 18 : la visite de bienvenue du deuxième jour se met en route
   watchVillageois(); // l'île à bâtir (fiche I3a) : un jour de bac, un villageois arrive ; ses maisons, ses avis
   watchChronique(); // l'île à bâtir (fiche I7g) : l'arrivée notée, le baptême du village
   watchRobot();
-  watchPresents();
-  watchDemandes(); // V-2 : les petites demandes des habitants, annoncées au matin
+  watchDemandes(); // V-2 : les petites demandes des villageois, annoncées au matin
   watchMeteo(); // G-1 : l'averse qui commence
-  watchFetes(); // V-4 : la fête du hameau (annoncée au matin ; y être pendant la fête)
   watchInvitations(); // les invitations à un repas : les réponses au matin, les invités en route
   watchVocations(); // l'île à bâtir (fiche I8a) : au matin, la fête d'hier, le chantier du village, les paliers
-  watchPlans(); // les plans de meubles offerts par un ami (le lot 4)
+  watchPlans(); // les plans de meubles offerts (une récompense, annoncée au matin)
   watchPreparations();
   watchUnlocks();
   if (ticked) watchAlerts();

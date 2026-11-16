@@ -4,22 +4,15 @@
    ========================================================================== */
 
 import {
-  acheterCaleche, addItem, addLot, buyAnimal, buyItem, chapterProgress,
-  chapterReached, completeChapter, countItem, createInitialState, createNewGame, DATA, farmTerrain,
-  feedAllHens, findPlot, formatPercent, harvest, hoe, lotsOf, mailText,
-  maxStage, migrate, moveToFridge, objectiveValue, plant, plantableCrops,
-  plantableCropsFor, shear, startMilling, startRecipe, storeWheat, takeItem, testAddHens,
-  testAddWheat, testBatir, testEmptyBatteries, testFillBatteries, testGoToChapter,
-  testSetBuildingLevel5, testSetLevel, testWoolReady, tick, unlockLevel, updateChapters, water,
-  zoneTile, executerCommande, objectifsARevoir, PAS_OBJECTIFS,
+  addItem, chapterProgress, chapterReached, completeChapter, createInitialState, DATA, feedAllHens, formatPercent,
+  harvest, migrate, shear, startMilling, startRecipe, takeItem, testAddHens, testAddWheat, testBatir,
+  testEmptyBatteries, testFillBatteries, testSetBuildingLevel5, testWoolReady, tick, updateChapters,
 } from '../../js/engine/index.js';
 import { ETAPES } from '../../js/engine/didacticiel.js';
 import {
-  affamer, assert, assertEqual, atChapter, atelier, boite, coldRoom, farm, fillSheep, garden,
-  kwh, ml, mondeFait, nightWithProduced, OBJECTIFS_MONDE, pature, plantRipe, reach, runFor, setInv, sleepOnce,
-  test, testBase, tireless, versBoite, vieFaite,
+  assert, assertEqual, atChapter, atelier, farm, fillSheep, garden, kwh, ml, mondeFait, OBJECTIFS_MONDE, plantRipe,
+  reach, runFor, sleepOnce, test, testBase,
 } from './aide.mjs';
-import { vendreCaleche } from '../../js/engine/caleche.js';
 
 /* ---------- Lot 9 : chapitres ---------- */
 

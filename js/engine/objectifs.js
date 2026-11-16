@@ -8,7 +8,6 @@ import { hasHoe } from './crops.js';
 import { aCruche, puitsPose } from './cruche.js';
 import { offrirSac } from './equipement.js';
 import { butBoussole } from './monde-vu.js';
-import { hameauxVus } from './monde-hameaux.js';
 import { horsDeLaFerme } from './didacticiel.js';
 import { batirAbriDepart } from './abri-depart.js';
 import { mulberry32 } from './base.js';
@@ -49,6 +48,10 @@ const SEMAINE = (state) => semaineDe(state);
 const prises = (state) => Object.keys((state.monde && state.monde.pris) || {}).length;
 
 // Les états qu'une tâche « etat » peut demander : vrai quand c'est fait.
+// Les hameaux d'avant que la partie a vus (state.monde.hameaux ; une partie de l'île n'en a pas : ses objectifs n'en
+// demandent pas).
+const hameauxVus = (s) => (s.monde && s.monde.hameaux && typeof s.monde.hameaux === 'object' ? s.monde.hameaux : {});
+
 const ETATS = {
   atelier: (s) => atelierConstruit(s),
   houe: (s) => hasHoe(s),

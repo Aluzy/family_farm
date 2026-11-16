@@ -15,9 +15,9 @@
    ========================================================================== */
 
 import {
-  addItem, arriverVillageois, blocsPoses, caseBatissable, casesCouvertes, DATA, farmTerrain, journeeDuVillage, journeesPourLaCarte,
-  lieuxDuVillage, maisonsMarquees, meteoDuJour, paroleVillageois, piecesCloses, poserBloc, positionVillageois, testMaisonVillageois,
-  ETATS_VILLAGEOIS,
+  addItem, arriverVillageois, blocsPoses, caseBatissable, casesCouvertes, DATA, farmTerrain, journeeDuVillage,
+  lieuxDuVillage, maisonsMarquees, meteoDuJour, paroleVillageois, piecesCloses, poserBloc, positionVillageois,
+  testMaisonVillageois, ETATS_VILLAGEOIS,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 

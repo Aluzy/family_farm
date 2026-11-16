@@ -12,7 +12,6 @@ import { absoluteHours, dayHour } from './clock.js';
 import { aCruche, eauCruche, puiserCruche } from './cruche.js';
 import { casesDuTerrain, farmTerrain, tileCount } from './terrain.js';
 import { serrePlaces } from './blocs.js';
-import { recitPour } from './recit-aiguillage.js';
 import { recolteSauvage } from './sauvages.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
@@ -673,12 +672,10 @@ export function growHoursLeft(state, plot) {
   return fin === null ? null : Math.max(0, fin - absoluteHours(state));
 }
 
-// Les heures d'un cycle de pousse : TEMPS.POUSSE_HEURES ; la pierre de lune posée sur la ferme (le récit, lot 10 :
-// le fait « pierre.posee », js/engine/fil-lune.js), RECIT.FIL.PIERRE.POUSSE fois moins (tout y pousse plus vite). Fiche
-// I7c : par l'aiguillage du récit ; l'île n'a pas de pierre (recit-muet.js : 1). Les effets de la lune ne passent pas
-// par là : ils sont une règle des cultures (LUNE, lune.js), pas du récit.
-export function heuresPousse(state) {
-  return DATA.TEMPS.POUSSE_HEURES * recitPour(state).facteurPousse(state);
+// Les heures d'un cycle de pousse : TEMPS.POUSSE_HEURES. (D16 : la pierre de lune, qui faisait tout pousser plus vite,
+// est retirée avec le récit à la bascule, I9h ; les effets de la lune restent une règle des cultures : LUNE, lune.js.)
+export function heuresPousse() {
+  return DATA.TEMPS.POUSSE_HEURES;
 }
 
 /* ---------- Lot 8 : Serre ---------- */

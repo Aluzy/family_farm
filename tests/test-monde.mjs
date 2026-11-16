@@ -9,13 +9,14 @@
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import {
+  nouvelleCharrette,
   addItem, allDevices, caseDansLaFerme, caseVue, commandeHorsDeLaFerme, countItem, createNewGame, DATA, HORS_FERME_ILE, refusFrontiere, unirVu, voirAutour, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, buildAtelier, morceauxDe, poserBloc, ramassables, testFillBatteries, testSetLevel, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
 } from '../js/engine/index.js';
 import { clockHours, dureeDuPas, energieDe, horlogeVivante, nightActive, pasDe } from '../js/engine/index.js';
 import { cheminDehorsSur, migrate, objetsDeRegion, regionVue, solDirect, STATE_VERSION, surCase } from '../js/engine/index.js';
 import { capacitePortage, chargeDuCompte, COMMANDES_DEHORS, COMMANDES_DU_PORT, comptoirDuPort, enVenteAuPort, lieuPort, prixIle } from '../js/engine/index.js';
 import { arriverVillageois, attribuer, donnerOutil, noterEvenement, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
-import { cheminsDehors, etatTroncon, nouvelleCharrette, poidsDuMonde, poserRails } from '../js/engine/index.js';
+import { cheminsDehors, etatTroncon, poidsDuMonde, poserRails } from '../js/engine/index.js';
 import { atelier, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
 import { empreinteDuMonde } from './engine/monde-de-la-graine.mjs';
 import { spawnSync } from 'node:child_process';
@@ -23,7 +24,10 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, elaguer, etatDesLits, horsDeLaFerme, Monde, MONDE, MondeRegistre, SAUVEGARDES, SauvegardesMonde, traiterMessage } from '../worker/src/monde.mjs';
+import {
+  ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, horsDeLaFerme, Monde, MONDE, MondeRegistre, SAUVEGARDES,
+  SauvegardesMonde, traiterMessage,
+} from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion fausse'); }
@@ -442,11 +446,12 @@ test('I9a : le monde créé chez l\'invité (un autre processus, de la graine) e
 });
 
 test('E-8 : la nuit d\'un monde partagé ne fait que la ferme ; 30 nuits sur une copie élaguée, le journal se rejoue', () => {
-  // (la même nuit, en solo et dans un monde partagé : seul le solo fait vivre le grand monde)
+  // (la même nuit, en solo et dans un monde partagé ; la vie des hameaux, que seul le solo faisait, est retirée à la
+  // bascule, I9h : ni l'une ni l'autre ne rapporte l'amitié ni les projets des hameaux)
   const solo = partieLocale(), part = JSON.parse(JSON.stringify(solo));
   part.mondePartage = true;
   runNight(solo); runNight(part);
-  eq([solo.nuit.amitie !== undefined, part.nuit.amitie === undefined, part.nuit.projets === undefined], [true, true, true]);
+  eq([solo.nuit.amitie, part.nuit.amitie, part.nuit.projets], [undefined, undefined, undefined]);
   const { r, sql } = monde();
   for (let i = 0; i < 30; i++) { const n = nuitPartagee(r); assert(n.ok, `nuit ${i + 1} : ${n.erreur}`); }
   eq(r.charger().day, partieLocale().day + 30);

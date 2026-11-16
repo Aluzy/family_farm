@@ -17,12 +17,12 @@
    ========================================================================== */
 
 import {
-  achatsCommercesDuJour, acheterAuCommerce, acheterAuComptoir, actionsDuJour, addItem, arriverVillageois, attribuer, avancerBac,
+  achatsCommercesDuJour, acheterAuCommerce, acheterAuComptoir, actionsDuJour, addItem, arriverVillageois, attribuer,
   awakeMsAtHour, bilanCommerce, botCommerce, chroniqueDe, commanderAuCommerce, commercesAuBac, commercesDe,
-  conditionsCommerce, countItem, craftStatus, createNewGame, DATA, donnerOutil, executerCommande, farmSeed, farmTerrain, journeeDuVillage,
-  locaux, lotCommerce, lotsDuJour, migrate, nomDe, ouvrirCommerce, parlerVillageois, paroleVillageois, portDuMonde, postesDe,
-  prixArtisan, recetteDebloquee, recettesConnues, runNight, STATE_VERSION, tableauVillage, tacheDef, testMaisonVillageois,
-  lettresCommerce, travailleAujourdhui, trouverVillageois, villageoisDe,
+  conditionsCommerce, countItem, craftStatus, DATA, donnerOutil, executerCommande, farmSeed, farmTerrain,
+  journeeDuVillage, locaux, lotCommerce, lotsDuJour, migrate, nomDe, ouvrirCommerce, parlerVillageois,
+  paroleVillageois, portDuMonde, postesDe, prixArtisan, recetteDebloquee, recettesConnues, runNight, STATE_VERSION,
+  tableauVillage, tacheDef, testMaisonVillageois, lettresCommerce, travailleAujourdhui,
 } from '../../js/engine/index.js';
 import { ajouterAmitie, palierAmitie } from '../../js/engine/amitie.js';
 import { testLocalCommerce } from '../../js/engine/testmode.js';
@@ -31,7 +31,7 @@ import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const AR = DATA.ARTISANS;
-const SEUIL = DATA.RECIT.PALIERS[AR.AMITIE];
+const SEUIL = DATA.AMITIE.ECHELLE.PALIERS[AR.AMITIE];
 
 // L'île de test : le port, `n` villageois dans leurs maisons, la boîte pleine, les outils du joueur.
 function ile(n = 2, seed = 1) {
@@ -192,7 +192,7 @@ test('les matières : son stock d\'abord, puis le coffre, achetées de sa bourse
   assert(!lotCommerce(s, v).ok, 'bourse vide : il attend les commandes');
   // (l'amitié lui apprend des pièces)
   assertEqual(recettesConnues(s, c).map((x) => x.id), ['lingot_fer', 'clous', 'lame', 'rails'], 'cordial (I2b : les rails, à la commande)');
-  ajouterAmitie(s, v.id, DATA.RECIT.PALIERS[3]);
+  ajouterAmitie(s, v.id, DATA.AMITIE.ECHELLE.PALIERS[3]);
   assert(recettesConnues(s, c).some((x) => x.id === 'charniere') && palierAmitie(s, v.id) >= 3, 'proche : les charnières, le cuivre');
 });
 

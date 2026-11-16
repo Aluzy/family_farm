@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Tests du moteur : l'exploration (le récit, lot 8 ; docs/recit/plan.md).
+   Tests du moteur : l'exploration (le récit, lot 8 ; archive/jeu-avant-ile:docs/recit/plan.md).
    - la tente : une case à part, à côté du sac ; elle se prend de l'inventaire et s'y range ;
    - le bivouac : loin de la ferme, la nuit, sa tente portée, le personnage dort là où il est ; l'énergie
      remonte comme dans un lit ; il ne prend pas de couchage de la maison ; le bivouac finit avec la nuit.

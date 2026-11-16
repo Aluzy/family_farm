@@ -19,7 +19,7 @@
      dès qu'une maison libre l'attend, avant tout villageois tiré (villageois.js arriverVillageois). Les autres sont
      oubliés sans bruit ;
    - les remboursements (notés dans les comptes quand ce sont des pièces) : les commandes payées au marchand ambulant
-     (des semences, ce que portait son coffre : remboursées en pièces, caleche.js annulerCommande), ce que la malle
+     (des semences, ce que portait son coffre : remboursées en pièces, migration-avant.js viderMalle), ce que la malle
      portait (à vendre : repris ; livré : pris), les commandes en cours aux ateliers des voisins (ce qu'elles devaient
      rendre, livré), ce qui avait été apporté aux projets des voisins encore inachevés (rendu), les présents laissés
      devant la porte (ramassés), les pièces des lettres pas encore ouvertes, l'enveloppe pas encore ouverte (ses pièces) ;
@@ -28,7 +28,7 @@
      encore vus s'effacent (leurs récompenses sont déjà données) ;
    - le récit : ce que le joueur a vécu est résumé en quelques lignes datées de la chronique (le type « avant »,
      MIGRATION.CHRONIQUE, sans nom propre) ; rien d'autre n'est gardé : state.recit et la visite de bienvenue sont ceux
-     d'une partie de l'île (vides, recit-muet.js), le courrier est vidé, les souvenirs du récit (la cloche, la pierre)
+     d'une partie de l'île (vides : migration-avant.js), le courrier est vidé, les souvenirs du récit (la cloche, la pierre)
      quittent l'inventaire ;
    - le retour : state.retourIle, la fenêtre d'une page du premier lancement (js/ui/retour-ile.js : retourIle), avec le
      cadeau de bienvenue (MIGRATION.CADEAU) donné quand on la ferme (fermerRetourIle) ; `copie` : la page a gardé la
@@ -40,10 +40,9 @@ import { nouveauDehors, nouveauPort, prenomsDuJeu, texteDuRecit } from './villag
 import { hache } from './ferme-generee.js';
 import { nouveauxNoms } from './noms.js';
 import { chroniqueDe, nouvelleChronique, noterChroniqueLe } from './chronique.js';
-import { recitPour } from './recit-aiguillage.js';
 import { goutsDe } from './amitie.js';
-import { annulerCommande, contenuMalle, nouvelleCaleche, prendreLivraison, reprendreTout } from './caleche.js';
-import { addItem, countItem, takeItem } from './inventory.js';
+import { bienvenueFaite, calecheVide, ouvrirEnveloppe, recitVide, retirerSouvenirs, sortieAtelier, viderMalle } from './migration-avant.js';
+import { addItem } from './inventory.js';
 import { earn } from './compta.js';
 import { validApparence } from './family.js';
 
@@ -125,21 +124,17 @@ function rembourser(state) {
   const avant = state.pieces;
   // (la malle : ce qui était à vendre, repris ; ce qui était livré, pris ; les commandes payées, remboursées)
   if (objet(state.caleche) && objet(state.caleche.malle)) {
-    const c = contenuMalle(state);
+    const c = viderMalle(state);
     for (const [k, n] of Object.entries(c.vente)) ajouter(rendu.objets, k, n);
     for (const [k, n] of Object.entries(c.livre)) ajouter(rendu.objets, k, n);
-    reprendreTout(state);
-    prendreLivraison(state);
-    annulerCommande(state);
   }
   // (les commandes en cours aux ateliers des voisins : ce qu'elles devaient rendre, livré)
-  const A = (DATA.ILE && DATA.ILE.ATELIERS) || {};
   const H = (state.monde && objet(state.monde.habitants) && state.monde.habitants) || {};
   for (const h of Object.values(H)) {
     for (const c of (h && Array.isArray(h.commandes) && h.commandes) || []) {
-      const r = c && A[c.atelier] && A[c.atelier].recettes && A[c.atelier].recettes[c.recette];
-      if (!r || !(entier(c.lots) > 0)) continue;
-      for (const [it, q] of Object.entries(r.sortie || {})) if (DATA.OBJETS[it]) { addItem(state, it, q * entier(c.lots)); ajouter(rendu.objets, it, q * entier(c.lots)); }
+      const sortie = c && sortieAtelier(c.atelier, c.recette);
+      if (!sortie || !(entier(c.lots) > 0)) continue;
+      for (const [it, q] of Object.entries(sortie)) if (DATA.OBJETS[it]) { addItem(state, it, q * entier(c.lots)); ajouter(rendu.objets, it, q * entier(c.lots)); }
     }
   }
   // (ce qui avait été apporté aux projets des voisins encore en cours)
@@ -149,17 +144,9 @@ function rembourser(state) {
   // (les présents laissés devant la porte)
   const porte = objet(state.amitie) && Array.isArray(state.amitie.porte) ? state.amitie.porte : [];
   for (const x of porte) if (x && DATA.OBJETS[x.objet] && entier(x.n) > 0) { addItem(state, x.objet, entier(x.n)); ajouter(rendu.objets, x.objet, entier(x.n)); }
-  // (les lettres pas encore ouvertes : leurs pièces ; leurs cadeaux étaient déjà dans l'inventaire)
-  for (const l of Array.isArray(state.courrier) ? state.courrier : []) {
-    const def = l && DATA.COURRIER && DATA.COURRIER[l.id], p = def ? entier(def.pieces) : 0;
-    if (p > 0 && !l.lu && !l.verse) earn(state, p, 'Lettre jamais ouverte');
-  }
-  // (l'enveloppe pas encore ouverte : ses pièces)
-  const E = DATA.RECIT && DATA.RECIT.ENVELOPPE;
-  if (E && DATA.OBJETS[E.OBJET]) {
-    const n = Math.floor(countItem(state, E.OBJET));
-    if (n > 0) { takeItem(state, E.OBJET, n); earn(state, entier(E.PIECES) * n, 'Enveloppe ouverte'); }
-  }
+  // (les lettres pas encore ouvertes : aucune ne portait de pièces, leurs cadeaux étaient déjà dans l'inventaire ;
+  // l'enveloppe pas encore ouverte : ses pièces)
+  ouvrirEnveloppe(state);
   rendu.pieces = Math.max(0, Math.round(state.pieces - avant));
   return rendu;
 }
@@ -222,17 +209,13 @@ export function migrerVersLIle(state) {
   monde.hameaux = {};
   monde.habitants = {};
   if (objet(monde.but) && monde.but.sorte === 'hameau') monde.but = null;
-  state.caleche = nouvelleCaleche();
+  state.caleche = calecheVide();
   state.projets = {};
   state.voisins = { liens: {}, evenements: [] };
-  const R = recitPour(state);
-  state.recit = R.nouveauRecit();
-  state.bienvenue = R.nouvelleBienvenue();
+  state.recit = recitVide();
+  state.bienvenue = bienvenueFaite();
   state.courrier = [];
-  for (const it of ['cloche_maurice', (DATA.RECIT && DATA.RECIT.FIL && DATA.RECIT.FIL.PIERRE && DATA.RECIT.FIL.PIERRE.OBJET) || 'pierre_lune']) {
-    const n = DATA.OBJETS[it] ? Math.floor(countItem(state, it)) : 0;
-    if (n > 0) takeItem(state, it, n);
-  }
+  retirerSouvenirs(state);
   const a = objet(state.amitie) ? state.amitie : (state.amitie = {});
   const village = (k) => /^vg-\d+$/.test(k);
   a.pnj = Object.fromEntries(Object.entries(objet(a.pnj) ? a.pnj : {}).filter(([k]) => village(k)));

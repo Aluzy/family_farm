@@ -568,7 +568,7 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
   const hameaux = hameauxCases.sort((a, b) => angle(a) - angle(b)).map((i, n) => ({
     id: 'hameau_' + (n + 1), case: i, nom: noms.length ? noms.splice(Math.floor(rh() * noms.length), 1)[0] : 'Hameau ' + (n + 1),
   }));
-  // Le récit (docs/recit/bible.md) : les hameaux garantis. Le plus proche de la ferme est toujours Le Gué
+  // Le récit (archive/jeu-avant-ile:docs/recit/bible.md) : les hameaux garantis. Le plus proche de la ferme est toujours Le Gué
   // (PH.GUE), le hameau natal de Maurice (gue: true, garanti: « gue ») ; puis chaque hameau de
   // PH.GARANTIS, dans l'ordre, prend le hameau qui reste dont le pays (pays : la côte, la montagne, la
   // forêt, la lande, sa part dans un cercle de HAMEAUX.CARACTERE.RAYON cases, comme le style d'un
@@ -787,7 +787,7 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
   }
   for (const i of surMer) ajoute(i, 'mer');
 
-  /* -- les lieux du récit (docs/recit/bible.md) : l'observatoire de Maurice (la « cabane »), l'atelier de Frida, l'épave -- */
+  /* -- les lieux du récit (archive/jeu-avant-ile:docs/recit/bible.md) : l'observatoire de Maurice (la « cabane »), l'atelier de Frida, l'épave -- */
   // (une case chacun, dans lieux.recit : { id, sorte, case } ; leur dessin : monde-lieux.js. La
   // distance aux chemins se lit sur la grille grossière : un parcours en largeur depuis ses cases de
   // chemin, en cases grossières, fois GRILLE.)

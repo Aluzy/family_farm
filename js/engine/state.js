@@ -1,7 +1,6 @@
 import { DATA } from './catalog.js';
-import { nouvelleCaleche } from './caleche.js';
 import { GENERATEUR_VERSION, STATE_VERSION } from './base.js';
-import { allDevices, batteryCapacity, newDayStats, startFarm } from './devices.js';
+import { newDayStats, allDevices, batteryCapacity, startFarm } from './devices.js';
 import { addItem, countItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
@@ -35,17 +34,17 @@ import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
 import { nouvelEquipement, sacDef } from './equipement.js';
 import { nouveauCompagnon } from './compagnon.js';
-import { recitDAvant, recitPour } from './recit-aiguillage.js';
+import { bienvenueDAvant, bienvenueFaite, calecheVide, poserEnveloppe, recitVide, remboursementCommerce } from './migration-avant.js';
 import { reparerAmitieVillageois } from './villageois-amitie.js';
 import { reparerLiens } from './liens.js';
 import { reparerBourse, reparerEtal } from './bourse.js';
 import { reparerGardeManger } from './garde-manger.js';
 import { reparerTraits } from './traits.js';
-import { reparerPaliersVocations } from './vocations.js';
-import { reparerFetes } from './fetes-village.js';
 import { reparerProjetsVillage } from './projets-village.js';
 import { reparerProduction } from './production.js';
 import { reparerArtisan, reparerCommerces } from './artisans.js';
+import { reparerPaliersVocations } from './vocations.js';
+import { reparerFetes } from './fetes-village.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -140,19 +139,16 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     energie: energyMax(), // version 1.8 : l'énergie du personnage (millièmes)
     compta: [], // les Comptes : gains et dépenses récents (voir compta.js)
     meubles: {}, // meubles de la maison (fabriqués à l'Atelier ; absent dans une ancienne sauvegarde : aucun)
-    caleche: nouvelleCaleche(), // la calèche (caleche.js, fiche 7c) : son coffre, ses retenues
+    caleche: calecheVide(), // la calèche d'avant (fiche 7c), vide : une clé de la sauvegarde (migration-avant.js)
     equipement: nouvelEquipement(), // fiche 11 : les pièces de chaque membre, le sac (equipement.js)
     litPrincipal: null, // fiche 17 : le lit choisi par le personnage principal (blocs.js choisirLit ; null : le premier)
-    // fiche 18 : la visite de bienvenue du deuxième jour (bienvenue.js) ; fiche I7c : déjà faite
-    // (l'aiguillage du récit, recit-aiguillage.js : la partie naissante, le réglage seul décide)
-    bienvenue: recitPour(null).nouvelleBienvenue(),
+    // fiche 18 : la visite de bienvenue d'avant ; sur l'île, déjà faite (une clé de la sauvegarde : migration-avant.js)
+    bienvenue: bienvenueFaite(),
     // fiche 19 : le compagnon aide à la ferme (compagnon.js) : l'option, ce qu'il a fait aujourd'hui, sa
     // cruche. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
     compagnon: nouveauCompagnon(),
-    // le récit de Céron (recit.js, docs/recit/) : les faits, les relations, la confiance des hameaux, les
-    // répliques dites, le carnet. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas).
-    // Fiche I7c : un récit vide que rien n'écrit (recit-muet.js ; la page d'avant le lit encore)
-    recit: recitPour(null).nouveauRecit(),
+    // le récit d'avant (retiré à la bascule, I9h) : vide, que rien n'écrit (une clé de la sauvegarde : migration-avant.js)
+    recit: recitVide(),
     amitie: { pnj: {}, visites: {}, porte: [] }, // l'amitié avec les habitants des hameaux (js/engine/amitie.js)
     invitations: { seq: 0, liste: [] },
     plans: { connus: {}, explores: {}, amis: {} },
@@ -509,7 +505,7 @@ export const MIGRATIONS = {
   // retenues du jour, l'heure de ses derniers arrêts, les ventes du jour). Rien d'autre ne change :
   // l'argent, l'inventaire (ce qui a été acheté au Marché reste au joueur), les outils, les animaux, les
   // meubles et les cours du Marché (state.marche : ceux des semences comptent encore) restent.
-  56: (state) => ({ ...state, caleche: nouvelleCaleche(), version: 57 }),
+  56: (state) => ({ ...state, caleche: calecheVide(), version: 57 }),
   // v57 → v58 : s'orienter (monde-vu.js, fiche 8) : ce qui a été vu du grand monde, plus fin que les
   // régions (state.monde.vu : un bit par cellule de 8 × 8 cases, en base64), le but de la boussole
   // (state.monde.but, null : la ferme) et si elle se montre (state.monde.boussole). Une partie existante
@@ -537,19 +533,17 @@ export const MIGRATIONS = {
   // v60 → v61 : choisir son lit (blocs.js choisirLit, fiche 17) : le personnage principal n'en a pas
   // encore choisi, il garde le premier couchage (l'ordre des pièces), comme avant.
   60: (state) => ({ ...state, litPrincipal: null, version: 61 }),
-  // v61 → v62 : la visite de bienvenue (bienvenue.js, fiche 18). Une partie qui n'a pas passé le jour
+  // v61 → v62 : la visite de bienvenue (fiche 18 ; migration-avant.js). Une partie qui n'a pas passé le jour
   // de la visite l'attend ; une partie plus avancée ne la reçoit pas (« faite », sans plat).
   61: (state) => {
-    const b = recitDAvant().nouvelleBienvenue();
-    if ((Number(state.day) || 1) > recitDAvant().jourBienvenue()) b.etat = 'faite';
-    return { ...state, bienvenue: b, version: 62 };
+    return { ...state, bienvenue: bienvenueDAvant(state.day), version: 62 };
   },
   // v62 → v63 : le récit, lot 7 (l'économie de l'île) : les commerces du niveau 10 disparaissent (la veillée à
-  // la ferme les remplace) ; ce qui y avait été mis est rendu (remboursementCommerce, js/engine/ile.js),
+  // la ferme les remplace) ; ce qui y avait été mis est rendu (remboursementCommerce, js/engine/migration-avant.js),
   // compté comme un gain de la journée (compta : remboursement).
   62: (state) => {
     const { commerce, ...reste } = state;
-    const rendu = recitDAvant().remboursementCommerce(commerce);
+    const rendu = remboursementCommerce(commerce);
     const out = { ...reste, version: 63 };
     if (rendu > 0) {
       out.pieces = (Number(state.pieces) || 0) + rendu;
@@ -577,14 +571,14 @@ export const MIGRATIONS = {
     const l = Array.isArray(out.courrier) ? out.courrier.find((x) => x && x.id === 'notaire_legs') : null;
     if (!l) return out;
     if (l.verse) {
-      const r = out.recit && typeof out.recit === 'object' && !Array.isArray(out.recit) ? out.recit : recitDAvant().nouveauRecit();
+      const r = out.recit && typeof out.recit === 'object' && !Array.isArray(out.recit) ? out.recit : recitVide();
       const faits = r.faits && typeof r.faits === 'object' && !Array.isArray(r.faits) ? r.faits : {};
       const j = Math.max(1, Math.floor(Number(state.day) || 1));
       if (!Array.isArray(faits['enveloppe.ouverte'])) faits['enveloppe.ouverte'] = [j, j, 1];
       out.recit = { ...r, faits };
     } else {
       out.courrier = out.courrier.map((x) => (x === l ? { ...x, verse: true } : x));
-      addItem(out, recitDAvant().objetEnveloppe(), 1);
+      poserEnveloppe(out);
     }
     return out;
   },
@@ -714,7 +708,7 @@ export const MIGRATIONS = {
     if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 1) out.carte = { ...c, generateur: 2 };
     return out;
   },
-  // v72 → v73 (le récit cosy, docs/recit/bible.md) : Maurice et Philomène sont partis en voyage (plus de notaire),
+  // v72 → v73 (le récit cosy, archive/jeu-avant-ile:docs/recit/bible.md) : Maurice et Philomène sont partis en voyage (plus de notaire),
   // Johnny n'existe plus (son carnet devient celui du ciel de Maurice, à son observatoire), Théo reste sur l'île
   // (chez Frida, s'il voulait partir : il revient à Bois-Joli), Odile tutoie dès la rencontre, la fin « riche »
   // s'appelle « genereuse ». Les noms changent dans la partie (RECIT_RENOMMAGES) ; rien ne se perd.

@@ -15,11 +15,10 @@
 
 import {
   addItem, boiteCounts, butBoussole, commencerObjectifs, composeFamily, createNewGame, DATA, didacticielIleActif,
-  etapeIle, familleSeule, farmMap, farmTerrain, fermeVierge, finishSetup, majDidacticielIle, mangeurs, migrate, nomIle,
-  nomIlePropose, nommerIle, passerDidacticielIle, passerEtapeIle, simulatePlay, solsPoses, STATE_VERSION, villageoisDe,
+  etapeIle, familleSeule, farmMap, farmTerrain, fermeVierge, finishSetup, majDidacticielIle, mangeurs, migrate,
+  nomIle, nomIlePropose, nommerIle, passerDidacticielIle, passerEtapeIle, simulatePlay, solsPoses, villageoisDe,
 } from '../../js/engine/index.js';
 import { blocGid } from '../../js/engine/planche.js';
-import { scenesPossibles } from '../../js/engine/recit-aiguillage.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
@@ -119,8 +118,7 @@ test('la terre vierge : pas de chemin intérieur ; le seul chemin va de la porte
 test('le premier jour sans visite : pas de visite ni de scène d\'arrivée, le plat attend dans l\'abri', () => {
   const s = departGarde();
   assertEqual(s.bienvenue.etat, 'faite', 'la visite n\'a pas lieu');
-  // (fiche I7c : la scène d'arrivée n'a plus à être notée dite : aucune scène ne se joue sur l'île, le récit reste vide)
-  assertEqual(scenesPossibles(s, { lieu: 'ferme' }), [], 'aucune scène sur la ferme');
+  // (fiche I7c : la scène d'arrivée n'a plus à être notée dite ; le récit est retiré à la bascule, I9h)
   assertEqual(s.recit.dites, {}, 'rien n\'est noté au récit');
   const plat = DATA.VILLAGE.DEPART.PLAT;
   assertEqual(boiteCounts(s), { [plat]: 1 }, 'le plat dans la boîte à nourriture');

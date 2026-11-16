@@ -117,7 +117,7 @@ test('connaissance : les jours ensemble, les maisons voisines, la table, l\'affi
     assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'connaissance', 'connue dès l\'arrivée');
     t.day += 30;
     assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'connaissance', 'les jours seuls n\'en font pas une amie');
-    t.amitie.pnj[t.villageois[0].id].pts = DATA.RECIT.PALIERS[DATA.VILLAGE.AMITIE.FAMILLE_AMI];
+    t.amitie.pnj[t.villageois[0].id].pts = DATA.AMITIE.ECHELLE.PALIERS[DATA.VILLAGE.AMITIE.FAMILLE_AMI];
     assertEqual(connaissance(t, t.villageois[0].id, 'famille').nom, 'ami', 'amie avec l\'amitié');
     // la carte : les deux sens
     const C = liensPourLaCarte(s);

@@ -15,11 +15,12 @@
    ========================================================================== */
 
 import {
-  achatsCommercesDuJour, acheterAuCommerce, acheterAuComptoir, actionsDuJour, addItem, arriverVillageois, attribuer, botCommerce,
-  commercesAuBac, commercesDe, conditionsSecond, couleursTeinture, countItem, craftStatus, createNewGame, DATA, donnerOutil,
-  enVenteAuCommerce, etapesDe, executerCommande, farmSeed, journeeDuVillage, lotCommerce, lotsDuJour, meteoDuJour, migrate,
-  ouvrirCommerce, portDuMonde, postesDe, prixArtisan, prixIle, prixTeint, recettesDe, rejoindreCommerce, runNight,
-  STATE_VERSION, teintesDe, testMaisonVillageois, trouverVillageois,
+  etapesDe,
+  achatsCommercesDuJour, acheterAuCommerce, acheterAuComptoir, actionsDuJour, addItem, arriverVillageois, attribuer,
+  botCommerce, commercesAuBac, commercesDe, conditionsSecond, couleursTeinture, countItem, craftStatus, DATA,
+  donnerOutil, enVenteAuCommerce, executerCommande, farmSeed, journeeDuVillage, lotCommerce, lotsDuJour, meteoDuJour,
+  migrate, ouvrirCommerce, portDuMonde, postesDe, prixArtisan, prixIle, prixTeint, recettesDe, rejoindreCommerce,
+  runNight, STATE_VERSION, teintesDe, testMaisonVillageois, trouverVillageois,
 } from '../../js/engine/index.js';
 import { ajouterAmitie } from '../../js/engine/amitie.js';
 import { testLocalCommerce } from '../../js/engine/testmode.js';
@@ -28,7 +29,7 @@ import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const AR = DATA.ARTISANS, M = AR.COMMERCES.mercerie;
-const SEUIL = DATA.RECIT.PALIERS[AR.AMITIE];
+const SEUIL = DATA.AMITIE.ECHELLE.PALIERS[AR.AMITIE];
 
 // L'île de test : le port, `n` villageois dans leurs maisons, la boîte pleine, les outils du joueur.
 function ile(n = 2, seed = 1) {

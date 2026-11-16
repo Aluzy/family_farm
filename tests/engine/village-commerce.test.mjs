@@ -4,10 +4,9 @@
    ========================================================================== */
 
 import {
-  acheterAuPort, acheterCaleche, awakeMsAtHour, buyItem, buyPrice, calecheIci, comptoirDuPort, commanderCaleche, commencerObjectifs,
-  createNewGame, DATA, deposerMalle, distanceAuComptoir, enVenteAuPort, etalPort, executerCommande, farmSeed, isBuyable, lieuPort,
-  marcheFerme, objectiveValue, portDuMonde, portOuvert, sellItem, sellPrice, simulateGame, unlockLevel, vendreAuPort, vendreCaleche,
-  chargerPortage,
+  acheterAuPort, awakeMsAtHour, buyItem, buyPrice, comptoirDuPort, commencerObjectifs, createNewGame, DATA,
+  distanceAuComptoir, enVenteAuPort, etalPort, executerCommande, farmSeed, isBuyable, lieuPort, marcheFerme,
+  objectiveValue, portDuMonde, portOuvert, sellPrice, simulateGame, unlockLevel, vendreAuPort, chargerPortage,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, reach, setInv, test } from './aide.mjs';
 
@@ -116,24 +115,6 @@ test('les commandes port.vendre et port.acheter', () => {
   const a = executerCommande(s, { id: 'a1', type: 'port.acheter', args: { objet: 'graine_carotte', quantite: 1, case: ou } });
   assert(a.ok, a.error);
   assertEqual(executerCommande(s, { type: 'port.vendre', args: { objet: 'patate', quantite: 1 } }).ok, false, 'il faut la case');
-});
-
-test('la calèche inerte : elle ne vend ni n\'achète plus, sa malle non plus', () => {
-  const { s } = auPort();
-  setInv(s, { carotte: 5 });
-  s.pieces = 200;
-  const avant = JSON.stringify([s.pieces, s.inventaire]);
-  for (const r of [
-    vendreCaleche(s, 'carotte', 1, null, { sansPresence: true }),
-    acheterCaleche(s, 'graine_carotte', 1, null, { sansPresence: true }),
-    deposerMalle(s, 'carotte', 1),
-    commanderCaleche(s, 'graine_carotte', 1),
-  ]) {
-    assertEqual(r.ok, false, 'refusé');
-    assert(/port/.test(r.error), r.error);
-  }
-  assertEqual(calecheIci(s, 0).ok, false, 'pas de commerce à côté d\'elle');
-  assertEqual(JSON.stringify([s.pieces, s.inventaire]), avant, 'rien n\'a bougé');
 });
 
 test('le joueur automatique va au port : 25 nuits sans nuit sans repas, des ventes au port, des graines achetées', () => {

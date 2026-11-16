@@ -6,7 +6,6 @@ import { availableEnergy } from './fridge.js';
 import { allPlots, isMature } from './crops.js';
 import { hensToFeed, sheepToShear, strawMissing } from './animals.js';
 import { techAuto } from './techtree.js';
-import { unreadMail } from './campaign.js';
 import { createNewGame } from './depart.js';
 import { enExpedition, portionsSac } from './equipement.js';
 
@@ -86,9 +85,9 @@ export function getNotifications(state) {
   return out.map((n, i) => ({ n, i })).sort((a, b) => a.n.priorite - b.n.priorite || a.i - b.i).map((x) => x.n);
 }
 
-// Pastille du menu du bas : nombre d'alertes en cours, plus les lettres à lire.
+// Pastille du menu du bas : nombre d'alertes en cours (le courrier d'avant est retiré, I9h).
 export function notificationCount(state) {
-  return getNotifications(state).length + unreadMail(state).length;
+  return getNotifications(state).length;
 }
 
 /* ---------- Lot 11 : bulles d'aide de la première partie ---------- */

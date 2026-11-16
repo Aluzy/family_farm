@@ -15,10 +15,11 @@
    ========================================================================== */
 
 import {
-  agrandirPort, arriverVillageois, awakeMsAtHour, assurerArrivee, bornerChronique, chroniqueAEcrit, chroniqueArrivee, chroniqueDe, chroniqueParMois,
-  chroniqueVente, commerceEnPhrase, commerceOuvert, completeChapter, DATA, epinglerLigne, lignesEpinglees, migrate, noteCropHarvested,
-  nomAffiche, nomDe, nomRefus, nommerCommerce, nomsDe, noterChronique, noterLigne, proposerNom, renommer, renommerEtNoter,
-  reparerChronique, runNight, souvenirsDe, STATE_VERSION, sujetsVillageois, testMaisonVillageois, texteLigne,
+  agrandirPort, arriverVillageois, awakeMsAtHour, assurerArrivee, bornerChronique, chroniqueArrivee,
+  chroniqueParMois, chroniqueVente, commerceEnPhrase, commerceOuvert, completeChapter, DATA, epinglerLigne,
+  lignesEpinglees, migrate, noteCropHarvested, nomAffiche, nomDe, nomRefus, nommerCommerce, noterChronique,
+  noterLigne, proposerNom, renommer, renommerEtNoter, reparerChronique, runNight, souvenirsDe, STATE_VERSION,
+  sujetsVillageois, testMaisonVillageois, texteLigne,
 } from '../../js/engine/index.js';
 import { chroniqueHtml, noteHtml, renommerHtml } from '../../js/ui/chronique-html.js';
 import { assert, assertEqual, boite, partie, test } from './aide.mjs';

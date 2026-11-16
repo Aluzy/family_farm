@@ -13,7 +13,7 @@
 
 import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
-import { carnetDuJour, changerObjectif, majObjectifs, objectifsActifs, semaineDe, tacheAFaire } from '../engine/objectifs.js';
+import { carnetDuJour, changerObjectif, majObjectifs, objectifsActifs, tacheAFaire } from '../engine/objectifs.js';
 import { didacticielIleMontre } from './didacticiel-ile.js';
 import { distanceAuComptoir, heuresPort, PORT, portDansSesHeures } from '../engine/port.js';
 import { marcheFerme, marcheOuvert } from '../engine/devices.js';
@@ -26,7 +26,7 @@ import { morph, refresh } from './render.js';
 import { registerActions } from './actions.js';
 import { notify } from './toasts.js';
 import {
-  affichable, carteOuverte, construire, element, ETAPES_UI, fabriquer, menuCarte, montrerHameauVoisin, outil, prendreOutil, tenu,
+  affichable, carteOuverte, construire, element, ETAPES_UI, fabriquer, menuCarte, outil, prendreOutil, tenu,
 } from './didacticiel.js';
 
 let ouvert = false;      // le carnet est ouvert

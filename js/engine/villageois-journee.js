@@ -21,7 +21,7 @@ import { voyagesDuJour } from './charrette.js';
 /* ---------- la journée des villageois sur la ferme (le chantier « l'île à bâtir », fiche I3b) ----------
 
    Où est un villageois, et ce qu'il fait, à chaque heure du jour : tout se déduit de la partie (ses blocs, sa
-   graine, la météo du jour) et de l'heure, sans rien garder (comme la tournée de la calèche, caleche-tournee.js) :
+   graine, la météo du jour) et de l'heure, sans rien garder (comme le faisait la tournée de la calèche d'avant la bascule) :
    deux joueurs voient la même chose (I9d), la scène n'a rien à calculer loin de la vue (elle le pose où il doit
    être, js/carte/ferme/villageois.js), et les tests le vérifient sans navigateur.
 

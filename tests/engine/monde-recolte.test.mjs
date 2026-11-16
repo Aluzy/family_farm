@@ -15,9 +15,9 @@ import {
   mondePris, morceauxDe, noterIci, objetPris, objetsDeRegion, ramasserMonde, ramasserMorceau, RECOLTE, recolterMonde,
   regionDeCase, regionsVues, repousseMonde, solDeRegion, solDirect, STATE_VERSION, testSetEnergyZero, TIRED,
 } from '../../js/engine/index.js';
-import { SORTES_ROCHES } from '../../js/engine/monde-roches.js';
-import { SORTES } from '../../js/engine/monde-vegetation.js';
 import { assert, assertEqual, garden, sleepOnce, test } from './aide.mjs';
+import { SORTES } from '../../js/engine/monde-vegetation.js';
+import { SORTES_ROCHES } from '../../js/engine/monde-roches.js';
 
 const W = MONDE.LARGEUR, N = MONDE.REGION;
 

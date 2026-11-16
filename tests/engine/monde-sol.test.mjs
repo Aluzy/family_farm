@@ -175,7 +175,7 @@ test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à 
   // des grottes, qui fermaient les leurs, ne sont plus : docs/gisements.md, lot 4)
   const pontons = new Set(), bio = (i) => p.biome[i];
   // (les lieux du récit dessinés ferment leurs cases bloque : l'épave ; la cabane et l'atelier sont bâtis,
-  // leurs murs dans sol.ctx.hameaux.bloque, docs/recit/)
+  // leurs murs dans sol.ctx.hameaux.bloque, archive/jeu-avant-ile:docs/recit/)
   // (les secrets du monde aussi, D-2)
   for (const l of [...(p.lieux.recit || []), ...(p.lieux.secrets || [])]) for (const [dx, dy] of (LIEUX.SORTES.find((x) => x.nom === l.sorte) || {}).bloque || []) pieds.add(l.case + dy * W + dx);
   // (la cale du bac ouvre sa jetée, sur la mer, comme un ponton : le récit)

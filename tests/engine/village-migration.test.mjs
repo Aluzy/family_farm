@@ -25,6 +25,7 @@ import {
   simulatePlay, STATE_VERSION, testMaisonVillageois, texteLigne,
 } from '../../js/engine/index.js';
 import { texteDuRecit } from '../../js/engine/village.js';
+import { ENVELOPPE } from '../../js/engine/migration-avant.js';
 import { assert, assertEqual, boite, test } from './aide.mjs';
 
 const lire = (f) => JSON.parse(readFileSync(new URL(f, import.meta.url), 'utf8'));
@@ -115,22 +116,17 @@ test('les amis d\'avant deviennent candidats, puis débarquent les premiers', ()
   try { DATA.VILLAGE.MIGRATION.AMI = 3; assert(candidatsDAvant({ ...copie(p), essais: { village: true } }).length < amis.length, 'AMI 3'); } finally { DATA.VILLAGE.MIGRATION.AMI = AMI; }
 });
 
-test('les remboursements : le marchand ambulant, la malle, l\'atelier, le projet, la lettre, l\'enveloppe', () => {
+test('les remboursements : le marchand ambulant, la malle, l\'atelier, le projet, l\'enveloppe', () => {
   const p = copie(PARTIES.recente_avancee);
-  // (une lettre jamais ouverte, qui porterait des pièces — aucune n'en porte plus depuis le lot 9 : on lui en donne le
-  // temps du test — ; une enveloppe jamais ouverte)
-  const lettre = Object.keys(DATA.COURRIER)[0], piecesLettre = DATA.COURRIER[lettre].pieces;
-  DATA.COURRIER[lettre].pieces = 40;
-  p.courrier.push({ id: lettre, nuit: p.day, lu: false });
+  // (une enveloppe jamais ouverte ; les lettres ne portaient plus de pièces depuis le lot 9 : le courrier se vide)
   p.inventaire.enveloppe_maurice = [{ qty: 1, nightsLeft: null, origin: 'produit' }];
-  let off, m;
-  try { off = eteint(p); m = migre(p); } finally { if (piecesLettre === undefined) delete DATA.COURRIER[lettre].pieces; else DATA.COURRIER[lettre].pieces = piecesLettre; }
+  const off = eteint(p), m = migre(p);
   const malle = p.caleche.malle;
   assert(malle.commande.graine_tomate && malle.vente.oeuf, 'la malle porte une commande et un dépôt');
-  const cmd = malle.commande.graine_tomate.cout, lettrePieces = 40, env = DATA.RECIT.ENVELOPPE.PIECES;
-  assertEqual(m.pieces, off.pieces + cmd + lettrePieces + env, 'les pièces : la commande, la lettre, l\'enveloppe');
-  assertEqual(m.retourIle.rendu.pieces, cmd + lettrePieces + env, 'dans la fenêtre');
-  for (const l of ['Commande annulée : ', 'Lettre jamais ouverte', 'Enveloppe ouverte']) assert(m.compta.some((x) => x.libelle.startsWith(l)), `dans les comptes : ${l}`);
+  const cmd = malle.commande.graine_tomate.cout, env = ENVELOPPE.PIECES;
+  assertEqual(m.pieces, off.pieces + cmd + env, 'les pièces : la commande, l\'enveloppe');
+  assertEqual(m.retourIle.rendu.pieces, cmd + env, 'dans la fenêtre');
+  for (const l of ['Commande annulée : ', 'Enveloppe ouverte']) assert(m.compta.some((x) => x.libelle.startsWith(l)), `dans les comptes : ${l}`);
   const atelier = Object.values(p.monde.habitants).flatMap((h) => h.commandes || []);
   assert(atelier.length, 'une commande à l\'atelier');
   const projet = Object.values(p.projets)[0].recu;

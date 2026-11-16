@@ -2,7 +2,6 @@ import { gemmesHtml } from './gemmes-solde.js';
 import { DATA } from '../engine/catalog.js';
 import { brume as brumeMeteo, pleut } from '../engine/meteo.js';
 import { demandesBouton } from './demandes.js';
-import { pagesDuCarnet } from './carnet.js';
 import { energyLevel, energyMax, enduranceBonus } from '../engine/stamina.js';
 import { allDevices, isOwned, marcheFerme, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
@@ -27,9 +26,7 @@ import { actionSleep } from './game-actions.js';
 import { artHtml, pxText } from './pixel-art.js';
 import { averageHappiness } from '../engine/bonheur.js';
 import { morph, morphSlots, refresh, setLastRenderAt } from './render.js';
-import {
-  cibleAttrs, heureDuJour, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
-} from './stage.js';
+import { heureDuJour, setStagePan, STAGE_LIEUX, stageActive, stageUsable } from './stage.js';
 import {
   backToFerme, deviceName, renderDeviceFenetre, renderDeviceScreen, renderEauFenetre, renderEnergieFenetre, renderFerme,
   renderInstallationsMaison, renderPotager, renderRobotCard,
@@ -48,10 +45,10 @@ import { renderAtelier } from './atelier.js';
 import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
 import { farmTerrain } from '../engine/terrain.js';
-import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js';
+import { comptoirTabAOuvrir } from './comptoir.js';
 import { portTabsHtml, renderPort } from './port.js';
 import { chroniqueBouton } from './chronique.js';
-import { renderChapterBanner, ongletsIle, corpsIle } from './chapitres.js';
+import { ongletsIle, corpsIle } from './chapitres.js';
 import { paliersSuivis } from '../engine/paliers.js';
 import { renderBoite } from './boite.js';
 import { carteCuisineVillage, carteGardeManger } from './garde-manger.js';
@@ -676,14 +673,6 @@ function carteMondeBouton() {
   return '<button type="button" class="nav-btn" data-action="carte-monde-open" title="Carte du monde (touche M)" aria-label="Carte du monde" aria-keyshortcuts="M"><span class="nav-icon" aria-hidden="true">🧭</span><span class="nav-label">Carte du monde</span></button>';
 }
 
-// Le récit : le carnet du joueur (js/ui/carnet.js), dès sa première page (l'île à bâtir n'en a pas, fiche I7d : la
-// chronique est à sa place).
-function carnetBouton() {
-  const n = pagesDuCarnet().length;
-  if (!n) return '';
-  return `<button type="button" class="nav-btn" data-action="carnet-open" title="Carnet" aria-label="Carnet (${n > 1 ? `${n} pages` : '1 page'})"><span class="nav-icon" aria-hidden="true">📓</span><span class="nav-label">Carnet</span></button>`;
-}
-
 export function renderTabbar() {
   const current = ['inventaire', 'atelier', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
@@ -720,8 +709,7 @@ export function renderTabbar() {
       .join('') +
       // L'Encyclopédie, un livre qui se remplit au fil de la partie (js/ui/encyclopedie.js)
       encyclopedieBouton() +
-      // (l'île à bâtir, fiches I7g et I7d : la chronique à la place du carnet ; chacun ne paraît que dans sa partie)
-      carnetBouton() +
+      // (fiche I7g : la chronique, à la place du carnet du récit d'avant)
       chroniqueBouton() +
       demandesBouton() +
       carteMondeBouton() +
@@ -739,7 +727,7 @@ const TAB_RENDERERS = {
   ferme: () => (ecranFerme === 'panneaux' || ecranFerme === 'batteries' ? [renderDeviceScreen(ecranFerme)] : stageActive() ? [''] : renderFerme()),
   famille: () => [backToFerme() + renderFamille()],
   inventaire: () => [renderInventaire()],
-  comptoir: () => [renderComptoir()],
+  comptoir: () => [renderPort()],
   recettes: () => [backToFerme() + renderRecettes()],
   techno: () => [backToFerme() + renderTechno()],
   notifications: () => [renderNotifications()],

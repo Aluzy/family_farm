@@ -327,8 +327,8 @@ function casesDevantComptoir(state, l) {
 function palierVoulu() {
   return Math.max(0, Math.floor(reglage('AMITIE', 2)));
 }
-const nomPalier = (p) => (((DATA.RECIT || {}).PALIER_NOMS || [])[p]) || `palier ${p}`;
-const seuilPalier = (p) => (((DATA.RECIT || {}).PALIERS || [])[p]) ?? 0;
+const nomPalier = (p) => (DATA.AMITIE.ECHELLE.NOMS[p]) || `palier ${p}`;
+const seuilPalier = (p) => DATA.AMITIE.ECHELLE.PALIERS[p] ?? 0;
 
 // Les jours qu'il a faits de la tâche `t` (v.pratique).
 export function joursPratiques(v, t) {

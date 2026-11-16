@@ -7,7 +7,7 @@ import { awakeMsAtHour } from './clock.js';
 import { addItem, countItem, spoil, takeItem } from './inventory.js';
 import { blocAt, blocsPoses, casesBaties, caseLibreFoyer, couchages, herbesSur, majPoulailler, poserBloc, serrePlaces } from './blocs.js';
 import { poserEtage, poserSolEtage } from './etage.js';
-import { allPlots, makePlot, maxStage, seedItem, serreCap, zoneTile } from './crops.js';
+import { makePlot, allPlots, maxStage, seedItem, serreCap, zoneTile } from './crops.js';
 import { farmTerrain } from './terrain.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
 import { arbreProche, openVerger } from './orchard.js';

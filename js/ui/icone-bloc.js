@@ -3,7 +3,7 @@
    la carte ; l'Atelier : la sienne. Le menu Construire (js/ui/chantier.js) et l'Atelier
    (js/ui/atelier.js, les recettes qui donnent un bloc) montrent la même. */
 import { DATA } from '../engine/catalog.js';
-import { meubleSrc } from './caleche.js';
+import { meubleSrc } from './comptoir.js';
 
 // Une machine des chaînes de production (l'onglet Machines, sauf l'Atelier) : son dessin de la carte (une
 // case de 16 × 24 de assets/blocs.png, à l'arrêt : BLOCS_CARTE de js/carte/ferme/config.js), plutôt que son

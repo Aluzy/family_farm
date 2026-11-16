@@ -97,10 +97,10 @@ test('rapport : total par chapitre sur plusieurs sessions', () => {
 test('top des actions : regroupement par libellé, interface exclue, action inconnue visible', () => {
   const r = buildReport([
     session({ counters: { clicks: { 'water': 10, 'water-all': 5, 'plant': 7, 'sleep': 4, 'switch-tab': 99, 'close-modal': 50, 'nouveaute-x': 3, 'tuto-skip': 2 } } }),
-    session({ counters: { clicks: { 'water': 1, 'start-recipe': 6, 'sell-item': 6, 'comptoir-tab': 40 } } }),
+    session({ counters: { clicks: { 'water': 1, 'start-recipe': 6, 'port-vendre': 6, 'comptoir-tab': 40 } } }),
   ], NOW);
   eq(r.topActions[0], { label: 'Arroser', count: 16 });
-  eq(r.topActions.slice(1, 4).map((a) => a.label), ['Planter', 'Cuisiner (préparer une recette)', 'Vendre']);
+  eq(r.topActions.slice(1, 4).map((a) => a.label), ['Planter', 'Cuisiner (préparer une recette)', 'Vendre au port']);
   assert(r.topActions.some((a) => a.label === 'nouveaute-x (non répertorié)' && a.count === 3));
   assert(!r.topActions.some((a) => /switch-tab|close-modal|comptoir-tab|tuto/.test(a.label)), 'aucune action d\'interface');
   eq(r.interfaceClicks, 99 + 50 + 2 + 40);

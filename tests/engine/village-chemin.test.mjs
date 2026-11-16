@@ -11,11 +11,13 @@
    ========================================================================== */
 
 import {
-  addItem, awakeMsAtHour, BIOME, bonusChemin, capacitePortage, chargeDe, chargerPortage, cheminDehorsSur, cheminsDehors,
-  cheminsPourLeSol, choisirVehicule, comptoirDuPort, contexteSol, countItem, createNewGame, DATA, dechargerAuPort,
-  dechargerPortage, decoderSegments, elementsSol, empriseDe, encoderSegments, etatTroncon, farmSeed, farmTerrain, horsFerme,
-  majCheminsSol, migrate, poseStatus, poserBloc, poserCheminsSol, portDuMonde, reprendreBloc, solDirect, STATE_VERSION,
-  surChemin, tronconDuPort, vendreAuPort, vitesseSurCase, volumeCharge, volumeDe, assurerTroncon, casesPonts,
+  decoderSegments,
+  addItem, awakeMsAtHour, BIOME, bonusChemin, capacitePortage, chargeDe, chargerPortage, cheminDehorsSur,
+  cheminsDehors, cheminsPourLeSol, choisirVehicule, comptoirDuPort, contexteSol, countItem, createNewGame, DATA,
+  dechargerAuPort, dechargerPortage, elementsSol, empriseDe, encoderSegments, etatTroncon, farmSeed, farmTerrain,
+  horsFerme, majCheminsSol, migrate, poseStatus, poserBloc, poserCheminsSol, portDuMonde, reprendreBloc, solDirect,
+  STATE_VERSION, surChemin, tronconDuPort, vendreAuPort, vitesseSurCase, volumeCharge, volumeDe, assurerTroncon,
+  casesPonts,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, reach, setInv, test } from './aide.mjs';
 

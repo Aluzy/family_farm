@@ -5,7 +5,7 @@ import { GAME_VERSION, STATE_VERSION } from '../engine/base.js';
 import { farmOpen, pumpFlow } from '../engine/devices.js';
 import { energyStats } from '../engine/energy.js';
 import { cropProduct, hasHoe, seedStock } from '../engine/crops.js';
-import { chapterCount, chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
+import { chapterCount, chapterProgress, plantableCropsFor } from '../engine/campaign.js';
 import { paliersSuivis } from '../engine/paliers.js';
 import { setupPending } from '../engine/depart.js';
 import { unlockLevel } from '../engine/levels.js';
@@ -32,7 +32,7 @@ import { openModal } from './modal.js';
 import { effetTexte } from './fiche-membre.js';
 import { penalite } from '../engine/inventory.js';
 import { ouvrirModeEmploi } from './chaines-aide.js';
-import { ficheIle, mondeIle, reglesIle, sourceEquipementIle } from './aide-ile.js';
+import { ficheIle, reglesIle, sourceEquipementIle } from './aide-ile.js';
 
 /* ---------- Lot 11 : aide sur chaque bâtiment ---------- */
 
@@ -176,7 +176,7 @@ const HELP = {
     const V = DATA.VERGER;
     return {
       nom: 'Verger',
-      role: 'Pommiers, poiriers et autres fruitiers : achète un jeune arbre à la calèche (onglet Acheter, les semences) et plante-le dans le sol, dehors, avec la case 🔨, loin des autres arbres. Il pousse en 4 dessins (jeune arbre, arbuste, arbre, arbre en fruits) et reste en place.',
+      role: 'Pommiers, poiriers et autres fruitiers : commande un jeune arbre au port (l\'import du bac) et plante-le dans le sol, dehors, avec la case 🔨, loin des autres arbres. Il pousse en 4 dessins (jeune arbre, arbuste, arbre, arbre en fruits) et reste en place.',
       conso: `Aucune : pas d'arrosage. Cueillir un arbre en fruits coûte ${formatNumber(DATA.PERSONNAGE.COUTS.cueillir)} énergie (rien avec la Récolte du verger de l'Arbre des technologies).`,
       prod: `${V.FRUITS} fruits ${nightsLabel(V.MATURITE)} après la plantation, puis ${V.PERIODE} nuits après chaque cueillette, toute l'année. Les fruits attendent sur l'arbre : un appui sur l'arbre les cueille.`,
       note: '',
@@ -243,33 +243,25 @@ const HELP = {
   },
   // Fiche 9b : le grand monde, ses lieux et ses gens, ce qui s'y fait (ouverte depuis À propos).
   monde: () => {
-    const T = farmTerrain(state), C = DATA.CALECHE;
+    const T = farmTerrain(state);
     return {
       nom: 'Le grand monde',
       icone: '🧭',
       lignes: [
         ['Le pays', `Ta ferme est au milieu d'un grand pays${T.MONDE ? ` de ${formatNumber(T.LARGEUR)} × ${formatNumber(T.HAUTEUR)} cases` : ''}, fermé par la montagne au nord et à l'ouest, par la mer au sud et à l'est. Autour d'elle, des prés ; plus loin, des forêts profondes, des marais, la lande, la montagne et ses sommets enneigés, la côte et ses plages. Des rivières descendent de la montagne à la mer, parfois par un lac.`],
-        ['Chemins et gués', 'Les chemins de terre partent de la sortie de ta ferme, à l\'est, et font le tour du pays de hameau en hameau : la calèche les suit. On ne passe ni la mer, ni un lac, ni les falaises, ni les sommets ; une rivière se traverse à gué, là où un chemin la croise (des pierres plates sur l\'eau).'],
+        ['Chemins et gués', 'Ton chemin part de la porte de l\'abri et sort de la ferme à l\'est ; de là, un chemin mène au port. Ils sont à toi : pose-les, reprends-les, déplace-les (le mode Construire). On ne passe ni la mer, ni un lac, ni les falaises, ni les sommets ; une rivière se traverse à gué, là où un chemin la croise (des pierres plates sur l\'eau), ou sur un pont de planches.'],
         ['Le brouillard', 'Tout est caché au départ, ta ferme comprise : seuls les alentours de ton personnage sont dégagés. Le brouillard se lève autour de toi quand tu marches (plus loin en montagne et à découvert, moins en forêt, dans le marais et la nuit), et ce que tu as vu le reste. Rien de ce qu\'il cache ne se voit ni ne se touche.'],
-        ['La carte du monde', 'Le menu « Carte du monde » (ou la touche M, ou un appui sur la boussole) montre tout ce que tu as vu : les biomes, les chemins, ta ferme, les hameaux et les coins de pêche découverts, la calèche quand elle y passe. Fais-la glisser, zoome, touche un lieu : son nom, sa distance, et « Y mener la boussole ».'],
+        ['La carte du monde', 'Le menu « Carte du monde » (ou la touche M, ou un appui sur la boussole) montre tout ce que tu as vu : les biomes, tes chemins, ta ferme, le port et les coins de pêche découverts. Fais-la glisser, zoome, touche un lieu : son nom, sa distance, et « Y mener la boussole ».'],
         ['La boussole', 'Sous l\'horloge, son aiguille montre la ferme, ou le lieu choisi sur la carte du monde, et sa distance en cases. Arrivé au lieu, elle montre de nouveau la ferme ; sur la ferme, sans lieu choisi, elle se cache. Les Options la retirent.'],
         ['Récolter dans le monde', `Hors de la ferme, les mêmes gestes : la hache abat les arbres, les buissons, les souches et les troncs couchés (un arbre en ${formatNumber(DATA.RECOLTE.SORTES.feuillu.coups)} coups) ; la pioche casse les rochers, les gros blocs, les éboulis, les gisements et les cristaux ; la faux fauche les fougères, la bruyère, les joncs, les roseaux et les oyats. À la main (touche-les), cueille les mûres des ronciers et ramasse les champignons (les lumineux aussi, en forêt), les herbes de montagne, le bois flotté, les galets, les coquillages, les étoiles de mer et les algues. Ce qui est pris revient quelques jours plus tard (${DATA.RECOLTE.SORTES.feuillu.retour[0]} à ${DATA.RECOLTE.SORTES.feuillu.retour[1]} jours pour un arbre), si tu es passé par là.`],
         ['Ce qui luit la nuit', 'En forêt, des champignons lumineux ; en montagne, des amas de quartz et d\'améthyste : le jour, on les voit à peine ; la nuit, chacun luit de sa couleur.'],
         ['Pêche', 'La canne s\'utilise au bord de toute eau du monde : les lacs, les rivières et la mer ont chacun leurs poissons ; les coins de pêche (un ponton, des piquets et une nasse, des remous) sont meilleurs (voir la fiche « Pêche »).'],
         ['Les bêtes du monde', 'Marmottes, bouquetins et aigles en montagne, mouettes, crabes et dauphins sur la côte, canards et cygnes sur les lacs et le marais, chevreuils, renards, lapins et écureuils en forêt, lièvres et perdrix sur la lande : on ne les chasse pas, on les regarde. Elles fuient si tu t\'approches trop. Touche une bête : son nom et sa page de l\'Encyclopédie (elle se découvre la première fois que tu en vois une).'],
-        ['Les hameaux', `Les chemins du grand monde mènent à des hameaux de ${DATA.HAMEAUX.MAISONS[0]} à ${DATA.HAMEAUX.MAISONS[1]} maisons, bâties de murs, de portes et de fenêtres comme ta maison, dans le style du pays (pierre et ardoise en montagne, pierre blanche et tuiles sur la côte, bois et chaume en forêt et sur la lande, bois et roseaux au bord du marais). Promène-toi sur la place, entre dans les maisons par leur porte (le toit s'efface). On n'y bâtit pas, on n'y laboure pas, on n'y casse rien et on n'y coupe pas les arbres des jardins. Le premier passage dans un hameau l'annonce et l'inscrit dans l'Encyclopédie.`],
-        ['Les habitants', `Chaque maison d'un hameau a sa famille (un ou deux adultes, des enfants), et chaque hameau son métier : bûcheron, pêcheur, mineur, berger ou cueilleur. Le matin, les adultes partent travailler (le bûcheron abat aussi des arbres alentour, qui repoussent comme les autres), les enfants jouent sur la place ; à midi et le soir, tout le monde rentre manger, et la nuit chacun dort dans son lit. Touche un habitant : il te dit son prénom, son métier et un mot selon l'heure et son humeur. Touche le panneau de la place : la fiche du hameau montre ses familles, leur bonheur et la réserve du hameau. Chaque nuit, même loin de toi, chaque famille vit sa journée : elle produit, mange, est plus ou moins heureuse, et met ce qui lui reste à la réserve, que la calèche viendra acheter.`],
-        ['L\'amitié', `Chaque habitant a sa jauge d'amitié (inconnu, poli, cordial, proche, intime). Elle monte quand tu lui parles (+${DATA.AMITIE.PAROLE} par jour), quand tu passes dans son hameau (+${DATA.AMITIE.VISITE}) et avec un cadeau par jour (« 🎁 Offrir » dans sa bulle) : ce qu'il adore +${DATA.AMITIE.CADEAU.adore}, ce qu'il aime +${DATA.AMITIE.CADEAU.aime}, ce qu'il déteste ${DATA.AMITIE.CADEAU.deteste}. L'absence ne lui fait rien perdre : revu après ${DATA.AMITIE.RETROUVAILLES.JOURS} jours ou plus, il est content de te retrouver (+${DATA.AMITIE.RETROUVAILLES.BONUS} de plus). Un ami proche laisse parfois un présent devant ta porte ; Basile et Garance font des prix à leurs amis. Une émotion forte colore tout son corps quelques instants : jaune la joie, rouge la colère, violet la peur, vert le dégoût ; le reste du temps, il garde ses couleurs.`],
-        ['La visite de bienvenue', `Le deuxième jour, vers midi, un habitant du hameau le plus proche vient à pied jusqu'à ta porte souhaiter la bienvenue à ta famille. Va à sa rencontre : il t'offre un bon plat de sa cuisine. Si tu n'es pas là, il le laisse devant la porte : tu le prendras en rentrant.`],
-        ['Inviter à un repas', `Dans le calendrier, touche un jour à venir : invite jusqu'à ${DATA.AMITIE.INVITATION.INVITES_MAX} personnes à qui tu as déjà parlé, pour le déjeuner (${DATA.AMITIE.INVITATION.MOMENTS.midi.heure} h) ou le dîner (${DATA.AMITIE.INVITATION.MOMENTS.soir.heure} h). Achille, le cocher, porte le message ; les réponses arrivent le lendemain matin. Le jour dit, tes invités viennent s'asseoir à ta table (une table de jardin et ses chaises, l'onglet « Jardin » du mode Construire ; sinon celle de la maison). Ta famille s'attable avec eux aux places qui restent. Touche la table pour servir le repas (et une chaise pour t'asseoir avec eux ; touche ailleurs pour te lever) : leurs plats préférés les rapprochent de toi, ta famille mange à sa faim et sera plus heureuse cette nuit. Ils en parleront les jours suivants.`],
-        // (le chantier « l'île à bâtir » allumé, fiche I1b : le port commerce, la calèche ne fait plus que rouler)
-        ['Le port', `Au bout du chemin qui sort de ta ferme, sur la côte : le quai, la cale et la halle. Au comptoir, sous la halle (dès le niveau ${unlockLevel('marche')}, ouvert ${heuresPort()}), on vend tout ce qui se vend, au prix de vente et sans limite (le bac emporte tout), et on achète les semences que ton niveau a débloquées. La carte du monde le montre, la boussole y mène. La calèche roule encore, mais ne commerce plus.`],
-        ['L\'Atelier', 'Seules les semences s\'achètent : les outils, les bêtes (un nid garni pour une poule, une pierre à sel et du foin pour un mouton ou une vache, un licol et des friandises pour le cheval), la ruche, le bac à fleurs et les meubles se fabriquent à l\'Atelier, avec ce que tu récoltes à la ferme et dans le monde. Les aliments se cultivent, se cuisinent, ou viennent des hameaux par la calèche.'],
+        ['L\'Atelier', 'Seules les semences s\'achètent (au port) : les outils, les bêtes (un nid garni pour une poule, une pierre à sel et du foin pour un mouton ou une vache, un licol et des friandises pour le cheval), la ruche et le bac à fleurs se fabriquent à l\'Atelier, avec ce que tu récoltes à la ferme et dans le monde ; les meubles de la maison se commandent au menuisier, dès qu\'un villageois ouvre la scierie. Ce que l\'île ne donne pas se commande au port.'],
         ['Le cheval', 'En selle, il te porte partout dans le pays, plus vite qu\'à pied ; quand tu en descends, il rentre à l\'Écurie. Avec sa sacoche (Atelier) remplie de pommes (sa fiche s\'ouvre quand tu montes en selle, ou touche-le à l\'Écurie), il galope : en selle, touche une pomme au-dessus de la barre d\'outils (× 2, la pomme dorée du four × 2,5).'],
         // fiche 15 : les blocs qui éclairent la nuit (BLOCS lumiere : js/carte/ferme/chantier.js, stepLanterns)
-        ['Les styles d\'aménagement', `Chaque bloc, sol ou meuble décoratif a un style, marqué d'une petite icône dans le mode Construire : ${Object.values(DATA.STYLES.LISTE).map((x) => `${x.icone} ${x.nom}`).join(', ')}. Aucun n'est plus beau qu'un autre. Ta famille est plus heureuse (+${DATA.STYLES.MAISON.BONUS} à sa cible de bonheur) quand la ferme réunit ${DATA.STYLES.MAISON.VARIETE} styles d'au moins ${DATA.STYLES.MAISON.PIECES} sortes de blocs chacun, ou ${DATA.STYLES.MAISON.COMPLET} sortes d'un même style : ce sont les sortes différentes qui comptent, pas le nombre de blocs. Chaque habitant a son style préféré (on le découvre en partageant un repas, ou en devenant cordiaux) : invité près d'un coin de son style, il l'admire, et le repas vous rapproche davantage.`],
-        ['Les projets des hameaux', `Chaque hameau a son projet : ${Object.values(DATA.PROJETS.SORTES).map((x) => `${x.icone} ${x.nom.toLowerCase()}`).join(', ')}. Sa fiche (le panneau de la place) dit ce qu'il demande ; « 🤝 Apporter ce que j'ai » y donne tes matériaux (une fois par jour, chacun de ses habitants t'en sait gré : +${DATA.PROJETS.DON} d'amitié). Chaque nuit, les familles y ajoutent un peu de leur réserve. Quand tout est là, le hameau s'y met la nuit : la place se garnit de bancs, de fleurs, d'une pergola…, la confiance du hameau gagne ${DATA.PROJETS.FIN.CONFIANCE}, chacun de ses habitants +${DATA.PROJETS.FIN.AMITIE} d'amitié, et ils t'en parlent les jours suivants. Puis vient le projet suivant.`],
-        ['Les plans de collection', `Chaque pays de l'île a sa collection de meubles de jardin : ${Object.values(DATA.PLANS.COLLECTIONS).map((c) => `${c.icone} ${c.nom} (${c.plans.map((id) => DATA.ATELIER.BLOCS[id].nom.toLowerCase()).join(', ')})`).join(' ; ')}. Leur recette ne se fait à l'Atelier qu'une fois le plan trouvé : la première fois que tu passes dans un pays, hors de la ferme, tu y trouves un plan ; un ami « ${DATA.AMITIE.ECHELLE.NOMS[DATA.PLANS.AMI]} » d'un hameau de ce pays t'offre le suivant, une nuit. Le carnet de plans, sous l'Atelier, montre ce que tu as trouvé.`],
+        ['Les styles d\'aménagement', `Chaque bloc, sol ou meuble décoratif a un style, marqué d'une petite icône dans le mode Construire : ${Object.values(DATA.STYLES.LISTE).map((x) => `${x.icone} ${x.nom}`).join(', ')}. Aucun n'est plus beau qu'un autre. Ta famille est plus heureuse (+${DATA.STYLES.MAISON.BONUS} à sa cible de bonheur) quand la ferme réunit ${DATA.STYLES.MAISON.VARIETE} styles d'au moins ${DATA.STYLES.MAISON.PIECES} sortes de blocs chacun, ou ${DATA.STYLES.MAISON.COMPLET} sortes d'un même style : ce sont les sortes différentes qui comptent, pas le nombre de blocs.`],
+        ['Les plans de collection', `Chaque pays de l'île a sa collection de meubles de jardin : ${Object.values(DATA.PLANS.COLLECTIONS).map((c) => `${c.icone} ${c.nom} (${c.plans.map((id) => DATA.ATELIER.BLOCS[id].nom.toLowerCase()).join(', ')})`).join(' ; ')}. Leur recette ne se fait à l'Atelier qu'une fois le plan trouvé : explore le pays, hors de la ferme, pour y trouver ses plans ; d\'autres se commandent au port, et les paliers de l\'île en offrent. Le carnet de plans, sous l'Atelier, montre ce que tu as trouvé.`],
         ['Trouver vite un objet', 'Dans le menu Construire, un appui long sur un objet (un clic droit à la souris) le met dans tes favoris, ou l\'en retire : il porte une petite étoile. L\'onglet ⭐, en tête des onglets, réunit tes favoris puis les derniers objets que tu as choisis : deux touches suffisent pour reprendre l\'un d\'eux. Sous les onglets bien remplis, des filtres : 🎒 « ce que j\'ai » cache ce qui est épuisé ; pour les meubles, la pièce (cuisine, salon, chambre) ; et le style d\'aménagement. Touche un filtre allumé pour l\'éteindre. Tes favoris restent sur cet appareil.'],
         ['Les couleurs des meubles', 'Certains meubles existent en plusieurs couleurs : la chaise et la table (miel, noyer, et peinte en bleu ou en bois blanchi), le canapé (vert, rouge, bleu, moutarde), le lit adulte (vert, rouge, bleu) et la commode (chêne, noyer, sauge). En posant l\'un d\'eux, le bouton 🎨 à côté de ✔️ change sa couleur ; l\'aperçu la montre. Pour un meuble déjà posé, allume l\'outil 🎨 de la petite fenêtre des outils et touche-le : il passe à la couleur suivante, gratuitement, en bas comme à l\'étage. Deux lits adulte côte à côte ne font un lit double que s\'ils ont la même couleur.'],
         ['Tourner les meubles', 'En mode Construire, chaque meuble se pose dans le sens qu\'on veut : de face, de dos, ou de profil (tourné vers la gauche ou la droite). Un meuble en main, le bouton ↻ à côté de ✔️ tourne son aperçu d\'un quart de tour ; une table ou un canapé de profil prend sa longueur vers le haut. Pour un meuble déjà posé, allume l\'outil ↻ de la petite fenêtre des outils et touche-le. Une chaise tournée vers la table : on y voit la personne assise de profil. Les lits et le réfrigérateur tournent aussi (un lit de profil prend sa longueur en travers, et l\'on y dort couché dans ce sens), et tout cela marche aussi à l\'étage. Seuls les tableaux ne tournent pas : accrochés au mur, ils le suivent.'],
@@ -317,17 +309,8 @@ const HELP = {
     const Q = DATA.EQUIPEMENT, O = DATA.OBJETS, R = DATA.ATELIER.RECETTES;
     const liste = (e) => Object.entries(e).map(([o, n]) => `${n} ${O[o].nom.toLowerCase()}`).join(', ');
     const recette = (id) => liste(R[id].entrees);
-    // (une pièce qui ne se fabrique pas à l'Atelier : elle se commande à l'atelier d'un hameau,
-    // data/ile.json, comme les vêtements de laine cousus aux Genêts)
-    const hameau = (id) => {
-      return sourceEquipementIle;   // (l'île à bâtir, fiche I7d : pas d'atelier de hameau)
-      for (const A of Object.values(DATA.ILE.ATELIERS)) {
-        const r = Object.values(A.recettes || {}).find((x) => x.sortie && id in x.sortie);
-        const h = DATA.PLAN_MONDE.HAMEAUX.GARANTIS.find((x) => x.id === A.hameau);
-        if (r) return `${A.nom}${h ? ` (${h.nom})` : ''} : ${liste(r.entrees)}${r.pieces ? `, ${formatNumber(r.pieces)} pièces` : ''}`;
-      }
-      return null;
-    };
+    // (une pièce qui ne se fabrique pas à l'Atelier : elle viendra d'un commerce de l'île)
+    const hameau = () => sourceEquipementIle;
     const source = (id) => (R[id] ? `Atelier : ${recette(id)}${R[id].debloque ? ` (dès le niveau ${unlockLevel(R[id].debloque)})` : ''}` : hameau(id));
     const pieces = Object.keys(Q.PIECES);
     const enfant = pieces.filter((id) => Q.PIECES[id].enfant).map((id) => O[id].nom.toLowerCase());
@@ -367,7 +350,7 @@ const HELP = {
     }
     const lignes = [['Chapitres', `La campagne compte ${chapterCount()} chapitres. Remplis tous les objectifs d'un chapitre pour passer au suivant et gagner son XP, ses points de technologie et sa récompense : des plans de meubles de collection et du décor, chacun de son style. Le dernier ouvre le jeu libre.`]];
     if (!c.fini) lignes.push(['Ce chapitre', chapterProgress(state).intro]);
-    else lignes.push(['Jeu libre', 'Aménage, invite, aide les hameaux, complète tes collections de plans : à ton rythme.']);
+    else lignes.push(['Jeu libre', 'Aménage, invite, aide le village, complète tes collections de plans : à ton rythme.']);
     return { nom: 'Chapitres', icone: '📜', lignes };
   },
   frigo: () => ({
@@ -379,11 +362,8 @@ const HELP = {
   }),
 };
 
-// L'île à bâtir (fiche I7d, js/ui/aide-ile.js) : la fiche « L'île à bâtir », et le grand monde sans les hameaux, leurs
-// habitants ni la calèche (une partie d'avant garde la fiche d'avant).
+// L'île à bâtir (fiche I7d, js/ui/aide-ile.js) : la fiche « L'île à bâtir ».
 HELP.ile = () => ficheIle(state);
-const mondeDAvant = HELP.monde;
-HELP.monde = () => { const h = mondeDAvant(); return { ...h, lignes: mondeIle(h.lignes) }; };
 
 // Les fiches sans bâtiment, ouvertes depuis À propos (l'île à bâtir : la sienne en tête).
 const FICHES = ['monde', 'outils', 'equipement', 'gisements', 'peche', 'chaines', 'techno'];
@@ -507,10 +487,10 @@ const GUIDE_BOUTONS = {
 };
 
 const GUIDE_GRAINES = [
-  '[data-action="buy-item"][data-item="graine_carotte"][data-q="10"]:not([disabled])',
-  '[data-action="buy-item"][data-item="graine_carotte"][data-q="5"]:not([disabled])',
-  '[data-action="buy-item"][data-item="graine_carotte"]:not([disabled])',
-  '[data-action="shop-item"][data-item="graine_carotte"]', // la calèche en cases : d'abord la fiche
+  '[data-action="port-acheter"][data-item="graine_carotte"][data-q="10"]:not([disabled])',
+  '[data-action="port-acheter"][data-item="graine_carotte"][data-q="5"]:not([disabled])',
+  '[data-action="port-acheter"][data-item="graine_carotte"]:not([disabled])',
+  '[data-action="port-fiche"][data-mode="acheter"][data-item="graine_carotte"]', // le port en cases : d'abord la fiche
   '[data-action="comptoir-tab"][data-tab="acheter"]',
   '.nav-btn[data-tab="comptoir"]',
   '#stage-window-close',

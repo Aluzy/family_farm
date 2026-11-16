@@ -2,17 +2,11 @@
    Tests du moteur : les styles d'aménagement (js/engine/styles.js, data/styles.json).
    - chaque bloc a au plus un style ; on compte les sortes différentes, pas les blocs ;
    - la famille : la variété ou un style complet élèvent la cible de bonheur (les deux se valent) ;
-   - les habitants : un style préféré (écrit, ou tiré du style de leur hameau), révélé par l'amitié ou un
-     repas ; invités, ils admirent un coin de leur style autour de la table (plus d'amitié).
    Lancer seul : node tests/run-tests.mjs styles.
    ========================================================================== */
 
-import { DATA, hourOfDay } from '../../js/engine/index.js';
-import { ajouterAmitie, amitieAvec, parlerAmitie, styleHabitant, trouverPnj } from '../../js/engine/amitie.js';
 import { cibleBonheur } from '../../js/engine/bonheur.js';
-import { invitationsNuit, invitesModele, inviter, INVITATION, servirRepas } from '../../js/engine/invitations.js';
-import { habitantsDe, peuplerHameau } from '../../js/engine/habitants.js';
-import { admireLeCoin, decorAutour, decorFerme, STYLES, styleBonheur, styleDe, styleMaison, stylePrefere, tableDuRepas } from '../../js/engine/styles.js';
+import { decorFerme, STYLES, styleBonheur, styleDe, styleMaison } from '../../js/engine/styles.js';
 import { farmTerrain } from '../../js/engine/terrain.js';
 import { assert, assertEqual, garden, test } from './aide.mjs';
 
@@ -47,14 +41,3 @@ test('styles : la famille, par la variété ou par un style complet (les deux se
   fleuri.forEach((b, i) => poser(u, b, t0 + 2 * i));
   assertEqual([styleMaison(u).complet, styleBonheur(u)], ['fleuri', M.BONUS]);
 });
-
-// Un hameau de prairie, un habitant à qui l'on a parlé.
-function hameau(style = 'prairie') {
-  const s = garden();
-  const plan = { id: 'h_st', nom: 'Les Prés', metier: 'berger', style, case: 3,
-    maisons: [{ id: 'h_st_m1', lits: [{ case: 0, sorte: 'lit_adulte' }] }], jardins: [], travail: [], place: { cases: [] } };
-  peuplerHameau(s, plan);
-  const m = habitantsDe(s).h_st.foyers[0].membres[0];
-  parlerAmitie(s, 'h_st', m.id);
-  return { s, m };
-}

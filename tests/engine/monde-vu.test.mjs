@@ -17,8 +17,8 @@
 
 import { readFileSync } from 'node:fs';
 import {
-  caseDepart, createInitialState, createNewGame, DATA, elementsSol, farmTerrain, migrate, regionDeCase, regionsFerme, regionVue, solDirect,
-  STATE_VERSION, voirHameau,
+  caseDepart, createInitialState, createNewGame, DATA, elementsSol, farmTerrain, migrate, regionDeCase, regionsFerme,
+  regionVue, solDirect, STATE_VERSION,
 } from '../../js/engine/index.js';
 import {
   boussoleMontree, butBoussole, caseVue, cellulesAutour, cellulesFerme, choisirBut, deBase64, DECOUVERTE, directionVers, etatBoussole, grilleVu,

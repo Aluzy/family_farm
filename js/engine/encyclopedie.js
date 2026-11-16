@@ -1,5 +1,4 @@
 import { ENCYCLOPEDIE } from '../encyclopedie.generated.js';
-import { ENCYCLOPEDIE_ILE } from '../encyclopedie-ile.generated.js';
 import { conditionRemplie } from './decouverte.js';
 
 /* ---------- l'encyclopédie de la partie ----------
@@ -10,16 +9,14 @@ import { conditionRemplie } from './decouverte.js';
    state.encyclopedie = { vues: { id: jour de la découverte }, lues: { id: true },
    evenements: { 'faune:renard': true } }. Sans `vues` (une ancienne partie, ou avant le premier
    passage) : majEncyclopedie les crée, et ce qui est déjà connu n'est pas « nouveau ».
-   Deux livres pendant le chantier « l'île à bâtir » (fiche I7d) : celui du jeu publié (CATEGORIES) et celui d'une
-   partie de l'île (encyclopedie_ile.json lu par-dessus l'autre : sans le récit, les hameaux ni la calèche ; le port,
-   le village) ; livreDe(state) choisit (villageActif). Sans partie, le livre du jeu publié. */
+   Un seul livre depuis la bascule (fiche I9h) : celui de l'île à bâtir (sans le récit, les hameaux ni la calèche ;
+   le port, le village). */
 
 export const CATEGORIES = ENCYCLOPEDIE.categories;
 
 const indexer = (cats) => { const m = new Map(); for (const c of cats) for (const e of c.entrees) m.set(e.id, { ...e, categorie: c.id }); return m; };
-const ANCIEN = { categories: CATEGORIES, parId: indexer(CATEGORIES) };
-const ILE = { categories: ENCYCLOPEDIE_ILE.categories, parId: indexer(ENCYCLOPEDIE_ILE.categories) };
-const livreDe = (state) => (state ? ILE : ANCIEN);
+const LIVRE = { categories: CATEGORIES, parId: indexer(CATEGORIES) };
+const livreDe = () => LIVRE;
 
 // Les catégories du livre de la partie (celui de l'île).
 export function categoriesDe(state = null) {

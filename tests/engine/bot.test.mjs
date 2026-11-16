@@ -4,16 +4,14 @@
    ========================================================================== */
 
 import {
-  actionCost, atelierConstruit, boitePosee, botBuy, botDay, botFabriquer, botPassageCaleche, commencerObjectifs, createNewGame,
-  materiauxFournis, posteSimulation, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill,
-  botRaiseFunds, botRecipeValue, botScythe, botSell, botSheep, botSnack, botStepInfo, botWheatKept,
-  chapterReached, countItem, cutGrass, DATA, hasHoe, hasTool, millPending, NIGHT_STEPS,
-  openStation, sheepCount, simulateFromCopy, simulateGame, simulatePlay,
-  soilCount, testBatir, testFillBatteries, testGoToChapter, testSetLevel, testWoolReady,
+  actionCost, atelierConstruit, botBuy, botDay, botFabriquer, commencerObjectifs, createNewGame, materiauxFournis,
+  posteSimulation, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill, botRecipeValue, botScythe, botSheep,
+  botSnack, botStepInfo, botWheatKept, countItem, cutGrass, DATA, hasHoe, hasTool, millPending, openStation,
+  sheepCount, simulateFromCopy, simulateGame, simulatePlay, soilCount, testBatir, testFillBatteries, testSetLevel,
+  testWoolReady,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atChapter, fillCows, fillSheep, growZone, partie, pature, reach, setInv,
-  test, vieFaite,
+  assert, assertEqual, atChapter, fillCows, fillSheep, growZone, partie, pature, reach, setInv, test,
 } from './aide.mjs';
 
 /* --- Lot 10 : simulation d'un joueur automatique --- */

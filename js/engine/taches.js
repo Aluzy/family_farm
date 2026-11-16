@@ -8,7 +8,7 @@ import { harvestPlot, isMature, plantPlot, rockGone, seedStock, treeGone, waterC
 import { harvestTree, ripeTrees } from './orchard.js';
 import { castLine, chopTree, chopsLeft, fishLeft, foretArbres, foretGrand, grassCut, hasTool, mineRock, scytheGrass, toolDef } from './outils.js';
 import { ramassables, ramasser } from './atelier.js';
-import { recolterRuche, ruchesARecolter, ruchesPosees } from './ruches.js';
+import { ruchesPosees, recolterRuche, ruchesARecolter } from './ruches.js';
 import { pickUp } from './ramassage.js';
 import { botteleuses, sortirBotte, verserFibres } from './botteleuse.js';
 import { recipeStatus, startRecipe } from './kitchen.js';

@@ -13,10 +13,11 @@
    ========================================================================== */
 
 import {
-  actionsDues, addItem, arriverVillageois, capaciteCharrette, attribuer, avancerTaches, botVillageois, chopsLeft, clockHours, countItem, createNewGame,
-  DATA, donnerOutil, executerCommande, farmSeed, farmTerrain, fishLeft, harvestAll, isMature, journeeDuVillage, listeTaches, migrate,
-  maxStage, paroleVillageois, portDuMonde, postesDe, quiFaitQuoi, reprendreOutil, runNight, STATE_VERSION, tacheAttente, tacheDef,
-  tacheManque, tachesDuPoste, tachesNuit, tachesPour, testBatir, testMaisonVillageois, tick, treeGone, villageoisDe, waterPlot,
+  actionsDues, addItem, arriverVillageois, capaciteCharrette, attribuer, avancerTaches, botVillageois, clockHours,
+  countItem, createNewGame, DATA, donnerOutil, executerCommande, farmSeed, farmTerrain, fishLeft, harvestAll,
+  isMature, journeeDuVillage, listeTaches, migrate, maxStage, paroleVillageois, portDuMonde, postesDe, quiFaitQuoi,
+  reprendreOutil, runNight, STATE_VERSION, tacheAttente, tacheDef, tacheManque, tachesDuPoste, tachesNuit,
+  tachesPour, testBatir, testMaisonVillageois, tick, treeGone, villageoisDe, waterPlot,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 

@@ -1,7 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, isOwned, starterOf, storedEnergy } from './devices.js';
-import { earn } from './compta.js';
 import { addItem, countItem, penalite } from './inventory.js';
 import { averageHappiness } from './bonheur.js';
 import { plantableCrops } from './crops.js';
@@ -9,13 +8,8 @@ import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.j
 import { gainXp, levelReached, unlockLevel } from './levels.js';
 import { houseRepaired } from './depart.js';
 import { farmTerrain } from './terrain.js';
-import { hameauxVus } from './monde-hameaux.js';
 import { partVue } from './monde-vu.js';
-import { genreJoueur } from './family.js';
-import { recitPour } from './recit-aiguillage.js';
 import { offrirPlan } from './plans.js';
-import { habitantsDe } from './habitants.js';
-import { cleDe, palierAmitie } from './amitie.js';
 import { styleMaison } from './styles.js';
 import { compterObjectifIle, listeDesChapitres, paliersSuivis } from './paliers.js';
 import { chroniqueRecolte, noterChronique } from './chronique.js';
@@ -206,12 +200,6 @@ function partDuMonde(state) {
   return vuMemo.pct;
 }
 
-// Les habitants des hameaux au palier d'amitié `palier` ou plus.
-function amisAuPalier(state, palier) {
-  let n = 0;
-  for (const h of Object.values(habitantsDe(state))) for (const f of (h && h.foyers) || []) for (const m of f.membres || []) if (palierAmitie(state, cleDe(m)) >= palier) n++;
-  return n;
-}
 
 // Valeur actuelle d'un objectif.
 export function objectiveValue(state, obj) {
@@ -230,7 +218,7 @@ export function objectiveValue(state, obj) {
     case 'laines': return k.laines;
     // la nouvelle vision (après le lot 6, à la place de l'autonomie) : les amis, les repas partagés, les
     // projets des hameaux, les styles, les plans
-    case 'amis': return amisAuPalier(state, obj.palier || 0);
+    case 'amis': return 0;   // (les amis des hameaux d'avant : retirés à la bascule, I9h ; l'île compte amitieVillageois)
     case 'repas': return k.repasInvites || 0;
     case 'projets': return Object.values(state.projets && typeof state.projets === 'object' ? state.projets : {}).reduce((n, p) => n + (p && Array.isArray(p.faits) ? p.faits.length : 0), 0);
     case 'styles': { const m = styleMaison(state); return m.complet ? obj.cible : Math.min(obj.cible, m.varies.length); }
@@ -256,7 +244,7 @@ export function objectiveValue(state, obj) {
     case 'caleche': return Math.floor((k.calecheVentes || 0) + (k.ventesPort || 0));
     case 'achatsHameaux': return Math.floor(k.achatsHameaux || 0);
     case 'pecheMer': return Math.floor(k.pecheMer || 0);
-    case 'hameaux': return Object.keys(hameauxVus(state)).length;
+    case 'hameaux': return Object.keys((state.monde && state.monde.hameaux) || {}).length;
     case 'monde': return partDuMonde(state);
     case 'faune': return Object.keys(evenements(state)).filter((e) => e.startsWith('faune:')).length;
     default: return 0;
@@ -277,14 +265,6 @@ export function chapterProgress(state, chapitre = numeroEnCours(state)) {
     return { ...o, libelle: o.libelleSauvage || o.libelle, valeur, ok: valeur + EPS >= o.cible, ratio: Math.max(0, Math.min(1, valeur / o.cible)) };
   });
   return { chapitre, titre: def.titre, icone: def.icone, intro: palier ? '' : def.introSauvage || def.intro, objectifs, fait: objectifs.every((o) => o.ok), palier };
-}
-
-// Le texte de la lettre `id` : sa version d'une terre sauvage (texteSauvage) s'il y en a une. Une ligne
-// { m, f } prend la variante du genre du personnage principal (texteRecit, le récit) ; {nom} reste à
-// remplacer par la page.
-export function mailText(state, id) {
-  const def = DATA.COURRIER[id];
-  return (def.texteSauvage || def.texte).map((l) => (l && typeof l === 'object' ? l[genreJoueur(state)] || l.m || '' : l));
 }
 
 // Le lot 6 : la récompense du chapitre `n` (data/campaign.json recompense), donnée une fois : ses plans
@@ -379,72 +359,6 @@ export function chapitresAuPas(state) {
   pasObjectifs.set(state, n + 1);
   if (state.campagne) noteItemRecords(state);
   return 0;
-}
-
-/* ---------- version 1.3 : le courrier ---------- */
-
-export function mailbox(state) {
-  return Array.isArray(state.courrier) ? state.courrier : [];
-}
-
-export function mailReceived(state, id) {
-  return mailbox(state).some((l) => l.id === id);
-}
-
-// Lettres pas encore lues, dans l'ordre d'arrivée.
-export function unreadMail(state) {
-  return mailbox(state).filter((l) => !l.lu);
-}
-
-// La condition d'une lettre est-elle remplie ? Toutes ses clés doivent l'être (une lettre sans clé connue
-// n'arrive jamais). Le récit, lot 9 : chapitre (le chapitre de la campagne atteint), fait (un fait du récit,
-// ou une liste : tous notés) et apres (avec fait : au moins ce nombre de jours depuis que le premier l'a été).
-function mailDue(state, def) {
-  const q = def.quand || {};
-  const tests = [];
-  if (q.depart) tests.push(!!(state.departV2 && state.famille && state.famille.configuree));
-  if (q.debloque) tests.push(!!state.campagne && isUnlocked(state, q.debloque));
-  if (q.niveau) tests.push(levelReached(state) >= q.niveau); // version 1.14
-  if (q.chapitre) tests.push(!!state.campagne && chapterReached(state) >= q.chapitre);
-  if (q.fait) {
-    const faits = Array.isArray(q.fait) ? q.fait : [q.fait];
-    // (fiche I7c : les faits du récit, par l'aiguillage ; aucun, et le courrier ne vient pas)
-    const R = recitPour(state);
-    tests.push(faits.every((f) => R.aFait(state, f)) && (!q.apres || R.ageFait(state, faits[0]) !== null && R.premierJourFait(state, faits[0]) + q.apres <= state.day));
-  }
-  return tests.length > 0 && tests.every(Boolean);
-}
-
-
-// Fait arriver les lettres dont la condition vient d'être remplie : les cadeaux
-// vont dans l'inventaire, la lettre dans state.courrier (non lue). Une lettre
-// n'arrive qu'une fois ; une partie qui remplissait déjà la condition avant la
-// version 1.3 la reçoit au premier passage. Renvoie les identifiants arrivés.
-export function deliverMail(state) {
-  const arrivees = [];
-  for (const [id, def] of Object.entries(DATA.COURRIER)) {
-    if (mailReceived(state, id) || !mailDue(state, def)) continue;
-    if (!Array.isArray(state.courrier)) state.courrier = [];
-    for (const [item, qty] of Object.entries(def.cadeaux || {})) addItem(state, item, qty);
-    state.courrier.push({ id, nuit: state.day, lu: false });
-    arrivees.push(id);
-  }
-  return arrivees;
-}
-
-// Le joueur a ouvert la lettre : elle reste dans le courrier, marquée lue.
-export function readMail(state, id) {
-  const l = mailbox(state).find((x) => x.id === id);
-  if (!l || !DATA.COURRIER[id]) return fail('Lettre introuvable.');
-  l.lu = true;
-  // Version 1.14 : les pièces d'une lettre sont versées une fois, à l'ouverture (sans XP).
-  const pieces = DATA.COURRIER[id].pieces || 0;
-  if (pieces && !l.verse) {
-    earn(state, pieces, `Lettre : ${DATA.COURRIER[id].expediteur || 'courrier'}`);
-    l.verse = true;
-    return { ok: true, id, pieces };
-  }
-  return { ok: true, id, pieces: 0 };
 }
 
 // Le joueur a vu l'écran de fin du chapitre : on l'enlève de la file.

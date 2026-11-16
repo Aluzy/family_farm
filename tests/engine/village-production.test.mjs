@@ -14,12 +14,13 @@
    ========================================================================== */
 
 import {
-  acheterPalier, accepterContrat, addItem, arriverVillageois, attribuer, avancerContrats, awakeMsAtHour, bilanJour, buildAtelier, calculProduction,
-  catalogueImport, chargerPortage, choisirVehicule, commanderImport, comptoirDuPort, contratsDuPort, countItem, craftStatus,
-  createNewGame, DATA, debloque, etatChaine, executerCommande, farmSeed, farmTerrain, listeVocations, livrerContrat,
-  machinesDeLaFerme, migrate, palierVocation, paiementContrat, porteeNavette, portDuMonde, poserBloc, postesDe,
-  prendreAvisContrats, productionNuit, prixIle, robotTrip, runNight, scoreVocation, sellPrice, STATE_VERSION, tacheDef, tacheManque, tachesDuPoste,
-  tachesNuit, testBatir, testFillBatteries, testFillTank, testMaisonVillageois, tirerContrats, valeurContrat, vocationsNuit,
+  acheterPalier, accepterContrat, addItem, arriverVillageois, attribuer, avancerContrats, awakeMsAtHour, bilanJour,
+  buildAtelier, calculProduction, catalogueImport, chargerPortage, choisirVehicule, commanderImport, comptoirDuPort,
+  contratsDuPort, countItem, craftStatus, DATA, debloque, etatChaine, executerCommande, farmSeed, farmTerrain,
+  listeVocations, livrerContrat, machinesDeLaFerme, migrate, palierVocation, paiementContrat, porteeNavette,
+  portDuMonde, poserBloc, postesDe, prendreAvisContrats, productionNuit, prixIle, robotTrip, scoreVocation,
+  STATE_VERSION, tacheDef, tacheManque, tachesDuPoste, tachesNuit, testBatir, testFillBatteries, testFillTank,
+  testMaisonVillageois, tirerContrats, valeurContrat, vocationsNuit,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, boite, partie, runFor, setInv, test } from './aide.mjs';
 

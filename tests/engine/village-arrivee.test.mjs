@@ -13,10 +13,10 @@
    ========================================================================== */
 
 import {
-  accueillirVillageois, arriveeDue, arriveeRefus, arriverVillageois, boiteCounts, caseArrivee, couchages, craftStatus,
-  createNewGame, DATA, farmTerrain, ficheVillageois, jourDeBac, litsDeLaFamille, maisonsLibres, maisonsMarquees, migrate,
-  nombreVillageois, phraseArrivee, plafondVillageois, poserBloc, prendreAvis, recetteDebloquee, reprendreBloc, runNight,
-  STATE_VERSION, testMaisonVillageois, tirerVillageois, verifierMaisons, villageoisDe, villageoisNuit, villageoisPourLaCarte,
+  accueillirVillageois, arriveeDue, arriveeRefus, arriverVillageois, boiteCounts, caseArrivee, couchages,
+  createNewGame, DATA, farmTerrain, ficheVillageois, jourDeBac, litsDeLaFamille, maisonsLibres, maisonsMarquees,
+  migrate, nombreVillageois, phraseArrivee, plafondVillageois, poserBloc, prendreAvis, reprendreBloc, runNight,
+  STATE_VERSION, testMaisonVillageois, tirerVillageois, verifierMaisons, villageoisDe, villageoisPourLaCarte,
 } from '../../js/engine/index.js';
 import { cleDiversite } from '../../js/engine/apparence.js';
 import { assert, assertEqual, boite, partie, sansPenalite, test } from './aide.mjs';

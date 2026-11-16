@@ -9,8 +9,9 @@
    ========================================================================== */
 
 import {
-  BIOME, catalogueImport, contexteSol, countItem, createNewGame, culturesSauvages, DATA, elementsSol, farmTerrain, findPlot, genererMonde,
-  harvest, isBuyable, MONDE, plant, objetsDeRegion, poserCheminsSol, ramasserMonde, solDeRegion, solDirect,
+  BIOME, catalogueImport, contexteSol, countItem, culturesSauvages, DATA, elementsSol, farmTerrain, findPlot,
+  genererMonde, harvest, isBuyable, MONDE, plant, objetsDeRegion, poserCheminsSol, ramasserMonde, solDeRegion,
+  solDirect,
 } from '../../js/engine/index.js';
 import { plantableCropsFor } from '../../js/engine/campaign.js';
 import { SORTES } from '../../js/engine/monde-vegetation.js';

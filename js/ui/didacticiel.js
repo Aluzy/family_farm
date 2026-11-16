@@ -34,14 +34,9 @@ import {
   planAbri, suivantDidacticiel,
 } from '../engine/didacticiel.js';
 import { farmTerrain } from '../engine/terrain.js';
-import { absoluteHours } from '../engine/clock.js';
-import { CALECHE, calecheMaintenant, heureTexte, ouEstCaleche } from '../engine/caleche.js';
 import { unlockLevel } from '../engine/levels.js';
 import { marcheOuvert } from '../engine/devices.js';
-import { boussoleMontree, lieuxDeLaCarte, montrerLieu } from '../engine/monde-vu.js';
-import { solDuMonde } from './monde-sol.js';
-import { deHameau } from '../engine/fetes.js';
-import { recitPour } from '../engine/recit-aiguillage.js';   // (fiche I7d : le nom du cocher, par l'aiguillage)
+import { montrerLieu } from '../engine/monde-vu.js';
 import { buildMode, hoeMode, scytheMode, state } from './store.js';
 import { menuOpen, stageWindow } from './stage-windows.js';
 import { toolbarOpen } from './outils.js';
@@ -105,35 +100,14 @@ const fabrique = (ids) => ({ cible: () => fabriquer(ids()).cible || null, carte:
 export const carteOuverte = () => !!document.querySelector('#modal-root .carte-monde');
 // L'entrée 🧭 du menu (d'abord la flèche, s'il est fermé).
 export const menuCarte = () => (menuOpen ? '.nav-btn[data-action="carte-monde-open"]' : '#side-tab');
-// Les trois cases de la sortie de la ferme (le chemin y a trois cases de large) : là où la calèche se gare.
+// Les trois cases de la sortie de la ferme (le chemin y a trois cases de large).
 function casesSortie(sorte = 'porte') {
   const T = farmTerrain(state), S = T.MONDE && T.MONDE.cadre && T.MONDE.cadre.SORTIE;
   if (!Number.isInteger(S)) return [];
   return [S - T.LARGEUR, S, S + T.LARGEUR].map((t) => ({ case: t, sorte }));
 }
-// L'heure du jeu, en mots (« 8 h 15 »).
-const heure = () => heureTexte(absoluteHours(state) % 24);
 // Le premier élément visible de `sel`, ou null (pour une cible qui peut manquer).
 export const visibleSel = (sel) => (element(sel) ? sel : null);
-
-// Le hameau voisin, montré sur la carte du monde en arrivant à son étape (le cocher en a parlé) : le Gué (le
-// récit : le plus proche de la ferme, gue vrai, monde-gen.js), sinon le plus proche de la sortie de la ferme
-// parmi ceux du plan ; sauf si un hameau y est déjà (vu en marchant).
-// Gardé dans state.didacticiel.montre. → vrai si la partie a changé.
-export function montrerHameauVoisin() {
-  // (le didacticiel d'avant, ou les objectifs du jour : le septième, le hameau voisin, js/ui/objectifs.js)
-  const d = state.didacticiel || state.objectifs;
-  if (!d) return false;
-  const T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : null, lieux = sol && sol.lieux();
-  if (!lieux || d.montre) return false;
-  if (lieuxDeLaCarte(state, lieux, T).hameaux.length) { d.montre = true; return true; }
-  const S = T.MONDE.cadre.SORTIE, W = T.LARGEUR, dist = (t) => Math.hypot((t % W) - (S % W), Math.floor(t / W) - Math.floor(S / W));
-  const h = (lieux.hameaux || []).find((x) => x.gue) || [...(lieux.hameaux || [])].sort((a, b) => dist(a.case) - dist(b.case))[0];
-  if (!h) return false;
-  montrerLieu(state, h.case, 6);
-  d.montre = h.id;
-  return true;
-}
 
 // Les cases qui brillent sur la carte (la surbrillance de l'étape : l'abri, la sortie de la ferme) se
 // dégagent du brouillard, DEGAGE cases autour de chacune (fiche 14b). Une fois par liste de cases. → vrai si
@@ -230,32 +204,15 @@ export const ETAPES_UI = {
       : 'Dehors, tout se récolte avec les gestes de la ferme : coupe un <b>arbre</b> à la hache, casse un <b>rocher</b> à la pioche, ou ramasse à la main des <b>mûres</b>, des champignons, des galets… (touche-les).'),
     cible: () => (tenu('hache') || tenu('pioche') ? null : outil('hache')),
   },
+  // (une partie d'avant passée sur l'île au milieu de son didacticiel, fiche I7f : la calèche et les hameaux ne sont
+  // plus ; l'étape de la vente se fait au port, celles du hameau se passent)
   caleche: {
-    texte: () => {
-      const vendre = marcheOuvert(state), ou = `${ouEstCaleche(state)} Il est ${heure()}.`;
-      const e = calecheMaintenant(state), garee = e && e.etat === 'arret' && e.arret.sorte === 'ferme';
-      return `La <b>calèche</b> fait le tour du monde et s'arrête chaque jour devant l'entrée de ta ferme vers ${heureTexte(CALECHE.FERME)}, une heure${garee ? '' : ' (les cases qui brillent)'}. ${ou} `
-        + (vendre ? 'Attends-la là, ou hèle-la quand elle passe près de toi (🔔 Héler), puis touche-la et <b>vends-lui</b> quelque chose : une récolte, du bois, des mûres…'
-          : `Va à sa rencontre, ou hèle-la quand elle passe près de toi (🔔 Héler), et <b>touche-la</b> : son cocher commercera avec toi dès le niveau ${unlockLevel('marche')}.`)
-        + ' En attendant, continue ta ferme : la bulle attend.';
-    },
-    cible: () => visibleSel('.caleche-heler:not([hidden])'),
-    // (garée devant la ferme, le cercle autour d'elle suffit : les cases seraient par-dessus)
-    carte: () => { const e = calecheMaintenant(state); return e && e.etat === 'arret' && e.arret.sorte === 'ferme' ? { caleche: true } : { caleche: true, cases: casesSortie() }; },
+    texte: () => (marcheOuvert(state) ? 'Le <b>port</b>, au bout du chemin, achète ce que tu produis : va y <b>vendre</b> quelque chose (une récolte, du bois, des mûres…), ou passe cette étape.'
+      : `Le <b>port</b>, au bout du chemin, commercera avec toi dès le niveau ${unlockLevel('marche')} : passe cette étape en attendant.`),
   },
-  hameau_choisir: {
-    texte: () => (!carteOuverte() ? `${recitPour(state).nomCocher(state)} t'a parlé ${deHameau(DATA.PLAN_MONDE.HAMEAUX.GUE)}, le <b>hameau</b> voisin : le voici sur ta carte du monde. ${menuOpen ? 'Touche 🧭 <b>Carte du monde</b>.' : 'Ouvre-la (le menu, puis 🧭 Carte du monde).'}`
-      : document.querySelector('[data-action="carte-monde-but"]') ? 'Touche « <b>Y mener la boussole</b> » : elle te montrera le chemin.'
-      : 'Touche le hameau 🏘️ sur la carte (fais-la glisser s\'il le faut) : son nom, sa distance, et la boussole.'),
-    cible: () => (!carteOuverte() ? menuCarte() : visibleSel('[data-action="carte-monde-but"]') || visibleSel('[data-action="carte-monde-lieu"][data-sorte="hameau"]')),
-  },
-  hameau_aller: {
-    texte: () => (carteOuverte() ? 'Ferme la carte : la <b>boussole</b>, sous l\'horloge, te mène au hameau.'
-      : boussoleMontree(state) ? 'Suis l\'aiguille de la <b>boussole</b>, sous l\'horloge : elle montre le hameau, et sa distance en cases est dessous. Les chemins y mènent aussi. Là-bas, entre dans les maisons, parle aux habitants (touche-les).'
-      : 'La boussole est retirée (Options) : suis les <b>chemins</b> jusqu\'au hameau, il est sur ta carte du monde.'),
-    cible: () => (carteOuverte() ? null : visibleSel('.boussole')),
-  },
-  fin: { texte: () => 'Bravo, te voilà dans le grand monde ! Chaque hameau a ses familles et son métier, la montagne ses gisements et ses cristaux, la côte sa mer ; la calèche achète ce que tu produis. Ta plante pousse à la ferme : touche-la, une bulle te dit quand elle grandira ; récolte-la quand elle sera mûre. La suite est à toi : élevage, cuisine, et les objectifs des chapitres.' },
+  hameau_choisir: { texte: () => 'Cette étape n\'existe plus sur l\'île : passe-la.' },
+  hameau_aller: { texte: () => 'Cette étape n\'existe plus sur l\'île : passe-la.' },
+  fin: { texte: () => 'Bravo, te voilà dans le grand monde ! La montagne a ses gisements et ses cristaux, la côte sa mer ; le port achète ce que tu produis. Ta plante pousse à la ferme : touche-la, une bulle te dit quand elle grandira ; récolte-la quand elle sera mûre. La suite est à toi : élevage, cuisine, et les paliers de l\'île.' },
 };
 
 // L'abri à fabriquer : la recette dont il manque encore des objets.
@@ -335,9 +292,8 @@ export function renderDidacticiel() {
   if (state && majDidacticiel(state)) { persistState(); son('reussite'); }
   // la fenêtre de l'Atelier s'ouvre : l'étape « touche l'Atelier » est faite
   if (state && etapeDidacticiel(state) === 'atelier_ouvrir' && stageWindow === 'atelier' && suivantDidacticiel(state, 'atelier_ouvrir').ok) persistState();
-  // fiche 9b : la carte du monde s'ouvre : l'étape « carte » est faite ; le hameau voisin se montre
+  // fiche 9b : la carte du monde s'ouvre : l'étape « carte » est faite
   if (state && etapeDidacticiel(state) === 'carte' && carteOuverte() && suivantDidacticiel(state, 'carte').ok) persistState();
-  if (state && etapeDidacticiel(state) === 'hameau_choisir' && montrerHameauVoisin()) persistState();
   // fiche 14b : ce que la bulle allume sur la carte n'est pas sous le brouillard
   if (state && degagerCible()) persistState();
   // les graines vues dans l'inventaire, puis l'inventaire refermé : l'étape est faite

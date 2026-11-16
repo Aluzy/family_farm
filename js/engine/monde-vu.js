@@ -257,23 +257,15 @@ export function toutCacher(state) {
 
 /* ---------- ce que la carte du monde montre ---------- */
 
-// Les lieux du plan (monde-gen.js : { hameaux: [{ id, case, nom }], peche: [{ id, case, eau }] }) que la carte du
-// monde montre : ceux dont la case est vue, et rien d'autre. Un hameau vu de loin n'a pas de nom tant que le
-// personnage n'y est pas allé (state.monde.hameaux), sauf le Gué. (Les entrées de grotte ne sont plus.)
-// Le port (le chantier « l'île à bâtir », fiche I1a : lieux.port) est connu dès le départ, vu ou non, et son
-// chemin aussi (la carte du monde lève le brouillard sur eux : js/ui/carte-monde.js).
-// → { hameaux: [{ id, case, nom, connu }], peche: [{ id, case, eau, nom }][, port: [{ id, case, nom, chemin }]] }.
+// Les lieux du plan (monde-gen.js : { peche: [{ id, case, eau }], port }) que la carte du monde montre : ceux dont la
+// case est vue, et rien d'autre. (Les entrées de grotte ne sont plus ; les hameaux d'avant non plus, I7e, I9h.)
+// Le port (fiche I1a : lieux.port) est connu dès le départ, vu ou non, et son chemin aussi (la carte du monde lève le
+// brouillard sur eux : js/ui/carte-monde.js).
+// → { peche: [{ id, case, eau, nom }][, port: [{ id, case, nom, chemin }]] }.
 export function lieuxDeLaCarte(state, lieux, T = farmTerrain(state)) {
-  const out = { hameaux: [], peche: [] };
+  const out = { peche: [] };
   if (!lieux) return out;
   if (lieux.port) out.port = [{ id: lieux.port.id, case: lieux.port.case, nom: lieux.port.nom, chemin: lieux.port.chemin || [] }];
-  const connus = (state.monde && state.monde.hameaux) || {};
-  for (const h of lieux.hameaux || []) {
-    if (!caseVue(state, h.case, T)) continue;
-    const c = connus[h.id];
-    // (le Gué garde son nom : la lettre d'Adèle et le cocher en parlent avant qu'on y aille ; le récit)
-    out.hameaux.push({ id: h.id, case: h.case, nom: c ? c.nom : h.gue && h.nom ? h.nom : 'Un hameau', connu: !!c });
-  }
   const EAUX = { lac: 'au lac', riviere: 'à la rivière', mer: 'en mer' };
   for (const p of lieux.peche || []) if (caseVue(state, p.case, T)) out.peche.push({ id: p.id, case: p.case, eau: p.eau, nom: `Un coin de pêche ${EAUX[p.eau] || ''}`.trim() });
   return out;
@@ -281,9 +273,9 @@ export function lieuxDeLaCarte(state, lieux, T = farmTerrain(state)) {
 
 /* ---------- la boussole ---------- */
 
-export const SORTES_BUTS = ['hameau', 'peche', 'port'];
+export const SORTES_BUTS = ['peche', 'port'];
 // (la liste de lieuxDeLaCarte où chercher le but de cette sorte)
-const listeDe = (sorte) => (sorte === 'hameau' ? 'hameaux' : sorte === 'port' ? 'port' : 'peche');
+const listeDe = (sorte) => (sorte === 'port' ? 'port' : 'peche');
 export const listeDuBut = (L, sorte) => L[listeDe(sorte)] || [];
 
 // Le lieu choisi sur la carte du monde (state.monde.but : { sorte, id }), ou null (la ferme).

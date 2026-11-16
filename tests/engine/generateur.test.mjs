@@ -10,6 +10,7 @@ import {
   contexteSol, createInitialState, fermeFaite, fermeRecue, GENERATEUR_VERSION, genererFerme, genererMonde, migrate, MONDE,
   planDuMonde, reparerPartie, setFarmSeed, solDeRegion, STATE_VERSION,
 } from '../../js/engine/index.js';
+import { PORT } from '../../js/engine/port.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 // L'empreinte du monde de la graine EMPREINTE_GRAINE, pour chaque version du générateur.
@@ -39,6 +40,13 @@ const EMPREINTES = {
   // (9 : les décors dessinés à la main, fleurs, pierre et champignons ; la ferme et le plan sont ceux du 8)
   9: { ferme: '4da6ebef', plan: '3080e6fc', regions: { '3,3': '4ba36a8c', '0,0': '18c531a4', '8,6': '16097208', '5,1': 'd05ddc63', '1,1': '73d2d5a5' } },
 };
+// Depuis la bascule (fiche I9h), on ne joue plus que l'île : le monde de la graine avec son port (au niveau de départ,
+// sans hameau). Les régions relevées sont celles de ce monde-là (EMPREINTES_ILE) ; la ferme et le plan du monde sans
+// port, dont le monde de l'île est tiré, restent comparés à EMPREINTES. (Le sol des régions du monde sans port
+// dessinait les maisons des hameaux, retirées avec eux : ce monde-là n'est plus joué.)
+const EMPREINTES_ILE = {
+  9: { plan: '6e25a998', regions: { '3,3': '3e1dc326', '0,0': '18c531a4', '8,6': '1860a90a', '5,1': '1a49940f', '1,1': '56366521' } },
+};
 
 // Une empreinte FNV-1a (32 bits) d'une valeur : nombres, textes, listes, tableaux typés, objets (clés
 // triées : l'ordre d'écriture n'y change rien).
@@ -58,11 +66,12 @@ function empreinte(v) {
 // L'empreinte du monde d'une graine : la ferme générée, le plan du monde, et le sol de quelques régions
 // (celle de la ferme, un coin, le sud-est, le nord, celle du premier hameau). La durée d'une région
 // (`ms`) n'en fait pas partie.
-function empreinteDuMonde(graine) {
+function empreinteDuMonde(graine, port = 0) {
   const ferme = empreinte(genererFerme(graine));
-  const { biome, relief, humidite, rivieres, finRivieres, lacs, chemins, lieux } = planDuMonde(graine);
-  const plan = empreinte({ biome, relief, humidite, rivieres, finRivieres, lacs, chemins, lieux });
-  const M = genererMonde(graine).terrain.MONDE;
+  const empreintePlan = (p) => { const { biome, relief, humidite, rivieres, finRivieres, lacs, chemins, lieux } = p; return empreinte({ biome, relief, humidite, rivieres, finRivieres, lacs, chemins, lieux }); };
+  const { lieux } = planDuMonde(graine);
+  const plan = empreintePlan(planDuMonde(graine)), planIle = empreintePlan(planDuMonde(graine, port));
+  const M = genererMonde(graine, port).terrain.MONDE;
   const ctx = contexteSol(M.graine, M.cadre, M.ferme, M.taille);
   const h = lieux.hameaux[0].case, R = MONDE.REGION;
   const cles = ['3,3', '0,0', '8,6', '5,1', Math.floor((h % MONDE.LARGEUR) / R) + ',' + Math.floor(Math.floor(h / MONDE.LARGEUR) / R)];
@@ -72,13 +81,15 @@ function empreinteDuMonde(graine) {
     const { ms, ...r } = solDeRegion(ctx, rx, ry);
     regions[cle] = empreinte(r);
   }
-  return { ferme, plan, regions };
+  return { ferme, plan, planIle, regions };
 }
 
 test('le générateur : le monde d\'une graine est celui qu\'a relevé sa version (GENERATEUR_VERSION)', () => {
-  const vu = empreinteDuMonde(EMPREINTE_GRAINE);
-  const attendu = EMPREINTES[GENERATEUR_VERSION];
-  assert(attendu, `aucune empreinte pour la version ${GENERATEUR_VERSION} du générateur : ajoute ${GENERATEUR_VERSION}: ${JSON.stringify(vu)} à EMPREINTES`);
+  const { ferme, plan, planIle, regions } = empreinteDuMonde(EMPREINTE_GRAINE, PORT.NIVEAU_DEPART);
+  const vu = { ferme, plan, ile: { plan: planIle, regions } };
+  const A = EMPREINTES[GENERATEUR_VERSION], I = EMPREINTES_ILE[GENERATEUR_VERSION];
+  assert(A && I, `aucune empreinte pour la version ${GENERATEUR_VERSION} du générateur : ajoute-la à EMPREINTES et EMPREINTES_ILE (${JSON.stringify(vu)})`);
+  const attendu = { ferme: A.ferme, plan: A.plan, ile: I };
   assertEqual(vu, attendu, `le monde de la graine « ${EMPREINTE_GRAINE} » a changé sans que GENERATEUR_VERSION change (js/engine/base.js) : voir l'en-tête de EMPREINTES (obtenu ${JSON.stringify(vu)})`);
 });
 

@@ -6,9 +6,7 @@ import { countItem, isFridgeable, isPerishable, lotsOf, penalite } from '../engi
 import { fridgeCapacity, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeRoom, fridgeUnits } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { sorteAPlanter } from '../engine/plantation.js';
-import { formatNumber, formatQty } from '../engine/format.js';
-import { recitPage } from '../engine/recit-aiguillage.js';   // (fiche I7d : l'île n'a ni enveloppe, ni pierre, ni cloche)
-import { persistState } from './storage.js';
+import { formatQty } from '../engine/format.js';
 import { invTab, state } from './store.js';
 import { eatButton } from './energie.js';
 import { applyResult } from './game-actions.js';
@@ -17,7 +15,7 @@ import { fridgeIcon } from './serre-verger-frigo.js';
 import { pxText } from './pixel-art.js';
 import { tel } from './consent.js';
 import { morph } from './render.js';
-import { lieuDuPerso, stageUsable } from './stage.js';
+import { stageUsable } from './stage.js';
 import { accord, costLabel, itemsText, plural } from './common.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
@@ -167,13 +165,6 @@ function itemBodyHtml(o) {
   const massif = aPlanter && DATA.ATELIER.BLOCS[aPlanter].massif;
   if (aPlanter) lines.push(massif ? `🌼 Se sème dehors, sur une case d'herbe libre : en fleurs dans ${DATA.MASSIFS.NUITS} nuits, à cueillir à la main ; elles refleurissent ensuite. Aussi dans un bac à fleurs.` : '🌳 Se plante dehors, sur une case d\'herbe libre, loin des autres arbres.');
   // fiche 11 : une pièce d'équipement, un sac à provisions
-  // les objets du récit (une partie d'avant seulement : recitPage rend null sur l'île, fiche I7d)
-  const R = recitPage(state);
-  // le récit, lot 9 : l'enveloppe de Maurice (ce qu'il a écrit dessus ; l'ouvrir la garde, js/engine/recit.js)
-  if (R && o.item === R.RECIT.ENVELOPPE.OBJET) lines.push('📜 « Pour les toits de Céron : Odile saura. Ou pour toi, si tu en as plus besoin qu\'eux. Tu sauras. M. »');
-  // le récit, lot 10 : la pierre de lune (la poser sur la ferme : js/engine/fil-lune.js poserPierre)
-  if (R && o.item === R.FIL.PIERRE.OBJET) lines.push('🌙 Une pierre tiède, qui luit faiblement dans le noir.');
-  if (R && o.item === 'cloche_maurice') lines.push('🔔 La cloche de la calèche de Maurice. Deux coups devant chaque maison : un pour bonjour, un pour au revoir.');
   if (estEquipement(o.item)) lines.push(`🧰 ${effetTexte(o.item)} ${sacDef(o.item) ? 'Il se porte dans la quatrième case de ta fiche (Famille).' : 'Elle se porte : Famille, la fiche d\'un membre, une case vide.'}`);
   let actions = '';
   if (o.lieu === 'frigo') {
@@ -184,8 +175,6 @@ function itemBodyHtml(o) {
     if (aPlanter) actions += `<button type="button" class="btn primary" data-action="arbre-planter" data-item="${o.item}">🌱 ${massif ? 'Semer dans l\'herbe' : 'Planter'}</button>`;
     // (l'engrais : le prendre en main, puis le glisser sur les cultures arrosées de la carte, js/ui/compost.js)
     if (DATA.COMPOST && o.item === DATA.COMPOST.ENGRAIS && stageUsable()) actions += `<button type="button" class="btn primary" data-action="engrais-toggle">${it.icone} Prendre en main</button>`;
-    if (R && o.item === R.RECIT.ENVELOPPE.OBJET) actions += '<button type="button" class="btn" data-action="enveloppe-ouvrir">✉️ L\'ouvrir</button>';
-    if (R && o.item === R.FIL.PIERRE.OBJET && (lieuDuPerso() || {}).lieu === 'ferme') actions += '<button type="button" class="btn" data-action="pierre-poser">🪨 La poser sur la ferme</button>';
     if (it.mangeable) actions += eatButton(o.item, 'Manger');
     if (state.frigo.construit && isFridgeable(o.item)) {
       const off = fridgeRoom(state) < 1 ? ' disabled title="Le frigo est plein"' : '';
@@ -230,24 +219,6 @@ export function renderItemModal() {
 registerActions({
   'inv-item': (target) => {
     openItemModal(target.dataset.item, target.dataset.lieu);
-  },
-  // le récit, lot 9 : ouvrir l'enveloppe de Maurice, c'est la garder (ses pièces) ; la fiche se ferme
-  'enveloppe-ouvrir': () => {
-    const R = recitPage(state);
-    if (!R) return;
-    const r = applyResult(R.ouvrirEnveloppe(state));
-    if (!r.ok) return;
-    persistState();
-    notify(`✉️ Dans l'enveloppe, ${formatNumber(r.pieces)} 💰, et rien d'autre. Elles sont à toi.`, { kind: 'info' });
-  },
-  // le récit, lot 10 : la pierre posée sur la ferme (elle quitte l'inventaire ; la fiche se ferme)
-  'pierre-poser': () => {
-    const R = recitPage(state);
-    if (!R) return;
-    const r = applyResult(R.poserPierre(state));
-    if (!r.ok) return;
-    persistState();
-    notify('🪨 La pierre est posée. La terre, dessous, est tiède.', { kind: 'info' });
   },
   'fridge-in-all': () => {
     const result = applyResult(executer('frigo.toutRanger', {}));

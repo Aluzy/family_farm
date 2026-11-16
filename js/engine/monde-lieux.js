@@ -15,7 +15,7 @@ import { BIOME } from './monde-gen.js';
        rivière, une eau trop étroite) : des piquets, une nasse et un filet sur la rive, à côté de la
        case (ils ne ferment rien).
 
-     - Les lieux du récit (lieux.recit : l'observatoire de Maurice (la « cabane »), l'atelier de Frida, l'épave ; docs/recit/) :
+     - Les lieux du récit (lieux.recit : l'observatoire de Maurice (la « cabane »), l'atelier de Frida, l'épave ; archive/jeu-avant-ile:docs/recit/) :
        leur dessin posé sur leur case, leurs cases `bloque` fermées (data/monde.json, LIEUX.SORTES).
      - Les secrets du monde (D-2, lieux.secrets : la ruine, le cairn, l'arbre ancien, le belvédère, la pierre levée) :
        posés comme les lieux du récit (la ruine de la forêt : sa variante moussue) ; les toucher : secrets.js.

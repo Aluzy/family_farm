@@ -144,13 +144,8 @@ test('culture sans découpe : un avertissement, pas une erreur', () => {
 
 /* ---------- ce que les autres tables citent ---------- */
 
-refuse('courrier : cadeau inconnu', (d) => { d.COURRIER.adele_serre.cadeaux.mangue = 1; }, '« mangue »');
 refuse('inventaire de départ : objet inconnu', (d) => { d.DEPART.ETAT_INITIAL.INVENTAIRE.graine_melon = 2; }, 'DEPART.ETAT_INITIAL.INVENTAIRE : « graine_melon »');
 refuse('animal : produit inconnu', (d) => { d.ANIMAUX.poule.produit = 'oeufs'; }, 'ANIMAUX.poule.produit : « oeufs »');
-refuse('île : un atelier d\'un hameau qui n\'est pas garanti', (d) => { d.ILE.ATELIERS.scierie.hameau = 'les_saules'; }, 'un hameau garanti');
-refuse('île : une commande qui demande un objet inconnu', (d) => { d.ILE.ATELIERS.scierie.recettes.planches.entrees.chene = 1; }, '« chene »');
-refuse('île : un meuble sans vendeur', (d) => { d.MEUBLES.chaise.vendeur = 'mouettes'; }, 'un hameau qui vend des meubles');
-refuse('île : la veillée sans l\'élément du niveau 10', (d) => { delete d.NIVEAUX.ELEMENTS.veillee; d.NIVEAUX.liste[9].debloque = []; d.RECIT.SCENES = d.RECIT.SCENES.filter((x) => x.id !== 'veillee_ferme'); }, 'l\'élément « veillee » manque');
 refuse('monde : un biome manque', (d) => { d.BIOMES = d.BIOMES.filter((b) => b !== 'sommet'); delete d.ROCHES.DENSITES.sommet; delete d.ROCHES.BORNES.sommet; }, 'BIOMES : « sommet » manque');
 refuse('rochers : une sorte inconnue dans les densités', (d) => { d.ROCHES.DENSITES.montagne.roche.menhir = 0.01; }, '« menhir » n\'est pas une sorte');
 refuse('rochers : une falaise sans toutes ses colonnes', (d) => { d.ROCHES.SORTES.find((s) => s.nom === 'paroi').variantes = 24; }, 'ROCHES.SORTES[10].variantes');
@@ -183,61 +178,8 @@ test('le fromage d\'alpage : herbes de montagne (trouvaille, récolte du grand m
   eq(sourcesOf(DATA, 'fromage_alpage'), ['recette fromage_alpage', 'Marché']);
 });
 
-/* ---------- le récit de Céron (data/recit.json) ---------- */
+/* ---------- le plan du monde : les hameaux garantis, les lieux, les bâtisses (le récit est retiré à la bascule, I9h) ---------- */
 
-const R0 = (d) => d.RECIT.REPLIQUES[0];
-refuse('récit : un personnage inconnu', (d) => { R0(d).qui = 'personne'; }, 'un personnage de RECIT.PERSONNAGES');
-refuse('récit : une condition inconnue', (d) => { R0(d).quand = { meteo: 'pluie' }; }, 'condition inconnue');
-refuse('récit : une phase de lune inconnue', (d) => { R0(d).quand = { lune: 'rousse' }; }, 'une phase parmi');
-refuse('récit : un palier hors des paliers', (d) => { R0(d).quand = { palier_min: 9 }; }, 'un rang de palier');
-refuse('récit : des conditions jamais vraies', (d) => { R0(d).quand = { fait: 'x', sans_fait: 'x' }; }, 'jamais vraie');
-refuse('récit : une bulle trop longue', (d) => { R0(d).texte = 'a'.repeat(d.RECIT.BULLE_MAX + 1); }, 'au plus');
-refuse('récit : {prenom} compte pour un prénom entier', (d) => { R0(d).texte = `{prenom}${'a'.repeat(d.RECIT.BULLE_MAX - '{prenom}'.length)}`; }, 'au plus');
-refuse('récit : {hameau} compte pour le plus long nom de hameau', (d) => { R0(d).texte = `{hameau}${'a'.repeat(d.RECIT.BULLE_MAX - '{hameau}'.length)}`; }, 'au plus');
-refuse('récit : une humeur inconnue', (d) => { R0(d).quand = { humeur: 'grognon' }; }, 'une humeur parmi');
-refuse('récit : jour_min après jour_max', (d) => { R0(d).quand = { jour_min: 5, jour_max: 2 }; }, 'jamais vraie');
-refuse('récit : une relation nulle dans un effet', (d) => { R0(d).effet = { relation: null }; }, 'des points, ou');
-refuse('récit : un fait d\'effet qui n\'est pas un texte', (d) => { R0(d).effet = { fait: 3 }; }, 'un fait ou une liste de faits');
-refuse('récit : un acte sur un chapitre qui n\'existe pas', (d) => { d.RECIT.ACTES[3].chapitre = 9; }, 'un chapitre de la campagne');
-refuse('récit : des seuils de confiance dans le désordre', (d) => { d.RECIT.CONFIANCE.NIVEAUX = { chaleureuse: 70, reservee: 0, cordiale: 40 }; }, 'des seuils entiers croissants');
-refuse('récit : une variable inconnue', (d) => { R0(d).texte = 'Bonjour {inconnu}.'; }, 'variable inconnue');
-refuse('récit : une seule variante de genre', (d) => { R0(d).texte = { m: 'Le petit' }; }, 'les deux variantes de genre');
-refuse('récit : un id en double', (d) => { d.RECIT.REPLIQUES[1].id = R0(d).id; }, 'en double');
-refuse('récit : un effet inconnu', (d) => { R0(d).effet = { magie: 1 }; }, 'effet inconnu');
-refuse('récit : une page de carnet inconnue', (d) => { d.RECIT.SCENES[0].effet.fragment = 'page_perdue'; }, 'une page de RECIT.FRAGMENTS');
-refuse('récit : une scène sans ligne', (d) => { d.RECIT.SCENES[0].lignes = []; }, 'au moins une ligne');
-refuse('récit : montrer un lieu qui n\'est pas garanti', (d) => { d.RECIT.SCENES[0].effet.montrer = 'cadolon'; }, 'un hameau garanti');
-// (le récit, lot 9 : les conditions, les effets, les personnages qui habitent, les fins, les lettres)
-refuse('récit : un objet inconnu en condition', (d) => { R0(d).quand = { objet: 'licorne' }; }, 'un objet de OBJETS');
-refuse('récit : toucher un personnage inconnu', (d) => { R0(d).quand = { touche: 'personne' }; }, 'un personnage de RECIT.PERSONNAGES');
-refuse('récit : une fin inconnue', (d) => { R0(d).quand = { fin: 'heureuse' }; }, 'une fin parmi');
-refuse('récit : une voie inconnue', (d) => { R0(d).quand = { voie: 'moyenne' }; }, 'petite ou grande');
-refuse('récit : donner un objet inconnu', (d) => { R0(d).effet = { donner: { licorne: 1 } }; }, 'licorne');
-refuse('récit : prendre une quantité qui n\'en est pas une', (d) => { R0(d).effet = { prendre: { planche: 0 } }; }, 'un entier au moins égal à 1');
-refuse('récit : habiter un hameau qui n\'est pas garanti', (d) => { d.RECIT.PERSONNAGES.odile.habite.hameau = 'cadolon'; }, 'un hameau garanti');
-refuse('récit : vivre avec quelqu\'un d\'un autre hameau', (d) => { d.RECIT.PERSONNAGES.theo.habite.avec = 'odile'; }, 'dans le même hameau');
-refuse('récit : un métier inconnu', (d) => { d.RECIT.PERSONNAGES.basile.habite.metier = 'astronaute'; }, 'un métier de HABITANTS.METIERS');
-refuse('récit : les fins dans le désordre', (d) => { d.RECIT.FINS.LISTE.reverse(); }, 'les quatre fins');
-refuse('récit : une grande ferme d\'un niveau inconnu', (d) => { d.RECIT.FINS.GRANDE = 'immense'; }, 'RECIT.FINS.GRANDE');
-refuse('récit : réparer un toit avec un objet inconnu', (d) => { d.RECIT.USURE.REPARER = { licorne: 2 }; }, 'licorne');
-refuse('récit : une tournée hors des hameaux garantis', (d) => { d.RECIT.TOURNEE = ['cadolon']; }, 'une liste de hameaux garantis');
-refuse('courrier : un chapitre qui n\'existe pas', (d) => { d.COURRIER.adele_recolte.quand = { chapitre: 99 }; }, 'quand.chapitre');
-refuse('courrier : des jours après, sans fait', (d) => { d.COURRIER.adele_recolte.quand = { chapitre: 2, apres: 3 }; }, 'quand.apres');
-// (le récit, lot 10 : le fil de la lune)
-refuse('récit : une page inconnue au carnet en condition', (d) => { R0(d).quand = { fragment: 'page_perdue' }; }, 'une page de RECIT.FRAGMENTS');
-refuse('récit : porter ce qui ne se porte pas', (d) => { R0(d).quand = { equipe: 'planche' }; }, 'une pièce de EQUIPEMENT.PIECES');
-refuse('récit : l\'amas d\'améthyste, une lune qui n\'existe pas', (d) => { d.RECIT.FIL.GALERIE.LUNE = 'bleue'; }, 'RECIT.FIL.GALERIE.LUNE');
-refuse('récit : une pierre qui ne pousse rien', (d) => { d.RECIT.FIL.PIERRE.POUSSE = 0; }, 'RECIT.FIL.PIERRE.POUSSE');
-refuse('courrier : une condition inconnue', (d) => { d.COURRIER.adele_recolte.quand = { lune: 'pleine' }; }, 'condition inconnue');
-refuse('récit : montrer depuis une réplique (une scène seulement)', (d) => { R0(d).effet = { montrer: 'gue' }; }, 'effet inconnu');
-refuse('récit : un salut pour un niveau de confiance inconnu', (d) => { d.RECIT.SALUTS.glaciale = ['Hm.']; }, 'un niveau de RECIT.CONFIANCE.NIVEAUX');
-refuse('récit : une première ligne de scène conditionnelle', (d) => { d.RECIT.SCENES[0].lignes[0].quand = { machines: true }; }, 'la première ligne est toujours dite');
-refuse('récit : une ligne de scène à condition inconnue', (d) => { d.RECIT.SCENES.find((x) => x.id === 'veillee_1').lignes[1].quand = { pluie: true }; }, 'condition inconnue');
-refuse('récit : un niveau d\'empreinte inconnu', (d) => { d.RECIT.SCENES.find((x) => x.id === 'frida_ferme').lignes[4].quand = { empreinte: 'geante' }; }, 'un niveau de RECIT.EMPREINTE.NIVEAUX');
-refuse('récit : une promesse qui demande un objet inconnu', (d) => { d.RECIT.PROMESSES.toit_garance.besoin.ardoise = 3; }, '« ardoise »');
-refuse('récit : une promesse sans quantité entière', (d) => { d.RECIT.PROMESSES.toit_garance.besoin.planche = 0; }, 'un entier au moins égal à 1');
-refuse('récit : une promesse faite à un inconnu', (d) => { d.RECIT.PROMESSES.toit_garance.qui = 'gaston'; }, 'un personnage de RECIT.PERSONNAGES');
-refuse('récit : confiance_partout non entière', (d) => { d.RECIT.PROMESSES.toit_garance.effet.confiance_partout = 1.5; }, 'des points entiers');
 refuse('monde : deux hameaux garantis du même nom', (d) => { d.PLAN_MONDE.HAMEAUX.GARANTIS[1].nom = 'Les Mouettes'; }, 'pris par aucun autre hameau garanti');
 refuse('monde : un hameau garanti au pays inconnu', (d) => { d.PLAN_MONDE.HAMEAUX.GARANTIS[0].pays = 'desert'; }, 'un pays parmi');
 refuse('monde : un hameau garanti au métier inconnu', (d) => { d.PLAN_MONDE.HAMEAUX.GARANTIS[0].metier = 'astronaute'; }, 'un métier parmi');
@@ -245,9 +187,6 @@ refuse('monde : un lieu du récit sans cases fermées', (d) => { d.LIEUX.SORTES.
 refuse('monde : une bâtisse au meuble inconnu', (d) => { d.HAMEAUX.BATISSES.cabane.meubles.push(['piano', 1, 1]); }, '« piano » n\'est pas une pièce');
 refuse('monde : une bâtisse au meuble dans le mur', (d) => { d.HAMEAUX.BATISSES.atelier.meubles[0][1] = 0; }, 'dedans, hors des murs');
 refuse('monde : une bâtisse au style inconnu', (d) => { d.HAMEAUX.BATISSES.cabane.style = 'gothique'; }, 'un style de HAMEAUX.STYLES');
-refuse('récit : un texte pour un lieu inconnu', (d) => { d.RECIT.LIEUX.moulin = [{ texte: 'Un moulin.' }]; }, 'une sorte de lieu du récit');
-refuse('récit : un lieu dont la dernière entrée a des conditions', (d) => { d.RECIT.LIEUX.epave = [{ quand: { lune: 'pleine' }, texte: 'La coque luit.' }]; }, 'la dernière entrée est sans condition');
-refuse('récit : un salut trop long', (d) => { d.RECIT.SALUTS.reservee = ['x'.repeat(200)]; }, 'caractères');
 
 // A-3 : les palettes et les variantes de couleur des meubles
 refuse('variante : une rampe inconnue', (d) => { d.MEUBLES.chaise.variantes[1].remplace = { bois_miel: 'bois_inconnu' }; }, 'des rampes de PALETTES');

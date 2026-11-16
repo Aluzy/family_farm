@@ -360,7 +360,7 @@ function suiteAccueil() {
 function reponseAccueil(oui) {
   const A = accueil;
   switch (A.etape) {
-    // (le récit, lot 8 : le compagnon est obligatoire, docs/recit/personnages.md : il garde la ferme
+    // (le récit, lot 8 : le compagnon est obligatoire, archive/jeu-avant-ile:docs/recit/personnages.md : il garde la ferme
     // quand le joueur explore ; plus de question, on le choisit tout de suite)
     case 'confirme':
       if (!oui) return allerA('perso');

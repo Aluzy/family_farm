@@ -14,9 +14,8 @@ import { renderDidacticiel } from './didacticiel.js';
 import { renderObjectifs } from './objectifs.js';
 import { renderDidacticielIle } from './didacticiel-ile.js';
 import { renderItemModal } from './inventaire.js';
-import { renderShopModal } from './caleche.js';
 import { renderPortModal } from './port.js';
-import { pixelize, watch } from './pixel-emoji.js';
+import { pixelize } from './pixel-emoji.js';
 import { renderRecipeBook } from './livre.js';
 import { renderEncyclopedie } from './encyclopedie.js';
 import { renderPlantation } from './plantation.js';
@@ -80,7 +79,6 @@ function rendre() {
   renderEncyclopedie();
   renderPlantation();
   renderItemModal();
-  renderShopModal();
   renderPortModal();   // (le port, fiche I1b)
   renderTestPanel();
 }

@@ -66,13 +66,6 @@ test('VILLAGE.PALIERS : sept paliers, comme les chapitres, sans texte d\'introdu
     assertEqual(P()[i].recompense.plans || [], (ch.recompense || {}).plans || [], `palier ${i + 1} : les plans du chapitre`);
     for (const [id, n] of Object.entries((ch.recompense || {}).objets || {})) assertEqual(P()[i].recompense.objets[id], n, `palier ${i + 1} : ${id}`);
   });
-  // ce que le courrier offrait (les objets de ses lettres, hors souvenirs du récit) est dans un palier
-  for (const l of Object.values(DATA.COURRIER)) {
-    for (const id of Object.keys(l.cadeaux || {})) {
-      if (DATA.OBJETS[id] && DATA.OBJETS[id].categorie === 'souvenir') continue;
-      assert(P().some((p) => (p.recompense.objets || {})[id] > 0), `le cadeau ${id} du courrier`);
-    }
-  }
 });
 
 test('une partie neuve suit les paliers : state.palier, la forme de state.campagne.chapitre', () => {
@@ -255,7 +248,7 @@ test('palier 6 « Le premier commerce » : un lingot fondu ; le commerce, l\'ami
   runFor(s, 25);
   assertEqual([countItem(s, 'lingot_fer'), okDe(s, 'objet'), s.palier], [1, true, 6]);
   villageois(s, 1);
-  amis(s, 1, DATA.RECIT.PALIERS[2]);
+  amis(s, 1, DATA.AMITIE.ECHELLE.PALIERS[2]);
   s.commerces = [{ id: 'forge' }]; // (fiche I5a)
   s.port = { niveau: 3 };
   const avant = countItem(s, 'cacao');
@@ -269,7 +262,7 @@ test('palier 7 « Un village de dix » : trois styles mêlés ; dix villageois, 
   s.sols = { 3: 'plancher', 4: 'sol_chevrons', 5: 'sol_carrelage', 6: 'sol_mosaique' };
   assertEqual(okDe(s, 'styles'), true, 'trois styles mêlés');
   villageois(s, 10);
-  amis(s, 3, DATA.RECIT.PALIERS[3]);
+  amis(s, 3, DATA.AMITIE.ECHELLE.PALIERS[3]);
   s.commerces = { forge: {}, mercerie: {} };
   updateChapters(s);
   assertEqual([s.campagne.fini, s.palier, chapterReached(s)], [true, 7, 8]);

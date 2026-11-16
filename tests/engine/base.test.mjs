@@ -6,7 +6,7 @@
 import {
   blocsPoses, buildCatalog, buildFridge, buyHoe, buyItem, composeFamily, createInitialState,
   createNewGame, DATA, familyName, farmOpen, farmSeed, findMember, finishSetup, formatNumber,
-  graineDemenagement, houseRepaired, inventoryCounts, isOwned, levelBlock, mailReceived,
+  graineDemenagement, houseRepaired, inventoryCounts, isOwned, levelBlock,
   mainCharacter, marcheFerme, memberPortrait, memberRemovalBlock, memberStyle, migrate,
   migrateDepart, mulberry32, portraitEmoji, RAW_DATA, removeMember, sellItem, setFamilyName,
   setMainCharacter, setMemberProfile, setupPending, simulateGame, starterBlock, starterOf,
@@ -16,6 +16,9 @@ import {
 import {
   assert, assertEqual, AVANT_DEMENAGEMENT, avecLune, migreAvant, ml, runFor, sansPenalite, test,
 } from './aide.mjs';
+
+// (le courrier d'avant est retiré à la bascule, I9h : une lettre reçue se lit dans state.courrier)
+const mailReceived = (s, id) => (s.courrier || []).some((l) => l.id === id);
 
 test('état initial : forme et valeurs attendues', () => {
   const s = createInitialState(42);

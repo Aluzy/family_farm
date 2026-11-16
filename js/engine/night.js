@@ -7,25 +7,21 @@ import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridg
 import { feedFamily, newNightStats } from './family.js';
 import { jaugeFamille } from './repas.js';
 import { growDue, readyCrops } from './crops.js';
-import { amitieNuit } from './amitie.js';
+import { amitieDe } from './amitie.js';
 import { invitationsNuit } from './invitations.js';
-import { plansNuit } from './plans.js';
-import { projetsNuit } from './projets.js';
 import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
-import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
+import { newStableReport, feedLivestock, fillSilo, layEggs, sheepToShear, strawNeed, strawStock } from './animals.js';
 import { chevalNuit } from './cheval.js';
 import { growOrchard } from './orchard.js';
 import { finishPreparations } from './kitchen.js';
 import { refreshUnlocks } from './techtree.js';
-import { autoMaintain, autoTasks, newAutoReport, rainNight, robotNight } from './automation.js';
+import { newAutoReport, autoMaintain, autoTasks, rainNight, robotNight } from './automation.js';
 import { recordNight, updateChapters } from './campaign.js';
 import { noteTutorialSleep } from './alerts.js';
 import { collectLeftovers } from './ramassage.js';
 import { regrowGrass, respawnBushes, respawnRocks, respawnTrees } from './outils.js';
 import { repousseMonde } from './monde-recolte.js';
-import { habitantsNuit } from './habitants.js';
 import { majDidacticielIle } from './didacticiel-ile.js';
-import { recitPour } from './recit-aiguillage.js';
 import { remplirRuches } from './ruches.js';
 import { affinerTonnelets } from './tonnelets.js';
 import { composter } from './compost.js';
@@ -36,7 +32,7 @@ import { distribuerGrain } from './distributeur.js';
 import { chainesDeLaJournee } from './chaines.js';
 import { horlogeVivante } from './temps-monde.js';
 import { demandesNuit, demandesVillageoisNuit } from './demandes.js';
-import { voisinsNuit } from './voisins.js';
+import { voisinsDe } from './voisins.js';
 import { enExpedition, tentePortee } from './equipement.js';
 import { villageoisDe, villageoisNuit } from './villageois.js';
 import { amitieVillageoisNuit } from './villageois-amitie.js';
@@ -366,27 +362,14 @@ function nuitEnLot(state) {
   // (I6a, villageois-amitie.js : un ami proche prépare parfois un présent, qu'il te donnera en main propre)
   const amisIle = amitieVillageoisNuit(state);
   if (amisIle) state.nuit.amitieVillageois = amisIle;
-  // E-8 : un monde partagé (state.mondePartage, posé à la mise en ligne : docs/monde-partage.md, M.3) n'est
-  // que la ferme : sa nuit ne fait pas vivre le grand monde (les hameaux, l'amitié, les invitations, les
-  // plans, les projets, la visite de bienvenue, le récit), qui reste à la partie solo du propriétaire
+  // Une partie solo (pas un monde partagé, qui n'en a pas : docs/monde-partage.md, M.3) : les invitations à un repas
+  // (invitations.js) : les messages du jour sont passés, les réponses viennent. (Les habitants des hameaux, leur
+  // entraide, leurs présents, leurs plans offerts, leurs projets, la visite de bienvenue et le récit sont retirés à la
+  // bascule, I9h ; l'amitié et les événements entre voisins gardent leur place dans la partie : amitieDe, voisinsDe.)
   if (!state.mondePartage) {
-    // les habitants des hameaux vivent leur journée, que le joueur soit là ou non (habitants.js,
-    // fiche 7b ; ni la ferme ni sa famille n'en dépendent)
-    habitantsNuit(state);
-    // V-3 : entre voisins (voisins.js) : l'entraide des foyers qui ont eu faim, une visite parfois
-    voisinsNuit(state);
-    // l'amitié (amitie.js) : les présents des amis proches devant la porte, la confiance des hameaux
-    state.nuit.amitie = amitieNuit(state);
-    // les invitations à un repas (invitations.js) : Achille a porté les messages du jour, les réponses viennent
+    voisinsDe(state);
+    amitieDe(state);
     state.nuit.invitations = invitationsNuit(state);
-    // les plans de meubles qu'offre un ami d'un hameau (plans.js, le lot 4)
-    state.nuit.plans = plansNuit(state);
-    // les projets collectifs des hameaux (projets.js, le lot 5) : la réserve y apporte, un projet complet s'achève
-    state.nuit.projets = projetsNuit(state);
-    // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte ; puis le
-    // récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux, les
-    // toits usés. Fiche I7c : par l'aiguillage du récit ; l'île n'en a pas, sa nuit ne fait rien (recit-muet.js)
-    recitPour(state).nuit(state);
   }
   recordNight(state); // Lot 9 : la série de pontes, le jeu libre (nuit encore = state.day)
   state.day += 1;
@@ -404,7 +387,7 @@ function nuitEnLot(state) {
   affinerTonnelets(state); // la tomme s'affine, le moût fermente (tonnelets.js)
   pousserBacs(state); // les fleurs des bacs poussent (bacs.js)
   pousserMassifs(state); // les fleurs semées dans l'herbe aussi (massifs.js)
-  if (!state.mondePartage) state.nuit.demande = demandesNuit(state); // V-2 : les petites demandes des habitants (demandes.js)
+  if (!state.mondePartage) state.nuit.demande = demandesNuit(state); // V-2 : les demandes passées s'oublient (demandes.js)
   // (I6a : celles des villageois)
   const demandeIle = villageoisDe(state).length ? demandesVillageoisNuit(state, villageoisDe(state)) : null;
   if (demandeIle) state.nuit.demandeVillageois = demandeIle;

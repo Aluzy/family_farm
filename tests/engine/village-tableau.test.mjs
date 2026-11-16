@@ -10,9 +10,9 @@
    ========================================================================== */
 
 import {
-  addItem, arriverVillageois, attribuer, bilanJour, bilanVillageois, botReattribuer, DATA, donnerOutil, entreesPeriode,
-  farmSeed, manqueCourt, portDuMonde, runNight, soldeLePlusBas, tableauVillage, tachesNuit, testBatir,
-  testMaisonVillageois, trierTableau, valeurPort, villageoisDe, prixIle,
+  addItem, arriverVillageois, attribuer, bilanJour, bilanVillageois, botReattribuer, DATA, donnerOutil,
+  entreesPeriode, farmSeed, manqueCourt, portDuMonde, runNight, soldeLePlusBas, tableauVillage, testBatir,
+  testMaisonVillageois, trierTableau, valeurPort, prixIle,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
