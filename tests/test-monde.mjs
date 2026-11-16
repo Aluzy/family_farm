@@ -9,14 +9,14 @@
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import {
-  addItem, allDevices, caseDansLaFerme, caseVue, commandeHorsDeLaFerme, countItem, createNewGame, DATA, HORS_FERME, HORS_FERME_ILE, ilePartagee, refusFrontiere, unirVu, voirAutour, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, buildAtelier, morceauxDe, poserBloc, ramassables, testFillBatteries, testSetLevel, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
+  addItem, allDevices, caseDansLaFerme, caseVue, commandeHorsDeLaFerme, countItem, createNewGame, DATA, HORS_FERME_ILE, refusFrontiere, unirVu, voirAutour, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, buildAtelier, morceauxDe, poserBloc, ramassables, testFillBatteries, testSetLevel, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
 } from '../js/engine/index.js';
 import { clockHours, dureeDuPas, energieDe, horlogeVivante, nightActive, pasDe } from '../js/engine/index.js';
 import { cheminDehorsSur, migrate, objetsDeRegion, regionVue, solDirect, STATE_VERSION, surCase } from '../js/engine/index.js';
 import { capacitePortage, chargeDuCompte, COMMANDES_DEHORS, COMMANDES_DU_PORT, comptoirDuPort, enVenteAuPort, lieuPort, prixIle } from '../js/engine/index.js';
 import { arriverVillageois, attribuer, donnerOutil, noterEvenement, testMaisonVillageois, villageoisDe } from '../js/engine/index.js';
 import { cheminsDehors, etatTroncon, nouvelleCharrette, poidsDuMonde, poserRails } from '../js/engine/index.js';
-import { atelier, avecVillage, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
+import { atelier, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
 import { empreinteDuMonde } from './engine/monde-de-la-graine.mjs';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -63,6 +63,9 @@ function monde() {
   return { r, sql, s };
 }
 const poser = (t, cid = id()) => ({ id: cid, type: 'bloc.poser', args: { sorte: 'mur_pierre', case: t } });
+// (E-5 : la nuit d'un coup, nuit.partagee, que le monde jouait quand tous étaient couchés ; depuis la bascule, I9h, un
+// monde fait défiler sa nuit dans ses pas : le moteur la garde pour rejouer le journal d'un monde d'avant à son réveil)
+const nuitPartagee = (r) => { const t = r.maintenant(); return r.jouer(ACTEUR_MONDE, { id: `nuit-${r.rev + 1}-${t.toString(36)}`, type: 'nuit.partagee', args: {} }, t); };
 
 test('monde : créé par la copie d\'une partie (F.4) ; la partie locale n\'est pas touchée ; la nuit n\'y est pas encore', () => {
   const { r, s } = monde();
@@ -95,28 +98,13 @@ test('axe E 2 et 5 : une commande renvoyée (déconnexion, double envoi) n\'est 
   eq(r.commande(A, { type: 'bloc.poser', args: c.args }).ok, false, 'sans id : refusée');
 });
 
-test('axe E 3 et 7 : propriétaire absent, l\'ami joue ; au retour, le propriétaire rattrape les commandes manquées et a la même partie', () => {
-  const { r } = monde();
-  // (le propriétaire a vu la révision 0, puis s'est absenté)
-  const chezA = JSON.parse(JSON.stringify(r.accueil(A, { version: GAME_VERSION }).partie));
-  const cases = casesLibres(r.charger(), 3);
-  for (const t of cases) assert(r.commande(B, poser(t)).ok, 'l\'ami pose');
-  assert(r.commande(B, { id: id(), type: 'potager.recolter', args: { parcelle: 'potager-1' } }).ok, 'l\'ami récolte');
-  const a = r.accueil(A, { version: GAME_VERSION, depuis: 0 });
-  eq([a.ok, a.rev, a.evts.length, a.evts.map((e) => e.acteur)], [true, 4, 4, [B, B, B, B]]);
-  for (const e of a.evts) assert(executerCommande(chezA, e.cmd).ok, 'rejouée chez lui');
-  eq(empreintePartie(chezA), empreintePartie(r.charger()), 'la même partie que le monde');
-  // trop en retard (le journal ne remonte pas jusque-là) : la partie entière
-  assert('partie' in r.accueil(A, { version: GAME_VERSION, depuis: 99 }) && !('evts' in r.accueil(A, { version: GAME_VERSION, depuis: 99 })), 'une révision inconnue : l\'instantané');
-});
-
 test('axe E 4 : un membre révoqué en cours de session : ses commandes refusées, son accueil aussi, sa connexion fermée', () => {
   const { r } = monde();
   const [t1, t2] = casesLibres(r.charger(), 2);
   assert(r.commande(B, poser(t1)).ok);
   eq(r.revoquer(B).ok, true);
   eq(r.commande(B, poser(t2)).ok, false);
-  eq(r.accueil(B, { version: GAME_VERSION }).raison, 'membre');
+  eq(r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION }).raison, 'membre');
   eq(r.revoquer(A).ok, false, 'le propriétaire ne se révoque pas');
   // (le Durable Object : la diffusion ferme la connexion de qui n'est plus membre)
   const fermees = [], recus = { [A]: [], [B]: [] };
@@ -142,35 +130,7 @@ test('axe E 8 : un jeu d\'une autre version est refusé à l\'accueil (« rechar
   const a = r.accueil(A, { version: '0.0.1' });
   eq([a.ok, a.raison], [false, 'version']);
   assert(/recharge la page/.test(a.erreur));
-  eq(r.accueil('c-inconnu', { version: GAME_VERSION }).raison, 'membre');
-});
-
-test('monde : le Durable Object réveillé refait la même partie (le dernier instantané, puis le journal) ; le journal se compacte', () => {
-  const { r, sql } = monde();
-  const cases = casesLibres(r.charger(), MONDE.INSTANTANE_TOUS + 5);
-  for (const t of cases) assert(r.commande(t % 2 ? A : B, poser(t)).ok);
-  const empreinte = empreintePartie(r.charger()), rev = r.rev;
-  eq(sql.db.prepare('SELECT MAX(rev) AS r FROM instantane').get().r, MONDE.INSTANTANE_TOUS, 'un instantané à la révision 20');
-  const reveil = new MondeRegistre(sql);
-  eq([empreintePartie(reveil.charger()), reveil.rev], [empreinte, rev], 'la même partie, la même révision');
-  eq(reveil.commande(A, poser(cases[0], 'cmd-' + 1)).doublon, undefined, 'un nouvel id : une nouvelle commande');
-});
-
-test('monde : les messages (hello, cmd) et la diffusion à tous les joueurs connectés', () => {
-  const { r } = monde();
-  const [t] = casesLibres(r.charger(), 1);
-  const a = [], tous = [];
-  traiterMessage(r, A, JSON.stringify({ t: 'hello', version: GAME_VERSION }), (m) => a.push(m), (m) => tous.push(m));
-  eq([a[0].t, a[0].rev, a[1].t], ['bienvenue', 0, 'instantane']);
-  traiterMessage(r, A, JSON.stringify({ t: 'cmd', ...poser(t, 'cmd-msg-1') }), (m) => a.push(m), (m) => tous.push(m));
-  eq(a[2], { t: 'ack', id: 'cmd-msg-1', ok: true, rev: 1 });
-  eq([tous.length, tous[0].t, tous[0].acteur, tous[0].cmd.args.case], [1, 'evt', A, t]);
-  traiterMessage(r, B, JSON.stringify({ t: 'hello', version: GAME_VERSION, depuis: 0 }), (m) => a.push(m), () => {});
-  eq([a[3].t, a[4].t, a[4].evts.length], ['bienvenue', 'rattrape', 1]);
-  traiterMessage(r, B, 'pas du json', (m) => a.push(m), () => {});
-  eq(a[5].t, 'erreur');
-  traiterMessage(r, B, JSON.stringify({ t: 'cmd', id: 'cmd-nuit-1', type: 'nuit.dormir', args: {} }), (m) => a.push(m), () => {});
-  assert(a[6].ok === false && /pas encore en ligne/.test(a[6].erreur), 'la nuit partagée : plus tard (F.2)');
+  eq(r.accueil('c-inconnu', { version: GAME_VERSION, format: STATE_VERSION }).raison, 'membre');
 });
 
 test('monde : les routes du Worker : mettre sa ferme en ligne, la retrouver dans ses mondes, sa fiche ; refusé sans session ou sans être membre', async () => {
@@ -343,36 +303,13 @@ test('E-5 : le potager se joue en ligne ; la nuit ne se demande pas, le monde la
   }
   eq(r.commande(A, { id: id(), type: 'nuit.partagee', args: {} }).ok, false, 'un joueur ne demande pas la nuit');
   const jour = r.charger().day, stade = findPlot(r.charger(), 'potager-1').stade;
-  const n = r.nuit();
+  const n = nuitPartagee(r);
   assert(n.ok, n.erreur);
   eq([n.evt.acteur, n.evt.cmd.type, r.charger().day], [ACTEUR_MONDE, 'nuit.partagee', jour + 1]);
   assert(findPlot(r.charger(), 'potager-1').stade > stade, 'la plante arrosée a poussé');
   // (le Durable Object réveillé rejoue le journal, la nuit comprise : la même partie)
   const r2 = new MondeRegistre(sql);
   eq(empreintePartie(r2.charger()), empreintePartie(r.charger()));
-});
-
-test('E-5 : le Durable Object : « se coucher » est dit à tous ; le dernier couché fait passer la nuit, chacun se relève ; un départ aussi', () => {
-  const { r } = monde();
-  const msgs = [];
-  const ws = (c) => { let att = null; return { c, send: (m) => msgs.push([c, JSON.parse(m)]), close() {}, serializeAttachment: (a) => { att = a; }, deserializeAttachment: () => att }; };
-  const wa = ws(A), wb = ws(B), sockets = [wa, wb];
-  const d = Object.create(Monde.prototype);
-  Object.assign(d, { registre: r, ctx: { getWebSockets: (tag) => sockets.filter((w) => !tag || w.c === tag), getTags: (w) => [w.c] } });
-  const dire = (w, m) => d.webSocketMessage(w, JSON.stringify(m));
-  const jour = r.charger().day;
-  dire(wa, { t: 'coucher', oui: true });
-  eq(msgs.map(([c, m]) => [c, m.t, m.comptes, m.connectes]), [[A, 'couches', [A], 2], [B, 'couches', [A], 2]]);
-  eq(r.charger().day, jour, 'B est debout : pas de nuit');
-  msgs.length = 0;
-  dire(wb, { t: 'coucher', oui: true });
-  eq(msgs.filter(([, m]) => m.t === 'evt').map(([c, m]) => [c, m.acteur, m.cmd.type]), [[A, ACTEUR_MONDE, 'nuit.partagee'], [B, ACTEUR_MONDE, 'nuit.partagee']]);
-  eq([r.charger().day, wa.deserializeAttachment().couche, wb.deserializeAttachment().couche], [jour + 1, false, false], 'le jour suivant ; tous levés');
-  // B couché, A part : B est seul, couché : la nuit passe
-  dire(wb, { t: 'coucher', oui: true });
-  sockets.splice(0, 1);
-  d.webSocketClose(wa, 1000);
-  eq(r.charger().day, jour + 2, 'A parti, la nuit de B passe');
 });
 
 /* ---------- E-6 : les bêtes ---------- */
@@ -399,7 +336,7 @@ test('E-6 : les bêtes en ligne : le monde ne ramasse pas (les tas entrent au co
   eq([w.poulailler.nourries, countItem(w, 'laine')], [2, 1], 'les poules nourries, la laine au coffre');
   eq(r.commande(B, { id: id(), type: 'etable.tondre', args: { mouton: w.paturage.moutons[0].id } }).ok, false, 'pas deux tontes');
   const oeufs = countItem(w, 'oeuf');
-  assert(r.nuit().ok);
+  assert(nuitPartagee(r).ok);
   assert(countItem(r.charger(), 'oeuf') > oeufs && !Object.keys(r.charger().aRamasser || {}).length, 'les œufs de la nuit au coffre, pas en tas');
   eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()), 'le journal se rejoue');
 });
@@ -428,7 +365,7 @@ test('E-7 : la cuisine en ligne : une recette lancée finit pendant la nuit part
   eq(countItem(w, 'carotte'), 3, 'une carotte mangée sur le pouce');
   eq(r.commande(B, { id: id(), type: 'manger', args: { objet: 'licorne' } }).ok, false, 'un objet inconnu est refusé');
   eq(r.commande(B, { id: id(), type: 'cuisine.lancer', args: { recette: 'omelette', en_plus: 1 } }).ok, false, 'un argument inconnu est refusé');
-  assert(r.nuit().ok);
+  assert(nuitPartagee(r).ok);
   assert(countItem(r.charger(), 'omelette') >= 1, 'l\'omelette est prête au matin');
 });
 
@@ -443,63 +380,31 @@ test('E-7 : le journal de la cuisine se rejoue à l\'identique (la nuit comprise
   const sql = baseSql(), r = new MondeRegistre(sql);
   assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
   for (const [type, args] of [['cuisine.lancer', { recette: 'omelette' }], ['frigo.ranger', { objet: 'carotte', quantite: 2 }], ['frigo.toutRanger', {}], ['manger', { objet: 'carotte' }]]) r.commande(A, { id: id(), type, args });
-  assert(r.nuit().ok);
+  assert(nuitPartagee(r).ok);
   eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()));
 });
 
 /* ---------- E-8 : la ferme, frontière du monde ---------- */
 
-test('E-8 : la copie mise en ligne perd le grand monde (la partie locale le garde) ; mondePartage est posé', () => {
-  const s = partieLocale();
-  s.monde.habitants = { hameau_1: { foyers: [{ membres: [{ id: 'h1' }] }] } };
-  s.monde.pris = { x: 1 };
-  s.monde.but = { sorte: 'hameau', id: 'hameau_1' };
-  const avant = JSON.stringify(s);
-  const r = new MondeRegistre(baseSql());
-  assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
-  const w = r.charger();
-  eq([w.mondePartage, JSON.stringify(w.monde.habitants), JSON.stringify(w.monde.pris), w.monde.but], [true, '{}', '{}', null]);
-  eq(JSON.stringify(s), avant, 'la partie locale est intacte');
-});
-
-test('E-8 : une commande qui vise une case hors de la ferme est refusée par le monde ; dans la ferme, elle passe', () => {
-  const { r } = monde();
-  const w = r.charger(), T = farmTerrain(w), F = T.FERME;
-  const dehors = (F.Y + 2) * T.LARGEUR + F.X - 3, dedans = casesLibres(w, 1)[0];
-  eq([dansLaFerme(w, dehors), dansLaFerme(w, dedans)], [false, true]);
-  const a = r.commande(A, poser(dehors));
-  eq(a.ok, false);
-  assert(/Hors de la ferme/.test(a.erreur), a.erreur);
-  eq(r.commande(A, { id: id(), type: 'bloc.deplacer', args: { de: dedans, vers: dehors } }).ok, false, 'pas vers dehors non plus');
-  assert(r.commande(A, poser(dedans)).ok, 'dans la ferme');
-});
-
 /* ---------- I9a : l'île partagée ---------- */
 
-// Une île du chantier « l'île à bâtir », mise en ligne : une partie neuve du chantier, devenue partie d'essai (le
-// réglage éteint, elle reste sur l'île : villageActif), ses murs en main.
+// Une île mise en ligne : une partie neuve, ses murs en main.
 function ileLocale(graine = '13') {
-  const s = avecVillage(() => createNewGame(graine, { nom: 'Île' }));
+  const s = createNewGame(graine, { nom: 'Île' });
   s.essais = { ...(s.essais || {}), village: true };
   addItem(s, DATA.ATELIER.BLOCS.mur_pierre.objet, 20);
   return s;
 }
 
-test('I9a, I9b : la frontière est au moteur (le jeu la vérifie comme le monde) ; une ferme d\'avant garde son mot ; l\'île partagée ouvre les gestes du dehors', () => {
+test('I9a, I9b : la frontière est au moteur (le jeu la vérifie comme le monde) ; l\'île partagée ouvre les gestes du dehors', () => {
   eq([horsDeLaFerme === commandeHorsDeLaFerme, dansLaFerme === caseDansLaFerme], [true, true], 'le même code des deux côtés');
-  // une ferme d'avant (le chantier éteint) : comme avant
-  const { r } = monde();
-  const w = r.charger(), T = farmTerrain(w), F = T.FERME;
-  const dehors = (F.Y + 2) * T.LARGEUR + F.X - 3;
-  eq([ilePartagee(w), refusFrontiere(w, { case: dehors }), r.commande(A, poser(dehors)).erreur], [false, HORS_FERME, HORS_FERME]);
-  eq([refusFrontiere(w, { piece: 'feuillu:40,40' }, 'monde.recolter'), r.commande(A, { id: id(), type: 'monde.recolter', args: { piece: 'feuillu:40,40' } }).erreur], [HORS_FERME, HORS_FERME], 'I9b : une pièce du monde, pas dans une ferme d\'avant');
   // l'île partagée (I9b) : hors de la ferme, les gestes du dehors passent (le moteur les vérifie : un mur ne se pose pas
   // dehors) ; les autres sont refusés à la frontière ; dans la ferme, comme avant
   const s = ileLocale();
   const ri = new MondeRegistre(baseSql());
   assert(ri.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
   const wi = ri.charger(), Ti = farmTerrain(wi), Fi = Ti.FERME;
-  eq([ilePartagee(wi), wi.mondePartage], [true, true]);
+  eq(wi.mondePartage, true);
   const dehorsI = (Fi.Y + 2) * Ti.LARGEUR + Fi.X - 3, dedansI = casesLibres(wi, 1)[0];
   eq([refusFrontiere(wi, { case: dehorsI }), refusFrontiere(wi, { case: dehorsI }, 'bloc.poser'), refusFrontiere(wi, { case: dehorsI }, 'potager.labourer')], [HORS_FERME_ILE, null, HORS_FERME_ILE]);
   assert(/pas hors de la ferme/.test(ri.commande(A, poser(dehorsI)).erreur), 'un mur dehors : le moteur le refuse');
@@ -515,7 +420,7 @@ test('I9a : le monde créé chez l\'invité (un autre processus, de la graine) e
   const r = new MondeRegistre(baseSql());
   assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
   r.ajouterMembre(B, 'Sam', 'batisseur');
-  const a = r.accueil(B, { version: GAME_VERSION });
+  const a = r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION });
   assert(a.ok && a.partie, 'l\'invité reçoit la partie du monde');
   const dossier = mkdtempSync(join(tmpdir(), 'ile-')), f = join(dossier, 'partie.json');
   writeFileSync(f, JSON.stringify(a.partie));
@@ -543,14 +448,14 @@ test('E-8 : la nuit d\'un monde partagé ne fait que la ferme ; 30 nuits sur une
   runNight(solo); runNight(part);
   eq([solo.nuit.amitie !== undefined, part.nuit.amitie === undefined, part.nuit.projets === undefined], [true, true, true]);
   const { r, sql } = monde();
-  for (let i = 0; i < 30; i++) { const n = r.nuit(); assert(n.ok, `nuit ${i + 1} : ${n.erreur}`); }
+  for (let i = 0; i < 30; i++) { const n = nuitPartagee(r); assert(n.ok, `nuit ${i + 1} : ${n.erreur}`); }
   eq(r.charger().day, partieLocale().day + 30);
   eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()));
 });
 
 /* ---------- E-9 : les outils de la ferme ---------- */
 
-test('E-9 : les outils en ligne : hache, pioche, faux, canne ; ce qui tombe va au coffre (pas de morceaux) ; hors de la ferme, refusé ; le journal se rejoue', () => {
+test('E-9 : les outils en ligne : hache, pioche, faux, canne ; ce qui tombe va au coffre (pas de morceaux) ; un arbre de la ferme hors d\'elle, refusé ; le journal se rejoue', () => {
   const s = partieLocale();
   s.outils = { hache: true, pioche: true, faux: true, canne: true, choisi: 'hache' };
   s.morceaux = [{ n: 1, item: 'bois', carte: 'ferme', x: 10, y: 10 }];
@@ -570,8 +475,7 @@ test('E-9 : les outils en ligne : hache, pioche, faux, canne ; ce qui tombe va a
   const pio = jouer('outil.casser', { rocher });
   if (pio.ok) assert(countItem(r.charger(), 'pierre') > p0, 'la pierre au coffre');
   else assert(/caillou|main/i.test(pio.erreur), pio.erreur);
-  eq(jouer('outil.couper', { arbre: '3,3' }).erreur, 'Hors de la ferme : en ligne, le monde partagé, c\'est la ferme.', 'un arbre du grand monde');
-  assert(/Hors de la ferme/.test(jouer('outil.pecher', { eau: 'lac' }).erreur), 'le lac est du grand monde');
+  eq(jouer('outil.couper', { arbre: '3,3' }).erreur, HORS_FERME_ILE, 'un arbre de la ferme, hors d\'elle : pas de sens');
   eq(jouer('outil.couper', { arbre: 'abc' }).ok, false, 'un id mal formé');
   eq(jouer('outil.faucherAutour', { touffes: [] }).ok, false, 'une liste vide');
   eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()), 'le journal se rejoue');
@@ -685,7 +589,7 @@ test('E-12 : les sauvegardes : de la plus récente à la plus ancienne, les GARD
   eq([await S.lire((await autre.liste())[0].cle), await S.lire('mondes/abc/../xyz/x.json')], [null, null], 'pas la sauvegarde d\'un autre monde');
 });
 
-test('E-12 : le propriétaire sauvegarde et restaure (par les routes du Durable Object) : la partie revient, pour tous, le journal le dit ; une nuit sauvegarde seule', async () => {
+test('E-12 : le propriétaire sauvegarde et restaure (par les routes du Durable Object) : la partie revient, pour tous, le journal le dit', async () => {
   const sql = baseSql(), bucket = fauxBucket(), msgs = [], sockets = [];
   const ctx = { storage: { sql }, id: { toString: () => 'abc' }, getWebSockets: (tag) => sockets.filter((w) => !tag || w.c === tag), getTags: (w) => [w.c], waitUntil: (p) => p };
   const d = new Monde(ctx, { SESSIONS: bucket });
@@ -708,14 +612,7 @@ test('E-12 : le propriétaire sauvegarde et restaure (par les routes du Durable 
   eq(r.journal(A).evts[0].type, 'monde.restaurer');
   // (réveillé, le monde refait la partie restaurée ; un joueur en retard la reçoit entière)
   eq(empreintePartie(new MondeRegistre(sql).charger()), avant);
-  assert(!!r.accueil(B, { version: GAME_VERSION, depuis: 1 }).partie, 'en retard d\'une restauration : la partie entière');
-  // une nuit : sauvée seule
-  r.positions.clear();
-  for (const w of sockets) { w.serializeAttachment = (a) => { w.att = a; }; w.deserializeAttachment = () => w.att; }
-  await d.webSocketMessage(sockets[0], JSON.stringify({ t: 'coucher', oui: true }));
-  await d.webSocketMessage(sockets[1], JSON.stringify({ t: 'coucher', oui: true }));
-  await new Promise((ok) => setTimeout(ok, 20));
-  eq((await req('sauvegardes', A)).sauvegardes[0].raison, 'nuit');
+  assert(!!r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION, depuis: 1 }).partie, 'en retard d\'une restauration : la partie entière');
 });
 
 /* ---------- E-13 : les machines de l'Atelier ---------- */
@@ -749,23 +646,6 @@ function enLigneDe(s) {
   return { r, sql, jouer: (type, args) => r.commande(B, { id: id(), type, args }) };
 }
 
-test('E-13 : une chaîne en ligne : l\'ami jardinier y verse ses graines ; l\'horloge figée, la chaîne fait sa journée à la nuit partagée ; son produit se ramasse ; le journal se rejoue', () => {
-  const { s, t } = usineAvec('huile', ['entonnoir', 'pressoir', 'convoyeur']);
-  setInv(s, { graine_tournesol: 7 });
-  const { r, sql, jouer } = enLigneDe(s);
-  const v = jouer('chaine.verser', { case: t });
-  assert(v.ok, v.erreur);
-  eq(jouer('chaine.verser', { case: t }).ok, false, 'elle a déjà de quoi faire');
-  eq(morceauxDe(r.charger(), 'ferme').length, 0, 'le jour, rien ne sort (l\'horloge est figée)');
-  assert(r.nuit().ok);
-  const m = morceauxDe(r.charger(), 'ferme');
-  eq([m.length, m[0].item], [1, 'huile'], 'à la nuit, l\'huile est sur son tas');
-  const p = jouer('morceau.ramasser', { n: m[0].n });
-  assert(p.ok, p.erreur);
-  eq([countItem(r.charger(), 'huile'), jouer('morceau.ramasser', { n: m[0].n }).ok], [1, false], 'au coffre, une seule fois');
-  eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()), 'le journal se rejoue');
-});
-
 test('E-13 : une botteleuse en ligne : les fibres versées, la botte sort tout de suite, sa paille au coffre ; la cueillette à la main, pas hors de la ferme', () => {
   const B2 = DATA.BOTTELEUSE;
   const { s, t } = usineAvec('botte', ['entonnoir', 'botteleuse', 'convoyeur', 'convoyeur']);
@@ -785,10 +665,10 @@ test('E-13 : une botteleuse en ligne : les fibres versées, la botte sort tout d
 
 /* ---------- I9a2 : l'horloge commune d'un monde de l'île ---------- */
 
-// Une île du chantier mise en ligne (une partie d'essai : villageActif), la Cuisine et le foyer bâtis, de quoi faire
+// Une île mise en ligne, la Cuisine et le foyer bâtis, de quoi faire
 // des omelettes ; `heure` : l'heure de la partie à sa mise en ligne. Le monde a une horloge à lui (`t`, en ms).
 function ileEnLigne({ heure = 6, graine = '17' } = {}) {
-  const ile = avecVillage(() => createNewGame(graine, { nom: 'Île' }));
+  const ile = createNewGame(graine, { nom: 'Île' });
   ile.essais = { ...(ile.essais || {}), village: true };
   testSetLevel(ile, 5);
   for (const st of ['foyer', 'cuisine']) assert(testBatir(ile, st).ok, `bâtir ${st}`);
@@ -808,7 +688,7 @@ function ileServie(o = {}) {
   const ctx = { storage: { sql }, id: { toString: () => 'ile' }, getWebSockets: (tag) => sockets.filter((w) => !tag || w.c === tag), getTags: (w) => [w.c], waitUntil: (p) => p };
   const d = new Monde(ctx, { SESSIONS: bucket });
   d.registre.maintenant = () => h.t;
-  const ile = avecVillage(() => createNewGame(o.graine || '17', { nom: 'Île' }));
+  const ile = createNewGame(o.graine || '17', { nom: 'Île' });
   ile.essais = { ...(ile.essais || {}), village: true };
   ile.awakeMs = ((o.heure || 6) - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
   addItem(ile, DATA.ATELIER.BLOCS.mur_pierre.objet, 40);
@@ -817,7 +697,7 @@ function ileServie(o = {}) {
   const ws = (c) => { let att = null; return { c, send: (m) => msgs.push([c, JSON.parse(m)]), close() {}, serializeAttachment: (a) => { att = a; }, deserializeAttachment: () => att }; };
   const de = (c) => sockets.find((w) => w.c === c);
   const dire = (c, m) => d.webSocketMessage(de(c), JSON.stringify(m));
-  const entrer = (c) => { sockets.push(ws(c)); dire(c, { t: 'hello', version: GAME_VERSION }); };
+  const entrer = (c) => { sockets.push(ws(c)); dire(c, { t: 'hello', version: GAME_VERSION, format: STATE_VERSION }); };
   const partir = (c) => { const w = sockets.filter((x) => x.c === c).pop(); sockets.splice(sockets.indexOf(w), 1); d.webSocketClose(w, 1000); };
   return { d, r: d.registre, sql, h, msgs, bucket, dire, entrer, partir };
 }
@@ -829,7 +709,7 @@ test('I9a2 : un monde de l\'île a une horloge vivante : sans joueur, il dort ; 
   eq([s.mondePartage, s.horloge, r.actif], [true, { pas: 0, sommeil: false, reveils: 0 }, false]);
   h.t += 3600 * 1000;
   eq(r.avancer().pas, 0, 'personne : rien ne tourne');
-  const a = r.accueil(A, { version: GAME_VERSION });
+  const a = r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   eq([a.horloge.pas, a.horloge.reel, a.horloge.maintenant, 'dormait' in a.horloge, r.actif], [0, h.t, h.t, false, true], 'le premier arrive : l\'horloge part de là');
   h.t += 60 * 1000;
   eq([r.avancer().pas, pasDe(r.charger())], [12, 12], 'une minute : 12 pas de 5 s');
@@ -840,7 +720,7 @@ test('I9a2 : un monde de l\'île a une horloge vivante : sans joueur, il dort ; 
   eq(r.endormir().pas, 13, 'le dernier part : les pas dus, puis le sommeil');
   h.t += 3 * 3600 * 1000;
   eq(r.avancer().pas, 0, 'trois heures sans personne : rien');
-  const b = r.accueil(B, { version: GAME_VERSION });
+  const b = r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION });
   eq([b.horloge.pas, b.horloge.dormait, r.charger().day, Math.round(clockHours(r.charger()) * 600)], [13, 3 * 3600 * 1000, jour, Math.round(heure * 600) + 100], 'il reprend où il s\'était arrêté (et le dit)');
   // le Durable Object évincé : réveillé à froid, la même partie, la même heure, le même pas
   h.t += 7000;
@@ -853,7 +733,7 @@ test('I9a2 : un monde de l\'île a une horloge vivante : sans joueur, il dort ; 
 
 test('I9a2 : chaque geste porte son pas ; le Durable Object réveillé à froid rejoue le journal pas à pas (la même empreinte) ; l\'énergie est celle de chacun', () => {
   const { r, sql, h } = ileEnLigne();
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   const cases = casesLibres(r.charger(), 6);
   const evts = [], attendus = [];
   let ecoule = 0;
@@ -883,7 +763,7 @@ test('I9a2 : chaque geste porte son pas ; le Durable Object réveillé à froid 
 
 test('I9a2 : une préparation finit à son heure (dans les pas, pas à la nuit) ; le soir, la nuit vient seule à 22 h', () => {
   const { r, h } = ileEnLigne({ heure: 21 });
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   const om = r.commande(B, { id: id(), type: 'cuisine.lancer', args: { recette: 'omelette' } });
   assert(om.ok, om.erreur);
   const prete = Math.ceil((DATA.RECETTES.omelette.temps * 1000) / PAS);
@@ -958,24 +838,18 @@ test('I9a2 : le Durable Object : un instantané toutes les 120 pas (l\'empreinte
   eq([[...bucket.m.values()].map((x) => JSON.parse(x.v).raison).sort(), ancre().actif, ancre().pas, inst()], [['depart', 'heure'], false, pasDe(r.charger()), r.rev], 'endormi et sauvé');
 });
 
-test('I9a2 : un joueur en retard de plus de 60 pas reçoit la partie entière ; en deçà, le journal ; les mondes d\'avant gardent F.2 (ni pas, ni horloge)', () => {
+test('I9a2 : un joueur en retard de plus de 60 pas reçoit la partie entière ; en deçà, le journal', () => {
   const { r, h } = ileEnLigne();
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   const [c] = casesLibres(r.charger(), 1);
   h.t += 10 * PAS;
   assert(r.commande(A, poser(c)).ok);
   h.t += 20 * PAS;
-  const proche = r.accueil(B, { version: GAME_VERSION, depuis: 0, pas: 0 });
+  const proche = r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION, depuis: 0, pas: 0 });
   eq([!!proche.evts, proche.evts && proche.evts.length], [true, 1], '30 pas : le journal');
   h.t += 40 * PAS;
-  eq('partie' in r.accueil(B, { version: GAME_VERSION, depuis: 0, pas: 0 }), true, '70 pas : la partie entière');
-  eq('partie' in r.accueil(B, { version: GAME_VERSION, depuis: 0 }), true, 'un retard inconnu : la partie entière');
-  // une ferme d'avant
-  const { r: f } = monde();
-  const a = f.accueil(A, { version: GAME_VERSION });
-  const [t] = casesLibres(f.charger(), 1);
-  const x = f.commande(A, poser(t));
-  eq(['horloge' in a, 'pas' in x.evt.cmd, 'reel' in x.evt, f.avancer().pas, f.reprendre(), horlogeVivante(f.charger())], [false, false, false, 0, null, false]);
+  eq('partie' in r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION, depuis: 0, pas: 0 }), true, '70 pas : la partie entière');
+  eq('partie' in r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION, depuis: 0 }), true, 'un retard inconnu : la partie entière');
 });
 
 /* ---------- I9b : les changements de l'île ---------- */
@@ -1010,7 +884,7 @@ function outille(r) {
 
 test('I9b : un arbre de l\'île abattu par l\'invité : son bois au coffre commun (rien au sol), sa région vue du monde ; un doublon refusé ; le Durable Object réveillé à froid rejoue tout', () => {
   const { r, sql, h } = ileEnLigne();
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   const w = outille(r);
   const [a] = piecesDehors(w, 'couper', 1, (o) => o.regle.coups >= 2);
   assert(a, 'un arbre de plusieurs coups près de la sortie');
@@ -1036,7 +910,7 @@ test('I9b : un arbre de l\'île abattu par l\'invité : son bois au coffre commu
 
 test('I9b : le conflit : deux joueurs sur le même buisson au même instant : le premier arrivé l\'a, le second est refusé ; pêcher au lac, faucher, ramasser dehors ; le rôle visiteur ne prend rien', () => {
   const { r } = ileEnLigne();
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   const w = outille(r);
   const [b, b2] = piecesDehors(w, 'couper', 2, (o) => o.regle.coups === 1);
   const premier = r.commande(B, recolter(b.id)), second = r.commande(A, recolter(b.id));
@@ -1053,7 +927,7 @@ test('I9b : le conflit : deux joueurs sur le même buisson au même instant : le
 
 test('I9b : un chemin posé dehors par l\'invité (le sol de sa région tiré par le monde), repris ; un mur dehors refusé par le moteur ; le journal se rejoue', () => {
   const { r, sql, h } = ileEnLigne();
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   const w = r.charger();
   addItem(w, DATA.ATELIER.BLOCS.chemin.objet, 5);
   r.instantane();
@@ -1074,9 +948,9 @@ test('I9b : un chemin posé dehors par l\'invité (le sol de sa région tiré pa
   eq(empreintePartie(froid.charger()), empreintePartie(r.charger()));
 });
 
-test('I9b : la repousse d\'une île suit la nuit qui vient dans les pas (le même jour au monde et au monde réveillé à froid) ; une ferme d\'avant, toujours pas (E-8)', () => {
+test('I9b : la repousse d\'une île suit la nuit qui vient dans les pas (le même jour au monde et au monde réveillé à froid)', () => {
   const { r, sql, h } = ileEnLigne({ heure: 21 });
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   const w = outille(r);
   const [b] = piecesDehors(w, 'couper', 1, (o) => o.regle.coups === 1);
   assert(r.commande(B, recolter(b.id)).ok);
@@ -1091,12 +965,6 @@ test('I9b : la repousse d\'une île suit la nuit qui vient dans les pas (le mêm
   const froid = new MondeRegistre(sql, () => h.t);
   froid.avancer();
   eq([empreintePartie(froid.charger()), b.id in froid.charger().monde.pris], [empreintePartie(r.charger()), false], 'le monde réveillé à froid le refait à l\'identique');
-  // E-8 : la nuit d'une ferme d'avant ne fait pas repousser le grand monde (elle n'en a pas)
-  const ferme = partieLocale();
-  ferme.mondePartage = true;
-  ferme.monde.pris = { [b.id]: { retour: ferme.day } };
-  runNight(ferme);
-  eq(b.id in ferme.monde.pris, true, 'une ferme d\'avant : rien ne repousse');
 });
 
 test('I9b : l\'intérêt par région : près, les positions à leur pas ; loin, une toutes les POS_LOIN_MS ; en entrant dans une région, le lot de ceux qui y sont ; une ferme d\'avant relaie tout', () => {
@@ -1136,7 +1004,7 @@ test('I9b : l\'intérêt par région : près, les positions à leur pas ; loin, 
 });
 
 test('I9b : le sac de chacun : celui du propriétaire vient de sa partie, l\'invité arrive sans ; chacun remplit le sien, mange du sien dehors ; format 105', () => {
-  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  const ile = createNewGame('17', { nom: 'Île' });
   ile.essais = { ...(ile.essais || {}), village: true };
   const sacs = Object.keys(DATA.EQUIPEMENT.SACS);
   addItem(ile, sacs[0], 2);
@@ -1148,7 +1016,7 @@ test('I9b : le sac de chacun : celui du propriétaire vient de sa partie, l\'inv
   const r = new MondeRegistre(sql, () => h.t);
   assert(r.creer({ proprietaire: A, partie: { v: ile.version, t: 0, s: ile } }).ok);
   r.ajouterMembre(B, 'Sam', 'batisseur');
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   const w = r.charger();
   eq([JSON.stringify(w.sacs[A]), w.equipement.sac, B in w.sacs], [avantSac, null, false], 'A a le sien, B aucun ; celui de la partie, à personne');
   const jouer = (qui, type, args) => r.commande(qui, { id: id(), type, args });
@@ -1189,7 +1057,7 @@ test('I9b : le sac de chacun : celui du propriétaire vient de sa partie, l\'inv
 // Une île en ligne prête à commercer : le propriétaire A (sa partie : une charge de 3 carottes), l'invité B (`roleB`) ;
 // au coffre commun, des carottes, du bois, une brouette, une charrette et le cheval. Le monde est réveillé, à 8 h.
 function ilePort({ roleB = 'batisseur', graine = '17', heure = 8 } = {}) {
-  const ile = avecVillage(() => createNewGame(graine, { nom: 'Île' }));
+  const ile = createNewGame(graine, { nom: 'Île' });
   ile.essais = { ...(ile.essais || {}), village: true };
   ile.awakeMs = (heure - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
   testSetLevel(ile, 5);   // (le commerce du port s'ouvre au niveau 3)
@@ -1206,7 +1074,7 @@ function ilePort({ roleB = 'batisseur', graine = '17', heure = 8 } = {}) {
   const c = r.creer({ proprietaire: A, nom: 'Alex', partie: { v: ile.version, t: 0, s: ile } });
   assert(c.ok, c.erreur);
   r.ajouterMembre(B, 'Sam', roleB);
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   const w = r.charger(), comptoir = comptoirDuPort(w);
   const jouer = (qui, type, args) => r.commande(qui, { id: id(), type, args });
   return { r, sql, h, w, ferme, port: comptoir && comptoir.devant, W, jouer };
@@ -1241,8 +1109,6 @@ test('I9c : la mise en ligne : le lieu du port écrit dans la partie, la charge 
   eq(j.map((e) => [e.nom, e.bilan.objet, e.bilan.n]), [['Alex', 'carotte', 3], ['Sam', 'carotte', 6]]);
   eq(j[1].bilan.gain, gainB, 'le gain de Sam, au journal');
   eq(pieces(r), p0 + j[0].bilan.gain + j[1].bilan.gain, 'la caisse : la somme des deux ventes');
-  // une ferme d'avant (le chantier éteint) : rien ne change (E-8, pas de port)
-  eq(refusFrontiere(partieLocale(), { case: port }, 'port.vendre'), HORS_FERME);
   // le Durable Object réveillé à froid : la même partie
   h.t += 20000;
   r.avancer();
@@ -1365,7 +1231,7 @@ test('I9c : le format 106 : la partie d\'un monde reçoit les charges de chacun 
 
 // I9d : une île à villageois (le chantier allumé pour sa partie), mise en ligne à 8 h, deux villageois au travail.
 function ileAuVillage(n = 2) {
-  const ile = avecVillage(() => createNewGame('17', { nom: 'Île' }));
+  const ile = createNewGame('17', { nom: 'Île' });
   ile.essais = { ...(ile.essais || {}), village: true };
   testSetLevel(ile, 5);
   assert(testBatir(ile, 'foyer').ok, 'le foyer de la famille');
@@ -1393,13 +1259,9 @@ test('I9d : les villageois en ligne : l\'amitié du propriétaire vient de sa pa
   assert(r.creer({ proprietaire: A, partie: { v: ile.version, t: 0, s: JSON.parse(JSON.stringify(ile)) } }).ok);
   r.ajouterMembre(B, 'Sam', 'jardinier');
   r.ajouterMembre('c-vis', 'Vi', 'visiteur');
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   const w = r.charger();
   eq([w.amities[A].pnj[v.id].pts, B in w.amities, (w.voisins.evenements || []).length], [ptsA, false, 1], 'A a son amitié ; B rien encore ; les liens du village gardés');
-  // (une ferme d'avant, elle, ne garde pas les liens des hameaux : elaguer, E-8)
-  const ferme = partieLocale();
-  ferme.voisins = { liens: {}, evenements: [{ sorte: 'visite' }] };
-  eq('voisins' in avecVillage(() => elaguer(JSON.parse(JSON.stringify(ferme))), false), false, 'une ferme d\'avant les retire');
   const jouer = (qui, type, args) => r.commande(qui, { id: id(), type, args });
   h.t += 6 * 5000;
   let x = jouer(B, 'villageois.parler', { id: v.id, n: 0 });
@@ -1459,7 +1321,7 @@ test('I9e : les gestes de gestion du village par le monde, selon le rôle ; refu
   traiterMessage(r, A, JSON.stringify({ t: 'reglages', taches: true }), (m) => a.push(m), (m) => d.push(m));
   eq([d[0], r.reglages()], [{ t: 'reglages', reglages: { taches: true } }, { taches: true }]);
   const acc = [];
-  traiterMessage(r, 'c-bat', JSON.stringify({ t: 'hello', version: GAME_VERSION }), (m) => acc.push(m), () => {});
+  traiterMessage(r, 'c-bat', JSON.stringify({ t: 'hello', version: GAME_VERSION, format: STATE_VERSION }), (m) => acc.push(m), () => {});
   eq(acc[0].reglages, { taches: true }, 'l\'accueil dit les réglages');
   x = jouer('c-bat', 'villageois.attribuer', { id: v.id, tache: 'pierre' });
   assert(x.ok, `le bâtisseur, avec la délégation (${x.erreur})`);
@@ -1510,9 +1372,7 @@ test('I9e : les gestes de gestion du village par le monde, selon le rôle ; refu
   eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal se rejoue');
 });
 
-test('I9e : une ferme d\'avant garde la grille d\'E-11 (fabriquer : le bâtisseur) ; une île la sienne (fabriquer : l\'ami jardinier)', () => {
-  const { r } = monde();
-  eq(roleDemande(r.charger(), { type: 'atelier.fabriquer', args: { recette: 'x' } }), 'batisseur', 'une ferme d\'avant');
+test('I9e : la grille d\'une île (fabriquer : l\'ami jardinier)', () => {
   const ile = ileAuVillage(1);
   eq(roleDemande(ile, { type: 'atelier.fabriquer', args: { recette: 'x' } }), 'jardinier', 'une île');
 });
@@ -1562,7 +1422,7 @@ test('I9f : la mise en ligne d\'une île avancée emporte toute l\'île (ce qui 
   console.log(`  (I9f : une île de trois villageois mise en ligne : ${(p.partie / 1024).toFixed(1)} Ko, dont ${(p.dehors / 1024).toFixed(1)} Ko hors de la ferme, en ${Math.round(ms)} ms)`);
 });
 
-test('I9f : le plafond : une île trop lourde, ou trop changée hors de la ferme, n\'est pas mise en ligne, et le message dit son poids ; une ferme d\'avant garde la limite d\'avant', () => {
+test('I9f : le plafond : une île trop lourde, ou trop changée hors de la ferme, n\'est pas mise en ligne, et le message dit son poids', () => {
   const lourde = ileAuVillage(1);
   lourde.carnetEssai = 'x'.repeat(300 * 1024);   // (un champ de la partie, gardé tel quel par la copie)
   const a = new MondeRegistre(baseSql()).creer({ proprietaire: A, partie: { v: lourde.version, t: 0, s: lourde } });
@@ -1571,9 +1431,6 @@ test('I9f : le plafond : une île trop lourde, ou trop changée hors de la ferme
   for (let k = 0; k < 2500; k++) changee.monde.pris[`feuillu:${16 * k + 8},${40 + (k % 7) * 16}`] = { retour: changee.day + 9 };
   const b = new MondeRegistre(baseSql()).creer({ proprietaire: A, partie: { v: changee.version, t: 0, s: changee } });
   eq([b.ok, b.statut, /hors de la ferme pèse \d+ Ko : un monde en porte 64 Ko au plus/.test(b.erreur)], [false, 413, true], b.erreur);
-  const ferme = partieLocale();
-  ferme.carnetEssai = 'x'.repeat(300 * 1024);
-  assert(new MondeRegistre(baseSql()).creer({ proprietaire: A, partie: { v: ferme.version, t: 0, s: ferme } }).ok, 'une ferme d\'avant (le chantier éteint) : la limite d\'avant');
 });
 
 test('I9f : la copie remise à jour depuis la partie solo : elle remplace l\'île en ligne pour tous (le propriétaire seul), les membres restent, chacun repart de zéro ; le journal le marque, un joueur en retard reçoit tout', () => {
@@ -1581,7 +1438,7 @@ test('I9f : la copie remise à jour depuis la partie solo : elle remplace l\'îl
   const h = { t: 1_700_000_000_000 }, sql = baseSql(), r = new MondeRegistre(sql, () => h.t);
   assert(r.creer({ proprietaire: A, nom: 'Alex', partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
   r.ajouterMembre(B, 'Sam', 'jardinier');
-  r.accueil(A, { version: GAME_VERSION });
+  r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   h.t += 6 * 5000;
   const v = villageoisDe(r.charger())[0];
   assert(r.commande(B, { id: id(), type: 'villageois.parler', args: { id: v.id, n: 0 } }).ok, 'B parle à un villageois en ligne');
@@ -1598,7 +1455,7 @@ test('I9f : la copie remise à jour depuis la partie solo : elle remplace l\'îl
   assert(attendu.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
   eq([countItem(w, 'bois'), a3.id in w.monde.pris, B in w.amities, r.membres().map((m) => m.compte).sort()], [countItem(s, 'bois'), true, false, [A, B].sort()], 'la partie solo d\'aujourd\'hui ; B est toujours membre, son amitié recommence');
   eq(empreintePartie({ ...w, horloge: null }), empreintePartie({ ...attendu.charger(), horloge: null }), 'la même copie qu\'une mise en ligne');
-  eq([r.journal(A).evts[0].type, 'partie' in r.accueil(B, { version: GAME_VERSION, depuis: revB })], ['monde.remplacer', true], 'la marque ; B, en retard, reçoit tout');
+  eq([r.journal(A).evts[0].type, 'partie' in r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION, depuis: revB })], ['monde.remplacer', true], 'la marque ; B, en retard, reçoit tout');
   eq(empreintePartie(new MondeRegistre(sql, () => h.t).charger()), empreintePartie(r.charger()), 'réveillé, le monde refait la copie');
 });
 
@@ -1610,7 +1467,7 @@ function mondeDAvant() {
   const [t] = casesLibres(r.charger(), 1);
   assert(r.commande(B, poser(t)).ok, 'le mur de l\'ami, au journal');
   const vieille = JSON.parse(sql.db.prepare('SELECT json FROM instantane WHERE rev = 0').get().json);
-  for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge']) delete vieille[k];
+  for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge', 'port', 'dehors', 'palier', 'noms', 'chronique']) delete vieille[k];
   vieille.version = 103;
   sql.db.prepare('UPDATE instantane SET json = ? WHERE rev = 0').run(JSON.stringify(vieille));
   sql.db.prepare('DELETE FROM meta WHERE cle = ?').run('format');
@@ -1621,11 +1478,10 @@ function mondeDAvant() {
 test('I9f : un monde d\'avant migre à sa première ouverture : la ferme et le coffre intacts, l\'horloge vivante (son jour et son heure gardés), l\'île autour, le port et le tronçon posés, aucun villageois ; la partie d\'avant gardée ; un jeu d\'avant n\'entre plus', () => {
   const { sql, avant, mur } = mondeDAvant();
   const h = { t: 1_700_000_000_000 }, r = new MondeRegistre(sql, () => h.t);
-  r.essaiIle = true;   // (pendant le chantier : un Durable Object d'essai ; à la bascule, le réglage allumé)
   const t0 = performance.now();
   const w = r.charger();
   const ms = performance.now() - t0;
-  eq([ilePartagee(w), horlogeVivante(w), w.horloge.pas, w.day, clockHours(w), w.mondePartage], [true, true, 0, avant.day, clockHours(avant), true], 'une île, son horloge vivante au pas 0, le même jour et la même heure');
+  eq([true, horlogeVivante(w), w.horloge.pas, w.day, clockHours(w), w.mondePartage], [true, true, 0, avant.day, clockHours(avant), true], 'une île, son horloge vivante au pas 0, le même jour et la même heure');
   eq([JSON.stringify(w.blocs), JSON.stringify(w.sols), JSON.stringify(w.potager.parcelles.map((p) => [p.case, p.culture]))], [JSON.stringify(avant.blocs), JSON.stringify(avant.sols), JSON.stringify(avant.potager.parcelles.map((p) => [p.case, p.culture]))], 'la ferme intacte (le mur de l\'ami compris)');
   assert(w.blocs[mur] === 'mur_pierre', 'le geste d\'après l\'instantané, rejoué');
   const C = DATA.VILLAGE.MIGRATION.CADEAU;
@@ -1658,7 +1514,6 @@ test('I9f : un monde d\'avant migre à sa première ouverture : la ferme et le c
 test('I9f : un monde d\'avant migré se joue à deux : les gestes de chacun, le temps qui passe, son énergie à chacun ; la grille d\'une île ; réveillé à froid, la même partie', () => {
   const { sql } = mondeDAvant();
   const h = { t: 1_700_000_000_000 }, r = new MondeRegistre(sql, () => h.t);
-  r.essaiIle = true;
   const w = r.charger();
   r.accueil(A, { version: GAME_VERSION, format: STATE_VERSION });
   r.accueil(B, { version: GAME_VERSION, format: STATE_VERSION });
@@ -1677,7 +1532,6 @@ test('I9f : un monde d\'avant migré se joue à deux : les gestes de chacun, le 
   h.t += 60 * 5000;
   r.avancer();
   const froid = new MondeRegistre(sql, () => h.t);
-  froid.essaiIle = true;
   froid.avancer();
   eq(empreintePartie(froid.charger()), empreintePartie(r.charger()), 'le journal d\'après la migration se rejoue, pas à pas');
   eq(froid.journal(A).evts.filter((e) => e.type === 'monde.migrer').length, 1, 'une seule migration');
@@ -1685,10 +1539,10 @@ test('I9f : un monde d\'avant migré se joue à deux : les gestes de chacun, le 
 
 test('I9f : le chantier allumé (la bascule), un monde d\'avant migre sans essai ; un monde déjà à jour ne bouge pas ; une île d\'avant I9c reçoit son lieu du port et le portage de son propriétaire', () => {
   const { sql, avant } = mondeDAvant();
-  avecVillage(() => {
+  {
   const r = new MondeRegistre(sql);
   const w = r.charger();
-  eq([ilePartagee(w), !!(w.essais && w.essais.village), villageoisDe(w).length, w.blocs[Object.keys(avant.blocs)[0]]], [true, false, 0, avant.blocs[Object.keys(avant.blocs)[0]]], 'une île (le réglage), pas une partie d\'essai');
+  eq([true, !!(w.essais && w.essais.village), villageoisDe(w).length, w.blocs[Object.keys(avant.blocs)[0]]], [true, false, 0, avant.blocs[Object.keys(avant.blocs)[0]]], 'une île (le réglage), pas une partie d\'essai');
   const rev = r.rev, em = empreintePartie(w);
   const encore = new MondeRegistre(sql);
   eq([empreintePartie(encore.charger()), encore.rev, encore.aSauver || null], [em, rev, null], 'déjà à jour : rien ne bouge');
@@ -1704,14 +1558,14 @@ test('I9f : le chantier allumé (la bascule), un monde d\'avant migre sans essai
   ri.sql.exec('DELETE FROM meta WHERE cle = ?', 'format');
   const w2 = new MondeRegistre(ri.sql).charger();
   eq([!!w2.port.lieu, w2.charges[A] && w2.charges[A].charge.bois[0].qty, 'portage' in w2, Object.keys(w2.amities)], [true, 2, false, [A]], 'le lieu du port, le portage et l\'amitié du propriétaire');
-  });
+  }
 });
 
 test('I9f : le Durable Object : la ferme d\'avant est dans les sauvegardes du monde (« avant le passage sur l\'île ») ; la restaurer refait l\'île autour de la ferme, sans redonner le cadeau ; la sauvegarde d\'une île avancée, son poids et sa restauration', async () => {
   const { sql, avant } = mondeDAvant();
   const bucket = fauxBucket(), sockets = [];
   const ctx = { storage: { sql }, id: { toString: () => 'vieux' }, getWebSockets: () => sockets, getTags: (w) => [w.c], waitUntil: (p) => p };
-  const d = new Monde(ctx, { SESSIONS: bucket, ILE_ESSAI: '1' });
+  const d = new Monde(ctx, { SESSIONS: bucket });
   const req = (chemin, compte, corps, methode = corps ? 'POST' : 'GET') => d.fetch(new Request('https://monde/monde/' + chemin, { method: methode, headers: { 'X-Compte': compte, 'X-Nom': 'X', 'Content-Type': 'application/json' }, body: corps ? JSON.stringify(corps) : undefined })).then(async (x) => ({ statut: x.status, ...(await x.json()) }));
   eq((await req('fiche', A)).ok, true);
   const L = (await req('sauvegardes', A)).sauvegardes;
@@ -1720,7 +1574,7 @@ test('I9f : le Durable Object : la ferme d\'avant est dans les sauvegardes du mo
   const res = await req('restaurer', A, { cle: L[0].cle });
   assert(res.ok, res.erreur);
   const w = d.registre.charger();
-  eq([ilePartagee(w), !!w.port.lieu, JSON.stringify(w.blocs), countItem(w, 'planche'), w.retourIle.donne], [true, true, JSON.stringify(avant.blocs), countItem(avant, 'planche'), true], 'l\'île revient autour de la ferme d\'avant ; le cadeau n\'est pas redonné');
+  eq([true, !!w.port.lieu, JSON.stringify(w.blocs), countItem(w, 'planche'), w.retourIle.donne], [true, true, JSON.stringify(avant.blocs), countItem(avant, 'planche'), true], 'l\'île revient autour de la ferme d\'avant ; le cadeau n\'est pas redonné');
   assert(planches > countItem(w, 'planche'), 'le cadeau avait été donné une fois');
   // une île avancée : sa sauvegarde (son poids), restaurée après un geste (son temps)
   const { s } = ileAvancee();

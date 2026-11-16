@@ -27,7 +27,6 @@ const MINUTES = Number(opt('minutes', 60));
 const GESTES = Number(opt('gestes', 4));
 const DORMENT = args.includes('--dorment');
 const PLAFOND = args.includes('--plafond');
-DATA.VILLAGE.ACTIF = true;   // (le chantier allumé : la partie est une île, son monde a l'horloge vivante)
 
 const cloner = (v) => JSON.parse(JSON.stringify(v));
 function ileAvancee() {

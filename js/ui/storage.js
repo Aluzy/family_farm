@@ -5,8 +5,7 @@ import { enLigne, SAVE_KEY, setState, state } from './store.js';
 import { setPendingAbsence, setSimulatedAt, simulatedAt, syncJobs } from './loop.js';
 import { notify } from './toasts.js';
 import { mesurer } from './chrono.js';
-import { essaiDemande, partieNeuve } from './village.js';
-import { copieRetourGardee, essayerSurLIle, partieDAvant } from '../engine/migration-ile.js';
+import { copieRetourGardee } from '../engine/migration-ile.js';
 
 /* ---------- stockage : localStorage, toujours entouré de try/catch ---------- */
 
@@ -50,11 +49,9 @@ export function loadOrCreateState() {
 // La sauvegarde d'avant le passage sur l'île, gardée sur l'appareil (au cas où) : exportable depuis ⚙️ Options.
 export const SAVE_AVANT_ILE = 'ferme-save-avant-ile';
 
-// Une partie d'avant ouverte sur l'île y passe (js/engine/migration-ile.js) : le réglage allumé, migrate l'a fait ;
-// pendant le chantier, jeu.html?village=1 la rend partie d'essai et la fait passer ici. La première fois, la
+// Une partie d'avant ouverte y passe sur l'île (js/engine/migration-ile.js : migrate l'a fait). La première fois, la
 // sauvegarde d'avant (`raw`, telle qu'elle était sur l'appareil) est gardée à part, puis la partie est enregistrée.
 function versLIle(s, raw) {
-  if (essaiDemande() && partieDAvant(s)) essayerSurLIle(s);
   if (s && s.retourIle && !s.retourIle.copie && raw) {
     safeStorageSet(SAVE_AVANT_ILE, raw);
     copieRetourGardee(s);
@@ -101,7 +98,7 @@ export const SAVE_AVANT_DEMENAGEMENT = 'ferme-save-avant-demenagement';
 
 // Une nouvelle partie : sur une terre sauvage (la ferme générée de sa graine).
 function nouvellePartie() {
-  return partieNeuve(createNewGame(makeSeed()));
+  return createNewGame(makeSeed());
 }
 
 // La ferme du grand-père (la carte de Tiled) n'existe plus : une partie qui y était encore a

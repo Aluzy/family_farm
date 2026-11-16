@@ -329,7 +329,7 @@ function nuitEnLot(state) {
   // la ferme générée : qui n'a pas de paillasse dans une pièce close perd du bonheur
   const sansCouchage = nuitSansCouchage(state).map((m) => m.id);
   // le chantier « l'île à bâtir » (fiche I3a, villageois.js) : les villageois mangent à la boîte commune, après la
-  // famille, et dorment dans leur lit ; un jour de bac, un nouveau venu qui pouvait venir est là (éteint : rien)
+  // famille, et dorment dans leur lit ; un jour de bac, un nouveau venu qui pouvait venir est là
   // (I3c, taches.js : avant, chacun finit ses actions du jour ; sa nuit les met dans son journal)
   const taches = tachesNuit(state);
   if (taches) state.nuit.taches = taches;
@@ -405,7 +405,7 @@ function nuitEnLot(state) {
   pousserBacs(state); // les fleurs des bacs poussent (bacs.js)
   pousserMassifs(state); // les fleurs semées dans l'herbe aussi (massifs.js)
   if (!state.mondePartage) state.nuit.demande = demandesNuit(state); // V-2 : les petites demandes des habitants (demandes.js)
-  // (I6a : celles des villageois, le réglage allumé ; éteint, rien)
+  // (I6a : celles des villageois)
   const demandeIle = villageoisDe(state).length ? demandesVillageoisNuit(state, villageoisDe(state)) : null;
   if (demandeIle) state.nuit.demandeVillageois = demandeIle;
   refreshUnlocks(state);

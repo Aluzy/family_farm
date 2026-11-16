@@ -10,7 +10,6 @@ import { paliersSuivis } from '../engine/paliers.js';
 import { setupPending } from '../engine/depart.js';
 import { unlockLevel } from '../engine/levels.js';
 import { farmTerrain } from '../engine/terrain.js';
-import { villageActif } from '../engine/village.js';
 import { heuresPort } from '../engine/port.js';
 import { advanceTutorial, skipTutorial, tutorialStep } from '../engine/alerts.js';
 import {
@@ -264,8 +263,7 @@ const HELP = {
         ['La visite de bienvenue', `Le deuxième jour, vers midi, un habitant du hameau le plus proche vient à pied jusqu'à ta porte souhaiter la bienvenue à ta famille. Va à sa rencontre : il t'offre un bon plat de sa cuisine. Si tu n'es pas là, il le laisse devant la porte : tu le prendras en rentrant.`],
         ['Inviter à un repas', `Dans le calendrier, touche un jour à venir : invite jusqu'à ${DATA.AMITIE.INVITATION.INVITES_MAX} personnes à qui tu as déjà parlé, pour le déjeuner (${DATA.AMITIE.INVITATION.MOMENTS.midi.heure} h) ou le dîner (${DATA.AMITIE.INVITATION.MOMENTS.soir.heure} h). Achille, le cocher, porte le message ; les réponses arrivent le lendemain matin. Le jour dit, tes invités viennent s'asseoir à ta table (une table de jardin et ses chaises, l'onglet « Jardin » du mode Construire ; sinon celle de la maison). Ta famille s'attable avec eux aux places qui restent. Touche la table pour servir le repas (et une chaise pour t'asseoir avec eux ; touche ailleurs pour te lever) : leurs plats préférés les rapprochent de toi, ta famille mange à sa faim et sera plus heureuse cette nuit. Ils en parleront les jours suivants.`],
         // (le chantier « l'île à bâtir » allumé, fiche I1b : le port commerce, la calèche ne fait plus que rouler)
-        villageActif(state) ? ['Le port', `Au bout du chemin qui sort de ta ferme, sur la côte : le quai, la cale et la halle. Au comptoir, sous la halle (dès le niveau ${unlockLevel('marche')}, ouvert ${heuresPort()}), on vend tout ce qui se vend, au prix de vente et sans limite (le bac emporte tout), et on achète les semences que ton niveau a débloquées. La carte du monde le montre, la boussole y mène. La calèche roule encore, mais ne commerce plus.`]
-          : ['La calèche', `Chaque jour, elle fait le tour du pays par les chemins, de hameau en hameau, et s'arrête devant l'entrée de ta ferme vers ${C.FERME} h, une heure. Une icône au bord de l'écran montre où elle est quand elle approche ; sur un chemin, quand elle passe tout près, touche-la ou le bouton « Héler » : elle s'arrête. Arrêtée à côté de toi (dès le niveau ${unlockLevel('marche')}), elle t'achète tout ce qui se vend, au prix de vente, et te vend des semences et ce qu'elle a acheté en chemin à la réserve des hameaux (bois, poisson, pierre, lait, laine, baies…), dont l'argent va aux familles. Le soir, elle dort dans un hameau. Sa fenêtre (le menu) dit où elle est.`],
+        ['Le port', `Au bout du chemin qui sort de ta ferme, sur la côte : le quai, la cale et la halle. Au comptoir, sous la halle (dès le niveau ${unlockLevel('marche')}, ouvert ${heuresPort()}), on vend tout ce qui se vend, au prix de vente et sans limite (le bac emporte tout), et on achète les semences que ton niveau a débloquées. La carte du monde le montre, la boussole y mène. La calèche roule encore, mais ne commerce plus.`],
         ['L\'Atelier', 'Seules les semences s\'achètent : les outils, les bêtes (un nid garni pour une poule, une pierre à sel et du foin pour un mouton ou une vache, un licol et des friandises pour le cheval), la ruche, le bac à fleurs et les meubles se fabriquent à l\'Atelier, avec ce que tu récoltes à la ferme et dans le monde. Les aliments se cultivent, se cuisinent, ou viennent des hameaux par la calèche.'],
         ['Le cheval', 'En selle, il te porte partout dans le pays, plus vite qu\'à pied ; quand tu en descends, il rentre à l\'Écurie. Avec sa sacoche (Atelier) remplie de pommes (sa fiche s\'ouvre quand tu montes en selle, ou touche-le à l\'Écurie), il galope : en selle, touche une pomme au-dessus de la barre d\'outils (× 2, la pomme dorée du four × 2,5).'],
         // fiche 15 : les blocs qui éclairent la nuit (BLOCS lumiere : js/carte/ferme/chantier.js, stepLanterns)
@@ -322,7 +320,7 @@ const HELP = {
     // (une pièce qui ne se fabrique pas à l'Atelier : elle se commande à l'atelier d'un hameau,
     // data/ile.json, comme les vêtements de laine cousus aux Genêts)
     const hameau = (id) => {
-      if (villageActif(state)) return sourceEquipementIle;   // (l'île à bâtir, fiche I7d : pas d'atelier de hameau)
+      return sourceEquipementIle;   // (l'île à bâtir, fiche I7d : pas d'atelier de hameau)
       for (const A of Object.values(DATA.ILE.ATELIERS)) {
         const r = Object.values(A.recettes || {}).find((x) => x.sortie && id in x.sortie);
         const h = DATA.PLAN_MONDE.HAMEAUX.GARANTIS.find((x) => x.id === A.hameau);
@@ -353,9 +351,9 @@ const HELP = {
       nom: 'Arbre des technologies',
       icone: '🔬',
       lignes: [
-        ['PT', `Les points de technologie (PT) : ${villageActif(state) ? 'chaque palier de l\'île franchi' : 'chaque chapitre terminé'} en rapporte (${T.POINTS.CHAPITRES.join(' · ')}), chaque jalon de maîtrise 1, et en jeu libre 1 toutes les ${T.POINTS.MODE_LIBRE_NUITS} nuits.`],
+        ['PT', `Les points de technologie (PT) : chaque palier de l'île franchi en rapporte (${T.POINTS.CHAPITRES.join(' · ')}), chaque jalon de maîtrise 1, et en jeu libre 1 toutes les ${T.POINTS.MODE_LIBRE_NUITS} nuits.`],
         ['Coût', 'Une technologie se paie en PT, en pièces et en ressources : du bois et de la pierre (hache, pioche), puis des lingots fondus au Four avec le minerai des gisements.'],
-        ['Paliers', `Les paliers s'ouvrent avec les ${villageActif(state) ? 'paliers de l\'île' : 'chapitres'} : ${Object.entries(T.PALIERS).map(([n, p]) => `${n}. ${p.nom} (${villageActif(state) ? 'palier' : 'chapitre'} ${p.chapitre})`).join(' · ')}.`],
+        ['Paliers', `Les paliers s'ouvrent avec les paliers de l'île : ${Object.entries(T.PALIERS).map(([n, p]) => `${n}. ${p.nom} (palier ${p.chapitre})`).join(' · ')}.`],
         ['Branches', `${noeuds.length} technologies en ${T.branches.length} branches : ${T.branches.map((b) => `${b.icone} ${b.nom} (${noeuds.filter((x) => x.branche === b.id).length})`).join(' · ')}.`],
         ['Outils', `${noeuds.filter((x) => x.branche === 'outils').map((x) => x.nom).join(', ')} : moins de coups, plus de bois, de pierre, de minerai et de poisson, moins d'énergie.`],
       ],
@@ -385,11 +383,11 @@ const HELP = {
 // habitants ni la calèche (une partie d'avant garde la fiche d'avant).
 HELP.ile = () => ficheIle(state);
 const mondeDAvant = HELP.monde;
-HELP.monde = () => { const h = mondeDAvant(); return villageActif(state) ? { ...h, lignes: mondeIle(h.lignes) } : h; };
+HELP.monde = () => { const h = mondeDAvant(); return { ...h, lignes: mondeIle(h.lignes) }; };
 
 // Les fiches sans bâtiment, ouvertes depuis À propos (l'île à bâtir : la sienne en tête).
 const FICHES = ['monde', 'outils', 'equipement', 'gisements', 'peche', 'chaines', 'techno'];
-const fiches = () => (state && villageActif(state) ? ['ile', ...FICHES] : FICHES);
+const fiches = () => (state ? ['ile', ...FICHES] : FICHES);
 
 // Le nom des actions de DATA.PERSONNAGE.COUTS, pour la règle de l'énergie.
 const ACTIONS_NOMS = {
@@ -432,13 +430,13 @@ const TUTO = {
     texte: () => (!farmOpen(state) && !houseRepaired(state)
       ? 'Une terre sauvage, sans maison : ramasse les petites pierres et les morceaux de bois (un appui dessus), cueille les baies des buissons pour reprendre des forces (même épuisé) ou coupe-les à la hache pour leur bois, pose l\'Atelier (menu, 🔨 Construire) et touche-le pour y fabriquer une faux pour faucher l\'herbe haute (ses fibres), puis des murs, une porte et une paillasse, puis bâtis une pièce close avec la case 🔨 de la barre d\'outils (la porte se pose sur une case libre, ou à la place d\'un mur). Ce sera ton foyer : on y dort.'
       : !farmOpen(state)
-      ? `Ton foyer est bâti. Ici, tout se fait d'abord à la main : fabrique à l'Atelier un puits et une cruche, pose le puits dehors avec la case 🔨, remplis la cruche au puits (un appui dessus : ton personnage y va et puise ; sa jauge bleue, dans la barre d'outils, dit l'eau qui reste) et arrose tes plantes. ${villageActif(state) ? `Le port, au bout du chemin, commerce avec toi à partir du niveau ${unlockLevel('marche')}.` : `La calèche, qui passe à la ferme chaque jour vers ${DATA.CALECHE.FERME} h, commerce avec toi à partir du niveau ${unlockLevel('marche')}.`} Au niveau ${unlockLevel('energie')}, le panneau solaire, la pompe, la citerne et la batterie (il faut des lingots : le minerai des gisements, fondu au four) pomperont l'eau pour toi : l'automatisation commence.`
+      ? `Ton foyer est bâti. Ici, tout se fait d'abord à la main : fabrique à l'Atelier un puits et une cruche, pose le puits dehors avec la case 🔨, remplis la cruche au puits (un appui dessus : ton personnage y va et puise ; sa jauge bleue, dans la barre d'outils, dit l'eau qui reste) et arrose tes plantes. Le port, au bout du chemin, commerce avec toi à partir du niveau ${unlockLevel('marche')}. Au niveau ${unlockLevel('energie')}, le panneau solaire, la pompe, la citerne et la batterie (il faut des lingots : le minerai des gisements, fondu au four) pomperont l'eau pour toi : l'automatisation commence.`
       : `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.POMPE.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : maintiens le doigt sur la citerne pour voir son niveau.${stageUsable() ? ' Sur la carte, touche le panneau solaire ou la batterie pour l\'énergie, le puits ou la citerne pour l\'eau.' : ''}`),
   },
   potager: {
     titre: '🌱 La zone de culture',
     // FLU-19 : plus de parcelle avant le labour ; on achète la houe, on laboure, puis on plante
-    texte: () => `${hasHoe(state) ? 'Ta houe' : 'Fabrique d\'abord la houe à l\'Atelier : elle'} change l'herbe en terre ; ${villageActif(state) ? `les graines s'achètent au port (onglet Acheter), au comptoir sous la halle, ${heuresPort()}.` : `les graines s'achètent à la calèche (onglet Acheter), quand elle passe à la ferme vers ${DATA.CALECHE.FERME} h.`} ${stageUsable()
+    texte: () => `${hasHoe(state) ? 'Ta houe' : 'Fabrique d\'abord la houe à l\'Atelier : elle'} change l'herbe en terre ; les graines s'achètent au port (onglet Acheter), au comptoir sous la halle, ${heuresPort()}. ${stageUsable()
       ? `Prends-la (bouton ${DATA.HOUE.ICONE} en bas à droite) et touche l'herbe foncée (les cases vertes) pour labourer. Range-la, puis touche une terre labourée pour planter, et touche-la encore pour l'arroser`
       : 'Laboure, puis touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade ${DATA.TEMPS.POUSSE_HEURES} heures plus tard, puis redemande de l'eau : les carottes sont mûres en ${daysLabel(DATA.CULTURES.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante. Arrosée, elle n\'a besoin de rien : une bulle dit quand elle grandira. Maintiens le doigt sur une terre pour la fenêtre de la zone (Planter partout, Arroser tout, Récolter tout).' : 'Après la récolte, replante.'}`,
   },
@@ -597,10 +595,9 @@ export function openAboutModal() {
       : 'La nuit : repas, puis une poule nourrie pond, les moutons font leur laine, les vaches donnent leur lait. Rien ne se perd pendant ton absence : les aliments ne se gâtent pas, les plantes attendent, les bêtes pas nourries ne produisent rien mais ne s\'en vont pas, et le bonheur de la famille ne baisse pas.',
     `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}, + ${DATA.PERSONNAGE.ENDURANCE} par niveau : l'endurance) : chaque action au clic en coûte (${Object.entries(DATA.PERSONNAGE.COUTS).map(([a, n]) => `${ACTIONS_NOMS[a] || a} ${formatNumber(n)}`).join(', ')}), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %), avec les technologies et l'équipement, mais jamais moins de ${DATA.PERSONNAGE.PLANCHER} % de ce coût. Au réveil, ${DATA.PERSONNAGE.REVEIL_REPAS > 0 ? `elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE} % de la jauge, et jusqu'à la jauge pleine si le reste de la famille se couche rassasié` : `elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE} % de la jauge`} ; un aliment mangé dans la journée rend sa valeur (son énergie ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}, + ${DATA.PERSONNAGE.MANGER_BONUS} %, arrondie au-dessus). Les automatisations ne coûtent rien.`,
     `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe (son eau sert aussi aux asperseurs de l'arrosage automatique), moulin, chaînes de production, réfrigérateur, station de charge du robot. ${penalite('USURE') ? `Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.USURE.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.USURE.TAUX_ENTRETIEN)} % de son prix, le réparer après une panne ${formatNumber(DATA.USURE.TAUX_REPARATION)} % (arrondis à l'entier supérieur).` : 'Les appareils ne s\'usent pas et ne tombent pas en panne.'}`,
-    villageActif(state) ? reglesIle(state).commerce
-      : `La calèche : elle fait chaque jour le tour du monde par les chemins et passe à la ferme vers ${DATA.CALECHE.FERME} h ; on commerce avec elle quand elle est arrêtée à côté de soi (ou hélée sur un chemin). Prix de vente fixes. Elle vend les semences (prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur ; chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient, chaque unité vendue en retire ${formatNumber(M.PAS)}, plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %) et ce qu'elle achète aux hameaux (à ${DATA.CALECHE.VENTE} % du prix de vente). Les outils, les animaux et les meubles se fabriquent à l'Atelier.`,
-    villageActif(state) ? reglesIle(state).paliers : `${chapterCount()} chapitres racontent un foyer qui prend vie : des amis, des repas partagés, les projets des hameaux, une ferme à votre image ; le dernier ouvre le jeu libre.`,
-    `Arbre des technologies : ${Object.keys(DATA.ARBRE.noeuds).length} technologies en ${DATA.ARBRE.branches.length} branches, payées en points de technologie (PT : ${villageActif(state) ? 'paliers de l\'île franchis' : 'chapitres terminés'}, jalons de maîtrise, mode libre), en pièces et en ressources (bois, pierre, puis lingots fondus au Four avec le minerai des gisements). Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
+    reglesIle(state).commerce,
+    reglesIle(state).paliers,
+    `Arbre des technologies : ${Object.keys(DATA.ARBRE.noeuds).length} technologies en ${DATA.ARBRE.branches.length} branches, payées en points de technologie (PT : paliers de l'île franchis, jalons de maîtrise, mode libre), en pièces et en ressources (bois, pierre, puis lingots fondus au Four avec le minerai des gisements). Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
     `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,
   ];
   openModal(`

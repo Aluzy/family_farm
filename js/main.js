@@ -11,7 +11,6 @@ import { demenagementAnnonce, ileAnnonce, importSaveText, loadOrCreateState, mak
 import { ecranTitre, ecranTitreVoulu } from './ui/ecran-titre.js';
 import { lireTransfert } from './ui/transfert.js';
 import { newGameFrom } from './engine/alerts.js';
-import { partieNeuve } from './ui/village.js';
 import { notify } from './ui/toasts.js';
 import { catchUp, demarrerBoucles, onHide, setMailSeen, setPendingAbsence, setSimulatedAt, syncJobs } from './ui/loop.js';
 import { oublierAdresseMine } from './ui/hote.js';
@@ -108,7 +107,7 @@ async function demarrer() {
   setState(partieDuMonde || loadOrCreateState());
   if (titre && titre.choix === 'nouvelle' && !partieDuMonde) {
     // (comme « Recommencer à zéro » des options : une nouvelle partie à la place de celle de l'appareil)
-    setState(partieNeuve(newGameFrom(state, makeSeed())));
+    setState(newGameFrom(state, makeSeed()));
     setSimulatedAt(Date.now());
     setPendingAbsence(null);
     persistState();

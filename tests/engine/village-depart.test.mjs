@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : le nouveau départ (docs/ile.md, fiche I7b ; js/engine/depart-ile.js,
-   js/engine/didacticiel-ile.js). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec
-   VILLAGE.ACTIF forcé à true.
+   js/engine/didacticiel-ile.js).
    - l'écran de départ : « Seul » (un adulte tiré de la graine, sans compagnon), le nom de l'île proposé et borné ;
    - la terre vierge : pas de chemin intérieur (ni coins, ni tuiles de chemin dans le sol de la ferme) ; le seul
      chemin part de la porte de l'abri et va, d'un seul tenant, à la sortie de la ferme ; l'abri tel quel ;
@@ -10,7 +9,7 @@
    - le didacticiel : ses étapes passent d'elles-mêmes ; chacune se passe, le tout aussi ;
    - une partie seule et une partie à six, jouées par le joueur automatique : elles passent le didacticiel jusqu'au
      premier villageois et à sa tâche ;
-   - la sauvegarde : v94 → v95 ; éteint, rien ne change.
+   - la sauvegarde : v94 → v95.
    Lancer seul : node tests/run-tests.mjs village-depart
    ========================================================================== */
 
@@ -21,7 +20,7 @@ import {
 } from '../../js/engine/index.js';
 import { blocGid } from '../../js/engine/planche.js';
 import { scenesPossibles } from '../../js/engine/recit-aiguillage.js';
-import { assert, assertEqual, avecVillage, test } from './aide.mjs';
+import { assert, assertEqual, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 
@@ -190,7 +189,7 @@ test('à six, joué par le joueur automatique : le didacticiel jusqu\'au premier
   assert(villageoisDe(s).some((v) => v.maison !== null && v.tache), 'un villageois logé, à sa tâche');
 });
 
-/* ---------- la sauvegarde, le réglage éteint ---------- */
+/* ---------- la sauvegarde ---------- */
 
 test('la sauvegarde : v94 → v95, une partie d\'avant inchangée, ce qui est abîmé réparé', () => {
   const s = departGarde();
@@ -204,18 +203,4 @@ test('la sauvegarde : v94 → v95, une partie d\'avant inchangée, ce qui est ab
   assertEqual(abime.didacticielIle.fini, true, 'un didacticiel illisible est fini');
   const bon = migrate({ v: 92, t: 0, s: { ...copie(s), version: 92 } }, 95);
   assertEqual([bon.noms, bon.didacticielIle, bon.dehors.ferme], [s.noms, s.didacticielIle, 'vierge'], 'gardé tel quel');
-});
-
-test('éteint : la partie neuve d\'avant (le chemin peint, la visite de bienvenue, ni nom ni didacticiel de l\'île)', () => {
-  avecVillage(() => {
-    const s = createNewGame('eteint', { nom: 'Martin' });
-    commencerObjectifs(s);
-    assertEqual(['noms' in s, 'didacticielIle' in s, 'dehors' in s], [false, false, false]);
-    assertEqual(s.bienvenue.etat, 'attendue', 'la visite viendra');
-    assertEqual(Object.values(solsPoses(s)).filter((k) => k === 'chemin').length, 0, 'pas de chemin posé');
-    assertEqual(fermeVierge(s), false);
-    let coins = 0;
-    for (const k of farmTerrain(s).SOMMETS) if (k === 1) coins++;
-    assert(coins > 100, 'le chemin peint');
-  }, false);
 });

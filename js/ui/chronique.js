@@ -1,5 +1,4 @@
 import { setupPending } from '../engine/depart.js';
-import { villageActif } from '../engine/village.js';
 import { assurerArrivee, epinglerLigne, noterLigne, renommerEtNoter } from '../engine/chronique.js';
 import { nomDe, nomRefus, nomsDe, proposerNom } from '../engine/noms.js';
 import { chroniqueHtml, noteHtml, renommerHtml } from './chronique-html.js';
@@ -24,8 +23,7 @@ import { gestePermis, nomDuMembre } from './en-ligne.js';
      - nommer l'île ou le village (« ✏️ Renommer » : le champ, « 🎲 Un autre nom ») ;
      - la veille (watchChronique, à chaque tour de la boucle, au plus une fois par seconde) : la ligne de l'arrivée une
        fois la famille configurée ; le baptême du village (le troisième villageois : le nom proposé, à garder ou à
-       changer), dès qu'aucune fenêtre n'est ouverte.
-   Le chantier éteint, rien ne se montre. Tant que le récit est là (fiche I7c), le carnet reste à côté.
+       changer), dès qu'aucune fenêtre n'est ouverte. Tant que le récit est là (fiche I7c), le carnet reste à côté.
    I9e, en ligne : la chronique est celle du monde. Nommer (nom.donner : le propriétaire de l'île), épingler et annoter
    (chronique.epingler, chronique.noter : l'ami jardinier, signé) sont des commandes du monde ; les boutons ne paraissent
    qu'à qui a le droit, et une ligne épinglée ou annotée dit par qui. Le baptême du village n'est proposé qu'au
@@ -49,7 +47,7 @@ function ouvrirRenommer(quoi, rang = 0, o = {}) {
 
 // À chaque tour de la boucle : l'arrivée notée, le baptême du village proposé.
 export function watchChronique() {
-  if (!state || !villageActif(state) || setupPending(state)) return;
+  if (!state || setupPending(state)) return;
   const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
   if (now - veille < VEILLE_MS) return;
   veille = now;
@@ -68,7 +66,7 @@ export function watchChronique() {
 
 // Le bouton du menu (js/ui/stage-windows.js) : '' le chantier éteint.
 export function chroniqueBouton() {
-  if (!state || !villageActif(state)) return '';
+  if (!state) return '';
   return '<button type="button" class="nav-btn" data-action="chronique-open" title="Chronique" aria-label="La chronique de l\'île"><span class="nav-icon" aria-hidden="true">📜</span><span class="nav-label">Chronique</span></button>';
 }
 

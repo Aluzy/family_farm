@@ -26,7 +26,6 @@
    ========================================================================== */
 
 import { DATA } from './catalog.js';
-import { villageActif } from './village.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { BIOMES } from './monde-gen.js';
 import { elementsSol, solDirect, tronconDuPort } from './monde-sol.js';
@@ -69,9 +68,8 @@ export function decoderSegments(segs, max = Infinity) {
 
 /* ---------- les chemins possédés ---------- */
 
-// Le dehors de la partie, ou null (le chantier éteint, ou une partie d'avant qui n'a encore rien posé dehors).
+// Le dehors de la partie, ou null (une partie d'avant qui n'a encore rien posé dehors).
 export function dehorsDe(state) {
-  if (!villageActif(state)) return null;
   const d = state && state.dehors;
   return d && typeof d === 'object' && !Array.isArray(d) ? d : null;
 }
@@ -84,7 +82,6 @@ function dehorsCree(state) {
 
 // Où en est le tronçon du port : 'a_poser', 'pose', 'genere' (une partie d'avant, ou rien posé), ou null (éteint).
 export function etatTroncon(state) {
-  if (!villageActif(state)) return null;
   const d = dehorsDe(state);
   return d && ['a_poser', 'pose', 'genere'].includes(d.troncon) ? d.troncon : 'genere';
 }
@@ -313,7 +310,6 @@ export function traceSurRails(R, W, cases, heures, PAS = 6) {
 // falaise, ni l'emprise du port, ni sous un arbre ou un rocher), et sur une rivière, sur un pont de planches seulement.
 export function railsStatus(state, t, sur = {}) {
   const T = farmTerrain(state);
-  if (!villageActif(state)) return { ok: false, raison: 'Les rails sont de l\'île.' };
   if (railsSur(state, t)) return { ok: false, raison: 'Il y a déjà des rails ici.' };
   const B = DATA.ATELIER.BLOCS, b = state.blocs && state.blocs[t], sb = b && B[b];
   if (sb && !sb.pont) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
@@ -359,7 +355,7 @@ export function assurerTroncon(state) {
 }
 
 // Ce que le sol du monde doit savoir des chemins de la partie (js/ui/monde-sol.js, monde-sol.js poserCheminsSol) :
-// { troncon, cases }, ou null (le chantier éteint, ou une partie d'avant qui n'a rien posé dehors : le sol d'avant).
+// { troncon, cases }, ou null (une partie d'avant qui n'a rien posé dehors : le sol d'avant).
 export function cheminsPourLeSol(state) {
   const e = etatTroncon(state);
   if (!e || (e === 'genere' && !cheminsDehors(state).size)) return null;
@@ -451,7 +447,7 @@ export function blocDuDehors(sorte) {
   return Array.isArray(L) && L.includes(sorte);
 }
 
-// Peut-on poser `sorte` sur la case `t`, hors de la ferme (le chantier allumé) ? { ok, raison }. Ce qui est en main
+// Peut-on poser `sorte` sur la case `t`, hors de la ferme ? { ok, raison }. Ce qui est en main
 // est vu avant (blocs.js, poseStatus).
 export function poseDehorsStatus(state, sorte, t) {
   const T = farmTerrain(state), s = DATA.ATELIER.BLOCS[sorte];
@@ -502,17 +498,16 @@ export function casesPonts(state) {
 
 /* ---------- l'effet du chemin : on y va plus vite ---------- */
 
-// Combien de fois plus vite sur un chemin (1 + VILLAGE.CHEMIN.VITESSE %), 1 le chantier éteint.
+// Combien de fois plus vite sur un chemin (1 + VILLAGE.CHEMIN.VITESSE %).
 export function bonusChemin(state) {
-  if (!villageActif(state)) return 1;
   const C = DATA.VILLAGE && DATA.VILLAGE.CHEMIN;
   return 1 + Math.max(0, (C && C.VITESSE) || 0) / 100;
 }
 
 // La case `t` est-elle un chemin (un chemin possédé hors de la ferme, un chemin posé sur la ferme, le chemin de la
-// ferme : trois de ses quatre coins au moins en sont, ses SOMMETS) ? Faux le chantier éteint.
+// ferme : trois de ses quatre coins au moins en sont, ses SOMMETS) ?
 export function surChemin(state, t, T = farmTerrain(state)) {
-  if (!villageActif(state) || !Number.isInteger(t) || t < 0) return false;
+  if (!Number.isInteger(t) || t < 0) return false;
   if (cheminDehorsSur(state, t) || (state.sols && state.sols[t] === 'chemin')) return true;
   if (horsFerme(T, t)) return false;
   const S = T.SOMMETS, W = T.LARGEUR, V = W + 1, c = t % W, r = Math.floor(t / W);

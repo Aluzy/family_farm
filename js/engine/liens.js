@@ -3,7 +3,7 @@ import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
-import { prenomsDuJeu, villageActif } from './village.js';
+import { prenomsDuJeu } from './village.js';
 import { hourOfDay, nightActive } from './clock.js';
 import { maisonsMarquees, litsDeLaFamille } from './blocs.js';
 import { jourDeBac } from './bac.js';
@@ -55,7 +55,7 @@ import { presentsALaFete } from './fetes-village.js';
      foyers: [{ id ('fy-1'…), membres: [a, b], maison (la boîte aux lettres), jour, enfant (son id, ou null),
        attend (true : il viendra par le prochain bac) }],
      entraide: [{ jour, de, a }] (un repas que `de` apportera à `a` ce jour-là) }.
-   Il ne naît qu'avec les villageois (le réglage allumé). Les tests : tests/engine/village-liens.test.mjs. */
+   Il ne naît qu'avec les villageois. Les tests : tests/engine/village-liens.test.mjs. */
 
 const LI = () => (DATA.VILLAGE && DATA.VILLAGE.LIENS) || {};
 const CO = () => (DATA.VILLAGE && DATA.VILLAGE.SOCIAL && DATA.VILLAGE.SOCIAL.CONNAISSANCE) || {};
@@ -202,9 +202,8 @@ export function lienDe(score) {
 // Les gains de la journée `jour` (state.day), pour chaque paire, et ce qui s'est passé. Appelé par runNight après
 // les tâches (leur journée de travail est finie) et avant la nuit des villageois (leur repos de demain n'est pas
 // encore tiré : la journée lue est bien celle qu'ils ont vécue). → { gains (les paires qui ont monté), paliers
-// ([{ a, b, palier }] passés), evenements } ; null le réglage éteint ou sans villageois.
+// ([{ a, b, palier }] passés), evenements } ; null sans villageois.
 export function liensNuit(state) {
-  if (!villageActif(state)) return null;
   const V = villageoisDe(state);
   if (!V.length) return null;
   const L = liensEtat(state), jour = jourDe(state), G = LI().GAINS || {};
@@ -296,9 +295,9 @@ export function liensNuit(state) {
 
 // Après la nuit des villageois (leur repos de demain est tiré) : les repas apportés de demain (planifierEntraide), et
 // l'enfant d'un foyer qui n'est pas venu par le bac du jour (la journée finie avant l'heure) est là d'un coup.
-// → { entraide: [{ de, a }], enfant (son id, ou null) } ; null le réglage éteint ou sans villageois.
+// → { entraide: [{ de, a }], enfant (son id, ou null) } ; null sans villageois.
 export function liensFinDeNuit(state) {
-  if (!villageActif(state) || !villageoisDe(state).length) return null;
+  if (!villageoisDe(state).length) return null;
   const L = liensEtat(state), jour = jourDe(state);
   L.entraide = L.entraide.filter((e) => e && e.jour > jour);
   const entraide = planifierEntraide(state, jour + 1);
@@ -353,7 +352,7 @@ function avis(v, quoi) {
 // Ce que ses liens ajoutent à sa cible de bonheur (villageois.js nuitDe) : BONHEUR.AMI s'il a un ami au village,
 // BONHEUR.PROCHE un proche (le plus grand des deux), ENTRAIDE.BONHEUR s'il a reçu un repas aujourd'hui.
 export function bonheurDesLiens(state, v) {
-  if (!villageActif(state) || !v) return 0;
+  if (!v) return 0;
   const B = LI().BONHEUR || {};
   let meilleur = 0;
   for (const o of villageoisDe(state)) if (o !== v) meilleur = Math.max(meilleur, palierLien(scoreAvec(state, v, o)));
@@ -428,7 +427,6 @@ export function maisonsPourFoyer(state, a, b) {
 // Pourquoi `a` et `b` ne peuvent pas (encore) former un foyer, ou null. `o.maison` : false pour ne pas regarder la
 // maison (ce qu'il manque : la fiche).
 export function foyerRefus(state, a, b, o = {}) {
-  if (!villageActif(state)) return 'Le chantier de l\'île n\'est pas allumé.';
   const va = trouverVillageois(state, a), vb = trouverVillageois(state, b);
   if (!va || !vb || va === vb) return 'Villageois inconnu.';
   if (va.enfant || vb.enfant) return 'Un enfant ne fonde pas de foyer.';
@@ -491,7 +489,6 @@ export function accueillirEnfant(state, fid) {
 // Le foyer dont l'enfant viendrait par ce bac, ou la raison qu'il ne vienne pas (un texte) : `o.heure` false pour ne
 // pas regarder l'heure du bac (la nuit) ; un seul nouveau venu par passage.
 export function arriveeEnfantRefus(state, o = {}) {
-  if (!villageActif(state)) return 'Le chantier de l\'île n\'est pas allumé.';
   const jour = jourDe(state);
   if (!jourDeBac(state, jour)) return 'Le bac ne passe pas aujourd\'hui.';
   if (villageoisDe(state).some((v) => v.arrive === jour)) return 'Un seul nouveau venu par passage du bac.';

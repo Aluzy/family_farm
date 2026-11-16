@@ -17,7 +17,6 @@ import { offrirPlan } from './plans.js';
 import { habitantsDe } from './habitants.js';
 import { cleDe, palierAmitie } from './amitie.js';
 import { styleMaison } from './styles.js';
-import { villageActif } from './village.js';
 import { compterObjectifIle, listeDesChapitres, paliersSuivis } from './paliers.js';
 import { chroniqueRecolte, noterChronique } from './chronique.js';
 
@@ -124,9 +123,9 @@ export function cropUnlocked(state, culture) {
 
 // Cultures qu'on peut planter dans ce lieu avec les chapitres atteints. Comme
 // pour les bâtiments, c'est un masquage : plant() lui-même reste libre.
-// (les plants sauvages de l'île, fiche I7e : seulement sur l'île ; le jeu d'avant ne les montre pas)
+// (les plants sauvages de l'île compris, fiche I7e)
 export function plantableCropsFor(state, lieu) {
-  return plantableCrops(lieu).filter((c) => cropUnlocked(state, c) && (!DATA.CULTURES[c].sauvage || villageActif(state)));
+  return plantableCrops(lieu).filter((c) => cropUnlocked(state, c));
 }
 
 // Version 1.12 : une culture récoltée (objectif « cultures différentes »).
@@ -253,8 +252,8 @@ export function objectiveValue(state, obj) {
     // version 1.22 : le plus d'exemplaires d'un objet (`item`) eus en même temps
     case 'objet': return Math.max(countItem(state, obj.item), (k.objets && k.objets[obj.item]) || 0);
     // fiche 9b : le grand monde
-    // (le chantier « l'île à bâtir » allumé, fiche I1b : la calèche ne commerce plus, les ventes au port comptent)
-    case 'caleche': return Math.floor((k.calecheVentes || 0) + (villageActif(state) ? k.ventesPort || 0 : 0));
+    // (l'île, fiche I1b : les ventes au port comptent ; celles d'une partie d'avant à la calèche aussi)
+    case 'caleche': return Math.floor((k.calecheVentes || 0) + (k.ventesPort || 0));
     case 'achatsHameaux': return Math.floor(k.achatsHameaux || 0);
     case 'pecheMer': return Math.floor(k.pecheMer || 0);
     case 'hameaux': return Object.keys(hameauxVus(state)).length;
@@ -354,9 +353,6 @@ export function updateChapters(state) {
     done++;
   }
   checkMastery(state); // Arbre v2 : jalons de maîtrise
-  // version 1.3 : le courrier que ce stade de la partie fait arriver (le chantier « l'île à bâtir » allumé, il
-  // n'y en a plus : ce qu'il offrait est passé dans les récompenses des paliers, fiche I7a)
-  if (!villageActif(state)) deliverMail(state);
   return done;
 }
 
@@ -412,7 +408,7 @@ function mailDue(state, def) {
   if (q.chapitre) tests.push(!!state.campagne && chapterReached(state) >= q.chapitre);
   if (q.fait) {
     const faits = Array.isArray(q.fait) ? q.fait : [q.fait];
-    // (fiche I7c : les faits du récit, par l'aiguillage ; le chantier allumé, aucun, et le courrier ne vient pas)
+    // (fiche I7c : les faits du récit, par l'aiguillage ; aucun, et le courrier ne vient pas)
     const R = recitPour(state);
     tests.push(faits.every((f) => R.aFait(state, f)) && (!q.apres || R.ageFait(state, faits[0]) !== null && R.premierJourFait(state, faits[0]) + q.apres <= state.day));
   }

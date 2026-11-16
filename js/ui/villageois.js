@@ -5,7 +5,6 @@ import { escapeHtml } from '../engine/format.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { setupPending } from '../engine/depart.js';
 import { clockHours, hourOfDay, nightActive } from '../engine/clock.js';
-import { villageActif } from '../engine/village.js';
 import {
   accueillirVillageois, arriveeDue, arriverVillageois, ficheVillageois, nombreVillageois, prendreAvis, trouverVillageois,
   verifierMaisons, villageoisDe, villageoisPourLaCarte,
@@ -73,8 +72,7 @@ import { gestePermis, mondeActuel } from './en-ligne.js';
      - I9e (en ligne, les rôles : js/engine/roles.js) : les gestes de sa fiche sont des commandes du monde
        (villageois.attribuer, villageois.outil, villageois.vendre ; les liens : js/ui/liens.js) ; qui fait quoi se lit par
        tous, et ses boutons ne paraissent qu'à qui a le droit (gestePermis) : attribuer une tâche est au propriétaire (ou
-       aux bâtisseurs s'il le délègue), confier un outil et la navette à l'ami jardinier.
-   Le chantier éteint (villageActif), rien ici ne se montre. */
+       aux bâtisseurs s'il le délègue), confier un outil et la navette à l'ami jardinier. */
 
 const WATCH_MS = 1000;
 let derniereVeille = -Infinity;
@@ -106,7 +104,7 @@ function direAvis() {
 
 // À chaque image (au plus une fois par seconde) : le nouveau venu en route, les maisons, les avis.
 export function watchVillageois() {
-  if (!state || !villageActif(state) || setupPending(state)) return;
+  if (!state || setupPending(state)) return;
   const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
   if (now - derniereVeille < WATCH_MS) return;
   derniereVeille = now;
@@ -146,10 +144,10 @@ function lieuxDuMonde() {
   }
 }
 
-// Le modèle de la carte (js/ui/stage.js) : null le chantier éteint ou sans villageois.
+// Le modèle de la carte (js/ui/stage.js) : null sans villageois.
 // Fiche I3b : chacun porte sa journée (journee : les segments de 0 à 24 h, js/engine/villageois-journee.js).
 export function villageoisModele() {
-  if (!state || !villageActif(state) || !nombreVillageois(state)) return null;
+  if (!state || !nombreVillageois(state)) return null;
   const L = villageoisPourLaCarte(state, lieuxDuMonde());
   const J = journeesPourLaCarte(state) || {}, Tr = travailPourLaCarte(state) || {};
   for (const v of L || []) { v.journee = J[v.id] || null; v.travail = Tr[v.id] || null; }
@@ -160,9 +158,9 @@ export function villageoisModele() {
 // du relevé), s (secondes réelles par heure de jeu : la scène avance l'heure entre deux modèles), nuit, chemins
 // (les cases des chemins posés de la ferme : ils les préfèrent), vitesse et chemin (VILLAGE.HORAIRE), liens (I3b+ :
 // qui se connaît, villageois-liens.js liensPourLaCarte) et social (VILLAGE.SOCIAL.CROISE, les réglages de la scène :
-// js/carte/ferme/villageois-social.js) } ; null le chantier éteint ou sans villageois.
+// js/carte/ferme/villageois-social.js) } ; null sans villageois.
 export function villageoisHorloge(heure = null) {
-  if (!state || !villageActif(state) || !nombreVillageois(state)) return null;
+  if (!state || !nombreVillageois(state)) return null;
   // (I9d : l'heure donnée par la scène, js/ui/stage.js heureDuJour : en ligne, celle du pas plus la part du pas écoulée,
   // la même que la lumière ; en solo, clockHours)
   return {
@@ -278,7 +276,7 @@ function parlerEnLigne(id, o) {
 
 // Le compte des villageois sur la carte du joueur (sous l'argent) : '' sans eux.
 export function villageoisCarteHtml() {
-  if (!state || !villageActif(state)) return '';
+  if (!state) return '';
   const n = nombreVillageois(state);
   if (!n) return '';
   const t = `${n} villageois sur l'île. Voir les villageois`;

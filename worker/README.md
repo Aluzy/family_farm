@@ -144,10 +144,8 @@ propriétaire reste dans son navigateur. Le propriétaire peut remettre la copie
 /mondes/<id>/remplacer`). **Un monde se met à jour à sa première ouverture** par un serveur d'une autre version
 (`mettreAJour`, depuis `charger`) : sa partie passe au format du serveur, le journal d'après son instantané se rejoue,
 la partie d'avant est gardée (la table `avant_migration`, et une sauvegarde « avant une mise à jour du jeu » ou « avant le
-passage sur l'île »), une marque `monde.migrer` au journal ; le chantier allumé, une ferme d'avant passe sur l'île (la
-migration d'I7f, l'horloge vivante, le port et le tronçon, le cadeau au coffre commun ; aucun villageois). Pendant le
-chantier, seul un Durable Object d'essai le fait (la variable `ILE_ESSAI` = `1`, que seuls les tests posent : ne pas la
-mettre dans `wrangler.toml`). Le protocole gagne `hello.format` et le message `remplace`.
+passage sur l'île »), une marque `monde.migrer` au journal ; une ferme d'avant passe sur l'île (la migration d'I7f,
+l'horloge vivante, le port et le tronçon, le cadeau au coffre commun ; aucun villageois). Le protocole gagne `hello.format` et le message `remplace`.
 
 Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
 monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au
@@ -314,8 +312,9 @@ l'île (sans redonner le cadeau).
 d'une nouvelle version, et refuse ensuite les jeux d'avant (« recharge la page ») ; un jeu plus récent que le Worker
 attend (« réessaie dans quelques minutes »). La première ouverture d'une ferme d'avant coûte ≈ 0,9 s (la migration, le lieu
 du port, le tronçon) : **à mesurer au premier déploiement**, comme le premier réveil.
-**I9h, la bascule** (la version 2.0.0, `VILLAGE.ACTIF` allumé, embarqué avec le moteur) : tous les mondes d'avant passent
-sur l'île à leur premier réveil, sans `ILE_ESSAI` (gardé, sans effet, jusqu'au retrait). L'ordre exact du déploiement (le
+**I9h, la bascule** (la version 2.0.0) : tous les mondes d'avant passent sur l'île à leur premier réveil ; la seconde PR
+retire le réglage (`VILLAGE.ACTIF`, `ILE_ESSAI`) et la ferme d'avant des mondes (l'élagage d'E-8, le temps figé de F.2 et la
+nuit partagée d'un coup, la grille d'E-11, `HORS_FERME`) : toute partie d'un monde est une île. L'ordre exact du déploiement (le
 Worker, vérifié, puis le site, retenu par une règle de l'environnement `github-pages`) : `docs/fiches/ile/I9h-bascule.md`,
 « Fait : la première PR ». Répéter avant : `node scripts/repetition-monde.mjs <copie du jeu d'avant>`.
 

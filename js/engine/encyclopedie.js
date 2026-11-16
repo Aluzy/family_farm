@@ -1,7 +1,6 @@
 import { ENCYCLOPEDIE } from '../encyclopedie.generated.js';
 import { ENCYCLOPEDIE_ILE } from '../encyclopedie-ile.generated.js';
 import { conditionRemplie } from './decouverte.js';
-import { villageActif } from './village.js';
 
 /* ---------- l'encyclopédie de la partie ----------
    Le jeu a son encyclopédie, un livre (js/ui/encyclopedie.js) qui se remplit au fil de la
@@ -20,9 +19,9 @@ export const CATEGORIES = ENCYCLOPEDIE.categories;
 const indexer = (cats) => { const m = new Map(); for (const c of cats) for (const e of c.entrees) m.set(e.id, { ...e, categorie: c.id }); return m; };
 const ANCIEN = { categories: CATEGORIES, parId: indexer(CATEGORIES) };
 const ILE = { categories: ENCYCLOPEDIE_ILE.categories, parId: indexer(ENCYCLOPEDIE_ILE.categories) };
-const livreDe = (state) => (state && villageActif(state) ? ILE : ANCIEN);
+const livreDe = (state) => (state ? ILE : ANCIEN);
 
-// Les catégories du livre de la partie (celui de l'île, le chantier allumé).
+// Les catégories du livre de la partie (celui de l'île).
 export function categoriesDe(state = null) {
   return livreDe(state).categories;
 }

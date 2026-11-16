@@ -23,7 +23,6 @@ import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { habitantsDe } from './habitants.js';
 import { ajouterAmitie, amitieDe, cleDe, HAMEAU_VILLAGE, palierAmitie, trouverPnj } from './amitie.js';
-import { villageActif } from './village.js';
 
 const D = () => DATA.DEMANDES;
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -96,7 +95,7 @@ export function demandesNuit(state) {
 // CHANCE, MAX ouvertes pour le village, DEPUIS jours après son arrivée), selon sa tâche (VILLAGE.AMITIE.METIERS → les
 // BESOINS de ce métier). Le réglage éteint ou sans villageois : rien (la partie n'est pas touchée). → la demande, ou null.
 export function demandesVillageoisNuit(state, villageois) {
-  if (state.mondePartage || !villageActif(state) || !Array.isArray(villageois) || !villageois.length) return null;
+  if (state.mondePartage || !Array.isArray(villageois) || !villageois.length) return null;
   const A = DATA.VILLAGE.AMITIE || {}, R = A.DEMANDES || {};
   const d = demandesDe(state), jour = state.day;
   d.liste = d.liste.filter((x) => x.fin >= jour);

@@ -4,7 +4,6 @@ import { fail } from './devices.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
 import { addItem } from './inventory.js';
-import { villageActif } from './village.js';
 import { noterObjectif } from './objectifs-compte.js';
 import {
   AMITIE, HAMEAU_VILLAGE, amitieAvec, amitieDe, fiche, goutsTires, offrir, palierAmitie, parlerAmitie,
@@ -125,7 +124,7 @@ export function donnerPresent(state, id) {
 // (RETOUR.CHANCE[palier] %), s'il n'en garde pas déjà un : un objet des présents de son métier (RETOUR.PRESENTS,
 // METIERS). → { presents: [{ id, objet, n }] }, ou null (le réglage éteint, sans villageois).
 export function amitieVillageoisNuit(state) {
-  if (!villageActif(state) || state.mondePartage) return null;
+  if (state.mondePartage) return null;
   const V = villageoisDe(state);
   if (!V.length) return null;
   const R = AMITIE.RETOUR, jour = jourDe(state), out = { presents: [] };

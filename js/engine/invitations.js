@@ -9,7 +9,7 @@ import { habitantsDe, metierHabitant } from './habitants.js';
 import { rassasierFamille, repasJour } from './repas.js';
 import { recitPour } from './recit-aiguillage.js';
 import { ajouterAmitie, amitieDe, cleDe, fiche, goutPour, HAMEAU_VILLAGE, palierAmitie, styleHabitant, trouverPnj } from './amitie.js';
-import { texteDuRecit, villageActif } from './village.js';
+import { texteDuRecit } from './village.js';
 import { porteVillageois, trouverVillageois } from './villageois.js';
 import { noterRepasPartage } from './vocation-village.js';
 import { tacheDef } from './taches.js';
@@ -35,7 +35,7 @@ import { admireLeCoin, phraseAdmire, STYLES, tableDuRepas } from './styles.js';
    Une invitation passée (servie ou manquée) quitte la liste la nuit ; son souvenir reste dans l'amitié
    (state.amitie.pnj[clé].souvenirs = [{ jour, plat, terrasse }]).
 
-   Fiche I6a (le chantier « l'île à bâtir », le réglage allumé) : les villageois s'invitent aussi (le « hameau »
+   Fiche I6a (le chantier « l'île à bâtir ») : les villageois s'invitent aussi (le « hameau »
    HAMEAU_VILLAGE d'amitie.js) ; on les connaît tous (ils vivent ici, la famille les a accueillis). Le jour dit, la
    scène fait venir le villageois lui-même à table (invites.js : il quitte sa journée le temps du repas, puis la
    reprend), de là où il est, sinon de sa porte. */
@@ -67,7 +67,7 @@ export function relationsInvitables(state) {
     }
   }
   // (fiche I6a : les villageois, tous connus ; son « métier » : sa tâche)
-  if (villageActif(state) && Array.isArray(state.villageois)) {
+  if (Array.isArray(state.villageois)) {
     for (const v of state.villageois) {
       if (!v || typeof v.id !== 'string') continue;
       const palier = palierAmitie(state, v.id), def = tacheDef(v.tache);
@@ -200,7 +200,7 @@ export function invitesModele(state) {
   if (!invites.length) return null;
   // (des villageois à table : on ne parle ni de la calèche ni de « chez nous », mais de l'île ; sur l'île, pas de
   // calèche non plus avec un habitant d'un hameau, fiche I7d)
-  const surIle = villageActif(state) ? P.TABLE.filter((x) => !texteDuRecit(x)) : P.TABLE;
+  const surIle = P.TABLE.filter((x) => !texteDuRecit(x));
   const table = invites.some((g) => g.villageois) ? [...P.TABLE.filter((x) => !/calèche|chez nous/i.test(x)), ...(((DATA.VILLAGE || {}).AMITIE || {}).PHRASES || {}).table || []] : surIle;
   return { id: inv.id, moment: inv.moment, nom: INVITATION.MOMENTS[inv.moment].nom, etat: inv.etat, invites, paroles: { arrive: P.ARRIVE, table, merci: P.MERCI, seul: P.SEUL } };
 }

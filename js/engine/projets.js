@@ -114,7 +114,7 @@ export function projetsNuit(state) {
     recitPour(state).ajouterConfiance(state, hid, PROJETS.FIN.CONFIANCE);   // (fiche I7c : le récit d'avant seulement)
     for (const m of membres(state, hid)) ajouterAmitie(state, cleDe(m), PROJETS.FIN.AMITIE);
     out.push({ hameau: hid, sorte: pr.sorte });
-    // (l'île à bâtir, fiche I7g : le projet fini, dans la chronique ; rien le chantier éteint)
+    // (l'île à bâtir, fiche I7g : le projet fini, dans la chronique)
     noterChronique(state, 'projet', { id: `${hid}:${pr.sorte}`, lieu: h.nom || '', nom: pr.nom.charAt(0).toLowerCase() + pr.nom.slice(1), icone: pr.icone });
   }
   return out;

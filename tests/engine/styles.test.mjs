@@ -58,39 +58,3 @@ function hameau(style = 'prairie') {
   parlerAmitie(s, 'h_st', m.id);
   return { s, m };
 }
-
-test('styles : chacun son style préféré, révélé par l\'amitié', () => {
-  assertEqual(stylePrefere('basile', 'x', 'cote'), 'basile' in STYLES.ECRITS ? STYLES.ECRITS.basile : null, 'un personnage écrit : le sien');
-  for (let i = 0; i < 20; i++) assert(STYLES.BIOMES.cote.includes(stylePrefere('p' + i, 'id' + i, 'cote')), 'de la côte : côtier');
-  assertEqual(stylePrefere('a', 'id7', 'prairie'), stylePrefere('a', 'id7', 'prairie'), 'déterministe');
-  const { s, m } = hameau();
-  const t = trouverPnj(s, 'h_st', m.id);
-  assert(STYLES.BIOMES.prairie.includes(styleHabitant(s, t)));
-  assertEqual(amitieAvec(s, 'h_st', m.id).style, null, 'pas encore connu');
-  ajouterAmitie(s, m.id, 100);
-  assertEqual(amitieAvec(s, 'h_st', m.id).style.id, styleHabitant(s, t), 'un ami : on le connaît');
-});
-
-test('styles : invité, il admire un coin de son style autour de la table (plus d\'amitié)', () => {
-  const { s, m } = hameau();
-  ajouterAmitie(s, m.id, 100);
-  const st = styleHabitant(s, trouverPnj(s, 'h_st', m.id));
-  const W = farmTerrain(s).LARGEUR, t = 60 * W + 60;
-  poser(s, 'table_jardin', t); poser(s, 'chaise_jardin', t - 1);
-  assertEqual(tableDuRepas(s), { case: t, terrasse: true });
-  assertEqual(admireLeCoin(s, st), false, 'rien de son style autour');
-  // trois sortes de son style, tout près
-  STYLES.LISTE[st].blocs.filter((b) => b !== 'table_jardin' && b !== 'chaise_jardin').slice(0, STYLES.ADMIRE).forEach((b, i) => poser(s, b, t + 2 + i));
-  assert((decorAutour(s, t)[st] || 0) >= STYLES.ADMIRE);
-  assertEqual(admireLeCoin(s, st), true);
-  // le repas : il l'admire en arrivant, et le repas rapporte BONUS_REPAS de plus
-  const inv = inviter(s, s.day + 1, 'midi', [{ hameau: 'h_st', id: m.id }]).invitation;
-  invitationsNuit(s);
-  s.day += 1;
-  s.awakeMs = (INVITATION.MOMENTS.midi.heure - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
-  assertEqual(hourOfDay(s), INVITATION.MOMENTS.midi.heure);
-  assert(invitesModele(s).invites[0].admire, 'sa phrase d\'arrivée');
-  const r = servirRepas(s, inv.id, [], true);
-  const R = INVITATION.REPAS;
-  assertEqual([r.invites[0].admire, r.invites[0].points, r.invites[0].emotion], [true, Math.ceil(R.BASE / 2) + R.TERRASSE + STYLES.BONUS_REPAS, 'joie']);
-});

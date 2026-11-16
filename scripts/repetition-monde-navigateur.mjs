@@ -2,7 +2,7 @@
 // La répétition de la bascule, en ligne et dans Chromium (fiche I9h) : un monde fait et joué à deux par le serveur du
 // jeu d'avant (une copie de main ou de archive/jeu-avant-ile : la version 1.22.0, sa partie au format 86, une maison au
 // niveau 2 meublée), puis servi par le Worker d'aujourd'hui (worker/src/index.js et ses Durable Objects sur des bases
-// node:sqlite, comme tests/deux-joueurs.mjs), le réglage du jeu tel qu'il est (allumé, sans ILE_ESSAI) ; deux onglets,
+// node:sqlite, comme tests/deux-joueurs.mjs), le jeu tel qu'il est ; deux onglets,
 // le propriétaire et son ami, y entrent par le jeu d'aujourd'hui : le monde passe sur l'île à sa première ouverture, un
 // jeu 1.22.0 est refusé, chacun voit sa fenêtre du retour, puis ils y jouent à deux (un mur posé chez l'un vu chez
 // l'autre, le temps qui passe, les parties confirmées celle du monde).
@@ -17,7 +17,7 @@ import { extname, join, normalize, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { ROOT as RACINE } from './lib/engine-source.mjs';
-import { countItem, createNewGame, DATA, empreintePartie, GAME_VERSION, ilePartagee, pasDe, poseStatus, villageoisDe, avancerJusqua } from '../js/engine/index.js';
+import { countItem, createNewGame, DATA, empreintePartie, GAME_VERSION, pasDe, poseStatus, villageoisDe, avancerJusqua } from '../js/engine/index.js';
 import W from '../worker/src/index.js';
 import { Comptes } from '../worker/src/comptes.mjs';
 import { Monde } from '../worker/src/monde.mjs';
@@ -129,7 +129,7 @@ try {
   const reg = mondes.get(ID).registre;
   const w = reg.charger();
   verifie(refus && refus.t === 'refus' && /recharge la page/.test(refus.erreur || ''), `un jeu 1.22.0 est refusé (« ${refus && refus.erreur} »)`);
-  verifie(ilePartagee(w) && !(w.essais && w.essais.village) && !!w.port.lieu && villageoisDe(w).length === 0 && JSON.stringify([w.blocs, w.niveauxHauts, w.etage]) === JSON.stringify([avant.blocs, avant.niveauxHauts, avant.etage]) && reg.meta('version') === GAME_VERSION,
+  verifie(!!w.mondePartage && !(w.essais && w.essais.village) && !!w.port.lieu && villageoisDe(w).length === 0 && JSON.stringify([w.blocs, w.niveauxHauts, w.etage]) === JSON.stringify([avant.blocs, avant.niveauxHauts, avant.etage]) && reg.meta('version') === GAME_VERSION,
     `le monde du jeu d'avant est passé sur l'île à sa première ouverture, sans essai (version ${reg.meta('version')}, format ${reg.meta('format')}) : sa ferme, son étage et son niveau 2 intacts, le port, aucun villageois`);
   // A et B entrent
   for (const p of [pa, pb]) await p.goto(`${BASE}/jeu.html?monde=${ID}`);

@@ -68,7 +68,6 @@ import { noterEncyclopedie } from './encyclopedie.js';
 import { ESPECES_FAUNE } from './monde-faune.js';
 import { buildFridge, FRIGO_OBJET } from './fridge.js';
 import { takeItem } from './inventory.js';
-import { villageActif } from './village.js';
 import { acheterAuPort, dechargerAuPort, niveauPort, PORT, portDuMonde, vendreAuPort } from './port.js';
 import {
   agrandirPort, apporterAuChantier, articleDe, articleRefus, avancerBac, commanderImport, commandesDuBac, honorerCommande,
@@ -182,7 +181,7 @@ function botOutil(state, id) {
 // son poste, avec l'outil qu'elle demande (fabriqué à l'Atelier, puis donné).
 export function botVillageois(state) {
   const S = DATA.SIMULATION.VILLAGEOIS;
-  if (!S || !villageActif(state)) return;
+  if (!S) return;
   const V = villageoisDe(state);
   const palier = paliersSuivis(state) ? state.palier : Infinity;
   if (palier >= S.MAISON_PALIER && !maisonsLibres(state).length && !V.some((v) => v.maison === null || v.maison === undefined)
@@ -265,7 +264,6 @@ const candidatDe = (state, sorte) => {
   return M[sorte] || (M[sorte] = {});
 };
 export function botCommerce(state, V = villageoisDe(state)) {
-  if (!villageActif(state)) return null;
   for (const S of reglagesCommerces()) {
     if (commerceOuvertDeSorte(state, S.SORTE)) { botEntretenirCommerce(state, S); continue; }
     return botUnCommerce(state, V, S);
@@ -294,9 +292,8 @@ function botEntretenirCommerce(state, S) {
 }
 
 // I5b : ce qu'il garde au coffre de `o` pour les commerces ouverts (SIMULATION.VILLAGEOIS.COMMERCES[].GARDER : la laine
-// de la mercerie, qu'il ne vend plus au port) ; 0 sans commerce (le chantier éteint : rien ne change).
+// de la mercerie, qu'il ne vend plus au port) ; 0 sans commerce.
 function gardePourCommerces(state, o) {
-  if (!villageActif(state)) return 0;
   return reglagesCommerces().filter((S) => commerceOuvertDeSorte(state, S.SORTE)).reduce((t, S) => t + Math.max(0, Number((S.GARDER || {})[o]) || 0), 0);
 }
 
@@ -399,7 +396,7 @@ function tachesGardees(state) {
 }
 
 // Les tâches qu'il confie, dans l'ordre (SIMULATION.VILLAGEOIS.TACHES) ; I2b : la tournée du port au rang
-// CHARRETTE.RANG (le chantier allumé).
+// CHARRETTE.RANG.
 function tachesVoulues() {
   const S = DATA.SIMULATION.VILLAGEOIS || {}, l = [...(S.TACHES || [])], r = Number((S.CHARRETTE || {}).RANG);
   if (Number.isInteger(r) && r > 0 && DATA.TACHES && DATA.TACHES.LISTE && DATA.TACHES.LISTE.navette && !l.includes('navette')) l.splice(Math.min(r - 1, l.length), 0, 'navette');
@@ -444,7 +441,7 @@ function farineDuVillage(state) {
 // VIVRES_GARDES dans l'inventaire (deux fois autant de ce qui se mange : la boîte commune passe avant).
 export function botEtal(state, V = villageoisDe(state)) {
   const E = DATA.SIMULATION.VILLAGEOIS && DATA.SIMULATION.VILLAGEOIS.ETAL;
-  if (!E || !villageActif(state) || !V.some((v) => !v.enfant && !v.accueil)) return false;
+  if (!E || !V.some((v) => !v.enfant && !v.accueil)) return false;
   if (caseEtal(state) === null) {
     if (!countItem(state, 'etal') && !botFabriquer(state, 'etal')) return false;
     if (!poserEtalLibre(state).ok) return false;
@@ -469,7 +466,7 @@ export function botEtal(state, V = villageoisDe(state)) {
 const essaisTaches = new WeakMap();   // la partie → { jour (le dernier passage), [id]: { releves: { tache: [soldes] }, dernier, tenu } }
 export function botReattribuer(state, V = villageoisDe(state)) {
   const S = DATA.SIMULATION.VILLAGEOIS, R = S && S.REATTRIBUER;
-  if (!R || !villageActif(state) || !V.length) return null;
+  if (!R || !V.length) return null;
   const memo = essaisTaches.get(state) || {};
   essaisTaches.set(state, memo);
   if (memo.jour === state.day) return null;
@@ -949,11 +946,11 @@ function botBatir(state, id) {
 }
 
 // Un jeune arbre du Verger : acheté à la calèche (son prix), puis planté. { cost, buy }.
-// (I1c, le chantier allumé : il vient par le bac ; commandé au port, payé d'avance, il est planté à sa livraison)
+// (I1c : il vient par le bac ; commandé au port, payé d'avance, il est planté à sa livraison)
 function botArbre(state, espece) {
   const item = DATA.ATELIER.BLOCS[espece] && DATA.ATELIER.BLOCS[espece].objet;
   if (!item || !isBuyable(item)) return { locked: true };
-  if (villageActif(state) && objetImporte(item)) return botImport(state, `objet:${item}`, () => {
+  if (objetImporte(item)) return botImport(state, `objet:${item}`, () => {
     const r = testBatir(state, espece);
     if (r.ok) takeItem(state, item, 1);
     return r;
@@ -989,7 +986,6 @@ function botImport(state, cle, utiliser) {
 // I1c : agrandir le port jusqu'au niveau `niveau` : les matériaux apportés au chantier (il les charge avant sa sortie :
 // botChargement), puis les pièces. { done }, { locked } ou { cost, buy }.
 function botPort(state, niveau) {
-  if (!villageActif(state)) return { done: true };
   if (niveauPort(state) >= niveau) return { done: true };
   const nx = prochainNiveau(state);
   if (!nx) return { done: true };
@@ -1075,7 +1071,7 @@ export function botStepInfo(state, step, eveilS) {
     // (le Verger s'ouvre avec le premier arbre planté)
     case 'verger':
       return isUnlocked(state, 'verger') ? { done: true } : { locked: true };
-    // I1c : un niveau du port (le chantier allumé ; éteint : rien à faire)
+    // I1c : un niveau du port
     case 'port':
       return botPort(state, step.niveau || 2);
     case 'arbres': {
@@ -1176,14 +1172,14 @@ const aCharger = new WeakMap();   // la partie → ce que le joueur simulé vend
 const sellItem = (state, item, qty) => {
   if (aCharger.has(state)) { if (qty >= 1) aCharger.get(state).push({ item, qty: Math.floor(qty) }); return { ok: true, sold: 0, gain: 0 }; }
   if (!botCalecheLa(state)) return { ok: false };
-  return villageActif(state) ? vendreAuPort(state, item, qty, null, { sansPresence: true }) : vendreCaleche(state, item, qty, null, { sansPresence: true });
+  return vendreAuPort(state, item, qty, null, { sansPresence: true });
 };
 function botAcheter(state, item, qty) {
   if (!botCalecheLa(state)) return { ok: false };
-  return villageActif(state) ? acheterAuPort(state, item, qty, null, { sansPresence: true }) : acheterCaleche(state, item, qty, null, { sansPresence: true });
+  return acheterAuPort(state, item, qty, null, { sansPresence: true });
 }
 
-/* -- I1b : la sortie au port (le chantier allumé) --
+/* -- I1b : la sortie au port --
    La calèche ne commerce plus : le joueur simulé va au port, au bout du chemin, quand ce qu'il a à vendre vaut
    SIMULATION.PORT.SEUIL pièces ou plus, ou qu'il lui manque des graines pour une parcelle vide ; une sortie par
    jour au plus, à la dernière série d'actions de la journée. La marche se compte en temps d'éveil d'après la
@@ -1244,12 +1240,11 @@ function botChargement(state) {
    planches fabriquées, la pierre et les lingots fournis). Au port, avant de décharger (tout ce qui reste se vend), il
    honore les commandes et apporte les matériaux au chantier ; botBuy paie le niveau (l'étape « port » du plan). */
 function botVisePort(state) {
-  const SP = DATA.SIMULATION.PORT, nx = villageActif(state) ? prochainNiveau(state) : null;
+  const SP = DATA.SIMULATION.PORT, nx = prochainNiveau(state);
   return nx && nx.niveau <= (SP.NIVEAU_MAX || 1) && state.pieces >= nx.pieces * (SP.CHANTIER || 0) ? nx : null;
 }
 // Ce qu'il porte en plus : [{ item, qty }]. `reunir` : les matériaux qui manquent sont réunis (sinon : ce qu'il a).
 function botAPorter(state, reunir = false) {
-  if (!villageActif(state)) return [];
   const out = [], semences = botSemences(state), charge = (k) => chargeDe(state)[k] || 0;
   // (fiche I8b, la stratégie « production » : ce qu'il a pour ses contrats d'export, avant le reste)
   if (vocationDe.has(state)) {
@@ -1327,7 +1322,7 @@ function botQuai(state) {
 // « proche »), liens (les paires « camarade » ou plus), production (le score), contrats (honorés) }.
 export function bilanVocation(state) {
   const V = villageoisDe(state).filter((v) => !v.enfant);
-  const paires = villageActif(state) ? quiEstLie(state).paires : [];
+  const paires = quiEstLie(state).paires;
   return {
     pieces: Math.round(state.pieces), bonheurFamille: Math.round(averageHappiness(state)),
     bonheurVillageois: V.length ? Math.round(V.reduce((t, v) => t + (Number(v.bonheur) || 0), 0) / V.length) : 0,
@@ -1340,7 +1335,7 @@ export function bilanVocation(state) {
 // La sortie au port, si elle s'impose : il y va, joue `fn` (le commerce possible), rentre. → vrai s'il y est allé.
 export function botSortiePort(state, fn) {
   const SP = DATA.SIMULATION.PORT;
-  if (!villageActif(state) || !marcheOuvert(state) || sortiesPort.get(state) === state.day) return false;
+  if (!marcheOuvert(state) || sortiesPort.get(state) === state.day) return false;
   if (botValeurAVendre(state) < SP.SEUIL && !botManqueGraines(state) && !botAPorter(state).length) return false;
   const g = farmSeed(state), lieu = g === null ? null : portDuMonde(g), T = farmTerrain(state);
   if (!lieu) return false;
@@ -1435,7 +1430,7 @@ function botStore(state) {
     // (I4 : sur l'île, les baies — des milliers, cueillies en passant — ne remplissent plus le frigo, où mangent la
     // famille et les villageois : il en garde VIVRES_GARDES au frais, le reste attend dans l'inventaire ; avant, le
     // frigo plein de baies laissait les villageois sur leur faim, cinq baies par repas)
-    if (villageActif(state)) reserve.baies = Math.max(reserve.baies || 0, Math.floor(countItem(state, 'baies')) - DATA.SIMULATION.VIVRES_GARDES);
+    reserve.baies = Math.max(reserve.baies || 0, Math.floor(countItem(state, 'baies')) - DATA.SIMULATION.VIVRES_GARDES);
     if (f.appareil.allume && !isBroken(f.appareil)) moveAllToFridge(state, reserve);
     return;
   }
@@ -1670,14 +1665,14 @@ function botActions(state, strat, options, soir) {
   botMill(state);
   botCook(state);
   botServir(state); // I0b : un repas partagé, s'il y a des invités à table
-  botVillageois(state); // I3c : une maison de villageois, leurs tâches (le chantier allumé ; éteint : rien)
+  botVillageois(state); // I3c : une maison de villageois, leurs tâches
   if (vocationDe.has(state)) botQuai(state); // I8b : la stratégie « production »
   if (!soir) return;
   botMonde(state); // fiche 9b : une sortie dans le grand monde, si le chapitre la demande
   botVoisins(state); // I0b : le hameau voisin, si le chapitre demande un ami, un repas, un projet
   botInviter(state);
-  // I0b : la calèche à son passage (le seul moment où il commerce) ; I1b : le chantier allumé, sa sortie au port
-  (villageActif(state) ? botSortiePort : botPassageCaleche)(state, () => {
+  // I0b : la calèche à son passage (le seul moment où il commerce) ; I1b : sa sortie au port
+  botSortiePort(state, () => {
     botStore(state); // version 1.10 : ranger d'abord, vendre ce qui n'a pas tenu au frais
     botSell(state);
     botAchatsHameaux(state);

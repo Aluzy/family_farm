@@ -14,7 +14,6 @@
 import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
 import { carnetDuJour, changerObjectif, majObjectifs, objectifsActifs, semaineDe, tacheAFaire } from '../engine/objectifs.js';
-import { villageActif } from '../engine/village.js';
 import { didacticielIleMontre } from './didacticiel-ile.js';
 import { distanceAuComptoir, heuresPort, PORT, portDansSesHeures } from '../engine/port.js';
 import { marcheFerme, marcheOuvert } from '../engine/devices.js';
@@ -166,7 +165,6 @@ export function renderObjectifs() {
   const c = state && affichable() && !didacticielIleMontre() ? carnetDuJour(state) : null;
   // (le septième jour, le hameau voisin : il est montré sur la carte du monde, comme le cocher en a parlé ; le
   // chantier « l'île à bâtir » allumé, la semaine n'a pas de hameau, fiche I7a)
-  if (c && !villageActif(state) && c.jour === semaineDe(state).length && !c.attente && montrerHameauVoisin()) persistState();
   // (les cases qui brillent sur la carte, la sortie de la ferme, sortent du brouillard, comme au didacticiel)
   const sb = c ? surbrillanceObjectifs() : null, cases = sb && Array.isArray(sb.cases) ? sb.cases : [];
   const cle = cases.map((x) => x.case).join(',');

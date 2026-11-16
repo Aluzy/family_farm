@@ -26,7 +26,6 @@ const NOMS = ['début', 'milieu', 'avancée'];
 const E = await import(engineUrl(ROOT));
 const { MondeRegistre } = await import(pathToFileURL(join(ROOT, 'worker', 'src', 'monde.mjs')).href);
 const MS = await import(pathToFileURL(join(ROOT, 'js', 'engine', 'monde-sol.js')).href);
-E.DATA.VILLAGE.ACTIF = true;
 const PLAFOND = E.DATA.VILLAGE.EN_LIGNE;
 const ko = (n) => (n / 1024).toFixed(1);
 const taille = (v) => (v === undefined ? 0 : JSON.stringify(v).length);

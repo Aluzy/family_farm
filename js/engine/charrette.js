@@ -35,7 +35,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, NO_COINS, pay } from './devices.js';
-import { villageActif } from './village.js';
 import { farmTerrain } from './terrain.js';
 import { comptoirDuPort } from './port.js';
 import { cadrePort, cheminsDehors, horsFerme, railsPoses } from './dehors.js';
@@ -55,9 +54,9 @@ export const BRANCHES = ['capacite', 'vitesse'];
 
 /* ---------- la charrette ---------- */
 
-// La charrette du village, ou null (le chantier éteint, ou pas encore de tournée).
+// La charrette du village, ou null (pas encore de tournée).
 export function charretteDu(state) {
-  if (!villageActif(state) || !objet(state && state.charrette)) return null;
+  if (!objet(state && state.charrette)) return null;
   return state.charrette;
 }
 
@@ -84,7 +83,6 @@ export function reparerCharrette(c) {
 
 // La charrette naît (le premier villageois mis à la tournée du port). → la charrette.
 export function naitreCharrette(state) {
-  if (!villageActif(state)) return null;
   if (!charretteDu(state)) state.charrette = nouvelleCharrette();
   return state.charrette;
 }
@@ -145,7 +143,6 @@ export function prochainPalier(state, b) {
 // Ce qui manque pour acheter le prochain palier de la branche `b` : null, ou la raison. Les deux branches sont libres
 // (aucun palier de l'une n'en demande un de l'autre) ; le cheval demande une place à l'Écurie, le wagonnet la voie.
 export function refusPalier(state, b) {
-  if (!villageActif(state)) return 'Le chantier de l\'île n\'est pas allumé.';
   if (!BRANCHES.includes(b)) return 'Branche inconnue.';
   if (!charretteDu(state)) return 'Le village n\'a pas encore de charrette : mets un villageois à la tournée du port.';
   const nx = prochainPalier(state, b);
@@ -208,7 +205,6 @@ const routes = new WeakMap();   // la partie → { cle, refs, route }
 // horsChemin (cases hors chemin), rails (cases sur les rails, au wagonnet), quai (elle part du quai) }, ou null (pas de
 // port, pas de poste). Gardée tant que les chemins, les rails, le quai, le port et le palier ne changent pas.
 export function trajetCharrette(state, p = palierRoulant(state)) {
-  if (!villageActif(state)) return null;
   const dep = departCharrette(state), c = comptoirDuPort(state);
   if (dep === null || !c) return null;
   const d = state.dehors || {}, quai = quaiDeChargement(state);
@@ -317,7 +313,6 @@ const voies = new WeakMap();   // la partie → { rails, quai, cadre, voie }
 // port ne sont pas là), ici (la première case où en poser), trace (incomplète : les cases d'une voie qui l'achèverait,
 // de la gare au port, rails déjà posés compris ; elle ne regarde pas le sol : une case peut refuser les rails) }.
 export function voieDe(state) {
-  if (!villageActif(state)) return { complete: false, gare: null, longueur: 0, manque: null, ici: null };
   const d = state.dehors || {}, quai = quaiDeChargement(state), T = farmTerrain(state), k = cadrePort(T);
   const m = voies.get(state);
   if (m && m.rails === d.rails && m.quai === quai && m.k === JSON.stringify(k || null)) return m.voie;
@@ -406,7 +401,6 @@ function calculerVoie(state, T, quai, k) {
 
 // Les charretiers du jour : les villageois de la tournée du port qui travaillent aujourd'hui, par ordre d'id.
 export function charretiersDuJour(state) {
-  if (!villageActif(state)) return [];
   return villageoisDe(state).filter((v) => v.tache === 'navette' && travailleAujourdhui(state, v)).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 

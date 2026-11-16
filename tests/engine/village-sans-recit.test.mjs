@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : le récit retiré du moteur (docs/ile.md, fiche I7c ; l'aiguillage :
-   js/engine/recit-aiguillage.js, ses deux implémentations : recit-ancien.js et recit-muet.js). Comme tous les
-   fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
+   js/engine/recit-aiguillage.js, ses deux implémentations : recit-ancien.js et recit-muet.js).
    - la lecture des imports : aucun module du moteur n'importe le récit (recit.js, fil-lune.js, usure.js,
      secrets.js, ile.js, bienvenue.js), sauf ces modules entre eux et recit-ancien.js (que seul l'aiguillage importe) ;
      l'index ne les ré-exporte plus (fiche I7d) ; depuis village.js, et depuis tout autre module, on n'atteint pas le
@@ -31,7 +30,7 @@ import {
 } from '../../js/engine/recit-aiguillage.js';
 import { RECIT_ANCIEN } from '../../js/engine/recit-ancien.js';
 import { RECIT_MUET } from '../../js/engine/recit-muet.js';
-import { assert, assertEqual, avecVillage, test } from './aide.mjs';
+import { assert, assertEqual, test } from './aide.mjs';
 
 const ICI = dirname(fileURLToPath(import.meta.url));
 const JS = join(ICI, '..', '..', 'js');
@@ -87,8 +86,8 @@ test('lecture des imports : depuis village.js (et tout autre module), le récit 
     }
     return vus;
   };
-  const depuisVillage = atteints('village.js');
-  for (const m of ['night.js', 'state.js', 'paliers.js', 'villageois.js', 'bac.js', 'fetes-village.js', 'chronique.js', AIGUILLAGE, 'recit-muet.js']) {
+  const depuisVillage = atteints('state.js');
+  for (const m of ['night.js', 'village.js', 'paliers.js', 'villageois.js', 'bac.js', 'fetes-village.js', 'chronique.js', AIGUILLAGE, 'recit-muet.js']) {
     assert(depuisVillage.has(m), `${m} est atteint depuis village.js`);
   }
   assertEqual(RETIRES.filter((r) => depuisVillage.has(r)), [], 'le récit est atteint depuis village.js');
@@ -118,18 +117,9 @@ test('lecture des imports : aucun fichier de la page n\'importe le récit (fiche
   assertEqual(fautifs, [], 'la page importe le récit sans l\'aiguillage');
 });
 
-test('allumé, la page n\'a rien du récit à lire (recitPage) ; éteint, ce que la page d\'avant lisait', () => {
+test('la page n\'a rien du récit à lire (recitPage)', () => {
   const s = createNewGame(4);
   assertEqual(recitPage(s), null, 'l\'île : rien');
-  const t = avecVillage(() => createNewGame(4), false);
-  avecVillage(() => {
-    const R = recitPage(t);
-    assert(R && R.RECIT === DATA.RECIT && R.ILE === DATA.ILE, 'le récit d\'avant');
-    for (const k of ['carnet', 'acteEnCours', 'aFait', 'tousLesToitsUses', 'toitsUses', 'reparerToit', 'bienvenueDe', 'bienvenueDonne', 'bienvenueDue', 'bienvenueEnRoute', 'bienvenueModele', 'bienvenuePose', 'bienvenuePrepare', 'parler', 'promesses', 'livrerPromesse', 'ateliersConnus', 'commander', 'commandesDe', 'retirerToutes', 'ouvrirEnveloppe', 'poserPierre', 'veilleeFerme', 'veilleeFermePossible']) {
-      assert(typeof R[k] === 'function', `la page d'avant lit ${k}`);
-    }
-    assertEqual(R.carnet(t), [], 'un carnet vide au départ');
-  }, false);
 });
 
 /* ---------- le moteur allumé, sans récit ---------- */
@@ -202,15 +192,4 @@ test('allumé, le récit vidé : 30 nuits du joueur automatique, aucun hameau, s
     assert(relationsInvitables(s).every((r) => r.villageois), 'on n\'invite que des villageois');
     assert(relationsInvitables(s).every((r) => DATA.AMITIE.ECHELLE.NOMS.includes(r.nomPalier)), 'les noms des paliers d\'amitié');
   });
-});
-
-test('éteint, l\'aiguillage rend le récit d\'avant ; les deux récits ont la même interface', () => {
-  const s = avecVillage(() => createNewGame(4), false);
-  avecVillage(() => assert(recitPour(s) === RECIT_ANCIEN, 'le jeu d\'avant'), false);
-  assertEqual(s.bienvenue.etat, 'attendue', 'la visite viendra');
-  assert(recitPour(s) === RECIT_MUET, 'allumé, le muet');
-  assertEqual(Object.keys(RECIT_MUET).filter((k) => k !== 'nom').sort(),
-    Object.keys(RECIT_ANCIEN).filter((k) => !['nom', 'jourBienvenue', 'remboursementCommerce', 'objetEnveloppe'].includes(k)).sort(),
-    'la même interface (sauf les migrations, qui ne lisent que le récit d\'avant)');
-  assertEqual([DATA.AMITIE.ECHELLE.MAX, DATA.AMITIE.ECHELLE.PALIERS, DATA.AMITIE.ECHELLE.NOMS], [DATA.RECIT.RELATION_MAX, DATA.RECIT.PALIERS, DATA.RECIT.PALIER_NOMS], 'l\'échelle de l\'amitié est celle du récit');
 });

@@ -1,8 +1,7 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : la charrette du village (fiche I2b ; js/engine/charrette.js, taches.js
-   avancerCharrette, dehors.js les rails ; docs/ile.md, D17). Comme tous les fichiers tests/engine/village-*.test.mjs, il
-   tourne avec VILLAGE.ACTIF forcé à true.
-   - la charrette naît avec la tournée du port ; éteint, rien ;
+   avancerCharrette, dehors.js les rails ; docs/ile.md, D17).
+   - la charrette naît avec la tournée du port;
    - les paliers : les prix, l'ordre, le refus sans pièces ; les deux branches libres ; le cheval demande l'Écurie, le
      wagonnet la voie complète ; « Charrette du village : … » aux Comptes ;
    - les voyages du jour pour trois longueurs de chemin (le tableau de la fiche) ; un voyage entier ; le chemin coupé ;
@@ -25,7 +24,7 @@ import {
   voieDe, voyagesDuJour, accepterContrat, avancerContrats, retirerCheminDehors, retirerRails, cheminsDehors, horlogeDe, assurerTroncon,
   botCommerce, charretierPourCommerce, courbeRails, formeRails, IMAGES_RAILS, traceSurRails,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, setInv, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, setInv, test } from './aide.mjs';
 
 const CH = DATA.CHARRETTE;
 const copie = (o) => JSON.parse(JSON.stringify(o));
@@ -76,9 +75,9 @@ function ecurie(s) {
   return false;
 }
 
-/* ---------- la naissance, éteint ---------- */
+/* ---------- la naissance ---------- */
 
-test('la charrette naît avec le premier villageois mis à la tournée du port, aux paliers 1 ; éteint, rien', () => {
+test('la charrette naît avec le premier villageois mis à la tournée du port, aux paliers 1', () => {
   const { s, V: [v] } = ile(1, 1, false);
   assertEqual(charretteDu(s), null, 'pas de tournée, pas de charrette');
   attribuer(s, v.id, 'bois');
@@ -87,11 +86,6 @@ test('la charrette naît avec le premier villageois mis à la tournée du port, 
   assertEqual([s.charrette.capacite, s.charrette.vitesse, s.charrette.cheval, s.charrette.wagonnet], [1, 1, null, false]);
   assertEqual(capaciteCharrette(s), CH.CAPACITES[0]);
   assertEqual(modeCharrette(s), 'bras');
-  avecVillage(() => {
-    assertEqual(charretteDu(s), null, 'éteint : rien ne se lit');
-    assertEqual(acheterPalier(s, 'capacite').ok, false);
-    assertEqual(voyagesDuJour(s).voyages, []);
-  }, false);
 });
 
 /* ---------- les paliers ---------- */

@@ -38,6 +38,7 @@ function robotJour(s) {
 // Arbre v2 : état de test où tous les paliers sont ouverts et les PT abondants.
 function techReady(s, pt = 99) {
   s.campagne.chapitre = 7;
+  s.palier = 7;   // (l'île : le palier tient la place du chapitre)
   techPoints(s).solde = pt;
   return s;
 }
@@ -545,6 +546,7 @@ test('prérequis : palier, bâtiment, nœud précédent, PT et pièces', () => {
   assertEqual(techStatus(s, 'cu_recolte_auto'), 'verrouille');
   assertEqual(techPrereqs(s, 'cu_recolte_auto').map((p) => p.ok), [false, false, false]);
   s.campagne.chapitre = 4;
+  s.palier = 4;   // (l'île : le palier tient la place du chapitre, paliers.js)
   techPoints(s).solde = 10;
   assertEqual(techPrereqs(s, 'cu_recolte_auto').map((p) => p.ok), [true, false, false]);
   const refus = buyTech(s, 'cu_recolte_auto');
@@ -799,7 +801,7 @@ test('points de technologie : chapitres, jalons de maîtrise, mode libre', () =>
   // chapitre terminé : 2 PT pour le chapitre 1
   completeChapter(s);
   assertEqual([techPoints(s).solde, techPoints(s).gagnes], [2, 2]);
-  assertEqual(techPoints(s).annonces[0], { pt: 2, raison: 'Chapitre 1 terminé' });
+  assertEqual(techPoints(s).annonces[0], { pt: 2, raison: 'Palier 1 franchi' });
   // jalon : 50 pains cuits → 1 PT, une seule fois
   s.campagne.compteurs.pains = 50;
   assertEqual(checkMastery(s), 1);

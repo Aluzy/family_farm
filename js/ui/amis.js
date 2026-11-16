@@ -14,12 +14,12 @@
 // toutes les PUBLIER_MS : c'est ce qui le dit « en ligne » chez ses amis. Jamais d'adresse e-mail.
 // Un lien jeu.html#ami=MOON-XXXXX (partagé par un ami) envoie la demande, une fois connecté.
 //
-// Fiche I6a (le chantier « l'île à bâtir », le réglage allumé) : en tête du volet, « Sur l'île » liste les
+// Fiche I6a (le chantier « l'île à bâtir ») : en tête du volet, « Sur l'île » liste les
 // villageois (sans compte : ils sont dans la partie), leur palier d'amitié, un 🎁 s'ils gardent un présent, un 📜
 // s'ils ont une demande ; toucher l'un ouvre sa fiche (js/ui/villageois.js).
 
 import { levelProgress } from '../engine/levels.js';
-import { amitieVillageois, memberPerso, validApparence, villageActif, villageoisDe } from '../engine/index.js';
+import { amitieVillageois, memberPerso, validApparence, villageoisDe } from '../engine/index.js';
 import { ouvrirFicheVillageois } from './villageois.js';
 import { registerActions } from './actions.js';
 import { appelServeur, compteGarde, personnageSolo, quandConnecte } from './compte.js';
@@ -155,9 +155,9 @@ function ligneMessage(m) {
   return `<div class="amis-msg"><span><strong>${echapper(m.prenom)}</strong> ${MOTS[m.type](m)}</span>${act}</div>`;
 }
 
-// (I6a) Les villageois de l'île et leur amitié : '' le réglage éteint ou sans villageois.
+// (I6a) Les villageois de l'île et leur amitié : '' sans villageois.
 function ileHtml() {
-  if (!state || !villageActif(state)) return '';
+  if (!state) return '';
   const V = villageoisDe(state);
   if (!V.length) return '';
   const lignes = V.map((v) => {

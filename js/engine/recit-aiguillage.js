@@ -25,14 +25,13 @@
    une sauvegarde d'avant le chantier.
    ========================================================================== */
 
-import { villageActif } from './village.js';
 import { RECIT_ANCIEN } from './recit-ancien.js';
 import { RECIT_MUET } from './recit-muet.js';
 
-// Le récit de la partie : le muet le chantier allumé, sinon l'ancien. `state` peut être null (une partie en
+// Le récit de la partie : le muet sinon l'ancien. `state` peut être null (une partie en
 // train de naître : le réglage seul décide).
-export function recitPour(state) {
-  return villageActif(state) ? RECIT_MUET : RECIT_ANCIEN;
+export function recitPour() {
+  return RECIT_MUET;
 }
 
 // Le récit d'avant, pour les migrations des sauvegardes d'avant le chantier (state.js).

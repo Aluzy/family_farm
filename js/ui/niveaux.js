@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { acknowledgeLevel, levelCount, levelProgress, levelUnlocks } from '../engine/levels.js';
 import { formatNumber } from '../engine/format.js';
 import { state } from './store.js';
-import { elementDuNiveau, noteDuNiveau, villageActif } from '../engine/village.js';
+import { elementDuNiveau, noteDuNiveau } from '../engine/village.js';
 import { tel } from './consent.js';
 import { refresh } from './render.js';
 import { registerActions } from './actions.js';
@@ -82,7 +82,7 @@ function openLevelsModal(tous = false) {
   openModal(`
     <h2 id="levels-title" tabindex="-1">⭐ Niveaux</h2>
     <div class="stack">${levelBarHtml()}</div>
-    <p class="muted">L'expérience vient de tes actions : labourer ${xp.labourer} XP, planter ${xp.planter}, arroser ${xp.arroser}, récolter ${xp.recolter}, cuisiner ${xp.cuisiner}, cuire au four ${xp.cuireFour}, moudre ${xp.moudre}, tondre ${xp.tondre} ; chaque œuf ${xp.oeuf}, chaque lait ${xp.lait} ; ${xp.vendre} XP par pièce gagnée en vendant ${villageActif(state) ? 'au port ; et de chaque palier de l\'île franchi' : 'à la calèche ; et de chaque chapitre terminé'}. Une automatisation rapporte ${DATA.NIVEAUX.AUTO} % de l'XP de l'action.</p>
+    <p class="muted">L'expérience vient de tes actions : labourer ${xp.labourer} XP, planter ${xp.planter}, arroser ${xp.arroser}, récolter ${xp.recolter}, cuisiner ${xp.cuisiner}, cuire au four ${xp.cuireFour}, moudre ${xp.moudre}, tondre ${xp.tondre} ; chaque œuf ${xp.oeuf}, chaque lait ${xp.lait} ; ${xp.vendre} XP par pièce gagnée en vendant au port ; et de chaque palier de l'île franchi. Une automatisation rapporte ${DATA.NIVEAUX.AUTO} % de l'XP de l'action.</p>
     <ul class="objectives">${rows.join('')}</ul>
     ${tous || (debut === 1 && fin === levelCount()) ? '' : `<p class="row"><button type="button" class="btn" data-action="levels-all">Voir tous les niveaux (${levelCount()})</button></p>`}
     <button type="button" class="btn primary" data-action="close-modal" id="levels-close">Fermer</button>`, { labelledBy: 'levels-title', focus: '#levels-title' });

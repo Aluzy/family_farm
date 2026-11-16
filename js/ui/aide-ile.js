@@ -1,7 +1,7 @@
 /* ==========================================================================
    L'aide de l'île à bâtir (fiche I7d, docs/ile.md « Le récit retiré de l'interface »).
 
-   Les textes de l'aide pour une partie de l'île (villageActif) : des règles, pas d'histoire, dans le ton de l'aide
+   Les textes de l'aide de l'île : des règles, pas d'histoire, dans le ton de l'aide
    d'avant (js/ui/aide.js, qui les montre). Ce module ne lit que le moteur et les données (aucun élément de la page) :
    tests/engine/village-textes.test.mjs les lit dans Node et vérifie qu'aucun ne cite un nom du récit, la calèche,
    son cocher ni les hameaux (VILLAGE.SANS_RECIT).

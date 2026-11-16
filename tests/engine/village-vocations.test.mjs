@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : les vocations, et la vocation « village » (fiche I8a ; docs/ile.md ;
    js/engine/vocations.js, vocation-village.js, fetes-village.js, projets-village.js).
-   Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
    - le socle : une vocation enregistrée (une troisième, sans toucher au moteur), son score, ses paliers, notés la
      nuit et jamais perdus, ce qu'ils débloquent ;
    - la convivialité et chacune de ses causes (le bonheur, les amis, les proches, les fêtes, les projets, les repas
@@ -11,7 +10,7 @@
      ils causent), la nuit (tenue, l'affinité de chaque paire, le bonheur) ; la veillée de pleine lune ;
    - un projet : le kiosque bâti en trois journées de villageois (le chantier posé, les matériaux, ceux qu'on y
      envoie travaillent à la place de leur tâche, le journal et le tableau le montrent) ; la place et son décor ;
-   - la sauvegarde (v96 → v97) ; éteint : rien.
+   - la sauvegarde (v96 → v97).
    Lancer seul : node tests/run-tests.mjs village-vocations.
    ========================================================================== */
 
@@ -23,7 +22,7 @@ import {
   paroleVillageois, poserAffinite, poserBloc, projetEnCours, projetFini, projetsVillageNuit, quiFaitQuoi, recetteDebloquee, runNight,
   scoreVocation, STATE_VERSION, testMaisonVillageois, travailleAujourdhui, villageoisNuit, vocationsNuit,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const VV = DATA.VOCATIONS.village;
@@ -360,7 +359,7 @@ test('un projet sans bâtiment : la place, sur la place, et son décor dans l\'i
   assert(/déjà fini/.test(lancerRefus(s, 'place')));
 });
 
-/* ---------- la sauvegarde, éteint ---------- */
+/* ---------- la sauvegarde ---------- */
 
 test('la sauvegarde : v96 → v97 (les vocations réparées ; sans elles, rien)', () => {
   assert(STATE_VERSION >= 97, 'le format 97 ou plus');
@@ -383,22 +382,4 @@ test('la sauvegarde : v96 → v97 (les vocations réparées ; sans elles, rien)'
   const m2 = migrate({ v: 1, t: 0, s: copie(sans) });
   assert(!('vocations' in m2), 'rien sans vocations');
   assertEqual(donneesVocation('village').nom, VV.nom);
-});
-
-test('éteint : rien (ni score, ni palier, ni fête, ni projet)', () => {
-  avecVillage(() => {
-    const s = partie(11);
-    assertEqual(listeVocations(s), []);
-    assertEqual(scoreVocation(s, 'village'), { score: 0, causes: [] });
-    assertEqual(vocationsNuit(s), null);
-    assertEqual(fetesVillageNuit(s), null);
-    assertEqual(projetsVillageNuit(s), null);
-    s.vocations = { paliers: { village: 4 } };
-    assertEqual(debloque(s, 'plan:banc_pierre'), false, 'même une partie qui en garde');
-    assert(/pas allumé/.test(fixerFete(s, s.day + 2).error));
-    assert(/pas allumé/.test(lancerProjet(s, 'place').error));
-    delete s.vocations;
-    runNight(s);
-    assert(!('vocations' in s), 'la nuit n\'en crée pas');
-  }, false);
 });

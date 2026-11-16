@@ -17,7 +17,6 @@ import { farmSeed } from './terrain.js';
 import { marcheOuvert } from './devices.js';
 import { hasTool } from './outils.js';
 import { cowCount } from './animals.js';
-import { villageActif } from './village.js';
 import { commencerNouveauDepart } from './depart-ile.js';
 
 /* ---------- les objectifs du jour (la refonte du didacticiel, lot 2) ----------
@@ -36,12 +35,12 @@ import { commencerNouveauDepart } from './depart-ile.js';
    { titre, intro, recompense, objectifs }), changes (les objectifs changés aujourd'hui) }.
    Une partie d'avant (state.didacticiel) n'en a pas : elle garde son didacticiel. Voir docs/didacticiel.md.
 
-   Le chantier « l'île à bâtir » allumé (villageActif, fiche I7a) : la semaine est celle du nouveau départ
+   L'île à bâtir (fiche I7a) : la semaine est celle du nouveau départ
    (DATA.VILLAGE.OBJECTIFS.SEMAINE : sans phrase d'ambiance, ni hameau ni calèche) et les objectifs tirés gagnent
    ceux du port et du village (DATA.VILLAGE.OBJECTIFS.TIRES.LISTE, ajoutés à la liste ; une entrée de même id
    remplace celle d'avant). */
 
-const ileObjectifs = (state) => (villageActif(state) && DATA.VILLAGE && DATA.VILLAGE.OBJECTIFS) || null;
+const ileObjectifs = (state) => (DATA.VILLAGE && DATA.VILLAGE.OBJECTIFS) || null;
 export function semaineDe(state) {
   const I = ileObjectifs(state);
   return (I && Array.isArray(I.SEMAINE) && I.SEMAINE) || DATA.OBJECTIFS.SEMAINE;
@@ -96,7 +95,7 @@ const SI = {
 };
 export const SI_OBJECTIFS = Object.keys(SI);
 
-// La liste des objectifs qui se tirent : celle d'OBJECTIFS.TIRES, et le chantier allumé, celle du port et du
+// La liste des objectifs qui se tirent : celle d'OBJECTIFS.TIRES, et celle du port et du
 // village (une entrée de même id remplace celle d'avant, à sa place ; les autres s'ajoutent à la fin).
 // (fiche I7e : sur l'île, ce qui se fait dans un hameau — `si: 'hameau'` — sort de la liste : elle n'en a pas)
 export function listeTiree(state) {
@@ -168,8 +167,8 @@ export function commencerObjectifs(state) {
   batirAbriDepart(state);
   state.objectifs = { jour: -1, debut: state.day, faits: {}, atteints: [], base: {}, recu: null, fini: false };
   entrer(state, 0);
-  // (le chantier allumé, fiche I7b : le nouveau départ, la terre vierge, le plat dans l'abri, le didacticiel de l'île)
-  if (villageActif(state) && !state.didacticielIle) commencerNouveauDepart(state);
+  // (fiche I7b : le nouveau départ, la terre vierge, le plat dans l'abri, le didacticiel de l'île)
+  if (!state.didacticielIle) commencerNouveauDepart(state);
   return { ok: true };
 }
 

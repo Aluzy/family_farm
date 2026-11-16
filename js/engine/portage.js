@@ -31,7 +31,6 @@ import { keepLots, lotsOf, pullLots, pushLots } from './inventory.js';
 import { fridgeLots } from './fridge.js';
 import { encaisserVente, sellableCount } from './market.js';
 import { bumpCounter } from './campaign.js';
-import { villageActif } from './village.js';
 import { farmTerrain } from './terrain.js';
 import { chevalPossede } from './cheval.js';
 import { horsFerme } from './dehors.js';
@@ -54,9 +53,8 @@ export function volumeDe(item) {
   return Number.isInteger(v) && v > 0 ? v : 1;
 }
 
-// Le portage de la partie (créé s'il manque), ou null le chantier éteint.
+// Le portage de la partie (créé s'il manque).
 export function portageDe(state) {
-  if (!villageActif(state)) return null;
   if (!state.portage || typeof state.portage !== 'object' || Array.isArray(state.portage)) state.portage = { vehicule: 'mains', charge: {} };
   const p = state.portage;
   if (!VEHICULES.includes(p.vehicule)) p.vehicule = 'mains';
@@ -155,7 +153,7 @@ export function capacitePortage(state) {
 
 // Ce qui est chargé : { objet: n }.
 export function chargeDe(state) {
-  const p = villageActif(state) && state.portage && state.portage.charge;
+  const p = state.portage && state.portage.charge;
   const out = {};
   if (!p || typeof p !== 'object') return out;
   for (const [k, lots] of Object.entries(p)) { const n = nLots(lots); if (n > 0 && DATA.OBJETS[k]) out[k] = n; }

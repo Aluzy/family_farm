@@ -1,6 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : le contrôle des textes (fiche I7d, docs/ile.md « Le récit retiré de
-   l'interface »). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
+   l'interface »).
    Aucun texte qu'atteint une partie de l'île ne contient un nom du récit (VILLAGE.SANS_RECIT.NOMS : Maurice,
    Philomène, Adèle, Odile, Achille, Frida, Basile, Théo, Garance, Lise, Fernand, Céron, Cadolon, Le Gué, Bois-Joli,
    Les Genêts, Les Mouettes, Brumeval) ni « calèche », « cocher », « hameau » (VILLAGE.SANS_RECIT.MOTS) :
@@ -27,7 +27,7 @@ import { categoriesDe, entreeEncyclopedie, majEncyclopedie, nombreEntrees, pages
 import { ENCYCLOPEDIE_ILE } from '../../js/encyclopedie-ile.generated.js';
 import { ficheIle, mondeIle, reglesIle, sourceEquipementIle } from '../../js/ui/aide-ile.js';
 import { chroniqueHtml, nomsHtml } from '../../js/ui/chronique-html.js';
-import { assert, assertEqual, avecVillage, test } from './aide.mjs';
+import { assert, assertEqual, test } from './aide.mjs';
 
 // Les chaînes de `o` (un objet de données : ses clés « // » sont des commentaires) qui citent le récit, avec leur chemin.
 function fautes(o, chemin = '', out = []) {
@@ -186,15 +186,4 @@ test('la carte du monde de l\'île (fiche I7e) : ni hameau ni nom du récit, ni 
     assertEqual([b.sorte, texteDuRecit(b.nom)], ['ferme', null], `${g} : la boussole vers la ferme`);
     assert(Math.abs(b.x - ((T.MONDE.cadre.SORTIE % W) + 0.5)) < 1e-9, 'au bout du chemin');
   }
-});
-
-test('éteint, rien ne change : les prénoms, le livre et les niveaux d\'avant', () => {
-  avecVillage(() => {
-    const s = createNewGame(3);
-    for (const g of ['f', 'm']) assert(prenomsDuJeu(s, g) === DATA.HABITANTS.PRENOMS[g], `la liste de toujours (${g})`);
-    assert(categoriesDe(s) !== ENCYCLOPEDIE_ILE.categories && categoriesDe(s).some((c) => c.id === 'ile'), 'le livre d\'avant');
-    assert(entreeEncyclopedie('maurice', s) && !entreeEncyclopedie('villageois', s), 'ses pages');
-    assertEqual(elementDuNiveau(s, 'veillee'), DATA.NIVEAUX.ELEMENTS.veillee, 'la veillée du niveau 10');
-    assertEqual(noteDuNiveau(s, 9, levelUnlocks(9).note), levelUnlocks(9).note, 'la note du niveau 9');
-  }, false);
 });

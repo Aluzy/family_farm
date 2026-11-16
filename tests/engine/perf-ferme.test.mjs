@@ -10,7 +10,7 @@ import {
   migrate, nightActive, pasDuMonde, piecesCloses, portDuMonde, poseStatus, testFarmMap, testFermeConstruite, testMaisonVillageois,
   villageoisDe,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, garden, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, garden, partie, test } from './aide.mjs';
 
 test('la ferme d\'essai : bâtiments, maisons meublées avec un étage, jardin ; sauvegardée et relue telle quelle', () => {
   const s = garden();
@@ -55,7 +55,7 @@ test('Construire, un mur en main : tester 2 000 cases de la ferme d\'essai prend
 // village, runNight) relevait les pièces closes pour chaque villageois : 64 ms en moyenne (au plus 131) sur l'île du
 // joueur automatique avant I9g, 9 à 12 ms après (scripts/cout-performances.mjs). La borne laisse la place d'une machine
 // lente (le moteur d'avant I9g ne la tenait pas : 37 ms au mieux sur cette île) ; la partie d'une île de quinze tient dans le plafond d'un monde en ligne (VILLAGE.EN_LIGNE.PARTIE_KO).
-test('I9g : la nuit d\'un village de quinze (minuit, un pas du monde) reste sous 30 ms ; sa partie sous le plafond d\'un monde', () => avecVillage(() => {
+test('I9g : la nuit d\'un village de quinze (minuit, un pas du monde) reste sous 30 ms ; sa partie sous le plafond d\'un monde', () => (() => {
   const s = partie(1);
   portDuMonde(farmSeed(s));
   boite(s, { pain: 200 });
@@ -77,4 +77,4 @@ test('I9g : la nuit d\'un village de quinze (minuit, un pas du monde) reste sous
   console.log(`   (quinze villageois : minuit ${minuits.map((x) => x.toFixed(1)).join(' et ')} ms ; la partie ${ko.toFixed(0)} Ko)`);
   assert(ms < 30, `minuit : ${ms.toFixed(1)} ms`);
   assert(ko < DATA.VILLAGE.EN_LIGNE.PARTIE_KO, `la partie : ${ko.toFixed(0)} Ko`);
-}));
+})());

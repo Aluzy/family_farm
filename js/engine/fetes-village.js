@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
-import { villageActif } from './village.js';
 import { countItem, inventoryCounts, takeItem, addItem } from './inventory.js';
 import { moonPhase } from './lune.js';
 import { villageoisDe } from './villageois.js';
@@ -81,7 +80,6 @@ function complete(f) {
 // Les fêtes du jour `jour` : [fête complétée] ; la première est celle que la journée montre. La veillée de pleine lune
 // n'y est que si aucune autre fête n'est ce jour-là et que le village compte VEILLEE_MIN villageois. [] éteint.
 export function fetesDuJourVillage(state, jour = jourDe(state)) {
-  if (!villageActif(state)) return [];
   const v = lire(state), out = [];
   for (const f of (v && v.fetes) || []) if (objet(f) && f.jour === jour) out.push(complete(f));
   if (!out.length && jourVeillee(jour) === jour && adultes(state).length >= (Number(FE().VEILLEE_MIN) || 2) && centreDeLaPlace(state) !== null) out.push(complete({ jour, sorte: 'pleine_lune' }));
@@ -101,7 +99,6 @@ export function feteEnCoursVillage(state, heure) {
 
 // Les fêtes du mois de lune qui contient `jour`, veillée comprise : [fête complétée], par jour (le calendrier).
 export function fetesDuMoisVillage(state, jour = jourDe(state)) {
-  if (!villageActif(state)) return [];
   const premier = moisDe(jour) * MOIS() + 1, out = [];
   for (let d = premier; d < premier + MOIS(); d++) out.push(...fetesDuJourVillage(state, d));
   return out;
@@ -146,7 +143,6 @@ export function choisirPlats(state, n) {
 
 // Pourquoi le joueur ne peut pas fixer une fête du village le jour `jour`, ou null.
 export function feteRefus(state, jour) {
-  if (!villageActif(state)) return 'Le chantier de l\'île n\'est pas allumé.';
   if (state.mondePartage) return 'Les fêtes se fixent sur l\'île du propriétaire.';
   const d = Math.floor(Number(jour));
   if (!Number.isInteger(d) || d <= jourDe(state)) return 'Choisis un jour à venir (pas aujourd\'hui : il faut le temps de prévenir tout le monde).';
@@ -192,7 +188,6 @@ export function annulerFete(state, jour) {
 // La fête de l'ouverture du commerce `commerce` (son id, son nom ; les commerces d'I5a l'appellent à l'ouverture) :
 // fixée au premier jour libre à partir de demain, sans plats. → { ok, fete } ou un refus.
 export function fixerFeteOuverture(state, commerce, nom = '') {
-  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
   const v = villageVocation(state);
   let d = jourDe(state) + 1;
   while (v.fetes.some((f) => f.jour === d)) d++;
@@ -217,7 +212,7 @@ export function aLaFete(state, id, jour = jourDe(state)) {
 // Ce que la fête du jour ajoute à la cible de bonheur du villageois `v` (villageois.js nuitDe) : BONHEUR, et un point
 // par sorte de plat servi (VARIETE au plus), s'il y était ; 0 sinon.
 export function bonheurDeLaFete(state, v) {
-  if (!v || !villageActif(state)) return 0;
+  if (!v) return 0;
   const f = feteDuJourVillage(state);
   if (!f || !aLaFete(state, v.id)) return 0;
   return (Number(FE().BONHEUR) || 0) + Math.min(Number(FE().VARIETE) || 0, Object.keys(f.plats || {}).length);
@@ -226,7 +221,6 @@ export function bonheurDeLaFete(state, v) {
 // La nuit (runNight, après la nuit des villageois) : la fête du jour est tenue (notée, comptée) ; les fêtes passées
 // depuis GARDE jours s'oublient (le compte reste). → { sorte, nom, icone, venus, plats } ou null.
 export function fetesVillageNuit(state) {
-  if (!villageActif(state)) return null;
   const jour = jourDe(state), f = feteDuJourVillage(state, jour);
   let out = null;
   if (f) {

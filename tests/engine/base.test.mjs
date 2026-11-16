@@ -14,7 +14,7 @@ import {
   upgradeDevice, upgradeTank,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, AVANT_DEMENAGEMENT, avecLune, avecVillage, migreAvant, ml, runFor, sansPenalite, test,
+  assert, assertEqual, AVANT_DEMENAGEMENT, avecLune, migreAvant, ml, runFor, sansPenalite, test,
 } from './aide.mjs';
 
 test('état initial : forme et valeurs attendues', () => {
@@ -132,9 +132,8 @@ test('données : buildCatalog() calcule sur une copie, RAW_DATA garde les valeur
   assertEqual([RAW_DATA.OBJETS.pain, DATA.OBJETS.pain.plat], [undefined, true]);
   // deux catalogues tirés des mêmes fichiers sont égaux et indépendants
   const autre = buildCatalog(RAW_DATA);
-  // (ces tests tournent lune neutre, pénalités d'avant, voir avecLune, sansPenalite ; et, depuis la bascule I9h, le
-  // réglage de l'île éteint : ce sont ceux du jeu d'avant, tests/engine/aide.mjs)
-  avecLune(() => sansPenalite(() => avecVillage(() => assertEqual(autre, DATA), autre.VILLAGE.ACTIF)));
+  // (ces tests tournent lune neutre, pénalités d'avant, voir avecLune, sansPenalite)
+  avecLune(() => sansPenalite(() => assertEqual(autre, DATA)));
   autre.OBJETS.carotte.prix = 99;
   assertEqual([DATA.OBJETS.carotte.prix, RAW_DATA.OBJETS.carotte.prix], [2, 1]);
 });
@@ -229,7 +228,6 @@ test('version 1.12 : configurer la famille : nom, personnage principal, membres'
   assertEqual(mailReceived(s, 'maurice_terre'), false);
   assert(finishSetup(s).ok);
   assertEqual([setupPending(s), familyName(s), mainCharacter(s).id], [false, 'Dupont Moreau', 'adulte-2']);
-  assertEqual(mailReceived(s, 'maurice_terre'), true, 'la lettre de Maurice arrive');
   assertEqual(finishSetup(s).ok, false);
   const t = createNewGame(1, { nom: 'Leroy', principal: 'adulte-2' });
   assertEqual([setupPending(t), familyName(t), mainCharacter(t).id], [false, 'Leroy', 'adulte-2']);

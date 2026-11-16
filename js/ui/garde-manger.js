@@ -1,5 +1,4 @@
 import { DATA } from '../engine/catalog.js';
-import { villageActif } from '../engine/village.js';
 import { villageoisDe } from '../engine/villageois.js';
 import { quiFaitQuoi } from '../engine/taches.js';
 import { etatGardeManger, estCuisineDuVillage } from '../engine/garde-manger.js';
@@ -37,7 +36,6 @@ const bouton = (action, texte, data = {}, primaire = false) => `<button type="bu
 // La carte du garde-manger, en tête de la fenêtre de la boîte (sorte 'boite') ou du réfrigérateur ('frigo') ; '' le
 // chantier éteint.
 export function carteGardeManger(sorte) {
-  if (!villageActif(state)) return '';
   const E = etatGardeManger(state);
   if (!E || !E.possibles.includes(sorte)) return '';
   const V = villageoisDe(state).length, ici = SORTES[sorte][0];
@@ -96,7 +94,7 @@ function blocDe(station) {
 // La carte de la cuisine du village, en tête de la fenêtre de la Cuisine ('cuisine') ou du Four ('four') ; '' le
 // chantier éteint ou sans bloc posé.
 export function carteCuisineVillage(station) {
-  if (!villageActif(state) || !state.stations[station] || !state.stations[station].construit) return '';
+  if (!state.stations[station] || !state.stations[station].construit) return '';
   const t = blocDe(station);
   if (t === null) return '';
   const E = etatGardeManger(state);

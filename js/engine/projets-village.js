@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
-import { villageActif } from './village.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { farmTerrain } from './terrain.js';
 import { blocsPoses, empriseMeuble, sensBloc } from './blocs.js';
@@ -128,7 +127,6 @@ export function projetsVillage(state) {
 
 // Pourquoi le joueur ne peut pas lancer le projet `sorte`, ou null.
 export function lancerRefus(state, sorte) {
-  if (!villageActif(state)) return 'Le chantier de l\'île n\'est pas allumé.';
   const S = defProjet(sorte);
   if (!S) return 'Projet inconnu.';
   if (projetFini(state, sorte)) return 'Ce projet est déjà fini.';
@@ -171,7 +169,6 @@ export function apporterAuProjetVillage(state) {
 // Le joueur envoie le villageois `id` au chantier (`oui` false : il l'en rappelle, il reprend sa tâche). → { ok } ou
 // un refus.
 export function envoyerAuChantier(state, id, oui = true) {
-  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
   const v = trouverVillageois(state, id);
   if (!v) return fail('Villageois inconnu.');
   if (!oui) { v.chantier = null; return { ok: true, chantier: null }; }
@@ -199,7 +196,7 @@ export function abandonnerProjet(state) {
 // Le villageois `v` travaille-t-il au chantier aujourd'hui (à la place de sa tâche) ? Envoyé au projet en cours, tout
 // est là, le chantier est praticable ; ni au repos, ni en route, ni enfant. (taches.js, villageois-journee.js)
 export function auChantier(state, v) {
-  if (!v || !v.chantier || v.repos || v.accueil || v.enfant || !villageActif(state)) return false;
+  if (!v || !v.chantier || v.repos || v.accueil || v.enfant) return false;
   const e = projetEnCours(state);
   return !!e && e.sorte === v.chantier && e.pret && e.lieu;
 }
@@ -238,7 +235,6 @@ export function signatureProjets(state) {
 // compte une journée (sa journée de travail le dit : tache « chantier », le journal et le tableau la montrent) ;
 // toutes faites, le projet est fini. → { sorte, nom, icone, equipe, faites, journees, fini, donne } ou null.
 export function projetsVillageNuit(state) {
-  if (!villageActif(state)) return null;
   const e = projetEnCours(state);
   if (!e) return null;
   const jour = jourDe(state), S = defProjet(e.sorte), p = etat(state);

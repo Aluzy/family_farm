@@ -1,7 +1,6 @@
 import { DATA, prixIle } from './catalog.js';
 import { fail, canPay, NO_COINS, pay } from './devices.js';
 import { earn } from './compta.js';
-import { villageActif } from './village.js';
 import { mulberry32 } from './base.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
@@ -88,8 +87,8 @@ import { niveauPort } from './port.js';
    couleursEnseigne), cave (I5c : [{ objet, n, nuits, recette, pour ('joueur' : une commande, ou null) }]) }] ; les
    paliers de l'île, paliers.js, le comptent), et sur chaque villageois :
    v.pratique ({ tâche: jours }), v.envies ({ sorte: jour }), v.commerce (l'id de son commerce), v.achatCommerce ({ jour,
-   objet, commerce }), v.entretien (le jour de sa dernière lame). Des entiers partout. Le chantier éteint
-   (villageActif), rien ne se lit ni ne s'écrit. Les tests : tests/engine/village-artisans.test.mjs. */
+   objet, commerce }), v.entretien (le jour de sa dernière lame). Des entiers partout.
+   Les tests : tests/engine/village-artisans.test.mjs. */
 
 const AR = () => DATA.ARTISANS || {};
 const SORTES = () => AR().COMMERCES || {};
@@ -183,9 +182,9 @@ const recetteDe = (sorte, id) => recettesDe(sorte).find((r) => r.id === id) || n
 
 /* ---------- les commerces de la partie ---------- */
 
-// Les commerces de la partie (state.commerces), lisibles ; [] le chantier éteint.
+// Les commerces de la partie (state.commerces), lisibles.
 export function commercesDe(state) {
-  if (!state || !villageActif(state) || !Array.isArray(state.commerces)) return [];
+  if (!state || !Array.isArray(state.commerces)) return [];
   return state.commerces.filter((c) => objet(c) && defCommerce(c.sorte));
 }
 
@@ -230,7 +229,7 @@ const distance = (w, a, b) => Math.max(Math.abs((a % w) - (b % w)), Math.abs(Mat
 // des pièces ; l'établi et le comptoir sont dans la pièce, l'enseigne dehors, à ENSEIGNE cases au plus d'une de ses portes.
 export function locaux(state, sorte) {
   const d = defCommerce(sorte);
-  if (!d || !villageActif(state)) return [];
+  if (!d) return [];
   // (I9d : une fois par pas du monde, blocs.js memoEnLot ; ceux qui les lisent ne les changent pas)
   return memoEnLot(state, `locaux:${sorte}`, () => calculerLocaux(state, d));
 }
@@ -381,7 +380,7 @@ function conditionPlafond(state) {
 // null inconnu.
 export function conditionsCommerce(state, vid, sorte) {
   const v = trouverVillageois(state, vid), d = defCommerce(sorte);
-  if (!v || !d || !villageActif(state)) return null;
+  if (!v || !d) return null;
   const J = Math.max(1, Math.floor(reglage('JOURS', 10))), fait = joursPratiques(v, d.tache);
   const envie = objet(v.envies) && Number.isInteger(v.envies[sorte]);
   const T = (DATA.TACHES && DATA.TACHES.LISTE && DATA.TACHES.LISTE[d.tache]) || {};
@@ -405,7 +404,7 @@ export function conditionsCommerce(state, vid, sorte) {
 // peut le prendre en second —, ou null) }] : les sortes dont il a l'envie ou qu'il tient.
 export function commercesPourLaFiche(state, vid) {
   const v = trouverVillageois(state, vid);
-  if (!v || !villageActif(state)) return [];
+  if (!v) return [];
   const sien = commerceDuVillageois(state, vid);
   return sortesCommerces().filter((s) => (sien && sien.sorte === s) || (objet(v.envies) && Number.isInteger(v.envies[s]))).map((s) => {
     const d = defCommerce(s);
@@ -420,7 +419,7 @@ export function commercesPourLaFiche(state, vid) {
 // Sa bulle quand on lui parle (villageois-amitie.js parlerVillageois) : l'envie d'un commerce qu'il n'a pas encore
 // (ARTISANS.COMMERCES[sorte].ENVIE), à la première conversation du jour, puis une fois sur deux. → { sorte, texte } ou null.
 export function envieAParler(state, v, premiere = true, n = 0) {
-  if (!v || !villageActif(state) || commerceDuVillageois(state, v.id)) return null;
+  if (!v || commerceDuVillageois(state, v.id)) return null;
   const e = enviesDe(v)[0];
   if (!e || !(premiere || Math.floor(Number(n) || 0) % 2 === 0)) return null;
   const L = defCommerce(e.sorte).ENVIE || [];
@@ -434,7 +433,6 @@ const nouveauJournal = (jour) => ({ jour, lots: 0, fait: {}, achete: {}, paye: 0
 // Le joueur décide : le villageois `vid` ouvre le commerce `sorte` dans un local libre. → { ok, commerce, nom, fete } ou
 // un refus (ce qui manque).
 export function ouvrirCommerce(state, vid, sorte) {
-  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
   const v = trouverVillageois(state, vid), d = defCommerce(sorte);
   if (!v || !d) return fail('Commerce inconnu.');
   if (v.enfant) return fail('Les enfants ne tiennent pas de commerce.');
@@ -469,7 +467,6 @@ export function ouvrirCommerce(state, vid, sorte) {
 // temps-monde.js avecActeur) peut le lui suggérer. Rien ne change dans la partie : la commande va au journal du monde,
 // signée, et l'événement prévient le propriétaire (js/ui/en-ligne.js). → { ok, villageois, sorte, prenom, nom } ou un refus.
 export function suggererCommerce(state, vid, sorte) {
-  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
   const v = trouverVillageois(state, vid), d = defCommerce(sorte);
   if (!v || !d) return fail('Commerce inconnu.');
   if (v.enfant) return fail('Les enfants ne tiennent pas de commerce.');
@@ -511,7 +508,6 @@ export function conditionsSecond(state, vid, cid) {
 // Le joueur décide : le villageois `vid` rejoint le commerce `cid` en second (la tâche du commerce ; ses lots, ses
 // étapes : etapesDe). → { ok, commerce } ou un refus.
 export function rejoindreCommerce(state, vid, cid) {
-  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
   const c = commerceDe(state, cid), v = trouverVillageois(state, vid);
   if (!c || !v) return fail('Commerce inconnu.');
   if (!deuxDe(c.sorte)) return fail(`${defCommerce(c.sorte).nom} se tient seul.`);
@@ -968,7 +964,7 @@ export function achatsCommercesDuJour(state, jour = jourDe(state)) {
 
 // La signature des achats au comptoir du jour (la clé de la journée, villageois-journee.js).
 export function commercesSignature(state, jour = jourDe(state)) {
-  if (!villageActif(state) || !Array.isArray(state.commerces) || !state.commerces.length) return 0;
+  if (!Array.isArray(state.commerces) || !state.commerces.length) return 0;
   const m = achatsCommercesDuJour(state, jour);
   return [commercesOuverts(state).map((c) => [c.id, c.etabli, c.qui]), [...m].map(([id, a]) => [id, a.commerce, a.objet])];
 }
@@ -1029,7 +1025,7 @@ function creneauComptoir(state, id) {
 
 // À chaque pas de la ferme (energy.js) : qui est au comptoir depuis la moitié de son créneau y achète. → les achats.
 export function avancerCommerces(state) {
-  if (!villageActif(state) || nightActive(state) || !Array.isArray(state.commerces) || !state.commerces.length) return 0;
+  if (nightActive(state) || !Array.isArray(state.commerces) || !state.commerces.length) return 0;
   const h = clockHours(state);
   let n = 0;
   for (const [id, a] of achatsCommercesDuJour(state)) {
@@ -1087,7 +1083,7 @@ export function commercesAuBac(state, jour, vendu = null) {
 // une nuit de plus en cave (affinerCaves). → { envies: [{ id, sorte }], appris: [{ commerce, recettes }], achats, caves
 // (ce qui est sorti de cave) } ou null (rien).
 export function artisansNuit(state) {
-  if (!villageActif(state) || !Array.isArray(state.villageois)) return null;
+  if (!Array.isArray(state.villageois)) return null;
   const jour = jourDe(state), J = Math.max(1, Math.floor(reglage('JOURS', 10)));
   const out = { envies: [], appris: [], achats: 0, caves: [] };
   // (l'achat au comptoir qu'on n'a pas vu : la page fermée)

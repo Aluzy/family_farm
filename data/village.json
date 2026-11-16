@@ -2,11 +2,9 @@
   "//VILLAGE": [
     "Le chantier « l'île à bâtir » (novembre 2026) : on arrive sur une île vierge, on vend au port, des",
     "villageois s'installent sur la ferme et y travaillent. Le plan, les décisions et l'ordre des fiches sont",
-    "dans docs/ile.md ; les fiches dans docs/fiches/ile/. ACTIF : le code du chantier est lu quand il vaut",
-    "true (js/engine/village.js, villageActif). Depuis la bascule (fiche I9h, la version 2.0.0), il vaut true : l'île",
-    "est le jeu, une partie d'avant y passe à son ouverture (MIGRATION), un monde en ligne d'avant à son réveil par le",
-    "serveur (I9f). Les tests du jeu d'avant le forcent à false (tests/engine/aide.mjs, avecVillage), jusqu'au retrait",
-    "du jeu d'avant et du réglage lui-même (la seconde PR d'I9h) ; jeu.html?village=1 ne change plus rien.",
+    "dans docs/ile.md ; les fiches dans docs/fiches/ile/. Depuis la bascule (fiche I9h, la version 2.0.0), l'île est",
+    "le jeu : une partie d'avant y passe à son ouverture (MIGRATION), un monde en ligne d'avant à son réveil par le",
+    "serveur (I9f). Le réglage de bascule (ACTIF) et la partie d'essai (jeu.html?village=1) sont retirés.",
     "ARRIVEE (fiche I3a, js/engine/villageois.js) : l'arrivée d'un villageois. Il débarque du bac (fiche I1c,",
     "js/engine/bac.js : un jour de bac, PORT.BAC.PERIODE, pendant que le bac est à quai, PORT.BAC.HEURES ; la page le",
     "met en route ; une journée finie avant, la nuit l'installe d'un coup). Il lui faut une maison libre (une pièce",
@@ -20,7 +18,6 @@
     "le salut de l'heure (HABITANTS.PHRASES.salut)."
   ],
   "VILLAGE": {
-    "ACTIF": true,
     "ARRIVEE": {
       "RESERVE_JOURS": 2,
       "PLAFOND": { "1": 2, "2": 5, "3": 10, "4": 12, "5": 14 },
@@ -573,12 +570,12 @@
       }
     },
     "//PALIERS": [
-      "Les paliers de l'île (fiche I7a, js/engine/paliers.js) : avec ACTIF, une partie neuve suit ces sept paliers à la",
+      "Les paliers de l'île (fiche I7a, js/engine/paliers.js) : une partie neuve suit ces sept paliers à la",
       "place des sept chapitres de la campagne (data/campaign.json), sans introduction ni personnage : un titre, une",
       "icône, des objectifs, une récompense. Le palier n tient la place du chapitre n : il rapporte les mêmes points de",
       "technologie (ARBRE.POINTS.CHAPITRES) et la même XP (NIVEAUX.CHAPITRES_XP), ouvre les mêmes paliers de l'arbre ;",
-      "sa récompense reprend les plans et le décor du chapitre, et ce que le courrier offrait (il n'y en a plus avec",
-      "ACTIF : les graines de la serre sont au palier 6). Les objectifs reprennent les types de campaign.js",
+      "sa récompense reprend les plans et le décor du chapitre, et ce que le courrier offrait (il n'y en a plus sur",
+      "l'île : les graines de la serre sont au palier 6). Les objectifs reprennent les types de campaign.js",
       "(objectiveValue) et ceux du chantier : ventesPort (les pièces gagnées au port), portNiveau (le niveau du port),",
       "villageois (installés : une maison), taches (villageois qui ont une tâche), commerces (ouverts) et",
       "amitieVillageois (villageois au palier d'amitié `palier` ou plus, 2 : cordial). La calèche, les hameaux et la",
@@ -664,7 +661,7 @@
       }
     ],
     "//OBJECTIFS": [
-      "Les objectifs du jour avec ACTIF (fiche I7a, js/engine/objectifs.js) : SEMAINE remplace OBJECTIFS.SEMAINE",
+      "Les objectifs du jour de l'île (fiche I7a, js/engine/objectifs.js) : SEMAINE remplace OBJECTIFS.SEMAINE",
       "(data/general.json) pour le nouveau départ, sans phrase d'ambiance (pas d'intro) ni hameau ni calèche : la",
       "vente se fait au port. TIRES.LISTE s'ajoute à OBJECTIFS.TIRES.LISTE (une entrée de même id la remplace) :",
       "vendre au port, parler aux villageois, leur offrir un cadeau, honorer une commande du bac. Les « si » du",
@@ -980,8 +977,8 @@
     },
     "//MIGRATION": [
       "La migration d'une partie d'avant vers l'île (fiche I7f ; le moteur : js/engine/migration-ile.js ; la fenêtre du retour :",
-      "js/ui/retour-ile.js). Elle se fait à l'ouverture d'une partie d'avant sur l'île : le réglage allumé (ACTIF : à la",
-      "bascule, toujours), ou une partie d'essai (jeu.html?village=1). La ferme, l'inventaire, les pièces, le niveau, l'arbre,",
+      "js/ui/retour-ile.js). Elle se fait à l'ouverture d'une partie d'avant sur l'île (depuis la bascule, I9h :",
+      "toujours). La ferme, l'inventaire, les pièces, le niveau, l'arbre,",
       "les bêtes, la famille, l'équipement, les plans, les styles ne bougent pas ; le port, son chemin et son tronçon",
       "paraissent ; les voisins d'avant et le marchand ambulant s'en vont. AMI : le palier d'amitié (AMITIE.ECHELLE : 2,",
       "« cordial ») à partir duquel un voisin d'avant devient un candidat, qui débarquera par le bac avant tout villageois tiré",
@@ -1625,8 +1622,8 @@
   "//PORT": [
     "Le port (fiche I1a) : avec l'abri, le seul bâtiment de l'île au début d'une partie. Un quai de planches sur",
     "la mer, une cale de pierre à côté de lui, une halle ouverte (un toit sur quatre poteaux, un comptoir, une",
-    "balance) au bord de l'eau, au bout de l'île, relié à la sortie de la ferme par un chemin. Il n'est posé que",
-    "le chantier allumé (villageActif) : le monde de la partie le reçoit alors dans son cadre (cadre.PORT : le",
+    "balance) au bord de l'eau, au bout de l'île, relié à la sortie de la ferme par un chemin. Le monde de la",
+    "partie le reçoit dans son cadre (cadre.PORT : le",
     "niveau du port), et le plan le place (js/engine/monde-gen.js, elementsDuMonde, après tous les autres lieux :",
     "ils ne bougent pas) ; le bâti se fait avec les hameaux (js/engine/monde-hameaux.js, planPort).",
     "NOM : son nom (le panneau, la carte du monde, la boussole). NIVEAU_DEPART : le niveau d'une partie neuve",

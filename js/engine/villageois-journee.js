@@ -2,7 +2,6 @@ import { DATA } from './catalog.js';
 import { mulberry32 } from './base.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
-import { villageActif } from './village.js';
 import { blocsPoses, casesCouvertes, estCloture, etatEnclos, maisonsMarquees, memoEnLot, piecesCloses, solsPoses } from './blocs.js';
 import { lieuPort } from './port.js';
 import { meteoDuJour } from './meteo.js';
@@ -281,7 +280,7 @@ const memoJours = new Map();   // (cle → Map(id → segments)) : la dernière 
 // table?, vers? }, but? }]), les segments de 0 à 24 h, dans l'ordre. Les repas sont faits dans l'ordre des id : un
 // siège pris par l'un ne l'est pas par un autre ; les créneaux dehors, créneau par créneau, pour tout le village à
 // la fois (I3b+ : un ami rendu visite, un rendez-vous, une promenade à deux engagent les deux). Gardée tant que la
-// partie et le jour ne changent pas (ni l'horaire). Vide le chantier éteint.
+// partie et le jour ne changent pas (ni l'horaire).
 export function journeeDuVillage(state, jour = jourDe(state)) {
   const V = villageoisDe(state);
   if (!V.length) return new Map();
@@ -986,9 +985,9 @@ export function paroleVillageois(state, id, o = {}) {
 }
 
 // Pour la scène : la journée de chacun, aujourd'hui ({ [id]: segments }), et les lieux qu'elle doit connaître ;
-// null le chantier éteint ou sans villageois.
+// null sans villageois.
 export function journeesPourLaCarte(state) {
-  if (!villageActif(state) || !villageoisDe(state).length) return null;
+  if (!villageoisDe(state).length) return null;
   const J = journeeDuVillage(state), out = {};
   for (const [id, segs] of J) out[id] = segs;
   return out;

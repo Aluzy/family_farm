@@ -191,18 +191,6 @@ test('annonces : un écran de fin par chapitre terminé, vidé un à un', () => 
   assertEqual(acknowledgeChapter(s).ok, false);
 });
 
-test('rapport de réveil Lot 9 : chapitre en cours et chapitres terminés', () => {
-  // la famille a faim : 6 patates (30 points) puis des conserves
-  const s = boite(atChapter(2), { patate: 6, conserve: 60 });
-  // version 1.12 : tout le chapitre 2 est rempli juste avant la nuit
-  s.progression.niveau = 3;
-  Object.assign(s.campagne.compteurs, { cultures: ['carotte', 'patate', 'tomate', 'courgette'], semisBle: 1, calecheVentes: 50 });
-  Object.assign(s.silo, { construit: true, ble: 50 });
-  affamer(s);
-  const r = sleepOnce(s);
-  assertEqual([r.chapitre, r.chapitresTermines, 'autonomie' in r, 'energieProduit' in r], [3, [2], false, false]);
-});
-
 /* --- masquage --- */
 
 test('déblocages : chaque niveau atteint ouvre ses éléments', () => {

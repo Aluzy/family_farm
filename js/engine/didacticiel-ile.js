@@ -25,7 +25,6 @@ import { butBoussole, choisirBut } from './monde-vu.js';
 import { distanceAuComptoir } from './port.js';
 import { chargeDe } from './portage.js';
 import { maisonsLibres, villageoisDe } from './villageois.js';
-import { villageActif } from './village.js';
 
 const D = () => DATA.VILLAGE.DEPART;
 export const ETAPES_ILE = () => D().ETAPES.map((e) => e.id);
@@ -54,7 +53,7 @@ export const BUTS_ILE = Object.keys(BUTS);
 
 export function didacticielIleActif(state) {
   const d = state && state.didacticielIle;
-  return !!(d && !d.fini && villageActif(state));
+  return !!(d && !d.fini);
 }
 
 // L'étape en cours : { id, icone, ligne, n (1, 2…), total }, ou null.

@@ -1,6 +1,5 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : l'arrivée d'un villageois (docs/ile.md, fiche I3a ; js/engine/villageois.js).
-   Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
    - la maison libre : une pièce close avec un lit que la famille ne prend pas, marquée d'une boîte aux lettres
      contre sa porte ; la famille dort d'abord ailleurs ;
    - l'arrivée : un jour de bac, une maison libre ; à partir du deuxième, de quoi manger et un port assez grand ;
@@ -9,7 +8,7 @@
    - la nuit : il mange à la boîte commune (une part de plus), dort dans son lit ; mal nourri ou sans lit, il se
      repose le lendemain et ne part pas ; la famille et son bonheur ne changent pas ;
    - la maison retirée : il dort à l'abri, attend, et reprend une maison libre ;
-   - la sauvegarde : v86 → v87, la liste réparée ; éteint, rien ne change.
+   - la sauvegarde : v86 → v87, la liste réparée.
    Lancer seul : node tests/run-tests.mjs village-arrivee.
    ========================================================================== */
 
@@ -20,7 +19,7 @@ import {
   STATE_VERSION, testMaisonVillageois, tirerVillageois, verifierMaisons, villageoisDe, villageoisNuit, villageoisPourLaCarte,
 } from '../../js/engine/index.js';
 import { cleDiversite } from '../../js/engine/apparence.js';
-import { assert, assertEqual, avecVillage, boite, partie, sansPenalite, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, sansPenalite, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 
@@ -74,23 +73,6 @@ test('une maison dont la famille a besoin du lit n\'est pas libre ; la famille n
   assert(m.ok);
   assert(litsDeLaFamille(s).has(m.lits[0]), 'la famille y dort');
   assertEqual(maisonsLibres(s), [], 'pas libre');
-});
-
-test('éteint, la boîte aux lettres ne marque rien et sa recette n\'est pas à l\'Atelier', () => {
-  avecVillage(() => {
-    const s = partie(2);
-    const m = testMaisonVillageois(s);
-    assert(m.ok);
-    assertEqual(maisonsLibres(s), [], 'aucune maison libre');
-    assertEqual(couchages(s).length, s.famille.membres.length + 1, 'le lit compte, dans l\'ordre des pièces');
-    assertEqual(recetteDebloquee(s, 'boite_aux_lettres'), false, 'pas de recette');
-    assertEqual(villageoisNuit(s), null, 'la nuit : rien');
-    runNight(s);
-    assert(!('villageois' in s), 'pas de champ villageois');
-  }, false);
-  const s = partie(2);
-  assertEqual(recetteDebloquee(s, 'boite_aux_lettres'), true, 'allumé : la recette');
-  assert(craftStatus(s, 'boite_aux_lettres').raison !== 'Recette inconnue.', 'elle se fabrique à l\'Atelier');
 });
 
 /* ---------- l'arrivée ---------- */
@@ -188,8 +170,9 @@ test('la nuit : il mange à la boîte commune (une part de plus) et dort dans so
   const sans = copie(s);
   assert(arriverVillageois(s, { direct: true }).ok);
   const pain = DATA.OBJETS.pain.energie, part = Math.ceil(DATA.FAMILLE.AJ.adulte / pain);
-  // (sans lui : la même partie, le chantier éteint le temps de la nuit)
-  runNight(s); avecVillage(() => runNight(sans), false);
+  // (sans lui : la même partie, copiée avant son arrivée, sans la boîte aux lettres de la maison : personne n'y arrive)
+  delete sans.blocs[m.boite];
+  runNight(s); runNight(sans);
   assertEqual((boiteCounts(sans).pain || 0) - (boiteCounts(s).pain || 0), part, 'une part de plus dans la boîte');
   const v = villageoisDe(s)[0];
   assertEqual([v.lit, v.faim, v.repos], [m.lits[0], 0, false], 'dans son lit, rassasié');
@@ -274,15 +257,4 @@ test('la sauvegarde : v86 → v87, sans villageois rien ne s\'ajoute ; une liste
   assertEqual(r.length, 1, 'le lisible reste');
   assertEqual([r[0].maison, r[0].lit, r[0].bonheur, r[0].journal, r[0].accueil], [null, null, DATA.BONHEUR.DEPART, [], null], 'réparé');
   assertEqual(migrate({ ...copie(s), version: 86, villageois: 'rien' }).villageois, [], 'pas une liste : vide');
-});
-
-test('éteint, une partie avec des villageois ne les montre pas (le jeu d\'avant)', () => {
-  const { s } = ile(17);
-  versLeBac(s);
-  arriverVillageois(s, { direct: true });
-  avecVillage(() => {
-    assertEqual(villageoisDe(s), [], 'aucun');
-    assertEqual(villageoisPourLaCarte(s), null, 'rien sur la carte');
-    assertEqual(maisonsLibres(s), []);
-  }, false);
 });

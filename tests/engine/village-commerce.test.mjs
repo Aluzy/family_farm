@@ -1,6 +1,5 @@
 /* ==========================================================================
-   Tests du chantier « l'île à bâtir » : le commerce au port (docs/ile.md, fiche I1b). Comme tous les fichiers
-   tests/engine/village-*.test.mjs, ils tournent avec VILLAGE.ACTIF forcé à true (tests/engine/aide.mjs).
+   Tests du chantier « l'île à bâtir » : le commerce au port (docs/ile.md, fiche I1b).
    Lancer seul : node tests/run-tests.mjs village-commerce
    ========================================================================== */
 
@@ -10,7 +9,7 @@ import {
   marcheFerme, objectiveValue, portDuMonde, portOuvert, sellItem, sellPrice, simulateGame, unlockLevel, vendreAuPort, vendreCaleche,
   chargerPortage,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, reach, setInv, test } from './aide.mjs';
+import { assert, assertEqual, reach, setInv, test } from './aide.mjs';
 
 const P = DATA.PORT;
 
@@ -135,24 +134,6 @@ test('la calèche inerte : elle ne vend ni n\'achète plus, sa malle non plus', 
   }
   assertEqual(calecheIci(s, 0).ok, false, 'pas de commerce à côté d\'elle');
   assertEqual(JSON.stringify([s.pieces, s.inventaire]), avant, 'rien n\'a bougé');
-});
-
-test('le réglage éteint : pas de port, la calèche et market.js comme avant', () => {
-  avecVillage(() => {
-    const s = reach(createNewGame('commerce'), 'marche');
-    s.awakeMs = awakeMsAtHour(9);
-    setInv(s, { carotte: 5 });
-    assertEqual(lieuPort(s), null, 'pas de lieu de port');
-    assertEqual(vendreAuPort(s, 'carotte', 1, 0, { sansPresence: true }).ok, false, 'pas de vente au port');
-    const r = sellItem(s, 'carotte', 1);
-    assert(r.ok, r.error);
-    assertEqual(s.compta[s.compta.length - 1].libelle, `Vente : ${DATA.OBJETS.carotte.nom}`, 'les Comptes d\'avant');
-    s.pieces = 100;
-    assert(buyItem(s, 'graine_carotte', 1).ok);
-    assertEqual(s.compta[s.compta.length - 1].libelle, `Achat : ${DATA.OBJETS.graine_carotte.nom}`);
-    assert(vendreCaleche(s, 'carotte', 1, null, { sansPresence: true }).ok, 'la calèche commerce');
-    assertEqual(marcheFerme(s), `La calèche commerce avec toi à partir du niveau ${unlockLevel('marche')}.`);
-  }, false);
 });
 
 test('le joueur automatique va au port : 25 nuits sans nuit sans repas, des ventes au port, des graines achetées', () => {

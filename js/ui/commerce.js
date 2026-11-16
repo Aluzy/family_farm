@@ -1,6 +1,5 @@
 import { DATA } from '../engine/catalog.js';
 import { escapeHtml, formatCoins, formatDay } from '../engine/format.js';
-import { villageActif } from '../engine/village.js';
 import { setupPending } from '../engine/depart.js';
 import { asleep } from '../engine/night.js';
 import { countItem } from '../engine/inventory.js';
@@ -53,7 +52,7 @@ let rangNom = 0;
 
 // Peut-on ouvrir la fenêtre ? (un commerce ouvert)
 export function commerceFenetreOk() {
-  return villageActif(state) && commercesOuverts(state).length > 0;
+  return commercesOuverts(state).length > 0;
 }
 
 function commerceVu() {
@@ -161,7 +160,7 @@ function lettresHtml(c) {
 // Sa fiche : son envie d'un commerce (ce qui manque, « Ouvrir »), ou le commerce qu'il tient.
 export function commerceFicheHtml(id) {
   const v = trouverVillageois(state, id);
-  if (!v || v.enfant || !villageActif(state)) return '';
+  if (!v || v.enfant) return '';
   const e = escapeHtml(id), il = ilElle(v);
   return commercesPourLaFiche(state, id).map((x) => {
     if (x.commerce) {
@@ -201,7 +200,7 @@ let annonce = null;
 // À chaque image (js/ui/loop.js) : les ventes au comptoir, les commandes livrées ; au réveil, une envie née, une pièce
 // apprise. → vrai s'il y a eu quelque chose.
 export function watchCommerces() {
-  if (!state || !villageActif(state) || setupPending(state)) return false;
+  if (!state || setupPending(state)) return false;
   let n = 0;
   // (I9d : en ligne, un avis déjà dit ne se redit pas quand la partie locale est refaite)
   for (const a of avisNeufs(prendreAvisCommerces(state), (x) => `${x.commerce}:${x.sorte}:${x.id || ''}:${x.objet}:${x.n || x.prix || ''}`)) {

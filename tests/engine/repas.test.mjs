@@ -167,7 +167,8 @@ test('le réfrigérateur construit : la boîte et son contenu reviennent dans l\
   s.pieces = 5000;
   assert(construireFrigo(reach(s, 'frigo')).ok, 'frigo');
   assertEqual([boitePosee(s), countItem(s, 'boite_nourriture'), countItem(s, 'carotte'), boiteCounts(s), sourceRepas(s)], [false, 1, 6, {}, 'frigo']);
-  assertEqual(poseStatus(s, 'boite_nourriture', boite).raison, 'La famille mange au réfrigérateur : la boîte à nourriture ne sert plus.');
+  // (fiche I3e : une boîte posée après le réfrigérateur peut devenir le garde-manger commun du village)
+  assert(poseStatus(s, 'boite_nourriture', boite).ok, 'elle se repose');
   assertEqual(deposerBoite(s, 'carotte', 1).ok, false);
 });
 

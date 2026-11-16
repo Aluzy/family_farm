@@ -24,7 +24,6 @@ import { DATA, prixIle } from './catalog.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { earn } from './compta.js';
-import { villageActif } from './village.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
 import { keepLots, pullLots } from './inventory.js';
@@ -117,7 +116,7 @@ export function avancerContrats(state) {
 
 // Ce que la page doit dire (retiré) : [{ quoi: 'proposes' | 'manque' | 'honore', … }].
 export function prendreAvisContrats(state) {
-  const P = villageActif(state) && state.production && state.production.contrats;
+  const P = state.production && state.production.contrats;
   if (!P || !Array.isArray(P.avis) || !P.avis.length) return [];
   const out = P.avis;
   P.avis = [];

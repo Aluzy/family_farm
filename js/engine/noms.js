@@ -12,14 +12,13 @@
      commerces: { id du commerce: nom } (la fiche I5a : nommerCommerce, à son ouverture),
      maisons: { case de la boîte aux lettres: nom } (si le joueur le veut),
      avis: ['village'] (ce que la page doit encore proposer au joueur : nommer le village) }.
-   Il ne naît qu'avec le chantier allumé (createInitialState, allumerEssaiVillage, ou le premier besoin) ; éteint, une
-   partie n'en a pas. Les tests : tests/engine/village-chronique.test.mjs. */
+   Il naît avec la partie (createInitialState, la migration d'une partie d'avant, ou le premier besoin). Les tests : tests/engine/village-chronique.test.mjs. */
 
 import { DATA } from './catalog.js';
 import { mulberry32 } from './base.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
-import { texteDuRecit, villageActif } from './village.js';
+import { texteDuRecit } from './village.js';
 
 const N = () => (DATA.VILLAGE && DATA.VILLAGE.NOMS) || {};
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -134,7 +133,6 @@ export function proposerNom(state, quoi, id = null, rang = 0, o = {}) {
 // Donne le nom `texte` à `quoi` (`id` pour un commerce ou une maison). Borné (nomRefus) ; une chaîne vide efface le
 // nom d'une maison. → { ok, nom, avant } ou un refus.
 export function renommer(state, quoi, texte, id = null) {
-  if (!villageActif(state)) return { ok: false, error: 'Le chantier de l\'île n\'est pas allumé.' };
   if (!SORTES.includes(quoi)) return { ok: false, error: 'Rien à nommer ici.' };
   const n = nomsDe(state), nom = nettoyerNom(texte);
   if (quoi === 'maison' && !nom) {
@@ -156,7 +154,6 @@ export function renommer(state, quoi, texte, id = null) {
 // Le village prend un nom quand le NOMS.VILLAGE_A-ième villageois adulte s'installe : le nom proposé est pris, et la page
 // propose au joueur de le changer (l'avis « village »). → le nom donné, ou null (déjà nommé, pas encore le moment).
 export function nommerVillageSiBesoin(state) {
-  if (!villageActif(state)) return null;
   const adultes = (Array.isArray(state.villageois) ? state.villageois : []).filter((v) => objet(v) && !v.enfant).length;
   if (adultes < Math.max(1, Number(N().VILLAGE_A) || 3)) return null;
   const n = nomsDe(state);
@@ -167,9 +164,9 @@ export function nommerVillageSiBesoin(state) {
 }
 
 // Le nom d'un commerce qui ouvre (la fiche I5a l'appellera) : celui qu'il a déjà, sinon un nom proposé à la graine
-// (« Forge du Vieux Chêne »), gardé. `o.sorte` : forge, mercerie… → le nom, ou null le chantier éteint.
+// (« Forge du Vieux Chêne »), gardé. `o.sorte` : forge, mercerie… → le nom.
 export function nommerCommerce(state, id, o = {}) {
-  if (!villageActif(state) || id === null || id === undefined || String(id) === '') return null;
+  if (id === null || id === undefined || String(id) === '') return null;
   const n = nomsDe(state), k = String(id);
   if (!n.commerces[k]) n.commerces[k] = proposerNom(state, 'commerce', k, 0, o);
   return n.commerces[k];

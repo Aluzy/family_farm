@@ -1,7 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : le garde-manger commun et la cuisine du village (docs/ile.md, fiche I3e ;
-   js/engine/garde-manger.js). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF
-   forcé à true.
+   js/engine/garde-manger.js).
    - le garde-manger : rendu commun (la boîte, le réfrigérateur), les refus, la réserve visée ;
    - les dépôts du travail : ce qui se mange, jusqu'à la réserve, le reste au coffre ; rien à 0 ;
    - la boîte commune reste celle du village le réfrigérateur acheté : la famille au réfrigérateur, le village à la boîte ;
@@ -10,7 +9,7 @@
      farine au coffre, la file du joueur libre ; deux cuisiniers font deux fois plus de plats ; le menu, ce qui manque ;
    - la tablée : un plat partagé nourrit plusieurs villageois, chacun goûte à tous ; ce qui n'est pas entamé revient ;
    - le tableau (sa ligne), la vapeur, la journée (la table commune d'abord) ;
-   - la sauvegarde v102 → v103 ; les commandes ; le joueur automatique ; éteint, rien.
+   - la sauvegarde v102 → v103 ; les commandes ; le joueur automatique.
    Lancer seul : node tests/run-tests.mjs village-garde-manger.
    ========================================================================== */
 
@@ -21,7 +20,7 @@ import {
   moveToFridge, platDuVillage, portDuMonde, postesDe, prochainPlat, reglerReserve, reparerGardeManger, runNight, sourceRepas,
   STATE_VERSION, tableauVillage, tachesNuit, tachesPour, testBatir, testMaisonVillageois, villageoisDe, villageoisNuit,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, reach, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, reach, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const GM = DATA.VILLAGE.GARDE_MANGER;
@@ -361,13 +360,3 @@ test('le joueur automatique : la boîte commune, la cuisinière du village, un c
   assertEqual(V.length, 3);
 });
 
-/* ---------- éteint ---------- */
-
-test('éteint : pas de garde-manger, rien ne change la nuit', () => avecVillage(() => {
-  const s = partie(1);
-  boite(s, { pain: 5 });
-  assertEqual(gardeManger(s), null);
-  assert(!designerGardeManger(s, true).ok, 'refusé');
-  assertEqual(etatGardeManger(s), null);
-  assertEqual(cuisineDuVillage(s), false);
-}, false));

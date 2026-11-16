@@ -1,6 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : l'île sans hameau, sans calèche ni boucle de chemins (docs/ile.md, fiche
-   I7e). Comme tous les fichiers tests/engine/village-*.test.mjs, ils tournent avec VILLAGE.ACTIF forcé à true.
+   I7e).
    Joués en quatre parties, en parallèle (village-monde-<k>.test.mjs posent globalThis.PARTIE_TESTS = [k, n]) ; le
    lot de 50 graines y est réparti.
    - sur 50 graines (celles de tests/engine/ile-monde-temoins.json, relevées sur le plan d'avant I7e) : le plan de
@@ -25,7 +25,7 @@ import {
 } from '../../js/engine/index.js';
 import { tourneeDe, tourneeDuMonde } from '../../js/engine/caleche.js';
 import { habitantsDe } from '../../js/engine/habitants.js';
-import { assert, assertEqual, avecVillage } from './aide.mjs';
+import { assert, assertEqual } from './aide.mjs';
 
 const PARTIE = globalThis.PARTIE_TESTS;
 let rangTest = 0;
@@ -190,16 +190,4 @@ test('une partie de l\'île : ni hameau sur la carte du monde, ni calèche, ni h
   tourneeDuMonde(s.carte.graine);   // (même posée par un monde d'avant de la même graine)
   assertEqual(tourneeDe(s), null, 'pas de calèche');
   assertEqual(habitantsDe(s), {}, 'aucun habitant de hameau');
-});
-
-test('éteint : le monde d\'avant, ses hameaux, ses boucles, sa calèche', () => {
-  avecVillage(() => {
-    const s = createNewGame(GRAINES[4]);
-    const plan = planDuMonde(s.carte.graine);
-    assert(plan.lieux.hameaux.length >= 3, 'des hameaux');
-    assert(plan.chemins.length >= 3, 'des boucles');
-    assertEqual(plan.lieux.port, undefined, 'pas de port');
-    tourneeDuMonde(s.carte.graine);
-    assert(tourneeDe(s) && tourneeDe(s).arrets.some((a) => a.sorte === 'hameau'), 'la calèche fait sa tournée');
-  }, false);
 });

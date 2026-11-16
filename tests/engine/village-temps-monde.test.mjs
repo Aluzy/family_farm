@@ -11,7 +11,7 @@ import {
   addItem, avancerJusqua, clockHours, createNewGame, DATA, dureeDuPas, empreintePartie, energieDe, energyMax, executerCommande,
   farmStep, horlogeVivante, migrate, nightActive, pasDe, pasDuMonde, STATE_VERSION, testBatir, testSetLevel,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, farm, sansPenalite, test } from './aide.mjs';
+import { assert, assertEqual, farm, sansPenalite, test } from './aide.mjs';
 
 const cloner = (v) => JSON.parse(JSON.stringify(v));
 const PAS_PAR_HEURE = (DATA.TEMPS.SECONDES_PAR_HEURE * 1000) / DATA.VILLAGE.EN_LIGNE.PAS_MS;   // 6
@@ -29,12 +29,9 @@ function ileDuMonde(graine = '17') {
   return s;
 }
 
-test('I9a2 : une île en ligne a une horloge vivante ; une ferme d\'avant (F.2) ou une partie solo, non', () => {
+test('I9a2 : une île en ligne a une horloge vivante ; une partie solo, non', () => {
   const s = ileDuMonde();
   assertEqual([horlogeVivante(s), horlogeVivante({ ...s, mondePartage: false }), pasDe(s)], [true, false, 0]);
-  const ferme = farm();
-  ferme.mondePartage = true;
-  assertEqual(avecVillage(() => horlogeVivante(ferme), false), false, 'une ferme d\'avant (le chantier éteint) garde l\'horloge figée');
   assertEqual(DATA.VILLAGE.EN_LIGNE.PAS_MS, 5000, 'le pas du protocole : 5 s d\'horloge');
 });
 
@@ -76,9 +73,6 @@ test('I9a2 : la nuit vient seule à 22 h (pas 96), le jour change à minuit (pas
   // (le jour, se coucher ne presse rien : la cadence est celle de la nuit)
   assert(executerCommande(s, { id: 'c-sommeil-2', type: 'temps.sommeil', args: { oui: true } }).ok);
   assertEqual(dureeDuPas(s), 5000);
-  const ferme = farm();
-  ferme.mondePartage = true;
-  assertEqual(avecVillage(() => executerCommande(ferme, { id: 'c-sommeil-3', type: 'temps.sommeil', args: { oui: true } }).ok, false), false, 'pas dans une ferme d\'avant');
 });
 
 test('I9a2 : une préparation finit à son heure, dans les pas (pas à la nuit) ; celle qui cuit encore à 22 h finit à minuit, comme en solo', () => {

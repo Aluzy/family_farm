@@ -54,8 +54,7 @@ import { HAMEAUX, voirHameau } from '../engine/monde-hameaux.js';
 import { garantiDuHameau, HABITANTS, habitantsPourLaCarte } from '../engine/habitants.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
-import { villageActif } from '../engine/village.js';
-import { caseDansLaFerme, ilePartagee } from '../engine/frontiere.js';
+import { caseDansLaFerme } from '../engine/frontiere.js';
 import { fractionDuPas, noterBrouillard, noterDehors } from './en-ligne.js';
 import { cuisineVillageAllumee } from '../engine/taches.js';
 import { choisirBloc } from './garde-manger.js';
@@ -363,7 +362,7 @@ function allerA(c) {
 // (js/ui/monde-sol.js) : leur clé (leurs segments), leur état, et le tronçon du port converti par le Web Worker,
 // posé dans la partie (js/engine/dehors.js, poserTroncon).
 poserCheminsMonde({
-  cle: () => (state && state.dehors && villageActif(state) ? state.dehors.chemins : null),
+  cle: () => (state && state.dehors ? state.dehors.chemins : null),
   etat: () => cheminsPourLeSol(state),
   troncon: (cases) => { if (poserTroncon(state, cases)) persistState(); },
 });
@@ -388,11 +387,9 @@ function ouvertesAvecPonts() {
 
 export function stageModel() {
   // (fiche I2 : les chemins possédés, au sol du monde s'ils ont changé ; les ponts)
-  if (villageActif(state)) {
-    majPonts();
-    const solM = solDuMonde(farmTerrain(state));
-    if (solM && solM.majChemins) solM.majChemins();
-  }
+  majPonts();
+  const solM = solDuMonde(farmTerrain(state));
+  if (solM && solM.majChemins) solM.majChemins();
   const vue = (p) => {
     if (!p.culture) return { id: p.id, culture: null, icone: '', phase: -1, mature: false, arrosee: !!p.arrose };
     const max = maxStage(p);
@@ -583,7 +580,7 @@ export function stageModel() {
     // attend devant la porte (js/carte/ferme/visite.js) ; null le reste du temps
     visite: recitPage(state) ? recitPage(state).bienvenueModele(state) : null,   // (l'île : pas de visite de bienvenue)
     // l'île à bâtir (fiche I3a, js/engine/villageois.js) : les villageois (celui qui arrive du port, ceux qui dorment
-    // dans leur lit : js/carte/ferme/villageois.js) ; null le chantier éteint ou sans villageois
+    // dans leur lit : js/carte/ferme/villageois.js) ; null sans villageois
     villageois: villageoisModele(),
     bac: bacModele(), // (le bac du port, fiche I1c : js/carte/ferme/bac.js)
     charretteVillage: charretteModele(), // (la charrette du village et les rails, fiche I2b : js/carte/ferme/charrette-village.js)
@@ -675,7 +672,7 @@ export function stageModel() {
     foyer: foyerPorte(),
     // (fiche I2, le portage : la brouette devant le personnage à pied, la charrette attelée au cheval en selle, quand
     // quelque chose est chargé ; js/carte/portage.js)
-    portage: villageActif(state) && volumeCharge(state) > 0 ? { vehicule: vehiculePortage(state), charge: Object.keys(chargeDe(state)).length } : null,
+    portage: volumeCharge(state) > 0 ? { vehicule: vehiculePortage(state), charge: Object.keys(chargeDe(state)).length } : null,
     houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state) * cheminIci, galop: !!friandiseGalop(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? semables() : null, engraissables: engraisMode && !buildMode ? casesEngraissables(state) : null,   // (l'engrais pris en main, js/ui/compost.js) serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
@@ -715,14 +712,13 @@ function meubleDe(sorte, tile, etage = false) {
 // Le nom écrit sur l'enseigne d'un commerce (fiche I5a) : celui du commerce dont c'est l'enseigne, sinon le nom de sa
 // sorte (« La forge »).
 function nomEnseigne(b, tile) {
-  if (!villageActif(state)) return '';
   const c = Number.isInteger(tile) ? commercesOuverts(state).find((x) => { const l = localDe(state, x); return l && l.enseigne === tile; }) : null;
   return c ? nomCommerce(state, c) : ((defCommerce(b.enseigneCommerce) || {}).nom || '');
 }
 
 // Les lettres de l'enseigne d'un commerce (I8a : une couleur débloquée, choisie dans sa fenêtre), ou null.
 function lettresEnseigne(tile) {
-  if (!villageActif(state) || !Number.isInteger(tile)) return null;
+  if (!Number.isInteger(tile)) return null;
   const c = commercesOuverts(state).find((x) => { const l = localDe(state, x); return l && l.enseigne === tile; });
   return c ? lettresCommerce(state, c) : null;
 }
@@ -752,7 +748,7 @@ function dessinBloc(b, tile, sorte) {
   // (fiches I5a, I5b, I5c : l'établi d'un commerce ouvert qui a une image `ouvert` : la forge allumée, ses braises
   // rougeoient ; le four du boulanger, son feu ; le rouet de la mercerie, qui tourne ; chantier.js stepFires,
   // BLOCS_CARTE.commerces)
-  if (b.commerce && b.ouvert && Number.isInteger(tile) && villageActif(state) && commercesOuverts(state).some((c) => c.etabli === tile)) return b.ouvert;
+  if (b.commerce && b.ouvert && Number.isInteger(tile) && commercesOuverts(state).some((c) => c.etabli === tile)) return b.ouvert;
   // (fiche I8a : un bâtiment d'un projet du village, en chantier tant qu'il n'est pas fini ; js/engine/projets-village.js)
   if (b.projetVillage) return dessinProjet(state, sorte);
   if (b.bac) return (Number.isInteger(tile) && dessinBac(state, tile)) || `bac_${b.bac}_vide`;
@@ -1267,7 +1263,7 @@ function stageParcelle(id) {
 function mondeDeLaCarte() {
   const sol = solDuMonde(farmTerrain(state));
   // (fiche I2 : les ponts de planches posés s'ouvrent aussi ; le moteur lit ce sol pour bâtir dehors, dehors.js)
-  if (sol) sol.ouvertes = () => (villageActif(state) ? ouvertesAvecPonts() : casesOuvertesMonde(state));
+  if (sol) sol.ouvertes = () => (ouvertesAvecPonts());
   // (I9b : en ligne, une région que la page n'a pas encore se tire en direct pour rejouer un bloc posé dehors)
   poserSolDehors(sol, { repli: () => !!enLigne });
   return sol;
@@ -1374,17 +1370,16 @@ function horsFermeDit() {
   const t = Date.now();
   if (t - dernierMot > 3000) { dernierMot = t; notify('🌐 Le reste du monde t\'attend dans ta ferme solo : en ligne, on reste sur la ferme.'); }
 }
-// I9a : l'île partagée (le chantier allumé pour la partie du monde) : pas de borne, le personnage sort de la
+// I9a : l'île partagée : pas de borne, le personnage sort de la
 // ferme et la vue le suit ; ce qu'il voit lève SON brouillard (stageIciEnLigne). I9b : les gestes du dehors passent
 // par le monde (js/engine/frontiere.js COMMANDES_DEHORS, js/ui/en-ligne.js) : les pièces du monde se prennent (recolte :
 // la commande monde.recolter, js/ui/outils.js), on pêche, on pose des chemins.
 function enLigneSurLaFerme(options) {
   if (!enLigne) return options;
-  const ile = ilePartagee(state);
-  const o = { ...options, borne: ile ? null : farmTerrain(state).FERME || null, horsFerme: horsFermeDit };
+  const o = { ...options, borne: null, horsFerme: horsFermeDit };
   for (const k of MUETS_EN_LIGNE) if (o[k]) o[k] = () => null;
-  if (ile && o.ici) o.ici = stageIciEnLigne;
-  for (const k of REFUSES_EN_LIGNE) if (o[k] && !(ile && k === 'recolte')) o[k] = pasEnLigne;
+  if (o.ici) o.ici = stageIciEnLigne;
+  for (const k of REFUSES_EN_LIGNE) if (o[k] && k !== 'recolte') o[k] = pasEnLigne;
   return o;
 }
 

@@ -3,8 +3,7 @@
    Les réglages : data/village.json (VILLAGE.MIGRATION).
 
    Une partie d'avant (partieDAvant : elle n'a pas de port, state.port, que toute partie de l'île a dès sa naissance)
-   ouverte sur l'île (le réglage allumé ; pendant le chantier, aussi une partie d'essai : jeu.html?village=1, js/ui/storage.js
-   essayerSurLIle) passe sur l'île une fois, à son ouverture (state.js migrate : migrationIleDue, puis migrerVersLIle).
+   passe sur l'île une fois, à son ouverture (state.js migrate : migrationIleDue, puis migrerVersLIle).
    Rien de ce que le joueur a bâti, gagné ou noué ne se perd :
    - ce qui ne bouge pas : la ferme et tout ce qui y est bâti (ses chemins peints compris : ce n'est pas une terre
      vierge), l'inventaire, les pièces, le niveau, l'arbre des technologies, les bêtes, la famille, l'équipement, les
@@ -37,7 +36,7 @@
    ========================================================================== */
 
 import { DATA } from './catalog.js';
-import { nouveauDehors, nouveauPort, prenomsDuJeu, texteDuRecit, villageActif } from './village.js';
+import { nouveauDehors, nouveauPort, prenomsDuJeu, texteDuRecit } from './village.js';
 import { hache } from './ferme-generee.js';
 import { nouveauxNoms } from './noms.js';
 import { chroniqueDe, nouvelleChronique, noterChroniqueLe } from './chronique.js';
@@ -58,14 +57,14 @@ const ajouter = (o, k, n) => { if (n > 0 && DATA.OBJETS[k]) o[k] = (o[k] || 0) +
 /* ---------- quand ---------- */
 
 // Une partie d'avant l'île : elle n'a pas de port (toute partie de l'île en a un dès sa naissance : state.js
-// createInitialState, village.js allumerEssaiVillage ; et toute partie migrée).
+// createInitialState ; et toute partie migrée).
 export function partieDAvant(state) {
   return objet(state) && !objet(state.port);
 }
 
-// La partie doit-elle passer sur l'île maintenant ? (une partie d'avant, ouverte sur l'île)
+// La partie doit-elle passer sur l'île maintenant ? (une partie d'avant)
 export function migrationIleDue(state) {
-  return partieDAvant(state) && villageActif(state);
+  return partieDAvant(state);
 }
 
 /* ---------- les amis d'avant ---------- */
@@ -194,13 +193,10 @@ function resumerAvant(state, candidats) {
 
 /* ---------- la migration ---------- */
 
-// Passe la partie d'avant `state` sur l'île (une fois). `o.essai` : une partie d'essai (jeu.html?village=1) : elle le
-// devient (state.essais.village). → le bilan (state.retourIle), ou null (ce n'est pas une partie d'avant, ou le
-// chantier n'est pas allumé pour elle).
-export function migrerVersLIle(state, o = {}) {
+// Passe la partie d'avant `state` sur l'île (une fois). → le bilan (state.retourIle), ou null (ce n'est pas une partie
+// d'avant).
+export function migrerVersLIle(state) {
   if (!partieDAvant(state)) return null;
-  if (o.essai) state.essais = { ...(objet(state.essais) ? state.essais : {}), village: true };
-  if (!villageActif(state)) return null;
   const jour = jourDe(state);
   const rendu = rembourser(state);
   const candidats = candidatsDAvant(state);
@@ -265,16 +261,11 @@ export function migrerVersLIle(state, o = {}) {
   return bilan;
 }
 
-// Une partie d'essai : la partie d'avant ouverte avec jeu.html?village=1 (js/ui/storage.js). → le bilan, ou null.
-export function essayerSurLIle(state) {
-  return migrerVersLIle(state, { essai: true });
-}
-
 /* ---------- le retour ---------- */
 
 // La fenêtre du retour à montrer, ou null.
 export function retourIle(state) {
-  return objet(state && state.retourIle) && villageActif(state) ? state.retourIle : null;
+  return objet(state && state.retourIle) ? state.retourIle : null;
 }
 
 const nomObjet = (k, n) => `${n} × ${DATA.OBJETS[k] ? `${DATA.OBJETS[k].icone || ''} ${DATA.OBJETS[k].nom}`.trim() : k}`;

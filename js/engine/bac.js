@@ -42,14 +42,13 @@
    la page recharge la scène.
 
    `o.sansPresence` : le joueur automatique (bot.js), qui n'a pas de carte, commerce sans case (port.js).
-   Le chantier éteint (villageActif), rien ici ne se lit ni ne s'écrit.
    ========================================================================== */
 
 import { DATA, prixIle } from './catalog.js';
 import { EPS, mulberry32 } from './base.js';
 import { canPay, fail, NO_COINS, pay } from './devices.js';
 import { earn } from './compta.js';
-import { nouveauPort, villageActif } from './village.js';
+import { nouveauPort } from './village.js';
 import { clockHours, nightActive } from './clock.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
@@ -101,7 +100,7 @@ const heure = (state) => clockHours(state);
 
 // Le bac est-il à quai en ce moment ? (un jour de bac, de HEURES[0] à HEURES[1] h, de jour)
 export function bacAQuai(state) {
-  if (!villageActif(state) || nightActive(state) || !jourDeBac(state)) return false;
+  if (nightActive(state) || !jourDeBac(state)) return false;
   const h = heure(state), [a, b] = B().HEURES;
   return h + EPS >= a && h < b - EPS;
 }
@@ -152,9 +151,8 @@ export function reparerPort(p, jour = 1) {
   };
 }
 
-// Le port de la partie (créé s'il manque : une partie d'essai d'avant la fiche I1c), ou null le chantier éteint.
+// Le port de la partie (créé s'il manque : une partie d'essai d'avant la fiche I1c).
 export function portDe(state) {
-  if (!villageActif(state)) return null;
   if (!objet(state.port)) state.port = nouveauPort(jourDe(state));
   const p = state.port;
   if (!Array.isArray(p.commandes) || !Array.isArray(p.imports) || !objet(p.vendu) || !objet(p.chantier) || !Array.isArray(p.avis)) {
@@ -217,7 +215,7 @@ function arriveeDuBac(state, p, jour, tirer) {
 
 // Ce que la page doit dire au joueur : [{ quoi: 'bac', jour, livres, rendus, commandes, manquees }] ; retirés.
 export function prendreAvisBac(state) {
-  const p = villageActif(state) && objet(state.port) ? state.port : null;
+  const p = objet(state.port) ? state.port : null;
   if (!p || !Array.isArray(p.avis) || !p.avis.length) return [];
   const out = p.avis;
   p.avis = [];
@@ -238,7 +236,7 @@ export function noterVenteBac(state, item, n) {
 
 // Les caisses sur le quai : une par BAC.CAISSE volumes vendus depuis le dernier départ, CAISSES_MAX au plus.
 export function caissesAQuai(state) {
-  const p = villageActif(state) && objet(state.port) ? state.port : null;
+  const p = objet(state.port) ? state.port : null;
   if (!p || !objet(p.vendu)) return 0;
   const vol = Object.entries(p.vendu).reduce((t, [k, n]) => t + n * volumeDe(k), 0);
   return vol > 0 ? Math.min(Math.max(1, Number(B().CAISSES_MAX) || 1), Math.ceil(vol / Math.max(1, Number(B().CAISSE) || 1))) : 0;

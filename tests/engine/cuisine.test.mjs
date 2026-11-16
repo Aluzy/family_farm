@@ -20,7 +20,7 @@ import {
   waterCostFor, wheatForHens, wheatTotal, prixIle, roundPct, encaisserVente,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, avecVillage, construireFrigo, atelier, AVANT_DEMENAGEMENT, boite, coldRoom, farm, fillSheep,
+  affamer, assert, assertEqual, construireFrigo, atelier, AVANT_DEMENAGEMENT, boite, coldRoom, farm, fillSheep,
   garden, kwh, matin, migreAvant, ml, pature, plantRipe, ranch, reach, runFor, setInv, sleepOnce,
   test,
 } from './aide.mjs';
@@ -293,9 +293,10 @@ test('Lot 13 : farine et pain se vendent deux fois leur ancien prix', () => {
   const s = atelier();
   setInv(s, { farine: 3, pain: 2 });
   const avant = s.pieces;
-  assertEqual([sellItem(s, 'farine', 3).gain, sellItem(s, 'pain', 2).gain], [6, 16]);
-  assertEqual(s.pieces, avant + 22);
-  assertEqual(buyPrice(garden(), 'farine'), 3, 'prix d\'achat = nouveau prix de vente × coefficient (2 × 120 % = 2,4 → 3)');
+  // (une partie vend au prix de l'île, fiche I4 : prixIle ; le prix écrit reste celui des données)
+  assertEqual([sellItem(s, 'farine', 3).gain, sellItem(s, 'pain', 2).gain], [3 * prixIle('farine'), 2 * prixIle('pain')]);
+  assertEqual(s.pieces, avant + 3 * prixIle('farine') + 2 * prixIle('pain'));
+  assertEqual(buyPrice(garden(), 'farine'), Math.ceil(prixIle('farine') * 1.2), 'prix d\'achat = prix de vente × coefficient (120 %, arrondi au-dessus)');
 });
 
 test('les plats se gardent 6 nuits (le pain 7) ; la farine et l\'huile ne périment pas', () => {
@@ -1303,16 +1304,14 @@ test('onglet Livre de recette : ouvert par le Four, jamais avant', () => {
   assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir', 'recettes']);
 });
 
-test('plats et ingrédients se vendent au Marché au prix fixe', () => {
+test('plats et ingrédients se vendent au prix de l\'île', () => {
   const s = atelier();
   setInv(s, { ragout: 2, farine: 3, huile: 1 });
   const before = s.pieces;
-  // Lot 12 : ragoût à 36 (ingrédients doublés). Lot 13 : farine à 2 (doublée) ;
-  // l'huile garde son prix (4).
-  assertEqual(sellItem(s, 'ragout', 2).gain, 72);
-  assertEqual(sellItem(s, 'farine', 3).gain, 6);
-  assertEqual(sellItem(s, 'huile', 1).gain, 4);
-  assertEqual(s.pieces, before + 82);
+  // (au prix de l'île, fiche I4 : prixIle)
+  const P = [2 * prixIle('ragout'), 3 * prixIle('farine'), prixIle('huile')];
+  assertEqual([sellItem(s, 'ragout', 2).gain, sellItem(s, 'farine', 3).gain, sellItem(s, 'huile', 1).gain], P);
+  assertEqual(s.pieces, before + P[0] + P[1] + P[2]);
 });
 
 test('mode test Lot 5 : stations gratuites, +10 farines, +10 huiles, +20 œufs, moulin usé', () => {
@@ -1413,17 +1412,11 @@ test('I4 : sur l\'île, les plats gardent leurs coefficients, sur les prix de l\
   assertEqual([DATA.OBJETS.farine.prix, DATA.OBJETS.pain.prix], [2, 8], 'les prix écrits');
 });
 
-test('I4 : la vente au prix de l\'île le réglage allumé, au prix écrit éteint', () => {
-  avecVillage(() => {
-    const s = createInitialState();
-    assertEqual(sellPrice('pain', s), prixIle('pain'), 'allumé : le prix de l\'île');
-    const avant = s.pieces;
-    encaisserVente(s, 'pain', 2);
-    assertEqual(s.pieces - avant, 2 * prixIle('pain'), 'la vente encaisse le prix de l\'île');
-  });
-  avecVillage(() => {
-    const s = createInitialState();
-    assertEqual(sellPrice('pain', s), DATA.OBJETS.pain.prix, 'éteint : le prix écrit');
-    assertEqual(sellPrice('pain'), DATA.OBJETS.pain.prix, 'sans partie : le prix écrit');
-  }, false);
+test('I4 : la vente au prix de l\'île', () => {
+  const s = createInitialState();
+  assertEqual(sellPrice('pain', s), prixIle('pain'), 'le prix de l\'île');
+  const avant = s.pieces;
+  encaisserVente(s, 'pain', 2);
+  assertEqual(s.pieces - avant, 2 * prixIle('pain'), 'la vente encaisse le prix de l\'île');
+  assertEqual(sellPrice('pain'), DATA.OBJETS.pain.prix, 'sans partie : le prix écrit');
 });

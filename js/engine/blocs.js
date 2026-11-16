@@ -26,7 +26,6 @@ import { chainesReprise } from './chaines.js';
 import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
-import { villageActif } from './village.js';
 import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
@@ -640,8 +639,7 @@ export function pieceDe(state, tile) {
 let conseilsCle = null, conseilsListe = null;
 export function conseilsPieces(state) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR, max = DATA.ATELIER.PIECE_MAX;
-  const village = villageActif(state);
-  const cle = W + ':' + village + ':' + JSON.stringify(B);
+  const cle = W + ':' + JSON.stringify(B);
   if (cle === conseilsCle) return conseilsListe;
   const F = casesQuiFerment(B), ferme = (t, plus) => t === plus || F.has(t);
   const voisins = (i) => { const c = i % W, r = Math.floor(i / W); return [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, r > 0 ? i - W : -1, r < H - 1 ? i + W : -1]; };
@@ -704,7 +702,7 @@ export function conseilsPieces(state) {
   const sansPorte = enceintes.filter((e) => !portesDe(e).length).map((e) => e.cases.sort((x, y) => x - y));
   const NOMS = { maison: 'Maison', poulailler: 'Le Poulailler', paturage: 'L\'Étable', serre: 'La Serre', silo: 'Le Silo', moulin: 'Le Moulin', ecurie: 'L\'Écurie', commerce: 'Un commerce : l\'établi et le comptoir, l\'enseigne dehors' };
   // (fiche I3a : une maison marquée d'une boîte aux lettres est celle d'un villageois)
-  const marquees = village ? new Set(maisonsMarquees(state).map((m) => m.piece)) : new Set();
+  const marquees = new Set(maisonsMarquees(state).map((m) => m.piece));
   const pieces = piecesCloses(state).map((p) => {
     const genre = genreDe(B, p);
     const lits = p.paillasses.length;
@@ -779,12 +777,10 @@ export function dansPiece(state, tile) {
 // ne compte plus : l'ordre des pièces revient.
 export function couchages(state) {
   let l = piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
-  // (le chantier « l'île à bâtir », fiche I3a : les lits d'une maison marquée d'une boîte aux lettres, celle d'un
-  // villageois, passent après les autres ; la famille n'y dort que s'il ne lui reste pas d'autre lit)
-  if (villageActif(state)) {
-    const reserves = new Set(maisonsMarquees(state).flatMap((m) => m.piece.paillasses));
-    if (reserves.size) l = l.filter((c) => !reserves.has(c)).concat(l.filter((c) => reserves.has(c)));
-  }
+  // (fiche I3a : les lits d'une maison marquée d'une boîte aux lettres, celle d'un villageois, passent après les
+  // autres ; la famille n'y dort que s'il ne lui reste pas d'autre lit)
+  const reserves = new Set(maisonsMarquees(state).flatMap((m) => m.piece.paillasses));
+  if (reserves.size) l = l.filter((c) => !reserves.has(c)).concat(l.filter((c) => reserves.has(c)));
   const k = l.indexOf(state.litPrincipal);
   if (k > 0) [l[0], l[k]] = [l[k], l[0]];
   return l;
@@ -981,7 +977,6 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   }
   // (fiche I2b : les rails, une couche à part, sur la ferme comme dehors : dehors.js railsStatus)
   if (s.rails) {
-    if (!villageActif(state)) return { ok: false, raison: 'Les rails sont de l\'île.' };
     if (horsFerme(T, tile)) return railsStatus(state, tile);
     const ch = T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
     const bloque = arbreSurCase(state, tile) || foretSurCase(state, tile) ? 'Un arbre pousse ici.'
@@ -990,7 +985,7 @@ export function poseStatus(state, sorte, tile, sens = 0) {
     return railsStatus(state, tile, { couverte: casesCouvertes(state).has(tile), piece: !!dansPiece(state, tile), bloque });
   }
   // (le chantier « l'île à bâtir », fiche I2 : hors de la ferme, sur l'île, les blocs de VILLAGE.DEHORS : dehors.js)
-  if (villageActif(state) && horsFerme(T, tile)) return poseDehorsStatus(state, sorte, tile);
+  if (horsFerme(T, tile)) return poseDehorsStatus(state, sorte, tile);
   // le même mur posé sur un mur : il se rehausse d'un bloc (jusqu'à HAUTEUR_MAX)
   if (s.mur && blocAt(state, tile) === sorte) {
     return hauteurMur(state, tile) < DATA.ATELIER.HAUTEUR_MAX ? { ok: true } : { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
@@ -1004,8 +999,6 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (changeMur(blocAt(state, tile), sorte)) {
     return hauteurMur(state, tile) > 1 ? { ok: false, raison: 'Ce mur est rehaussé : reprends d\'abord ses blocs du dessus.' } : { ok: true };
   }
-  // (fiche I3e : sur l'île, une boîte posée après le réfrigérateur peut devenir le garde-manger commun du village)
-  if (s.boite && state.frigo && state.frigo.construit && !villageActif(state)) return { ok: false, raison: 'La famille mange au réfrigérateur : la boîte à nourriture ne sert plus.' };
   if (s.unique && dejaPose(state, sorte)) return { ok: false, raison: `Il y a déjà ${s.nom.toLowerCase() === 'citerne' ? 'une' : 'un'} ${s.nom.toLowerCase()} sur la ferme.` };
   // la station du robot : quand il est là (récolte ou semis automatiques)
   if (s.robot && !robotOn(state)) return { ok: false, raison: 'Il faut d\'abord le robot : la récolte ou le semis automatiques (arbre des technologies).' };
@@ -1183,7 +1176,7 @@ function poser(state, sorte, tile, sens = 0) {
   if (s.sur) {
     if (!state.blocsDessus || typeof state.blocsDessus !== 'object') state.blocsDessus = {};
     state.blocsDessus[tile] = sorte;
-  } else if (s.sol && sorte === 'chemin' && villageActif(state) && horsFerme(farmTerrain(state), tile)) {
+  } else if (s.sol && sorte === 'chemin' && horsFerme(farmTerrain(state), tile)) {
     // (hors de la ferme, un chemin possédé : dans ses segments, js/engine/dehors.js)
     poserCheminDehors(state, tile);
     return { ok: true, sorte, case: tile };
@@ -1227,7 +1220,7 @@ function poser(state, sorte, tile, sens = 0) {
 export function reprendreBloc(state, tile, opts) {
   // (une case couverte par un meuble, un bloc large : lui)
   // (fiche I2b : des rails sur la case, par-dessus le chemin ou le pont : eux d'abord)
-  if (!blocDessus(state, tile) && villageActif(state) && railsSur(state, tile)) {
+  if (!blocDessus(state, tile) && railsSur(state, tile)) {
     retirerRails(state, tile);
     addItem(state, sorteDe('rails').objet, 1);
     return { ok: true, sorte: 'rails', case: tile };

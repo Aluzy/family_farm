@@ -2,7 +2,6 @@ import { DATA, prixIle } from './catalog.js';
 import { fail } from './devices.js';
 import { earn } from './compta.js';
 import { clockHours, nightActive } from './clock.js';
-import { villageActif } from './village.js';
 import { mulberry32 } from './base.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
@@ -48,8 +47,8 @@ import { blocBloque, casesCouvertes, memoEnLot } from './blocs.js';
    Ce que la partie garde (format 93) : v.panier ({ objet: n }), v.reste (pièces), v.achat ({ jour, objet } : son achat
    du jour), v.achats ([{ jour, objet, prix, ou ('etal' | 'bac') }] : les ACHATS_GARDES derniers), v.affaires ({ objet:
    n } : ses vêtements et ses meubles), v.provisions ({ objet: n } : ce qu'il s'est acheté à manger), v.commande ({ objet, n, prix (pour tout), arrive } ou null), v.plaisir ({ jour, bonheur } ou
-   null), v.vente ({ jour, pieces } : la dernière vente de son panier) ; state.etal. Des entiers partout. Le chantier
-   éteint (villageActif), rien ici ne se lit ni ne s'écrit. Les tests : tests/engine/village-bourse.test.mjs. */
+   null), v.vente ({ jour, pieces } : la dernière vente de son panier) ; state.etal. Des entiers partout.
+   Les tests : tests/engine/village-bourse.test.mjs. */
 
 const VG = () => DATA.VILLAGE || {};
 const BO = () => VG().BOURSE || {};
@@ -93,7 +92,7 @@ export function partDue(J) {
 // La nuit (villageoisNuit) : le villageois `v` garde sa part de la journée `J` (son entrée du journal). → la valeur
 // prise (J.part), un entier.
 export function prendrePart(state, v, J) {
-  if (!villageActif(state) || !v || !J) return 0;
+  if (!v || !J) return 0;
   if (!objet(v.panier)) v.panier = {};
   const reste = Math.max(0, entier(v.reste));
   const { du: part } = partDue(J);
@@ -166,7 +165,6 @@ function noterAchat(v, x) {
 // pieces }), commandes ({ id: objet }), livrees ({ id: objet }) }.
 export function vendrePaniers(state, jour, vendu = null) {
   const out = { ventes: {}, commandes: {}, livrees: {} };
-  if (!villageActif(state)) return out;
   const I = BO().IMPORT || {}, per = Math.max(1, Math.floor(Number(DATA.PORT && DATA.PORT.BAC && DATA.PORT.BAC.PERIODE) || 1));
   for (const v of villageoisDe(state)) {
     if (v.enfant) continue;
@@ -240,7 +238,7 @@ export function enVenteAlEtal(state) {
 
 // L'étal a-t-il quelque chose en vente (la scène : l'étal garni) ?
 export function etalGarni(state) {
-  return villageActif(state) && enVenteAlEtal(state).length > 0;
+  return enVenteAlEtal(state).length > 0;
 }
 
 // Ce qui peut se mettre en vente : ce qui se vend sur l'île (un prix, ni invendable ni objet du chantier), sauf les
@@ -252,7 +250,6 @@ export function vendableALEtal(o) {
 
 // Le joueur met `n` unités de `o` en vente (de l'inventaire, puis du réfrigérateur). → { ok, n } ou le refus.
 export function mettreALEtal(state, o, n = 1) {
-  if (!villageActif(state)) return fail('Pas d\'étal ici.');
   if (caseEtal(state) === null) return fail('Pose d\'abord ton étal (Atelier), dehors.');
   if (!vendableALEtal(o)) return fail(`${nom(o)} ne se vend pas à l'étal.`);
   const E = etalDe(state), places = Math.max(1, entier(ET().PLACES) || 6), max = Math.max(1, entier(ET().QUANTITE) || 20);
@@ -310,7 +307,7 @@ let memoCle = null, memoAchats = null;
 // le plus cher qu'il peut payer) ; ACHATS par jour au plus (un). Rien sans étal posé.
 export function achatsDuJour(state, jour = jourDe(state)) {
   const out = new Map();
-  if (!villageActif(state) || caseEtal(state) === null) return out;
+  if (caseEtal(state) === null) return out;
   const V = [...villageoisDe(state)].sort((a, b) => (a.id < b.id ? -1 : 1));
   const stock = { ...((objet(state.etal) && state.etal.objets) || {}) };
   const cle = JSON.stringify([jour, stock, V.map((v) => [v.id, entier(v.bourse), !!v.enfant, !!v.repos, v.accueil || 0, v.maison ?? null, v.affaires || 0, v.achat || 0, v.gouts || 0])]);
@@ -403,7 +400,7 @@ function creneauEtal(state, id) {
 
 // À chaque pas de la ferme (energy.js) : qui est à l'étal depuis la moitié de son créneau y achète. → les achats faits.
 export function avancerAchats(state) {
-  if (!villageActif(state) || nightActive(state) || caseEtal(state) === null || !Array.isArray(state.villageois) || !state.villageois.length) return 0;
+  if (nightActive(state) || caseEtal(state) === null || !Array.isArray(state.villageois) || !state.villageois.length) return 0;
   const h = clockHours(state);
   let n = 0;
   for (const [id, a] of achatsDuJour(state)) {
@@ -417,7 +414,7 @@ export function avancerAchats(state) {
 // La nuit (runNight, avant la nuit des villageois) : l'achat du jour qu'on n'a pas vu (la page fermée) se fait. → les
 // achats faits.
 export function achatsNuit(state) {
-  if (!villageActif(state) || caseEtal(state) === null) return 0;
+  if (caseEtal(state) === null) return 0;
   let n = 0;
   for (const [id, a] of achatsDuJour(state)) if (!a.fait && creneauEtal(state, id) && acheterALEtal(state, id, a.objet).ok) n++;
   return n;
@@ -457,7 +454,7 @@ export function plaisirDuJour(v, jour) {
 
 // Ce que la page doit dire (un achat à l'étal) : [{ id, objet, prix, envie }] ; retirés.
 export function prendreAvisEtal(state) {
-  if (!villageActif(state) || !objet(state.etal) || !Array.isArray(state.etal.avis) || !state.etal.avis.length) return [];
+  if (!objet(state.etal) || !Array.isArray(state.etal.avis) || !state.etal.avis.length) return [];
   const out = state.etal.avis;
   state.etal.avis = [];
   return out;

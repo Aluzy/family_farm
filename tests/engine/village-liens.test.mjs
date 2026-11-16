@@ -1,6 +1,5 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : les liens entre villageois (fiche I6b ; docs/ile.md ; js/engine/liens.js).
-   Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
    - l'affinité : gardée (une demi-matrice), elle monte chaque nuit selon ce qu'ils ont vécu (l'île, le voisinage, le
      même poste, la même table, une sortie, un repas du joueur, le même toit, un repas apporté) et ne baisse jamais ;
      au-delà de LENT, moitié ; une paire sans valeur part de l'estimation d'I3b+ ; les paliers nommés ;
@@ -11,7 +10,7 @@
    - le foyer à deux (proposé, dans une maison à deux lits ; chacun son lit ; leur ancienne maison se libère) ;
      l'enfant (un lit d'enfant, le prochain bac ; il ne travaille pas, il joue sur la place) ;
    - les propos (voisin, lien_ami, visite_*, entraide_*, foyer) ; la fiche (liensVillageois, quiEstLie) ;
-   - le déterminisme ; la sauvegarde (v91 → v92, réparée) ; les commandes ; éteint : rien.
+   - le déterminisme ; la sauvegarde (v91 → v92, réparée) ; les commandes.
    Lancer seul : node tests/run-tests.mjs village-liens.
    ========================================================================== */
 
@@ -22,7 +21,7 @@ import {
   poserAffinite, poserBloc, quiEstLie, reparerLiens, runNight, STATE_VERSION, sujetsVillageois, actionsDuJour, testMaisonVillageois,
   verifierMaisons, villageoisNuit, voisinsDe,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const LI = DATA.VILLAGE.LIENS, P = LI.PALIERS;
@@ -364,7 +363,7 @@ test('l\'enfant : un lit d\'enfant chez un foyer, le joueur le propose, il vient
   assert(sujetsVillageois(s, a).some((x) => x.id === 'enfant'), 'les parents en parlent');
 });
 
-/* ---------- le déterminisme, la sauvegarde, les commandes, éteint ---------- */
+/* ---------- le déterminisme, la sauvegarde, les commandes ---------- */
 
 test('déterministe : la même partie, les mêmes nuits, les mêmes liens et la même journée', () => {
   const { s } = ile(10, 5);
@@ -410,15 +409,4 @@ test('la sauvegarde : v91 → v92 (les liens réparés ; sans villageois, rien) 
   assertEqual(a.maison, b.maison);
   assert(!executerCommande(s, { type: 'villageois.enfant', args: { foyer: foyerDe(s, a.id).id } }).ok, 'sans lit d\'enfant');
   void c;
-});
-
-test('éteint : ni liens, ni nuit des liens, ni journée', () => {
-  avecVillage(() => {
-    const s = partie(13);
-    assertEqual(liensNuit(s), null);
-    assertEqual(liensFinDeNuit(s), null);
-    assert(!('liens' in s), 'pas de state.liens');
-    runNight(s);
-    assert(!('liens' in s), 'toujours rien');
-  }, false);
 });

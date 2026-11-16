@@ -11,7 +11,6 @@ import { asleep } from '../engine/night.js';
 import { habitantsDe } from '../engine/habitants.js';
 import { annonceDemande, demandeDe, demandesDe, demandesOuvertes, rendreDemande, texteDemande } from '../engine/demandes.js';
 import { HAMEAU_VILLAGE } from '../engine/amitie.js';
-import { villageActif } from '../engine/village.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { state } from './store.js';
@@ -57,7 +56,7 @@ function ouvrirCarnet() {
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="demandes-titre">📜 Les demandes</h2>
-    <p class="muted">${villageActif(state) ? 'Tes voisins te demandent un coup de main.' : 'Des habitants des hameaux te demandent un coup de main.'} Rien ne presse : une demande que tu ne fais pas s'oublie, sans rien coûter. Pour en rendre une, va voir la personne : sa bulle › 🎁 Offrir › Donner.</p>
+    <p class="muted">Tes voisins te demandent un coup de main. Rien ne presse : une demande que tu ne fais pas s'oublie, sans rien coûter. Pour en rendre une, va voir la personne : sa bulle › 🎁 Offrir › Donner.</p>
     <ul class="journal-monde">${lignes}</ul>
     <p class="muted">Demandes rendues : ${demandesDe(state).faites}.</p>`, { labelledBy: 'demandes-titre' });
 }

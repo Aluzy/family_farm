@@ -14,9 +14,8 @@ import { genererMonde } from './monde.js';
 import { elementsDuMonde } from './monde-gen.js';
 import { etatCaleche, heureTournee, tourneeDuPlan, vueDeSens } from './caleche-tournee.js';
 import { recitPour } from './recit-aiguillage.js';
-import { villageActif } from './village.js';
 
-// (fiche I7c : le récit passe par l'aiguillage ; le chantier allumé, la calèche ne commerce plus, rien n'est noté)
+// (fiche I7c : le récit passe par l'aiguillage ; la calèche ne commerce plus, rien n'est noté)
 const nomCocher = (state, majuscule = true) => recitPour(state).nomCocher(state, majuscule);
 const noterFait = (state, fait) => recitPour(state).noterFait(state, fait);
 
@@ -69,7 +68,7 @@ export const CALECHE = DATA.CALECHE;
 // Le chantier « l'île à bâtir » allumé (fiche I1b) : la calèche roule encore (jusqu'à la fiche I7e), mais ne
 // commerce plus ; on vend et on achète au port (port.js). Ce qu'elle répond.
 export const CALECHE_AU_PORT = 'La calèche ne commerce plus : on vend et on achète au port, sous la halle, au bout du chemin.';
-const auPort = (state) => villageActif(state);
+const auPort = () => true;
 
 /* ---------- la tournée (caleche-tournee.js : le tour, la position à toute heure) ---------- */
 
@@ -95,10 +94,8 @@ export function poserTournee(graine, tour) {
 
 // La tournée de la partie, ou null (pas encore là ; le chantier « l'île à bâtir » allumé, fiche I7e : jamais, l'île
 // n'a ni hameau, ni boucle, ni calèche).
-export function tourneeDe(state) {
-  if (villageActif(state)) return null;
-  const g = farmSeed(state);
-  return g === null ? null : tournees.get(g) || null;
+export function tourneeDe() {
+  return null;
 }
 
 /* ---------- où elle est ---------- */

@@ -38,7 +38,6 @@ const chrono = (f) => { const t = performance.now(); const r = f(); return [r, p
 let ok = true;
 
 // 1. l'île du joueur automatique
-E.DATA.VILLAGE.ACTIF = true;
 const s = E.createNewGame(graine, { nom: 'Simulation' });
 E.commencerObjectifs(s);
 let fait = 0;
@@ -65,30 +64,30 @@ for (const n of moments) {
   console.log(`  sa restauration : ${msRestaurer.toFixed(0)} ms (${rr.ok ? 'la partie revient' : rr.erreur})`);
 }
 
-// 2. un monde d'avant : la partie récente avancée, mise en ligne le chantier éteint, puis migrée
-E.DATA.VILLAGE.ACTIF = false;
+// 2. un monde d'avant : la partie récente avancée, mise en ligne, ramenée à une ferme seule (sans port) au format 103,
+// puis migrée
 const vieille = JSON.parse(readFileSync(join(ROOT, 'tests', 'engine', 'anciennes-parties.json'), 'utf8')).recente_avancee;
 const sql = baseSql();
 const r = new MondeRegistre(sql);
 const c = r.creer({ proprietaire: 'proprio', nom: 'Alex', partie: vieille });
 if (!c.ok) { console.log(`le monde d'avant : ${c.erreur}`); process.exit(1); }
 const brute = JSON.parse(r.un('SELECT json FROM instantane WHERE rev = 0').json);
-for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge']) delete brute[k];
+for (const k of ['charges', 'amities', 'sacs', 'energies', 'horloge', 'port', 'dehors', 'palier', 'noms', 'chronique']) delete brute[k];
 brute.version = 103;
 r.faire('UPDATE instantane SET json = ? WHERE rev = 0', JSON.stringify(brute));
 r.faire('DELETE FROM meta WHERE cle = ?', 'format');
 const b = bucket();
-const d = new Monde({ storage: { sql }, id: { toString: () => 'vieux' }, getWebSockets: () => [], getTags: () => [], waitUntil: (p) => p }, { SESSIONS: b, ILE_ESSAI: '1' });
+const d = new Monde({ storage: { sql }, id: { toString: () => 'vieux' }, getWebSockets: () => [], getTags: () => [], waitUntil: (p) => p }, { SESSIONS: b });
 const t0 = performance.now();
 await d.charger();
 const msMigrer = performance.now() - t0;
 const w = d.registre.charger(), p = E.poidsDuMonde(w);
 const L = await d.sauvegardes().liste();
 const avant = JSON.stringify(brute).length;
-console.log(`\nUn monde d'avant (anciennes-parties.json, recente_avancee : jour ${w.day}, une ferme seule au format 103), ouvert par le serveur d'aujourd'hui (un Durable Object d'essai)`);
+console.log(`\nUn monde d'avant (anciennes-parties.json, recente_avancee : jour ${w.day}, une ferme seule au format 103), ouvert par le serveur d'aujourd'hui`);
 console.log(`  la migration : ${msMigrer.toFixed(0)} ms (le format, la ferme sur l'île, le lieu du port, le tronçon posé, la sauvegarde d'avant)`);
-console.log(`  la partie : ${ko(avant)} Ko avant, ${ko(p.partie)} Ko après (dont ${ko(p.dehors)} Ko hors de la ferme : le tronçon) ; une île : ${E.ilePartagee(w)}, son port : ${!!(w.port && w.port.lieu)}, villageois : ${(w.villageois || []).length}`);
+console.log(`  la partie : ${ko(avant)} Ko avant, ${ko(p.partie)} Ko après (dont ${ko(p.dehors)} Ko hors de la ferme : le tronçon) ; une île : ${!!w.mondePartage}, son port : ${!!(w.port && w.port.lieu)}, villageois : ${(w.villageois || []).length}`);
 console.log(`  les sauvegardes du monde : ${L.map((x) => `${x.raison} (${ko(x.taille)} Ko)`).join(', ')}`);
-ok = ok && E.ilePartagee(w) && L.some((x) => x.raison === 'avant-ile');
+ok = ok && !!(w.port && w.port.lieu) && L.some((x) => x.raison === 'avant-ile');
 console.log(`\n${ok ? 'Tout tient.' : 'Quelque chose ne tient pas.'}`);
 process.exit(ok ? 0 : 1);

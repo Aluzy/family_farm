@@ -1,6 +1,5 @@
 /* ==========================================================================
-   Tests du chantier « l'île à bâtir » : le port sur l'île (docs/ile.md, fiche I1a). Comme tous les fichiers
-   tests/engine/village-*.test.mjs, ils tournent avec VILLAGE.ACTIF forcé à true (tests/engine/aide.mjs).
+   Tests du chantier « l'île à bâtir » : le port sur l'île (docs/ile.md, fiche I1a).
    Joués en quatre parties, en parallèle (village-port-<k>.test.mjs posent globalThis.PARTIE_TESTS = [k, n]) :
    seuls les tests de rang k modulo n se jouent dans la partie k. Le lot de 50 graines y est réparti.
    Lancer : node tests/run-tests.mjs village-port
@@ -11,7 +10,7 @@ import {
   BIOME, caseMarchable, champsDuMonde, choisirBut, contenuPort, contexteSol, createNewGame, DATA, elementsDuMonde, elementsSol, etatBoussole,
   farmTerrain, genererMonde, lieuxDeLaCarte, niveauPort, planDuMonde, plansDesHameaux, releve, solDirect,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage } from './aide.mjs';
+import { assert, assertEqual } from './aide.mjs';
 
 const PARTIE = globalThis.PARTIE_TESTS;
 let rangTest = 0;
@@ -108,17 +107,6 @@ test('le port ne déplace rien d\'autre dans le plan', () => {
   assertEqual([...avec.eaux], [...sans.eaux], 'ni les eaux');
 });
 
-test('le réglage éteint : le monde d\'avant, sans port', () => {
-  avecVillage(() => {
-    const s = createNewGame(41);
-    assertEqual(niveauPort(s), 0, 'pas de port');
-    const T = farmTerrain(s);
-    assert(T === genererMonde(s.carte.graine).terrain, 'le terrain du monde d\'avant, le même objet');
-    assertEqual(T.MONDE.cadre.PORT, undefined, 'pas de port dans le cadre');
-    assertEqual(planDuMonde(s.carte.graine).lieux.port, undefined, 'pas de port dans le plan');
-  }, false);
-});
-
 test('le réglage allumé : la partie a son port, le même terrain', () => {
   const s = createNewGame(42);
   assertEqual(niveauPort(s), DATA.PORT.NIVEAU_DEPART, 'le niveau de départ');
@@ -173,5 +161,4 @@ test('le port est connu dès le départ : la carte du monde le montre, la bousso
   const b = etatBoussole(s, F.X + 2, F.Y + 2, lieux, null, T);
   assertEqual(b.sorte, 'port');
   assertEqual(b.x, (lieux.port.case % W) + 0.5);
-  avecVillage(() => assertEqual(lieuxDeLaCarte(s, { hameaux: [], peche: [] }, T).port, undefined, 'sans port, rien de plus'), false);
 });

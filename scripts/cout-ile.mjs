@@ -32,7 +32,6 @@ const GESTES = Number(opt('gestes', 6));
 const PARJOUR = Number(opt('parjour', 150));
 const JOURS = Number(opt('jours', 10));
 const GRAINE = opt('graine', '1');
-DATA.VILLAGE.ACTIF = true;   // (le chantier allumé : la partie est une île, son monde a l'horloge vivante)
 
 const cloner = (v) => JSON.parse(JSON.stringify(v));
 const ko = (n) => +(n / 1024).toFixed(1);

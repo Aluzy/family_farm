@@ -1,7 +1,6 @@
 import { DATA, prixIle, recipeOutput, recipeOutputQty } from './catalog.js';
 import { fail } from './devices.js';
 import { absoluteHours, clockHours, nightActive } from './clock.js';
-import { villageActif } from './village.js';
 import { farmTerrain } from './terrain.js';
 import { inventoryCounts, takeItem } from './inventory.js';
 import { canFeedHen, feedAllHens, hensToFeed, wheatTotal, woolReady, shear } from './animals.js';
@@ -235,7 +234,6 @@ export function signatureTaches(state) {
 // la journée du village les relit souvent)
 const postesMemo = new Map();
 export function postesDe(state, id, v = null) {
-  if (!villageActif(state)) return [];
   const def = tacheDef(id);
   if (!def) return [];
   const L = lieuxDuVillage(state);
@@ -365,7 +363,7 @@ function calculerPostes(state, id, v, def, L) {
 // enclos), un buisson ; une parcelle (son appui long ouvre déjà sa zone : les champs passent par la fiche).
 const arbresMemo = new WeakMap();
 export function tachesDuPoste(state, t) {
-  if (!villageActif(state) || !Number.isInteger(t)) return [];
+  if (!Number.isInteger(t)) return [];
   const T = farmTerrain(state), W = T.LARGEUR, B = state.blocs || {}, out = new Set();
   let parCase = arbresMemo.get(T);
   if (!parCase) {
@@ -460,7 +458,6 @@ export function tachesPour(state, id) {
 
 // Le joueur confie la tâche `tache` (TACHES.LISTE ; null : plus de tâche) au villageois `id`. → { ok, tache, manque }.
 export function attribuer(state, id, tache) {
-  if (!villageActif(state)) return fail('Le chantier de l\'île n\'est pas allumé.');
   const v = trouverVillageois(state, id);
   if (!v) return fail('Villageois inconnu.');
   if (tache !== null && tache !== '' && !tacheDef(tache)) return fail('Tâche inconnue.');
@@ -781,10 +778,10 @@ export function actionsDuJour(state, v) {
   // (fiche I5a : un artisan fait ses lots, pas plus : ni à deux ni avec une machine)
   if (def.commerce) { const c = commerceDuVillageois(state, v.id); return c ? lotsDuJour(c) : 0; }
   // (fiche I2b : un charretier fait les voyages de la charrette qui lui reviennent aujourd'hui, ni plus ni moins)
-  if (v.tache === 'navette' && villageActif(state)) return voyagesDuJour(state).voyages.filter((x) => x.charretier === v.id).length;
+  if (v.tache === 'navette') return voyagesDuJour(state).voyages.filter((x) => x.charretier === v.id).length;
   // (fiche I3e : la cuisine du village fait GARDE_MANGER.CUISINE.ACTIONS plats par jour)
   const base = v.tache === 'cuisine' && cuisineDuVillage(state) ? Math.max(1, Number(((DATA.VILLAGE.GARDE_MANGER || {}).CUISINE || {}).ACTIONS) || def.ACTIONS) : def.ACTIONS;
-  return base + (villageActif(state) ? travailADeux(state).get(v.id) || 0 : 0);
+  return base + (travailADeux(state).get(v.id) || 0);
 }
 
 // Combien d'actions il devrait avoir faites à l'heure `h` : ses actions du jour, à parts égales sur ses heures de
@@ -841,7 +838,7 @@ const derniers = new WeakMap();   // (la partie → l'heure absolue du dernier p
 // À chaque pas de la ferme (energy.js) : chacun fait les actions que l'heure lui doit. Rien le chantier éteint, sans
 // villageois au travail, la nuit. → les actions faites.
 export function avancerTaches(state) {
-  if (!villageActif(state) || !Array.isArray(state.villageois) || !state.villageois.length || nightActive(state)) return 0;
+  if (!Array.isArray(state.villageois) || !state.villageois.length || nightActive(state)) return 0;
   const t = absoluteHours(state);
   if (t - (derniers.get(state) ?? -Infinity) < 0.1) return 0;
   derniers.set(state, t);
@@ -857,9 +854,9 @@ export function avancerTaches(state) {
 
 // La nuit (runNight, avant villageoisNuit) : chacun fait ce qui reste de ses ACTIONS (une journée finie avant l'heure,
 // la page fermée, l'averse) ; sa journée de travail reste dans v.travail, que la nuit du villageois met dans son
-// journal (villageois.js, nuitDe). → { [id]: { tache, actions, produit } } ; null le chantier éteint ou sans tâche.
+// journal (villageois.js, nuitDe). → { [id]: { tache, actions, produit } } ; null sans tâche.
 export function tachesNuit(state) {
-  if (!villageActif(state) || !Array.isArray(state.villageois)) return null;
+  if (!Array.isArray(state.villageois)) return null;
   const out = {};
   // (fiche I2b : les voyages de la charrette qui restent, chacun vendu à son heure d'arrivée ; puis la ration du cheval du
   // village, notée au premier charretier du jour)
@@ -978,7 +975,7 @@ export function quiFaitQuoi(state) {
 // Fiche I3e : la cuisine du village fume-t-elle ? Un cuisinier y travaille à cette heure (un créneau de travail de sa
 // journée), le jour : la vapeur de la cuisinière (la scène : modèle.cuisineAllumee, js/ui/stage.js).
 export function cuisineVillageAllumee(state) {
-  if (!villageActif(state) || nightActive(state) || !cuisineDuVillage(state)) return false;
+  if (nightActive(state) || !cuisineDuVillage(state)) return false;
   const h = clockHours(state), J = journeeDuVillage(state);
   return villageoisDe(state).some((v) => v.tache === 'cuisine' && travailleAujourdhui(state, v)
     && (J.get(v.id) || []).some((x) => x.etat === 'travail' && h >= x.de && h < x.a));

@@ -1,5 +1,4 @@
 import { DATA } from './catalog.js';
-import { villageActif } from './village.js';
 
 /* ---------- les plants sauvages de l'île (le chantier « l'île à bâtir », fiche I7e) ----------
 
@@ -32,7 +31,7 @@ export function estSauvage(culture) {
 // La récolte de la culture `culture` (crops.js harvestPlot) : un plant sauvage récolté pour la première fois sur l'île
 // s'inscrit au catalogue d'import du port. → l'objet inscrit (son plant), ou null.
 export function recolteSauvage(state, culture) {
-  if (!estSauvage(culture) || !villageActif(state)) return null;
+  if (!estSauvage(culture)) return null;
   const p = state && state.port;
   if (!p || typeof p !== 'object') return null;
   if (!Array.isArray(p.sauvages)) p.sauvages = [];

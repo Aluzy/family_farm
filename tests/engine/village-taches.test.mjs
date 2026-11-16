@@ -1,6 +1,5 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : les tâches attribuées (docs/ile.md, fiche I3c ; js/engine/taches.js).
-   Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé à true.
    - chaque tâche produit ce que dit TACHES (ses ACTIONS, par les fonctions du joueur), dans les bornes du monde
      (l'arbre tombe et repousse, le quota de pêche du jour est celui du joueur) ; sans énergie, XP ni objectif du jour
      du joueur ;
@@ -19,7 +18,7 @@ import {
   maxStage, paroleVillageois, portDuMonde, postesDe, quiFaitQuoi, reprendreOutil, runNight, STATE_VERSION, tacheAttente, tacheDef,
   tacheManque, tachesDuPoste, tachesNuit, tachesPour, testBatir, testMaisonVillageois, tick, treeGone, villageoisDe, waterPlot,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const TA = DATA.TACHES;
@@ -311,7 +310,7 @@ test('la fiche : les tâches, celles qu\'il peut faire, ce qui manque, qui l\'a 
   assertEqual(tachesDuPoste(s, rive.case), [], 'l\'herbe de la rive : rien');
 });
 
-/* ---------- la sauvegarde, le joueur automatique, éteint ---------- */
+/* ---------- la sauvegarde, le joueur automatique ---------- */
 
 test('la sauvegarde : v88 → v89 ; la tâche et l\'outil gardés, une valeur abîmée remise à vide', () => {
   assert(STATE_VERSION >= 89, 'le format 89 ou plus');
@@ -344,15 +343,4 @@ test('le joueur automatique loge un villageois, lui confie une tâche et son out
   assert(v.tache, `une tâche : ${v.tache}`);
   assertEqual(tacheAttente(s, v), null, 'rien ne lui manque');
   if (tacheDef(v.tache).outil) assertEqual(v.outil, tacheDef(v.tache).outil, 'son outil');
-});
-
-test('éteint : ni tâche, ni travail, ni format qui change pour une partie neuve', () => {
-  avecVillage(() => {
-    const s = createNewGame(5);
-    assertEqual(avancerTaches(s), 0, 'rien');
-    assertEqual(tachesNuit(s), null, 'pas de nuit des tâches');
-    assert(!attribuer(s, 'vg-1', 'bois').ok, 'refusé');
-    assertEqual(chopsLeft(s, 'x') > 0, true);
-    assert(!('villageois' in s), 'pas de villageois');
-  }, false);
 });

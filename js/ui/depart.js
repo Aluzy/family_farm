@@ -5,7 +5,6 @@ import {
 } from '../engine/depart.js';
 import { cleanFirstName, validFirstName } from '../engine/family.js';
 import { commencerObjectifs } from '../engine/objectifs.js';
-import { villageActif } from '../engine/village.js';
 import { familleSeule, nomIlePropose, nommerIle } from '../engine/depart-ile.js';
 import { levelBlock } from '../engine/levels.js';
 import { escapeHtml } from '../engine/format.js';
@@ -106,12 +105,12 @@ const accueil = {
   // y revient. modif : null, ou { ajout: 'enfant' | 'animal' | null } ; animalI : l'animal qu'on nomme.
   modif: null,
   animalI: -1,
-  seul: false,                     // (le chantier allumé) « Seul » : un adulte tiré de la graine
-  ile: '',                         // (le chantier allumé) le nom de l'île, tel qu'il est saisi
+  seul: false,                     // « Seul » : un adulte tiré de la graine
+  ile: '',                         // le nom de l'île, tel qu'il est saisi
 };
 
 // Le chantier « l'île à bâtir » est-il allumé pour la partie qu'on commence ?
-const surIle = () => !!(state && villageActif(state));
+const surIle = () => !!(state);
 
 const ORDINAUX = ['premier', 'deuxième', 'troisième', 'quatrième', 'cinquième', 'sixième'];
 

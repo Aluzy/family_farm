@@ -197,9 +197,9 @@ export function recipeOutputQty(id) {
    de l'île de leurs ingrédients (la farine, l'huile). Un objet que rien ne fabrique garde son prix (les récoltes, le
    bois, la pierre).
 
-   Le jeu d'avant (le réglage éteint) ne lit rien de tout cela : DATA.OBJETS[…].prix reste le prix écrit, octet pour
+   Le jeu d'avant ne lit rien de tout cela : DATA.OBJETS[…].prix reste le prix écrit, octet pour
    octet. Les prix de l'île sont dans DATA.PRIX_ILE (seulement ceux qui changent) ; prixIle(objet) les lit, et
-   market.js sellPrice(objet, state) choisit selon villageActif(state). Des entiers : au plus proche, une pièce au
+   market.js sellPrice(objet, state) les lit quand une partie est donnée. Des entiers : au plus proche, une pièce au
    moins. */
 
 // Les recettes qui font un prix sur l'île : [{ id, sorte ('atelier', 'station', 'artisan'), entrees ([{ options,

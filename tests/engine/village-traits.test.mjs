@@ -1,6 +1,6 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : les traits de personnalité des villageois (fiche I6c ; docs/ile.md ;
-   js/engine/traits.js). Comme tous les fichiers tests/engine/village-*.test.mjs, il tourne avec VILLAGE.ACTIF forcé.
+   js/engine/traits.js).
    - le tirage : deux ou trois traits, jamais deux opposés, jamais deux villageois avec la même liste, déterministe ;
    - chaque effet lu dans les réglages (TRAITS) : l'horaire (le matinal dehors avant les autres, le couche-tard au
      souper après eux, le gourmand à table le premier), la flânerie, le casanier chez lui, la plage de travail du
@@ -8,7 +8,7 @@
      la scène (le facteur de causerie) ; les postes (le bonheur à la tâche aimée, boudée, l'ami proche ; le rendement
      ne change pas) ; les affinités (les paires accordées) ;
    - la découverte (vu trois jours, entendu deux fois ; la fiche et ses « ? » ; le tableau) ;
-   - la sauvegarde (v93 → v94 : les villageois d'avant reçoivent leurs traits) ; éteint : rien.
+   - la sauvegarde (v93 → v94 : les villageois d'avant reçoivent leurs traits).
    Lancer seul : node tests/run-tests.mjs village-traits.
    ========================================================================== */
 
@@ -19,7 +19,7 @@ import {
   poserAffinite, positionVillageois, reparerTraits, STATE_VERSION, testMaisonVillageois, tirerTraits, traitsConnus,
   traitsPourFiche, traitsValides, villageoisNuit, ajouterAmitie,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avecVillage, boite, partie, test } from './aide.mjs';
+import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 const TR = DATA.TRAITS, LISTE = TR.LISTE;
@@ -318,7 +318,7 @@ test('la découverte : vu trois matins dehors avant les autres, il est « matina
 
 /* ---------- la sauvegarde ---------- */
 
-test('la sauvegarde : v93 → v94, les villageois d\'avant reçoivent leurs traits ; réparés ; éteint, rien', () => {
+test('la sauvegarde : v93 → v94, les villageois d\'avant reçoivent leurs traits ; réparés', () => {
   const { s, V } = ile(9, 4);
   assertEqual(s.version, STATE_VERSION);
   const vieille = copie(s);
@@ -350,12 +350,4 @@ test('la sauvegarde : v93 → v94, les villageois d\'avant reçoivent leurs trai
   const sans = copie(partie(12));
   sans.version = 92;
   assert(!('villageois' in migrate({ v: 1, t: 0, s: sans })), 'rien sans villageois');
-});
-
-test('éteint : ni traits, ni observation, ni bonheur des traits', () => {
-  const { s, V: [a] } = ile(10, 1);
-  avecVillage(() => {
-    assertEqual(observerTraits(s, [a.id], 7.05), []);
-    assertEqual(bonheurDesTraits(s, a), 0);
-  }, false);
 });

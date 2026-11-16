@@ -23,7 +23,7 @@ import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { genererMonde } from './monde.js';
 import { niveauPort } from './port.js';
-import { fermeVierge, nouveauDehors, prenomsDuJeu, villageActif } from './village.js';
+import { fermeVierge, nouveauDehors, prenomsDuJeu } from './village.js';
 import { chemin } from './chemin.js';
 import { addItem } from './inventory.js';
 import { nomDe, proposerNom } from './noms.js';
@@ -145,7 +145,6 @@ function platDansLAbri(state) {
 // s'il n'est pas choisi), ses pièces de départ (DEPART.PIECES, à la place de DEPART.PIECES_SAUVAGE), le chemin de l'abri à la sortie sur une terre vierge, le plat dans l'abri, le didacticiel
 // de l'île. Une fois par partie (state.didacticielIle le dit). → { ok, chemin (cases posées), plat }.
 export function commencerNouveauDepart(state) {
-  if (!villageActif(state)) return fail('Le chantier est éteint.');
   if (state.didacticielIle) return fail('Le nouveau départ est déjà fait.');
   if (!nomIle(state)) nommerIle(state, nomIlePropose(state));
   // (les pièces de départ de l'île : la première vente au port vient plus tard et plus petite qu'à la calèche)

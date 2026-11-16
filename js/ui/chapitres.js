@@ -15,7 +15,6 @@ import { projetsFaits } from '../engine/projets.js';
 import { styleDe, styleInfo, styleMaison } from '../engine/styles.js';
 import { listeDesChapitres, paliersSuivis } from '../engine/paliers.js';
 import { notify } from './toasts.js';
-import { villageActif } from '../engine/village.js';
 import { subtabsHtml } from './inventaire.js';
 import { renderVocations } from './vocations.js';
 
@@ -129,7 +128,7 @@ function annoncerPaliers() {
   refresh();
 }
 
-// Fiche I8a : la fenêtre « L'île » a deux onglets (le chantier allumé) : les paliers de l'île, puis les vocations
+// Fiche I8a : la fenêtre « L'île » a deux onglets : les paliers de l'île, puis les vocations
 // (js/ui/vocations.js : chaque vocation, son score, ses paliers, ce qui la fait monter ; les fêtes et les projets du
 // village).
 const ILE_ONGLETS = [
@@ -141,7 +140,7 @@ export function ongletsIle() {
   return subtabsHtml(ILE_ONGLETS, ileOnglet, 'ile-onglet');
 }
 export function corpsIle() {
-  return villageActif(state) && paliersSuivis(state) && ileOnglet === 'vocations' ? renderVocations() : renderChapterBanner();
+  return paliersSuivis(state) && ileOnglet === 'vocations' ? renderVocations() : renderChapterBanner();
 }
 // (une notification qui mène aux vocations : l'onglet s'ouvre)
 export function ouvrirOngletIle(id) {

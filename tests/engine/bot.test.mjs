@@ -67,24 +67,6 @@ test('Lot 10 : la simulation ne lit ni l\'horloge ni Math.random', () => {
   }
 });
 
-test('Lot 10 : chaque nuit, la journée du joueur dure son temps d\'éveil', () => {
-  for (const id of ['applique', 'minimal']) {
-    const s = partie(1);
-    const strat = DATA.SIMULATION.STRATEGIES[id];
-    // on mesure l'éveil juste avant Dormir : botDay l'a rempli, sleep() le remet à zéro.
-    // La mesure est une étape de nuit ajoutée en tête : elle passe avant la remise à zéro.
-    const eveil = [];
-    NIGHT_STEPS.unshift((state) => { eveil.push(state.awakeMs); });
-    try {
-      botDay(s, strat, {});
-    } finally {
-      NIGHT_STEPS.shift();
-    }
-    assertEqual(eveil[0], strat.eveilS * 1000, `${id} : ${eveil[0]} ms d'éveil au lieu de ${strat.eveilS} s`);
-    assertEqual([s.day, s.awakeMs], [2, 0]);
-  }
-});
-
 test('Lot 10 : simulateFromCopy ne touche pas la partie en cours', () => {
   const s = partie(3);
   s.pieces = 123;
@@ -131,36 +113,6 @@ test('Lot 10 : le joueur automatique fauche et bottelle la paille de ses moutons
   testWoolReady(s);
   botSheep(s);
   assertEqual([countItem(s, 'laine'), sheepCount(s)], [2, 2]);
-});
-
-test('Lot 10 : au chapitre du troupeau, le joueur automatique nourrit ses moutons et finit par tondre 10 laines', () => {
-  const s = partie(3);
-  simulatePlay(s, 'applique', 22);
-  testGoToChapter(s, 5);
-  vieFaite(s); // (la nouvelle vision : le repas partagé, hors du joueur automatique)
-  // version 1.6 : les améliorations coûtent plus cher (100 à 2 200 pièces) ;
-  // version 1.7 : le Champ attend que le Moulin soit construit. Le chapitre se
-  // termine vers la 28ᵉ nuit (22ᵉ avant ces deux versions).
-  const rows = simulatePlay(s, 'applique', 30);
-  assertEqual(rows.length, 30);
-  assertEqual(s.stations.moulin.construit, true, 'il a construit le Moulin');
-  assert(sheepCount(s) >= 3, `il a acheté ses moutons : ${sheepCount(s)}`);
-  assert(s.campagne.compteurs.laines >= 10, `laines tondues : ${s.campagne.compteurs.laines}`);
-  assert(chapterReached(s) >= 6, `le chapitre du troupeau est terminé : chapitre ${chapterReached(s)}`);
-  assertEqual(rows.filter((r) => r.couverture <= 0).length, 0, 'la famille mange tous les soirs');
-});
-
-test('Lot 10 : le joueur vend ce qui périt demain, jamais la réserve', () => {
-  const s = partie(1);
-  s.inventaire = { carotte: [{ qty: 100, nightsLeft: 1, origin: 'produit' }], patate: [{ qty: 10, nightsLeft: 1, origin: 'produit' }] };
-  s.famille.reserve = { patate: 6 };
-  const piecesAvant = s.pieces;
-  botSell(s);
-  assertEqual(s.pieces, piecesAvant, 'I0b : sans la calèche, rien ne se vend');
-  botPassageCaleche(s, () => botSell(s));
-  assertEqual(countItem(s, 'carotte'), 0, 'les carottes qui périraient sont vendues');
-  assertEqual(countItem(s, 'patate'), 6, 'la réserve de semences reste');
-  assert(s.pieces > piecesAvant, 'la vente rapporte des pièces');
 });
 
 test('fiche 7c : le joueur fabrique sa houe (plus de Marché), sans toucher à ses pièces', () => {
@@ -227,18 +179,6 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   assertEqual(cultures(u).every((c) => c !== null && !botIsFieldCrop(c)), true, 'six parcelles de légumes');
 });
 
-test('Lot 10 : le joueur ne vend des conserves que pour payer un achat, et pas sous le stock gardé', () => {
-  const s = partie(1);
-  s.pieces = 0;
-  s.inventaire.conserve = [{ qty: DATA.SIMULATION.CONSERVES_GARDEES, nightsLeft: null, origin: 'acheté' }];
-  botRaiseFunds(s, 30);
-  assertEqual(countItem(s, 'conserve'), DATA.SIMULATION.CONSERVES_GARDEES, 'sous le stock gardé, on ne vend pas');
-  s.inventaire.conserve = [{ qty: DATA.SIMULATION.CONSERVES_GARDEES + 100, nightsLeft: null, origin: 'acheté' }];
-  botPassageCaleche(s, () => botRaiseFunds(s, 30)); // (I0b : à la calèche, à son passage)
-  assertEqual(s.pieces, 30, 'juste ce qu\'il faut');
-  assertEqual(countItem(s, 'conserve'), DATA.SIMULATION.CONSERVES_GARDEES + 100 - 10);
-});
-
 test('Lot 10 : à court d\'énergie, le joueur mange un en-cas, jamais la réserve de semences', () => {
   const s = partie(1);
   s.energie = 0;
@@ -259,25 +199,7 @@ test('Lot 10 : plante, arrose et récolte : les premières carottes arrivent', (
   assert(s.campagne.compteurs.eauMl > 0, 'la pompe a tourné');
 });
 
-test('Lot 10 : dépannage : une unité de nourriture achetée chaque soir fait monter son prix', () => {
-  const opts = { depannage: { item: 'carotte', dernier: null } };
-  const rows = simulateGame('applique', 5, 1, opts);
-  assert(rows.every((r) => r.depannage && typeof r.depannage.prix === 'number'), 'le prix de la prochaine unité est relevé chaque nuit');
-  const prix = rows.map((r) => r.depannage.prix);
-  assert(prix[4] >= prix[0], 'le prix ne baisse pas quand on achète chaque nuit');
-});
-
 /* --- I0b : le joueur automatique remis d'aplomb (la partie d'aujourd'hui) --- */
-
-test('I0b : il part de la partie neuve d\'aujourd\'hui, fabrique à l\'Atelier, pose la boîte et nourrit sa famille', () => {
-  const s = createNewGame(1, { nom: 'Simulation' });
-  commencerObjectifs(s);
-  assertEqual([s.pieces, !!s.abriDepart, atelierConstruit(s), boitePosee(s)], [DATA.DEPART.PIECES_SAUVAGE, true, false, false]);
-  const rows = simulatePlay(s, 'applique', 4);
-  assert(atelierConstruit(s) && hasHoe(s) && boitePosee(s), 'l\'Atelier, la houe, la boîte à nourriture');
-  assertEqual(rows.filter((r) => r.couverture <= 0).length, 0, 'la famille mange tous les soirs');
-  assertEqual((s.compta || []).some((l) => /^Construction/.test(l.libelle)), false, 'rien ne se bâtit en pièces');
-});
 
 test('I0b : une recette de l\'Atelier : la planche se fabrique, les bruts qui manquent sont fournis et comptés', () => {
   const s = createNewGame(1, { nom: 'Simulation' });
@@ -302,17 +224,4 @@ test('I0b : les comptes de la simulation, par nuit et par poste, tombent juste',
     ['Vente : Carotte', 'Vente : Pain', 'Vente : Œuf', 'Achat : Graines de carotte', 'Achat : Blé', 'Technologie : x', 'Amélioration : Pompe', 'Poulailler agrandi', 'Calèche : Miel'].map(posteSimulation),
     ['vente_cultures', 'vente_plats', 'vente_produits', 'graines', 'graines', 'technologies', 'appareils', 'batiments', 'achats_hameaux'],
   );
-});
-
-test('I0b : il ne commerce qu\'au passage de la calèche, et à partir de son niveau', () => {
-  const s = createNewGame(1, { nom: 'Simulation' });
-  commencerObjectifs(s);
-  setInv(s, { carotte: 40 });
-  botPassageCaleche(s, () => botSell(s));
-  assertEqual([countItem(s, 'carotte'), s.pieces], [40, DATA.DEPART.PIECES_SAUVAGE], 'avant le niveau du Marché, la calèche n\'achète rien');
-  testSetLevel(s, 3);
-  botSell(s);
-  assertEqual(countItem(s, 'carotte'), 40, 'hors de son passage non plus');
-  botPassageCaleche(s, () => botSell(s));
-  assertEqual(countItem(s, 'carotte'), DATA.SIMULATION.VIVRES_GARDES, 'à son passage, il vend ce qu\'il a en trop');
 });

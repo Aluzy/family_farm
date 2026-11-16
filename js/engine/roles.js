@@ -11,7 +11,7 @@
      proprietaire : tout, dont retirer une structure sensible (un atelier, un bâtiment, un appareil, un
                     bloc unique, le silo : SENSIBLE) ; et lui seul invite, retire, change les rôles.
 
-   I9e, la grille d'une île (ilePartagee) : le monde en ligne est l'île d'un propriétaire, et ses amis invités viennent
+   I9e, la grille d'une île (depuis la bascule, I9h, la seule : la grille d'E-11 d'une ferme d'avant est retirée) : le monde en ligne est l'île d'un propriétaire, et ses amis invités viennent
    l'aider à faire progresser SON village. Les rôles sont une grille de confiance : l'ami aidant est vraiment utile
    (il produit, vend, se lie aux villageois, leur confie un outil, bâtit), le propriétaire garde ce qui est structurant
    (GRILLE_ILE, docs/monde-partage.md § 10 et § 13) :
@@ -34,7 +34,6 @@ import { DATA } from './catalog.js';
 import { surCase } from './commandes.js';
 import { blocAt, blocDessus, casesCouvertes, maisonsMarquees } from './blocs.js';
 import { dessusEtage, etageBlocs, fenetresHautes } from './etage.js';
-import { ilePartagee } from './frontiere.js';
 import { farmTerrain } from './terrain.js';
 
 export const ROLES_MONDE = ['visiteur', 'jardinier', 'batisseur', 'proprietaire'];
@@ -143,7 +142,7 @@ export function roleDemande(state, c, reglages = REGLAGES_MONDE) {
   const type = String((c && c.type) || '');
   const r = retire(state, c);
   if (r && sensible(r)) return 'proprietaire';
-  if (state && ilePartagee(state)) {
+  if (state) {
     if (c && toucheUneMaisonHabitee(state, c)) return 'proprietaire';
     if (type === 'villageois.attribuer' && reglages && reglages.taches === true) return 'batisseur';
     if (GRILLE_ILE[type]) return GRILLE_ILE[type];
@@ -172,7 +171,7 @@ export function refusDuRole(role, state, c, reglages = REGLAGES_MONDE) {
     const type = String(c && c.type);
     if (AU_PROPRIETAIRE[type]) return AU_PROPRIETAIRE[type];
     const r = retire(state, c);
-    if (!(r && sensible(r)) && state && ilePartagee(state) && toucheUneMaisonHabitee(state, c)) return 'Seul le propriétaire de l\'île retire la maison d\'un villageois (sa boîte aux lettres, sa porte, ses murs, son lit).';
+    if (!(r && sensible(r)) && state && toucheUneMaisonHabitee(state, c)) return 'Seul le propriétaire de l\'île retire la maison d\'un villageois (sa boîte aux lettres, sa porte, ses murs, son lit).';
     return 'Seul le propriétaire de la ferme retire un atelier, un bâtiment ou un appareil.';
   }
   return `Ton rôle dans ce monde (${NOMS_ROLES[role] || role}) ne permet pas ce geste : il faut être ${NOMS_ROLES[besoin].toLowerCase()}. Le propriétaire peut changer ton rôle (👥).`;

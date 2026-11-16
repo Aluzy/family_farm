@@ -9257,7 +9257,6 @@ export const RAW_DATA = {
     ]
   },
   "VILLAGE": {
-    "ACTIF": true,
     "ARRIVEE": {
       "RESERVE_JOURS": 2,
       "PLAFOND": { "1": 2, "2": 5, "3": 10, "4": 12, "5": 14 },

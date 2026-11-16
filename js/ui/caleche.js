@@ -35,7 +35,6 @@ import { meubleRefus } from '../engine/meubles.js';
 import { itemsText } from './common.js';
 import { proposerScene } from './scene.js';
 import { renvoiAuPort } from './port.js';
-import { villageActif } from '../engine/village.js';
 
 // Ce que la calèche lit du récit (le cocher, ses promesses, les ateliers et les meubles des hameaux), par l'aiguillage
 // (fiche I7d) : une partie d'avant passe au récit tel quel ; l'île à bâtir n'en a rien (recitPage rend null : ni
@@ -514,7 +513,7 @@ export function watchCaleche() {
     if (annonce !== state.day) {
       annonce = state.day;
       // (le chantier « l'île à bâtir » allumé, fiche I1b : elle ne commerce plus, elle passe sans s'annoncer)
-      if (!villageActif(state)) notify(`🔔 Ding, ding ! La calèche est arrivée à la ferme, devant l'entrée${marcheOuvert(state) ? ' : vends-lui tes récoltes, achète-lui des graines' : ''}. Elle repart vers ${heureTexte(CALECHE.FERME + CALECHE.ARRET_FERME)}.`, { kind: 'info' });
+      if (false) notify(`🔔 Ding, ding ! La calèche est arrivée à la ferme, devant l'entrée${marcheOuvert(state) ? ' : vends-lui tes récoltes, achète-lui des graines' : ''}. Elle repart vers ${heureTexte(CALECHE.FERME + CALECHE.ARRET_FERME)}.`, { kind: 'info' });
     }
   } else if (e && annonce === null) annonce = e.t > 0 && e.etat !== 'gite' ? state.day : null;   // (déjà passée en arrivant)
   if (stageWindow === 'comptoir') retenirCaleche();
@@ -530,14 +529,14 @@ function annoncerPassage(m) {
 // La malle pour la scène (js/carte/ferme/malle.js) : { x, y (px : le bord gauche et le bas de ses cases), cases,
 // pleine }, ou null (pas de malle : pas de grand monde).
 export function malleDepuisCarte() {
-  if (villageActif(state)) return null;   // (l'île, fiche I7e : pas de calèche, pas de malle)
+  return null;   // (l'île, fiche I7e : pas de calèche, pas de malle)
   const Tf = farmTerrain(state), M = Tf && Tf.MALLE;
   return M ? { x: M.x, y: M.y, cases: M.cases, pleine: mallePleine(state) } : null;
 }
 
 // Un appui sur la malle (le personnage arrivé devant) : la fenêtre de la calèche (Vendre : on y dépose).
 export function malleToucheeDepuisCarte() {
-  if (villageActif(state)) { renvoiAuPort('La malle de la calèche'); return; }   // (fiche I1b : le port)
+  { renvoiAuPort('La malle de la calèche'); return; }   // (fiche I1b : le port)
   if (!marcheOuvert(state)) { notify(`${CALECHE.ICONE} ${marcheFerme(state)}`, { kind: 'info' }); return; }
   openStageWindow('comptoir');
 }
@@ -561,7 +560,7 @@ export function calecheDepuisCarte() {
 // Un appui sur la calèche : là, sa fenêtre ; en chemin et tout près, on la hèle (et sa fenêtre
 // s'ouvre) ; sinon, où elle va.
 export function calecheToucheeDepuisCarte() {
-  if (villageActif(state)) { renvoiAuPort(`${CALECHE.ICONE} La calèche`); return; }   // (fiche I1b : le port)
+  { renvoiAuPort(`${CALECHE.ICONE} La calèche`); return; }   // (fiche I1b : le port)
   if (sceneCaleche()) return;
   const ou = ouPerso();
   if (!marcheOuvert(state)) {

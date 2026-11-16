@@ -3,8 +3,9 @@
 // bout, comme la page les ouvre (js/ui/storage.js : migrate, avec le passage sur l'île), puis jouées quelques nuits par le
 // joueur automatique. Pour chacune :
 //   1. la lecture du fichier (une sauvegarde exportée depuis ⚙️ Options, .json ou le texte copié, ou la partie seule) ;
-//   2. le jeu d'avant (le réglage éteint) : la partie migrée telle qu'elle était, pour comparer ;
-//   3. l'île (le réglage du jeu, allumé depuis I9h) : le format du jeu, le passage sur l'île (une fois), la ferme identique
+//   2. la partie d'avant mise au format sans passer sur l'île (migrate, `ile: false`) : la ferme d'où elle part, pour
+//      comparer ;
+//   3. l'île : le format du jeu, le passage sur l'île (une fois), la ferme identique
 //      (blocs, sols, hauteurs, fenêtres, l'étage et les niveaux du dessus, les papiers peints, les meubles, les parcelles),
 //      les pièces jamais en baisse, le port, le tronçon à poser, la fenêtre du retour (ses lignes), une seconde ouverture
 //      qui ne change rien ;
@@ -23,7 +24,6 @@ import { ROOT, engineUrl } from './lib/engine-source.mjs';
 
 const E = await import(engineUrl(ROOT));
 const { DATA, STATE_VERSION } = E;
-const REGLAGE = DATA.VILLAGE.ACTIF;
 
 const args = process.argv.slice(2);
 const option = (nom, def) => { const i = args.indexOf(`--${nom}`); return i >= 0 ? args[i + 1] : def; };
@@ -55,7 +55,6 @@ if (fichiers.length) {
 }
 
 const copie = (o) => structuredClone(o);
-const avecReglage = (actif, fn) => { const avant = DATA.VILLAGE.ACTIF; DATA.VILLAGE.ACTIF = actif; try { return fn(); } finally { DATA.VILLAGE.ACTIF = avant; } };
 // (ce que le joueur a bâti : le bas, l'étage, les niveaux du dessus, les papiers peints, les meubles, les parcelles, le lit)
 const FERME = ['blocs', 'sols', 'hauteurs', 'rehausses', 'fenetres', 'blocsDessus', 'meubles', 'sens', 'teintes', 'etage', 'fenetresEtage', 'sensEtage', 'teintesEtage', 'dessusEtage', 'solsEtage', 'fenetresHautes', 'niveauxHauts', 'solsHauts', 'litPrincipal'];
 function empreinte(s) {
@@ -67,32 +66,32 @@ function repeter(p) {
   const r = { nom: p.nom, de: `${p.jeu ? `${p.jeu}, ` : ''}format ${p.v}, jour ${p.s.day}`, ok: true, notes: [], echecs: [] };
   const echec = (m) => { r.ok = false; r.echecs.push(m); };
   const t0 = performance.now();
-  // 2. le jeu d'avant (le réglage éteint)
-  const off = avecReglage(false, () => E.migrate({ v: p.v, t: p.t, s: copie(p.s) }));
+  // 2. la partie d'avant au format du jeu, sans passer sur l'île
+  const off = E.migrate({ v: p.v, t: p.t, s: copie(p.s) }, STATE_VERSION, { ile: false });
   const avant = E.partieDAvant(off);
   // 3. l'île
   let m;
-  try { m = avecReglage(true, () => E.migrate({ v: p.v, t: p.t, s: copie(p.s) })); } catch (e) { echec(`l'ouverture lève : ${e.message}`); return r; }
+  try { m = E.migrate({ v: p.v, t: p.t, s: copie(p.s) }); } catch (e) { echec(`l'ouverture lève : ${e.message}`); return r; }
   r.ms = Math.round(performance.now() - t0);
   if (m.version !== STATE_VERSION) echec(`le format : ${m.version} au lieu de ${STATE_VERSION}`);
   if (avant) {
     if (!m.port || E.partieDAvant(m) || E.migrationIleDue(m)) echec('la partie n\'est pas passée sur l\'île');
-    if (!E.retourIle(avecReglage(true, () => m)) && !avecReglage(true, () => E.retourIle(m))) echec('pas de fenêtre du retour');
+    if (!E.retourIle(m)) echec('pas de fenêtre du retour');
     if (empreinte(m) !== empreinte(off)) {
       const diff = FERME.filter((k) => JSON.stringify(m[k] ?? null) !== JSON.stringify(off[k] ?? null));
       echec(`la ferme a changé : ${diff.join(', ') || 'parcelles ou papiers'}`);
     }
     if (!(m.pieces >= off.pieces)) echec(`les pièces baissent : ${off.pieces} → ${m.pieces}`);
     r.notes.push(`passée sur l'île : port niveau ${m.port.niveau}, palier ${m.palier}, ${(m.candidats || []).length} ami(s) candidat(s), ${off.pieces} → ${m.pieces} pièces`);
-    const L = avecReglage(true, () => E.lignesRetour(m));
+    const L = E.lignesRetour(m);
     if (!L || L.lignes.length !== 5) echec('la fenêtre du retour n\'a pas ses cinq lignes');
     else if (detail) r.notes.push(...L.lignes.map((l) => `  ${l.icone} ${l.texte}`), `  🎁 ${L.cadeau}`);
   } else r.notes.push('déjà une partie de l\'île : rien à faire passer');
-  const encore = avecReglage(true, () => E.migrate({ v: m.version, t: 0, s: copie(m) }));
+  const encore = E.migrate({ v: m.version, t: 0, s: copie(m) });
   if (JSON.stringify(encore) !== JSON.stringify(m)) echec('une seconde ouverture change la partie');
   // 4. le jeu
   try {
-    avecReglage(true, () => {
+    {
       const blocs = Object.keys(m.blocs || {}).length;
       E.assurerTroncon(m);
       E.fermerRetourIle(m);
@@ -106,12 +105,12 @@ function repeter(p) {
       // (la partie jouée s'enregistre et se relit)
       const relue = E.migrate(JSON.parse(JSON.stringify({ v: m.version, t: 0, s: m })));
       if (JSON.stringify(relue) !== JSON.stringify(m)) echec('la partie jouée ne se relit pas à l\'identique');
-    });
+    }
   } catch (e) { echec(`le jeu lève : ${e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e.message}`); }
   return r;
 }
 
-console.log(`La répétition de la bascule : ${parties.length} partie(s), le réglage du jeu ${REGLAGE ? 'allumé' : 'éteint'} (l'île forcée pour la répétition), format ${STATE_VERSION}, ${nuits} nuit(s) jouée(s).`);
+console.log(`La répétition de la bascule : ${parties.length} partie(s), format ${STATE_VERSION}, ${nuits} nuit(s) jouée(s).`);
 let echecs = 0;
 for (const p of parties) {
   if (p.erreur) { echecs += 1; console.log(`\n✗ ${p.nom} : ${p.erreur}`); continue; }

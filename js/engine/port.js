@@ -14,7 +14,7 @@
    et le catalogue d'import.
 
    Le commerce (fiche I1b) : sous la halle, au comptoir, on vend ce que la ferme produit et ce qu'on trouve
-   sur l'île, on achète les semences. Avec le chantier allumé, c'est la seule interface économique : la calèche
+   sur l'île, on achète les semences. C'est la seule interface économique : la calèche
    ne commerce plus (caleche.js). Les prix et les cours sont ceux de market.js (sellItem, buyItem : rien n'est
    dupliqué) ; les écritures des Comptes disent « Port : … ».
    - Où est le comptoir : le lieu du port (plan.lieux.port : sa case, le sens de son quai) est tiré avec les
@@ -35,7 +35,6 @@
 
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { villageActif } from './village.js';
 import { fail, marcheFerme, marcheOuvert } from './devices.js';
 import { clockHours } from './clock.js';
 import { buyItem, buyPrice, buyQuote, isBuyable, sellableCount } from './market.js';
@@ -52,7 +51,6 @@ export const NIVEAUX_PORT = PORT.NIVEAUX.length;
 
 // Le niveau du port de la partie (1 à NIVEAUX_PORT), ou 0 : pas de port (le chantier éteint).
 export function niveauPort(state) {
-  if (!villageActif(state)) return 0;
   const n = state && state.port && Number.isInteger(state.port.niveau) ? state.port.niveau : PORT.NIVEAU_DEPART;
   return Math.max(1, Math.min(NIVEAUX_PORT, n));
 }
@@ -90,7 +88,6 @@ export function portDuMonde(graine) {
 // en ligne : poserLieuDuPort) ; le serveur et chaque joueur lisent alors le même, sans rien demander à la page (le pas du
 // monde le lit : la tournée d'un villageois).
 export function lieuPort(state) {
-  if (!villageActif(state)) return null;
   const L = state && state.port && state.port.lieu;
   if (lieuLisible(L)) return L;
   const g = farmSeed(state);
@@ -103,7 +100,7 @@ export function lieuLisible(L) {
 // I9c : le lieu du port écrit dans la partie (celle d'un monde de l'île, à sa mise en ligne ou à sa restauration :
 // worker/src/monde.mjs), calculé d'après le plan de sa graine (portDuMonde : ≈ 0,7 s, une fois). → le lieu, ou null.
 export function poserLieuDuPort(state) {
-  if (!villageActif(state) || !state.port || typeof state.port !== 'object') return null;
+  if (!state.port || typeof state.port !== 'object') return null;
   if (lieuLisible(state.port.lieu)) return state.port.lieu;
   const g = farmSeed(state), l = g === null ? null : portDuMonde(g);
   if (!l) return null;
@@ -159,7 +156,6 @@ export function ouEstLePort() {
 // Peut-on commercer au port, le personnage sur la case `ou` ? { ok, raison, dist }. `o.sansPresence` : sans
 // case (le joueur automatique) : seuls le chantier, le niveau et les heures comptent.
 export function portOuvert(state, ou = null, o = {}) {
-  if (!villageActif(state)) return { ok: false, raison: 'Il n\'y a pas de port.', dist: Infinity };
   if (!marcheOuvert(state)) return { ok: false, raison: marcheFerme(state), dist: Infinity };
   const dist = o.sansPresence ? 0 : distanceAuComptoir(state, ou);
   if (dist > PORT.PORTEE + EPS) return { ok: false, raison: `Tu n'es pas au port. ${ouEstLePort()}`, dist };

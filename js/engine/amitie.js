@@ -6,7 +6,6 @@ import { addItem, countItem, takeItem } from './inventory.js';
 import { habitantsDe } from './habitants.js';
 import { cleEcrite, recitPour } from './recit-aiguillage.js';
 import { STYLES, styleInfo, stylePrefere } from './styles.js';
-import { villageActif } from './village.js';
 
 /* ---------- l'amitié avec les habitants des hameaux (data/amitie.json) ----------
 
@@ -72,7 +71,7 @@ const estVillageois = (m) => !!m && typeof m.id === 'string' && /^vg-\d+$/.test(
 // villageois), cle (son id), villageois: true }).
 export function trouverPnj(state, hameauId, membreId) {
   if (hameauId === HAMEAU_VILLAGE) {
-    const v = villageActif(state) && Array.isArray(state.villageois) ? state.villageois.find((x) => x && x.id === membreId) : null;
+    const v = Array.isArray(state.villageois) ? state.villageois.find((x) => x && x.id === membreId) : null;
     return v ? { h: VILLAGE_H, f: null, m: v, cle: v.id, villageois: true } : null;
   }
   const h = habitantsDe(state)[hameauId];

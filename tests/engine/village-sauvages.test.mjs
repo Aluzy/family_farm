@@ -1,11 +1,10 @@
 /* ==========================================================================
    Tests du chantier « l'île à bâtir » : les plants sauvages de l'île (docs/ile.md, fiche I7e : « une raison
-   d'explorer » ; data/village.json VILLAGE.SAUVAGES, js/engine/sauvages.js). Comme tous les fichiers
-   tests/engine/village-*.test.mjs, ils tournent avec VILLAGE.ACTIF forcé à true.
+   d'explorer » ; data/village.json VILLAGE.SAUVAGES, js/engine/sauvages.js).
    - le monde de l'île porte l'ail des ours dans ses sous-bois et la salicorne sur ses plages, loin de la ferme ;
      le monde d'avant n'en a aucun ; ils ne déplacent rien d'autre (sans eux, la même végétation) ;
    - on ramasse un plant, on le repique, il pousse, on le récolte : il entre au catalogue d'import du port, une fois ;
-   - il ne s'achète pas au comptoir ; éteint, il n'est pas proposé aux semis.
+   - il ne s'achète pas au comptoir.
    Lancer seul : node tests/run-tests.mjs village-sauvages
    ========================================================================== */
 
@@ -15,7 +14,7 @@ import {
 } from '../../js/engine/index.js';
 import { plantableCropsFor } from '../../js/engine/campaign.js';
 import { SORTES } from '../../js/engine/monde-vegetation.js';
-import { assert, assertEqual, avecVillage, garden, plantRipe, test } from './aide.mjs';
+import { assert, assertEqual, garden, plantRipe, test } from './aide.mjs';
 
 const W = MONDE.LARGEUR, N = MONDE.REGION;
 const GRAINE = 'sauvages-1';
@@ -136,17 +135,4 @@ test('un plant sauvage trouvé, rapporté, repiqué, récolté : il entre au cat
   assertEqual(harvest(s, 'potager-2').sauvage, undefined, 'une fois seulement');
   assertEqual(s.port.sauvages.filter((x) => x === 'plant_ail_ours').length, 1);
   assert(findPlot(s, 'potager-1').culture === null, 'la parcelle libérée');
-});
-
-test('éteint : ni plant sauvage aux semis, ni inscription', () => {
-  avecVillage(() => {
-    const s = createNewGame(5);
-    assertEqual(plantableCropsFor(s, 'potager').filter((c) => DATA.CULTURES[c].sauvage), [], 'pas aux semis');
-  }, false);
-  avecVillage(() => {
-    const s = garden();
-    s.port = { sauvages: [] };
-    assertEqual(plant(s, 'potager-1', 'salicorne').ok, false, 'ni ne se plante');
-    assertEqual(s.port.sauvages.length, 0, 'rien ne s\'inscrit');
-  }, false);
 });
