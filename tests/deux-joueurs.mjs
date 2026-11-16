@@ -335,7 +335,9 @@ try {
   await pa.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   verifie((await pa.evaluate(() => localStorage.getItem('ferme-save'))) === soloA, '5. la partie solo de A n\'est pas touchée en ligne');
   const avant = reg.rev;
-  await action(pa, 'sell-item', { item: 'carotte' });
+  // (un geste de l'île pas encore en ligne : abandonner le projet du village ; la vente à la calèche, qui servait ici, est
+  // retirée à la bascule, I9h)
+  await action(pa, 'vocation-projet-abandonner', {});
   await pa.waitForTimeout(300);
   verifie(reg.rev === avant && /viendra bientôt/.test(await pa.evaluate(() => document.body.innerText)), '6. un geste pas encore en ligne est refusé');
   // 6b. E-11 : les rôles et le journal
