@@ -5,18 +5,18 @@ import { hourOfDay } from './clock.js';
 import { hache } from './ferme-generee.js';
 import { validApparence } from './family.js';
 import { countItem, takeItem } from './inventory.js';
-import { habitantsDe, metierHabitant } from './habitants.js';
 import { rassasierFamille, repasJour } from './repas.js';
-import { RECIT } from './recit.js';
-import { ajouterAmitie, amitieDe, cleDe, fiche, goutPour, palierAmitie, styleHabitant, trouverPnj } from './amitie.js';
-import { admireLeCoin, phraseAdmire, STYLES, tableDuRepas } from './styles.js';
+import { ajouterAmitie, amitieDe, fiche, goutPour, HAMEAU_VILLAGE, palierAmitie, styleHabitant, trouverPnj } from './amitie.js';
+import { porteVillageois, trouverVillageois } from './villageois.js';
+import { noterRepasPartage } from './vocation-village.js';
+import { tacheDef } from './taches.js';
+import { admireLeCoin, phraseAdmire, STYLES } from './styles.js';
 
 /* ---------- les invitations à un repas (data/amitie.json, AMITIE.INVITATION) ----------
 
-   Depuis le calendrier, le joueur invite à un repas des personnes à qui il a déjà parlé (les habitants des
-   hameaux, dont les personnages écrits) : un jour à venir, un moment (le déjeuner, le dîner). Achille, le
-   cocher, porte le message pendant sa tournée ; la nuit, chacun répond (selon son palier d'amitié), et les
-   réponses sont annoncées au matin (la page : js/ui/invitations.js).
+   Depuis le calendrier, le joueur invite à un repas des villageois (fiche I6a) : un jour à venir, un moment (le
+   déjeuner, le dîner). Le message passe de porte en porte ; la nuit, chacun répond (selon son palier d'amitié), et
+   les réponses sont annoncées au matin (la page : js/ui/invitations.js).
 
    Le jour dit, de VIENNENT heures avant l'heure du repas à ATTENTE heures après, ceux qui ont dit oui viennent
    à la ferme (la carte : js/carte/ferme/invites.js) et s'assoient à la table (une table de jardin et ses
@@ -25,11 +25,16 @@ import { admireLeCoin, phraseAdmire, STYLES, tableDuRepas } from './styles.js';
    heureuse cette nuit, et chaque invité en garde le souvenir, dont il parle ensuite (souvenirParole). Un repas
    manqué (personne à table) ne fait rien perdre.
 
-   state.invitations = { seq, liste: [{ id, jour, moment, envoye (le jour où Achille a pris le message),
+   state.invitations = { seq, liste: [{ id, jour, moment, envoye (le jour où le message est parti),
      etat: 'envoyee' | 'repondue' | 'servie' | 'manquee', invites: [{ hameau, id, cle, prenom, reponse:
      'oui' | 'non' | null }], annonce (les réponses dites au matin), servi: { plats, terrasse } }] }
    Une invitation passée (servie ou manquée) quitte la liste la nuit ; son souvenir reste dans l'amitié
-   (state.amitie.pnj[clé].souvenirs = [{ jour, plat, terrasse }]). */
+   (state.amitie.pnj[clé].souvenirs = [{ jour, plat, terrasse }]).
+
+   Les villageois (le « hameau » HAMEAU_VILLAGE d'amitie.js) : on les connaît tous (ils vivent ici, la famille les a
+   accueillis). Le jour dit, la scène fait venir le villageois lui-même à table (invites.js : il quitte sa journée le
+   temps du repas, puis la reprend), de là où il est, sinon de sa porte. (Les habitants des hameaux d'avant et le cocher
+   qui portait le message sont retirés à la bascule, I9h.) */
 
 export const INVITATION = DATA.AMITIE.INVITATION;
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -44,17 +49,15 @@ export function invitationsDe(state) {
   return I;
 }
 
-// Les personnes qu'on peut inviter : celles à qui l'on a déjà parlé (ou que le récit a fait connaître). →
-// [{ hameau, hameauNom, id, cle, prenom, enfant, metier, palier, nomPalier }], par palier puis par prénom.
+// Les personnes qu'on peut inviter : les villageois, tous connus (son « métier » : sa tâche). →
+// [{ hameau, hameauNom, id, cle, prenom, enfant, metier, palier, nomPalier, villageois }], par palier puis par prénom.
 export function relationsInvitables(state) {
-  const a = amitieDe(state), out = [];
-  for (const [hid, h] of Object.entries(habitantsDe(state))) {
-    for (const f of (h && h.foyers) || []) for (const m of f.membres || []) {
-      const cle = cleDe(m), p = a.pnj[cle];
-      const connu = (p && (Number.isFinite(p.parle) || Number.isFinite(p.vu))) || (RECIT.PERSONNAGES[cle] && palierAmitie(state, cle) > 0);
-      if (!connu) continue;
-      const palier = palierAmitie(state, cle);
-      out.push({ hameau: hid, hameauNom: h.nom, id: m.id, cle, prenom: m.prenom, enfant: !!m.enfant, metier: metierHabitant(h, m), palier, nomPalier: RECIT.PALIER_NOMS[palier] });
+  const out = [];
+  if (Array.isArray(state.villageois)) {
+    for (const v of state.villageois) {
+      if (!v || typeof v.id !== 'string') continue;
+      const palier = palierAmitie(state, v.id), def = tacheDef(v.tache);
+      out.push({ hameau: HAMEAU_VILLAGE, hameauNom: 'le village', id: v.id, cle: v.id, prenom: v.prenom, enfant: false, villageois: true, metier: def ? def.nom : (v.genre === 'm' ? 'villageois' : 'villageoise'), palier, nomPalier: DATA.AMITIE.ECHELLE.NOMS[palier] });
     }
   }
   return out.sort((x, y) => y.palier - x.palier || (x.prenom < y.prenom ? -1 : x.prenom > y.prenom ? 1 : 0));
@@ -72,11 +75,11 @@ export function invitationsAVenir(state) {
 }
 
 // Inviter : `jour` (de DELAI[0] à DELAI[1] jours plus tard), `moment` (MOMENTS), `qui` : [{ hameau, id }].
-// Achille prend le message aujourd'hui. → { ok, invitation } ou un refus.
+// Le message part aujourd'hui. → { ok, invitation } ou un refus.
 export function inviter(state, jour, moment, qui) {
   const j = jourDe(state), I = INVITATION;
   const d = Math.floor(Number(jour));
-  if (!Number.isFinite(d) || d < j + I.DELAI[0] || d > j + I.DELAI[1]) return fail(`Choisis un jour entre demain et dans ${I.DELAI[1]} jours : Achille doit avoir le temps de porter le message.`);
+  if (!Number.isFinite(d) || d < j + I.DELAI[0] || d > j + I.DELAI[1]) return fail(`Choisis un jour entre demain et dans ${I.DELAI[1]} jours : le message doit avoir le temps de passer.`);
   if (!I.MOMENTS[moment]) return fail('Choisis le déjeuner ou le dîner.');
   if (!Array.isArray(qui) || !qui.length) return fail('Choisis au moins une personne à inviter.');
   if (qui.length > I.INVITES_MAX) return fail(`${I.INVITES_MAX} invités au plus autour de la table.`);
@@ -113,7 +116,7 @@ function repond(state, inv, cle) {
   return rnd() * 100 < chance ? 'oui' : 'non';
 }
 
-// La nuit (runNight, avant que le jour change) : Achille a porté les messages du jour (chacun répond) ;
+// La nuit (runNight, avant que le jour change) : les messages du jour sont passés (chacun répond) ;
 // les invitations d'aujourd'hui qui n'ont pas eu lieu sont manquées (rien n'est perdu) ; les passées quittent
 // la liste. → { reponses: [id], manquees: [id] }.
 export function invitationsNuit(state) {
@@ -161,20 +164,22 @@ export function invitationDuMoment(state) {
 export function invitesModele(state) {
   const inv = invitationDuMoment(state);
   if (!inv) return null;
-  const H = habitantsDe(state), P = INVITATION.PAROLES;
+  const P = INVITATION.PAROLES;
   const invites = [];
   for (const q of inv.invites) {
     if (q.reponse !== 'oui') continue;
     const t = trouverPnj(state, q.hameau, q.id);
     if (!t) continue;
-    const h = H[q.hameau];
-    // (le coin de la table est de son style : il l'admire en arrivant, js/engine/styles.js)
+    // (fiche I6a : un villageois vient lui-même, de là où il est, sinon de sa porte ; le coin de la table est de son
+    // style : il l'admire en arrivant, js/engine/styles.js)
     const style = styleHabitant(state, t);
     const admire = admireLeCoin(state, style) ? phraseAdmire(style, invites.length) : null;
-    invites.push({ id: q.id, hameau: q.hameau, hameauNom: h.nom, prenom: t.m.prenom, perso: t.m.perso, apparence: validApparence(t.m.apparence, !!t.m.enfant), enfant: !!t.m.enfant, metier: metierHabitant(h, t.m), depart: Number.isInteger(h.case) ? h.case : null, admire });
+    invites.push({ id: q.id, hameau: q.hameau, hameauNom: t.h.nom, prenom: t.m.prenom, perso: t.m.perso, apparence: validApparence(t.m.apparence, false), enfant: false, metier: '', depart: porteVillageois(state, q.id), villageois: true, admire });
   }
   if (!invites.length) return null;
-  return { id: inv.id, moment: inv.moment, nom: INVITATION.MOMENTS[inv.moment].nom, etat: inv.etat, invites, paroles: { arrive: P.ARRIVE, table: P.TABLE, merci: P.MERCI, seul: P.SEUL } };
+  // (des villageois à table : on ne parle ni de la calèche ni de « chez nous », mais de l'île)
+  const table = [...P.TABLE.filter((x) => !/calèche|chez nous/i.test(x)), ...(((DATA.VILLAGE || {}).AMITIE || {}).PHRASES || {}).table || []];
+  return { id: inv.id, moment: inv.moment, nom: INVITATION.MOMENTS[inv.moment].nom, etat: inv.etat, invites, paroles: { arrive: P.ARRIVE, table, merci: P.MERCI, seul: P.SEUL } };
 }
 
 // Ce qui se sert : les plats de l'inventaire (et les fruits, les produits qui se mangent tels quels).
@@ -239,6 +244,8 @@ export function servirRepas(state, id, plats = [], terrasse = false) {
   }
   inv.etat = 'servie';
   inv.servi = { plats: choisis, terrasse: !!terrasse };
+  // (fiche I8a : un repas partagé avec des villageois compte pour la convivialité du village)
+  if (inv.invites.some((q) => q.reponse === 'oui' && trouverVillageois(state, q.id))) noterRepasPartage(state);
   return { ok: true, invites: out, plats: choisis, terrasse: !!terrasse };
 }
 

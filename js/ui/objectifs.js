@@ -14,6 +14,9 @@
 import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
 import { carnetDuJour, changerObjectif, majObjectifs, objectifsActifs, tacheAFaire } from '../engine/objectifs.js';
+import { didacticielIleMontre } from './didacticiel-ile.js';
+import { distanceAuComptoir, heuresPort, PORT, portDansSesHeures } from '../engine/port.js';
+import { marcheFerme, marcheOuvert } from '../engine/devices.js';
 import { applyResult } from './game-actions.js';
 import { montrerLieu } from '../engine/monde-vu.js';
 import { state } from './store.js';
@@ -23,7 +26,7 @@ import { morph, refresh } from './render.js';
 import { registerActions } from './actions.js';
 import { notify } from './toasts.js';
 import {
-  affichable, carteOuverte, construire, element, ETAPES_UI, fabriquer, menuCarte, montrerHameauVoisin, outil, prendreOutil, tenu,
+  affichable, carteOuverte, construire, element, ETAPES_UI, fabriquer, menuCarte, outil, prendreOutil, tenu,
 } from './didacticiel.js';
 
 let ouvert = false;      // le carnet est ouvert
@@ -59,7 +62,17 @@ const GUIDES = {
     texte: () => (carteOuverte() ? 'Voici le <b>grand monde</b> : ta ferme au milieu, le reste sous le brouillard.' : menuOpen ? 'Touche 🧭 <b>Carte du monde</b>.' : 'Ouvre la <b>carte du monde</b> : le menu (la flèche), puis 🧭 Carte du monde.'),
     cible: () => (carteOuverte() ? null : menuCarte()),
   }),
-  parler: () => ({ texte: () => 'Au hameau, touche un <b>habitant</b> pour lui parler.' }),
+  parler: () => ({ texte: () => 'Touche un <b>villageois</b> pour lui parler.' }),
+  // l'île à bâtir (fiche I1b) : vendre au port (l'objectif du jour « vendre », la commande du bac)
+  port: () => ({
+    texte: () => {
+      const S = window.FarmStage, ou = S && S.persoCase ? S.persoCase() : -1;
+      if (!marcheOuvert(state)) return `${marcheFerme(state)} En attendant, continue ta ferme : la bulle attend.`;
+      const heures = portDansSesHeures(state) ? '' : ` Le comptoir est ouvert ${heuresPort()} : reviens à ces heures-là.`;
+      if (distanceAuComptoir(state, ou) <= PORT.PORTEE) return `Touche le <b>comptoir</b>, sous la halle : l'onglet 💰 Vendre, puis une récolte.${heures}`;
+      return `Le <b>port</b> est au bout du chemin qui sort de la ferme, sur la côte : suis le chemin, ou mène-y la boussole (la carte du monde, touche ⚓ le port). Sous la halle, touche le <b>comptoir</b> et vends une récolte.${heures}`;
+    },
+  }),
   // (les objectifs tirés après la première semaine)
   cuisiner: () => ({ texte: () => 'Touche la <b>cuisinière</b> dans ta maison, puis choisis un plat dont tu as les ingrédients.', carte: () => ({ blocs: ['cuisiniere'] }) }),
   pecher: () => ({
@@ -140,15 +153,18 @@ export function renderObjectifs() {
   if (!root) return;
   if (state && objectifsActifs(state)) {
     const ev = majObjectifs(state);
-    if (ev) {
+    // (le didacticiel de l'île, fiche I7b : les jours se font et leurs récompenses se donnent, sans un mot)
+    if (ev && didacticielIleMontre()) persistState();
+    else if (ev) {
       persistState();
       if (ev.recompense) { notify(`📜 Jour ${ev.jour} fait : ${ev.titre} ! ${recompenseTexte(ev.recompense)}. La suite demain matin.`, { kind: 'succes' }); guide = false; }
       else if (ev.nouveau !== undefined) { const c = carnetDuJour(state); if (c) notify(`📜 Jour ${c.jour} : ${c.titre}. Touche le carnet pour voir tes objectifs.`, { kind: 'info' }); }
     }
   }
-  const c = state && affichable() ? carnetDuJour(state) : null;
-  // (le septième jour, le hameau voisin : il est montré sur la carte du monde, comme le cocher en a parlé)
-  if (c && c.jour === DATA.OBJECTIFS.SEMAINE.length && !c.attente && montrerHameauVoisin()) persistState();
+  // (pendant le didacticiel de l'île, fiche I7b, le carnet se tait : un seul guide à la fois)
+  const c = state && affichable() && !didacticielIleMontre() ? carnetDuJour(state) : null;
+  // (le septième jour, le hameau voisin : il est montré sur la carte du monde, comme le cocher en a parlé ; le
+  // chantier « l'île à bâtir » allumé, la semaine n'a pas de hameau, fiche I7a)
   // (les cases qui brillent sur la carte, la sortie de la ferme, sortent du brouillard, comme au didacticiel)
   const sb = c ? surbrillanceObjectifs() : null, cases = sb && Array.isArray(sb.cases) ? sb.cases : [];
   const cle = cases.map((x) => x.case).join(',');

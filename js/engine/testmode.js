@@ -7,13 +7,13 @@ import { awakeMsAtHour } from './clock.js';
 import { addItem, countItem, spoil, takeItem } from './inventory.js';
 import { blocAt, blocsPoses, casesBaties, caseLibreFoyer, couchages, herbesSur, majPoulailler, poserBloc, serrePlaces } from './blocs.js';
 import { poserEtage, poserSolEtage } from './etage.js';
-import { allPlots, makePlot, maxStage, seedItem, serreCap, zoneTile } from './crops.js';
+import { makePlot, allPlots, maxStage, seedItem, serreCap, zoneTile } from './crops.js';
 import { farmTerrain } from './terrain.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
 import { arbreProche, openVerger } from './orchard.js';
 import { foretProche } from './outils.js';
 import { grantTechPoints, refreshUnlocks } from './techtree.js';
-import { chapterCount, completeChapter, newCampaignCounters } from './campaign.js';
+import { chapterCount, completeChapter, newCampaignCounters, poserChapitre } from './campaign.js';
 import { sleep } from './night.js';
 import { setFarmSeed } from './depart.js';
 import { gainXp, levelBlock, levelCount } from './levels.js';
@@ -217,11 +217,11 @@ export function testCompleteChapter(state) {
 export function testGoToChapter(state, n) {
   const c = state.campagne;
   const target = Math.floor(Number(n));
-  if (!c || !(target >= 1 && target <= chapterCount() + 1)) return fail('Chapitre inconnu.');
+  if (!c || !(target >= 1 && target <= chapterCount(state) + 1)) return fail('Chapitre inconnu.');
   c.compteurs = newCampaignCounters();
   c.annonces = [];
-  c.fini = target > chapterCount();
-  c.chapitre = c.fini ? chapterCount() : target;
+  c.fini = target > chapterCount(state);
+  poserChapitre(state, c.fini ? chapterCount(state) : target); // (fiche I7a : le palier aussi, s'il y en a)
   // version 1.7 : et au niveau d'un joueur arrivé à ce chapitre (NIVEAUX.CHAPITRE_NIVEAU)
   testSetLevel(state, DATA.NIVEAUX.CHAPITRE_NIVEAU[target - 1]);
   return { ok: true, chapitre: c.chapitre, fini: c.fini };
@@ -281,7 +281,8 @@ export function testFillEnergy(state) {
   return { ok: true };
 }
 
-// Lot 3 : 20 unités de chaque aliment (à conservation pleine).
+// Lot 3 : 20 unités de chaque aliment (à conservation pleine), ceux de l'île compris (village : la faisselle, la tomme
+// de cave du fromager, I5c).
 export function testAddFood(state) {
   for (const item of Object.keys(DATA.OBJETS)) {
     if (DATA.OBJETS[item].mangeable) addItem(state, item, 20);
@@ -481,6 +482,52 @@ export function testBatir(state, id) {
     if (r.ok) testLabourerSerre(state);
   }
   return r.ok ? { ok: true, coin: at(0, 0) } : r;
+}
+
+// Le chantier « l'île à bâtir » (fiche I3a) : bâtit d'un coup, sur un coin d'herbe libre, la maison d'un
+// villageois : une pièce close de 5 × 4 cases (la porte au milieu du bas), `lits` paillasses dedans, et la boîte
+// aux lettres dehors, contre la porte (en bas à gauche). → { ok, coin, porte, boite, lits: [cases] } ou un refus.
+// Fiche I5a (les commerces, artisans.js) : bâtit d'un coup, sur un coin d'herbe libre, le local du commerce `sorte` :
+// une pièce close de 6 × 5 cases (la porte au milieu du bas), l'établi de la sorte au fond à gauche, le comptoir devant
+// la porte, l'enseigne dehors, à droite de la porte. `donner` : les trois blocs donnés avant d'être posés (sinon, pris
+// dans l'inventaire, comme le joueur). → { ok, coin, porte, etabli, comptoir, enseigne } ou un refus.
+export function testLocalCommerce(state, sorte = 'forge', donner = true) {
+  const d = ((DATA.ARTISANS || {}).COMMERCES || {})[sorte];
+  if (!d) return fail('Commerce inconnu.');
+  const z = coinLibre(state, 6, 6);
+  if (!z) return fail('Plus de place libre sur la ferme.');
+  const at = piece(state, z, 6, 5);
+  const pose = (s, t) => (donner ? poserDonne(state, s, t) : poserBloc(state, s, t));
+  const comptoir = (DATA.ARTISANS || {}).COMPTOIR || 'comptoir';
+  for (const [s, t] of [[d.etabli, at(1, 1)], [comptoir, at(3, 2)], [d.enseigne, at(4, 5)]]) {
+    const r = pose(s, t);
+    if (!r.ok) return r;
+  }
+  return { ok: true, coin: at(0, 0), porte: at(3, 4), etabli: at(1, 1), comptoir: at(3, 2), enseigne: at(4, 5) };
+}
+
+// Fiche I4 (l'étal du joueur, bourse.js) : pose l'étal de l'inventaire dans un coin libre de la ferme (deux cases de
+// large, la case de devant libre), comme le joueur ; `donner` : l'objet donné juste avant (les tests). → { ok, case }.
+export function poserEtalLibre(state, donner = false) {
+  const z = coinLibre(state, 2, 2);
+  if (!z) return fail('Plus de place libre sur la ferme.');
+  const t = z.r * z.W + z.c;
+  const r = donner ? poserDonne(state, 'etal', t) : poserBloc(state, 'etal', t);
+  return r.ok ? { ok: true, case: t } : r;
+}
+
+export function testMaisonVillageois(state, lits = 1) {
+  const z = coinLibre(state, 5, 5);
+  if (!z) return fail('Plus de place libre sur la ferme.');
+  const at = piece(state, z, 5, 4);
+  const poses = [];
+  for (let x = 1; x <= Math.max(1, Math.min(3, lits)); x++) {
+    const r = poserDonne(state, 'paillasse', at(x, 1));
+    if (!r.ok) return r;
+    poses.push(at(x, 1));
+  }
+  const r = poserDonne(state, 'boite_aux_lettres', at(1, 4));
+  return r.ok ? { ok: true, coin: at(0, 0), porte: at(2, 3), boite: at(1, 4), lits: poses } : r;
 }
 
 // Laboure d'un coup les cases libres de la Serre (sans houe ni énergie) :

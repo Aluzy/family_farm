@@ -172,6 +172,23 @@ function voirCellules(state, T, cellules) {
   return nouvelles.length;
 }
 
+// I9a (l'île partagée) : le vu `autre` (une chaîne base64 : le brouillard de chacun dans un monde en ligne,
+// gardé à part, js/ui/en-ligne.js) ajouté à celui de la partie ; ses régions ne changent pas (elles sont au
+// moteur, à la partie du monde). → vrai si le vu de la partie a changé.
+export function unirVu(state, autre, T = farmTerrain(state)) {
+  if (!T || !T.FERME || typeof autre !== 'string' || !autre) return false;
+  const bits = new Uint8Array(bitsDe(state, T)), plus = deBase64(autre, bits.length);
+  let change = false;
+  for (let i = 0; i < bits.length; i++) {
+    const v = bits[i] | plus[i];
+    if (v !== bits[i]) { bits[i] = v; change = true; }
+  }
+  if (!change) return false;
+  if (!state.monde || typeof state.monde !== 'object') state.monde = { vues: [] };
+  state.monde.vu = versBase64(bits);
+  return true;
+}
+
 // Le personnage est sur la case t (le biome de sa case, son nom ; la nuit ou non) : ce qu'il voit
 // devient vu (fiche 11 : la nuit, le casque à lampe voit plus loin, equipement.js vueNuitPct). → le
 // nombre de cellules nouvelles.
@@ -240,20 +257,15 @@ export function toutCacher(state) {
 
 /* ---------- ce que la carte du monde montre ---------- */
 
-// Les lieux du plan (monde-gen.js : { hameaux: [{ id, case, nom }], peche: [{ id, case, eau }] }) que la carte du
-// monde montre : ceux dont la case est vue, et rien d'autre. Un hameau vu de loin n'a pas de nom tant que le
-// personnage n'y est pas allé (state.monde.hameaux), sauf le Gué. (Les entrées de grotte ne sont plus.)
-// → { hameaux: [{ id, case, nom, connu }], peche: [{ id, case, eau, nom }] }.
+// Les lieux du plan (monde-gen.js : { peche: [{ id, case, eau }], port }) que la carte du monde montre : ceux dont la
+// case est vue, et rien d'autre. (Les entrées de grotte ne sont plus ; les hameaux d'avant non plus, I7e, I9h.)
+// Le port (fiche I1a : lieux.port) est connu dès le départ, vu ou non, et son chemin aussi (la carte du monde lève le
+// brouillard sur eux : js/ui/carte-monde.js).
+// → { peche: [{ id, case, eau, nom }][, port: [{ id, case, nom, chemin }]] }.
 export function lieuxDeLaCarte(state, lieux, T = farmTerrain(state)) {
-  const out = { hameaux: [], peche: [] };
+  const out = { peche: [] };
   if (!lieux) return out;
-  const connus = (state.monde && state.monde.hameaux) || {};
-  for (const h of lieux.hameaux || []) {
-    if (!caseVue(state, h.case, T)) continue;
-    const c = connus[h.id];
-    // (le Gué garde son nom : la lettre d'Adèle et le cocher en parlent avant qu'on y aille ; le récit)
-    out.hameaux.push({ id: h.id, case: h.case, nom: c ? c.nom : h.gue && h.nom ? h.nom : 'Un hameau', connu: !!c });
-  }
+  if (lieux.port) out.port = [{ id: lieux.port.id, case: lieux.port.case, nom: lieux.port.nom, chemin: lieux.port.chemin || [] }];
   const EAUX = { lac: 'au lac', riviere: 'à la rivière', mer: 'en mer' };
   for (const p of lieux.peche || []) if (caseVue(state, p.case, T)) out.peche.push({ id: p.id, case: p.case, eau: p.eau, nom: `Un coin de pêche ${EAUX[p.eau] || ''}`.trim() });
   return out;
@@ -261,7 +273,10 @@ export function lieuxDeLaCarte(state, lieux, T = farmTerrain(state)) {
 
 /* ---------- la boussole ---------- */
 
-export const SORTES_BUTS = ['hameau', 'peche'];
+export const SORTES_BUTS = ['peche', 'port'];
+// (la liste de lieuxDeLaCarte où chercher le but de cette sorte)
+const listeDe = (sorte) => (sorte === 'port' ? 'port' : 'peche');
+export const listeDuBut = (L, sorte) => L[listeDe(sorte)] || [];
 
 // Le lieu choisi sur la carte du monde (state.monde.but : { sorte, id }), ou null (la ferme).
 export function butBoussole(state) {
@@ -275,7 +290,7 @@ export function choisirBut(state, but, lieux = null) {
   if (!but) { state.monde.but = null; return { ok: true }; }
   if (!SORTES_BUTS.includes(but.sorte) || typeof but.id !== 'string') return { ok: false, error: 'Lieu inconnu.' };
   if (lieux) {
-    const liste = lieuxDeLaCarte(state, lieux)[but.sorte === 'hameau' ? 'hameaux' : 'peche'];
+    const liste = listeDuBut(lieuxDeLaCarte(state, lieux), but.sorte);
     if (!liste.some((l) => l.id === but.id)) return { ok: false, error: 'Ce lieu n\'a pas encore été vu.' };
   }
   state.monde.but = { sorte: but.sorte, id: but.id };
@@ -308,7 +323,7 @@ export function etatBoussole(state, x, y, lieux, sortie, T = farmTerrain(state))
   const W = T.LARGEUR, F = T.FERME, b = butBoussole(state);
   let but = null;
   if (b && lieux) {
-    const l = lieuxDeLaCarte(state, lieux, T)[b.sorte === 'hameau' ? 'hameaux' : 'peche'].find((q) => q.id === b.id);
+    const l = listeDuBut(lieuxDeLaCarte(state, lieux, T), b.sorte).find((q) => q.id === b.id);
     if (l) but = { sorte: b.sorte, id: l.id, nom: l.nom, x: (l.case % W) + 0.5, y: Math.floor(l.case / W) + 0.5 };
   }
   if (!but) {

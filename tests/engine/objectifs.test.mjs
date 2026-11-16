@@ -48,7 +48,7 @@ test('les données : sept jours, chaque tâche lit un état connu ou un compte n
 test('une nouvelle partie : l\'abri, les pièces, le premier jour et ses graines ; pas d\'ancien didacticiel', () => {
   const s = nouvelle();
   assert(objectifsActifs(s));
-  assertEqual([piecesCloses(s).length, s.pieces, etapeDidacticiel(s)], [1, DATA.DEPART.PIECES_SAUVAGE, null]);
+  assertEqual([piecesCloses(s).length, s.pieces, etapeDidacticiel(s)], [1, DATA.VILLAGE.DEPART.PIECES, null]);
   assertEqual(countItem(s, 'graine_carotte'), DATA.OBJECTIFS.SEMAINE[0].offre.graine_carotte, 'les graines du premier potager');
   const c = carnetDuJour(s);
   assertEqual([c.jour, c.titre, c.faits, c.total, c.fait, c.attente], [1, 'S\'installer', 0, 2, false, false]);

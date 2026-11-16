@@ -204,10 +204,13 @@
       const [gc, gr] = cellOf(x1, y1);
       if (Math.max(Math.abs(gc - sc), Math.abs(gr - sr)) > TRAJET_MAX) return straight(x0, y0, x1, y1);
       if (!free(gc, gr)) { if (info) info.impossible = true; return null; }
-      if (lineFree(x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
+      // (fiche I3b : info.cout(case), le prix d'un pas (au moins 1) : les villageois préfèrent les chemins posés ;
+      // pas de ligne droite d'office, et le chemin tendu ne coupe qu'entre deux cases du même prix)
+      const cout = info && info.cout ? info.cout : null;
+      if (!cout && lineFree(x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
       if (!grid) grid = { cols, rows, libre: marche ? (i) => !blocked[i] && marche(i) : (i) => !blocked[i] };
       const boite = K.boite(sc, sr, gc, gr, MARGE, cols, rows);
-      const cells = K.chemin(grid, sr * cols + sc, gr * cols + gc, { boite, max: RECHERCHE_MAX });
+      const cells = K.chemin(cout ? { cols, rows, libre: grid.libre, cout } : grid, sr * cols + sc, gr * cols + gc, { boite, max: RECHERCHE_MAX });
       if (!cells) {
         // (le but enfermé : la recherche à rebours, partie de lui, a vite tout vu)
         if (info) { const r = {}; K.chemin(grid, gr * cols + gc, sr * cols + sc, { boite, max: RECHERCHE_MAX, info: r }); info.impossible = !!r.epuise; }
@@ -215,7 +218,14 @@
       }
       const pts = cells.map((i) => ({ x: (i % cols) * T + T / 2, y: ((i / cols) | 0) * T + T - 2 }));
       pts[pts.length - 1] = { x: x1, y: y1 };
-      return K.tendre(pts, x0, y0, lineFree);
+      if (!cout) return K.tendre(pts, x0, y0, lineFree);
+      const prix = (x, y) => cout(Math.floor((y - 1) / T) * cols + Math.floor(x / T));
+      const memePrix = (xa, ya, xb, yb) => {
+        const p0 = prix(xa, ya), n = Math.max(1, Math.ceil(Math.hypot(xb - xa, yb - ya) / 4));
+        for (let k = 1; k <= n; k++) if (prix(xa + ((xb - xa) * k) / n, ya + ((yb - ya) * k) / n) !== p0) return false;
+        return true;
+      };
+      return K.tendre(pts, x0, y0, (xa, ya, xb, yb) => lineFree(xa, ya, xb, yb) && memePrix(xa, ya, xb, yb));
     }
     const pathLength = (x, y, path) => path.reduce((s, p) => { const d = Math.hypot(p.x - x, p.y - y); x = p.x; y = p.y; return s + d; }, 0);
 
@@ -237,8 +247,11 @@
     // le cheval (js/carte/cheval.js) : dehors, quand il marche ou attend, il y est assis et va
     // plus vite (ctx.cheval : le modèle dit qu'il est en selle) ; pendant un geste, dans un
     // intérieur, il en descend
-    const selles = { cheval: K.cheval ? K.cheval(scene) : null };
-    const monture = () => (ctx.cheval ? 'cheval' : null);
+    // (l'île à bâtir, fiche I2 : chargé pour le port avec la charrette, il la mène attelée au cheval, assis sur son
+    // banc ; avec la brouette, à pied, il la pousse devant lui : js/carte/portage.js, modèle.portage)
+    const selles = { cheval: K.cheval ? K.cheval(scene) : null, charrette: K.charrette ? K.charrette(scene) : null };
+    const brouette = K.brouette ? K.brouette(scene) : null;
+    const monture = () => (ctx.cheval ? (ctx.portage && ctx.portage.vehicule === 'charrette' && selles.charrette ? 'charrette' : 'cheval') : null);
     const cacheSelles = () => { for (const k in selles) if (selles[k]) selles[k].cache(); };
     const ROULE = /^(marche|panier|idle)_(bas|haut|cote)_\d$/;
     let roule = 0, rx = 0, ry = 0;
@@ -293,6 +306,12 @@
         cacheSelles();
         frame(name);
         s.setPosition(Math.round(x), Math.round(y - lift())).setFlipX(flip).setDepth(dz(y)).setAlpha(alpha);
+        if (brouette) {
+          if (ctx.portage && ctx.portage.vehicule === 'brouette' && ROULE.test(name) && !lift()) {
+            roule += Math.hypot(x - rx, y - ry);
+            brouette.place(x, y, face, flip, roule, alpha, dz(y));
+          } else brouette.cache();
+        }
         // le coup fort qui se charge : il tremble (d'autant plus que la charge monte)
         if (tremble > 0 && !reduced()) s.x += Math.round((Math.random() * 2 - 1) * (0.6 + tremble));
       }
@@ -574,6 +593,7 @@
       ctx.chevalVitesse = raw.chevalVitesse || 1;
       ctx.galop = !!raw.galop;
       ctx.pied = raw.pied || 1;
+      ctx.portage = raw.portage || null;
       ctx.coucher = !!raw.coucher;
       ctx.dort = !!raw.dort;
       pilesNow = new Map((raw.ramasser || []).map((p) => [p.id, p]));

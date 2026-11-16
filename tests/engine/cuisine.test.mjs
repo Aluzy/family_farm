@@ -4,20 +4,21 @@
    ========================================================================== */
 
 import {
-  actionCost, addItem, allDevices, boiteCounts, buildStation, buyItem, buyPasture,
-  buyPrice, buySheep, cancelMilling, cancelQueued, countItem, createInitialState, DATA,
-  depenserMembre, deposerBoite, deviceStatus, dishEnergy, dishPrice, feedAllHens, findDevice,
-  findPlot, fridgeCount, fridgeRate, fridgeUnits, grantTech, harvest, harvestAll, hasTech,
-  houseRepaired, ingredientOptions, inventoryCounts, isBroken, isBuyable, isPerishable,
-  loadShedding, lotsOf, maintainCost, maintainDevice, mangerMembre, mangeurs, marketCoef, migrate,
-  millPending, millTimeLeft, moveToFridge, panelOutput, pastureCost, plant, productionItemKeys,
-  queueCapacity, recipeNode, stopCurrent, recipeStatus, recipeUnlocked, repairCost, repairDevice, scaleEnergie,
-  sellableCount, sellItem, sellPrice, shelfLife, simulateOffline, sleep, snackEnergy, startFarm,
-  startHousehold, startLot4, startMilling, startRecipe, storeWheat, taskTimeLeft, techEffects,
-  techPct, testAddEggs, testAddFlour, testAddHens, testAddOil, testAddSeeds, testAddWheat,
-  testBatir, testBuildStations, testSetLevel, testSetWear, testWearMill, testWoolReady, tick,
-  toggleDevice, unlockLevel, upgradeCost, upgradeDevice, valeurAliment, wakeEnergy, waterAll,
-  waterCostFor, wheatForHens, wheatTotal,
+  startFarm,
+  startHousehold,
+  startLot4,
+  actionCost, addItem, allDevices, boiteCounts, buildStation, buyItem, buyPasture, buyPrice, buySheep, cancelMilling,
+  cancelQueued, countItem, createInitialState, DATA, depenserMembre, deposerBoite, deviceStatus, dishEnergy,
+  dishPrice, feedAllHens, findDevice, findPlot, fridgeCount, fridgeRate, fridgeUnits, grantTech, harvest, harvestAll,
+  hasTech, houseRepaired, ingredientOptions, inventoryCounts, isBroken, isBuyable, isPerishable, loadShedding,
+  lotsOf, maintainCost, maintainDevice, mangerMembre, mangeurs, marketCoef, migrate, millPending, millTimeLeft,
+  moveToFridge, panelOutput, pastureCost, plant, productionItemKeys, queueCapacity, recipeNode, stopCurrent,
+  recipeStatus, recipeUnlocked, repairCost, repairDevice, scaleEnergie, sellableCount, sellItem, sellPrice,
+  shelfLife, simulateOffline, sleep, snackEnergy, startMilling, startRecipe, storeWheat, taskTimeLeft, techEffects,
+  techPct, testAddEggs, testAddFlour, testAddHens, testAddOil, testAddSeeds, testAddWheat, testBatir,
+  testBuildStations, testSetLevel, testSetWear, testWearMill, testWoolReady, tick, toggleDevice, unlockLevel,
+  upgradeCost, upgradeDevice, valeurAliment, wakeEnergy, waterAll, waterCostFor, wheatForHens, wheatTotal, prixIle,
+  roundPct, encaisserVente,
 } from '../../js/engine/index.js';
 import {
   affamer, assert, assertEqual, construireFrigo, atelier, AVANT_DEMENAGEMENT, boite, coldRoom, farm, fillSheep,
@@ -140,6 +141,7 @@ const PRIX_PRODUCTIONS_AVANT_LOT_12 = {
   oignon: 1, ail: 2, poivron: 2, epinard: 1, fraise: 2, riz: 1, raisin: 3,
   houblon: 3, cacao: 8, vanille: 15, cafe: 6,
   lait: 4,
+  ail_ours: 3, salicorne: 3,   // (les plants sauvages de l'île, fiche I7e : des cultures comme les autres)
 };
 
 // Version 1.1 : les viandes ne sont plus des productions de la ferme. Leur prix
@@ -292,9 +294,10 @@ test('Lot 13 : farine et pain se vendent deux fois leur ancien prix', () => {
   const s = atelier();
   setInv(s, { farine: 3, pain: 2 });
   const avant = s.pieces;
-  assertEqual([sellItem(s, 'farine', 3).gain, sellItem(s, 'pain', 2).gain], [6, 16]);
-  assertEqual(s.pieces, avant + 22);
-  assertEqual(buyPrice(garden(), 'farine'), 3, 'prix d\'achat = nouveau prix de vente × coefficient (2 × 120 % = 2,4 → 3)');
+  // (une partie vend au prix de l'île, fiche I4 : prixIle ; le prix écrit reste celui des données)
+  assertEqual([sellItem(s, 'farine', 3).gain, sellItem(s, 'pain', 2).gain], [3 * prixIle('farine'), 2 * prixIle('pain')]);
+  assertEqual(s.pieces, avant + 3 * prixIle('farine') + 2 * prixIle('pain'));
+  assertEqual(buyPrice(garden(), 'farine'), Math.ceil(prixIle('farine') * 1.2), 'prix d\'achat = prix de vente × coefficient (120 %, arrondi au-dessus)');
 });
 
 test('les plats se gardent 6 nuits (le pain 7) ; la farine et l\'huile ne périment pas', () => {
@@ -1302,16 +1305,14 @@ test('onglet Livre de recette : ouvert par le Four, jamais avant', () => {
   assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir', 'recettes']);
 });
 
-test('plats et ingrédients se vendent au Marché au prix fixe', () => {
+test('plats et ingrédients se vendent au prix de l\'île', () => {
   const s = atelier();
   setInv(s, { ragout: 2, farine: 3, huile: 1 });
   const before = s.pieces;
-  // Lot 12 : ragoût à 36 (ingrédients doublés). Lot 13 : farine à 2 (doublée) ;
-  // l'huile garde son prix (4).
-  assertEqual(sellItem(s, 'ragout', 2).gain, 72);
-  assertEqual(sellItem(s, 'farine', 3).gain, 6);
-  assertEqual(sellItem(s, 'huile', 1).gain, 4);
-  assertEqual(s.pieces, before + 82);
+  // (au prix de l'île, fiche I4 : prixIle)
+  const P = [2 * prixIle('ragout'), 3 * prixIle('farine'), prixIle('huile')];
+  assertEqual([sellItem(s, 'ragout', 2).gain, sellItem(s, 'farine', 3).gain, sellItem(s, 'huile', 1).gain], P);
+  assertEqual(s.pieces, before + P[0] + P[1] + P[2]);
 });
 
 test('mode test Lot 5 : stations gratuites, +10 farines, +10 huiles, +20 œufs, moulin usé', () => {
@@ -1399,3 +1400,24 @@ function unlockRecipes(s) {
   for (const [id, n] of Object.entries(DATA.ARBRE.noeuds)) if (n.effet.recettes) grantTech(s, id, false);
   return s;
 }
+
+/* ---------- le chantier « l'île à bâtir », fiche I4 : les prix de l'île ---------- */
+
+test('I4 : sur l\'île, les plats gardent leurs coefficients, sur les prix de l\'île de leurs ingrédients', () => {
+  // la farine (une transformation, coefPrix 135) : 2 → 3 ; le pain (coefPrix 160 : 2 farines et un litre d'eau)
+  assertEqual(prixIle('farine'), roundPct(DATA.OBJETS.ble.prix, DATA.RECETTES.farine.coefPrix), 'la farine de l\'île');
+  assertEqual(prixIle('pain'), roundPct(2 * prixIle('farine') + DATA.RECETTES.pain.eau * DATA.CUISINE.PRIX_EAU, DATA.RECETTES.pain.coefPrix), 'le pain de l\'île');
+  // une omelette (œufs et huile) : l'huile garde son prix (3 graines à 1, × 1,35 → 4) ; le plat, COEF_PLAT
+  assertEqual(prixIle('omelette'), roundPct(3 * prixIle('oeuf') + prixIle('huile'), DATA.CUISINE.COEF_PLAT), 'l\'omelette');
+  // le jeu d'avant : ses prix écrits
+  assertEqual([DATA.OBJETS.farine.prix, DATA.OBJETS.pain.prix], [2, 8], 'les prix écrits');
+});
+
+test('I4 : la vente au prix de l\'île', () => {
+  const s = createInitialState();
+  assertEqual(sellPrice('pain', s), prixIle('pain'), 'le prix de l\'île');
+  const avant = s.pieces;
+  encaisserVente(s, 'pain', 2);
+  assertEqual(s.pieces - avant, 2 * prixIle('pain'), 'la vente encaisse le prix de l\'île');
+  assertEqual(sellPrice('pain'), DATA.OBJETS.pain.prix, 'sans partie : le prix écrit');
+});

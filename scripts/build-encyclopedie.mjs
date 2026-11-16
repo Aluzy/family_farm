@@ -22,6 +22,9 @@
 // (scripts/carte/faune.py, assets/faune.json : les cases par leur nom) ; la page de la pêche, les icônes
 // de ses poissons (« icones », celles du jeu). Une planche ou une case introuvable est une erreur.
 //
+// Une seule source depuis la bascule (fiche I9h) : le livre de l'île à bâtir (encyclopedie_ile.json, qui se lisait
+// par-dessus le livre d'avant pendant le chantier, y a été appliqué puis retiré).
+//
 // Usage : node scripts/build-encyclopedie.mjs          (réécrit encyclopedie.html et js/encyclopedie.generated.js)
 //         node scripts/build-encyclopedie.mjs --check  (vérifie qu'ils sont à jour, sans écrire)
 
@@ -122,29 +125,33 @@ const poissons = () => {
 };
 const ICONES = { peche: poissons };
 
-// Tous les termes, pour le libellé des liens ; un lien vers un terme inconnu est une erreur.
-const termes = new Map();
-for (const c of data.categories) {
-  for (const e of c.entrees) {
-    if (termes.has(e.id)) throw new Error(`Identifiant en double : ${e.id}`);
-    termes.set(e.id, e.terme);
-  }
-}
-
-// Quand l'entrée se découvre dans le jeu : au moins une condition, toutes connues.
-for (const c of data.categories) {
-  for (const e of c.entrees) {
-    if (!Array.isArray(e.decouverte) || !e.decouverte.length) throw new Error(`« ${e.id} » ne dit pas quand elle se découvre (decouverte)`);
-    for (const cond of e.decouverte) {
-      const err = erreurCondition(cond);
-      if (err) throw new Error(`« ${e.id} » : ${err}`);
+// Tous les termes d'un livre, pour le libellé des liens ; un identifiant en double est une erreur. Puis : chaque
+// entrée dit quand elle se découvre (au moins une condition, toutes connues) ; un lien vers un terme inconnu est une
+// erreur.
+function verifier(livre, nom) {
+  const termes = new Map();
+  for (const c of livre.categories) {
+    for (const e of c.entrees) {
+      if (termes.has(e.id)) throw new Error(`${nom} : identifiant en double : ${e.id}`);
+      termes.set(e.id, e.terme);
     }
   }
+  for (const c of livre.categories) {
+    for (const e of c.entrees) {
+      if (!Array.isArray(e.decouverte) || !e.decouverte.length) throw new Error(`${nom} : « ${e.id} » ne dit pas quand elle se découvre (decouverte)`);
+      for (const cond of e.decouverte) {
+        const err = erreurCondition(cond);
+        if (err) throw new Error(`${nom} : « ${e.id} » : ${err}`);
+      }
+      for (const l of e.liens || []) if (!termes.has(l)) throw new Error(`${nom} : « ${e.id} » renvoie vers un terme inconnu : ${l}`);
+    }
+  }
+  return termes;
 }
 
 // Les entrées pour le jeu : descriptions remplies, liens vérifiés.
-const jeu = {
-  categories: data.categories.map((c) => ({
+const pourLeJeu = (livre) => ({
+  categories: livre.categories.map((c) => ({
     id: c.id,
     icone: c.icone,
     nom: c.nom,
@@ -154,15 +161,17 @@ const jeu = {
       ...(ICONES[e.id] ? { icones: ICONES[e.id]() } : {}),
     })),
   })),
-};
+});
+
+const termes = verifier(data, 'encyclopedie_ferme_familiale.json');
+const jeu = pourLeJeu(data);
 const jeuSource = `// FICHIER GÉNÉRÉ par scripts/build-encyclopedie.mjs à partir de encyclopedie_ferme_familiale.json.
 // Ne pas le modifier : changer le fichier JSON, puis lancer
 //   node scripts/build-encyclopedie.mjs
 export const ENCYCLOPEDIE = ${JSON.stringify(jeu, null, 1)};
 `;
-
-// Le récit, lot 11 : une entrée « secret » (la pierre du fil de la lune, que rien ne doit signaler) n'est que
-// dans le livre du jeu, découverte quand on l'a trouvée ; la page publique ne la montre pas, ni les liens vers elle.
+// Une entrée « secret » (le récit, lot 11 ; il n'y en a plus depuis la bascule) n'est que dans le livre du jeu,
+// découverte quand on l'a trouvée ; la page publique ne la montre pas, ni les liens vers elle.
 const secrets = new Set(data.categories.flatMap((c) => c.entrees.filter((e) => e.secret).map((e) => e.id)));
 const publiques = (c) => c.entrees.filter((e) => !secrets.has(e.id));
 
@@ -214,15 +223,12 @@ out = remplacer(out, '<nav class="cat-nav">', '</nav>', `\n        ${menu}\n    
 out = remplacer(out, '<main class="wrap">', '    <p class="no-results"', `\n    \n${data.categories.map(section).join('\n')}\n`);
 
 const total = data.categories.reduce((t, c) => t + c.entrees.length, 0);
-let jeuActuel = null;
-try {
-  jeuActuel = readFileSync(jeuPath, 'utf8');
-} catch (err) {
-  // pas encore généré
-}
+const lire = (f) => { try { return readFileSync(f, 'utf8'); } catch (err) { return null; } };   // (pas encore généré)
+const jeuActuel = lire(jeuPath);
 if (process.argv.includes('--check')) {
-  if (out !== page || jeuActuel !== jeuSource) {
-    console.error(`${out !== page ? 'encyclopedie.html' : 'js/encyclopedie.generated.js'} n'est pas à jour : lancer « node scripts/build-encyclopedie.mjs ».`);
+  const vieux = [out !== page && 'encyclopedie.html', jeuActuel !== jeuSource && 'js/encyclopedie.generated.js'].filter(Boolean);
+  if (vieux.length) {
+    console.error(`${vieux.join(', ')} : pas à jour ; lancer « node scripts/build-encyclopedie.mjs ».`);
     process.exit(1);
   }
   console.log(`encyclopedie.html et js/encyclopedie.generated.js sont à jour (${total} termes, ${data.categories.length} catégories).`);

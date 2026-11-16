@@ -180,7 +180,8 @@ test('migration v52 → v53 : une partie d\'avant a vu les régions de sa ferme,
   const m = migrate({ v: 52, t: 0, s: v52 });
   assertEqual(m.version, STATE_VERSION);
   assertEqual(m.monde, { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuDesRegions(farmTerrain(s), regionsFerme(farmTerrain(s))), but: null, boussole: true }, '(puis v53 → v54 : rien de pris ; v54 → v55 : aucun hameau vu ; v55 → v56 : pas d\'habitants ; v57 → v58 : la ferme et sa prairie vues)');
-  assertEqual({ ...m, monde: undefined, version: 0 }, { ...JSON.parse(JSON.stringify(s)), monde: undefined, version: 0 }, 'le reste à l\'identique');
+  // (la visite de bienvenue d'une partie d'avant, v61 → v62 : attendue au jour 1 ; la partie neuve, une île, n'en a pas)
+  assertEqual({ ...m, monde: undefined, version: 0, bienvenue: undefined }, { ...JSON.parse(JSON.stringify(s)), monde: undefined, version: 0, bienvenue: undefined }, 'le reste à l\'identique');
   assertEqual(casesDuTerrain(farmTerrain(m), m), casesDuTerrain(farmTerrain(s), s));
   assert(sleepOnce(m) !== null, 'la partie continue');
 });

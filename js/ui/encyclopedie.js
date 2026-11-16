@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { escapeHtml } from '../engine/format.js';
 import { setupPending } from '../engine/depart.js';
 import {
-  CATEGORIES, entreeEncyclopedie, lirePage, majEncyclopedie, nombreEntrees, noterEncyclopedie,
+  categoriesDe, entreeEncyclopedie, lirePage, majEncyclopedie, nombreEntrees, noterEncyclopedie,
   nouveautesEncyclopedie, pageConnue, pageNouvelle, pagesConnues,
 } from '../engine/encyclopedie.js';
 import { enLigne, state } from './store.js';
@@ -13,7 +13,6 @@ import { showToast } from './toasts.js';
 import { registerActions } from './actions.js';
 import { livre } from './livre.js';
 import { familyLabelHtml } from './depart.js';
-import { HAMEAUX, hameauxVus } from '../engine/monde-hameaux.js';
 
 /* ---------- l'Encyclopédie, un livre qui se remplit au fil de la partie ----------
    Comme le Livre de recette (js/ui/livre.js) : une couverture, une page à la fois. Les pages,
@@ -29,7 +28,7 @@ let derniereMaj = 0;
 // Les pages du livre : { sorte: 'sommaire' | 'categorie' | 'entree', id }.
 function pagesLivre() {
   const out = [{ sorte: 'sommaire' }];
-  for (const c of CATEGORIES) {
+  for (const c of categoriesDe(state)) {
     out.push({ sorte: 'categorie', id: c.id });
     for (const id of pagesConnues(state, c.id)) out.push({ sorte: 'entree', id });
   }
@@ -40,7 +39,7 @@ const numero = (sorte, id) => pagesLivre().findIndex((p) => p.sorte === sorte &&
 
 // Un lien vers une entrée : la page si elle est découverte, sinon « ? ? ? ».
 function lien(id, classe = 'chip') {
-  const e = entreeEncyclopedie(id);
+  const e = entreeEncyclopedie(id, state);
   if (!e) return '';
   if (!pageConnue(state, id)) return `<span class="${classe} encyclo-inconnue" title="Pas encore découvert">? ? ?</span>`;
   const neuf = pageNouvelle(state, id) ? ' <span class="encyclo-neuf">Nouveau</span>' : '';
@@ -48,10 +47,10 @@ function lien(id, classe = 'chip') {
 }
 
 function sommaireHtml() {
-  const total = nombreEntrees();
+  const total = nombreEntrees(state);
   const connues = pagesConnues(state).length;
   const nouvelles = nouveautesEncyclopedie(state);
-  const cats = CATEGORIES.map((c) => {
+  const cats = categoriesDe(state).map((c) => {
     const n = pagesConnues(state, c.id).length;
     return `<li><button type="button" class="book-toc-link" data-action="book-goto" data-page="${numero('categorie', c.id)}"><span>${c.icone} ${escapeHtml(c.nom)}</span><span class="book-toc-dots" aria-hidden="true"></span><span class="num">${n} / ${c.entrees.length}</span></button></li>`;
   }).join('');
@@ -79,7 +78,7 @@ function collectionsHtml() {
 }
 
 function categorieHtml(id) {
-  const c = CATEGORIES.find((x) => x.id === id);
+  const c = categoriesDe(state).find((x) => x.id === id);
   const n = pagesConnues(state, id).length;
   // les pages découvertes d'abord, puis celles qui restent à découvrir
   const ids = c.entrees.map((e) => e.id);
@@ -94,24 +93,15 @@ function categorieHtml(id) {
 }
 
 function entreeHtml(id) {
-  const e = entreeEncyclopedie(id);
-  const c = CATEGORIES.find((x) => x.id === e.categorie);
+  const e = entreeEncyclopedie(id, state);
+  const c = categoriesDe(state).find((x) => x.id === e.categorie);
   const liens = e.liens.map((l) => lien(l)).join('');
   return `
     ${dessinEntree(e, c)}
     <p class="encyclo-categorie"><button type="button" class="encyclo-lien-texte" data-action="book-goto" data-page="${numero('categorie', c.id)}">${c.icone} ${escapeHtml(c.nom)}</button></p>
     <h2 class="book-title">${escapeHtml(e.terme)}</h2>
     <p class="encyclo-texte">${escapeHtml(e.description)}</p>
-    ${id === 'hameaux' ? hameauxHtml() : ''}
     ${liens ? `<h3 class="book-h3">Voir aussi</h3><div class="encyclo-liens">${liens}</div>` : ''}`;
-}
-
-// La page « Les hameaux » : ceux où l'on est allé (state.monde.hameaux), dans l'ordre de leur découverte.
-function hameauxHtml() {
-  const vus = Object.values(hameauxVus(state)).sort((a, b) => a.jour - b.jour);
-  if (!vus.length) return '';
-  const li = vus.map((h) => `<li><strong>${escapeHtml(h.nom)}</strong>, un hameau ${escapeHtml((HAMEAUX.STYLES[h.style] || HAMEAUX.STYLES.prairie).nom)} <span class="muted">(jour ${h.jour})</span></li>`).join('');
-  return `<h3 class="book-h3">Ceux qu'on a vus</h3><ul class="encyclo-hameaux">${li}</ul>`;
 }
 
 // Fiche 14 : le dessin d'une bête, celui de la carte (une case de sa planche : e.visuels, tirés des
@@ -189,7 +179,7 @@ function majDecouvertes(force = false) {
   if (faites.length) persistState();
   if (!neuves.length) return;
   persistState();
-  const noms = neuves.map((id) => entreeEncyclopedie(id).terme);
+  const noms = neuves.map((id) => entreeEncyclopedie(id, state).terme);
   showToast(neuves.length === 1
     ? `📖 Nouvelle page dans l'Encyclopédie : ${noms[0]}`
     : `📖 ${neuves.length} nouvelles pages dans l'Encyclopédie : ${noms.slice(0, 3).join(', ')}${neuves.length > 3 ? '…' : ''}`, { son: 'decouverte' });
@@ -218,13 +208,6 @@ export function encyclopedieBiome(biome) {
   const e = state.encyclopedie && state.encyclopedie.evenements;
   if (e && e[`biome:${biome}`]) return;
   noterEncyclopedie(state, `biome:${biome}`);
-  majDecouvertes(true);
-}
-
-// Un hameau du grand monde vu pour la première fois (js/ui/stage.js) : la page « Les hameaux » se
-// découvre (la condition « hameau » lit state.monde.hameaux), ou se complète.
-export function encyclopedieHameau() {
-  if (!state) return;
   majDecouvertes(true);
 }
 

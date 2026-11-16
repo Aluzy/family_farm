@@ -17,12 +17,33 @@
 //   reconnecte, demande ce qu'il a manqué depuis sa révision et renvoie ses commandes en attente (le
 //   monde ne joue pas deux fois la même : leur id).
 // - Le bandeau « 🌐 » dit où l'on est, si l'on est à jour, et permet de revenir à sa ferme solo.
+// - I9a2, l'horloge commune d'une île (D13 : horlogeVivante, js/engine/temps-monde.js ; la note :
+//   docs/fiches/ile/I9a2-note-horloge.md) : F.2 ne vaut plus pour elle. Le temps passe par pas de 5 s d'horloge, que
+//   chacun joue chez lui à l'heure du serveur (horlogeEnLigne, à chaque image : js/ui/loop.js ; la synchro :
+//   js/ui/synchro.js) ; la nuit vient seule à 22 h ; tous couchés, elle file dix fois plus vite ; sans joueur, le
+//   monde dort, et le dit au retour. Chacun a son énergie (la partie du monde la range par compte).
+// - I9a, l'île partagée (js/engine/frontiere.js) : le
+//   personnage sort de la ferme et la vue le suit (js/ui/stage.js) ; chacun voit le relief de l'île, tiré chez
+//   lui de la graine ; son brouillard est à lui (gardé dans son navigateur, par monde : brouillard).
+// - I9b, les changements de l'île : hors de la ferme, on récolte (monde.recolter), on pêche et l'on pose des chemins
+//   par le monde, comme sur la ferme ; ce qu'un geste lâche va au coffre commun ; un geste qui n'a pas de sens dehors
+//   est refusé ici, avant d'être envoyé, comme le monde le refuserait. Le monde relaie les positions des joueurs
+//   proches à leur pas, celles des joueurs loin plus rarement (l'intérêt par région : worker/src/monde.mjs).
+// - I9c, le port et la caisse : au port, chacun vend ce qu'il a porté (sa charge, la sienne : synchro.js), la caisse
+//   est commune ; ce qu'un autre vend, achète, livre ou bâtit au port se dit (le bilan de l'événement : commerceEnMots),
+//   et le journal du monde le garde, avec son auteur.
+// - I9e, les rôles en ligne : le monde est l'île d'un propriétaire, ses amis viennent l'aider à faire progresser son
+//   village (js/engine/roles.js, la grille d'une île). Les gestes de gestion du village sont des commandes du monde,
+//   refusées ici (gestePermis, jouerEnLigne) comme le monde les refuserait ; le propriétaire délègue l'attribution des
+//   tâches aux bâtisseurs par un réglage du monde (👥 ; lien.reglages). Ce qu'un autre fait au village se dit (l'ordre
+//   d'une tâche, un commerce ouvert ou suggéré, un nom : gesteEnMots avec le bilan de l'événement). Chacun s'appelle du
+//   prénom de son personnage (hello : prenom).
 
-import { executerCommande, GAME_VERSION, ICONES_ROLES, memberPerso, NOMS_ROLES, refusDuRole, validApparence } from '../engine/index.js';
-import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, quandConnecte } from './compte.js';
+import { clockHours, DATA, empreintePartie, executerCommande, GAME_VERSION, STATE_VERSION, ICONES_ROLES, memberPerso, NOMS_ROLES, pasDe, refusDuRole, refusFrontiere, reglagesMonde, unirVu, validApparence } from '../engine/index.js';
+import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, prenomPersonnage, quandConnecte } from './compte.js';
 import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';
-import { setEnLigne, setState } from './store.js';
+import { setEnLigne, setPasEnLigne, setState } from './store.js';
 import { notify } from './toasts.js';
 import { sonMatin } from './son.js';
 import { refresh } from './render.js';
@@ -71,7 +92,10 @@ function connecter() {
   lien.etat = lien.synchro ? 'reconnexion' : 'connexion';
   bandeau();
   ws.addEventListener('open', () => {
-    ws.send(JSON.stringify({ t: 'hello', version: GAME_VERSION, ...(lien.synchro ? { depuis: lien.synchro.rev } : {}) }));
+    lien.helloT = Date.now();
+    // (I9a2 : le pas de sa partie confirmée : trop en retard, le monde envoie la partie entière)
+    // (I9e : le prénom de son personnage, le nom que les autres voient)
+    ws.send(JSON.stringify({ t: 'hello', version: GAME_VERSION, format: STATE_VERSION, prenom: prenomPersonnage(), ...(lien.synchro ? { depuis: lien.synchro.rev, pas: pasDe(lien.synchro.confirmee) } : {}) }));
   });
   ws.addEventListener('message', (e) => recevoir(ws, e.data));
   ws.addEventListener('close', (e) => {
@@ -133,10 +157,19 @@ function recevoir(ws, data) {
     lien.membres = m.membres || [];
     lien.role = m.role;
     lien.moi = m.moi;
+    lien.proprietaire = m.proprietaire || null;
+    lien.reglages = reglagesMonde(m.reglages);
     lien.essais = 0;
     lien.couche = false;   // (une nouvelle connexion : levé)
     lien.couches = [];
     derniere = null;
+    // (I9a2 : l'horloge du monde, et l'heure du serveur : son avance sur la nôtre, la moitié de l'aller-retour comprise)
+    lien.horloge = m.horloge || null;
+    if (m.horloge && Number.isFinite(m.horloge.maintenant)) {
+      const now = Date.now(), rtt = Math.max(0, now - (lien.helloT || now));
+      lien.decalage = m.horloge.maintenant + rtt / 2 - now;
+    }
+    lien.dormait = m.horloge && m.horloge.dormait > 0 ? m.horloge.dormait : null;
     return;
   }
   // E-5 : qui est couché (et combien sont là)
@@ -147,7 +180,12 @@ function recevoir(ws, data) {
     bandeau();
     return;
   }
-  // E-4 : où regardent les autres (relayé par le monde, jamais écrit) ; leur départ
+  // E-4 : où regardent les autres (relayé par le monde, jamais écrit) ; leur départ. I9b : en entrant dans une région,
+  // les joueurs qui y sont, en un lot.
+  if (m.t === 'lot') {
+    for (const p of Array.isArray(m.pos) ? m.pos : []) if (p && p.t === 'pos') recevoir(ws, JSON.stringify(p));
+    return;
+  }
   if (m.t === 'pos') {
     const a = autres.get(m.acteur) || { nom: '', look: null, ech: [], t: 0 };
     a.nom = m.nom;
@@ -178,38 +216,74 @@ function recevoir(ws, data) {
     if (document.getElementById('membres-titre')) ouvrirMembres();
     return;
   }
+  // I9e : les réglages du monde (la délégation des tâches) ont changé
+  if (m.t === 'reglages') {
+    const avant = lien.reglages || reglagesMonde(null);
+    lien.reglages = reglagesMonde(m.reglages);
+    if (avant.taches !== lien.reglages.taches && lien.role === 'batisseur') notify(lien.reglages.taches ? '🌐 Le propriétaire te confie l\'attribution des tâches des villageois.' : '🌐 Le propriétaire reprend l\'attribution des tâches des villageois.', { duree: 6000 });
+    if (document.getElementById('membres-titre')) ouvrirMembres();
+    refresh();
+    return;
+  }
   // E-12 : le propriétaire a restauré une sauvegarde (la partie est arrivée juste avant : instantane)
   if (m.t === 'restaure') {
     notify(`🌐 Le propriétaire a restauré une sauvegarde du monde : jour ${m.jour}.`, { duree: 7000 });
     return;
   }
+  // I9f : le propriétaire a remis la copie à jour depuis sa partie solo (la partie est arrivée juste avant : instantane)
+  if (m.t === 'remplace') {
+    notify(lien.role === 'proprietaire' ? `🌐 Ton île en ligne est remise à jour depuis ta partie solo : jour ${m.jour}.` : `🌐 Le propriétaire a remis son île en ligne à jour depuis sa partie solo : jour ${m.jour}. Tu repars sans sac ni charge, et tes amitiés avec ses villageois recommencent.`, { duree: 9000 });
+    return;
+  }
   if (m.t === 'instantane') {
+    lien.rattrapage = false;
+    const horloge = m.horloge || lien.horloge;
     if (!lien.synchro) {
-      lien.synchro = new Synchro({ partie: m.partie, rev: m.rev, executerCommande, quandRefaite: partieRefaite });
+      lien.synchro = new Synchro({ partie: m.partie, rev: m.rev, executerCommande, quandRefaite: partieRefaite, moi: lien.moi, horloge });
+      poserBrouillard(lien.synchro.locale);
       setEnLigne(lien.synchro);
       lien.etat = 'ok';
       const p = lien.premiere;
       lien.premiere = null;
       p && p(lien.synchro.locale);
     } else {
-      lien.synchro.instantane(m);
+      lien.synchro.instantane({ ...m, horloge });
       lien.etat = 'ok';
     }
     renvoyer();
+    reveilDuMonde();
     bandeau();
     return;
   }
   if (m.t === 'rattrape') {
     for (const e of m.evts || []) if (!lien.synchro.evenement(e)) { toutRedemander(); return; }
+    // (I9a2 : puis la confirmée jusqu'au pas du monde)
+    if (lien.horloge) lien.synchro.ancrer(lien.horloge);
     lien.etat = 'ok';
     renvoyer();
+    reveilDuMonde();
     bandeau();
     return;
   }
   if (m.t === 'evt') {
     if (!lien.synchro.evenement(m)) toutRedemander();
+    // (I9c : ce qu'un autre a fait au port, dit à chacun ; la caisse est commune)
+    if (m.bilan && m.acteur !== lien.moi && m.cmd) {
+      const qui = nomDuMembre(m.acteur) || 'Un joueur';
+      // (I9e : un invité suggère un commerce : au propriétaire, de décider)
+      const decide = m.cmd.type === 'commerce.suggerer' && lien.role === 'proprietaire' ? ' À toi de décider (sa fiche).' : '';
+      notify(`${echapper(qui)} ${gesteEnMots(m.cmd.type, m.bilan, true)}${decide ? `.${decide}` : ''}`, { kind: 'info', duree: decide ? 10000 : 6000 });
+    }
     if (m.cmd && m.cmd.type === 'nuit.partagee') matin();
     bandeau();
+    return;
+  }
+  // I9a2 : l'instantané au temps du monde : l'empreinte de sa partie à ce pas ; la nôtre diffère, tout est redemandé
+  if (m.t === 'controle') {
+    const S = lien.synchro;
+    if (!S || !S.vivante || !Number.isInteger(m.pas) || pasDe(S.confirmee) > m.pas) return;
+    S.avancerConfirmee(m.pas);
+    if (empreintePartie(S.confirmee) !== m.empreinte) { lien.ecarts = (lien.ecarts || 0) + 1; toutRedemander(); }
     return;
   }
   if (m.t === 'ack' && !m.ok) {
@@ -233,13 +307,66 @@ function coucher() {
   const oui = !lien.couche;
   if (!envoyer({ t: 'coucher', oui })) return;
   lien.couche = oui;
-  if (oui && lien.connectes > 1) notify('🛏 Tu es couché. La nuit passera quand tous les joueurs connectés le seront.');
+  // (I9a2 : sur une île, la nuit vient à son heure ; tous couchés, elle file)
+  if (oui && ileEnLigne()) notify(lien.connectes > 1 ? '🛏 Tu es couché. Quand tous les joueurs connectés le seront, la nuit filera (dès 22 h).' : '🛏 Tu es couché : la nuit filera dès 22 h.');
+  else if (oui && lien.connectes > 1) notify('🛏 Tu es couché. La nuit passera quand tous les joueurs connectés le seront.');
   bandeau();
 }
 
+/* ---------- I9a2 : l'horloge commune d'une île ---------- */
+
+// L'heure du serveur, estimée (la nôtre, plus son avance mesurée à l'accueil).
+export function heureServeur() {
+  return Date.now() + (lien && Number.isFinite(lien.decalage) ? lien.decalage : 0);
+}
+
+// À chaque image (js/ui/loop.js) : la partie locale avance à l'heure du serveur, pas à pas. Trop de retard (un onglet
+// resté caché) : la partie entière redemandée plutôt que tous ces pas. Rend { pas, evts } (rien : null).
+export function horlogeEnLigne() {
+  if (!lien || !lien.synchro || !lien.synchro.vivante || lien.etat !== 'ok' || lien.rattrapage) return null;
+  const S = lien.synchro, t = heureServeur();
+  if (S.retard(t) > DATA.VILLAGE.EN_LIGNE.RETARD_PAS) { lien.rattrapage = true; toutRedemander(); return null; }
+  const r = S.avancer(t);
+  for (const ev of r.evts) {
+    if (ev.reveil) matinIle();
+    if (ev.nuit) notify('🌙 22 h : la nuit tombe sur l\'île. Couchez-vous tous (🛏) : elle filera.', { duree: 5000 });
+  }
+  if (r.evts.some((ev) => ev.nuit || ev.reveil)) bandeau();
+  return r;
+}
+setPasEnLigne(horlogeEnLigne);
+
+// La part du pas en cours déjà écoulée (l'heure affichée entre deux pas : js/ui/stage.js) ; 0 hors d'une île.
+export function fractionDuPas() {
+  return lien && lien.synchro && lien.synchro.vivante && lien.etat === 'ok' ? lien.synchro.fraction(heureServeur()) : 0;
+}
+
+// Le réveil d'une île (le pas de 6 h) : chacun se lève.
+function matinIle() {
+  lien.couche = false;
+  lien.couches = [];
+  try { sonMatin(); } catch (e) { /* (le son ne doit rien empêcher) */ }
+  const s = lien.synchro && lien.synchro.locale;
+  notify(`🌅 Le jour ${s ? s.day : ''} se lève sur l'île.`, { duree: 5000 });
+}
+
+// Le monde dormait (sans joueur) : le dire, une fois, à l'arrivée.
+function reveilDuMonde() {
+  if (!lien || !lien.dormait || !lien.synchro) return;
+  const s = lien.synchro.locale, ms = lien.dormait;
+  lien.dormait = null;
+  const min = Math.round(ms / 60000), duree = min < 60 ? `${Math.max(1, min)} min` : min < 48 * 60 ? `${Math.round(min / 60)} h` : `${Math.round(min / 1440)} jours`;
+  const h = clockHours(s), heure = `${Math.floor(h)} h${Math.floor((h % 1) * 60) ? ` ${String(Math.floor((h % 1) * 60)).padStart(2, '0')}` : ''}`;
+  // (I9d : le village dormait avec lui : ses villageois n'ont rien fait, rien produit pendant ce temps)
+  const village = Array.isArray(s.villageois) && s.villageois.length ? ' Le village dormait avec lui : ses villageois n\'ont rien produit en ton absence, ils reprennent leur journée.' : '';
+  notify(`🌙 Le monde dormait depuis ${duree} : il reprend où il s'était arrêté (jour ${s.day}, ${heure}).${village}`, { duree: 8000 });
+}
+
+export const TEMPS_DU_MONDE = '🕰️ Le temps de ce monde passe quand au moins un joueur y est. Sans personne, il dort.';
+
 // Un trou dans les événements : la partie entière redemandée (un hello sans révision).
 function toutRedemander() {
-  envoyer({ t: 'hello', version: GAME_VERSION });
+  envoyer({ t: 'hello', version: GAME_VERSION, format: STATE_VERSION });
 }
 
 // La partie locale refaite (un geste d'un autre joueur, un refus) : le jeu la reprend.
@@ -250,6 +377,7 @@ function marquerChangement(qui) {
   if (F) F.changement = !F.changement || F.changement === qui ? qui : 'mixte';
 }
 function partieRefaite(locale) {
+  poserBrouillard(locale);
   marquerChangement('distant');
   setState(locale);
   refresh();
@@ -258,9 +386,14 @@ function partieRefaite(locale) {
 // executer (commandes.js), en ligne : la commande jouée sur la partie locale, puis envoyée (si la
 // connexion est coupée, elle attend : renvoyée à la reconnexion).
 export function jouerEnLigne(cmd) {
-  // (E-11 : son rôle dans le monde ne le permet pas : refusé ici, sans attendre le monde, qui le vérifie aussi)
-  const refus = lien.role ? refusDuRole(lien.role, lien.synchro.locale, cmd) : null;
+  // (E-11 : son rôle dans le monde ne le permet pas : refusé ici, sans attendre le monde, qui le vérifie aussi ; I9e : avec
+  // les réglages du monde)
+  const refus = lien.role ? refusDuRole(lien.role, lien.synchro.locale, cmd, lien.reglages) : null;
   if (refus) return { ok: false, error: `🌐 ${refus}` };
+  // (I9a, I9b : l'île partagée ; hors de la ferme, seuls les gestes du dehors passent : un autre est refusé ici,
+  // comme le monde le refuserait)
+  const frontiere = refusFrontiere(lien.synchro.locale, cmd.args, cmd.type);
+  if (frontiere) return { ok: false, error: `🌐 ${frontiere}` };
   const r = lien.synchro.jouer(cmd);
   if (r.ok) { marquerChangement('local'); envoyer({ t: 'cmd', id: cmd.id, type: cmd.type, args: cmd.args }); }
   bandeau();
@@ -268,6 +401,63 @@ export function jouerEnLigne(cmd) {
 }
 
 brancherEnLigne(jouerEnLigne);
+
+// I9e : le joueur peut-il faire le geste `type` (ses arguments `args`) dans ce monde ? Son rôle et les réglages du monde
+// (la page n'en montre le bouton qu'à qui le peut) ; en solo, toujours.
+export function gestePermis(type, args = {}) {
+  if (!lien || !lien.role || !lien.synchro) return true;
+  return !refusDuRole(lien.role, lien.synchro.locale, { type, args }, lien.reglages);
+}
+// I9e : le prénom d'un membre du monde (son compte), ou '' (en solo, inconnu).
+export function nomDuMembre(compte) {
+  const m = lien && Array.isArray(lien.membres) ? lien.membres.find((x) => x.compte === compte) : null;
+  return m ? String(m.nom || '') : '';
+}
+
+/* ---------- I9a : l'île partagée ---------- */
+
+// Le monde partagé est-il là (l'île entière : la ferme seule d'E-8 est retirée) ?
+export function ileEnLigne() {
+  return !!(lien && lien.synchro);
+}
+
+// Le brouillard de chacun : ce que SON personnage a vu de l'île. Il n'est pas dans la partie du monde (elle
+// garde le vu de sa création) : il est gardé ici, dans le navigateur, par monde (localStorage), et posé sur la
+// partie locale à chaque fois qu'elle est refaite (unirVu : ce que le monde a vu, plus ce que l'on a vu). Les
+// régions vues du moteur (state.monde.vues) restent celles du monde : le moteur les lit, la partie confirmée
+// doit être la même chez tous.
+let brouillard = null;   // { monde, vu (base64, comme state.monde.vu) }
+const cleBrouillard = (monde) => `ferme-brouillard-${monde}`;
+function brouillardDuMonde() {
+  if (!lien) return null;
+  if (!brouillard || brouillard.monde !== lien.monde) {
+    let vu = '';
+    try { vu = localStorage.getItem(cleBrouillard(lien.monde)) || ''; } catch (e) { vu = ''; }
+    brouillard = { monde: lien.monde, vu };
+  }
+  return brouillard;
+}
+function poserBrouillard(partie) {
+  if (!partie) return;
+  const b = brouillardDuMonde();
+  if (b && b.vu) unirVu(partie, b.vu);
+}
+// Le vu de la partie locale a grandi (le personnage a marché : js/ui/stage.js) : il devient celui de chacun.
+export function noterBrouillard(vu) {
+  const b = brouillardDuMonde();
+  if (!b || typeof vu !== 'string' || !vu || vu === b.vu) return;
+  b.vu = vu;
+  try { localStorage.setItem(cleBrouillard(b.monde), vu); } catch (e) { /* (le navigateur ne garde rien : la session seule) */ }
+}
+
+// Le personnage est-il hors de la ferme ? (js/ui/stage.js, à chaque case : gardé ; I9b, le bandeau ne le dit plus.)
+export function noterDehors(oui) {
+  if (!lien || !!lien.dehors === !!oui) return;
+  lien.dehors = !!oui;
+  // (I9b : sur une île, dehors, il mange de son sac : js/ui/energie.js le lit)
+  if (typeof window !== 'undefined' && window.FermeEnLigne) window.FermeEnLigne.dehors = !!oui && ileEnLigne();
+  bandeau();
+}
 
 /* ---------- E-4 : la présence ---------- */
 
@@ -318,11 +508,28 @@ if (typeof window !== 'undefined') setInterval(envoyerPosition, POS_MS);
 // actions qui changent la partie (actions.js, SOMMEIL_BLOQUEES), sauf celles-là. Dormir : par le bandeau.
 const CONSTRUIRE = new Set(['bloc', 'bloc-many', 'build-toggle', 'build-pick', 'build-tab', 'build-groupe', 'build-filtre', 'meuble-ok', 'build-level-menu', 'build-level', 'build-piece', 'build-gomme', 'build-tourner', 'build-peindre', 'build-tapisser', 'build-motif', 'meuble-peindre', 'build-sens', 'meuble-tourner', 'build-annuler', 'bloc-pipette', 'bloc-deplacer', 'etage-toggle']);
 // (E-5 : le potager ; E-6 : les bêtes ; E-7 : la cuisine, le Moulin, le frigo, la boîte, manger ; E-9 : les outils, le verger ; E-10 : la progression, l'Atelier, les appareils, planter un arbre)
-const FERME = new Set(['buy-tech', 'atelier-fabriquer', 'bloc-fabriquer', 'build-station', 'toggle', 'upgrade', 'upgrade-tank', 'robot-autonomie', 'maintain', 'repair', 'arbre-planter', 'arbre-case', 'arbre-oui', 'semis-set', 'silo-agrandir', 'tool-use', 'axe-toggle', 'pick-toggle', 'scythe-toggle', 'rod-toggle', 'harvest-tree', 'start-recipe', 'cancel-queued', 'stop-recipe', 'mill-start', 'mill-cancel', 'eat', 'sac-manger', 'fridge-in', 'fridge-out', 'fridge-in-all', 'fridge-in-urgent', 'frigo-ranger', 'build-fridge', 'upgrade-fridge', 'boite-deposer', 'boite-reprendre', 'feed-hen', 'feed-all', 'shear', 'cow-herbs', 'buy-pasture', 'upgrade-poulailler', 'plant', 'plant-many', 'plant-all', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'hoe', 'hoe-many', 'hoe-toggle', 'hoe-take', 'cruche-remplir', 'tonnelet-remplir', 'compost-jeter', 'engrais-many', 'engrais-toggle']);
+const FERME = new Set(['sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre', 'buy-tech', 'atelier-fabriquer', 'bloc-fabriquer', 'build-station', 'toggle', 'upgrade', 'upgrade-tank', 'robot-autonomie', 'maintain', 'repair', 'arbre-planter', 'arbre-case', 'arbre-oui', 'semis-set', 'silo-agrandir', 'tool-use', 'axe-toggle', 'pick-toggle', 'scythe-toggle', 'rod-toggle', 'harvest-tree', 'start-recipe', 'cancel-queued', 'stop-recipe', 'mill-start', 'mill-cancel', 'eat', 'sac-manger', 'fridge-in', 'fridge-out', 'fridge-in-all', 'fridge-in-urgent', 'frigo-ranger', 'build-fridge', 'upgrade-fridge', 'boite-deposer', 'boite-reprendre', 'feed-hen', 'feed-all', 'shear', 'cow-herbs', 'buy-pasture', 'upgrade-poulailler', 'plant', 'plant-many', 'plant-all', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'hoe', 'hoe-many', 'hoe-toggle', 'hoe-take', 'cruche-remplir', 'tonnelet-remplir', 'compost-jeter', 'engrais-many', 'engrais-toggle']);
 const JAMAIS = /^(test-|do-import|do-new-game|ask-new-game|demarrer|accueil-)/;
+// (I9f : ce qui change la famille de la partie, ses habits, sa tente, ses animaux : à la partie solo ; le choix d'un lit,
+// lit-oui, l'est déjà : SOMMEIL_BLOQUEES)
+const FAMILLE_SOLO = new Set(['member-save', 'member-add', 'member-remove', 'pet-add', 'pet-save', 'pet-remove', 'fiche-case', 'fiche-equiper', 'fiche-tente']);
+export const FAMILLE_EN_LIGNE = 'En ligne, la famille, ses habits et ses animaux ne changent pas : on les change dans sa partie solo.';
+// (I9e : les commerces et l'étal d'une île en ligne : des commandes du monde, js/ui/commerce.js, js/ui/etal.js)
+const PAS_ENCORE_ILE = new Set(['vocation-projet-envoyer', 'vocation-projet-abandonner']);
+const ILE_EN_LIGNE = new Set(['charrette-palier', 'commerce-ouvrir', 'commerce-acheter', 'commerce-commander', 'commerce-lettres', 'commerce-rejoindre', 'etal-mettre', 'etal-reprendre']);
 export function actionPermise(action, bloquees) {
   if (JAMAIS.test(action)) return 'Pas dans un monde en ligne : reviens à ta ferme solo (🌐 › Ma ferme solo).';
   if (action === 'sleep') return 'En ligne, on se couche par le bandeau (🛏 Se coucher) : la nuit passe quand tout le monde dort.';
+  // (I9d : sur une île, offrir un cadeau à un villageois : villageois.offrir, avec son amitié à soi)
+  if (action === 'ami-offrir' && ileEnLigne()) return null;
+  // (I9f : la famille de la partie d'un monde est celle de son propriétaire : ses prénoms, son allure, ses habits, sa tente
+  // et ses animaux ne changent pas en ligne, où ils ne s'écriraient que dans la partie locale, effacés au prochain geste
+  // d'un autre ; ils se changent dans la partie solo)
+  if (FAMILLE_SOLO.has(action)) return FAMILLE_EN_LIGNE;
+  // (I9e : sur une île, les commerces et l'étal passent par le monde : leurs commandes, avec les rôles ; le chantier d'un
+  // projet du village n'a pas encore de commande : refusé plutôt que joué sur la seule page)
+  if (ILE_EN_LIGNE.has(action) && ileEnLigne()) return null;
+  if (PAS_ENCORE_ILE.has(action) && ileEnLigne()) return 'En ligne, ce geste ne se fait pas encore : il viendra bientôt.';
   if (bloquees.has(action) && !CONSTRUIRE.has(action) && !FERME.has(action)) return 'En ligne, ce geste ne se fait pas encore : il viendra bientôt.';
   return null;
 }
@@ -347,6 +554,8 @@ export function bandeau() {
   const nc = (lien.couches || []).length, total = lien.connectes || 0;
   const lit = `<button class="btn${lien.couche ? ' primary' : ''}" type="button" data-action="monde-coucher" aria-pressed="${!!lien.couche}">🛏 ${lien.couche ? 'Couché' : 'Se coucher'}${total > 1 && nc ? ` ${nc}/${total}` : ''}</button>`;
   const role = lien.role ? `<span title="Ton rôle : ${NOMS_ROLES[lien.role] || lien.role}" aria-label="Ton rôle : ${NOMS_ROLES[lien.role] || lien.role}">${ICONES_ROLES[lien.role] || ''}</span> ` : '';
+  // (I9b : hors de la ferme, sur l'île partagée, tout se synchronise : le bandeau d'I9a, « rien d'autre n'est encore
+  // synchronisé », est retiré)
   el.innerHTML = `<span class="en-ligne-etat">🌐 ${role}<span class="en-ligne-mot">En ligne · </span>${etat}${attente}</span>${lit}<button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter" aria-label="Revenir à ma ferme solo"><span class="en-ligne-mot">Ma ferme </span>solo</button>`;
 }
 
@@ -361,6 +570,13 @@ const ROLES_TEXTE = {
   jardinier: 'cultive, s\'occupe des bêtes, cuisine, se sert des outils ; ne construit pas',
   visiteur: 'regarde, se promène, dort avec vous ; ne change rien',
 };
+// (I9e : sur une île, ce que chacun fait pour aider ton village ; le reste est à toi)
+const ROLES_TEXTE_ILE = {
+  batisseur: 'en plus : construit (sur l\'île aussi), achète au port et aux commerces ; attribue les tâches si tu le lui confies',
+  jardinier: 'récolte, cultive, cuisine, vend au port, se lie aux villageois, leur confie un outil, fabrique, annote la chronique ; ne construit pas',
+  visiteur: 'regarde, se promène, parle aux villageois, dort avec vous ; ne change rien',
+};
+const texteRole = (r) => (ileEnLigne() ? ROLES_TEXTE_ILE : ROLES_TEXTE)[r];
 const roleTexte = (r) => `${ICONES_ROLES[r] || ''} ${NOMS_ROLES[r] || r}`;
 function ouvrirMembres() {
   if (!lien) return;
@@ -368,7 +584,7 @@ function ouvrirMembres() {
   const lignes = lien.membres.map((m) => {
     const nom = `${echapper(m.nom)}${m.compte === lien.moi ? ' (toi)' : ''}`;
     if (!proprio || m.role === 'proprietaire') return `<div class="row"><span>${roleTexte(m.role)} · ${nom}</span></div>`;
-    const choix = ROLES_CHOIX.map((r) => `<button class="btn${m.role === r ? ' primary' : ''}" type="button" data-action="monde-role" data-compte="${echapper(m.compte)}" data-role="${r}" aria-pressed="${m.role === r}" title="${NOMS_ROLES[r]} : ${ROLES_TEXTE[r]}">${ICONES_ROLES[r]}</button>`).join('');
+    const choix = ROLES_CHOIX.map((r) => `<button class="btn${m.role === r ? ' primary' : ''}" type="button" data-action="monde-role" data-compte="${echapper(m.compte)}" data-role="${r}" aria-pressed="${m.role === r}" title="${NOMS_ROLES[r]} : ${texteRole(r)}">${ICONES_ROLES[r]}</button>`).join('');
     const retrait = aRetirer === m.compte ? `<button class="btn danger" type="button" data-action="monde-retirer-oui" data-compte="${echapper(m.compte)}">Oui, le retirer</button><button class="btn" type="button" data-action="monde-retirer-non">Non</button>` : `<button class="btn" type="button" data-action="monde-retirer" data-compte="${echapper(m.compte)}">Retirer</button>`;
     return `<div class="row"><span>${roleTexte(m.role)} · ${nom}</span>${choix}${retrait}</div>`;
   }).join('');
@@ -377,13 +593,23 @@ function ouvrirMembres() {
       <textarea id="invitation-lien" rows="3" readonly>${echapper(invitation.lien)}</textarea>
       <div class="row"><button class="btn" type="button" data-action="monde-copier">Copier</button>${typeof navigator !== 'undefined' && navigator.share ? '<button class="btn" type="button" data-action="monde-partager">Partager</button>' : ''}</div>`
       : `<p class="muted">Inviter un ami : un lien à lui envoyer. Choisis son rôle (tu pourras le changer ensuite).</p>
-      <div class="stack">${ROLES_CHOIX.map((r) => `<button class="btn${r === 'batisseur' ? ' primary' : ''}" type="button" data-action="monde-inviter" data-role="${r}">${roleTexte(r)} <span class="muted">· ${ROLES_TEXTE[r]}</span></button>`).join('')}</div>`;
+      <div class="stack">${ROLES_CHOIX.map((r) => `<button class="btn${r === 'batisseur' ? ' primary' : ''}" type="button" data-action="monde-inviter" data-role="${r}">${roleTexte(r)} <span class="muted">· ${texteRole(r)}</span></button>`).join('')}</div>`;
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="membres-titre">👥 Les membres</h2>
     <div class="stack">${lignes}</div>
     <div class="stack">${inv}</div>
+    ${ileEnLigne() ? `<p class="muted">${TEMPS_DU_MONDE}</p>` : ''}
+    ${ileEnLigne() ? reglagesHtml(proprio) : ''}
     ${proprio ? '<div class="row"><button class="btn" type="button" data-action="monde-journal">📜 Le journal du monde</button><button class="btn" type="button" data-action="monde-sauvegardes">💾 Les sauvegardes</button></div>' : ''}`, { labelledBy: 'membres-titre' });
+}
+
+// I9e : sur une île, ce qui reste au propriétaire, et la délégation des tâches aux bâtisseurs (un réglage du monde).
+function reglagesHtml(proprio) {
+  const oui = !!(lien.reglages && lien.reglages.taches);
+  const garde = '<p class="muted">🏡 Ton île, ton village : tes amis t\'aident à le faire grandir. Toi seul attribues les tâches, décides qu\'un villageois ouvre un commerce, formes un foyer, nommes, agrandis le port et retires la maison d\'un villageois.</p>';
+  if (!proprio) return `<p class="muted">🏡 Tu aides le propriétaire à faire grandir son village. Les tâches des villageois : ${oui ? 'il les confie aussi aux bâtisseurs' : 'c\'est lui qui les attribue'}.</p>`;
+  return `${garde}<div class="row"><button class="btn${oui ? ' primary' : ''}" type="button" data-action="monde-deleguer" aria-pressed="${oui}" id="monde-deleguer">🧺 ${oui ? 'Les bâtisseurs attribuent aussi les tâches' : 'Confier l\'attribution des tâches aux bâtisseurs'}</button></div>`;
 }
 
 // E-11 : ce qu'un geste du journal a fait, en mots.
@@ -397,16 +623,78 @@ const GESTES = {
   'ramassage.prendre': 'a ramassé', 'cuisine.lancer': 'a lancé une recette', 'cuisine.annuler': 'a retiré une préparation', 'cuisine.arreter': 'a arrêté une préparation', 'moulin.moudre': 'a moulu du blé', 'moulin.annuler': 'a repris du blé',
   'frigo.ranger': 'a rangé au frigo', 'frigo.sortir': 'a sorti du frigo', 'frigo.toutRanger': 'a tout rangé au frigo', 'frigo.urgent': 'a mis au frais', 'frigo.acheter': 'a acheté le frigo', 'frigo.agrandir': 'a agrandi le frigo',
   'boite.deposer': 'a garni la boîte', 'boite.reprendre': 'a repris dans la boîte', 'manger': 'a mangé',
+  'monde.recolter': 'a récolté sur l\'île', 'sac.poser': 'a pris un sac à provisions', 'sac.retirer': 'a rangé son sac', 'sac.remplir': 'a rempli son sac', 'sac.reprendre': 'a repris dans son sac',
   'outil.couper': 'a coupé du bois', 'outil.casser': 'a cassé un rocher', 'outil.caillou': 'a ramassé un caillou', 'outil.faucher': 'a fauché', 'outil.faucherAutour': 'a fauché', 'outil.pecher': 'a pêché', 'verger.cueillir': 'a cueilli des fruits',
   'tech.acheter': 'a acquis une technologie', 'atelier.fabriquer': 'a fabriqué à l\'Atelier', 'atelier.construire': 'a construit un atelier',
   'appareil.basculer': 'a allumé ou éteint un appareil', 'appareil.ameliorer': 'a amélioré un appareil', 'appareil.entretenir': 'a entretenu un appareil', 'appareil.reparer': 'a réparé un appareil',
   'reservoir.agrandir': 'a agrandi le réservoir', 'robot.batterie': 'a agrandi la batterie du robot', 'arbre.planter': 'a planté un arbre', 'massif.cueillir': 'a cueilli des fleurs',
+  'port.vendre': 'a vendu au port', 'port.decharger': 'a tout vendu au port', 'port.acheter': 'a acheté au port', 'port.honorer': 'a livré une commande du bac',
+  'port.livrer': 'a livré un contrat d\'export', 'port.importer': 'a commandé au catalogue d\'import', 'port.contrat': 'a accepté un contrat d\'export',
+  'port.apporter': 'a apporté au chantier du port', 'port.agrandir': 'a agrandi le port',
+  'portage.charger': 'a chargé pour le port', 'portage.reprendre': 'a déchargé à la ferme', 'portage.vehicule': 'a choisi comment porter',
   'nuit.partagee': 'tout le monde a dormi : la nuit est passée',
+  'temps.sommeil': 'tous couchés (la nuit file), ou l\'un s\'est levé',
   'monde.restaurer': 'a restauré une sauvegarde',
+  // (I9f : la mise à jour du monde, la copie remise à jour)
+  'monde.migrer': 'est passé à la version du serveur', 'monde.remplacer': 'a remis l\'île en ligne à jour depuis sa partie solo',
+  // (I9e : les gestes du village)
+  'villageois.attribuer': 'a confié une tâche', 'villageois.outil': 'a confié un outil', 'villageois.vendre': 'a choisi ce qu\'un villageois porte au port',
+  'villageois.foyer': 'a proposé un foyer', 'villageois.enfant': 'a proposé un enfant', 'villageois.parler': 'a parlé à un villageois',
+  'villageois.offrir': 'a offert un cadeau', 'villageois.accueillir': 'a accueilli un nouveau venu',
+  'commerce.ouvrir': 'a ouvert un commerce', 'commerce.rejoindre': 'a fait rejoindre un commerce', 'commerce.suggerer': 'a suggéré un commerce',
+  'commerce.acheter': 'a acheté à un commerce', 'commerce.commander': 'a commandé à un commerce', 'commerce.lettres': 'a changé une enseigne',
+  'etal.mettre': 'a mis à l\'étal', 'etal.reprendre': 'a repris de l\'étal', 'nom.donner': 'a donné un nom',
+  'chronique.epingler': 'a épinglé une ligne de la chronique', 'chronique.noter': 'a écrit dans la chronique',
+  'village.commun': 'a réglé le garde-manger du village', 'village.reserve': 'a réglé la réserve du village', 'village.cuisine': 'a réglé la cuisine du village',
+  // (I2b : la charrette du village)
+  'charrette.palier': 'a amélioré la charrette du village',
 };
 const FAMILLES_GESTES = { mur: 'a bâti un mur', etage: 'a bâti à l\'étage', solEtage: 'a posé un sol à l\'étage' };
-export function gesteEnMots(type) {
+export function gesteEnMots(type, bilan = null, caisse = false) {
+  // (I9f : le monde mis à jour à sa première ouverture par le serveur ; une ferme d'avant, passée sur l'île)
+  if (type === 'monde.migrer' && bilan && typeof bilan === 'object') return bilan.ile ? `est passé sur l'île à bâtir (la ferme d'avant est gardée dans 💾)${bilan.perdus ? ` ; ${bilan.perdus} geste(s) d'avant n'ont pas pu être rejoués` : ''}` : `est passé à la version ${echapper(bilan.vers || '?')} du jeu`;
+  if (bilan && typeof bilan === 'object') return villageEnMots(type, bilan) || commerceEnMots(type, bilan, caisse);
   return GESTES[type] || FAMILLES_GESTES[String(type).split('.')[0]] || 'a fait un geste';
+}
+// I9c : un geste du commerce et son bilan (worker/src/monde.mjs bilanCommerce), en mots : « a vendu 12 🥕 Carotte au
+// port (+48 💰) ». `caisse` : le dire de la caisse commune (pour les autres joueurs, sur le moment).
+const nomObjet = (k) => { const it = DATA.OBJETS[k]; return it ? `${it.icone} ${it.nom.toLowerCase()}` : String(k || '?'); };
+const pieces = (n) => `${Math.round(Number(n) || 0).toLocaleString('fr-FR')} 💰`;
+export function commerceEnMots(type, b, caisse = false) {
+  const enCaisse = caisse ? ' à la caisse commune' : '';
+  const liste = (o) => Object.entries(o || {}).map(([k, n]) => `${n} ${nomObjet(k)}`).join(', ') || 'rien';
+  switch (type) {
+    case 'port.vendre': return `a vendu ${b.n} ${nomObjet(b.objet)} au port (+${pieces(b.gain)}${enCaisse})`;
+    case 'port.decharger': return `a tout vendu au port : ${liste(b.vendus)} (+${pieces(b.gain)}${enCaisse})`;
+    case 'port.acheter': return `a acheté ${b.n} ${nomObjet(b.objet)} au port (−${pieces(b.cout)}${caisse ? ' de la caisse commune' : ''})`;
+    case 'port.honorer': return `a livré ${b.n} ${nomObjet(b.objet)} à une commande du bac (+${pieces(b.gain)}${enCaisse})${Number.isInteger(b.reste) ? ` : il en reste ${b.reste} à livrer` : ''}`;
+    case 'port.livrer': return `a livré ${b.n} ${nomObjet(b.objet)} à un contrat d'export (+${pieces(b.gain)}${enCaisse})`;
+    case 'port.importer': return `a commandé au catalogue d'import (−${pieces(b.cout)}${caisse ? ' de la caisse commune' : ''})`;
+    case 'port.contrat': return `a accepté un contrat d'export : ${b.n} ${nomObjet(b.objet)}`;
+    case 'port.apporter': return `a apporté au chantier du port : ${liste(b.apporte)}`;
+    case 'port.agrandir': return `a agrandi le port : niveau ${b.niveau}`;
+    default: return GESTES[type] || 'a fait un geste';
+  }
+}
+// I9e : un geste du village et son bilan (worker/src/monde.mjs bilanGeste), en mots : « a confié à Léa : 🪓 bûcheron
+// (avant : sans tâche) » ; null pour un autre geste.
+const nomTache = (t) => { const d = t && DATA.TACHES && DATA.TACHES.LISTE && DATA.TACHES.LISTE[t]; return d ? `${d.icone || ''} ${String(d.nom || t).toLowerCase()}`.trim() : 'sans tâche'; };
+const nomSorte = (s) => { const d = DATA.ARTISANS && DATA.ARTISANS.COMMERCES && DATA.ARTISANS.COMMERCES[s]; return d ? `${d.icone || ''} ${(d.un || d.nom || s)}`.trim() : String(s || '?'); };
+const quiV = (b) => echapper(b && b.prenom ? b.prenom : 'un villageois');
+function villageEnMots(type, b) {
+  switch (type) {
+    case 'villageois.attribuer': return `a confié à ${quiV(b)} : ${nomTache(b.apres)} (avant : ${nomTache(b.avant)})`;
+    case 'villageois.outil': return b.repris ? `a repris son outil à ${quiV(b)}` : `a confié un outil à ${quiV(b)}`;
+    case 'villageois.vendre': return `a choisi ce que ${quiV(b)} porte au port (${Number(b.n) || 0})`;
+    case 'villageois.foyer': return `a proposé un foyer à ${echapper(b.a || '?')} et ${echapper(b.b || '?')}`;
+    case 'villageois.enfant': return 'a proposé à un foyer d\'accueillir un enfant';
+    case 'commerce.ouvrir': return `a décidé : ${quiV(b)} ouvre ${echapper(b.nom || nomSorte(b.sorte))}`;
+    case 'commerce.rejoindre': return `a décidé : ${quiV(b)} rejoint un commerce`;
+    case 'commerce.suggerer': return `suggère que ${quiV(b)} ouvre ${echapper(nomSorte(b.sorte))}`;
+    case 'charrette.palier': return `a amélioré la charrette du village : ${b.branche === 'capacite' ? 'sa capacité' : 'sa vitesse'}, palier ${Number(b.palier) || '?'}${b.nom ? ` (${echapper(b.nom)})` : ''}, −${pieces(b.prix)} de la caisse commune`;
+    case 'nom.donner': return `a nommé ${{ ile: 'l\'île', village: 'le village', maison: 'une maison', commerce: 'un commerce' }[b.quoi] || 'quelque chose'} : ${echapper(b.nom || '—')}`;
+    default: return null;
+  }
 }
 function ilYa(ts) {
   const m = Math.max(0, Math.round((Date.now() - Number(ts)) / 60000));
@@ -423,11 +711,11 @@ async function ouvrirJournal(suite = false) {
   const r = await appelServeur(`/mondes/${lien.monde}/journal${avant ? `?avant=${avant}` : ''}`, { methode: 'GET' });
   if (!r.ok) { notify(`🌐 ${r.erreur || 'Le journal n\'a pas pu être lu.'}`); return; }
   journalVu = suite ? journalVu.concat(r.evts || []) : (r.evts || []);
-  const lignes = journalVu.length ? journalVu.map((e) => `<li><strong>${echapper(e.nom)}</strong> ${gesteEnMots(e.type)} <span class="muted">· ${ilYa(e.ts)} · n° ${e.rev}</span></li>`).join('') : '<li class="muted">Rien encore.</li>';
+  const lignes = journalVu.length ? journalVu.map((e) => `<li><strong>${echapper(e.nom)}</strong> ${gesteEnMots(e.type, e.bilan)} <span class="muted">· ${ilYa(e.ts)} · n° ${e.rev}</span></li>`).join('') : '<li class="muted">Rien encore.</li>';
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="journal-titre">📜 Le journal du monde</h2>
-    <p class="muted">Qui a fait quoi dans ta ferme, du plus récent au plus ancien.</p>
+    <p class="muted">Qui a fait quoi dans ${ileEnLigne() ? 'ton île' : 'ta ferme'}, du plus récent au plus ancien.</p>
     <ul class="journal-monde">${lignes}</ul>
     ${(r.evts || []).length >= 50 ? '<div class="row"><button class="btn" type="button" data-action="monde-journal-suite">Plus ancien</button></div>' : ''}
     <div class="row"><button class="btn" type="button" data-action="monde-membres">👥 Les membres</button></div>`, { labelledBy: 'journal-titre' });
@@ -435,7 +723,10 @@ async function ouvrirJournal(suite = false) {
 
 // E-12 : les sauvegardes du monde (le propriétaire) : une après chaque nuit, d'autres à la demande ; en
 // restaurer une remplace la partie du monde pour tous (la partie d'avant est sauvée d'abord).
-const RAISONS = { nuit: '🌙 après la nuit', main: '💾 à la main', 'avant-restauration': '↩️ avant une restauration' };
+const RAISONS = { nuit: '🌙 après la nuit', main: '💾 à la main', 'avant-restauration': '↩️ avant une restauration', heure: '🕰️ une heure de jeu', depart: '👋 au départ du dernier joueur',
+  // (I9f)
+  'avant-ile': '🏝️ avant le passage sur l\'île', 'avant-mise-a-jour': '⬆️ avant une mise à jour du jeu', 'avant-remplacement': '🔄 avant la copie remise à jour' };
+const SAUVEGARDES_GARDEES = 14;   // (worker/src/monde.mjs, SAUVEGARDES.GARDER)
 let sauvegardesVues = [], aRestaurer = null;
 async function ouvrirSauvegardes(relire = true) {
   if (!lien) return;
@@ -451,7 +742,7 @@ async function ouvrirSauvegardes(relire = true) {
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="sauvegardes-titre">💾 Les sauvegardes du monde</h2>
-    <p class="muted">Une après chaque nuit, et quand tu veux. Restaurer remet la ferme de tout le monde dans cet état ; la ferme d'avant est sauvée d'abord, tu peux donc revenir en arrière.</p>
+    <p class="muted">${ileEnLigne() ? `Une par heure de jeu en ligne, une quand le dernier joueur part, et quand tu veux (les ${SAUVEGARDES_GARDEES} dernières sont gardées). Restaurer remet l'île de tout le monde dans cet état ; l'île d'avant est sauvée d'abord, tu peux donc revenir en arrière.` : 'Une après chaque nuit, et quand tu veux. Restaurer remet la ferme de tout le monde dans cet état ; la ferme d\'avant est sauvée d\'abord, tu peux donc revenir en arrière.'}</p>
     <ul class="journal-monde">${lignes}</ul>
     <div class="row"><button class="btn primary" type="button" data-action="monde-sauvegarder">Sauvegarder maintenant</button><button class="btn" type="button" data-action="monde-membres">👥 Les membres</button></div>`, { labelledBy: 'sauvegardes-titre' });
 }
@@ -528,6 +819,8 @@ registerActions({
   'monde-restaurer-non': () => { aRestaurer = null; ouvrirSauvegardes(false); },
   'monde-restaurer-oui': (target) => { restaurer(target.dataset.cle); },
   'monde-journal-suite': () => { ouvrirJournal(true); },
+  // (I9e : le propriétaire délègue — ou reprend — l'attribution des tâches aux bâtisseurs)
+  'monde-deleguer': () => { if (lien && lien.role === 'proprietaire') envoyer({ t: 'reglages', taches: !(lien.reglages && lien.reglages.taches) }); },
   'monde-copier': () => {
     const z = document.getElementById('invitation-lien');
     if (!z) return;

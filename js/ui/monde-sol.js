@@ -1,12 +1,11 @@
 import { BIOMES } from '../engine/monde-gen.js';
-import { apercuDesBiomes, caseMarchable, COULEURS_BIOMES, contexteSol, elementsSol, SOLS_MONDE, solDeRegion } from '../engine/monde-sol.js';
+import { apercuDesBiomes, caseMarchable, COULEURS_BIOMES, contexteSol, elementsSol, majCheminsSol, poserCheminsSol, SOLS_MONDE, solDeRegion } from '../engine/monde-sol.js';
 import { SORTES_ROCHES } from '../engine/monde-roches.js';
 import { SORTES } from '../engine/monde-vegetation.js';
 import { idObjetMonde, RECOLTE } from '../engine/monde-recolte.js';
 import { SORTES_LIEUX } from '../engine/monde-lieux.js';
 import { ESPECES_FAUNE, FAUNE } from '../engine/monde-faune.js';
 import { HAMEAUX, SORTES_HAMEAUX } from '../engine/monde-hameaux.js';
-import { tourneeDuPlan } from '../engine/caleche-tournee.js';
 import { imageDuMonde } from '../engine/monde-carte.js';
 import { DATA } from '../engine/catalog.js';
 
@@ -40,9 +39,8 @@ import { DATA } from '../engine/catalog.js';
 //     place, panneau… ; null tant que les éléments ne sont pas tirés), hameauSortes (HAMEAUX.SORTES :
 //     les dessins de assets/hameaux.png, posés comme la végétation : reg.hameau), hameauxStyles
 //     (HAMEAUX.STYLES : le toit de chaque style), hameauEnclos (HAMEAUX.ENCLOS : la taille de l'enclos
-//     du berger, où les habitants mènent ses moutons : fiche 7b) ;
-//   - la calèche (fiche 7c) : tournee() (sa tournée, js/engine/caleche-tournee.js : tirée avec les
-//     éléments ; null avant), que la page pose dans le moteur (js/ui/caleche.js, poserTournee) ;
+//     du berger, où les habitants mènent ses moutons : fiche 7b) ; portLanterne (PORT.LANTERNE : la lumière des
+//     lanternes du port, le soir, fiche I1a ; le port est un plan parmi ceux des hameaux) ;
 //   - la carte du monde (fiche 8) : carte(f) (l'image du monde, un pixel par case : js/engine/monde-carte.js ;
 //     { l, h, px }), ou null tant qu'elle n'est pas faite : elle est alors demandée (au Worker, ou faite
 //     ici par morceaux de rangées), et f(carte) est appelée quand elle arrive.
@@ -56,6 +54,16 @@ import { DATA } from '../engine/catalog.js';
 // fois (les éléments du monde, ~200 ms).
 
 let courant = null;     // le sol du monde de la partie en cours (un seul à la fois)
+
+// Le chantier « l'île à bâtir », fiche I2 : les chemins possédés de la partie (js/engine/dehors.js). La page (js/ui/
+// stage.js) donne { cle() (ce qui change quand ils changent : leurs segments), etat() ({ troncon, cases }, ou
+// null : cheminsPourLeSol), troncon(cases) (le tronçon du port converti par le Worker : à poser dans la partie) }.
+// Le sol les reçoit à son « init », puis à chaque changement (sol.majChemins) : les régions qui les touchent sont
+// refaites, la carte du monde aussi.
+let chemins = null;
+export function poserCheminsMonde(c) {
+  chemins = c || null;
+}
 
 // L'adresse du Worker : sur le site, scripts/build-site.mjs remplace MONDE_WORKER par celle du
 // fichier regroupé (« js/monde-worker.js?v=… », un Worker classique) ; depuis le dépôt, le module.
@@ -75,7 +83,8 @@ function nouveauWorker() {
 export function solDuMonde(T) {
   const M = T && T.MONDE;
   if (!M) return null;
-  if (courant && courant.graine === M.graine) return courant.sol;
+  // (le monde de la graine, ou le même avec son port : MONDE.cle, js/engine/monde.js)
+  if (courant && courant.cle === (M.cle || M.graine)) return courant.sol;
   if (courant) courant.fermer();
   courant = client(T, M);
   return courant.sol;
@@ -84,8 +93,11 @@ export function solDuMonde(T) {
 function client(T, M) {
   const regions = new Map(), demandees = new Set(), abonnes = [];
   const mesures = { elements: null, regions: [], mode: 'worker' };
-  let apercu = null, direct = null, worker = nouveauWorker(), fini = false, lieux = null, hameaux = null, tournee = null;
+  let apercu = null, direct = null, worker = nouveauWorker(), fini = false, lieux = null, hameaux = null;
   let carte = null, carteVoulue = false, carteRangs = null;
+  // (les chemins possédés envoyés : leur clé)
+  let cheminsCle = chemins ? chemins.cle() : null;
+  const cheminsEtat = () => (chemins ? chemins.etat() : null);
   const carteAbonnes = [];
   const carteFaite = (c) => { carte = c; mesures.carte = c.ms; for (const f of carteAbonnes.splice(0)) f(c); };
   const couleurs = BIOMES.map((b) => COULEURS_BIOMES[b] || '#6a8157');
@@ -100,6 +112,7 @@ function client(T, M) {
     mesures.mode = 'direct';
     if (worker) { worker.terminate(); worker = null; }
     const ctx = contexteSol(M.graine, M.cadre, M.ferme, M.taille);
+    poserCheminsSol(ctx, cheminsEtat());
     direct = { ctx, file: [...demandees].filter((c) => !regions.has(c)), tache: null };
     if (!apercu) apercu = apercuDesBiomes(ctx);
     pas();
@@ -111,8 +124,7 @@ function client(T, M) {
       if (fini) return;
       if (!direct.ctx.elements) {
         elementsSol(direct.ctx); mesures.elements = direct.ctx.mesures.elements; lieux = direct.ctx.elements.lieux; hameaux = direct.ctx.hameaux.plans;
-        const cd = direct.ctx.cadre;
-        tournee = tourneeDuPlan({ W: cd.LARGEUR, chemins: direct.ctx.elements.chemins, hameaux: lieux.hameaux, sortie: cd.SORTIE, ferme: cd.FERME });
+        if (direct.ctx.tronconPose && chemins) chemins.troncon(direct.ctx.tronconPose);
       }
       const cle = direct.file.shift();
       if (cle && !regions.has(cle)) { const [rx, ry] = cle.split(',').map(Number); recu(solDeRegion(direct.ctx, rx, ry)); }
@@ -134,21 +146,25 @@ function client(T, M) {
       const m = ev.data || {};
       if (fini || m.graine !== M.graine) return;
       if (m.type === 'apercu') apercu = m.apercu;
-      else if (m.type === 'pret') { mesures.elements = m.ms; lieux = m.lieux || null; hameaux = m.hameaux || null; tournee = m.tournee || null; }
+      else if (m.type === 'pret') { mesures.elements = m.ms; lieux = m.lieux || null; hameaux = m.hameaux || null; if (m.troncon && chemins) chemins.troncon(m.troncon); }
       else if (m.type === 'region') recu(m.region);
       else if (m.type === 'carte') carteFaite(m.carte);
       else if (m.type === 'erreur') { console.warn('[monde] le Worker n\'a pas pu faire la région ' + m.cle + ' : ' + m.message); enDirect(); }
     };
     // (un Worker qui ne se charge pas : le calcul en direct)
     worker.onerror = (e) => { if (e && e.preventDefault) e.preventDefault(); enDirect(); };
-    worker.postMessage({ type: 'init', graine: M.graine, cadre: M.cadre, ferme: M.ferme, taille: M.taille });
+    worker.postMessage({ type: 'init', graine: M.graine, cadre: M.cadre, ferme: M.ferme, taille: M.taille, chemins: cheminsEtat() });
   } else enDirect();
   const sol = {
+    // (l'île, fiche I7e : le monde d'un port n'a ni hameau, ni boucle, ni calèche ; la scène n'en charge rien)
+    ile: !!M.cadre.PORT,
     ferme: M.cadre.FERME, tuiles: SOLS_MONDE, taille: M.taille, biomes: BIOMES, sortes: SORTES, roches: SORTES_ROCHES,
     regles: RECOLTE.SORTES, idObjet: idObjetMonde, ouvertes: null,
     lieux: () => lieux, lieuxSortes: SORTES_LIEUX, coins: (DATA.CANNE.COINS && DATA.CANNE.COINS.RAYON) || 0,
     faune: { especes: ESPECES_FAUNE.map((cle) => ({ cle, ...FAUNE.ESPECES[cle] })), PRES: FAUNE.PRES, LOIN: FAUNE.LOIN, RAYON: FAUNE.RAYON },
-    hameaux: () => hameaux, tournee: () => tournee, hameauSortes: SORTES_HAMEAUX, hameauxStyles: HAMEAUX.STYLES, hameauEnclos: HAMEAUX.ENCLOS,
+    hameaux: () => hameaux, hameauSortes: SORTES_HAMEAUX, hameauxStyles: HAMEAUX.STYLES, hameauEnclos: HAMEAUX.ENCLOS,
+    portLanterne: (DATA.PORT && DATA.PORT.LANTERNE) || null,
+    portBac: (DATA.PORT && DATA.PORT.BAC) || null,   // (le bac, fiche I1c : js/carte/ferme/bac.js)
     region(rx, ry) {
       const cle = rx + ',' + ry, r = regions.get(cle);
       if (r) return r;
@@ -170,10 +186,28 @@ function client(T, M) {
       return null;
     },
     marchable: (t) => caseMarchable(T, t, sol, sol.ouvertes ? sol.ouvertes() : null),
+    // (fiche I2 : les chemins possédés ont-ils changé ? Les régions faites qui les touchent sont refaites, la carte du
+    // monde aussi ; rien tant que leur clé ne change pas)
+    majChemins() {
+      const cle = chemins ? chemins.cle() : null;
+      if (cle === cheminsCle) return false;
+      cheminsCle = cle;
+      const e = cheminsEtat();
+      carte = null; carteVoulue = false; carteRangs = null;
+      if (direct) {
+        if (!direct.ctx.elements) { poserCheminsSol(direct.ctx, e); return true; }
+        for (const c of majCheminsSol(direct.ctx, e ? e.cases : [])) {
+          if (!regions.has(c)) continue;
+          const [rx, ry] = c.split(',').map(Number);
+          recu(solDeRegion(direct.ctx, rx, ry));
+        }
+      } else if (worker) worker.postMessage({ type: 'chemins', cases: e ? e.cases : [] });
+      return true;
+    },
     mesures: () => mesures,
   };
   return {
-    graine: M.graine, sol,
+    graine: M.graine, cle: M.cle || M.graine, sol,
     fermer() { fini = true; if (worker) worker.terminate(); if (direct && direct.tache) clearTimeout(direct.tache); abonnes.length = 0; },
   };
 }

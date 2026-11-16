@@ -12,6 +12,7 @@ import { absoluteHours, dayHour } from './clock.js';
 import { aCruche, eauCruche, puiserCruche } from './cruche.js';
 import { casesDuTerrain, farmTerrain, tileCount } from './terrain.js';
 import { serrePlaces } from './blocs.js';
+import { recolteSauvage } from './sauvages.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -555,6 +556,8 @@ export function harvestPlot(state, plot, auto = false, direct = false) {
   };
   gain(cropProduct(culture), harvestYield(state, culture));
   noteCropHarvested(state, culture); // version 1.12 : chapitres 1 et 2
+  // (l'île à bâtir, fiche I7e : un plant sauvage récolté la première fois s'inscrit au catalogue d'import du port)
+  const sauvage = recolteSauvage(state, culture);
   if (def.graines.mode === 'recolte') {
     const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
     gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
@@ -571,7 +574,7 @@ export function harvestPlot(state, plot, auto = false, direct = false) {
   if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9
   if (!auto) spendEnergy(state, 'recolter');
   gainActionXp(state, 'recolter', 1, auto); // version 1.7
-  return { ok: true, culture, items, aRamasser };
+  return { ok: true, culture, items, aRamasser, ...(sauvage ? { sauvage } : {}) };
 }
 
 // Deuxième étape nocturne : +1 stade si la parcelle a été arrosée (jusqu'au
@@ -669,12 +672,10 @@ export function growHoursLeft(state, plot) {
   return fin === null ? null : Math.max(0, fin - absoluteHours(state));
 }
 
-// Les heures d'un cycle de pousse : TEMPS.POUSSE_HEURES ; la pierre de lune posée sur la ferme (le récit, lot 10 :
-// le fait « pierre.posee », js/engine/fil-lune.js), RECIT.FIL.PIERRE.POUSSE fois moins (tout y pousse plus vite).
-export function heuresPousse(state) {
-  const f = state && state.recit && state.recit.faits;
-  const pierre = !!f && Array.isArray(f['pierre.posee']);
-  return DATA.TEMPS.POUSSE_HEURES * (pierre ? DATA.RECIT.FIL.PIERRE.POUSSE : 1);
+// Les heures d'un cycle de pousse : TEMPS.POUSSE_HEURES. (D16 : la pierre de lune, qui faisait tout pousser plus vite,
+// est retirée avec le récit à la bascule, I9h ; les effets de la lune restent une règle des cultures : LUNE, lune.js.)
+export function heuresPousse() {
+  return DATA.TEMPS.POUSSE_HEURES;
 }
 
 /* ---------- Lot 8 : Serre ---------- */

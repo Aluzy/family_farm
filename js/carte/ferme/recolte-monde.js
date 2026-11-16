@@ -46,7 +46,9 @@
 
     // Le modèle : les pièces prises, les plantes cueillies. Ce qui a changé : son image cachée ou
     // montrée (en fondu quand elle repousse), son dessin, ses cases repeintes (une petite pièce).
-    syncMonde(m) {
+    // `distant` (I9b, en ligne) : le changement vient d'un autre joueur : l'arbre qu'il abat tombe, le rocher
+    // qu'il casse se brise, sous nos yeux (mondeChuteDistante).
+    syncMonde(m, distant) {
       const pris = new Set((m && m.pris) || []), cueillis = new Set((m && m.cueillis) || []);
       // (au montage : ce qui est déjà dessiné, d'après rien, se refait d'après lui, sans fondu)
       const premier = !this.mondeEtat, avant = this.mondeEtat || { pris: new Set(), cueillis: new Set() };
@@ -62,6 +64,7 @@
       for (const id of change) {
         if (this.mondeOccupe.has(id)) continue;           // (son geste le finira)
         const o = this.mondeObjets && this.mondeObjets.get(id);
+        if (o && distant && !premier && pris.has(id) && !avant.pris.has(id) && this.mondeChuteDistante(o)) continue;
         if (o) { this.mondeMontre(o, !premier && !reducedMotion()); continue; }
         const q = /^([a-z_]+):(-?\d+),(-?\d+)$/.exec(id);
         if (!q || genres.get(q[1]) !== 'basse') continue;
@@ -71,6 +74,24 @@
       if (cases.size) this.mondeRepeint(cases);
       this.sunDirty = true;
       if (this.fermier && this.fermier.regrid) this.fermier.regrid();
+    },
+
+    // I9b : un autre joueur vient d'abattre l'arbre `o` (ou de briser le rocher) : il tombe ici aussi, sans secousse
+    // (comme celui d'un habitant), du côté que son pied désigne (le même chez tous). → vrai si la chute est lancée.
+    mondeChuteDistante(o) {
+      if (!o.img || !o.img.active || !o.img.visible || o.tombe || o.brise || o.anim || reducedMotion()) return false;
+      const g = o.regle && o.regle.geste;
+      if (g === 'couper') {
+        o.tombe = { dir: (Math.round(o.fx / T) % 2) ? 1 : -1, fin: null, arbre: o.genre === 'arbre' || o.nom === 'sapin_neige' };
+        this.mondeAbat(o, true, true);
+        return true;
+      }
+      if (g === 'casser') {
+        o.brise = { fin: null };
+        this.mondeBrise(o, true);
+        return true;
+      }
+      return false;
     },
 
     // Le moteur vient de prendre (ou de cueillir) la pièce `id` : la scène le sait tout de suite,

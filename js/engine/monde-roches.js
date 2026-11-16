@@ -111,7 +111,7 @@ export function epaveDuMonde(ctx, solBrut, sable) {
       // (la mer juste devant, à 1 à 3 cases au sud ; aucun chemin à moins de CHEMIN cases)
       if (!ok || ![1, 2, 3].some((d) => biome(X + 1, Y + d) === mer) || biome(X + 1, Y + 1) === mer && biome(X, Y + 1) !== mer && biome(X + 2, Y + 1) !== mer) continue;
       for (let y = Math.max(0, Y - E.CHEMIN); y <= Math.min(H - 1, Y + E.CHEMIN) && ok; y++) {
-        for (let x = Math.max(0, X - E.CHEMIN); x <= Math.min(W - 1, X + 2 + E.CHEMIN); x++) if (ctx.chemins[y * W + x]) { ok = false; break; }
+        for (let x = Math.max(0, X - E.CHEMIN); x <= Math.min(W - 1, X + 2 + E.CHEMIN); x++) if ((ctx.cheminsNature || ctx.chemins)[y * W + x]) { ok = false; break; }
       }
       if (!ok) continue;
       const h = hasard(ctx.gr ^ 0x5f356495, Y * W + X);

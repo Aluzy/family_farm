@@ -62,7 +62,7 @@ export function renderComposts() {
     <div class="cards">
       <div class="card">
         <span class="card-title"><span>${C().ICONE} Bacs à compost · <span class="num">${poses.length}</span></span></span>
-        <span class="muted">Chaque aliment jeté fait un engrais (au plus ${C().MAX_ENGRAIS} par bac). L'engrais s'achète aussi à la calèche. Prends-le en main, puis glisse-le sur une culture arrosée (des cases violettes) : elle gagne un cycle.</span>
+        <span class="muted">Chaque aliment jeté fait un engrais (au plus ${C().MAX_ENGRAIS} par bac). L'engrais s'achète aussi au port. Prends-le en main, puis glisse-le sur une culture arrosée (des cases violettes) : elle gagne un cycle.</span>
         ${countItem(state, C().ENGRAIS) ? `<div class="row"><button type="button" class="btn${engraisMode ? '' : ' primary'}" data-action="engrais-toggle" aria-pressed="${engraisMode}">${icone(C().ENGRAIS)} ${engraisMode ? 'Ranger l\'engrais' : `Prendre l'engrais en main (${countItem(state, C().ENGRAIS)})`}</button></div>` : ''}
         ${liste}
       </div>
@@ -103,7 +103,7 @@ registerActions({
   },
   // Prendre l'engrais en main (sa fiche de l'inventaire, la fenêtre du compost) ou le ranger (sa pastille, sur la carte).
   'engrais-toggle': () => {
-    if (!engraisMode && countItem(state, C().ENGRAIS) < 1) { notify('Il te faut de l\'engrais : le bac à compost, ou la calèche.'); return; }
+    if (!engraisMode && countItem(state, C().ENGRAIS) < 1) { notify('Il te faut de l\'engrais : le bac à compost, ou le port.'); return; }
     setEngraisMode(!engraisMode);
     if (engraisMode) {
       closeModal();

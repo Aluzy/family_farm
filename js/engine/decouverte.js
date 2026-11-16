@@ -7,7 +7,6 @@ import { levelReached } from './levels.js';
 import { isUnlocked } from './campaign.js';
 import { recipeUnlocked } from './kitchen.js';
 import { ETAPES } from './didacticiel.js';
-import { hameauxVus } from './monde-hameaux.js';
 import { equipementDe } from './equipement.js';
 
 /* ---------- quand une page de l'encyclopédie se découvre ----------
@@ -28,17 +27,18 @@ import { equipementDe } from './equipement.js';
      biome:<biome>       D-1 : le personnage est entré dans ce biome du grand monde (noterEncyclopedie,
                          la première fois : DATA.BIOMES, data/monde.json)
      secret:<sorte|page> D-2 : un secret du monde de cette sorte a été ouvert, ou cette page du carnet du
-                         voyageur trouvée (noterEncyclopedie : js/engine/secrets.js ; DATA.SECRETS)
+                         voyageur trouvée (le jeu d’avant, retiré à la bascule)
      hameau              un hameau du grand monde a été vu (state.monde.hameaux, monde-hameaux.js)
      onglet:<onglet>     l'onglet est ouvert (state.unlockedTabs)
      techno:<nœud>       la technologie est acquise ; technologies : un point de technologie gagné
      jour:<n>            la partie a atteint le jour n ; niveau:<n> : le niveau n
      piece_close         une pièce close sur la carte ; veillee : la veillée à la ferme (niveau 10) ;
      courrier            une lettre reçue
+     villageois          l'île à bâtir (fiche I7d) : un villageois s'est installé
      fait:<fait>         un fait du récit est noté (state.recit.faits, js/engine/recit.js : « odile.rencontre »,
                          « visite.bois_joli », « lieu.cale »… ; le récit, lot 11 : les pages de l'île de Céron) */
 
-const SEULES = ['depart', 'piece_close', 'veillee', 'courrier', 'technologies', 'hameau'];
+const SEULES = ['depart', 'piece_close', 'veillee', 'courrier', 'technologies', 'hameau', 'villageois'];
 const OUTILS = ['houe', 'hache', 'faux', 'pioche', 'canne'];
 const ANIMAUX = ['poule', 'mouton', 'vache'];
 const BATIMENTS = ['silo', 'poulailler', 'paturage', 'serre', 'verger', 'frigo'];
@@ -105,7 +105,7 @@ export function conditionRemplie(state, cond, evenements = {}, memo = null) {
     case 'faune': return !!evenements[`faune:${v}`];
     case 'biome': return !!evenements[`biome:${v}`];
     case 'secret': return !!evenements[`secret:${v}`];
-    case 'hameau': return Object.keys(hameauxVus(state)).length > 0;
+    case 'hameau': return Object.keys((state.monde && state.monde.hameaux) || {}).length > 0;
     case 'onglet': return Array.isArray(state.unlockedTabs) && state.unlockedTabs.includes(v);
     case 'techno': return Array.isArray(state.technologies) && state.technologies.includes(v);
     case 'technologies': return !!((state.pointsTech && state.pointsTech.gagnes > 0) || (Array.isArray(state.technologies) && state.technologies.length));
@@ -114,7 +114,8 @@ export function conditionRemplie(state, cond, evenements = {}, memo = null) {
     case 'piece_close': return piecesCloses(state).length > 0;
     case 'veillee': return isUnlocked(state, 'veillee');
     case 'courrier': return Array.isArray(state.courrier) && state.courrier.length > 0;
-    case 'fait': return !!(state.recit && state.recit.faits && Array.isArray(state.recit.faits[v]));
+    case 'villageois': return Array.isArray(state.villageois) && state.villageois.length > 0;
+    case 'fait': return false;   // (le récit d'avant est retiré, I9h : aucun fait)
     default: return false;
   }
 }
@@ -136,7 +137,7 @@ export function erreurCondition(cond) {
     didacticiel: () => ETAPES.includes(v),
     faune: () => !!(DATA.FAUNE && DATA.FAUNE.ESPECES && DATA.FAUNE.ESPECES[v]),
     biome: () => Array.isArray(DATA.BIOMES) && DATA.BIOMES.includes(v),
-    secret: () => !!(DATA.SECRETS && (DATA.SECRETS.NOMS[v] || DATA.SECRETS.PAGES.includes(v))),
+    secret: () => /^[a-z0-9_]+$/.test(v || ''),
     onglet: () => typeof v === 'string' && v.length > 0,
     techno: () => !!DATA.ARBRE.noeuds[v],
     jour: () => Number(v) >= 1,

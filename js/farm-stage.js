@@ -130,12 +130,12 @@
         A.feuille(this, F.C.BLOCS_CARTE.portails.key, F.C.BLOCS_CARTE.portails.file, F.C.BLOCS_CARTE.portails.frame, v);
         // les animaux de compagnie de la famille (js/ambient-life.js) : trois robes de chat, trois de chien
         for (const k of COMPAGNONS) A.feuille(this, k, k + '.png', CAT_FRAME, v);
-        // la calèche du grand monde (js/carte/ferme/caleche.js, fiche 7c)
-        if (K.CALECHE) A.feuille(this, K.CALECHE.key, K.CALECHE.file, { frameWidth: K.CALECHE.w, frameHeight: K.CALECHE.h }, v);
-        // sa malle, au bout du chemin de la ferme (js/carte/ferme/malle.js)
-        if (K.MALLE) A.feuille(this, K.MALLE.key, K.MALLE.file, { frameWidth: K.MALLE.w, frameHeight: K.MALLE.h }, v);
         // le cheval : sellé, seul (à l'Écurie), son poteau (js/carte/cheval.js)
         if (K.chargeCheval) K.chargeCheval(this, v);
+        // la brouette et la charrette attelée (l'île à bâtir, fiche I2 : js/carte/portage.js)
+        if (K.chargePortage) K.chargePortage(this, v);
+        // la charrette du village et les rails (l'île à bâtir, fiche I2b : js/carte/ferme/charrette-village.js)
+        if (K.chargeCharretteVillage && this.ctx.monde && this.ctx.monde.ile) K.chargeCharretteVillage(this, v);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
         L.json('perso_cases', v('personnages/cases.json'));
@@ -461,6 +461,20 @@
             this.showTankTip(true);
           }, LONG_PRESS_MS);
         }
+        // I3c (l'île à bâtir) : appui maintenu sur un poste de travail (un arbre, un rocher, l'étang, le poulailler, la
+        // cuisinière…) : « confier à… » (js/ui/villageois.js) ; rien là où aucune tâche ne se fait (l'appui reste un appui).
+        const mv = this.ctx.lastModel && this.ctx.lastModel.villageois;
+        if (!this.drag.holdTimer && !this.drag.labour && !this.drag.fort && !(this.ctx.lastModel && this.ctx.lastModel.bati) && mv && mv.length && this.ctx.bridge.villageois) {
+          const d = this.drag, t = this.tileAtPoint(wp.x, wp.y);
+          d.holdTimer = setTimeout(() => {
+            if (this.drag !== d || d.moved) return;
+            const r = this.ctx.bridge.villageois('poste', null, { case: t });
+            if (!r || !r.ok) return;
+            d.held = true;
+            this.setHover(null);
+            K.vibre('houe');
+          }, LONG_PRESS_MS);
+        }
       }
 
       onMove(pointer) {
@@ -654,17 +668,15 @@
           { nom: 'conseils', cadence: 10, actif: () => !!this.conseilsAFaire, pas: () => this.syncConseilsTextes() },   // (et les étiquettes des pièces qui arrivent à l'écran)
           { nom: 'charge', cadence: img, pas: () => this.stepCharge() },
           { nom: 'personnage', cadence: img, actif: () => !!this.fermier && !fige(), pas: (I) => {
-            // (une scène du récit sur la carte : il reste là pendant qu'on vient lui parler, js/carte/ferme/rencontre.js)
-            this.fermier.steer(this.rencontreRetient && this.rencontreRetient() ? null : this.manette.dir());
+            this.fermier.steer(this.manette.dir());
             this.fermier.update(I.delta);
           } },
           { nom: 'regionPerso', cadence: 10, actif: () => !!this.fermier && !fige(), pas: () => this.stepRegionPerso() },   // (la région où il entre devient vue : js/carte/ferme/sol.js)
           { nom: 'lieuxMonde', cadence: 10, pas: (I) => this.stepLieuxMonde(I.time) },       // (les coins de pêche, les secrets : lieux-monde.js)
           { nom: 'hameaux', cadence: img, actif: () => !fige(), pas: (I) => this.stepHameaux(I.s) },     // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
-          { nom: 'caleche', cadence: img, actif: () => !fige() && !!this.stepCaleche, pas: (I) => this.stepCaleche(I.s) },   // (la calèche : caleche.js)
-          { nom: 'malle', cadence: img, actif: () => !fige() && !!this.stepMalle, pas: () => this.stepMalle() },               // (sa malle : malle.js)
-          { nom: 'visite', cadence: img, actif: () => !fige() && !!this.stepVisite, pas: (I) => this.stepVisite(I.s) },       // (la visite de bienvenue : visite.js, fiche 18)
-          { nom: 'rencontre', cadence: img, actif: () => !fige() && !!this.stepRencontre, pas: (I) => this.stepRencontre(I.s) },   // (une scène du récit sur la carte : rencontre.js)
+          { nom: 'bac', cadence: img, actif: () => !fige() && !!this.stepBac && !!(this.ctx.lastModel && this.ctx.lastModel.bac), pas: () => this.stepBac() },   // (le bac du port, fiche I1c : bac.js)
+          { nom: 'charretteVillage', cadence: img, actif: () => !fige() && !!this.stepCharretteVillage && !!(this.ctx.lastModel && (this.ctx.lastModel.charretteVillage || this.cvEtat)), pas: () => this.stepCharretteVillage() },   // (la charrette du village, les rails : charrette-village.js, fiche I2b)
+          { nom: 'villageois', cadence: img, actif: () => !fige() && !!this.stepVillageois && !!(this.ctx.lastModel && (this.ctx.lastModel.villageois || this.villageoisVus && this.villageoisVus.size)), pas: (I) => this.stepVillageois(I.s) },   // (l'île à bâtir, fiche I3a : villageois.js)
           // (les présents des amis devant la porte : amis.js ; seulement quand il y en a : l'événement modele:presents)
           { nom: 'presents', cadence: img, actif: () => !fige() && !!this.stepPresents && (this.presentsLa || !!this.presentsPaquet), pas: () => this.stepPresents() },
           { nom: 'invites', cadence: img, actif: () => !fige() && !!this.stepInvites, pas: (I) => this.stepInvites(I.s) },   // (les invités d'un repas : invites.js)
@@ -988,12 +1000,11 @@
         // un hameau du grand monde (js/carte/ferme/hameaux.js) : son panneau ; un outil qui n'a rien
         // à y faire (il le dit)
         // un habitant d'un hameau (js/carte/ferme/habitants.js) : il parle
-        // la calèche du grand monde (js/carte/ferme/caleche.js) : sa fenêtre, ou on la hèle
-        if (!hoeing && this.calecheAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.calecheAt(wx, wy)) return { caleche: true };
-        // sa malle, au bout du chemin (js/carte/ferme/malle.js) : il y va, sa fenêtre s'ouvre
-        if (!hoeing && this.malleAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.malleAt(wx, wy)) return { malle: true };
-        // le visiteur de la visite de bienvenue (js/carte/ferme/visite.js) : il redit sa phrase
-        if (!hoeing && this.visiteurAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.visiteurAt(wx, wy)) return { visiteur: true };
+        // un villageois (l'île à bâtir, fiches I3a et I3b : js/carte/ferme/villageois.js) : sa bulle
+        if (!hoeing && this.villageoisAt && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
+          const vg = this.villageoisAt(wx, wy);
+          if (vg) return { villageois: vg };
+        }
         // un invité d'un repas (js/carte/ferme/invites.js) : un mot
         if (!hoeing && this.inviteAt && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
           const inv = this.inviteAt(wx, wy);
@@ -1079,7 +1090,7 @@
         if (!hoeing && this.siloAt(wx, wy)) return { window: 'silo' };
         // un four, une cuisinière posés (la ferme générée) : la fenêtre de sa station
         const station = !hoeing ? this.stationAt(wx, wy) : null;
-        if (station) return { window: station };
+        if (station) return { window: station, bloc: this.blocTouche };
         for (const z of this.zones()) {
           const i = z.at(wx, wy);
           if (i < 0) continue;
@@ -1239,8 +1250,6 @@
       }
 
       tap(wx, wy) {
-        // une scène du récit sur la carte (rencontre.js) : l'appui fait passer à la réplique suivante
-        if (this.rencontreTap && this.rencontreTap()) return;
         if (this.ambient) this.ambient.scare(wx, wy);   // un appui tout près fait s'envoler les oiseaux
         const hit = this.hitAt(wx, wy);
         // assis (js/carte/ferme/sieges.js) : un appui ailleurs le relève (pas sur un siège, la table du repas,
@@ -1283,16 +1292,15 @@
           return;
         }
         if (!hit) return;
-        if (hit.caleche) { if (this.ctx.bridge.calecheTouchee) this.ctx.bridge.calecheTouchee(); return; }
-        if (hit.malle) { this.malleTouchee(); return; }
         if (hit.habitant) { this.habitantParle(hit.habitant); return; }
         if (hit.compagnon) { if (this.ctx.bridge.compagnonTouche) this.ctx.bridge.compagnonTouche(); return; }
-        if (hit.visiteur) { if (this.visiteur) this.visiteParle(this.visiteur); return; }
+        if (hit.villageois) { this.villageoisParle(hit.villageois); return; }   // (fiche I3b : sa bulle, villageois.js)
         if (hit.invite) { const G = this.invitesVus; if (G) this.inviteBulle(hit.invite, (G.paroles.table || [])[Math.floor(Math.random() * (G.paroles.table || []).length)], 4500); return; }
+        if (hit.comptoir) { this.comptoirTouche(hit.comptoir); return; }
         if (hit.panneau) { if (this.ctx.bridge.hameauPanneau) this.ctx.bridge.hameauPanneau({ id: hit.panneau.id, nom: hit.panneau.nom, style: hit.panneau.style }); return; }
         if (hit.hameauRefus) { if (this.ctx.bridge.hameauRefus) this.ctx.bridge.hameauRefus(hit.hameauRefus.outil, hit.hameauRefus.nom); return; }
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien
-        if (hit.window) { this.ctx.bridge.act('stage-open', { window: hit.window }); return; }
+        if (hit.window) { this.ctx.bridge.act('stage-open', Number.isInteger(hit.bloc) ? { window: hit.window, bloc: hit.bloc } : { window: hit.window }); return; }
         if (hit.hoe) { K.vibre('houe'); this.ctx.bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
         if (hit.plante !== undefined) { this.ctx.bridge.act('arbre-case', { case: hit.plante }); return; }
         if (hit.bati !== undefined) { this.ctx.bridge.act('bloc', { case: hit.bati }); return; }
@@ -1579,10 +1587,17 @@
     const s = getScene();
     return !!(s && s.ready && s.compagnonDit && s.compagnonDit(c));
   }
-  // L'amitié (js/carte/ferme/amis.js) : la réaction `emotion` de l'habitant `id` (un cadeau…).
+  // L'amitié (js/carte/ferme/amis.js) : la réaction `emotion` de l'habitant `id` (un cadeau…) ; I6a : ou du
+  // villageois `id` (js/carte/ferme/villageois.js villageoisEmotion).
   function emotion(id, e) {
     const s = getScene();
-    return !!(s && s.emotionHabitant && s.emotionHabitant(id, e));
+    if (!s) return false;
+    return !!((s.emotionHabitant && s.emotionHabitant(id, e)) || (s.villageoisEmotion && s.villageoisEmotion(id, e)));
   }
-  global.FarmStage = { emotion, compagnonDit, mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, scene: getScene }; // scene() : pour le débogage et les tests
+  // I6a : le villageois `id` dit `texte` (sa réaction à un cadeau, un goût qu'il confie), `ms` millisecondes.
+  function villageoisDit(id, texte, ms) {
+    const s = getScene();
+    return !!(s && s.ready && s.villageoisDitParId && s.villageoisDitParId(id, texte, ms));
+  }
+  global.FarmStage = { emotion, villageoisDit, compagnonDit, mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

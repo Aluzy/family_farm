@@ -579,6 +579,12 @@
     // Moulin moud (modèle.meuleTourne, BLOCS_CARTE.meule) : elle tourne, ou s'arrête. Et la cuisinière qui cuit
     // (modèle.cuisineAllumee, BLOCS_CARTE.cuisine) : son feu et les flammes sous la marmite bougent (la vapeur :
     // vapeur.js) ; « animations réduites » : le feu pris, immobile.
+    // (fiches I5a, I5b : les images des établis des commerces ouverts, BLOCS_CARTE.commerces : image → son réglage)
+    etablisAnimes() {
+      if (!this.animesCommerces) this.animesCommerces = new Map(Object.values(BLOCS_CARTE.commerces || {}).flatMap((A) => A.images.map((k) => [k, A])));
+      return this.animesCommerces;
+    },
+
     stepFires(time) {
       if (!this.blocks) return;
       const Fe = BLOCS_CARTE.feu, M = BLOCS_CARTE.meule, Cu = BLOCS_CARTE.cuisine;
@@ -587,9 +593,23 @@
       const cuisine = this.cuisineOn ? (F.reducedMotion() ? Cu.frames[0] : image(Cu, true)) : BLOCS_CARTE.frames[Cu.sorte];
       // (le four redessiné, dessiné comme un meuble : son image éteinte, ou celle de son feu)
       const four = this.fireOn ? Fe.images[Math.floor(time * Fe.fps / 1000) % Fe.images.length] : Fe.eteint;
+      // (fiches I5a, I5b, I5c : l'établi d'un commerce ouvert, BLOCS_CARTE.commerces : les braises de la forge rougeoient, ses
+      // images alternent au hasard ; le feu du four du boulanger danse et le rouet de la mercerie tourne, les leurs défilent
+      // dans l'ordre)
+      const calmeF = F.reducedMotion(), animes = this.etablisAnimes();
       // (et ceux des niveaux du dessus, js/carte/ferme/etage.js : etageStations)
       for (const e of [...this.blocks.values(), ...(this.etageStations || [])]) {
         if (!e.img || !e.img.active) continue;
+        const Ac = e.dessin && animes.get(e.dessin);
+        if (Ac) {
+          if (!calmeF && (!e.animT || time >= e.animT)) {
+            e.animT = time + (Ac.suite ? 1 : 0.5 + Math.random()) * 1000 / Ac.fps;
+            e.animF = Ac.suite ? ((e.animF || 0) + 1) % Ac.images.length : Math.floor(Math.random() * Ac.images.length);
+          }
+          const k = 'meuble_' + Ac.images[calmeF ? 0 : e.animF || 0];
+          if (e.img.texture.key !== k && this.textures.exists(k)) e.img.setTexture(k);
+          continue;
+        }
         if (e.sorte === Fe.sorte && e.dessin) {
           if (e.img.texture.key !== four && this.textures.exists(four)) e.img.setTexture(four);
           continue;
@@ -644,6 +664,7 @@
           e.nomVu = cle;
           const L = C.largeur[E.matiere] || 16;
           e.nomTxt.setText(E.nom).setColor(E.texte).setScale(1);
+          if (E.matiere === 'village' || E.matiere === 'commerce') e.nomTxt.setAlign('center');   // (fiche I7g : le panneau du village, deux lignes centrées ; I5a : l'enseigne d'un commerce)
           // (trop long : sur deux lignes, coupé à l'espace ou au trait d'union le plus près du milieu, s'il y en a)
           if (e.nomTxt.width > L / C.deuxLignes) {
             const coupes = [...E.nom].map((c, i) => (c === ' ' || c === '-' ? i : -1)).filter((i) => i > 0);
@@ -681,6 +702,10 @@
       const LC = BLOCS_CARTE.lampeChevet, lampes = [];
       for (const e of (this.blocks || new Map()).values()) if (LC.dessins.includes(e.dessin) && e.img) lampes.push({ img: e.img, x: e.x, y: e.y - 1, e });
       for (const e of this.etageLampes || []) if (vu(e)) lampes.push({ img: e.img, x: e.x, y: e.y, e });
+      // (fiches I5a, I5b, I5c : les établis des commerces ouverts qui luisent le soir, la forge, le four du boulanger :
+      // BLOCS_CARTE.commerces, lueur)
+      const forges = [], animes = this.etablisAnimes();
+      for (const e of (this.blocks || new Map()).values()) { const Ac = e.img && animes.get(e.dessin); if (Ac && Ac.lueur) forges.push(e); }
       // (les cheminées, en bas et à l'étage : BLOCS_CARTE.cheminee)
       const cheminees = [];
       for (const e of (this.blocks || new Map()).values()) if (e.img && String(e.dessin || '').startsWith('cheminee_')) cheminees.push({ img: e.img, x: e.x, y: e.y - 1, e });
@@ -696,7 +721,7 @@
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
       const guirlandes = this.guirlandes && this.guirlandes.size ? [...this.guirlandes.values()] : [];
-      if (!list.length && !lampes.length && !guirlandes.length && !cheminees.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !this.calecheSprite && !luit) return;
+      if (!list.length && !lampes.length && !guirlandes.length && !cheminees.length && !forges.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !(this.feteLumieres && this.feteLumieres()) && !this.calecheSprite && !luit) return;
       if (!this.lanternLights) {
         this.lanternLights = [];
         lueur(this.textures);
@@ -783,6 +808,24 @@
           if (e.haloFeu) e.haloFeu.setVisible(true).setPosition(c.x + F.dx, c.y + F.dy).setAlpha(k);
         }
       }
+      // les établis des commerces qui luisent (fiches I5a, I5c : la forge, le four du boulanger) : le soir, la lueur de leur feu dans le voile, qui
+      // vacille ; un halo (WebGL)
+      {
+        for (const e of forges) {
+          const Fo = animes.get(e.dessin).lueur, allumee = nuit > Fo.allume;
+          if (!allumee || !e.img.active) { if (e.haloForge) e.haloForge.setVisible(false); continue; }
+          if (!calme && (!e.forgeT || time >= e.forgeT)) { e.forgeT = time + 120 + Math.random() * 160; e.forgeK = 1 - Fo.vacille + Math.random() * Fo.vacille * 2; }
+          const k = (calme ? 1 : e.forgeK || 1) * Math.min(1, nuit / 0.4) * e.img.alpha, S = Fo.sol, Fy = Fo.foyer;
+          out.push({ key: 'lueur', x: e.x + S.dx, y: e.y + S.dy, tint: S.teinte, alpha: S.alpha * k, scaleX: S.rayon / R, scaleY: (S.rayon * S.aplati) / R });
+          out.push({ key: 'lueur', x: e.x + Fy.dx, y: e.y + Fy.dy, tint: Fy.teinte, alpha: Fy.alpha * k, scaleX: Fy.rayon / R, scaleY: Fy.rayon / R });
+          if (webgl && !e.haloForge) {
+            const Hh = Fo.halo;
+            e.haloForge = this.add.pointlight(e.x + Fy.dx, e.y + Fy.dy, Hh.couleur, Hh.rayon, Hh.intensite, Hh.attenuation).setDepth(V.depth + 1);
+            e.img.once('destroy', () => { if (e.haloForge) { e.haloForge.destroy(); e.haloForge = null; } });
+          }
+          if (e.haloForge) e.haloForge.setVisible(true).setPosition(e.x + Fy.dx, e.y + Fy.dy).setAlpha(k);
+        }
+      }
       // les lampes de chevet : allumées le soir, une lueur chaude qui respire à peine ; leur halo (WebGL)
       for (const l of lampes) {
         const e = l.e;
@@ -804,8 +847,8 @@
       this.stepFenetres(out, nuit, dt);
       if (this.stepFenetresHameaux) this.stepFenetresHameaux(out, nuit);   // (les fenêtres des hameaux : hameaux.js)
       if (this.stepLumineux) this.stepLumineux(out, nuit, time);         // (les champignons et les cristaux du monde : lumineux.js)
+      if (this.stepFete) this.stepFete(out, nuit, time);                 // (I8a : les lampions de la fête du village : fete.js)
       this.stepEauLumiere(out, nuit, time);
-      if (this.lumiereCaleche) this.lumiereCaleche(out, nuit, time);   // (la lanterne de la calèche : caleche.js)
       // (le récit, lot 10 : la pierre de lune posée, les nuits de pleine lune, la ferme luit faiblement : une
       // grande lueur bleutée, à peine, qui respire ; model.fermeLuit : son centre et son rayon, px)
       if (luit) {
@@ -1149,7 +1192,6 @@
       // les arbres plantés dans le sol : leur tronc (ceux du Verger, ceux d'une graine : foret.js)
       for (const e of (this.trees || new Map()).values()) if (e.a && e.a.sol) out.push(e.a.case);
       out.push(...this.foretCells());
-      if (this.malleCells) out.push(...this.malleCells());   // (la malle de la calèche : malle.js)
       return out;
     },
 
@@ -1325,8 +1367,13 @@
     // réfrigérateur, plus haut qu'un bloc : toute sa hauteur).
     stationAt(wx, wy) {
       for (const e of (this.blocks || new Map()).values()) {
-        const win = BLOCS_CARTE.fenetres[e.sorte], h = e.sorte === 'refrigerateur' ? 34 : 24;
-        if (win && Math.abs(wx - e.x) <= T / 2 + 2 && wy <= e.y + 2 && wy >= e.y - h) return win;
+        // (I4 : l'étal du joueur, deux cases de large et son auvent)
+        // (I5a, I5b, I5c : l'établi, le comptoir et l'enseigne d'un commerce — ceux qui ouvrent sa fenêtre —, deux cases de
+        // large ; l'établi et l'enseigne, hauts)
+        const win = BLOCS_CARTE.fenetres[e.sorte], commerce = win === 'commerce', large = e.sorte === 'etal' || commerce;
+        const h = e.sorte === 'refrigerateur' ? 34 : e.sorte === 'etal' ? 30 : commerce && e.sorte !== 'comptoir' ? 40 : 24, demi = large ? T + 2 : T / 2 + 2;
+        // (fiche I3e : la case du bloc touché, pour la cuisine du village : farm-stage.js la passe à la fenêtre)
+        if (win && Math.abs(wx - e.x) <= demi && wy <= e.y + 2 && wy >= e.y - h) { this.blocTouche = e.case; return win; }
       }
       return null;
     },

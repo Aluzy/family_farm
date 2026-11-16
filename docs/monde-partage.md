@@ -8,6 +8,14 @@ reste à la partie solo de son propriétaire.
 le retrait d'un membre, l'avatar des autres joueurs, Construire, le potager, les bêtes, la cuisine et la
 nuit partagée. **E-8 a posé la frontière** : M.1, M.2 et M.3 ci-dessous sont faits (§ 7). Le code est dans `worker/src/monde.mjs`, `js/ui/en-ligne.js` et `js/engine/commandes.js`.
 
+> **Depuis la bascule (I9h, version 2.0.0), la frontière est celle de l'île** (décision D9 de `docs/ile.md`) : le
+> § 13, **« L'île partagée »** (fiche I9a), remplace E-8 (§ 1 à § 7) et F.2 (l'horloge figée, `worker/README.md`) ;
+> I9a2 y pose l'horloge vivante (§ 13, « Ce que fait I9a2 »). Un monde d'avant passe sur l'île à sa première
+> ouverture par le serveur (I9f ; § 13, « Ce que fait I9f »). Le réglage `VILLAGE.ACTIF`, l'essai `ILE_ESSAI` et la
+> nuit de la ferme seule du Worker sont retirés (I9h, le retrait) ; le moteur garde la commande `nuit.partagee`
+> pour rejouer le journal d'un monde d'avant. Les § 1 à § 12 disent l'histoire d'E-8 : les hameaux, la calèche
+> et le récit qu'ils citent ont quitté le jeu.
+
 ## 1. Le principe
 
 > **Un monde partagé, c'est ta ferme.** Tes amis viennent chez toi : ils construisent, cultivent,
@@ -200,6 +208,25 @@ Les rôles de la stratégie (§ 4.4), dans `js/engine/roles.js`. Le monde les v�
 - **Routes** : `POST /mondes/<id>/invitations { role }`, `POST /mondes/<id>/role { compte, role }` et `GET /mondes/<id>/journal?avant=`.
 - **Une base d'avant** prend la colonne `role` des invitations à son réveil.
 
+**I9e, la grille d'une île** (`GRILLE_ILE`, `js/engine/roles.js` ; le détail : `docs/ile.md`, « Les rôles en ligne »).
+Le monde en ligne d'une île est **l'île d'un propriétaire, que ses amis viennent aider** à faire progresser son village.
+L'ami aidant doit être vraiment utile, le propriétaire garde ce qui est structurant. Une ferme d'avant garde la grille
+ci-dessus.
+
+| Rôle | Sur une île, en plus |
+|---|---|
+| 👀 Visiteur | Il parle aux villageois (sa page seule, rien n'est envoyé). Il ne change toujours rien. |
+| 🌱 Ami jardinier | Récolter sur l'île, vendre au port et à l'étal, porter ; parler, offrir, accueillir ; fabriquer à l'Atelier ; confier ou reprendre un outil à un villageois, la navette ; suggérer un commerce au propriétaire ; épingler et annoter la chronique (signé). |
+| 🔨 Bâtisseur | Construire dehors ; acheter (le port, l'import, les contrats, les commerces), apporter au chantier du port ; régler la cuisine et le garde-manger du village ; attribuer les tâches **si le propriétaire le lui délègue**. |
+| 🏡 Propriétaire | Attribuer les tâches ; décider qu'un villageois ouvre ou rejoint un commerce, son enseigne ; former un foyer, accueillir un enfant ; nommer l'île, le village, une maison, un commerce ; agrandir le port ; retirer la maison d'un villageois ; les réglages du monde. |
+
+- **La délégation des tâches** est un réglage du monde (`meta.reglages`, éteint par défaut) : 👥 › « 🧺 Confier
+  l'attribution des tâches aux bâtisseurs » ; le propriétaire seul le change, chacun en est prévenu.
+- **Le monde vérifie la grille à chaque commande**, avec ses réglages ; la page aussi, et n'en montre les boutons qu'à
+  qui a le droit (`gestePermis`). Un jeu modifié qui enverrait un ordre est refusé par le monde.
+- **Le journal** porte le bilan des gestes du village (un ordre de tâche : le villageois, la tâche d'avant et d'après ;
+  un outil, un foyer, un commerce ouvert ou suggéré, un nom), et le prénom de chacun (envoyé par sa page avec `hello`).
+
 ## 11. E-12 : les sauvegardes du monde
 
 - **Où.** Dans le bucket R2 que le Worker a déjà (`SESSIONS`), sous `mondes/<id du Durable Object>/`. Rien de plus à configurer. Le rapport quotidien ne lit que `sessions/` et `players/`.
@@ -210,6 +237,9 @@ Les rôles de la stratégie (§ 4.4), dans `js/engine/roles.js`. Le monde les v�
   - un instantané est écrit, et le journal porte une marque `monde.restaurer`, jamais rejouée, qui garde l'histoire d'avant ;
   - chaque joueur connecté reçoit la partie entière et un mot ; un joueur en retard d'une restauration la reçoit entière à son retour.
 - **Routes** : `GET` et `POST /mondes/<id>/sauvegardes`, `POST /mondes/<id>/restaurer { cle }`, réservées au propriétaire. Une clé d'un autre monde est refusée.
+- **I9f** : une sauvegarde aussi avant une copie remise à jour (`POST /mondes/<id>/remplacer`) et avant la mise à jour d'un
+  monde par un serveur d'une autre version (une ferme d'avant : « avant le passage sur l'île ») ; une île restaurée garde
+  sa nuit en cours.
 
 ## 12. E-13 : les machines de l'Atelier
 
@@ -226,4 +256,278 @@ Les rôles de la stratégie (§ 4.4), dans `js/engine/roles.js`. Le monde les v�
   - **les chaînes** font leur journée au début de la nuit partagée (`chainesDeLaJournee`) : leur production en cours, puis ce que leur stock et une journée (de 6 h à 22 h) permettent, jusqu'à ce que leur tas soit plein. Le courant n'est pas compté.
 
   Les produits restent sur le tas, et chacun les ramasse par `morceau.ramasser`.
+
+  I9a2 : un monde de l'île a une horloge vivante (§ 13) : ses machines tournent dans les pas, et sa nuit ne refait pas
+  leur journée (la production doublerait). La botteleuse y sort encore sa botte au versement (sa sortie suit la carte,
+  pas l'horloge).
 - **Fermés en ligne, comme le veut la vision :** le grand monde (sa cueillette, ses hameaux, la calèche, le récit) et le commerce (M.4).
+
+## 13. L'île partagée (I9a) : la nouvelle frontière
+
+Décision D9 du chantier « l'île à bâtir » (`docs/ile.md`) : **un monde partagé, c'est l'île entière du
+joueur.** Ses invités y marchent, y bâtissent et y produisent. Cette section remplace E-8 (§ 1 à § 7) et
+F.2 (l'horloge figée) pour les mondes du chantier ; le jeu publié les garde tant que `VILLAGE.ACTIF` est
+éteint.
+
+### Ce qui est commun, ce qui reste à chacun
+
+| Commun : le monde le tient, tous le voient et le changent | À chacun : il ne se synchronise pas |
+|---|---|
+| L'île : son relief, sa nature, ses lieux (tirés de la graine chez chacun) | Son personnage (son allure, sa place) |
+| Les changements de l'île : ce qu'on y a pris et quand cela revient, les chemins et les blocs posés dehors, les quotas du jour | Son énergie |
+| La ferme, comme aujourd'hui (le bâti, le potager, les bêtes, la cuisine, les appareils) | Son brouillard : ce que SON personnage a vu de l'île |
+| Le coffre commun (F.1) et **la caisse** (D14, I9c) | Son sac (les provisions d'une sortie) et ce qu'il porte (I9c : sa charge) |
+| Le port, le bac, les commandes, le catalogue d'import | **Son amitié** avec chaque villageois (I9d) |
+| Les villageois, leurs tâches, leurs liens, les commerces, les vocations, les fêtes et les projets | Ses réglages (affichage, son, aide) |
+| La chronique et les noms | L'outil qu'il a en main (E-9) |
+| **L'heure** (D13 : l'horloge commune et vivante, I9a2) | |
+
+Deux règles en découlent :
+
+1. **Ce qui se tire de la graine ne s'envoie jamais.** Le relief, les biomes, les arbres, les rochers, les
+   plantes, les lieux et la carte se refont chez chacun (`genererMonde`, `elementsDuMonde`, le Worker du sol) :
+   le monde n'envoie que les **écarts** (ce qui a été pris, posé, retiré, avec leur jour).
+2. **Le brouillard n'est jamais dans la partie du monde.** Chaque joueur découvre l'île pour lui ; le moteur, lui,
+   ne lit que les régions vues **du monde** (`state.monde.vues`), les mêmes chez tous.
+
+### Ce que fait I9a (le chantier allumé pour la partie du monde : `ilePartagee`, `js/engine/frontiere.js`)
+
+- **La barrière est levée.** En ligne, sur une île, la scène n'a plus de borne : le personnage sort de la
+  ferme et la vue le suit (`js/ui/stage.js`, `enLigneSurLaFerme`). Les autres joueurs le voient où qu'il soit
+  (les positions relayées, E-4).
+- **Le relief de l'île** se dessine chez l'invité comme chez l'hôte : il le tire de la graine de la partie
+  du monde (le même niveau de port, la même ferme vierge, les mêmes chemins posés). Un test le vérifie dans un
+  autre processus, qui n'a rien en mémoire (`tests/test-monde.mjs`, `tests/engine/monde-de-la-graine.mjs`).
+- **Le brouillard de chacun** : ce que son personnage voit lève SON brouillard. Il est gardé dans son
+  navigateur, par monde (`localStorage` `ferme-brouillard-<monde>`), et posé sur sa partie locale chaque fois
+  qu'elle est refaite (`unirVu`, `js/engine/monde-vu.js` ; `js/ui/en-ligne.js`). Les régions vues du moteur ne
+  bougent pas, la partie confirmée reste celle du monde (`tests/test-synchro.mjs`). La carte du monde et la
+  boussole le lisent comme en solo.
+- **Rien d'autre n'est encore synchronisé hors de la ferme** (I9b l'a fait : ci-dessous). Hors d'elle, un bandeau le dit sous le bandeau
+  du monde (« 🏝️ Hors de la ferme : rien d'autre n'est encore synchronisé. »). Un geste qui vise une case
+  dehors (couper, casser, cueillir, poser un bloc ou un chemin) est refusé par le jeu avant d'être envoyé, et
+  par le monde s'il arrivait : le même contrôle, passé au moteur (`refusFrontiere`), le même pour le jeu et le
+  serveur (`worker/src/monde.mjs` en garde les noms `dansLaFerme` et `horsDeLaFerme`).
+- **Les mondes d'avant ne changent pas** : sans le chantier, la borne, le mot « Le reste du monde t'attend
+  dans ta ferme solo » et le refus du serveur sont ceux d'E-8 (`tests/deux-joueurs.mjs`, 4a ; `test-monde.mjs`).
+- Rien n'est ajouté à la sauvegarde (le format reste 103) : le brouillard de chacun vit dans son navigateur.
+
+### Ce que fait I9a2 (l'horloge commune : D13 remplace F.2 pour les îles)
+
+La note de conception : `docs/fiches/ile/I9a2-note-horloge.md` (validée telle quelle). Pour un monde de l'île
+(`horlogeVivante`, `js/engine/temps-monde.js`), F.2 (l'horloge figée) et E-5 (la nuit partagée d'un coup) ne valent
+plus ; les mondes d'avant les gardent jusqu'à leur migration (I9f : à leur première ouverture, le chantier allumé).
+
+- **Le temps passe tant qu'un joueur au moins est connecté.** Une connexion ouverte compte (sans détection
+  d'inactivité). Le dernier qui part endort le monde (un instantané, une sauvegarde) ; le premier qui revient le
+  réveille là où il s'était arrêté, sans rattraper le temps passé sans personne, et le dit (« 🌙 Le monde dormait
+  depuis… »).
+- **Par pas de 5 s d'horloge** (10 minutes de jeu), toujours un après l'autre, déduits de l'heure du serveur : ils ne
+  sont pas des révisions du journal. Avant chaque geste, le monde rejoue les pas dus ; le geste porte son pas
+  (`cmd.pas`) ; chaque joueur avance sa partie confirmée jusqu'à ce pas, puis joue le geste. Entre deux gestes, chaque
+  joueur avance sa partie lui-même, à l'heure du serveur (mesurée à l'accueil), et l'heure affichée glisse entre deux
+  pas. Rien n'est diffusé pour le temps qui passe, sauf, à chaque instantané au temps (toutes les 10 minutes),
+  l'empreinte de la partie : un joueur qui ne la retrouve pas redemande tout.
+- **Le pas ne lit que la partie.** Ce que les veilleurs de la page font en solo (la nuit à 22 h, le réveil, le bac, les
+  contrats, les arrivées, les maisons, la chronique) est dans le pas ; en ligne, ces veilleurs se taisent.
+  `Math.hypot` (dont l'arrondi peut varier d'un navigateur à l'autre) est sorti du chemin du pas.
+- **La nuit vient seule à 22 h.** Quand tous les joueurs connectés sont couchés (« 🛏 Se coucher », « 1/2 »), le monde
+  joue `temps.sommeil` et la nuit file dix fois plus vite (8 h en 48 s) ; un seul debout, elle garde son pas ; au
+  réveil, chacun se lève (un lit ne vaut que pour sa nuit). Se coucher avant 22 h attend la nuit.
+- **L'énergie est celle de chacun** : `state.energies`, par compte, dans la partie du monde (le monde la vérifie à chaque
+  geste) ; la nuit la rend à tous les membres ; un nouveau membre commence avec l'énergie pleine, le propriétaire avec
+  celle de sa partie. Chaque joueur voit la sienne.
+- **Une préparation finit à son heure** (dans les pas) ; celle qui cuit encore à minuit finit à minuit, comme en solo.
+  Construire ne fige plus l'heure en ligne.
+- **Les instantanés** : tous les 120 pas ou 200 gestes, et au départ du dernier ; le journal garde ses 500 gestes ; au-
+  delà de 60 pas de retard, un joueur reçoit la partie entière. **Les sauvegardes** (E-12) : une par heure de jeu en
+  ligne et au départ du dernier (14 gardées).
+- **La sauvegarde du jeu** passe au format 104 (`horloge`, `energies` dans la partie d'un monde).
+
+Le coût, mesuré (`node scripts/cout-horloge.mjs` ; le détail : `docs/ile.md`, « L'horloge commune ») : par heure en
+ligne, 720 pas (1 021 si tous dorment chaque nuit), ≈ 3,5 s de calcul pour le serveur, 0,47 Mo écrits pour l'île
+avancée (1,5 Mo au plafond), 6 alarmes, presque rien de diffusé sans geste ; à quatre joueurs qui font chacun 4 gestes
+par minute, 0,58 Mo écrits et 0,6 Mo diffusés, et le journal couvre 31 minutes.
+
+### Ce que fait I9b (les changements de l'île)
+
+Le détail et les mesures : `docs/ile.md`, « Les changements de l'île ». Le bandeau « rien d'autre n'est encore
+synchronisé » d'I9a est retiré : hors de la ferme, ce qu'un joueur change est vu des autres.
+
+- **Les gestes du dehors passent par le monde**, comme ceux de la ferme : `monde.recolter` (couper, casser, faucher,
+  cueillir, ramasser une pièce de l'île, « sorte:x,y »), la pêche dans un lac, une rivière, la mer, et les blocs du
+  dehors (un chemin, un pont, une barrière, un banc, une lumière). La frontière s'ouvre commande par commande
+  (`COMMANDES_DEHORS`, `js/engine/frontiere.js`) ; un geste qui n'a pas de sens dehors reste refusé, avant d'être
+  envoyé.
+- **Ce qu'un geste lâche va au coffre commun** (F.1), comme les outils de la ferme en ligne (E-9) : ni au sol, ni
+  dans le sac.
+- **Le monde contrôle une pièce par son identifiant**, sans tirer le sol de sa région (`refusPieceMonde`) ; le geste
+  refuse une pièce déjà prise. Deux joueurs sur le même arbre : le premier arrivé l'a, le coup de l'autre est annulé
+  proprement, rien en double. Un bloc posé dehors, lui, lit le sol de sa case (le monde le tire de la graine).
+- **Ce qui est pris revient au jour dit**, au même pas chez tous : la repousse vient avec la nuit dans les pas (une
+  île l'a ; une ferme d'avant, toujours pas). Les quotas (la pêche du jour) sont dans la partie du monde : communs.
+- **Rien n'est envoyé pour ce qui se déduit de la graine et du jour** : un geste du dehors pèse ≈ 155 octets ; une île
+  très exploitée, ≈ 17 à 38 Ko d'écarts dans la partie (plafond 64 Ko).
+- **L'intérêt par région** porte sur les positions (E-4), dix fois plus lourdes que les gestes : celles des joueurs
+  proches (la même région ou l'une des huit autour) arrivent à leur pas, celles des autres une fois toutes les 2 s ;
+  en entrant dans une région, on reçoit d'un coup où sont ceux qui y jouent. Les gestes vont à tous : la partie de
+  chacun doit rester celle du monde.
+- **Le sac de chacun** : `state.sacs`, par compte, dans la partie d'un monde de l'île (le propriétaire reçoit celui de
+  sa partie ; un invité arrive sans) ; chacun le remplit, le vide, en mange dehors. La sauvegarde passe au format 105.
+- **Le brouillard reste à chacun** (I9a).
+
+### Ce que fait I9c (le port et la caisse)
+
+Le détail et les mesures : `docs/ile.md`, « Le port et la caisse en ligne ».
+
+- **La caisse est commune** (D14), comme le coffre (F.1) : les pièces de la partie du monde sont à tous ses membres.
+  Une vente de n'importe quel joueur l'alimente, un achat y puise ; chacun la voit monter quand l'autre vend.
+- **Les commandes du port passent** : `port.vendre`, `port.acheter`, `port.decharger`, `port.honorer`,
+  `port.importer`, `port.contrat`, `port.livrer`, `port.apporter`, `port.agrandir`, et le portage (`portage.*`), dans
+  `COMMANDES_DU_PORT` (`js/engine/frontiere.js`). Jouées par le monde, payées tout de suite.
+- **Le comptoir est le même pour tous** : le lieu du port est écrit dans la partie à la mise en ligne
+  (`state.port.lieu`, d'après le plan de la graine) ; le monde et chaque joueur le lisent sans rien demander à la page.
+- **La charge de chacun** (`state.charges`, par compte, comme le sac) : ce qu'il a chargé sur la ferme (sorti du
+  coffre commun), à la main, à la brouette ou à la charrette. Une brouette sert un joueur à la fois (autant que de
+  brouettes au coffre) ; la charrette est attelée par un seul ; chargée, elle est à lui ; vide, elle passe au premier
+  qui la demande. Le propriétaire reçoit le portage de sa partie.
+- **Une commande du bac s'honore à plusieurs** : chacun livre ce qu'il a porté, payé au prix de vente ; la prime et
+  l'expérience viennent avec la dernière livraison. Deux joueurs sur le même lot : le premier arrivé l'a.
+- **Le bac** est dans le pas du monde (I9a2) : chacun le voit accoster au même pas, avec les mêmes commandes.
+- **Les rôles** : vendre et porter, l'ami jardinier ; acheter, le bâtisseur ; agrandir le port, le propriétaire ; le
+  visiteur ne vend ni n'achète (la grille complète : I9e).
+- **Le journal du monde** garde le bilan de chaque geste du commerce (qui a vendu quoi, pour combien ; les achats ; le
+  niveau du port) ; l'événement le porte aussi, et chaque joueur lit ce que les autres font au port.
+- **La case d'un geste du port vient de la page** : le monde la compare à la dernière position relayée du joueur (12
+  cases au plus). Un jeu trafiqué pourrait encore mentir sur sa position : c'est un garde-fou, pas une preuve.
+- **La sauvegarde** passe au format 106 (`charges` dans la partie d'un monde ; une partie solo n'y gagne rien).
+
+### Ce que fait I9d (les villageois en ligne)
+
+Le détail et les mesures : `docs/ile.md`, « Les villageois en ligne ».
+
+**La règle : le serveur seul fait compter.** En solo, ce qui se passe sous les yeux du joueur compte une fois (la règle
+de la fiche 7b : le moteur fait le travail à l'heure, la scène ne fait que le montrer). En ligne, sur une île, c'est le
+pas du monde qui fait compter : le travail des villageois, leurs repas, leurs liens, leurs achats à l'étal et aux
+commerces, les arrivées se jouent dans les pas (`pasDuMonde`), au serveur et à l'identique chez chaque joueur, qui les
+rejoue ; ce que la carte d'un joueur montre (un villageois qui frappe à sa porte, un geste vu, une réplique entendue)
+n'écrit rien dans la partie, ou passe par une commande que le monde joue (`villageois.accueillir`). Aucune position
+n'est envoyée : chacun place les villageois d'après l'heure commune (celle du pas, plus la part du pas écoulée : la même
+que la lumière) et leur horaire, tiré de la graine ; le geste qu'il voit et l'action que joue le pas tombent à la même
+heure.
+
+- **La journée du village** est dans les pas, par les mêmes fonctions qu'en solo (`avancerTaches`, les repas, les liens
+  de la nuit, les commerces) ; ce qu'ils produisent arrive au coffre commun au fil de la journée. Le pas de jour se joue
+  « en lot » (`enLot`, `js/engine/blocs.js`) : ce qui parcourt les blocs posés n'est calculé qu'une fois par pas (le même
+  résultat, trois à cinq fois plus vite).
+- **L'amitié est à chacun** : `state.amities` (par compte, dans la partie du monde) ; une commande pose celle de son
+  acteur dans `state.amitie` le temps de se jouer (`avecActeur`, comme l'énergie, le sac et la charge) ; un villageois que l'on ne
+  connaît pas encore est à l'accueil (`VILLAGE.AMITIE.ACCUEIL`) ; le propriétaire reçoit celle de sa partie. Chacun voit
+  la sienne. Ce que le pas lit de l'amitié (un ami proche accepte une tâche qu'il n'aime pas, un artisan ami apprend des
+  pièces, les paliers de l'île) est **l'amitié du village**, la meilleure des joueurs (elle ne baisse jamais). Les
+  liens entre villageois (`voisins`) sont du monde ; la copie d'une île les garde.
+- **Parler, offrir** : les commandes `villageois.parler { id, n?, activite?, but? }` et `villageois.offrir { id, objet }`
+  (l'ami jardinier au moins), jouées d'abord chez soi (la bulle tout de suite), puis par le monde.
+- **Le tableau** (I3d) se lit de la partie du monde : le même pour tous.
+- **Sans joueur, le village dort avec le monde** : rien n'est produit pendant l'absence ; la fenêtre du retour le dit
+  (« Le village dormait avec lui… »).
+- **Le visiteur** voit le village vivre et lui parle : sa page tire la bulle sur une copie de sa partie, sans rien
+  envoyer ; il ne change rien.
+- **La sauvegarde** passe au format 107, après les charges d'I9c (`amities` dans la partie d'un monde ; une partie
+  solo n'y gagne rien).
+
+### Ce que fait I9e (les tâches, les commerces et les rôles)
+
+Le détail : `docs/ile.md`, « Les rôles en ligne » ; la grille : § 10.
+
+- **Les gestes de gestion du village sont des commandes du monde** : la fiche d'un villageois (`villageois.attribuer`,
+  `villageois.outil`, `villageois.vendre`), ses liens (`villageois.foyer`, `villageois.enfant`), les noms (`nom.donner`),
+  la chronique (`chronique.epingler`, `chronique.noter`, signées : `par`) ; les commerces et l'étal passent sur une île.
+  En solo, rien ne change.
+- **Le propriétaire décide, les amis aident** : il attribue les tâches (ou le délègue aux bâtisseurs), ouvre les
+  commerces, forme les foyers, nomme, agrandit le port, retire une maison habitée. Un invité très ami d'un villageois qui a
+  l'envie d'un commerce peut la **suggérer** au propriétaire (`commerce.suggerer` : rien ne change, l'avis et le journal).
+- **Les noms** : chaque page envoie le prénom de son personnage avec `hello` ; le journal et les avis le disent.
+- **Les traits connus d'un villageois sont communs au monde** (à confirmer) ; **les chemins posés dehors ne sont pas
+  protégés** (un bâtisseur est un ami de confiance, le journal et les sauvegardes suffisent) ; **un visiteur compte**
+  pour l'horloge et pour les lits.
+- **La sauvegarde** passe au format 108 (`par` sur une ligne de la chronique d'un monde ; une partie solo n'y gagne rien).
+
+### Ce que fait I9f (mettre son île en ligne, migrer les mondes d'avant)
+
+Le détail et les mesures : `docs/ile.md`, « Mettre son île en ligne et migrer les mondes d'avant ».
+
+- **La copie d'une île emporte l'île** : ce qui est pris dehors et le jour où cela revient, les régions vues du monde, les
+  chemins et les rails, le port et son lieu, les villageois, leurs liens et ce qu'on sait de leurs traits, les commerces,
+  la charrette du village, la chronique et les noms ; l'énergie, le sac, la charge et l'amitié du propriétaire sont celles
+  de sa partie. Ce qui se tire de la graine n'y est jamais. **Le brouillard du propriétaire** part dans son navigateur,
+  comme celui des invités (I9a) ; le monde garde le vu des régions de sa ferme.
+- **Le plafond est vérifié** à la copie d'une île (256 Ko la partie, 64 Ko l'île hors de la ferme), avec le poids dans le
+  message ; la route garde 2 Mo à l'envoi.
+- **Deux îles** : la partie solo et l'île en ligne vivent chacune leur vie après la copie (F.4, comme avant) ; la fenêtre
+  « Jeu en ligne » le dit, et le propriétaire peut **remettre la copie à jour** depuis sa partie solo (avec confirmation :
+  elle remplace l'île en ligne pour tous ; le monde est sauvegardé d'abord ; les membres restent, chacun repart de zéro).
+- **Les sauvegardes** (E-12) portent l'île entière : 54 à 121 Ko pour l'île du joueur automatique ; 14 gardées (3,5 Mo au
+  plafond) ; restaurées en quelques millisecondes.
+- **Un monde d'avant se met à jour** à sa première ouverture par un serveur d'une autre version : sa partie passe au
+  format du serveur, le journal d'après son instantané se rejoue, la partie d'avant est gardée (dans les sauvegardes du
+  monde, et dans sa base) ; le chantier allumé, **une ferme d'avant passe sur l'île** (la migration d'I7f : la ferme et le
+  coffre intacts, l'horloge vivante, son jour et son heure gardés ; le port, son lieu, le tronçon ; aucun villageois ; le
+  cadeau au coffre commun), et chaque membre voit la fenêtre du retour (le propriétaire : la grille des rôles d'une île).
+- **Les versions** : `hello` porte le format du jeu ; un jeu plus ancien que le monde ne peut pas y entrer (« recharge la
+  page ») et sa commande est refusée ; un plus récent attend le serveur.
+- **La famille de la partie** (celle du propriétaire) ne change pas en ligne : sa fiche, ses habits, ses animaux se
+  changent dans la partie solo.
+- **Pas de nouveau format** de sauvegarde (109).
+
+### Le poids, et le plafond
+
+Mesuré par `node scripts/poids-ile.mjs` : une partie neuve du chantier jouée par le joueur automatique
+(graine 1, « applique »), pesée à trois moments.
+
+| Moment | Jour | Villageois | La partie | La copie du monde | L'île hors de la ferme | Le village et le port |
+|---|---|---|---|---|---|---|
+| Début | 11 | 0 | 26,1 Ko (gzip 5,3) | 26,2 Ko | 1,0 Ko | 0,9 Ko |
+| Milieu | 41 | 4 | 58,2 Ko (gzip 10,8) | 57,3 Ko | 1,0 Ko | 17,2 Ko |
+| Avancée | 81 | 6 | 80,3 Ko (gzip 13,2) | 74,7 Ko | 1,0 Ko | 35,6 Ko |
+
+- **Une île pèse moins qu'une ferme d'avant** : 75 Ko pour la copie avancée, contre 106 Ko pour la ferme
+  élaguée d'E-8 (§ 7) et 212 Ko pour la partie entière d'alors. Les habitants des hameaux sont partis (I7e).
+- **Le village grossit avec ses villageois** : ≈ 2,7 Ko chacun (dont 1,2 Ko de journal de 7 jours et 0,45 Ko
+  de tirage : prénom, allure, goûts, traits), plus leurs liens (`voisins`), les commerces et la chronique.
+- **L'île hors de la ferme ne pèse presque rien** pour le joueur automatique (1 Ko : le vu et les régions vues ;
+  il ne récolte pas dehors). Une île très exploitée (1 100 pièces prises en même temps : 150 par jour, revenues en
+  5 à 10 jours) pèse 39 Ko (6,5 Ko en gzip) dans `monde.pris`.
+- **Ce qui se recalcule de la graine, et ne s'envoie pas** : 46 210 arbres, plantes et rochers (≈ 1 Mo s'il
+  fallait les nommer), la carte (5,7 Mo), le terrain (322 Ko). Le refaire coûte : le terrain 0,3 s à froid, le
+  contexte du sol 0,4 à 0,5 s, puis ≈ 12 ms par région (88 régions).
+- **Ce qui se tire de la graine mais se garde** : le tirage des villageois (2,7 Ko pour six). On le garde : la
+  teinture (I5b) et la migration (I7f) le changent.
+- **Le serveur** : la mise en ligne d'une île avancée prend 5 ms ; sa nuit partagée 149 ms la première fois,
+  puis 16 à 34 ms ; l'empreinte de contrôle 2,5 ms.
+
+**Le plafond** (`data/village.json`, `VILLAGE.EN_LIGNE`) :
+
+- **256 Ko** pour la partie d'un monde (ce que reçoit un joueur qui entre, chaque instantané, chaque
+  sauvegarde du monde : 14 sauvegardes, 3,5 Mo au plus par monde). Projection d'une grande île : 80 Ko
+  (l'avancée) + 25 Ko (douze à quinze villageois) + 40 Ko (une île très exploitée) + une ferme d'avant migrée
+  (I7f) ≈ 200 Ko. Le plafond garde une marge.
+- **64 Ko** pour l'île hors de la ferme, dans cette partie (ce qui a été pris et quand cela revient, les chemins
+  et les blocs posés dehors).
+- Ce qui se tire de la graine n'est jamais envoyé, quelle que soit la taille de l'île.
+
+### Ce que les mesures disent des fiches suivantes
+
+- **I9a2 (l'horloge commune, faite : ci-dessus)** : un pas toutes les 5 s (réelles) joué comme une commande ferait une révision toutes
+  les 5 s, donc un instantané (`INSTANTANE_TOUS` = 20) toutes les 100 s : ≈ 2,7 Mo écrits par heure passée en
+  ligne pour une île de 75 Ko, 9 Mo à 256 Ko ; et le journal de rattrapage (`JOURNAL_GARDE` = 500 révisions) ne
+  couvrirait plus que 40 minutes. Il faut un instantané au temps (ou des pas qui ne comptent pas comme des révisions).
+- **I9b (les écarts du monde, faite : ci-dessus ; le contrôle par l'identifiant, sans le sol)** : les écarts sont petits (≤ 40 Ko pour une île très exploitée) ; ce qui coûte,
+  c'est leur contrôle par le serveur : vérifier qu'un arbre existe hors de la ferme demande le sol de sa région,
+  donc 0,4 à 0,5 s de contexte au réveil du monde, puis 12 ms par région. À trancher dans la fiche.
+- **I9d (les villageois)** : la copie élaguée d'aujourd'hui (`elaguer`) retire `voisins`, qui porte maintenant les
+  événements entre villageois (les visites du soir, les repas apportés : 5,7 Ko sur l'île avancée, `liens.js`) : un
+  monde de l'île doit le garder. Les fêtes du village sont dans `vocations` (gardé).
+- **I9f (mettre son île en ligne, faite : ci-dessus)** : `elaguer` est à refaire pour une île (garder `monde.pris`, les
+  chemins posés, `voisins` ; le brouillard du propriétaire part dans son navigateur) ; le plafond se vérifie à la mise en
+  ligne (aujourd'hui, la route accepte 2 Mo).

@@ -55,7 +55,7 @@ export function carnetPlansHtml() {
   return `
     <div class="card carnet-plans">
       <span class="card-title"><span>📜 Carnet de plans</span></span>
-      <span class="muted">Chaque pays a sa collection de meubles de jardin. Explore-le (hors de la ferme) pour trouver un premier plan ; un ami « ${escapeHtml(DATA.RECIT.PALIER_NOMS[PLANS.AMI])} » d'un hameau de ce pays t'offrira le suivant.</span>
+      <span class="muted">Chaque pays a sa collection de meubles de jardin. Explore-le (hors de la ferme) pour y trouver ses plans.</span>
       ${lignes}
     </div>`;
 }

@@ -2,13 +2,10 @@ import { escapeHtml } from '../engine/format.js';
 import { noterObjectif } from '../engine/objectifs-compte.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { blocsPoses } from '../engine/blocs.js';
-import { calecheMaintenant } from '../engine/caleche.js';
-import { HAMEAUX } from '../engine/monde-hameaux.js';
 import {
-  butBoussole, caseVue, choisirBut, directionVers, lieuxDeLaCarte, partVue, vuDe,
+  butBoussole, choisirBut, directionVers, lieuxDeLaCarte, listeDuBut, partVue, vuDe,
 } from '../engine/monde-vu.js';
 import { setupPending } from '../engine/depart.js';
-import { etapeDidacticiel } from '../engine/didacticiel.js';
 import { state } from './store.js';
 import { solDuMonde } from './monde-sol.js';
 import { persistState } from './storage.js';
@@ -22,24 +19,24 @@ import { closeModal, openModal } from './modal.js';
    Une fenêtre (le menu : « 🧭 Carte du monde » ; la touche M ; un appui sur la boussole) qui montre le
    grand monde vu, à petite échelle :
      - l'image du monde (js/engine/monde-carte.js : un pixel par case, les biomes, le relief, les eaux,
-       les falaises, les chemins, les hameaux), faite dans le Web Worker du sol (js/ui/monde-sol.js :
+       les falaises, les chemins, le port), faite dans le Web Worker du sol (js/ui/monde-sol.js :
        carte()) à la première ouverture, puis gardée ; la ferme par-dessus, d'après la partie (ses arbres,
        ses rochers, son eau et ses chemins, ce qui y est bâti, ses parcelles) ;
      - le brouillard par-dessus tout ce qui n'a pas été vu (js/engine/monde-vu.js : le vu de la partie),
        opaque sur toute cellule pas vue, ses bords adoucis sur le vu : rien de ce qui n'a pas été vu ne
        se devine ;
-     - les lieux découverts (lieuxDeLaCarte : ceux dont la case est vue ; un hameau n'a son nom qu'une
-       fois visité), avec leurs icônes et leurs noms ; la ferme ; le personnage et sa direction ; la
-       calèche si elle est dans une partie vue ;
+     - les lieux découverts (lieuxDeLaCarte : ceux dont la case est vue), avec leurs icônes et leurs noms ; la
+       ferme ; le personnage et sa direction ; le port (fiche I1a), connu
+       dès le départ : son nom, et le brouillard levé sur lui et sur son chemin depuis la ferme ;
      - on la fait glisser (doigt, souris), on zoome (deux doigts, molette, les boutons + et −) ; ⌖ la
        recentre sur le personnage ; un appui sur un lieu le choisit : son nom, sa distance, et il devient,
        d'un bouton, le but de la boussole (state.monde.but : js/carte/ferme/boussole.js).
-   Elle reste juste tant qu'elle est ouverte : le personnage et la calèche quatre fois par seconde, le
+   Elle reste juste tant qu'elle est ouverte : le personnage quatre fois par seconde, le
    brouillard et les lieux dès que le vu change (carteMondeVu, appelée par js/ui/stage.js). */
 
-export const LIEUX_ICONES = { ferme: '🏡', hameau: '🏘️', peche: '🎣', caleche: '🐴' };
+export const LIEUX_ICONES = { ferme: '🏡', peche: '🎣', port: '⚓' };
 const ZOOM = { min: 0.5, max: 10, depart: 3, pas: 1.4 };
-const BRUME = { tons: [[201, 208, 216], [226, 230, 234]], fond: '#c9d0d8', deborde: 2, flou: 1 };
+const BRUME = { tons: [[201, 208, 216], [226, 230, 234]], fond: '#c9d0d8', deborde: 2, flou: 1, connu: 3, port: 9 };
 
 let C = null;             // la carte ouverte : voir ouvrir()
 let base = null;          // l'image du monde et de la ferme : { graine, cv } (refaite à chaque ouverture)
@@ -87,13 +84,12 @@ function ouvrir(T, sol) {
     sale: true, minuteur: 0, raf: 0, perso: p,
   };
   taille();
-  centrerSurLeHameauMontre();
   C.ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { taille(); C.sale = true; }) : null;
   if (C.ro) C.ro.observe(cadre);
   // l'image du monde : gardée par le sol du monde (js/ui/monde-sol.js), sinon demandée (le Worker la fait ;
   // elle arrive dans quelques dixièmes de seconde) ; la ferme y est repeinte à chaque ouverture (ce qui y a
   // été bâti depuis)
-  if (base && base.graine !== T.MONDE.graine) base = null;
+  if (base && base.graine !== (T.MONDE.cle || T.MONDE.graine)) base = null;
   const img = sol.carte((c) => { if (C && C.sol === sol) { faireBase(c); C.sale = true; } });
   if (img) faireBase(img);
   // le doigt, la souris, la molette
@@ -102,24 +98,10 @@ function ouvrir(T, sol) {
   cv.addEventListener('pointerup', leve);
   cv.addEventListener('pointercancel', leve);
   cv.addEventListener('wheel', molette, { passive: false });
-  C.minuteur = setInterval(() => { if (C) C.sale = true; }, 250);   // (le personnage, la calèche)
+  C.minuteur = setInterval(() => { if (C) C.sale = true; }, 250);   // (le personnage)
   // (une autre fenêtre a pris sa place : la carte s'arrête)
   const boucle = () => { if (!C) return; if (!C.dlg.isConnected) { fermer(); return; } if (C.sale) dessine(); C.raf = requestAnimationFrame(boucle); };
   C.raf = requestAnimationFrame(boucle);
-}
-
-// (le didacticiel, fiche 9b : à l'étape du hameau, la carte s'ouvre sur lui et sur le personnage, les deux
-// dans le cadre : le hameau que le cocher a montré, state.didacticiel.montre)
-function centrerSurLeHameauMontre() {
-  const d = state.didacticiel;
-  if (etapeDidacticiel(state) !== 'hameau_choisir' || !d || typeof d.montre !== 'string') return;
-  const h = ((C.sol.lieux() || {}).hameaux || []).find((x) => x.id === d.montre);
-  if (!h) return;
-  const W = C.T.LARGEUR, hx = (h.case % W) + 0.5, hy = Math.floor(h.case / W) + 0.5;
-  const dx = Math.abs(hx - C.cx) + 8, dy = Math.abs(hy - C.cy) + 8;
-  C.z = Math.max(ZOOM.min, Math.min(ZOOM.depart, (C.w * 0.8) / dx, (C.h * 0.8) / dy));
-  C.cx = (hx + C.cx) / 2;
-  C.cy = (hy + C.cy) / 2;
 }
 
 function fermer() {
@@ -144,7 +126,7 @@ function faireBase(img) {
   const g = cv.getContext('2d'), data = new ImageData(new Uint8ClampedArray(img.px), img.l, img.h);
   peintFerme(T, data.data, img.l);
   g.putImageData(data, 0, 0);
-  base = { graine: T.MONDE.graine, cv };
+  base = { graine: T.MONDE.cle || T.MONDE.graine, cv };
 }
 
 // La ferme, case par case : son herbe (en deux tons, comme les prés), son eau et ses chemins (les coins
@@ -183,7 +165,7 @@ function bruit(x, y) {
 
 // Le brouillard de la carte (une case sur deux : il est adouci à l'affichage) : opaque sur les cellules pas
 // vues, étendu de BRUME.deborde points sur le vu puis flouté de BRUME.flou (rien ne se devine au bord).
-function faireBrume(v) {
+function faireBrume(v, connus = []) {
   const T = C.T, W2 = Math.ceil(T.LARGEUR / 2), H2 = Math.ceil(T.HAUTEUR / 2), n = W2 * H2;
   const a = new Float32Array(n), b = new Float32Array(n);
   for (let j = 0; j < H2; j++) {
@@ -191,6 +173,15 @@ function faireBrume(v) {
     for (let i = 0; i < W2; i++) {
       const cx = Math.floor((i * 2) / v.C), k = cy * v.L + cx;
       a[j * W2 + i] = (v.bits[k >> 3] >> (k & 7)) & 1 ? 0 : 1;
+    }
+  }
+  // (ce qui est connu sans avoir été vu : le port et son chemin, fiche I1a ; BRUME.connu points autour de chaque
+  // case, ou BRUME.port autour du port)
+  for (const [c, r] of connus) {
+    const x0 = Math.floor((c % T.LARGEUR) / 2), y0 = Math.floor(Math.floor(c / T.LARGEUR) / 2);
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const x = x0 + dx, y = y0 + dy;
+      if (x >= 0 && y >= 0 && x < W2 && y < H2 && dx * dx + dy * dy <= r * r) a[y * W2 + x] = 0;
     }
   }
   const passe = (src, dst, r, rangees, plusFort) => {
@@ -229,8 +220,13 @@ function dessine() {
   if (C.vuCle !== v.vu || C.avecLieux !== !!L) {
     C.vuCle = v.vu;
     C.avecLieux = !!L;   // (les lieux du plan arrivent avec les éléments du Worker)
-    faireBrume(v);
     C.lieux = lieuxDeLaCarte(state, L, C.T);
+    const connus = [];
+    for (const p of C.lieux.port || []) {
+      connus.push([p.case, BRUME.port]);
+      p.chemin.forEach((c, k) => { if (k % 2 === 0) connus.push([c, BRUME.connu]); });
+    }
+    faireBrume(v, connus);
     C.dlg.querySelector('.carte-monde-aide').textContent = `Vu : ${Math.round(partVue(state, C.T) * 100)} % du monde. Glisse pour déplacer la carte, pince ou fais tourner la molette pour zoomer ; touche un lieu pour le choisir.`;
     C.infoCle = null;
   }
@@ -261,16 +257,14 @@ function borne() {
   C.cy = T.HAUTEUR <= 2 * my ? T.HAUTEUR / 2 : Math.max(my, Math.min(T.HAUTEUR - my, C.cy));
 }
 
-// Les repères : la ferme, les lieux vus, la calèche (dans le vu), le personnage. Des boutons posés sur le
-// canevas (leur nom à côté : les hameaux visités, le lieu choisi, le but de la boussole).
+// Les repères : la ferme, les lieux vus, le personnage. Des boutons posés sur le canevas (leur nom à côté : le port,
+// le lieu choisi, le but de la boussole).
 function reperes() {
   const T = C.T, W = T.LARGEUR, F = T.FERME, b = butBoussole(state);
   const liste = [{ sorte: 'ferme', id: 'ferme', nom: 'La ferme', x: F.X + F.LARGEUR / 2, y: F.Y + F.HAUTEUR / 2, nomme: C.z >= 2 }];
   const ajoute = (sorte, l, nomme) => liste.push({ sorte, id: l.id, nom: l.nom, x: (l.case % W) + 0.5, y: Math.floor(l.case / W) + 0.5, nomme });
   for (const l of C.lieux.peche) ajoute('peche', l, false);
-  for (const l of C.lieux.hameaux) ajoute('hameau', l, l.connu);
-  const e = calecheMaintenant(state);
-  if (e && caseVue(state, Math.floor(e.y) * W + Math.floor(e.x), T)) liste.push({ sorte: 'caleche', id: 'caleche', nom: 'La calèche', x: e.x, y: e.y, nomme: false });
+  for (const l of C.lieux.port || []) ajoute('port', l, true);
   const p = window.FarmStage && FarmStage.perso ? FarmStage.perso() : null;
   if (p) C.perso = p;
   // (chaque repère garde son élément d'une image à l'autre : seuls sa place et ce qui change sont touchés,
@@ -291,7 +285,7 @@ function reperes() {
     const nom = r.nomme || choisi || (but && r.sorte !== 'ferme') || C.z >= 6;
     const el = repere(r.sorte + ':' + r.id, 'button', (x) => {
       x.type = 'button';
-      if (r.sorte !== 'caleche') { x.dataset.action = 'carte-monde-lieu'; x.dataset.sorte = r.sorte; x.dataset.id = r.id; } else x.tabIndex = -1;
+      x.dataset.action = 'carte-monde-lieu'; x.dataset.sorte = r.sorte; x.dataset.id = r.id;
     });
     const contenu = `${r.sorte}|${choisi}|${but}|${nom}|${r.nom}`;
     if (el.dataset.contenu !== contenu) {
@@ -326,7 +320,7 @@ function info() {
   if (c) {
     const r = trouve(c);
     if (!r) { C.choix = null; C.infoCle = null; return; }
-    const quoi = c.sorte === 'ferme' ? 'Ta ferme' : c.sorte === 'hameau' ? (r.connu ? `Un hameau ${HAMEAUX.STYLES[(state.monde.hameaux[r.id] || {}).style] ? HAMEAUX.STYLES[state.monde.hameaux[r.id].style].nom : ''}` : 'Un hameau que tu n\'as pas encore visité') : 'Un coin de pêche : plus de touches, un poisson rare';
+    const quoi = c.sorte === 'ferme' ? 'Ta ferme' : c.sorte === 'port' ? 'Le port de l\'île : le bac y accoste' : 'Un coin de pêche : plus de touches, un poisson rare';
     const estBut = c.sorte === 'ferme' ? !b : !!(b && b.sorte === c.sorte && b.id === c.id);
     const x = c.sorte === 'ferme' ? T.FERME.X + T.FERME.LARGEUR / 2 : (r.case % W) + 0.5, y = c.sorte === 'ferme' ? T.FERME.Y + T.FERME.HAUTEUR / 2 : Math.floor(r.case / W) + 0.5;
     html = `<span class="carte-monde-info-nom"><span aria-hidden="true">${LIEUX_ICONES[c.sorte]}</span> <strong>${escapeHtml(r.nom)}</strong></span><span class="muted">${escapeHtml(quoi)}${loin(x, y)}</span>`
@@ -346,7 +340,7 @@ function info() {
 function trouve(q) {
   if (q.sorte === 'ferme') return { id: 'ferme', nom: 'La ferme' };
   const L = C.lieux || lieuxDeLaCarte(state, C.sol.lieux(), C.T);
-  return (q.sorte === 'hameau' ? L.hameaux : L.peche).find((l) => l.id === q.id) || null;
+  return listeDuBut(L, q.sorte).find((l) => l.id === q.id) || null;
 }
 
 /* ---------- le doigt, la souris ---------- */

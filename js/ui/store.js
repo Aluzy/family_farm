@@ -20,7 +20,9 @@ export const TABS = [
   { id: 'atelier', label: 'Construire', icon: '🔨' }, // la ferme générée : le menu Construire (l'Atelier : touché sur la carte)
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳' },
-  { id: 'comptoir', label: 'Calèche', icon: '🐴' }, // le Marché devenu la calèche (fiche 7c, js/ui/caleche.js)
+  // le Marché devenu la calèche (fiche 7c, js/ui/caleche.js) ; le chantier « l'île à bâtir » allumé, le port
+  // (fiche I1b, js/ui/port.js)
+  { id: 'comptoir', get label() { return 'Port'; }, get icon() { return DATA.PORT.ICONE; } },
   { id: 'notifications', label: 'Notifications', icon: '✉️' },
 ];
 
@@ -54,6 +56,12 @@ export function techTreeShown() {
 export let enLigne = null;
 export function setEnLigne(value) {
   enLigne = value;
+}
+// I9a2 : l'horloge d'une île en ligne, à chaque image (js/ui/en-ligne.js horlogeEnLigne ; posée par elle, sans
+// que la boucle n'ait à l'importer) : { pas, evts } ou null.
+export let pasEnLigne = () => null;
+export function setPasEnLigne(f) {
+  pasEnLigne = f;
 }
 
 export let state = null;
@@ -177,12 +185,12 @@ export function setInvTab(value) {
   invTab = value;
   return value;
 }
-export let comptoirTab = 'vendre'; // la calèche : 'vendre' ou 'acheter'
+export let comptoirTab = 'vendre'; // le comptoir du port : 'vendre' ou 'acheter'
 export function setComptoirTab(value) {
   comptoirTab = value;
   return value;
 }
-export let comptoirTabChoisi = 'vendre'; // FLU-13 : le dernier onglet de la calèche choisi par le joueur
+export let comptoirTabChoisi = 'vendre'; // FLU-13 : le dernier onglet du comptoir choisi par le joueur
 export function setComptoirTabChoisi(value) {
   comptoirTabChoisi = value;
   return value;

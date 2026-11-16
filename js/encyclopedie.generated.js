@@ -4,6 +4,394 @@
 export const ENCYCLOPEDIE = {
  "categories": [
   {
+   "id": "port",
+   "icone": "⚓",
+   "nom": "Le port",
+   "entrees": [
+    {
+     "id": "port",
+     "terme": "Le port",
+     "description": "Au bout du chemin qui sort de la ferme, sur la côte : le quai, la cale et la halle. C'est le seul commerce de l'île. Au comptoir, sous la halle (dès le niveau 3, de 6 h à 21 h, à 3 cases au plus), on vend tout ce qui se vend, au prix de vente et sans limite : le bac emporte tout, il n'y a pas d'entrepôt. On y achète les semences que ton niveau a débloquées. Ce qu'on vend, on l'apporte : ce qui est chargé se vend d'un coup sous la halle. Le prix d'achat d'une semence monte un peu à chaque achat et redescend à chaque vente, sans passer sous un plancher. La carte du monde le montre, la boussole y mène.",
+     "liens": [
+      "bac",
+      "commandes_bac",
+      "import",
+      "niveaux_port",
+      "chemin_port",
+      "portage"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "bac",
+     "terme": "Le bac",
+     "description": "Le bateau du port. Il accoste tous les 3 jours, de 9 h à 17 h, le long du quai : la cloche sonne, le calendrier marque ses jours (⛴️). Il emporte les caisses de ce qui a été vendu depuis son dernier passage, apporte ses commandes, livre ce qu'on a importé, et c'est lui qui amène les villageois.",
+     "liens": [
+      "port",
+      "commandes_bac",
+      "import",
+      "villageois"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "commandes_bac",
+     "terme": "Les commandes du bac",
+     "description": "À chaque passage, le bac demande quelques objets parmi ce que tu sais produire (une culture récoltée, un plat préparé, les œufs, la laine, le lait de tes bêtes) : un objet, une quantité, une prime. Elles valent jusqu'au passage suivant. On les honore au comptoir avec ce qu'on a porté : le prix de vente, plus la prime, plus 15 XP. Plus le port grandit, plus il y en a. Une commande manquée s'efface sans rien coûter.",
+     "liens": [
+      "bac",
+      "port",
+      "portage"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "import",
+     "terme": "Le catalogue d'import",
+     "description": "Ce que l'île ne donne pas se commande au port, un rang par niveau du port : les jeunes arbres fruitiers et les plants de vigne ; le cacao, la vanille, le café, le sucre et les épices ; une poule, un mouton, une vache ; les plans des meubles de collection ; des graines de fleurs rares. Ce que ton niveau débloquait le reste (un jeune arbre demande le Verger, une bête son bâtiment et sa place). Une commande se paie d'avance et arrive au passage suivant du bac : à l'inventaire, une bête à son bâtiment (son prix rendu s'il n'y a plus de place), un plan appris.",
+     "liens": [
+      "port",
+      "bac",
+      "niveaux_port",
+      "verger"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "niveaux_port",
+     "terme": "Les niveaux du port",
+     "description": "Le port grandit en cinq niveaux. Chacun se paie en pièces et en matériaux apportés au chantier du port (des planches, des pierres, puis des lingots de fer et de cuivre ; le niveau 2 : 1 800 pièces, 24 planches, 16 pierres), en une ou plusieurs fois. Chaque niveau allonge le quai, ouvre un rang du catalogue d'import, apporte plus de commandes par passage et accueille plus de villageois.",
+     "liens": [
+      "port",
+      "import",
+      "commandes_bac",
+      "villageois",
+      "lingot"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "chemin_port",
+     "terme": "Le chemin du port",
+     "description": "De la porte de l'abri à la sortie de la ferme, puis de la sortie au port : des blocs de chemin qui t'appartiennent. Tu les poses, les reprends et les déplaces en mode Construire, sur la ferme comme dehors ; dehors se posent aussi les pas japonais, les lanternes, les réverbères, les barrières, les bancs et le pont de planches, qui passe une rivière. Sur un chemin, on va 100 % plus vite, à pied comme à cheval. Le port est loin : le cheval et le chemin raccourcissent l'aller.",
+     "liens": [
+      "chemins_et_gues",
+      "port",
+      "portage",
+      "cheval"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "portage",
+     "terme": "Porter au port",
+     "description": "Ce qu'on vend au port, on l'y porte. Chaque objet a un volume (un ; le bois et les planches 2, la pierre, les minerais et les lingots 3). À la main, 12 volumes ; avec la brouette (Atelier), 40 ; avec la charrette attelée au cheval, 160. On charge sur la ferme (la fenêtre du port, onglet Porter : de l'inventaire puis du réfrigérateur), on reprend sur la ferme, on décharge sous la halle : tout ce qui est chargé se vend. Les semences achetées vont droit à la ferme.",
+     "liens": [
+      "port",
+      "chemin_port",
+      "cheval"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "village",
+   "icone": "🏝️",
+   "nom": "L'île et son village",
+   "entrees": [
+    {
+     "id": "village",
+     "terme": "Le village",
+     "description": "On arrive sur une île vierge : un abri sur la terre de la ferme, un port au bout du chemin, et tout le reste à bâtir. Des villageois débarquent du bac, s'installent dans les maisons que tu leur bâtis, travaillent pour la ferme, se lient entre eux. Au troisième, le village reçoit un nom. Il n'y a pas d'histoire écrite : c'est toi qui fais celle de ton île, et la chronique la note.",
+     "liens": [
+      "villageois",
+      "maison_libre",
+      "chronique",
+      "noms",
+      "vocations"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "maison_libre",
+     "terme": "La maison d'un villageois",
+     "description": "Un villageois s'installe dans une maison libre : une pièce close du genre maison, avec un lit que la famille ne prend pas, et une boîte aux lettres (Atelier) posée dehors contre sa porte. Un villageois par maison. Le premier vient dès la première maison libre ; les suivants s'il y a de quoi manger pour tous (la boîte à nourriture, le réfrigérateur) et si le port est assez grand. Sur sa fiche, ✏️ donne un nom à sa maison.",
+     "liens": [
+      "villageois",
+      "piece_close",
+      "niveaux_port",
+      "noms"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "villageois",
+     "terme": "Les villageois",
+     "description": "Ils débarquent du bac, un par passage, marchent jusqu'à leur maison et frappent. Chacun a son prénom, son visage, ses goûts et ses traits. Ils se lèvent, travaillent à leur tâche, mangent à midi et le soir, sortent, se saluent, causent entre eux, rentrent dormir. La nuit, chacun mange à la boîte à nourriture (ou au réfrigérateur, ou au garde-manger commun) et dort dans son lit ; mal nourri ou sans lit, il se repose le lendemain. Personne ne part. La carte du joueur compte les villageois : un appui, leur liste, puis la fiche de chacun.",
+     "liens": [
+      "maison_libre",
+      "taches",
+      "tableau_villageois",
+      "amitie_villageois",
+      "liens_villageois",
+      "traits",
+      "garde_manger"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "taches",
+     "terme": "Les tâches",
+     "description": "C'est toi qui donnes une tâche à chaque villageois, sur sa fiche : les champs (récolter, arroser, ressemer), les bêtes, le verger et les ruches, le bois (une hache), la pierre et le minerai (une pioche), la pêche (une canne), la cueillette, le fauchage et la paille (une faux), la cuisine (celle du village, s'il y en a une), les machines, la tournée du port (il y vend ce que tu marques « à vendre »). Il la fait chaque jour à son poste, à ses heures de travail ; ce qu'il produit va au coffre de la ferme. L'outil de sa tâche, tu le fabriques et tu le lui donnes : sans lui, ou sans rien à faire, la tâche attend et il le dit.",
+     "liens": [
+      "villageois",
+      "tableau_villageois",
+      "part",
+      "outils",
+      "garde_manger"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "tableau_villageois",
+     "terme": "Le tableau des villageois",
+     "description": "Le bouton 📊, sur la carte du joueur : une ligne par villageois, sa tâche et ce qu'elle a donné, ce qu'il a coûté (ce qu'il a mangé, sa part, ce que son travail a pris au coffre), ce qu'il a produit, le solde et son humeur, hier ou sur sept jours, triable par colonne ; et ce qui lui manque aujourd'hui. Un appui sur un prénom : ses sept jours et son rendement. C'est un repère pour décider qui fait quoi, pas une note.",
+     "liens": [
+      "taches",
+      "part",
+      "villageois"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "garde_manger",
+     "terme": "Le garde-manger commun et la cuisine du village",
+     "description": "La boîte à nourriture ou le réfrigérateur, rendus communs au village d'un appui (« Le rendre commun ») : les villageois y mangent, et ce que leur travail produit qui se mange y va de lui-même, jusqu'à 3 jours de repas du village (un réglage de sa fenêtre) ; le reste va au coffre. Tu y déposes ce que tu veux. Au réfrigérateur, ce qui périt garde sa fraîcheur ; dans la boîte, il vieillit. Une cuisinière ou un four posés dans une maison deviennent la cuisine du village (« Cuisine du village ») : les villageois à qui tu confies la cuisine y font chacun 4 plats par jour avec le garde-manger (la farine et l'huile au coffre), et les y rangent ; un plat nourrit mieux que ses légumes. Le soir, on mange ensemble à la table commune : les plats se partagent, chacun goûte à tous. Le tableau des villageois a sa ligne.",
+     "liens": [
+      "villageois",
+      "taches",
+      "tableau_villageois",
+      "part"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "part",
+     "terme": "La part du villageois",
+     "description": "Chaque nuit, un villageois garde 30 % de la valeur de ce que son travail a produit ce jour-là : des objets de sa récolte quittent le coffre pour son panier, jamais des pièces de ta caisse. S'il a encore faim, il mange de son panier ; le reste se vend pour lui au passage du bac et va dans sa bourse. Le tableau la compte dans son coût.",
+     "liens": [
+      "taches",
+      "tableau_villageois",
+      "etal",
+      "bac"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "etal",
+     "terme": "L'étal et la bourse",
+     "description": "La bourse d'un villageois sert à ses plaisirs. L'étal (Atelier : des planches et des fibres), posé dehors, est ta boutique : tu y mets jusqu'à 6 sortes d'objets de l'inventaire. En fin d'après-midi, un villageois vient y acheter ce qu'il adore, ce dont il a besoin (un vêtement, un meuble pour sa maison), puis ce qu'il aime, s'il peut le payer : ses pièces sont pour toi, et il est plus heureux cette nuit-là. Avec assez de pièces, il commande aussi au bac un objet qu'il adore.",
+     "liens": [
+      "part",
+      "villageois",
+      "meubles",
+      "bac"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "amitie_villageois",
+     "terme": "L'amitié",
+     "description": "Chaque villageois a sa jauge d'amitié avec toi, de 0 à 100, en cinq paliers : inconnu, poli, cordial, proche, intime. Elle monte quand tu lui parles (+2, une fois par jour) et avec un cadeau, un par jour : chacun a ses goûts, qui se découvrent en offrant (ce qu'il adore vaut +8, ce qu'il aime +4, ce qu'il déteste -4). L'absence ne la fait jamais baisser. Un ami te confie parfois ce qu'il aimerait recevoir, et t'offre de temps en temps un présent de sa main.",
+     "liens": [
+      "villageois",
+      "liens_villageois",
+      "traits"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "liens_villageois",
+     "terme": "Les liens entre villageois",
+     "description": "Les villageois se lient entre eux à force de se croiser : voisins, au même poste, à table, en sortie, à la fête. Une affinité, des paliers (connaissance, camarade, ami, proche) : deux amis sont plus heureux, travaillent mieux ensemble, s'entraident, s'assoient sur le même banc, se rendent visite le soir. Deux villageois proches peuvent former un foyer si tu leur bâtis une maison ; un enfant peut y naître.",
+     "liens": [
+      "villageois",
+      "amitie_villageois",
+      "traits",
+      "maison_libre"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "traits",
+     "terme": "Les traits",
+     "description": "Chaque villageois a deux ou trois traits de personnalité, parmi douze : matinal, couche-tard, bavard, réservé, travailleur, flâneur, casanier, curieux, gourmand, rêveur, soigneux, taquin. Ils pèsent sur ses horaires, ses phrases, les postes qu'il préfère et ceux avec qui il s'entend. On les découvre en le voyant vivre, ou en l'écoutant ; sa fiche dit ceux qu'on connaît.",
+     "liens": [
+      "villageois",
+      "liens_villageois",
+      "taches"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "commerces",
+     "terme": "Les commerces",
+     "description": "Un villageois assez proche de toi peut avoir envie d'ouvrir un commerce d'artisan ; c'est toi qui le décides. Il faut qu'il ait pratiqué 10 jours la tâche de sa filière, son amitié, et un local que tu bâtis : une pièce close avec l'établi et le comptoir, l'enseigne près de la porte. Un commerce reste artisanal : 3 lots par jour, un de plus avec l'ancienneté. L'artisan achète sa matière à ton coffre avec sa bourse, et vend au comptoir : à toi, aux villageois, le surplus au bac ; tu peux lui commander une pièce, ou la faire à façon. La forge fond le minerai en lingots et fait des clous, des charnières et des lames ; la mercerie file, tisse et coud la laine. La scierie scie des planches et fait les meubles de la maison : sur ta commande (ils entrent dans ta maison) ou pour les maisons des villageois. La boulangerie cuit le pain et les tartes au four à bois : un villageois qui n'a plus de provisions vient y chercher son pain, qu'il mange à son repas. La fromagerie caille le lait en faisselles et met des tommes à s'affiner en cave, quelques nuits. Un commerce ne te retire rien : tu peux toujours scier, cuire et cailler toi-même ; il fait mieux ou autre chose, en petite quantité. Le village tient d'autant plus de commerces qu'il a de villageois et que son port est grand. Le premier commerce ouvert franchit un palier de l'île, a son nom, et sa fête d'ouverture.",
+     "liens": [
+      "mercerie",
+      "villageois",
+      "amitie_villageois",
+      "noms",
+      "fetes_village",
+      "meubles"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "mercerie",
+     "terme": "La mercerie",
+     "description": "Le commerce de la laine. Un villageois qui s'occupe des bêtes 10 jours rêve d'une mercerie : son établi, le rouet et le métier à tisser, avec le comptoir et l'enseigne près de la porte. La laine de la tonte, qu'il t'achète, devient du fil au rouet, le fil du tissu au métier, le tissu des gants, un manteau chaud, une salopette, un tablier, ou un tapis ; chaque étape vaut plus que la précédente, 3 lots par jour en tout. Avec un colorant du mortier, il teint le vêtement : rouge, orange, jaune, vert, bleu ou violet ; les villageois l'achètent et le portent, et habillés d'un manteau chaud, ils travaillent sous la pluie. Sans mercerie, tu tisses et tu couds toi-même à l'Atelier. Quand le village a grandi (6 villageois), un second villageois qui en a l'envie peut la rejoindre : l'un file et tisse, l'autre coud, et ils font deux fois plus de lots, sans machine.",
+     "liens": [
+      "commerces",
+      "villageois",
+      "etal"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "vocations",
+     "terme": "Les vocations",
+     "description": "L'île prend une vocation de ce que tu y bâtis, sans menu à choisir : un village convivial (les fêtes, les projets faits ensemble, les repas partagés, l'amitié entre villageois, une jolie place) ou une ferme productive. Chacune a son score et ses paliers, qui débloquent des plans, des projets, une seconde fête par mois ; un palier atteint n'est jamais perdu. La fenêtre « L'île », onglet Vocations, les montre.",
+     "liens": [
+      "fetes_village",
+      "projets_village",
+      "village"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "fetes_village",
+     "terme": "Les fêtes du village",
+     "description": "Une fête se fixe un jour à venir (la fenêtre « L'île », le calendrier), une par mois de lune : il lui faut une place (le panneau du village, un puits ou une table de jardin) et des plats cuisinés. De 17 h à 21 h, tous viennent sur la place, attablés ou en cercle, et causent. La veillée de pleine lune se tient d'elle-même, le premier soir de pleine lune du mois, dès deux villageois. Une fête rapproche ceux qui y sont et les rend plus heureux.",
+     "liens": [
+      "vocations",
+      "projets_village",
+      "liens_villageois"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "projets_village",
+     "terme": "Les projets du village",
+     "description": "Des ouvrages qu'on bâtit ensemble, un à la fois : la place, le jardin partagé, le lavoir, le kiosque, la fontaine du village, le four commun. Tu lances le projet, tu apportes les matériaux, tu poses son chantier ; les villageois que tu y envoies y travaillent à la place de leur tâche, une journée après l'autre. Fini, il prend son dessin achevé, et les villageois reprennent leur tâche.",
+     "liens": [
+      "vocations",
+      "fetes_village",
+      "taches"
+     ],
+     "decouverte": [
+      "villageois"
+     ]
+    },
+    {
+     "id": "chronique",
+     "terme": "La chronique",
+     "description": "Le menu « Chronique » 📜 : ce qui compte sur l'île, noté de lui-même, une ligne datée par moment — l'arrivée, la première récolte, la première vente, chaque villageois, le nom du village, les paliers, le port agrandi, deux villageois devenus proches, un foyer, une fête, un projet fini. Les mois anciens se résument. 📌 épingle une ligne ; ✏️ y écrit ta note.",
+     "liens": [
+      "noms",
+      "village"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "noms",
+     "terme": "Les noms",
+     "description": "Tu nommes ton île au départ, ton village quand le troisième villageois s'installe, les commerces et les maisons : un nom est proposé, « 🎲 Un autre nom » en tire un autre, ou tu écris le tien (2 à 20 signes). « ✏️ Renommer », dans la chronique, les change à tout moment. Le panneau du village (Atelier) écrit son nom sur sa planche.",
+     "liens": [
+      "chronique",
+      "village",
+      "maison_libre",
+      "commerces"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "styles_ile",
+     "terme": "Styles d'aménagement",
+     "description": "Chaque bloc, sol ou meuble décoratif a un style : champêtre 🌾 (la pierre, le bois brut, le chêne), forestier 🌲 (les planches, les bibliothèques, les fougères), côtier 🐚 (le bleu, le blanc, le carrelage, les palmiers) ou fleuri 🌷 (les fleurs, les briques rouges, le vitrail, les tapis et les plantes). Une petite icône le montre dans le mode Construire. Aucun n'est plus beau qu'un autre : ce sont des goûts. La famille est plus heureuse (+5 à sa cible de bonheur) quand la ferme réunit 3 styles d'au moins 2 sortes de blocs, ou 6 sortes d'un même style : on compte les sortes différentes, pas les blocs.",
+     "liens": [
+      "meubles",
+      "mode_construire"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "plans_ile",
+     "terme": "Plans de collection",
+     "description": "Chaque pays de l'île a sa collection de meubles de jardin, dans son style : la forêt (le banc et la table en rondins), la côte (la chaise peinte, la jarre aux coquillages), le marais (la lanterne de papier, le bassin de pierre), la montagne (le banc et la jardinière de pierre), la prairie (la pergola fleurie). Leur recette ne se fait à l'Atelier qu'une fois leur plan trouvé : en explorant le pays, hors de la ferme ; les plans se commandent aussi au port (le catalogue d'import), et les paliers de l'île en offrent. Le carnet de plans, sous l'Atelier, montre ce que tu as trouvé.",
+     "liens": [
+      "styles_ile",
+      "import",
+      "terrasse"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    }
+   ]
+  },
+  {
    "id": "batiments",
    "icone": "🏗️",
    "nom": "Bâtiments & infrastructures",
@@ -193,11 +581,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "verger",
      "terme": "Verger",
-     "description": "Les arbres fruitiers de la ferme : pommier, poirier, cerisier, abricotier et pêcher. Un jeune arbre s'achète à la calèche et se plante depuis sa fiche de l'Inventaire (« Planter », puis une case en surbrillance sur la carte), dehors, à au moins 3 cases d'un autre arbre planté. L'arbre passe par 4 dessins : jeune arbre, arbuste, arbre (5 nuits chacun), puis arbre en fruits, 15 nuits après sa plantation. Les fruits attendent sur l'arbre : un appui le cueille (6 fruits, 4 énergie, 20 XP), et l'arbre redonne ses fruits 3 nuits plus tard, toute l'année. La Récolte du verger, dans l'Arbre des technologies, les cueille la nuit. Il ne s'arrose pas.",
+     "description": "Les arbres fruitiers de la ferme : pommier, poirier, cerisier, abricotier et pêcher. Un jeune arbre se commande au port (le catalogue d'import, dès son premier rang : il arrive au passage suivant du bac) et se plante depuis sa fiche de l'Inventaire (« Planter », puis une case en surbrillance sur la carte), dehors, à au moins 3 cases d'un autre arbre planté. L'arbre passe par 4 dessins : jeune arbre, arbuste, arbre (5 nuits chacun), puis arbre en fruits, 15 nuits après sa plantation. Les fruits attendent sur l'arbre : un appui le cueille (6 fruits, 4 énergie, 20 XP), et l'arbre redonne ses fruits 3 nuits plus tard, toute l'année. La Récolte du verger, dans l'Arbre des technologies, les cueille la nuit ; un villageois au verger aussi. Il ne s'arrose pas.",
      "liens": [
       "pommier",
       "poirier",
-      "comptoir",
+      "import",
       "mode_construire"
      ],
      "decouverte": [
@@ -498,7 +886,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "atelier",
      "terme": "Atelier",
-     "description": "Le premier bâtiment : il se construit avec 3 bois et 3 pierres, puis se pose sur la carte. On y fabrique les planches, les murs, les fenêtres, les portes, la paillasse, le plancher, le chemin, la barrière, l'escalier, les blocs clés des bâtiments, le four et la cuisinière, le puits, les appareils (panneau, pompe, citerne, batterie, avec des lingots), et tout ce qui ne s'achète pas : les outils (houe, hache, pioche, faux, canne à pêche), de quoi attirer les bêtes (le nid garni d'une poule, la pierre à sel et le foin d'un mouton ou d'une vache, le licol et les friandises du cheval), la ruche et le bac à fleurs. Les meubles s'achètent dans les hameaux (Bois-Joli, Les Genêts) ; la scierie de Bois-Joli fait plus de planches que l'Atelier, contre un jour d'attente.",
+     "description": "Le premier bâtiment : il se construit avec 3 bois et 3 pierres, puis se pose sur la carte. On y fabrique les planches, les murs, les fenêtres, les portes, la paillasse, le plancher, le chemin, la barrière, l'escalier, les blocs clés des bâtiments, le four et la cuisinière, le puits, les appareils (panneau, pompe, citerne, batterie, avec des lingots), et tout ce qui ne s'achète pas : les outils (houe, hache, pioche, faux, canne à pêche), de quoi attirer les bêtes (le nid garni d'une poule, la pierre à sel et le foin d'un mouton ou d'une vache, le licol et les friandises du cheval), la ruche, le bac à fleurs, la boîte aux lettres d'une maison de villageois, la brouette, l'étal et le panneau du village. Ce qu'un artisan sait mieux faire viendra des commerces de l'île.",
      "liens": [
       "bois_et_pierre",
       "fibre",
@@ -508,7 +896,7 @@ export const ENCYCLOPEDIE = {
       "meubles",
       "ruche",
       "cheval",
-      "comptoir"
+      "port"
      ],
      "decouverte": [
       "didacticiel:atelier"
@@ -671,10 +1059,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "meubles",
      "terme": "Meubles",
-     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils se commandent au cocher, à la calèche : l'ébéniste de Bois-Joli et les tapis des Genêts, une fois ces hameaux connus ; puis ils se posent dans la maison. Chacun élève pour de bon le bonheur que vise la famille (voir « Bonheur »). Une grille aide à les placer ; les tableaux s'accrochent à un mur. Presque tous se tournent (en mode Construire, le bouton ↻) : de face, de dos ou de profil ; de profil, un meuble long (la table, le canapé, l'armoire) prend sa longueur vers le haut. Les lits, les tableaux et le réfrigérateur restent de face.",
+     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : sur l'île, le menuisier les fait (la scierie, un commerce) : commandés, ils entrent dans ta maison ; ils se posent dans la maison, et un villageois peut en acheter un pour la sienne, à l'étal ou au comptoir du menuisier. Chacun élève pour de bon le bonheur que vise la famille (voir « Bonheur »). Une grille aide à les placer ; les tableaux s'accrochent à un mur. Presque tous se tournent (en mode Construire, le bouton ↻) : de face, de dos ou de profil ; de profil, un meuble long (la table, le canapé, l'armoire) prend sa longueur vers le haut. Les lits, les tableaux et le réfrigérateur restent de face.",
      "liens": [
       "maison",
-      "comptoir"
+      "etal",
+      "commerces"
      ],
      "decouverte": [
       "objet:meuble_chaise",
@@ -750,7 +1139,7 @@ export const ENCYCLOPEDIE = {
       "abeilles",
       "ruche",
       "faux",
-      "comptoir"
+      "port"
      ],
      "decouverte": [
       "objet:bac_carre",
@@ -763,7 +1152,7 @@ export const ENCYCLOPEDIE = {
      "terme": "Bassin",
      "description": "Son plan se trouve au marais (une collection de plans) ; une case de bassin se fabrique ensuite à l'Atelier (3 pierres) et se pose dehors comme un bloc. Les cases posées côte à côte se raccordent en un seul bassin, cerclé d'une margelle de pierre taillée : on en fait un carré, une longue allée d'eau, un L… Son eau bouge comme celle des étangs, des nénuphars y poussent tout seuls, et l'on ne marche pas dedans.",
      "liens": [
-      "plans_collection",
+      "plans_ile",
       "mode_construire"
      ],
      "decouverte": [
@@ -775,7 +1164,6 @@ export const ENCYCLOPEDIE = {
      "terme": "Terrasse",
      "description": "La table de jardin (des planches et de la fibre pour sa nappe), la chaise de jardin et le banc de jardin se fabriquent à l'Atelier et se posent dehors (l'onglet « Jardin » du mode Construire). Une chaise ou un banc qui touche la table est une place : c'est là que s'assoient tes invités quand tu les invites à un repas depuis le calendrier.",
      "liens": [
-      "invitation_repas",
       "bac_a_fleurs"
      ],
      "decouverte": [
@@ -829,7 +1217,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "laisse_de_mer",
      "terme": "Étoiles de mer, algues et coquillages",
-     "description": "Sur les plages du grand monde, au bord de l'eau, la mer laisse des coquillages (une coquille Saint-Jacques, parfois un bulot avec), des étoiles de mer et des algues : un appui dessus, le personnage va les ramasser à la main. La mer en rapporte d'autres quelques jours plus tard. Ils ne se mangent pas : ils se vendent (la calèche les achète).",
+     "description": "Sur les plages du grand monde, au bord de l'eau, la mer laisse des coquillages (une coquille Saint-Jacques, parfois un bulot avec), des étoiles de mer et des algues : un appui dessus, le personnage va les ramasser à la main. La mer en rapporte d'autres quelques jours plus tard. Ils ne se mangent pas : ils se vendent au port.",
      "liens": [
       "recolte_du_monde"
      ],
@@ -849,7 +1237,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "vigne",
      "terme": "Vigne",
-     "description": "Une culture pérenne de la Zone de culture : le plant de vigne s'achète à la calèche (dès le niveau 6). Le pied grimpe le long de son tuteur et donne ses grappes de raisin noir au bout de 6 stades de croissance (un arrosage chacun) ; après la vendange (4 raisins), le pied reste dans sa parcelle, en feuillage, et refait ses grappes sans replanter : il repart de son stade 4 sur 6. Pour libérer la parcelle, la houe arrache une vigne qui n'est pas mûre.",
+     "description": "Une culture pérenne de la Zone de culture : le plant de vigne se commande au port (le catalogue d'import, par 4, dès le niveau 6). Le pied grimpe le long de son tuteur et donne ses grappes de raisin noir au bout de 6 stades de croissance (un arrosage chacun) ; après la vendange (4 raisins), le pied reste dans sa parcelle, en feuillage, et refait ses grappes sans replanter : il repart de son stade 4 sur 6. Pour libérer la parcelle, la houe arrache une vigne qui n'est pas mûre.",
      "liens": [
       "potager"
      ],
@@ -1063,7 +1451,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pommier",
      "terme": "Pommier",
-     "description": "Arbre fruitier permanent du verger, planté dans le sol (un jeune arbre acheté à la calèche). Porte 6 pommes 15 nuits après sa plantation, puis 3 nuits après chaque cueillette, toute l'année.",
+     "description": "Arbre fruitier permanent du verger, planté dans le sol (un jeune arbre commandé au port). Porte 6 pommes 15 nuits après sa plantation, puis 3 nuits après chaque cueillette, toute l'année.",
      "liens": [
       "verger"
      ],
@@ -1075,7 +1463,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "poirier",
      "terme": "Poirier",
-     "description": "Arbre fruitier permanent du verger, planté dans le sol (un jeune arbre acheté à la calèche). Porte 6 poires 15 nuits après sa plantation, puis 3 nuits après chaque cueillette, toute l'année.",
+     "description": "Arbre fruitier permanent du verger, planté dans le sol (un jeune arbre commandé au port). Porte 6 poires 15 nuits après sa plantation, puis 3 nuits après chaque cueillette, toute l'année.",
      "liens": [
       "verger"
      ],
@@ -1087,7 +1475,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "autres_fruitiers",
      "terme": "Cerisier, abricotier, pêcher",
-     "description": "Arbres fruitiers permanents du verger, comme le pommier et le poirier : un jeune arbre s'achète à la calèche et se plante dans le sol. Ils donnent cerises, abricots et pêches, et fleurissent avant de porter leurs fruits.",
+     "description": "Arbres fruitiers permanents du verger, comme le pommier et le poirier : un jeune arbre se commande au port et se plante dans le sol. Ils donnent cerises, abricots et pêches, et fleurissent avant de porter leurs fruits.",
      "liens": [
       "verger",
       "pommier",
@@ -1116,7 +1504,7 @@ export const ENCYCLOPEDIE = {
      "liens": [
       "poulailler",
       "etable",
-      "comptoir",
+      "port",
       "silo",
       "ble",
       "oeuf"
@@ -1141,7 +1529,7 @@ export const ENCYCLOPEDIE = {
      "description": "Animal de l'Étable, venu pour une pierre à sel et du foin (Atelier), qui occupe 1 place. Il mange 1 paille par nuit ; sa laine est prête à tondre après 2 nuits où il a été nourri. Sans paille, sa laine n'avance pas cette nuit-là, et rien d'autre ne lui arrive. Le second adulte de la famille peut s'occuper des bêtes.",
      "liens": [
       "etable",
-      "comptoir",
+      "port",
       "paille",
       "laine"
      ],
@@ -1165,7 +1553,7 @@ export const ENCYCLOPEDIE = {
      "description": "Animal de l'Étable, venue pour une pierre à sel et du foin (Atelier), qui occupe 3 places. Elle mange 2 pailles par nuit et donne 1 lait chaque nuit où elle a mangé. Sans paille, elle ne donne pas de lait cette nuit-là, et rien d'autre ne lui arrive. Nourrie aux herbes de montagne (bouton « Nourrir les vaches aux herbes » de l'Étable), elle mange 1 herbe à la place de sa paille et donne du lait d'alpage.",
      "liens": [
       "etable",
-      "comptoir",
+      "port",
       "paille",
       "lait",
       "fromage_d_alpage"
@@ -1214,10 +1602,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "laine",
      "terme": "Laine",
-     "description": "Produit obtenu en tondant un mouton dont la laine est prête ; il se vend à la calèche, et sert aux tapis, aux lits et au canapé (Atelier). Ne se consomme pas et ne périme jamais.",
+     "description": "Produit obtenu en tondant un mouton dont la laine est prête ; il se vend au port, et sert aux tapis, aux lits et au canapé (Atelier). Ne se consomme pas et ne périme jamais.",
      "liens": [
       "mouton",
-      "comptoir"
+      "port"
      ],
      "decouverte": [
       "objet:laine"
@@ -1275,7 +1663,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "miel",
      "terme": "Miel",
-     "description": "Produit des ruches : une ruche pleine donne 3 pots de miel. Il se vend à la calèche.",
+     "description": "Produit des ruches : une ruche pleine donne 3 pots de miel. Il se vend au port.",
      "liens": [
       "ruche",
       "abeilles"
@@ -1324,9 +1712,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pieces",
      "terme": "Pièces",
-     "description": "Monnaie du jeu, obtenue en vendant les surplus de la ferme à la calèche, et dépensée pour les achats (des semences, les produits des hameaux), les améliorations et l'agrandissement des surfaces.",
+     "description": "Monnaie du jeu, obtenue en vendant les surplus de la ferme au port (et en honorant les commandes du bac, à l'étal quand un villageois y achète), et dépensée au port : les semences, le catalogue d'import, les niveaux du port ; et pour les améliorations et les technologies.",
      "liens": [
-      "comptoir"
+      "port",
+      "import",
+      "etal"
      ],
      "decouverte": [
       "depart"
@@ -1362,10 +1752,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "graines",
      "terme": "Graines",
-     "description": "Obtenues normalement en récoltant les cultures, elles permettent de replanter. Peuvent aussi être achetées à la calèche (les seules choses qu'elle vend, avec les produits des hameaux) en dépannage, mais à un prix plus élevé que la production. Les arbres abattus laissent aussi leurs graines : la pomme de pin et le gland.",
+     "description": "Obtenues normalement en récoltant les cultures, elles permettent de replanter. Peuvent aussi être achetées au comptoir du port, en dépannage, mais à un prix plus élevé que la production ; elles vont droit à la ferme. Les arbres abattus laissent aussi leurs graines : la pomme de pin et le gland.",
      "liens": [
       "graines_d_arbre",
-      "comptoir"
+      "port"
      ],
      "decouverte": [
       "objet:graine_carotte",
@@ -1707,7 +2097,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "omelette_aux_champignons",
      "terme": "Omelette aux champignons",
-     "description": "Plat préparé à la cuisine à partir d'œufs et de champignons ramassés à la main dans les forêts du grand monde (ou venus des cueilleurs des hameaux, par la calèche).",
+     "description": "Plat préparé à la cuisine à partir d'œufs et de champignons ramassés à la main dans les forêts du grand monde.",
      "liens": [
       "cuisine",
       "oeuf",
@@ -1749,12 +2139,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "creme_de_marrons",
      "terme": "Crème de marrons",
-     "description": "Plat préparé à la cuisine à partir de châtaignes et de miel (ou de sucre, qu'une ancienne partie aurait encore). Les châtaignes se cueillent sur les châtaigniers des forêts du grand monde, ou viennent des cueilleurs des hameaux, par la calèche.",
+     "description": "Plat préparé à la cuisine à partir de châtaignes et de miel (ou de sucre, qu'on commande au port). Les châtaignes se cueillent sur les châtaigniers des forêts du grand monde.",
      "liens": [
       "cuisine",
       "miel",
-      "comptoir",
-      "habitants"
+      "import"
      ],
      "decouverte": [
       "objet:creme_marrons",
@@ -1764,13 +2153,12 @@ export const ENCYCLOPEDIE = {
     {
      "id": "tarte_aux_myrtilles",
      "terme": "Tarte aux myrtilles",
-     "description": "Plat cuit au four à partir de farine, de myrtilles et de miel (ou de sucre, qu'une ancienne partie aurait encore). Les myrtilles viennent des cueilleurs des hameaux, par la calèche.",
+     "description": "Plat cuit au four à partir de farine, de myrtilles et de miel (ou de sucre, qu'on commande au port). Les myrtilles se cueillent dans le grand monde.",
      "liens": [
       "four",
       "farine",
       "miel",
-      "comptoir",
-      "habitants"
+      "import"
      ],
      "decouverte": [
       "objet:tarte_myrtilles",
@@ -1919,7 +2307,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bois_et_pierre",
      "terme": "Bois et pierre",
-     "description": "Ressources de la carte : le bois tombe des arbres coupés à la hache, la pierre des rochers cassés à la pioche ; sur la ferme, on ramasse aussi à la main des petites pierres et des morceaux de bois. Ils ne périment pas et se vendent à la calèche, mais servent surtout à l'Atelier (planches, murs, outils…) et à payer les technologies de l'Arbre des technologies ; le bois sert aussi au Four pour fondre les lingots.",
+     "description": "Ressources de la carte : le bois tombe des arbres coupés à la hache, la pierre des rochers cassés à la pioche ; sur la ferme, on ramasse aussi à la main des petites pierres et des morceaux de bois. Ils ne périment pas et se vendent au port, mais servent surtout à l'Atelier (planches, murs, outils…), au chantier du port et à payer les technologies de l'Arbre des technologies ; le bois sert aussi au Four pour fondre les lingots. Un villageois au bois ou à la pierre en rapporte chaque jour.",
      "liens": [
       "ramassage",
       "atelier",
@@ -1962,55 +2350,6 @@ export const ENCYCLOPEDIE = {
       "objet:lingot_cuivre",
       "objet:lingot_or",
       "objet:lingot_platine"
-     ]
-    }
-   ]
-  },
-  {
-   "id": "commerce",
-   "icone": "🏪",
-   "nom": "Commerce",
-   "entrees": [
-    {
-     "id": "comptoir",
-     "terme": "La calèche",
-     "description": "Le commerce de la ferme et du pays : un cheval attelé à une voiture couverte, son cocher, et une lanterne la nuit. Chaque jour, elle fait le tour du monde par les chemins, de hameau en hameau, et passe à la ferme vers 10 h, où elle se gare une heure devant l'entrée, au bout du chemin de la ferme ; sur la place de chaque hameau, elle s'arrête une demi-heure, et le soir elle dort dans l'un d'eux. Quand elle approche, une icône au bord de l'écran montre où elle est ; sur un chemin, quand elle passe tout près, on la hèle (un appui sur elle, ou le bouton « Héler ») et elle s'arrête un moment. Elle commerce avec toi à partir du niveau 3. Arrêtée à côté de toi, elle achète tout ce qui se vend, au prix de vente, et vend les semences (en dépannage : leur prix monte à chaque achat) et ce qu'elle a acheté en chemin à la réserve des hameaux — bois, poisson, pierre, minerai, lait, laine, baies, champignons, châtaignes, myrtilles… —, en quantité limitée, à 150 % de leur prix de vente ; l'argent de ces achats va aux familles des hameaux. Rien d'autre : les outils, les animaux, le cheval, les ruches et les meubles se fabriquent à l'Atelier. Les minerais et les lingots ne se vendent pas. Sa fenêtre, dans le menu, dit où elle est et quand elle passe à la ferme.",
-     "liens": [
-      "coefficient_dachat",
-      "hameaux",
-      "habitants",
-      "graines",
-      "meubles",
-      "verger",
-      "chemins_et_gues",
-      "atelier"
-     ],
-     "decouverte": [
-      "onglet:comptoir"
-     ]
-    },
-    {
-     "id": "coefficient_dachat",
-     "terme": "Coefficient d'achat",
-     "description": "Multiplicateur appliqué au prix de vente d'un objet pour déterminer son prix d'achat à la calèche (les semences). Il augmente à chaque achat et diminue à chaque vente, sans jamais descendre sous un plancher minimal.",
-     "liens": [
-      "comptoir"
-     ],
-     "decouverte": [
-      "onglet:comptoir"
-     ]
-    },
-    {
-     "id": "commerce",
-     "terme": "Les ateliers des hameaux",
-     "description": "Les ateliers des hameaux : à Bois-Joli, la scierie (2 bois → 3 planches, prêtes le lendemain) et l'ébéniste, qui vend les meubles ; aux Genêts, le métier à tisser (2 laines → 1 tissu) et la couture (gants, manteau chaud, salopette, dans ce tissu), et les tapis. On leur passe commande par le cocher, à la calèche (l'onglet Commandes), une fois le hameau connu : il porte ce qu'il faut, et rapporte la commande à son passage suivant ; l'argent va aux familles du hameau. Au niveau 10, la ferme accueille la veillée de pleine lune : les voisins viennent, de 19 h à 22 h, et chaque hameau t'en sait gré.",
-     "liens": [
-      "mouton",
-      "comptoir",
-      "meubles"
-     ],
-     "decouverte": [
-      "hameau"
      ]
     }
    ]
@@ -2729,7 +3068,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "b_prairie",
      "terme": "La prairie",
-     "description": "Le pays de la ferme : de l'herbe à perte de vue, des fleurs, des chemins. Les hameaux s'y installent volontiers.",
+     "description": "Le pays de la ferme : de l'herbe à perte de vue, des fleurs, des chemins.",
      "liens": [
       "b_foret",
       "b_lande"
@@ -2828,730 +3167,6 @@ export const ENCYCLOPEDIE = {
    ]
   },
   {
-   "id": "secrets",
-   "icone": "🗝️",
-   "nom": "Les secrets du monde",
-   "entrees": [
-    {
-     "id": "s_ruine",
-     "terme": "Les vieilles ruines",
-     "description": "Des murs de pierre écroulés, mangés par la mousse : des maisons d'autrefois, bien avant les hameaux d'aujourd'hui. On en trouve dans la prairie, sur la lande et en forêt. Touche une ruine la première fois : entre ses pierres se cache un petit trésor, ou une page du carnet du voyageur.",
-     "liens": [
-      "s_cairn",
-      "s_pierre_levee",
-      "carnet_voyageur_1"
-     ],
-     "decouverte": [
-      "secret:ruine"
-     ]
-    },
-    {
-     "id": "s_cairn",
-     "terme": "Les cairns",
-     "description": "Des tas de pierres posées une à une, sur la lande et dans la montagne. Les bergers les montaient pour marquer les chemins par temps de brouillard. Sous la dernière pierre, il y a souvent une cachette.",
-     "liens": [
-      "s_belvedere",
-      "s_ruine"
-     ],
-     "decouverte": [
-      "secret:cairn"
-     ]
-    },
-    {
-     "id": "s_arbre_ancien",
-     "terme": "Les arbres anciens",
-     "description": "Des arbres immenses, plus vieux que tous les hameaux, dans la forêt et parfois au milieu d'un pré. Leurs racines gardent des cachettes. On ne les abat pas.",
-     "liens": [
-      "s_ruine",
-      "b_foret"
-     ],
-     "decouverte": [
-      "secret:arbre_ancien"
-     ]
-    },
-    {
-     "id": "s_belvedere",
-     "terme": "Les belvédères",
-     "description": "Un rocher plat, tout en haut de la montagne, d'où l'on voit le pays entier. Y monter, c'est découvrir d'un coup tout ce qui l'entoure : le brouillard de la carte se lève loin à la ronde.",
-     "liens": [
-      "s_cairn",
-      "b_montagne"
-     ],
-     "decouverte": [
-      "secret:belvedere"
-     ]
-    },
-    {
-     "id": "s_pierre_levee",
-     "terme": "Les pierres levées",
-     "description": "De grandes pierres dressées vers le ciel, sur la lande, dans la prairie ou au bord du marais. Personne ne sait qui les a levées. À leur pied, on trouve parfois une offrande oubliée.",
-     "liens": [
-      "s_ruine",
-      "carnet_voyageur_4"
-     ],
-     "decouverte": [
-      "secret:pierre_levee"
-     ]
-    },
-    {
-     "id": "carnet_voyageur_1",
-     "terme": "Carnet du voyageur, page 1",
-     "description": "« Je suis arrivé par le bac, un matin de brume. Personne ici ne sait d'où viennent les vieux murs qu'on croise dans les prés. On dit qu'il y avait des villages avant les hameaux, et des gens qui partaient un jour sans se retourner. »",
-     "liens": [
-      "carnet_voyageur_2",
-      "s_ruine"
-     ],
-     "decouverte": [
-      "secret:carnet_voyageur_1"
-     ]
-    },
-    {
-     "id": "carnet_voyageur_2",
-     "terme": "Carnet du voyageur, page 2",
-     "description": "« Les bergers m'ont appris à lire les cairns : une pierre posée en haut veut dire que le chemin continue ; deux pierres côte à côte, qu'il faut tourner. Par temps de brouillard, ils vous sauvent la vie. »",
-     "liens": [
-      "carnet_voyageur_3",
-      "s_cairn"
-     ],
-     "decouverte": [
-      "secret:carnet_voyageur_2"
-     ]
-    },
-    {
-     "id": "carnet_voyageur_3",
-     "terme": "Carnet du voyageur, page 3",
-     "description": "« J'ai compté les cernes d'une souche, près d'un très vieil arbre. J'ai abandonné à trois cents. Celui qui est encore debout à côté doit avoir vu passer mille hivers. »",
-     "liens": [
-      "carnet_voyageur_4",
-      "s_arbre_ancien"
-     ],
-     "decouverte": [
-      "secret:carnet_voyageur_3"
-     ]
-    },
-    {
-     "id": "carnet_voyageur_4",
-     "terme": "Carnet du voyageur, page 4",
-     "description": "« Les pierres levées regardent toutes du même côté : vers l'endroit où se lève la pleine lune, au début de l'été. Ceux qui les ont dressées connaissaient le ciel mieux que nous. »",
-     "liens": [
-      "carnet_voyageur_5",
-      "s_pierre_levee"
-     ],
-     "decouverte": [
-      "secret:carnet_voyageur_4"
-     ]
-    },
-    {
-     "id": "carnet_voyageur_5",
-     "terme": "Carnet du voyageur, page 5",
-     "description": "« Du haut du belvédère, j'ai vu trois rivières descendre vers la mer, et la fumée de six hameaux. J'ai dessiné la carte que voici ; elle n'est pas juste, mais elle est belle. »",
-     "liens": [
-      "carnet_voyageur_6",
-      "s_belvedere"
-     ],
-     "decouverte": [
-      "secret:carnet_voyageur_5"
-     ]
-    },
-    {
-     "id": "carnet_voyageur_6",
-     "terme": "Carnet du voyageur, page 6",
-     "description": "« Dans les hameaux, on laisse toujours une assiette de plus à table, au cas où quelqu'un passerait. On m'a nourri partout où je suis allé. Je n'ai jamais su comment rendre tout ça. »",
-     "liens": [
-      "carnet_voyageur_7"
-     ],
-     "decouverte": [
-      "secret:carnet_voyageur_6"
-     ]
-    },
-    {
-     "id": "carnet_voyageur_7",
-     "terme": "Carnet du voyageur, page 7",
-     "description": "« Les vieux disent qu'il ne faut rien prendre dans une ruine sans y laisser quelque chose en échange : une graine, une pierre, une chanson. Je n'avais qu'une chanson. Je l'ai laissée. »",
-     "liens": [
-      "carnet_voyageur_8"
-     ],
-     "decouverte": [
-      "secret:carnet_voyageur_7"
-     ]
-    },
-    {
-     "id": "carnet_voyageur_8",
-     "terme": "Carnet du voyageur, page 8",
-     "description": "« Je repars demain. J'ai caché les pages de ce carnet un peu partout, dans les endroits que j'ai aimés. Si tu les as toutes trouvées, c'est que tu as aimé les mêmes. Prends soin de ce pays. »",
-     "liens": [
-      "carnet_voyageur_1"
-     ],
-     "decouverte": [
-      "secret:carnet_voyageur_8"
-     ]
-    }
-   ]
-  },
-  {
-   "id": "hameaux",
-   "icone": "🏘️",
-   "nom": "Les hameaux du grand monde",
-   "entrees": [
-    {
-     "id": "hameaux",
-     "terme": "Les hameaux",
-     "description": "Les chemins du grand monde relient les hameaux, de petits villages de trois à sept maisons bâties des mêmes blocs que la maison de la ferme : des murs, des portes, des fenêtres, des planchers, un toit. Chacun a sa place de terre battue ou de pavés, son puits, son banc et un panneau à son nom ; des ruelles mènent aux portes ; des potagers et des vergers clôturés, des tas de bois, un poulailler et le lieu de travail de son métier : le billot du bûcheron, la barque et les filets du pêcheur, le wagonnet du mineur, l'enclos du berger, la claie du cueilleur. Le pays les façonne : de la pierre et de l'ardoise dans la montagne, de la pierre blanche et des tuiles sur la côte, du bois et du chaume en forêt et sur la lande, du bois et des roseaux au bord du marais. On s'y promène, on entre dans les maisons (le toit s'efface), on touche le panneau pour lire son nom ; la nuit, les fenêtres s'éclairent, et la fumée monte des cheminées. On n'y bâtit pas, on n'y laboure pas, on n'y casse rien et on n'y coupe pas les arbres des jardins : tout est aux habitants, qui y vivent leurs journées. Le premier passage dans un hameau l'annonce et l'inscrit sur cette page.",
-     "liens": [
-      "habitants",
-      "faune_du_monde",
-      "metiers",
-      "chemins_et_gues"
-     ],
-     "decouverte": [
-      "hameau"
-     ]
-    },
-    {
-     "id": "habitants",
-     "terme": "Les habitants",
-     "description": "Chaque maison d'un hameau abrite une famille : un ou deux adultes et quelques enfants, jamais plus que de lits. Le premier adulte fait le métier du hameau — bûcheron, pêcheur, mineur, berger ou cueilleur —, le second le même, un autre, ou il tient le jardin. Ils vivent leurs journées comme la tienne : levés à six heures et demie, les adultes partent au travail (le bûcheron fend au billot et abat les arbres alentour, qui repoussent comme les autres ; le pêcheur pêche depuis la rive ; le mineur pioche à son tas de minerai ; le berger soigne ses moutons dans l'enclos ; le cueilleur fait le tour des jardins), les enfants jouent sur la place ; à midi et le soir, tout le monde rentre manger, et la nuit chacun dort dans son lit. Touche un habitant : il s'arrête et te dit son prénom, son métier et un mot selon l'heure et son humeur. Chaque nuit, même loin de toi, chaque famille vit sa journée : son métier produit, son jardin et le poulailler donnent, elle cuisine les plats qu'elle connaît et mange à sa faim (ou non : son bonheur suit les mêmes règles que celui de ta famille) ; ce qui reste va à la réserve du hameau. Le panneau de la place ouvre la fiche du hameau : ses familles, leur bonheur et leur bourse, et sa réserve, qui grandit nuit après nuit. La calèche l'achète à chacun de ses passages (ce qu'elle a pris la dernière fois est dans la fiche), et l'argent va aux bourses des familles.",
-     "liens": [
-      "hameaux",
-      "bonheur",
-      "metiers",
-      "comptoir",
-      "amitie"
-     ],
-     "decouverte": [
-      "hameau"
-     ]
-    },
-    {
-     "id": "amitie",
-     "terme": "L'amitié",
-     "description": "Chaque habitant d'un hameau a une jauge d'amitié, de 0 à 100, en cinq paliers : inconnu, poli, cordial, proche, intime (Odile, Basile ou Théo gardent celle que l'histoire fait bouger). Elle monte quand tu lui parles (+2, une fois par jour), quand tu passes dans son hameau (+1, une fois par jour) et avec un cadeau, un par jour : touche-le, puis « 🎁 Offrir » dans sa bulle. Chacun a ses goûts, qui se découvrent en offrant : ce qu'il adore vaut +8, ce qu'il aime +4, le reste +1, et ce qu'il déteste -4. L'absence ne fait jamais baisser l'amitié : revu après 7 jours ou plus, un habitant qui te connaît est joyeux de te retrouver et la conversation rapporte +3 de plus. Un ami proche ou intime laisse parfois un présent devant ta porte ; l'amitié avec Basile ou Garance baisse le prix de leurs commandes (jusqu'à −20 %) et les rend plus rapides ; la confiance du hameau monte avec l'amitié de ses habitants. Les émotions fortes se lisent sur leur corps, tout entier coloré quelques instants : jaune la joie (un cadeau qui plaît, des retrouvailles, un bon repas), rouge la colère (un arbre abattu sous leurs yeux), violet la peur (un enfant qui voit frapper, un cheval qui passe trop près), vert le dégoût (un cadeau détesté) ; un petit emoji accompagne chaque réaction. Le reste du temps, ils gardent leurs couleurs.",
-     "liens": [
-      "habitants",
-      "hameaux"
-     ],
-     "decouverte": [
-      "hameau"
-     ]
-    },
-    {
-     "id": "invitation_repas",
-     "terme": "Inviter à un repas",
-     "description": "Depuis le calendrier, touche un jour à venir (ou « ＋ Créer un évènement ») : choisis le jour, le déjeuner (12 h) ou le dîner (19 h), et jusqu'à 4 personnes parmi celles à qui tu as déjà parlé. Achille, le cocher, porte ton message pendant sa tournée : les réponses arrivent le lendemain matin (plus l'amitié est grande, plus on accepte volontiers). Le jour dit, tes invités viennent à pied une heure avant et s'assoient à ta table : une table de jardin et ses chaises ou ses bancs (la terrasse), sinon la table de la maison ; sans table, ils attendent devant la porte. Viens à table : tu sers jusqu'à 3 plats de ton inventaire. Chacun gagne +4 d'amitié, plus selon ses goûts (+4 pour un plat qu'il adore), +2 sur la terrasse ; ta famille, qui s'est attablée avec eux aux places qui restent, mange à sa faim et vise +6 de bonheur cette nuit. Les jours suivants, tes invités parlent de ce bon moment. Un repas manqué ne fait rien perdre : ils repartent en souriant.",
-     "liens": [
-      "amitie",
-      "calendrier_lune",
-      "terrasse"
-     ],
-     "decouverte": [
-      "hameau"
-     ]
-    },
-    {
-     "id": "styles",
-     "terme": "Styles d'aménagement",
-     "description": "Chaque bloc, sol ou meuble décoratif a un style : champêtre 🌾 (la pierre, le bois brut, le chêne), forestier 🌲 (les planches, les bibliothèques, les fougères), côtier 🐚 (le bleu, le blanc, le carrelage, les palmiers) ou fleuri 🌷 (les fleurs, les briques rouges, le vitrail, les tapis et les plantes). Une petite icône le montre dans le mode Construire. Aucun n'est plus beau qu'un autre : ce sont des goûts. La famille est plus heureuse (+5 à sa cible de bonheur) quand la ferme réunit 3 styles d'au moins 2 sortes de blocs, ou 6 sortes d'un même style : on compte les sortes différentes, pas les blocs (vingt murs de pierre font une seule pièce). Chaque habitant a son style préféré, tiré du pays de son hameau (la côte aime le côtier, la forêt le forestier…) ; on le découvre en partageant un repas, ou en devenant cordiaux. Invité près d'un coin de son style (3 sortes au moins à 5 cases de la table), il l'admire en arrivant, et le repas lui rapporte +3 d'amitié de plus.",
-     "liens": [
-      "invitation_repas",
-      "meubles",
-      "mode_construire"
-     ],
-     "decouverte": [
-      "hameau"
-     ]
-    },
-    {
-     "id": "plans_collection",
-     "terme": "Plans de collection",
-     "description": "Chaque pays de l'île a sa collection de meubles de jardin, dans son style : la forêt (le banc et la table en rondins), la côte (la chaise peinte, la jarre aux coquillages), le marais (la lanterne de papier, le bassin de pierre), la montagne (le banc et la jardinière de pierre), la prairie (la pergola fleurie). Leur recette ne se fait à l'Atelier qu'une fois leur plan trouvé. La première fois que tu passes dans un pays, hors de la ferme, tu y trouves le plan d'un de ses meubles ; un ami « proche » d'un hameau de ce pays (la forêt, la côte, le marais, la montagne, la prairie ou la lande) t'offre le suivant, une nuit. Les bancs, les chaises et les tables en font des terrasses pour tes invités ; les sièges se tournent. Le carnet de plans, sous l'Atelier, montre ce que tu as trouvé.",
-     "liens": [
-      "styles",
-      "invitation_repas",
-      "terrasse"
-     ],
-     "decouverte": [
-      "hameau"
-     ]
-    },
-    {
-     "id": "projets_hameaux",
-     "terme": "Projets des hameaux",
-     "description": "Chaque hameau a ses projets collectifs, l'un après l'autre : aménager la place (des bancs, des bacs de fleurs, une lanterne, une table) ou créer un jardin partagé (une pergola, des bacs de lavande, des jardinières, un banc en rondins) ; les hameaux de la montagne, de la côte et du marais commencent par la place, ceux de la prairie, de la lande et de la forêt par le jardin. La fiche du hameau (touche le panneau de sa place) montre ce qu'il demande, en bois, en pierre et en fibre, et ce qui est déjà là. « 🤝 Apporter ce que j'ai » y donne tes matériaux ; une fois par jour, chacun de ses habitants t'en sait gré (+1 d'amitié). Chaque nuit, les familles y ajoutent un peu de leur réserve. Quand tout est là, le hameau s'y met la nuit même : sa place se garnit, la confiance du hameau gagne 10, chacun de ses habitants +5 d'amitié, et pendant 7 jours ils t'en remercient en te parlant.",
-     "liens": [
-      "hameaux",
-      "habitants",
-      "amitie"
-     ],
-     "decouverte": [
-      "hameau"
-     ]
-    },
-    {
-     "id": "metiers",
-     "terme": "Les métiers des hameaux",
-     "description": "Chaque hameau a son métier, que le pays lui donne : mineur au pied de la montagne, pêcheur au bord de l'eau, bûcheron à la lisière d'une forêt, berger sur la lande, cueilleur ailleurs. Le bûcheron fend au billot et abat des arbres alentour (du bois, parfois une pomme de pin) ; le pêcheur pêche depuis la rive le poisson de son eau (sardines, anchois, dorades et bars en mer, truites, ombles et brochets au lac, truites, goujons et saumons en rivière) ; le mineur pioche à son tas de minerai (de la pierre, parfois du fer, du cuivre, du quartz) ; le berger soigne ses moutons (du lait, parfois de la laine) ; le cueilleur rapporte des baies, des champignons, des mûres, des myrtilles et des châtaignes. Le jardinier, lui, tient le potager du foyer. Ce que les familles ne mangent pas va à la réserve du hameau, que la calèche achète et revend : c'est par elle que la ferme a les produits qu'elle ne fait pas.",
-     "liens": [
-      "habitants",
-      "hameaux",
-      "comptoir",
-      "gisements",
-      "peche"
-     ],
-     "decouverte": [
-      "hameau"
-     ]
-    }
-   ]
-  },
-  {
-   "id": "ile",
-   "icone": "🌙",
-   "nom": "L'île de Céron",
-   "entrees": [
-    {
-     "id": "ceron",
-     "terme": "Céron",
-     "description": "La petite île de l'archipel des Terres Lointaines, où ta famille s'installe : un massif volcanique au nord et à l'ouest, la mer au sud et à l'est, la terre de ton grand-père au milieu. Les premiers arrivants l'ont peuplée il y a cinq siècles ; leurs descendants y vivent près de la nature, sans rien faire venir d'ailleurs, et avec des usages : on ne ferme pas sa porte, on ne coupe pas un arbre sans en replanter un, personne ne chasse, on veille les soirs de pleine lune.",
-     "liens": [
-      "cadolon",
-      "calendrier_lune",
-      "hameaux",
-      "maurice"
-     ],
-     "decouverte": [
-      "depart"
-     ]
-    },
-    {
-     "id": "cadolon",
-     "terme": "Cadolon",
-     "description": "La grande île, d'où vient ta famille : une escale entre deux continents, ses quais, ses machines, son bruit. Un bac la relie à Céron, depuis la cale des Mouettes, pour les passagers, le courrier et les petits colis. Ici, on dit « ceux d'en face » pour ses habitants ; beaucoup d'enfants de Céron y sont partis, quelques anciens en sont revenus.",
-     "liens": [
-      "ceron",
-      "cale_bac",
-      "adele"
-     ],
-     "decouverte": [
-      "depart"
-     ]
-    },
-    {
-     "id": "calendrier_lune",
-     "terme": "Le calendrier de lune",
-     "description": "Céron suit le calendrier des premiers arrivants : douze mois de quatorze jours, de Solaria à Silentia, et les phases de la lune. Chacune a sa coutume : quand la lune monte, on sème (« ce qui monte avec la lune pousse avec elle ») ; à la pleine lune, on récolte et l'on veille ; quand elle descend, on économise l'eau et l'on répare ; aux nuits noires, la terre se repose, on raconte et l'on ne sème rien.",
-     "liens": [
-      "ceron",
-      "veillee_lune"
-     ],
-     "decouverte": [
-      "depart"
-     ]
-    },
-    {
-     "id": "maurice",
-     "terme": "Maurice",
-     "description": "Ton grand-père. Il a mené la calèche de l'île pendant trente-cinq ans en rendant mille services : un toit ici, une scie là. Il y a un an, il est parti faire le tour des îles en voilier avec Philomène, et vous a confié sa terre. Il écrit des cartes postales, et a laissé des carnets un peu partout.",
-     "liens": [
-      "achille",
-      "maison_maurice",
-      "carnet",
-      "promesses"
-     ],
-     "decouverte": [
-      "depart"
-     ]
-    },
-    {
-     "id": "philomene",
-     "terme": "Philomène",
-     "description": "Ta grand-mère, jardinière. Elle sème des graines au bord des chemins « pour ceux d'après ». C'est la meilleure amie de Frida. Elle voyage avec Maurice sur leur petit voilier, la Luciole, et ajoute toujours un petit mot à la fin de ses cartes.",
-     "liens": [
-      "maurice",
-      "frida",
-      "adele"
-     ],
-     "decouverte": [
-      "depart"
-     ]
-    },
-    {
-     "id": "adele",
-     "terme": "Adèle",
-     "description": "Ta mère. Elle a grandi au Gué, entre ses parents, Odile et Frida, et vit à Cadolon. Ses lettres arrivent par le bac aux moments qui comptent, et ses « au fait » ramènent toujours un souvenir.",
-     "liens": [
-      "courrier",
-      "maurice",
-      "cadolon"
-     ],
-     "decouverte": [
-      "courrier"
-     ]
-    },
-    {
-     "id": "achille",
-     "terme": "Achille",
-     "description": "Le cocher de l'île, formé par Maurice. Né aux Mouettes, il vit au Gué, à l'écurie de la calèche. Timide et attentionné, il parle à son cheval, Biscotte, plus qu'aux gens, et sait toutes les nouvelles. Il passe à la ferme chaque jour vers dix heures, achète ce que tu as en trop, porte ce que tu confies.",
-     "liens": [
-      "comptoir",
-      "le_gue",
-      "maurice",
-      "promesses"
-     ],
-     "decouverte": [
-      "fait:achille.cle"
-     ]
-    },
-    {
-     "id": "odile",
-     "terme": "Odile",
-     "description": "La grand-mère du Gué, voisine de Maurice et Philomène depuis toujours ; elle a vu grandir ta mère. Elle a des dictons de lune pour tout, fait les meilleures tartes de l'île et arrose les géraniums de tes grands-parents en attendant leur retour.",
-     "liens": [
-      "le_gue",
-      "maison_maurice",
-      "veillee_lune",
-      "calendrier_lune"
-     ],
-     "decouverte": [
-      "fait:odile.rencontre"
-     ]
-    },
-    {
-     "id": "fernand",
-     "terme": "Fernand",
-     "description": "Le pêcheur conteur des Mouettes, revenu sur l'île après quarante ans au port de Cadolon, « parce que c'est ici que j'ai mon cœur ». Il compare tout à « là-bas » pour dire combien on est bien ici, et connaît les dauphins par leur prénom. C'est lui qui a accueilli ta famille sur la cale.",
-     "liens": [
-      "les_mouettes",
-      "cale_bac",
-      "cadolon"
-     ],
-     "decouverte": [
-      "fait:arrivee"
-     ]
-    },
-    {
-     "id": "frida",
-     "terme": "Frida",
-     "description": "L'inventrice de l'île, venue il y a cinquante ans observer les bêtes et les plantes, et restée. La meilleure amie de Philomène ; elle gardait ta mère toute petite. Elle dort au Gué et vit à son atelier, au bord de l'étang : le robot, sa station, les automatisations, dont toute l'île est fière. Elle a toujours un chiffre à donner, et du thé sur le poêle.",
-     "liens": [
-      "atelier_frida",
-      "robot",
-      "automatisation"
-     ],
-     "decouverte": [
-      "fait:frida.rencontre"
-     ]
-    },
-    {
-     "id": "basile",
-     "terme": "Basile",
-     "description": "L'ébéniste de Bois-Joli : la scierie, les meubles de l'île. Il parle du bois comme d'une personne et plante deux arbres pour un coupé. Son fils Théo démonte tout, et remonte tout mieux qu'avant : il en est très fier.",
-     "liens": [
-      "bois_joli",
-      "theo",
-      "commerce"
-     ],
-     "decouverte": [
-      "fait:visite.bois_joli"
-     ]
-    },
-    {
-     "id": "theo",
-     "terme": "Théo",
-     "description": "Le fils de Basile, quinze ans, le meilleur de l'île pour réparer une roue ou une pompe. Il veut inventer des machines pour toute l'île, et hésite encore sur la façon de commencer : la calèche, l'atelier de son père ou les inventions de Frida.",
-     "liens": [
-      "basile",
-      "bois_joli",
-      "frida"
-     ],
-     "decouverte": [
-      "fait:theo.rencontre"
-     ]
-    },
-    {
-     "id": "garance",
-     "terme": "Garance",
-     "description": "La tisserande et bergère des Genêts, et la maman de Lise. Passionnée de couleurs, elle teint sa laine avec les plantes de la lande et nomme chaque nuance : bleu pervenche, jaune genêt, vert mousse. Maurice lui avait promis un toit plus lumineux pour son atelier ; son métier à tisser fait le tissu de l'île.",
-     "liens": [
-      "les_genets",
-      "promesses",
-      "commerce",
-      "lise"
-     ],
-     "decouverte": [
-      "fait:visite.genets",
-      "fait:promesse.toit_garance.commencee",
-      "fait:garance.rencontre"
-     ]
-    },
-    {
-     "id": "lise",
-     "terme": "Lise",
-     "description": "La fille de Garance, dix ans. Espiègle et curieuse, elle connaît chaque terrier de la lande, donne un nom à chaque lapin et ne ment jamais. Elle a des secrets, qu'elle garde (« Mais je dis pas. ») : à une amie, elle finit par les confier.",
-     "liens": [
-      "garance",
-      "les_genets"
-     ],
-     "decouverte": [
-      "fait:lise.rencontre"
-     ]
-    },
-    {
-     "id": "le_gue",
-     "terme": "Le Gué",
-     "description": "Le hameau le plus proche de la ferme, au croisement des chemins : celui de Maurice et Philomène, d'Odile et d'Achille, qui y a l'écurie de la calèche. On y veille les soirs de pleine lune. Au Gué, on ne ferme pas sa porte.",
-     "liens": [
-      "odile",
-      "achille",
-      "maison_maurice",
-      "veillee_lune"
-     ],
-     "decouverte": [
-      "fait:visite.gue",
-      "fait:achille.cle"
-     ]
-    },
-    {
-     "id": "maison_maurice",
-     "terme": "La maison de Maurice",
-     "description": "La maison de tes grands-parents, au Gué : la première du hameau, jamais fermée. Odile y passe chaque jour arroser les géraniums, en attendant leur retour de voyage.",
-     "liens": [
-      "maurice",
-      "le_gue",
-      "odile",
-      "carnet"
-     ],
-     "decouverte": [
-      "fait:odile.rencontre"
-     ]
-    },
-    {
-     "id": "les_mouettes",
-     "terme": "Les Mouettes",
-     "description": "Le hameau des pêcheurs, sur la côte : les barques, les filets, et la cale du bac. C'est la seule porte de Céron vers l'extérieur : on y arrive, on y reçoit le courrier. Fernand y pêche.",
-     "liens": [
-      "fernand",
-      "cale_bac",
-      "peche"
-     ],
-     "decouverte": [
-      "fait:visite.mouettes",
-      "fait:lieu.cale"
-     ]
-    },
-    {
-     "id": "brumeval",
-     "terme": "Brumeval",
-     "description": "Le hameau de la montagne volcanique : des mineurs, des sources chaudes, l'île ancienne. C'est là qu'a lieu, une fois l'an, la fête des premiers arrivants.",
-     "liens": [
-      "fete_premiers",
-      "gisements"
-     ],
-     "decouverte": [
-      "fait:visite.brumeval",
-      "fait:fete.annonce"
-     ]
-    },
-    {
-     "id": "bois_joli",
-     "terme": "Bois-Joli",
-     "description": "Le hameau de la forêt : des bûcherons, la scierie et l'atelier d'ébéniste de Basile, qui fait les meubles de l'île. Ça sent la sciure et le pain chaud.",
-     "liens": [
-      "basile",
-      "theo",
-      "commerce"
-     ],
-     "decouverte": [
-      "fait:visite.bois_joli"
-     ]
-    },
-    {
-     "id": "les_genets",
-     "terme": "Les Genêts",
-     "description": "Le hameau de la lande : des bergers, la bergerie, le métier à tisser, les teintures et la couture de Garance. Les plus belles couleurs de l'île.",
-     "liens": [
-      "garance",
-      "commerce"
-     ],
-     "decouverte": [
-      "fait:visite.genets"
-     ]
-    },
-    {
-     "id": "cale_bac",
-     "terme": "La cale du bac",
-     "description": "Une jetée de pierre, aux Mouettes, où le bac de Cadolon accoste : c'est par là que ta famille est arrivée. On peut marcher jusqu'au bout et regarder le bac amarré.",
-     "liens": [
-      "les_mouettes",
-      "cadolon",
-      "fernand"
-     ],
-     "decouverte": [
-      "fait:lieu.cale"
-     ]
-    },
-    {
-     "id": "epave",
-     "terme": "La barque des premiers arrivants",
-     "description": "La barque qui a amené les premiers habitants de Céron, il y a cinq siècles, couchée sur une plage loin des hameaux. Fernand dit qu'aucune planche n'a bougé. Les enfants de l'île y jouent aux explorateurs.",
-     "liens": [
-      "les_mouettes"
-     ],
-     "decouverte": [
-      "fait:lieu.epave"
-     ]
-    },
-    {
-     "id": "cabane_johnny",
-     "terme": "L'observatoire de Maurice",
-     "description": "Une cabane de rondins au fond de la forêt, loin des chemins, avec une longue-vue tournée vers le ciel : Maurice y regardait les étoiles. Son carnet du ciel y attend ; on y vient de préférence la nuit.",
-     "liens": [],
-     "decouverte": [
-      "fait:lieu.cabane"
-     ]
-    },
-    {
-     "id": "atelier_frida",
-     "terme": "L'atelier de Frida",
-     "description": "Une bâtisse au bord de l'eau, entre deux hameaux, pleine d'outils et de pièces de métal : on y sent l'huile. Frida y fabrique ses machines.",
-     "liens": [
-      "frida",
-      "robot"
-     ],
-     "decouverte": [
-      "fait:lieu.atelier"
-     ]
-    },
-    {
-     "id": "carnet",
-     "terme": "Le carnet",
-     "description": "Ton carnet, dans le menu : les pages que tu as trouvées, dans l'ordre où elles sont venues. Des carnets de tournée de Maurice, son carnet du ciel, des notes ; rien n'y dit ce qu'il faut en faire.",
-     "liens": [
-      "maurice",
-      "promesses"
-     ],
-     "decouverte": [
-      "fait:odile.rencontre"
-     ]
-    },
-    {
-     "id": "promesses",
-     "terme": "Les petits travaux de Maurice",
-     "description": "Son carnet de tournée en garde trois qu'il n'a pas eu le temps de finir avant de partir : le toit de l'atelier de Garance, les lames de la scie de Bois-Joli, la pompe des Mouettes. Personne ne te les demande. Si tu en as envie, confie à Achille, à la calèche, ce qu'il faut, en une ou plusieurs fois : il les porte, comme Maurice faisait.",
-     "liens": [
-      "achille",
-      "comptoir",
-      "garance",
-      "basile",
-      "fernand"
-     ],
-     "decouverte": [
-      "fait:odile.rencontre"
-     ]
-    },
-    {
-     "id": "veillee_lune",
-     "terme": "La veillée de pleine lune",
-     "description": "Les soirs de pleine lune, de 19 h à 22 h, l'île veille ensemble : au Gué d'abord, puis, une fois que tu as ta place, chez toi. On mange, on regarde la lune, on parle de ce qui s'est passé ; on parle aussi de toi. Y être compte.",
-     "liens": [
-      "le_gue",
-      "odile",
-      "calendrier_lune"
-     ],
-     "decouverte": [
-      "fait:veillee.1"
-     ]
-    },
-    {
-     "id": "fete_premiers",
-     "terme": "La fête des premiers arrivants",
-     "description": "Une fois l'an, à la pleine lune, à Brumeval : un repas cuit dans la terre chaude, et l'île fête ceux qui sont arrivés les premiers, et ceux qui viennent d'arriver. Achille l'annonce à la calèche. Ce qu'on y dit de toi dépend de la façon dont tu as trouvé ta place : toutes les fêtes finissent bien.",
-     "liens": [
-      "brumeval",
-      "achille"
-     ],
-     "decouverte": [
-      "fait:fete.annonce"
-     ]
-    },
-    {
-     "id": "toits",
-     "terme": "Les toits des hameaux",
-     "description": "Quelques toits des hameaux ont besoin d'un coup de main depuis que Maurice est parti en voyage ; rien ne s'abîme davantage. Sur place, la fiche du hameau dit lesquels ; avec des planches et des pierres, tu peux les rafraîchir, et le hameau s'en souvient.",
-     "liens": [
-      "hameaux",
-      "maurice"
-     ],
-     "decouverte": [
-      "fait:toits.uses"
-     ]
-    },
-    {
-     "id": "enveloppe_maurice",
-     "terme": "L'enveloppe de Maurice",
-     "description": "Une enveloppe arrivée avec une carte postale de Maurice, à ton nom. Il a écrit dessus : « Pour un beau cadeau à l'île : Odile saura. Ou pour toi, si tu en as besoin. Tu sauras. » L'ouvrir (sa fiche, dans l'inventaire), c'est la garder ; on peut aussi la porter à Odile. Les deux sont de bons choix.",
-     "liens": [
-      "maurice",
-      "odile",
-      "toits"
-     ],
-     "decouverte": [
-      "objet:enveloppe_maurice",
-      "fait:enveloppe.ouverte",
-      "fait:enveloppe.donnee"
-     ]
-    },
-    {
-     "id": "cloche_maurice",
-     "terme": "La cloche de Maurice",
-     "description": "La cloche de sa calèche. Il la sonnait deux fois devant chaque maison : une pour dire bonjour, une pour dire à bientôt.",
-     "liens": [
-      "maurice",
-      "fete_premiers"
-     ],
-     "decouverte": [
-      "objet:cloche_maurice"
-     ]
-    },
-    {
-     "id": "tente",
-     "terme": "Tente et bivouac",
-     "description": "La tente se fabrique à l'Atelier et se porte depuis la fiche du personnage, à côté du sac. Loin de la ferme, la nuit, « Dormir » la plante là où il est : il y dort, son énergie remonte comme dans un lit, et il se réveille au même endroit. Sans tente, il rentre dormir à la ferme. Pendant ce temps, ton compagnon garde la ferme.",
-     "liens": [
-      "sac_a_provisions",
-      "adulte",
-      "bouton_dormir"
-     ],
-     "decouverte": [
-      "objet:tente"
-     ]
-    },
-    {
-     "id": "lanterne_tempete",
-     "terme": "Lanterne-tempête",
-     "description": "Une petite lanterne de fer à porter à la main (une case d'équipement), fabriquée à l'Atelier. La nuit, dans le grand monde, on voit un peu plus loin. Et à sa lumière, on remarque ce que le jour cache.",
-     "liens": [
-      "equipement"
-     ],
-     "decouverte": [
-      "objet:lanterne_tempete"
-     ]
-    },
-    {
-     "id": "pierre_lune",
-     "terme": "La pierre",
-     "description": "Un galet clair et tiède, qui luit faiblement dans le noir. Posé sur la ferme, il y reste. Depuis, tout y pousse plus vite ; les nuits de pleine lune, la ferme luit un peu, et les lucioles viennent danser. Frida dit que c'est peut-être le sol.",
-     "liens": [
-      "calendrier_lune",
-      "frida"
-     ],
-     "decouverte": [
-      "objet:pierre_lune",
-      "fait:pierre.posee"
-     ]
-    }
-   ]
-  },
-  {
    "id": "mecaniques",
    "icone": "⚙️",
    "nom": "Mécaniques de jeu",
@@ -3573,13 +3188,13 @@ export const ENCYCLOPEDIE = {
     {
      "id": "grand_monde",
      "terme": "Le grand monde",
-     "description": "Une seule carte, vingt fois la ferme : la ferme est posée au milieu, dans une prairie, et le pays s'étend tout autour, fermé par la montagne au nord et à l'ouest, par la mer au sud et à l'est. Les prés entourent la ferme ; plus loin, les forêts profondes (feuillus, bouleaux, sapins, ronciers), les marais (saules, roseaux, eau basse), la lande (bruyère, ajoncs, pins tordus), la montagne et ses éboulis, les sommets enneigés et leurs falaises, la côte et ses plages de sable ou de galets. Des rivières descendent de la montagne à la mer, parfois par un lac. Chaque biome a ses plantes à récolter, ses bêtes, et ses lieux : des hameaux au bout des chemins, des gisements et des cristaux qui luisent la nuit dans la montagne, des coins de pêche sur l'eau. Tout est caché sous le brouillard au départ.",
+     "description": "Une seule carte, vingt fois la ferme : la ferme est posée au milieu, dans une prairie, et le pays s'étend tout autour, fermé par la montagne au nord et à l'ouest, par la mer au sud et à l'est. Les prés entourent la ferme ; plus loin, les forêts profondes (feuillus, bouleaux, sapins, ronciers), les marais (saules, roseaux, eau basse), la lande (bruyère, ajoncs, pins tordus), la montagne et ses éboulis, les sommets enneigés et leurs falaises, la côte et ses plages de sable ou de galets. Des rivières descendent de la montagne à la mer, parfois par un lac. Chaque biome a ses plantes à récolter, ses bêtes, et ses lieux : le port au bout du chemin, des gisements et des cristaux qui luisent la nuit dans la montagne, des coins de pêche sur l'eau. Tout est caché sous le brouillard au départ.",
      "liens": [
       "chemins_et_gues",
       "brouillard",
       "carte_du_monde",
       "recolte_du_monde",
-      "hameaux",
+      "port",
       "gisements",
       "cristaux_lumineux",
       "peche",
@@ -3592,11 +3207,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "chemins_et_gues",
      "terme": "Chemins et gués",
-     "description": "Le chemin de terre de la ferme sort à l'est, et de là partent les chemins du pays : ils relient les hameaux les uns aux autres, en une grande boucle qui fait le tour de la ferme, et la calèche les suit chaque jour. On marche partout sur la terre ferme, mais ni sur la mer, ni sur un lac, ni sur une falaise ou un sommet ; une rivière ne se passe qu'à gué, là où un chemin la croise : trois cases de pierres plates posées sur l'eau. Les arbres, les rochers et les murs ferment leurs cases ; jamais un chemin.",
+     "description": "Le chemin de la ferme part de la porte de l'abri et sort à l'est ; de là, un chemin mène au port. Ces chemins sont à toi : en mode Construire, tu en poses, tu en reprends, tu les déplaces, sur la ferme comme dehors (pas dans l'eau profonde, ni sur une falaise ou un sommet, ni autour du port). Sur un chemin, on va 100 % plus vite, à pied comme à cheval. On marche partout sur la terre ferme, mais ni sur la mer, ni sur un lac, ni sur une falaise ou un sommet ; une rivière se passe à gué, là où un chemin la croise, ou sur un pont de planches que tu poses. Les arbres, les rochers et les murs ferment leurs cases ; jamais un chemin.",
      "liens": [
       "grand_monde",
-      "comptoir",
-      "hameaux",
+      "chemin_port",
+      "port",
       "boussole"
      ],
      "decouverte": [
@@ -3606,11 +3221,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "brouillard",
      "terme": "Le brouillard",
-     "description": "Tout est caché au départ, ta ferme comprise : seuls les alentours de ton personnage sont dégagés. Partout ailleurs, un brouillard blanc couvre le pays, et rien de ce qu'il cache ne se devine — ni les arbres, ni les bêtes, ni les maisons, ni la calèche qui passe derrière. Il se lève autour de toi à mesure que tu marches, et ce que tu as vu le reste. Tu vois plus loin en hauteur, dans la montagne et sur les sommets (18 à 22 cases), et à découvert, sur la lande et la côte (15 cases), qu'au milieu des prés (12 cases) ; bien moins dans la forêt dense (7 cases) et le marais (9 cases), et deux fois moins la nuit. Ce que tu as vu s'inscrit sur la carte du monde.",
+     "description": "Tout est caché au départ, ta ferme comprise : seuls les alentours de ton personnage sont dégagés. Partout ailleurs, un brouillard blanc couvre le pays, et rien de ce qu'il cache ne se devine — ni les arbres, ni les bêtes, ni le port au loin. Il se lève autour de toi à mesure que tu marches, et ce que tu as vu le reste. Tu vois plus loin en hauteur, dans la montagne et sur les sommets (18 à 22 cases), et à découvert, sur la lande et la côte (15 cases), qu'au milieu des prés (12 cases) ; bien moins dans la forêt dense (7 cases) et le marais (9 cases), et deux fois moins la nuit. Ce que tu as vu s'inscrit sur la carte du monde.",
      "liens": [
       "carte_du_monde",
       "boussole",
-      "hameaux",
+      "port",
       "grand_monde"
      ],
      "decouverte": [
@@ -3620,12 +3235,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "carte_du_monde",
      "terme": "La carte du monde",
-     "description": "Elle s'ouvre par le menu (« Carte du monde »), la touche M au clavier ou un appui sur la boussole. Elle montre, en petit, tout ce que tu as vu du grand monde — les prés, les forêts, les marais, la lande, la montagne, la côte, les rivières et les lacs, les chemins, ta ferme — et laisse le reste dans le brouillard. Les lieux que tu as découverts y ont leur icône : les hameaux (avec leur nom une fois que tu y es allé), les coins de pêche ; tu y vois aussi ta position et ta direction, et la calèche quand elle passe dans une partie que tu connais. Fais-la glisser du doigt ou à la souris, zoome à deux doigts, à la molette ou avec les boutons ; touche un lieu pour lire son nom et sa distance, et choisis-le pour que la boussole t'y mène.",
+     "description": "Elle s'ouvre par le menu (« Carte du monde »), la touche M au clavier ou un appui sur la boussole. Elle montre, en petit, tout ce que tu as vu du grand monde — les prés, les forêts, les marais, la lande, la montagne, la côte, les rivières et les lacs, tes chemins, ta ferme, le port — et laisse le reste dans le brouillard. Les lieux que tu as découverts y ont leur icône, comme les coins de pêche ; tu y vois aussi ta position et ta direction. Fais-la glisser du doigt ou à la souris, zoome à deux doigts, à la molette ou avec les boutons ; touche un lieu pour lire son nom et sa distance, et choisis-le pour que la boussole t'y mène.",
      "liens": [
       "brouillard",
       "boussole",
-      "hameaux",
-      "comptoir"
+      "port"
      ],
      "decouverte": [
       "depart"
@@ -3740,18 +3354,15 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "chapitres",
-     "terme": "Chapitres",
-     "description": "7 étapes de l'histoire d'un foyer qui prend vie, avec leurs objectifs : Notre nouveau chez-nous (l'héritage : bâtir le foyer, première récolte), Une maison à notre image (le grenier : cultures, Silo, blé, et les premières ventes à la calèche), Les premiers animaux (le poulailler, le premier minerai de fer d'un gisement, un premier hameau du grand monde et un premier ami), Les plaisirs de la cuisine (le four, le premier lingot de fer, un quartz de la montagne, et une part du monde vue), Une ferme pleine de vie (le troupeau, un repas partagé avec des invités, d'autres hameaux, un poisson de mer), Au rythme de la nature (toute l'année : un projet de hameau achevé, acheter aux hameaux par la calèche, regarder les bêtes sauvages), puis Notre petit coin de paradis (mêler les styles, trouver des plans, connaître son pays). Ils ne débloquent plus rien depuis la version 1.7 : chaque chapitre terminé rapporte de l'expérience, des points de technologie, ouvre un palier de l'Arbre des technologies et offre une récompense : un plan de meuble de collection ou des objets de décor, chacun de son style (un plan déjà trouvé cède la place au suivant de sa collection). Le dernier ne termine rien : il ouvre le jeu libre (aménager, inviter, aider les hameaux, compléter les collections).",
+     "terme": "Les paliers de l'île",
+     "description": "7 paliers, sans histoire à lire : S'installer, La première vente au port, Le premier villageois, Les bêtes, Trois villageois au travail, Le premier commerce, puis Un village de dix. Chacun a ses objectifs (la fenêtre « L'île », dans le menu, les coche) ; tous remplis, le palier est franchi : une notification, de l'expérience, des points de technologie, un palier de l'Arbre des technologies et sa récompense (des plans de meubles de collection, du décor) tombent aussitôt. Le dernier ouvre le jeu libre : agrandir le port, accueillir, bâtir le village.",
      "liens": [
       "points_technologie",
       "niveaux",
-      "gisements",
-      "lingot",
-      "hameaux",
-      "cristaux_lumineux",
-      "comptoir",
-      "grand_monde",
-      "plans_collection"
+      "port",
+      "villageois",
+      "commerces",
+      "vocations"
      ],
      "decouverte": [
       "depart"
@@ -3962,30 +3573,12 @@ export const ENCYCLOPEDIE = {
      "description": "Entrée du menu qui liste ce qui demande l'attention : appareils en panne, aliments qui vont périr, parcelles à arroser, poules à nourrir, paille qui manque, récoltes et tontes prêtes. Un appui sur une ligne mène directement à l'endroit concerné. C'est aussi là qu'arrive le courrier.",
      "liens": [
       "carte",
-      "courrier",
       "usure",
       "peremption",
       "paille"
      ],
      "decouverte": [
       "depart"
-     ]
-    },
-    {
-     "id": "courrier",
-     "terme": "Courrier",
-     "description": "Lettres que la famille reçoit au fil de la partie, à lire dans l'onglet Notifications ; une lettre lue y reste, pour être relue. Maurice et Philomène écrivent au début, puis de leurs voyages (au niveau 9, une carte postale et l'enveloppe de Maurice) ; ta mère, Adèle, écrit à l'arrivée, puis aux moments qui comptent : la première récolte, la première veillée, le robot, la fête. Quand la Serre se débloque, elle rapporte de voyage une fève de cacao, une gousse de vanille et un grain de café, à planter dans la Serre.",
-     "liens": [
-      "notifications",
-      "adele",
-      "enveloppe_maurice",
-      "serre",
-      "cacao",
-      "vanille",
-      "cafe"
-     ],
-     "decouverte": [
-      "courrier"
      ]
     }
    ]
@@ -4022,14 +3615,15 @@ export const ENCYCLOPEDIE = {
     {
      "id": "famille",
      "terme": "Famille",
-     "description": "Deux adultes au départ (le personnage principal et son compagnon), et, si tu veux, des enfants et un animal, composés avant la première journée sur l'écran « Ta famille » (nom de famille, membres, personnage principal), puis à tout moment dans la fenêtre Famille (carte du joueur, en haut à gauche) : de 1 à 6 membres, dont au moins un adulte. Chacun a un prénom, un sexe, une coiffure (cinq par âge, dont blond) et une couleur de peau au choix. Un nouveau membre arrive avec le bonheur moyen de la famille. Le but du jeu est de nourrir la famille avec la production de la ferme, sans dépendre de la calèche.",
+     "description": "On arrive seul, ou en famille : « Seul », un adulte et rien d'autre ; « En famille », de 1 à 6 membres, dont au moins un adulte, un compagnon si tu veux, des enfants et jusqu'à trois chiens ou chats. Tout se compose avant la première journée (nom de famille, membres, personnage principal), puis à tout moment dans la fenêtre Famille (carte du joueur, en haut à gauche). Chacun a un prénom, un sexe, une coiffure (cinq par âge, dont blond) et une couleur de peau au choix. Un nouveau membre arrive avec le bonheur moyen de la famille. La famille se nourrit de la ferme ; les villageois, eux, viennent par le bac et vivent dans leur maison.",
      "liens": [
       "adulte",
       "enfant",
       "animal_de_compagnie",
       "apport_journalier",
       "bonheur",
-      "maison"
+      "maison",
+      "villageois"
      ],
      "decouverte": [
       "depart"
@@ -4130,7 +3724,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "gants_de_travail",
      "terme": "Gants de travail",
-     "description": "Des gants de tissu de laine, cousus aux Genêts. Le personnage principal dépense 20 % d'énergie de moins pour couper (la hache) et piocher (la pioche). Pour les adultes seulement.",
+     "description": "Des gants de tissu de laine. Le personnage principal dépense 20 % d'énergie de moins pour couper (la hache) et piocher (la pioche). Pour les adultes seulement. Ils viendront d'un commerce de l'île.",
      "liens": [
       "equipement",
       "hache",
@@ -4155,7 +3749,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "salopette_solide",
      "terme": "Salopette solide",
-     "description": "Une salopette de laine épaisse aux boucles de fer, cousue aux Genêts. Le personnage principal dépense 8 % d'énergie de moins pour tous ses gestes. Pour les adultes seulement.",
+     "description": "Une salopette de laine épaisse aux boucles de fer. Le personnage principal dépense 8 % d'énergie de moins pour tous ses gestes. Pour les adultes seulement. Elle viendra d'un commerce de l'île.",
      "liens": [
       "equipement",
       "energie_personnage"
@@ -4167,7 +3761,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "manteau_chaud",
      "terme": "Manteau chaud",
-     "description": "Un manteau de laine rouge au col fourré, cousu aux Genêts. Loin de la ferme, dans le vent et le froid du grand monde, le personnage principal dépense 15 % d'énergie de moins pour tous ses gestes. Il existe en taille enfant.",
+     "description": "Un manteau de laine rouge au col fourré. Loin de la ferme, dans le vent et le froid du grand monde, le personnage principal dépense 15 % d'énergie de moins pour tous ses gestes. Il existe en taille enfant. Il viendra d'un commerce de l'île.",
      "liens": [
       "equipement",
       "grand_monde"
@@ -4190,6 +3784,30 @@ export const ENCYCLOPEDIE = {
       "objet:sac_petit",
       "objet:sac_grand",
       "didacticiel:sortie"
+     ]
+    },
+    {
+     "id": "tente",
+     "terme": "Tente et bivouac",
+     "description": "La tente se fabrique à l'Atelier et se porte depuis la fiche du personnage, à côté du sac. Loin de la ferme, la nuit, « Dormir » la plante là où il est : il y dort, son énergie remonte comme dans un lit, et il se réveille au même endroit. Sans tente, il rentre dormir à la ferme. Pendant ce temps, ton compagnon garde la ferme.",
+     "liens": [
+      "sac_a_provisions",
+      "adulte",
+      "bouton_dormir"
+     ],
+     "decouverte": [
+      "objet:tente"
+     ]
+    },
+    {
+     "id": "lanterne_tempete",
+     "terme": "Lanterne-tempête",
+     "description": "Une petite lanterne de fer à porter à la main (une case d'équipement), fabriquée à l'Atelier. La nuit, dans le grand monde, on voit un peu plus loin. Et à sa lumière, on remarque ce que le jour cache.",
+     "liens": [
+      "equipement"
+     ],
+     "decouverte": [
+      "objet:lanterne_tempete"
      ]
     }
    ]

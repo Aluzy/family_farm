@@ -1,0 +1,69 @@
+# Les fiches du chantier « l'île à bâtir »
+
+Le plan, les décisions (D1 à D10) et l'ordre des fiches sont dans [`docs/ile.md`](../../ile.md) : le
+lire avant toute fiche. Une fiche est confiée à un agent indépendant et donne une PR, comme celles du
+grand monde ([`docs/fiches/README.md`](../README.md), dont les conventions s'appliquent toutes).
+
+**Le chantier est terminé** : toutes les fiches sont faites, I9h comprise (l'allumage en 2.0.0, puis le retrait du
+jeu d'avant). Le réglage `VILLAGE.ACTIF` dont parlent les conventions ci-dessous n'existe plus.
+
+## Conventions propres à ce chantier
+
+- **Le réglage** : tout se fait derrière `VILLAGE.ACTIF` (`data/village.json`). Le code neuf est lu
+  quand il vaut `true` ; avec `false`, le jeu et ses tests sont ceux d'avant, au pixel près. Les tests
+  d'une fiche forcent `true` (l'aide de test posée par I0a).
+- **Les réglages** vont dans `data/village.json` (sections `VILLAGE`, `PORT`, `TACHES`, `ARTISANS`,
+  `TRAITS`), avec leur commentaire `//SECTION` en phrases, comme les autres fichiers de `data/`.
+- **Les noms** : on dit « villageois » (plus « habitant »), « port » (plus « calèche » ni « Marché »),
+  « île » et « village » (plus « hameau »), dans le code neuf et dans les textes du jeu.
+- **Pas de récit** : aucune fiche n'ajoute de personnage écrit, de scène ni de dialogue. Les phrases
+  des villageois tiennent en une bulle et sortent de `HABITANTS.PHRASES` et `PROPOS` (et, depuis I3b+, des
+  petits échanges entre villageois de `VILLAGE.SOCIAL.REPLIQUES` : deux répliques, une bulle chacune, sans
+  personnage écrit).
+- **Vérifications communes** : `npm run build && npm test` (« Tout est vert »), `node tests/smoke.mjs`,
+  puis `node scripts/simulate.mjs` à partir de I0b (son code de sortie doit rester 0).
+- **Livraison commune** : un commit sur la branche de travail, pas de push ; mettre à jour le tableau
+  ci-dessous et `docs/ile.md` (la fiche : fait) ; rendre compte de ce qui est fait, des réglages
+  choisis, des mesures, des captures, de ce qui reste.
+
+## Les fiches
+
+| Fiche | Lot | Dépend de | État |
+|---|---|---|---|
+| [I0a — le réglage de bascule et l'archive](I0a-reglage-et-archive.md) | 0 | — | fait |
+| [I0b — le joueur automatique remis d'aplomb](I0b-joueur-automatique.md) | 0 | I0a | fait |
+| [I1a — le port sur l'île](I1a-port-sur-l-ile.md) | 1 | I0a | fait |
+| [I1b — le commerce au port](I1b-commerce-au-port.md) | 1 | I1a | fait |
+| [I1c — le bac, les commandes et le catalogue d'import](I1c-bac-commandes-import.md) | 1 | I1b | fait (le port au niveau 2 à la nuit 31 de la simulation, le palier 6 à la nuit 45 ; voir docs/ile.md) |
+| [I2 — le chemin du port, modifiable, et le portage](I2-chemin-et-portage.md) | 2 | I1b | fait (le port reste loin : 1,5 à 2,3 h de jeu à cheval sur le chemin, voir docs/ile.md) |
+| [I2b — la charrette du village : capacité, vitesse, le cheval, les rails et le wagonnet](I2b-charrette-du-village.md) | 2 | I2, I3c, I8b ; après I9e, avant I9f | fait (une charrette, ses charretiers qui se relaient ; les deux branches libres ; le cheval par le bac ; les rails, la voie, le wagonnet au halage ; l'onglet 🛞 du port ; format 109 ; `charrette.palier` au propriétaire ; voir docs/ile.md) |
+| [I3a — l'arrivée d'un villageois](I3a-arrivee-villageois.md) | 3 | I0a | fait |
+| [I3b — la vie des villageois sur la ferme](I3b-vie-sur-la-ferme.md) | 3 | I3a | fait (réglage « animé » choisi) ; I3b+ (vie sociale : qui se connaît, sorties à but, saluts, causeries) : fait |
+| [I3c — les tâches attribuées](I3c-taches.md) | 3 | I3b | fait |
+| [I3d — le tableau des villageois](I3d-tableau.md) | 3 | I3c | fait (le coût compte aussi ce que le travail prend au coffre ; le joueur automatique réattribue après deux semaines pleines) |
+| [I3e — la cuisine collective et le garde-manger commun](I3e-cuisine-collective.md) | 3 | I3d, I4, I5c, I6b | fait (la tâche « cuisine » devient la cuisine du village ; les dépôts du travail jusqu'à une réserve réglable ; la tablée ; format 102 ; le village de la simulation passe de 3 à 6 villageois, deux commerces ; le palier 7 reste hors de portée : un réglage proposé, voir docs/ile.md) |
+| [I4 — les prix des filières, la part et la bourse](I4-prix-part-bourse.md) | 4 | I3d, I1b | fait (les prix nouveaux seulement le réglage allumé : le jeu éteint ne bouge pas ; la part de 30 % prise sur le produit ; l'étal, l'achat d'un villageois, l'import à lui ; voir docs/ile.md) |
+| [I5a — l'atelier d'artisan, sa boutique, la forge](I5a-artisan-forge.md) | 5 | I4, I6a | fait (le socle des commerces, la forge ; l'envie, l'affinité, le local, la décision ; les matières payées au joueur, la vente au joueur, aux villageois, au bac, la façon ; la simulation dépasse le palier 6 : voir docs/ile.md) |
+| [I5b — la mercerie](I5b-mercerie.md) | 5 | I5a | fait (trois étapes, la teinture des vêtements portés par les villageois, le manteau contre la pluie ; deux artisans ajoutés au socle ; le joueur automatique ouvre plusieurs commerces ; format 101, après I5c ; voir docs/ile.md) |
+| [I5c — la scierie, la boulangerie, la fromagerie](I5c-autres-commerces.md) | 5 | I5a | fait (la règle commune : un commerce ne retire rien au joueur ; les 36 meubles au menuisier ; le pain dans les repas ; la cave ; `ARTISANS.PLAFOND` ; le four allumé (`BLOCS_CARTE.commerces`, mis en commun avec I5b) ; format 100 ; voir docs/ile.md) |
+| [I6a — l'amitié avec les villageois](I6a-amitie.md) | 6 | I3b | fait (goûts tirés, pas « par tâche préférée » ; le présent d'un ami donné en main propre) |
+| [I6b — les liens entre villageois](I6b-liens.md) | 6 | I6a | fait (l'affinité gardée, les paliers, le bonheur, le travail à deux, l'entraide, le banc à deux, la visite du soir, les foyers et l'enfant ; un repas apporté ne nourrit pas ; voir docs/ile.md) |
+| [I6c — les traits de personnalité](I6c-traits.md) | 6 | I6b, I3c | fait (douze traits, deux ou trois chacun ; découverts en les voyant vivre ou en les écoutant ; le réglage « marqué » en place, « doux » filmé aussi : à faire choisir ; voir docs/ile.md) |
+| [I7a — les objectifs sans récit](I7a-objectifs.md) | 7 | I0a | fait, sauf le point 6 (le joueur automatique suit les paliers : après I0b) |
+| [I7b — le nouveau départ](I7b-nouveau-depart.md) | 7 | I7a, I1b, I3a | fait (« seul » en trois appuis, la terre vierge, le didacticiel d'une ligne par étape, 15 étapes ; une étape « charger » ajoutée : le portage d'I2 ; pas de test avec un joueur réel) |
+| [I7c — le récit retiré du moteur](I7c-recit-moteur.md) | 7 | I7a, I6a | fait (un aiguillage, deux récits : l'ancien éteint, le muet allumé ; la page passe par lui pour ce qui ferait parler le récit ; la confiance ne débloquait rien de mécanique ; les lieux du récit gardés muets ; pas de nouveau format ; voir docs/ile.md) |
+| [I7d — le récit retiré de l'interface, de l'aide et de l'encyclopédie](I7d-recit-interface.md) | 7 | I7c | fait (la page ne lit le récit que par l'aiguillage, `recitPage` : rien sur l'île ; l'aide et le livre de l'île, deux sources pendant le chantier ; le contrôle des textes ; sept prénoms du récit hors du tirage ; l'accueil et le README préparés à part ; les hameaux et leurs noms restent sur la carte jusqu'à I7e ; voir docs/ile.md) |
+| [I7e — les hameaux, la calèche et les boucles de chemins retirés](I7e-hameaux-caleche.md) | 7 | I7d, I1c, I2 | fait (les hameaux et les boucles tirés en fantômes : le port, son chemin, le tronçon et les lieux restent à la graine près, sur 50 graines ; la nature reprend leur place ; ni calèche, ni habitant, ni leurs images ; deux plants sauvages, l'ail des ours et la salicorne, inscrits au catalogue d'import à leur première récolte ; voir docs/ile.md) |
+| [I7f — la migration des parties en cours](I7f-migration.md) | 7 | I7e, I7g, I3a | fait (à l'ouverture sur l'île, une fois, quel que soit le format : allumé par `migrate`, `?village=1` par la page ; la copie de sûreté ; les amis d'avant candidats, au bac avant tout tirage ; les remboursements ; le palier du chapitre ; la chronique « avant » ; la fenêtre du retour et son cadeau ; format 102 ; la pierre posée à confirmer : voir docs/ile.md) |
+| [I7g — la chronique et les noms](I7g-chronique-et-noms.md) | 7 | I7c | fait (avant I7c : la chronique s'ajoute au carnet, réglage allumé ; le commerce et les fêtes du village prêts à brancher, I5a, I8a ; voir docs/ile.md) |
+| [I8a — la vocation « village »](I8a-vocation-village.md) | 8 | I6b | fait (le socle des vocations ; la convivialité, quatre paliers ; les fêtes, la veillée ; six projets dont quatre bâtiments ; voir docs/ile.md) |
+| [I8b — la vocation « ferme productive »](I8b-vocation-productive.md) | 8 | I1c, I4 | fait (branché sur le socle des vocations d'I8a et les prix de l'île d'I4 ; les chiffres des contrats à refaire après I4 ; voir docs/ile.md) |
+| [I9a — l'île partagée : la frontière et le poids](I9a-ile-partagee.md) | 9 | I7f | fait (la frontière : `docs/monde-partage.md` § 13 ; la barrière levée, le brouillard de chacun dans son navigateur, rien d'autre de synchronisé dehors ; une île avancée pèse 75 Ko, plafond 256 Ko ; I9a2, I9b, I9d, I9f revues, voir docs/ile.md) |
+| [I9a2 — l'horloge commune](I9a2-horloge-commune.md) | 9 | I9a | fait (la voie b de la note : des pas de 5 s déduits de l'heure du serveur, hors du journal ; la nuit seule à 22 h, ×10 quand tous dorment ; l'énergie de chacun ; sans joueur, le monde dort ; format 104 ; par heure, 720 pas, ≈ 3,5 s de calcul, 0,5 Mo écrits, 6 alarmes : `scripts/cout-horloge.mjs` ; I9b à I9g revues, voir docs/ile.md) |
+| [I9b — les changements du monde, synchronisés par région](I9b-synchro-monde.md) | 9 | I9a2 | fait (les gestes du dehors par le monde : `monde.recolter`, la pêche, les blocs du dehors ; ce qu'ils lâchent au coffre commun ; le contrôle par l'identifiant de la pièce, sans le sol ; la repousse dans les pas ; l'intérêt par région sur les positions ; le sac de chacun, format 105 ; un geste ≈ 155 octets, une île très exploitée 17 à 38 Ko : `scripts/cout-ile.mjs` ; I9c à I9g revues, voir docs/ile.md) |
+| [I9c — le port et la caisse en ligne](I9c-port-en-ligne.md) | 9 | I9b | fait (les commandes du port et du portage ouvertes à la frontière ; la caisse de la partie du monde, commune ; la charge de chacun, une brouette par joueur, la charrette à un seul ; une commande du bac honorée à plusieurs ; le lieu du port dans la partie ; les rôles du port ; le bilan au journal et aux autres joueurs ; la case comparée à la dernière position ; format 106 ; un geste ≈ 210 octets, 0,1 à 0,3 ms au serveur ; I9d à I9g revues, voir docs/ile.md) |
+| [I9d — les villageois en ligne](I9d-villageois-en-ligne.md) | 9 | I9b | fait (la journée du village dans les pas, « le serveur seul fait compter » ; le pas de jour en lot, 3 à 5 fois plus vite, le même résultat ; l'amitié de chacun, `villageois.parler`, `villageois.offrir`, `villageois.accueillir` ; le visiteur parle sans rien changer ; `voisins` gardé ; format 107 ; `scripts/cout-villageois.mjs` ; I9e, I9f, I9g revues, voir docs/ile.md) |
+| [I9e — les tâches, les commerces et les rôles en ligne](I9e-roles-en-ligne.md) | 9 | I9c, I9d | fait (le monde est l'île d'un propriétaire que ses amis aident : la grille d'une île, `GRILLE_ILE` ; les gestes de gestion du village en commandes, `nom.donner`, `chronique.*` ; la délégation des tâches aux bâtisseurs, un réglage du monde ; la suggestion d'un commerce ; la maison habitée au propriétaire ; les vrais prénoms par `hello` ; le journal signé ; format 108 ; I9f, I9g, I9h revues, voir docs/ile.md) |
+| [I9f — mettre son île en ligne et migrer les mondes existants](I9f-mise-en-ligne.md) | 9 | I9e | fait (la copie emporte toute l'île, dans le plafond vérifié, le brouillard dans le navigateur ; « deux îles », la copie remise à jour avec confirmation ; une sauvegarde de 54 à 121 Ko, 14 gardées, restaurée en quelques ms ; un monde d'avant mis à jour par le serveur à sa première ouverture, une ferme passée sur l'île, sa partie d'avant gardée, la fenêtre du retour de chacun ; `hello.format`, un jeu d'avant refusé ; la famille ne change plus en ligne ; pas de nouveau format ; `scripts/cout-mise-en-ligne.mjs` ; I9g, I9h revues, voir docs/ile.md) |
+| [I9g — les performances](I9g-performances.md) | 9 | I5c, I6c, I9f | fait (le protocole : `scripts/cout-performances.mjs`, `scripts/mesure-scene-ile.mjs` ; le lot d'I9d étendu au tick, au pas de la ferme et à la nuit, les pièces closes reconnues sans leur texte, les maisons relevées d'un coup : minuit d'un village de 15 64 → 6 ms, le pas de jour 5,8 → 3,2 ms, l'alarme de 120 pas 775 → 388 ms, le tick solo 7,7 → 1,3 ms, le contrôle d'un retrait 0,95 → 0,11 ms ; les mêmes états octet pour octet, `village-lots.test.mjs` ; la garde dans `perf-ferme.test.mjs` ; pas de nouveau format ; la scène sur un vrai téléphone reste à mesurer ; I9h revue, voir docs/ile.md et docs/perf.md) |
+| [I9h — la bascule](I9h-bascule.md) | 9 | tout | fait (la première PR : la répétition, `scripts/repetition-bascule.mjs`, `repetition-monde.mjs`, et l'allumage en 2.0.0 ; la seconde : le retrait du réglage, du récit, des hameaux et de la calèche, `js/engine/migration-avant.js` gardé pour les anciennes parties, l'encyclopédie d'une seule source, la documentation et la page d'accueil de l'île ; le jeu inchangé, le site à 29,0 Mo au lieu de 29,9) |

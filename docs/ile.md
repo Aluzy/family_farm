@@ -1,0 +1,3069 @@
+# L'île à bâtir — la conception de référence
+
+Ce document fait foi pour le jeu depuis la bascule (fiche I9h, version 2.0.0, novembre 2026) : l'île à bâtir est
+le jeu. Il remplace ce que `docs/grand-monde.md` disait des hameaux, des habitants et de la calèche, et
+`docs/recit/` (retiré ; il reste sur la branche `archive/jeu-avant-ile`, avec le jeu d'avant). Pour le reste
+(la ferme, l'énergie, les cultures, les bêtes, la cuisine, la construction), `docs/conception.md` fait foi. Les
+fiches du chantier sont dans [`docs/fiches/ile/`](fiches/ile/README.md) ; les réglages de l'île, dans
+`data/village.json`.
+
+**L'état du chantier** : terminé. Toutes les fiches sont faites, I9h comprise (l'allumage en 2.0.0, puis le
+retrait du jeu d'avant : plus bas, « La bascule »). Il reste au mainteneur le déploiement (la fiche I9h).
+
+## Le jeu visé
+
+On arrive sur une île vierge, seul ou en famille. Il n'y a qu'un **abri** sur la terre de la ferme et
+un **port** au bout de l'île, reliés par un chemin. Tout le reste est à bâtir.
+
+1. On ramasse, on fabrique, on bâtit, on cultive.
+2. On porte ce qu'on a en trop au **port**, la seule interface économique : on y vend sans limite (le
+   bac emporte tout), on y achète des graines et de nouvelles espèces, on y honore les commandes du bac.
+3. Un **villageois** débarque. On lui bâtit une maison, on lui attribue des tâches, on se lie d'amitié.
+4. La ferme grossit, d'autres villageois arrivent, se lient entre eux, ouvrent des **commerces
+   d'artisans** (forge, mercerie, scierie…).
+5. L'île prend une **vocation** : un village convivial (fêtes, projets, repas), ou une ferme
+   productive et automatisée. Une troisième vocation viendra.
+
+Il n'y a pas de récit écrit : pas de personnages, de courrier, de scènes ni de fins. Le joueur nomme
+son île et son village ; une chronique note ce qui s'y passe.
+
+## Les décisions validées
+
+| # | Décision | Conséquence |
+|---|---|---|
+| D1 | Le port remplace la calèche et les hameaux. | `caleche.js`, `caleche-tournee.js`, `monde-hameaux.js`, `ile.js` sortent du jeu ; `market.js` reste. |
+| D2 | Le récit est retiré. | `recit.js`, `data/recit.json`, le courrier, les secrets du récit, `docs/recit/` ; 37 fichiers du jeu et 29 de tests y font référence. |
+| D3 | Les villageois vivent sur la terre du joueur, travaillent pour lui, ont une vie simple (repas, lit, bourse) et une vie sociale entre eux. | `habitants.js` devient le moteur des villageois ; `voisins.js` celui de leurs liens. |
+| D4 | Un tableau suit ce que chaque villageois coûte et produit par jour. | Journal de 7 jours par villageois, lu par une nouvelle fenêtre. |
+| D5 | Les commerces restent artisanaux : un établi, un artisan, peu de pièces par jour, pas d'électricité. | Le volume est réservé à la vocation productive (chaînes, robot). |
+| D6 | Des traits de personnalité, sans mimiques. | Les traits pèsent sur les horaires, les phrases, les postes préférés et les affinités. |
+| D7 | C'est le jeu par défaut, avec migration des parties en cours. | Pas de mode à côté. Le chantier a avancé derrière un réglage (`VILLAGE.ACTIF`), allumé puis retiré à la bascule (I9h). |
+| D8 | Le tronçon de chemin qui sort de la ferme reste ; les boucles vers les anciens hameaux sont retirées ; le joueur modifie le chemin. | Le chemin généré devient des blocs de chemin que le joueur possède, posés et retirés hors de la ferme aussi. |
+| D9 | En ligne, le monde partagé est l'île entière du joueur : les invités y co-construisent et y produisent. | La frontière E-8 de `docs/monde-partage.md` est levée ; la synchronisation est à optimiser. |
+| D10 | Le grand monde reste (biomes, grottes, pêche, faune, brouillard) : on y récolte. | Rien ne change dans `monde-sol.js`, `monde-vegetation.js`, `monde-roches.js`, `monde-recolte.js`, `monde-faune.js`. |
+| D11 | La vente au port n'est pas bornée : le bac emporte tout ce qu'on lui donne, il n'y a pas d'entrepôt. | La dépense longue repose sur les niveaux du port, les imports et la part des villageois (I1c). |
+| D12 | Le villageois garde une part de ce qu'il produit ; une tâche demande son outil, que le joueur fabrique et lui donne ; deux villageois assez proches peuvent former un foyer si on leur bâtit une maison ; chaque biome a ses plants sauvages. | I4, I3c, I6b, I7e. |
+| D13 | En ligne, l'horloge est commune et vivante. | Le serveur fait avancer le temps tant qu'un joueur est connecté (I9a2) ; F.2 est levée. |
+| D14 | En ligne, la caisse est commune. | I9c (fait) : les pièces de la partie du monde, à tous ; chacun porte sa charge. |
+| D15 | C'est le joueur qui attribue les tâches. Un villageois ouvre un commerce quand il a une affinité suffisante avec le joueur, qu'il en manifeste l'envie et que le joueur le décide. | I5a ; en ligne, « le joueur » est le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs ; un invité très ami peut lui suggérer un commerce (I9e, fait). |
+| D16 | La pierre de lune n'a plus d'effet magique : rien ne pousse plus vite. | Sur l'île, c'est déjà le cas depuis I7c (`recit-muet.js`, `facteurPousse` vaut 1) ; une partie d'avant la perd à la migration (I7f). À la bascule (I9h), le fil de la lune et l'objet sortent avec le récit. Les effets de la lune sur les cultures (`LUNE`, `lune.js`) restent : c'est une règle, pas de la magie. |
+| D17 | Le transport des marchandises entre le coffre du village et le port est le métier d'un villageois, ou de plusieurs qui se relaient. | I2b (la charrette du village, ses charretiers). En ligne, aucun joueur n'attelle la charrette du village : elle roule par ses charretiers, au pas du monde. La règle d'I9c (« vide, elle passe au premier qui la demande ») ne vaut que pour la charrette du joueur (I2). |
+| D18 | Les traits découverts d'un villageois sont partagés entre tous les joueurs. | I9e (fait) : ce qu'on sait des traits est du monde, un seul `traitsConnus`. |
+
+## Ce qui reste à trancher (dans les fiches qui le portent)
+
+| Question | Fiche | Proposition par défaut |
+|---|---|---|
+| Comment le serveur fait avancer l'horloge commune, et à quel coût ? | I9a2 (fait) | Par pas de 5 s d'horloge déduits de l'heure du serveur (pas des révisions), tant qu'un joueur est connecté ; le monde dort sans joueur. Par heure : 720 pas, ≈ 3,5 s de calcul, 0,5 Mo écrits, 6 alarmes. |
+| Où va ce qu'un geste lâche hors de la ferme, en ligne ? | I9b (fait) | Au coffre commun, comme les outils de la ferme en ligne (E-9) ; le sac de chacun est celui des provisions de sortie. |
+| Comment le serveur contrôle-t-il un geste dehors ? | I9b (fait) | Par l'identifiant de la pièce, sans le sol de sa région (0,5 µs contre 0,5 s au réveil, puis 10 ms par région) ; le moteur refuse un doublon. Le sol n'est tiré que pour un bloc posé dehors (12 régions gardées). |
+| En ligne, qui est « le joueur » qui attribue les tâches et décide des commerces ? | I9e (fait) | Le propriétaire de l'île, qui peut déléguer les tâches aux bâtisseurs (un réglage du monde, éteint par défaut). |
+| L'argent s'empile-t-il encore, la vente n'étant pas bornée ? | I1c, I4 | I1c : non, sur 80 nuits de simulation (le port en prend 6 800 pièces, 814 en caisse à la nuit 80). I4 : le joueur minimal finit à 242 pièces (le port au niveau 3), l'appliqué à 2 727 pour une borne de 1 412 : il a payé le niveau 2 tôt et n'atteint pas le niveau 3 avant la nuit 80 (ses matériaux, pas ses pièces : à 3 500 pièces, il ne le prend pas davantage). À revoir quand le joueur simulé ira plus loin que le palier 6. |
+| La part du villageois : fixe, ou selon l'amitié et le poste ? | I4 | I4 : fixe, `VILLAGE.PART` = 30 % (à 20 %, le villageois des champs rapporte 2,5 fois son coût, au bord de la fourchette ; à 40 %, la partie simulée s'appauvrit). |
+| La raison d'explorer sans hameaux à découvrir. | I1c, I8b, I7e | Des espèces sauvages à rapporter et à cultiver ; des sites à exploiter. I8b n'y a rien ajouté : la ferme productive se joue sur la ferme et au port. I7e : les plants sauvages de chaque biome (deux codés : l'ail des ours des sous-bois, la salicorne des plages), le catalogue d'import qu'ils enrichissent, les lieux muets d'I7c gardés ; la suite proposée plus bas (« Une raison d'explorer », I7e). |
+
+## Les constats d'où l'on part
+
+Relevés dans le dépôt le 12 novembre 2026 (format de sauvegarde 86).
+
+- **L'argent n'a pas de dépense récurrente.** Tout se vend sans limite à prix fixe ; les dépenses sont
+  ponctuelles (arbre des technologies ≈ 19 000, énergie et eau ≈ 12 000, frigo ≈ 6 100, robot jusqu'à
+  30 000) ; les pénalités sont coupées (`PENALITES`).
+- **Les bourses des habitants ne servent à rien** : `caleche.js` et `ile.js` les remplissent, aucun
+  code ne les dépense.
+- **La transformation détruit de la valeur** hors cuisine : 2 laines (24) → 1 tissu (18) ; 3 tissus
+  (54) + 20 de façon → un manteau (36) ; 2 bois (4) → 1 planche (4). Seul le lingot paie (minerai 2,
+  lingot 15).
+- **Un villageois rapporterait 2 à 7 fois ce qu'il mange** aux prix actuels (bétail ≈ 48 pièces par
+  jour, mine ≈ 36, bois ≈ 32, pêche ≈ 32, cueillette ≈ 15, contre 7 à 11 de nourriture).
+- **Le joueur automatique est périmé** : `node scripts/simulate.mjs` reste au chapitre 3, 71 nuits
+  sans repas sur 80, une vérification en échec. *Remis d'aplomb par I0b* : la famille mange toutes les
+  nuits, le chapitre 7 est atteint vers la nuit 42 (graine 1) ; et la simulation mesure maintenant
+  **l'argent qui s'empile** : vers 22 000 pièces en caisse à la nuit 80, aucune dépense sur les 20
+  dernières nuits, plus de 90 % des gains venant de la vente des cultures à la calèche (le constat de
+  `simulate.mjs`, ses comptes par poste dans `simulation.csv`).
+
+## Les lots
+
+| Lot | Fiches | Ce qu'il apporte |
+|---|---|---|
+| 0. Le socle | I0a (fait), I0b (fait) | Le réglage de bascule, l'archive, un joueur automatique qui tient la route |
+| 1. Le port | I1a (fait), I1b (fait), I1c (fait) | Le bâtiment, le commerce, le bac, les commandes et le catalogue d'import |
+| 2. Le chemin | I2 (fait) | Le chemin de la ferme au port, modifiable ; porter la marchandise |
+| 3. Les villageois | I3a (fait), I3b (fait), I3b+ (fait), I3c (fait), I3d (fait), I3e (fait) | L'arrivée, la vie sur la ferme, la vie sociale, les tâches, le tableau, le garde-manger commun et la cuisine du village |
+| 4. Les prix | I4 (fait) | Des filières qui paient, la part du villageois, la bourse dépensée |
+| 5. Les artisans | I5a (fait), I5b (fait), I5c (fait) | L'atelier et la boutique, la forge, la mercerie, les autres commerces |
+| 6. Les liens | I6a (fait), I6b (fait), I6c (fait) | L'amitié avec le joueur, les liens entre villageois, les traits |
+| 7. La page blanche | I7a (fait, sauf le joueur automatique), I7b (fait), I7c (fait), I7d (fait), I7e (fait), I7f (fait), I7g (fait) | Les objectifs sans récit, le nouveau départ, le retrait du récit et des hameaux, la migration, la chronique |
+| 8. Les vocations | I8a (fait), I8b (fait) | Le village convivial, la ferme productive |
+| 9. L'île en ligne et la bascule | I9a, I9a2, I9b, I9c, I9d, I9e, I9f, I9g (faits), I9h (fait : la répétition, l'allumage, le retrait) | L'île partagée, l'horloge commune, la synchronisation, les performances, la bascule |
+
+## L'ordre et les dépendances
+
+```
+I0a ─┬─ I0b
+     ├─ I1a ── I1b ── I1c
+     │           └──── I2
+     ├─ I3a ── I3b ── I3c ── I3d ── I4 ─┬─ I6a ── I6b ── I6c   (I3e : après I3d, I4, I5c, I6b)
+     │                                  ├─ I5a (après I6a) ── I5b ── I5c
+     │                                  └─ I8a, I8b
+     └─ I7a ── I7b
+I1b + I3a ──── I7c ─┬─ I7d ── I7e ─┬─ I7f
+                    └─ I7g ────────┘
+I7f ────────── I9a ── I9a2 ── I9b ── I9c ── I9d ── I9e ── I9f
+tout ───────── I9g ── I9h (la bascule)
+```
+
+**Première version jouable** (derrière le réglage) : I0a, I0b, I1a, I1b, I1c, I3a, I3b, I3c, I3d, I4,
+I7a, I7b. On arrive sur la terre vierge, on vend au port, un villageois s'installe et travaille, le
+tableau donne ses coûts.
+
+## Le réglage de bascule
+
+`VILLAGE.ACTIF` (`data/village.json`, posé par I0a) vaut `false` tant que le chantier dure : le jeu
+publié ne change pas. Chaque fiche écrit son code pour `ACTIF: true` et le teste ainsi ; les tests
+d'avant restent verts avec `false`. I9h le passe à `true`, retire les branches mortes et le réglage
+lui-même. Entre-temps, `?village=1` dans l'adresse du jeu l'allume pour un essai (I0a).
+
+**Depuis I9h (la première PR, la version 2.0.0), il valait `true`** ; **la seconde PR (le retrait) l'a retiré**, avec
+`villageActif`, l'essai (`?village=1`, `js/ui/village.js`, son bandeau), les branches du jeu d'avant et leurs tests.
+Ce qui suit dit ce qu'il était pendant le chantier.
+
+Ce qui est posé (I0a) :
+
+- `villageActif(state)` (`js/engine/village.js`) : la seule question que pose le code du chantier ;
+  elle rend `DATA.VILLAGE.ACTIF`, ou `true` pour une partie d'essai (`state.essais.village`).
+- L'essai (`js/ui/village.js`) : avec `jeu.html?village=1`, l'écran d'accueil s'affiche et une nouvelle
+  partie faite dans la page (l'accueil, « Recommencer à zéro », la première partie de l'appareil) devient
+  une partie d'essai, qui le reste en se rechargeant ; une partie d'avant déjà enregistrée, ouverte ainsi, passe sur l'île
+  et devient une partie d'essai (I7f, plus bas). Un
+  bandeau discret, en bas à gauche, le dit (« 🏝️ Essai : l'île à bâtir »).
+- Les tests : `tests/engine/village-*.test.mjs` forment leur propre suite, jouée en dernier, réglage
+  forcé à `true` ; ailleurs, `avecVillage(fn)` (`tests/engine/aide.mjs`) l'allume le temps d'un test.
+  `tests/engine/reglage-village.test.mjs` vérifie qu'éteint, une nouvelle partie est identique à celle
+  d'avant le chantier.
+- L'archive : le mainteneur la crée depuis `main`, avant la première fiche qui change le jeu publié
+  (`git fetch origin main && git push origin origin/main:refs/heads/archive/jeu-avant-ile`).
+
+## Les paliers de l'île (I7a)
+
+Ce qui est posé (I7a) :
+
+- Les sept chapitres deviennent sept **paliers de l'île** (`VILLAGE.PALIERS`, `data/village.json` ;
+  `js/engine/paliers.js`) : un titre, une icône, des objectifs, une récompense, aucun texte à lire.
+  S'installer ; la première vente au port ; le premier villageois ; les bêtes ; trois villageois au
+  travail ; le premier commerce ; un village de dix. La mécanique reste celle de `campaign.js` : le palier
+  n tient la place du chapitre n (mêmes points de technologie, même XP, mêmes paliers de l'arbre ; les
+  plans et le décor du chapitre, et les graines de la serre que le courrier offrait).
+- La partie : `state.palier` (1 à 7, la forme de `state.campagne.chapitre`, que `poserChapitre` tient
+  égal) n'existe que dans une partie neuve faite le réglage allumé (ou rendue d'essai) : pas de nouveau
+  format. Une partie d'avant garde ses chapitres tant qu'elle n'est pas passée sur l'île ; sa migration (I7f) lui donne le
+  palier de son chapitre. Les compteurs
+  restent dans `state.campagne.compteurs`.
+- Le réglage allumé : plus de courrier (ni lettres ni cartes postales) ; la semaine des objectifs du
+  jour est celle de `VILLAGE.OBJECTIFS.SEMAINE` (sans phrase d'ambiance, ni hameau ni calèche) et les
+  objectifs tirés gagnent ceux du port et du village (`VILLAGE.OBJECTIFS.TIRES`).
+- L'interface : la fenêtre des chapitres devient « L'île » (le palier en cours, ses objectifs cochés, la
+  récompense, les paliers passés) ; un palier franchi donne une notification et sa récompense, pas
+  d'écran à lire.
+- **Ce que les fiches suivantes remplissent** (lu de façon défensive : un champ absent compte 0) :
+
+| Objectif | Ce qu'il lit | Fiche |
+|---|---|---|
+| `ventesPort` | `state.campagne.compteurs.ventesPort` : les pièces gagnées au port (`bumpCounter(state, 'ventesPort', gain)`) | I1b |
+| `portNiveau` | `state.port.niveau` | I1c |
+| `villageois` | `state.villageois` : ceux qui ont une maison (`v.maison` non nul) | I3a |
+| `taches` | `state.villageois` : ceux qui ont une tâche (`v.tache` non nul) | I3c |
+| `commerces` | `state.commerces` (tableau ou objet) : ceux qui ne sont pas `ouvert: false` | I5a |
+| `amitieVillageois` | `palierAmitie(state, v.id)` d'`amitie.js` (`state.amitie.pnj[v.id]`), au palier `palier` ou plus | I6a |
+
+  Les objectifs du jour du chantier comptent `vendre` (une vente, I1b), `parler` (I3b, I6a),
+  `cadeau_villageois` (I6a) et `commande_bac` (I1c) par `noterObjectif` ; ils paraissent quand
+  `state.villageois` compte un villageois ou `state.port.commandes` une commande.
+- Reste à faire : le joueur automatique suit les paliers (point 6, après I0b).
+
+## Le commerce au port (I1b, fait)
+
+Ce qui est posé (I1b) :
+
+- **Le moteur** (`js/engine/port.js`) : `portOuvert(state, ou)` (le personnage à `PORT.PORTEE` = 3 cases au plus
+  d'une case du comptoir, de `PORT.HEURES` = 6 h à 21 h, au niveau de l'élément `marche` comme la calèche avant) ;
+  `vendreAuPort` et `acheterAuPort` passent par `market.js` (`sellItem`, `buyItem`, qui prennent maintenant le début
+  de leur libellé) : mêmes prix, mêmes cours ; les Comptes disent « Port : … ». À l'achat, les semences (`isBuyable`)
+  que le niveau a débloquées (`enVenteAuPort`) ; les produits des hameaux ne s'y vendent pas. Chaque vente fait
+  `bumpCounter(state, 'ventesPort', gain)` ; l'objectif du jour `vendre` se note par l'XP de la vente. Les
+  commandes `port.vendre` et `port.acheter` (`{ objet, quantite, case }`, `commandes.js`).
+- **Le comptoir** : le lieu du port (sa case, le sens du quai) est posé dans le moteur par la page dès que le
+  Worker a tiré les éléments (`poserPort`, `js/ui/port.js` `watchPort`), ou calculé d'après le plan dans Node
+  (`portDuMonde`) ; ses cases viennent de `dispositionPort`. Le plan du port porte `comptoir` (ses cases) : un
+  appui dessus (`js/carte/ferme/hameaux.js`) mène le personnage devant lui et ouvre la fenêtre.
+- **La fenêtre** (`js/ui/port.js`) : la fenêtre du commerce (menu « Port » ⚓) devient celle du port le chantier
+  allumé : Vendre et Acheter ; loin du port, elle dit où il est et ses heures, et propose d'y mener la boussole.
+- **Avec `ACTIF`** : la calèche roule mais ne commerce plus (`CALECHE_AU_PORT` : vente, achat, malle et commandes
+  refusés) ; un appui sur elle ou sur sa malle ouvre la fenêtre du port ; `marcheFerme` parle du port ; l'objectif
+  de campagne `caleche` compte aussi `ventesPort` ; l'aide, l'écran des niveaux (`PORT.ELEMENT`) et le guide
+  « Montre-moi » (`guide: "port"` dans `VILLAGE.OBJECTIFS`) parlent du port.
+- **Le joueur automatique** (`bot.js`, `botSortiePort`) : une sortie par jour au plus, quand ce qu'il a à vendre
+  vaut `SIMULATION.PORT.SEUIL` (60) pièces ou qu'il lui manque des graines ; la marche (le chemin du port, environ
+  660 cases pour la graine 1, et la moitié de la ferme, à 3,6 cases par seconde) se compte en temps d'éveil, à
+  l'aller et au retour. `node scripts/simulate.mjs --village` allume le réglage (le chapitre 7 et le dépannage n'y
+  sont que des constats : les paliers demandent des villageois).
+- **Les tests** : `tests/engine/village-commerce.test.mjs` (dont 25 nuits du joueur automatique, le réglage allumé).
+- Reste : les prix (I4). (Le chemin du port et le portage : I2, plus bas ; le bac, les commandes et l'import : I1c, plus bas.)
+
+## Le bac, les commandes et le catalogue d'import (I1c, fait)
+
+Ce qui est posé (I1c ; les réglages : `PORT.BAC`, `PORT.COMMANDES`, `PORT.IMPORT`, `PORT.NIVEAUX[].prix` et
+`.commandes`, data/village.json ; le moteur : `js/engine/bac.js`) :
+
+- **La vente reste libre** (D11) : sous la halle, tout se vend, sans quota ni attente (I1b, I2). Ce qui a été vendu
+  depuis le dernier départ du bac attend sur le quai (`state.port.vendu`, noté par `vendreCharge` et la tournée d'un
+  villageois) : la scène le montre en caisses (une par `BAC.CAISSE` = 12 volumes, `CAISSES_MAX` = 4 au plus), qui
+  partent avec lui. Ni entrepôt, ni place à gérer.
+- **Le bac** : il accoste tous les `BAC.PERIODE` = 3 jours (les jours multiples de 3), de 9 h à 17 h
+  (`BAC.HEURES`), le long des quatre dernières cases du quai, du côté opposé à la cale. Sa venue se déduit du jour :
+  `avancerBac` (la page à chaque veille, la nuit, et chaque lecture du port) traite les passages qui ont eu lieu
+  depuis le dernier traité (`state.port.passe`), `RATTRAPAGE` = 3 au plus (les plus récents : les imports attendus
+  arrivent au premier), puis son départ (`state.port.parti`). C'est le seul bac du jeu : `villageois.js` lit
+  `jourDeBac` et ses heures (`VILLAGE.ARRIVEE.PERIODE`, `HEURE` et `FIN` sont retirés). La scène
+  (`js/carte/ferme/bac.js`, `model.bac` : `js/ui/port.js` `bacModele`) : il arrive du large en glissant
+  (`BAC.ARRIVEE_S` = 7 s), se balance à quai, sa passerelle posée ; il repart vers le large, les caisses s'effacent
+  avec lui ; la carte ouverte pendant qu'il est à quai, il y est d'un coup. La page sonne la cloche et dit son
+  arrivée (ses commandes, ce qui est livré). Le calendrier marque ses jours (⛴️) et dit ses heures.
+- **Les commandes** : à chaque passage, `NIVEAUX[niveau − 1].commandes` (2, 3, 3, 4, 5) demandes tirées de la graine
+  et du jour du passage (`tirerCommandes`, sans toucher au hasard de la partie) parmi ce que le joueur sait produire
+  (`savoirProduire` : les cultures récoltées, les plats préparés, les œufs, la laine et le lait de ses bêtes) : un
+  objet, une quantité (de quoi valoir `COMMANDES.VALEUR` = 50, 90, 150, 230, 340 pièces selon le niveau, ± 30 %,
+  entre 2 et 40), une prime (25 à 60 %, par pas de 5). Valables jusqu'au passage suivant ; on les honore au comptoir
+  avec ce qu'on a porté (le portage, comme la vente) : le prix de vente (`encaisserVente` : son XP, le cours), plus
+  la prime (« Prime du bac »), plus `COMMANDES.XP` = 15 XP ; l'objectif du jour `commande_bac` se note. Manquée,
+  elle s'efface sans rien coûter (B-1).
+- **Le catalogue d'import** (`IMPORT.RANGS`, un rang par niveau du port) : 1, les jeunes arbres (50 à 60 pièces) et
+  les plants de vigne (30 les 4) ; 2, le cacao, la vanille, le café (par 2), le sucre et les épices (par 10) ; 3, une
+  poule (60), un mouton (160), une vache (260) ; 4, les plans des meubles de collection (300 à 600) ; 5, les graines
+  de fleurs rares (par 5). Ce que le niveau du joueur débloquait le reste (un jeune arbre : le Verger ; une culture :
+  son déblocage ; une bête : son bâtiment et sa place) : le catalogue ajoute la condition du port, et ces objets ne
+  s'achètent plus tout de suite au comptoir (`enVenteAuPort`). Une commande se paie d'avance (« Import : … ») et
+  arrive à la ferme au passage suivant (`livrerImport` : à l'inventaire ; une bête à son bâtiment, son prix rendu
+  s'il n'y a plus de place ; un plan appris). Les plants sauvages de l'île (I7e) s'y inscrivent par
+  `inscrireSauvage(state, objet)`, au rang `SAUVAGES.RANG`, au prix de vente × `SAUVAGES.MARGE` %.
+- **Les niveaux du port** (`NIVEAUX[k].prix`) : niveau 2, 1 800 pièces, 24 planches, 16 pierres ; 3, 5 000 pièces,
+  40 planches, 30 pierres, 6 lingots de fer ; 4, 11 000 pièces, 60 planches, 40 pierres, 12 lingots de fer ; 5,
+  24 000 pièces, 80 planches, 60 pierres, 20 lingots de fer, 10 lingots de cuivre (41 800 pièces en tout). Les
+  matériaux s'apportent au chantier du port (`apporterAuChantier`, `state.port.chantier`), depuis ce qu'on a porté,
+  en une ou plusieurs fois (les lingots, qui ne se vendent pas, se chargent pour le chantier :
+  `materiauDuChantier`) ; puis on paie (`agrandirPort`, « Port agrandi »). Chaque niveau allonge le quai (8, 9, 10,
+  11, 12 cases), ouvre un rang du catalogue, apporte plus de commandes par passage et accueille plus de villageois
+  (`VILLAGE.ARRIVEE.PLAFOND`). Le monde de la partie est celui du niveau du port (`cadre.PORT`) : la page se
+  recharge.
+- **La fenêtre** (`js/ui/port.js`) : trois onglets de plus, Commandes du bac 📦 (le bac, son prochain passage, ses
+  caisses ; les commandes, ce qui en est porté, la prime, « Honorer »), Import 🚢 (ce qui est attendu ; le catalogue
+  par rang, chaque article avec son prix et, fermé, pourquoi) et Le port 🏗️ (son niveau ; le chantier du suivant : ce
+  qui est apporté, ce qui manque, les pièces ; ce qu'il ouvre ; « Apporter au chantier », « Agrandir »). Les
+  commandes du moteur : `port.honorer`, `port.importer`, `port.apporter`, `port.agrandir` (`commandes.js`).
+- **Les dessins** (`scripts/carte/port_bac.py`, posés par `scripts/carte/port.py` dans la planche des hameaux, à la
+  suite des sortes du port : `bac_port`, `passerelle_port`, `caisses_bac`) : le bac (vers le sud, 38 × 60 : 660
+  couleurs ; vers l'est, 72 × 44 : 737), la passerelle (80 et 97), les caisses chargées (107, 167, 227).
+- **La sauvegarde** : format 90, `state.port` (`niveau`, `passe`, `parti`, `commandes`, `honorees`, `imports`,
+  `vendu`, `chantier`, `sauvages`, `avis`) ; il naît avec une partie neuve du chantier (ou une partie d'essai, ou au
+  premier besoin, sans rattraper les bacs d'avant elle) ; la migration 89 → 90 répare un port abîmé et laisse une
+  partie sans port telle quelle.
+- **Le joueur automatique** (`bot.js`) : il honore les commandes (il charge d'abord ce qu'elles demandent, puis, au
+  port, les honore avant de décharger), agrandit le port (l'étape `port` : au palier 4 le niveau 2, au palier 6 le
+  niveau 3, à la fin du plan les niveaux 3 à 5 ; il économise pour lui, en charge les matériaux dès que ses pièces
+  font `SIMULATION.PORT.CHANTIER` = la moitié du prix ; les planches qu'il n'a plus la force de fabriquer lui sont
+  fournies, comptées) et achète ses jeunes arbres par l'import (commandés, plantés à leur livraison).
+- **La simulation** (`node scripts/simulate.mjs --village`, 80 nuits, graine 1) : avant I1c, le palier 4 restait
+  bloqué (« Agrandir le port ») de la nuit 22 à la fin. Après : le port au niveau 2 à la nuit 31, le palier 5 à la
+  nuit 33 (35 pour le joueur minimal), le palier 6 à la nuit 45 (44) ; le niveau 3 à la nuit 75 ; le palier 6 attend
+  un commerce ouvert (I5a) et l'amitié des villageois (I6a). Les pièces en caisse à la nuit 80 : 814 (joueur
+  appliqué), 21 (minimal) ; avant I1c, 62 et 435 (le joueur dépensait tout en appareils). Les primes du bac :
+  ≈ 1 050 pièces sur la partie (9 % des gains) ; le port : 6 800 pièces (64 % des dépenses du joueur appliqué). Sur
+  les nuits 41 à 60, il économise pour le niveau 3 (net + 118 par jour, 2 747 en caisse à la nuit 60), puis le paie.
+  Éteint, le CSV de la simulation est le même octet pour octet.
+- **Les tests** : `tests/engine/village-bac.test.mjs` (les jours du bac ; la vente sans limite et les caisses ; les
+  commandes tirées, honorées, manquées ; le catalogue, l'import payé d'avance et livré au passage suivant, la bête
+  sans place, le plan ; le rattrapage après une absence, la nuit ; les niveaux ; la sauvegarde ; éteint, rien).
+- Reste : ~~la part des villageois et les prix (I4)~~ (fait, plus bas) ; ~~les plants sauvages à cultiver (I7e)~~ (fait : ils
+  s'inscrivent à leur première récolte, js/engine/sauvages.js, plus bas) ; les contrats d'export en volume (I8b) ; ~~le port en ligne (I9c)~~ (fait, plus bas) ; montrer le chantier du port
+  sur la carte (des matériaux empilés) ; que la tournée d'un villageois honore les commandes.
+
+## Le chemin du port, modifiable, et le portage (I2, fait)
+
+Ce qui est posé (I2 ; les réglages : `VILLAGE.DEHORS`, `VILLAGE.CHEMIN`, `VILLAGE.PORTAGE`, data/village.json) :
+
+- **Le chemin possédé** (`js/engine/dehors.js`) : dans une partie neuve du chantier, `state.dehors = { troncon, chemins }`.
+  Le tronçon généré de la sortie de la ferme au port (`lieux.port.chemin`) devient des blocs de chemin du joueur :
+  chaque case du tracé et un pinceau de `CHEMIN.PINCEAU` × `PINCEAU` cases (2 : la case, sa droite, le dessous ; à
+  `PRES_FERME` cases de la ferme, trois de large, le raccord avec sa sortie ne bouge pas) ; une case de rivière reste un
+  gué. La conversion se fait dans le Web Worker du sol (`monde-sol.js`, `tronconDuPort`), qui renvoie les cases avec
+  « pret » ; la page les pose (`poserTroncon`) ; dans Node, `assurerTroncon` fait le même calcul. La forme gardée est
+  compacte : des segments `[écart, longueur]` à plat (`encoderSegments`, une rangée de chemin = un segment). Mesures :
+  le tronçon de la graine 1 fait 599 cases, 100 segments, 618 octets ; celui de la partie d'essai (graine 200364) 865
+  cases, 210 segments, 1 234 octets. 600 cases de plus : en allée de deux de large, quelques octets ; posées une à une,
+  chacune isolée (le pire : 687 segments), `state.dehors` fait 2 966 octets et la partie 7 809 (contre 5 461). Le seul
+  tronçon de la graine 1 gardé une case par entrée, comme `state.sols`, ferait 10 783 octets. `troncon` : `a_poser` (partie neuve), `pose` (converti : le sol ne peint plus le tracé),
+  `genere` (une partie d'avant : son tronçon généré reste peint tel quel jusqu'à I7f ; ce qu'on pose dehors s'y ajoute).
+- **Le sol** : le contexte du sol reçoit les chemins possédés (`poserCheminsSol` à l'« init » du Worker,
+  `majCheminsSol` puis le message « chemins » à chaque changement : les régions déjà faites qui les touchent sont
+  refaites et repeintes, la carte du monde est redemandée). Ce qui se peint et se marche (`ctx.chemins`,
+  `ctx.cheminCoins`) suit les chemins possédés ; la nature (arbres, rochers, bêtes, hameaux) lit toujours les chemins
+  du plan (`ctx.cheminsNature`) : retirer un chemin ne fait rien pousser. Éteint ou sans chemin possédé, rien ne change.
+- **Bâtir hors de la ferme** (`poseDehorsStatus`, demandé par `blocs.js poseStatus` hors de la ferme, le chantier
+  allumé) : les blocs de `VILLAGE.DEHORS` (chemin, pas japonais, lanterne, réverbère, pont de planches, barrières,
+  bancs) ; refusés : la mer et les lacs (« l'eau profonde »), la falaise et les sommets, la rivière (sauf le pont), le
+  pied d'un arbre, d'un buisson ou d'un rocher (pris, sa case se libère), l'emprise du port (son cadre et
+  `HAMEAUX.RESERVE` cases autour) et des hameaux, une région pas encore dessinée. Un chemin possédé se lit comme un sol
+  « chemin » (`solAt`) : le mode Construire le pose, le reprend, le déplace comme sur la ferme ; les autres blocs vont
+  dans `state.blocs` et `state.sols` (cases du monde). Le **pont de planches** (`pont_planches`, l'Atelier : 3 planches
+  et 2 bois pour deux) se pose sur une rivière, tourné en travers (son sens) ; ses cases s'ouvrent à la marche (la
+  page les ajoute aux cases ouvertes, `casesPonts`).
+- **L'effet du chemin** : sur un chemin (un chemin possédé, un chemin posé sur la ferme, le chemin de la ferme :
+  `surChemin`), on va `CHEMIN.VITESSE` % plus vite (50), à pied comme à cheval (`js/ui/stage.js` : la vitesse de la case
+  du personnage, `modèle.pied`, `modèle.chevalVitesse`). La carte du monde dessine les chemins possédés.
+- **Le portage** (`js/engine/portage.js`) : `state.portage = { vehicule, charge }`. Chaque objet a un volume (un ;
+  `PORTAGE.VOLUMES` : bois et planches 2, pierre, minerais et lingots 3, bloc de silo 4). À la main `MAINS` (12) volumes,
+  la brouette `BROUETTE` (40), la charrette attelée au cheval `CHARRETTE` (160 ; il faut un cheval). On charge sur la
+  ferme (de l'inventaire puis du réfrigérateur, avec la fraîcheur des lots ; ce qui ne tient pas reste à la ferme),
+  on reprend sur la ferme, on décharge sous la halle : tout ce qui est chargé se vend d'un coup (`dechargerAuPort`) ;
+  `vendreAuPort` ne vend plus que ce qui est chargé ; les semences achetées vont droit à la ferme. Les commandes
+  `port.decharger`, `portage.charger`, `portage.reprendre`, `portage.vehicule`. La fenêtre du port gagne l'onglet
+  « Porter » (le véhicule, la place, « Charger les récoltes », ce qu'on charge) ; « Vendre » montre le chargement et,
+  sous la halle, « Tout décharger ». La brouette et la charrette se fabriquent à l'Atelier (recettes `village`).
+- **Les dessins** (`scripts/carte/portage.py`, vus de haut à 45°) : le pont (8 images : du nord au sud et d'ouest en
+  est, selon ses voisins ; 597 couleurs pour les 8, 174 à 177 chacune), la brouette (`assets/brouette.png`, 3 vues × 4
+  temps de la roue, 425 couleurs, 207 pour une case), la charrette attelée (`assets/charrette.png`, d'après la calèche :
+  3 vues × 5 temps × 2 couches, 1 205 couleurs, 579 pour une case). La scène (`js/carte/portage.js`) : la brouette
+  devant le personnage à pied, la charrette à la place du cheval sellé (il s'assied sur son banc), quand quelque chose
+  est chargé (`modèle.portage`).
+- **Le joueur automatique** : avant sa sortie, il fabrique une brouette s'il le peut, note ce qu'il vendrait et en charge
+  le plus cher au volume d'abord ; sa marche va deux fois plus vite (le chemin, +100 %), `CHEVAL.VITESSE` fois avec un cheval ; au
+  port, il décharge. Avec `--village`, ses gains de fin de partie tombent d'environ 430 à 185 pièces par jour (la
+  brouette porte 40 volumes) : l'argent ne s'empile plus (la vérification passe).
+- **La sauvegarde** : format 88 ; la migration v87 → v88 répare `dehors` et `portage` s'ils sont là et n'ajoute rien à
+  une partie d'avant.
+- **Les durées d'un aller** (la ferme, de son milieu, au port ; 58 px/s à pied, 30 s par heure de jeu ; graines 1 à 8,
+  aller de 350 à 517 cases) : à pied hors chemin 3,2 à 4,8 h (moyenne 4,1) ; à cheval 2,3 à 3,4 h (2,95) ; à pied
+  sur le chemin 2,2 à 3,2 h (2,75) ; à cheval sur le chemin 1,5 à 2,3 h (1,97) ; au galop (la pomme dorée) sur le
+  chemin 0,9 à 1,3 h. **La vitesse seule ne suffit pas** à faire l'aller en une heure de jeu à cheval : le port est
+  placé « le plus loin de la ferme » (`PORT.PLAN`, 200 à 265 cases à vol d'oiseau ; le tracé fait 1,4 à 1,6 fois
+  cette distance, et la demi-ferme ajoute 72 cases, 0,3 h à cheval sur le chemin). Proposition (non faite ici) : choisir
+  la côte la plus proche qui convient à partir de `PORT.PLAN.FERME` (70) plutôt que la plus loin, à 80 à 100 cases à vol
+  d'oiseau : l'aller à cheval sur le chemin tomberait vers 0,9 à 1 h (à pied sur le chemin, 1,3 à 1,4 h) ; ou un
+  raccourci (un bac côtier, un second quai près de la ferme) dans une fiche à part. Dans Chromium (sans écran, où la
+  scène tourne au ralenti : 32 px/s à pied au lieu de 58), le rapport mesuré chemin/herbe est de 1,3 à pied et 1,5 à
+  cheval ; l'aller à cheval avec la charrette, sur 426 cases, y a pris 143 s.
+- **Les tests** : `tests/engine/village-chemin.test.mjs` ; `village-commerce` charge avant de vendre.
+- Reste : ~~retirer les boucles vers les hameaux (I7e)~~ (fait : le monde de l'île n'a plus que le tronçon) ; ~~convertir le tronçon des parties d'avant (I7f)~~ (fait : la migration le remet « à poser ») ; le chargement
+  ne vieillit pas la nuit (il garde sa fraîcheur) ; un chemin repris du tronçon rend un bloc (1 pièce au port).
+
+## Les villageois : l'arrivée (I3a, fait)
+
+- **Le modèle** (`js/engine/villageois.js`) : `state.villageois`, une liste d'adultes seuls (`id`, `prenom`, `genre`,
+  `perso`, `apparence`, `gouts`, `maison`, `lit`, `bourse`, `bonheur`, `faim`, `arrive`, `repos`, `accueil`,
+  `sansMaison`, `avis`, `journal`). Le champ ne naît qu'avec le premier villageois : éteint, une partie neuve est
+  celle d'avant (format 87 ; la migration 86 → 87 ne fait que réparer une liste abîmée).
+- **La maison libre** : une pièce close du genre maison, marquée par une **boîte aux lettres** (un bloc fabriqué à
+  l'Atelier, posé dehors contre sa porte : `blocs.js`, `maisonsMarquees`), avec un lit que la famille ne prend pas ;
+  la famille dort d'abord dans les autres lits (`couchages`). Un villageois par maison.
+- **L'arrivée** (`VILLAGE.ARRIVEE`) : un jour de bac (depuis I1c, celui du bac du port : `js/engine/bac.js`
+  `jourDeBac`, `PORT.BAC.PERIODE`), pendant que le bac est à quai (`PORT.BAC.HEURES`) ; le premier dès la première maison libre ; les suivants s'il y a de quoi manger
+  (`RESERVE_JOURS`) et si le port le permet (`PLAFOND[niveau]`, un port sans niveau compte pour 1). Il part de la
+  case du port (`caseArrivee` : `plan.lieux.port` quand I1a l'aura posé, sinon le bout du chemin de la ferme),
+  marche à sa porte, frappe, dit une ligne ; une notification ; la carte du joueur compte les villageois (un appui :
+  leur liste, puis la fiche de chacun).
+- **La nuit** (`villageoisNuit`, dans `runNight`) : il mange à la boîte commune (le besoin d'un adulte), dort dans
+  son lit ; son bonheur suit la règle de la famille ; mal nourri ou sans lit, il se repose le lendemain (`repos`),
+  il ne part jamais. Sa maison retirée, il dort à l'abri et prend la prochaine maison libre.
+
+## Les villageois : la vie sur la ferme (I3b, fait)
+
+Ce qui est posé (I3b) :
+
+- **La journée déduite de l'heure** (`js/engine/villageois-journee.js`) : `journeeDuVillage(state, jour)` donne à
+  chaque villageois ses segments de 0 à 24 h (`{ de, a, etat, lieu: { genre, case } }`), tirés de la graine, du jour
+  et de son id, sans rien garder dans la partie ; `positionVillageois(state, id, heure)` dit où il est et ce qu'il
+  fait. Les états de la fiche : `dormir` (son lit), `lever` (chez lui), `dehors` (un point des chemins posés, de la
+  place, sinon des abords de sa porte), `flaner` (un banc libre, sinon la place), `repas` (assis : la table de sa
+  maison, sinon la table commune dehors ; un siège chacun ; sans place, chez lui), `rentrer` (la veillée chez lui),
+  `repos` (mal nourri ou sans lit la nuit d'avant : chez lui entre les repas), et `abri` (sous la pluie de
+  `meteo.js`, chez lui, repas du dehors compris ; sans maison, l'abri de départ). Les lieux (`lieuxDuVillage`) sont
+  gardés tant que les blocs ne changent pas ; jamais une case de mur (le test d'un lot de fermes générées).
+- **L'horaire** (`VILLAGE.HORAIRE`, d'après `HABITANTS.HORAIRE`) : lever 6 h 30, sortie 7 h 30, repas de 12 h à
+  13 h 15 et de 18 h 30 à 19 h 30, veillée chez lui jusqu'au coucher (21 h 15), chacun son retard (`DECALE`, 0,5 h
+  au plus) ; entre les repas, des créneaux de 0,75 h (communs à tous) où il flâne une fois sur `FLANER` (0,35 le
+  matin, 0,6 l'après-midi), sinon va et vient. `VITESSE` 0,9 (fois un adulte de la famille), `CHEMIN` 2 (le prix
+  d'un pas hors des chemins posés). Ces réglages étaient ceux proposés ; le réglage « animé » a été choisi depuis (plus
+  bas : CRENEAU 0,5, FLANER 0,2 et 0,4, VITESSE 1, CHEMIN 1,5).
+- **La scène** (`js/carte/ferme/villageois.js`), sur le socle des comportements : `CarteKit.machine` (un état par
+  état de la fiche, une transition revue quatre fois par seconde qui le fait passer au segment de l'heure), la
+  grille de l'image (`CarteKit.perception` : villageois, famille, bêtes de la ferme) et le pas des habitants
+  (`habAvancer` : il contourne le personnage et les autres). Il marche par `fermier.path`, qui prend maintenant un
+  prix par case (`info.cout`, `CarteKit.chemin` : `g.cout`) : il préfère les chemins posés ; les portes s'ouvrent à
+  son passage. Un trajet impossible : hors de la vue il y est d'un coup, dans la vue il renonce et flâne où il est.
+  Loin de la vue (320 px), ni trajet ni image : il est posé où l'heure le veut. L'heure lui vient du modèle
+  (`villageoisHeure`, avancée entre deux modèles).
+- **Parler** : un appui ouvre sa bulle (`paroleVillageois` : le salut de l'heure, ce qu'il fait, son humeur, tirés
+  de `VILLAGE.PHRASES` et `HABITANTS.PHRASES.salut`), avec un bouton pour sa fiche ; l'objectif du jour `parler`
+  compte. Plus de fenêtre au toucher.
+- **La nuit** : il dort dans son lit, sous la couverture (le toit effacé le montre) ; les fenêtres de sa maison
+  s'éclairent le soir tant qu'il y est éveillé, et s'éteignent quand il dort (`fenetres.js` : chaque maison de
+  villageois a sa lumière, `villageoisLumiere` ; les autres maisons comme avant).
+- **Les mesures** (Chromium, téléphone émulé : 412 × 915, DPR 2, processeur ralenti × 4 ; la place d'essai, 15 h,
+  vue dézoomée ; trois répétitions, médianes ; la machine chargée, charge 2,7 à 4,2 sur 4 cœurs) : le temps d'une
+  image (de « prestep » à « postrender », le dessin compris), avant → après : 0 villageois 6,1 → 7,2 ms ; 5 : 8,1 →
+  9,3 ms ; 10 : 11,2 → 8,6 ms ; 15 : 15,0 → 8,1 ms (moyennes 37,9 → 13,1 ms). Le système « villageois » coûte 0,41
+  ms par passage pour 15 villageois à l'écran (0,7 à 0,8 ms rapporté aux images dessinées), sous la borne de 1 ms ;
+  ses pointes (5 à 8 ms, rares) sont les recherches de chemin (deux par image au plus) et le chargement des
+  planches. Avant, sans eux à l'écran, l'image s'alourdissait déjà avec le nombre de villageois : le modèle de la
+  carte (`villageoisPourLaCarte`, refait à chaque rendu de la page) relevait les maisons et les lits de la famille
+  pour chacun (≈ 15 ms pour 15) ; il est maintenant gardé tant que rien ne change (0,04 ms).
+- Les réglages choisis sur film (parmi calme, normal, animé) : « animé » : `VITESSE` 1, `CRENEAU` 0,5, `FLANER` 0,2 le
+  matin et 0,4 l'après-midi, `CHEMIN` 1,5. Les tâches (I3c, fait) prennent des créneaux à la place des sorties.
+
+## Les villageois : la vie sociale (I3b+, fait)
+
+À la demande de l'utilisateur, après I3b : « que les villageois paraissent plus liés les uns aux autres », qu'on sente
+une communauté. Rien n'est sauvé (pas de nouveau format) : tout se déduit de la graine, du jour, des maisons et de
+l'heure, comme la journée de I3b ; loin de la vue, rien ne s'anime.
+
+- **Qui se connaît** (`js/engine/villageois-liens.js`) : `connaissance(state, a, b)` → `{ degre, nom, score, jours }`
+  (0 inconnu, 1 connaissance, 2 ami). Le score (0 à 100) : `PAR_JOUR` par jour passé ensemble sur l'île (depuis
+  l'arrivée du second), plus `VOISIN` si leurs boîtes aux lettres sont à `VOISINE` cases au plus, plus `TABLE` s'ils
+  mangent à la même table, plus une affinité tirée de la graine et des deux ids (0 à `AFFINITE`) ; connaissance dès
+  `PALIERS.connaissance` (10), ami dès `PALIERS.ami` (40). La famille du joueur (`b = 'famille'`) : connue dès
+  l'arrivée, amie dès le palier « cordial » de l'amitié du joueur (I6a ; avant : après 4 jours). `liensDuVillage` (toutes les paires, gardées pour le jour),
+  `liensPourLaCarte` (le modèle de la carte). **I6b l'a remplacé** par l'affinité sauvegardée (`liens.js`) : seul le
+  corps de `scoreDe` a changé ; ce calcul reste l'estimation d'une paire qui n'a pas encore passé de nuit ensemble.
+- **Des sorties qui ont un but** (`villageois-journee.js`, `VILLAGE.SOCIAL.BUTS`) : la grille des créneaux de I3b
+  reste le socle ; chaque créneau dehors est maintenant choisi pour tout le village à la fois, créneau par créneau
+  (déterministe), et tire au poids un but qui a un lieu libre : **visite** (il va devant la porte d'un ami, tourné
+  vers elle ; l'ami, chez lui `RECOIT` h, « recoit », sort à côté de sa porte), **rendez-vous** (à deux ou trois, en
+  petit cercle devant le puits ou sur la place : lieu « groupe », tourné vers le centre), **promenade** à deux entre
+  amis (un meneur, un ami à son côté, jusqu'à un point des chemins ou de la place), **eau** (devant le puits),
+  **jardin**, **bêtes** (par-dessus la barrière de l'enclos), **ouvrage** (`OUVRAGES` : une ruche, un bassin, un
+  arbre fruitier…), **port** (si son chemin fait `PORT_MAX` cases au plus : pas encore, le chemin du port est long) ;
+  à défaut, il va et vient comme en I3b. Une sortie à plusieurs dure `DUREE` créneaux (2 : le temps d'y aller et
+  d'y rester), si tous y sont libres ; l'ami chez qui l'on va est plutôt un voisin (le poids : le score divisé par
+  la distance des maisons). Jamais avec un inconnu ni avec un villageois au repos. Le segment porte `but` : `{ sorte, cle (la même pour ceux
+  qui le font ensemble), avec, role ('visiteur', 'hote', 'meneur', 'suit'), emoji }` ; les lieux nouveaux :
+  « devant » (une case, tournée vers `vers`) et « groupe » ; les lieux des sorties (`lieuxDesSorties`, gardés avec
+  ceux de I3b) : le devant de chaque porte, la case d'où l'on puise, les cercles, les cases d'où regarder.
+- **La scène** (`js/carte/ferme/villageois-social.js`, posée sur `villageois.js`) :
+  - au but, il fait quelque chose de visible : tourné vers ce qu'il est venu voir, un emoji (💧 🌱 🐑 👀) ; au puits,
+    il puise (le geste « ramasse ») ; à la porte d'un ami, il frappe (« Toc, toc ! ») ; l'hôte attend qu'on ait
+    frappé (9 s au plus), puis sort ;
+  - la promenade : le meneur attend son ami, puis ils marchent côte à côte (l'ami à son côté, `villageoisSuivre`) ;
+  - les causeries : ceux qui ont la même clé, arrivés, se font face (à trois, ils regardent qui parle) et échangent
+    des répliques à tour de rôle (une toutes les `TOUR` s, la bulle de l'autre s'efface quand il répond), une
+    émotion au début ; à table, ceux du même repas causent aussi ;
+  - se croiser : deux villageois qui se connaissent, à `RAYON` px, s'arrêtent, se tournent l'un vers l'autre, une
+    émotion (😊 👋 😄 ❤️ selon le degré et l'humeur), deux répliques l'une après l'autre (`DUREE` : 1,6 s entre
+    connaissances, 2,5 s entre amis) ; des amis font parfois un bout de chemin ensemble (`ENSEMBLE`, `BOUT` s) ;
+    deux inconnus, un signe de tête une fois sur deux ; pas deux fois la même paire en `ATTENTE` s, et chacun
+    reprend sa route 7 s avant d'en saluer un autre ;
+  - debout, il tourne la tête vers un ami qui passe (`REGARD` px) ; le personnage du joueur qui passe à `JOUEUR` px
+    d'un villageois qui connaît la famille reçoit un salut (un emoji, une bulle, une fois en `JOUEUR_ATTENTE` s) ;
+  - le visage sourit le temps d'un salut ou d'une émotion (`CarteVisages`, la réaction « joie ») ; l'emoji est celui
+    des habitants (`amis.js`, `emojiHabitant`), les bulles celles des villageois.
+- **Les répliques** (`VILLAGE.SOCIAL.REPLIQUES`, 86 paires ; `echangeVillageois`) : par degré (connaissance, ami),
+  moment (matin, jour, soir), météo (pluie, clair), humeur (triste), et ce qu'ils font (visite, groupe, promenade,
+  repas) ; tirées de la graine, de la paire et du jour, le rang de l'échange avance dans la liste (une causerie ne se
+  répète pas avant d'en avoir fait le tour). `SOCIAL.JOUEUR` : ce qu'on dit au personnage du joueur (`{joueur}`).
+  Une bulle tient une réplique : pas de fenêtre, pas de personnage écrit. Un appui sur un villageois à son but dit ce
+  qu'il y fait (`SOCIAL.ACTIVITE`).
+- **Les mesures** (comme I3b : Chromium, téléphone émulé 412 × 915, DPR 2, processeur ralenti × 4 ; 15 villageois à
+  l'écran, installés depuis plusieurs jours, la place à 15 h ; trois fenêtres de 6 s, médianes ; la machine chargée,
+  charge 1,8 à 3,2 sur 4 cœurs, plus lente que lors des mesures de I3b) : le système « villageois », à réglage égal
+  (« animé »), coûte 0,7 à 0,9 ms par passage avec I3b et 1,5 à 1,85 ms avec I3b+ (quatre mesures de chaque) ; à 5
+  et 10 villageois, 0,55 et 1,1 ms. Le surcoût (≈ 0,8 ms ici, soit ≈ 0,4 ms dans les conditions de I3b, où I3b
+  mesurait 0,41 ms) vient surtout de ce qu'ils marchent davantage (plus d'images de marche, plus de recherches de
+  chemin), des bulles (leur place n'est plus écrite que si elle change, le cadre de l'écran et la largeur du calque
+  sont relevés une fois par image), puis de la vie sociale elle-même (≈ 0,2 ms : les causeries et les croisements
+  revus dix fois par seconde, les emojis jamais mesurés). Les pointes (7 à 15 ms, rares) sont des recherches de
+  chemin et l'écriture d'une bulle. Le temps d'une image (médiane) reste du même ordre : 17 à 19 ms avec I3b, 19 à
+  23 ms avec I3b+.
+- **Les tests** : `tests/engine/village-social.test.mjs` (la connaissance, les sorties et leurs compagnons, jamais
+  avec un inconnu, le déterminisme, jamais dans un mur sur un lot de fermes, les répliques) ;
+  `village-journee.test.mjs` suit les sorties à but. Éteint, rien ne change (le CSV de la simulation est le même).
+- Reste : l'affinité sauvegardée et ce qu'elle change (I6b, fait) ; la visite du soir et s'asseoir côte à côte (I6b, fait) ;
+  le port quand son chemin sera court (I2) ; les tâches prennent des créneaux (I3c, fait).
+
+## Les villageois : les tâches (I3c, fait)
+
+Le cœur de la nouvelle boucle : le joueur confie une tâche à chaque villageois, qui la fait chaque jour à son poste ;
+ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo).
+
+- **Les tâches** (`TACHES`, `data/village.json`) : les champs (récolter ce qui est mûr, arroser ce qui a soif avec
+  l'eau du réservoir, ressemer de sa dernière culture), les bêtes (nourrir les poules, prendre les œufs, tondre,
+  prendre le lait et la laine), le verger et les ruches, le bois (hache), la pierre et le minerai (pioche), la pêche
+  (canne : l'étang ou la mare de la ferme), la cueillette (ce que la ferme offre ce matin), le fauchage et la paille
+  (faux ; une botteleuse posée en fait de la paille), la cuisine (une préparation lancée à la cuisinière ou au four,
+  `RECETTES`), la **navette** (« la tournée du port » dans le jeu : « navette » est un mot que les textes du jeu n'emploient plus ;
+  un aller-retour au port, `PORTEE` objets marqués « à vendre » sur sa fiche, vendus au
+  comptoir ; la brouette et la charrette viendront avec I2). Chacune : `ACTIONS` par jour (2 à 12), ce que donne une
+  action (`donne`), son outil, son lieu, son geste, son emoji, ce que dit la fiche sans poste (`SANS`), ses phrases.
+- **Le moteur** (`js/engine/taches.js`) : `attribuer(state, id, tache)` ; le travail se fait **à l'heure** (`avancerTaches`,
+  à chaque pas de la ferme, `energy.js`) : `ACTIONS` à parts égales sur ses créneaux de travail du jour
+  (`actionsDues`) ; la nuit (`tachesNuit`, avant `villageoisNuit`) fait ce qui reste (la page fermée, l'averse). Chaque
+  action passe par **les fonctions du joueur** (`harvestPlot`, `waterPlot`, `plantPlot`, `feedAllHens`, `pickUp`,
+  `shear`, `harvestTree`, `recolterRuche`, `chopTree`, `mineRock`, `castLine`, `ramasser`, `scytheGrass`,
+  `verserFibres`, `startRecipe`, `vendreAuPort`) : une carotte récoltée par lui est une carotte récoltée (les
+  compteurs de la campagne et des paliers comptent), un arbre coupé repousse comme les autres, le quota de pêche du
+  jour est celui du joueur, la pioche améliorée lui profite. Mais ni l'énergie, ni l'XP, ni les objectifs du jour du
+  joueur (`commeLeJoueur` les remet comme avant). Un arbre, un rocher entamé est fini d'abord. Une action sans rien à
+  faire se retente `ESSAI` h plus tard. En repos (I3a), il ne fait rien ; sans son outil ou sans poste, la tâche
+  **attend** et le dit (sa fiche, sa bulle : « il me faut une hache. »), et il vit sa journée comme avant.
+- **Les automatisations, la règle** : tout se lit dans la partie au moment de l'action, le premier passé prend. Une
+  parcelle arrosée (l'asperseur, l'averse, le robot, le joueur) n'a plus soif : il ne l'arrose pas une seconde fois ;
+  une récolte prise par le robot n'est plus mûre : il ne la prend pas, et le robot ne reprend pas ce qu'il a récolté.
+- **Les outils** : le joueur fabrique l'outil à l'Atelier et le donne (`donnerOutil` : il quitte sa barre d'outils, le
+  villageois le garde, `v.outil`) ; il le reprend (`reprendreOutil`) s'il n'en a pas déjà un. Celui que le villageois
+  tenait revient au joueur quand il en reçoit un autre.
+- **La journée** (`villageois-journee.js`, `planDuTravail`, avant les sorties de I3b+) : les créneaux dont le milieu tombe
+  dans `TRAVAIL` (8 h à 11 h 30, 13 h 30 à 16 h 30) sont du travail (l'état « travail », à son poste : un lieu
+  « devant », tourné vers ce qu'il travaille), sauf `PAUSE` créneau tiré par plage (jamais le premier), qui reste une
+  sortie de la vie sociale (le puits, un ami, la place). Le lever, le début de matinée, **les repas avec les autres**
+  (la table commune), la fin d'après-midi (après 16 h 30 : les visites, les rendez-vous, les promenades) et la veillée ne
+  changent pas. Un poste tient `POSTE` créneaux (une heure de jeu), puis il passe au suivant. Les postes (`postesDe`) :
+  à côté des parcelles, des enclos, des arbres fruitiers et des ruches ; de part et d'autre du pied d'un arbre ou d'un
+  rocher, à côté d'une touffe d'herbe haute (de profil, la hache, la pioche, la faux) ; sur la rive au-dessus de l'eau ;
+  devant la cuisinière ; le coffre (devant la maison de la famille) puis le comptoir du port, pour la navette ; à
+  `RAYON` cases de sa maison s'il y en a, sinon les plus proches de la ferme. **Deux villageois à la même tâche** ont des
+  postes voisins (le poste de l'équipe, puis les plus proches de lui : l'autre côté du même arbre) et la même clé : ils
+  causent un peu (`SOCIAL.REPLIQUES.travail`, une réplique toutes les `CAUSE` s, la première quelques secondes après
+  s'y être mis). Ils se lient en travaillant ensemble : `CONNAISSANCE.COLLEGUE` de plus par jour (I6b l'a repris : `LIENS.GAINS.POSTE`).
+  Sous la pluie, le travail du dehors devient l'abri (la cuisine continue) ; la nuit fait les actions qui restent.
+- **La scène** (`js/carte/ferme/villageois-travail.js`) : arrivé à son poste, il fait le geste de sa tâche en boucle
+  (les gestes des habitants des hameaux, `CarteKit.GESTES_HABITANTS` : la hache, la pioche, la faux, la canne,
+  l'arrosoir, se baisser, remuer la marmite ; les mêmes cases des planches, pas de dessin nouveau), une courte pause
+  entre deux ; chaque action que le moteur compte pendant qu'on le regarde fait monter l'emoji de ce qu'elle donne
+  (🪵 🪨 🐟 🌱…) ; rien n'est compté par la scène (la règle de la fiche 7b). Quand il cause, il pose son outil et se
+  tourne vers l'autre. Un passant qu'il connaît le salue comme ailleurs (I3b+).
+- **L'interface** (`js/ui/villageois.js`) : sa fiche dit sa tâche (où il en est aujourd'hui, ce qu'il a produit, ce
+  qui lui manque), son outil (« Donner ma hache », « Reprendre ») ; le bouton « Tâche » ouvre la liste (celles qu'il
+  peut faire, ce qui manque aux autres, qui l'a déjà) ; la navette, ce qu'elle porte (« à vendre ») ; la liste des
+  villageois dit **qui fait quoi** ; un appui long sur un poste de la carte (un arbre, un rocher, l'étang, le
+  poulailler, la cuisinière, un buisson ; `tachesDuPoste`) propose « Confier à… ».
+- **Le journal** : chaque nuit, l'entrée du journal du villageois (7 jours) gagne `tache`, `actions` et `produit`
+  (`{ objet: n }`), à côté de `mange` (le tableau, I3d, le lit). `quiFaitQuoi` donne la vue d'ensemble du jour.
+- **La sauvegarde** : format 89 (`v.tache`, `v.outil`, `v.vendre`, `v.semis` (ce qu'il ressèmera), `v.travail` (sa
+  journée de travail)) ; la migration 88 → 89 (`reparerTaches`) remet à vide une valeur abîmée. Les commandes
+  `villageois.attribuer`, `villageois.outil` et `villageois.vendre` (`commandes.js`).
+- **Le joueur automatique** (`bot.js`, `botVillageois`, `SIMULATION.VILLAGEOIS`) : dès le palier 3, il bâtit une maison
+  de villageois quand aucune n'est libre et que le port en laisse venir un de plus (la paillasse et la boîte aux
+  lettres fabriquées à l'Atelier), puis confie à chacun la première tâche libre de `TACHES` (d'abord ce qui nourrit,
+  puis ce qui se vend), son outil fabriqué et donné. `node scripts/simulate.mjs --village` passe ainsi du palier 3 au
+  palier 4 (nuit 22 pour le joueur appliqué, 23 pour le minimal ; avant : bloqué au palier 3) ; le palier 4 attend
+  l'agrandissement du port (I1c, depuis fait : voir plus haut). Deux villageois (le plafond d'un port de niveau 1), sur 80 nuits : l'un aux champs
+  (≈ 7 actions par jour sur 12 : ≈ 15 blés, 9 fraises, 6,5 épinards, 4,7 oignons, 4,4 carottes, 2,8 tomates… et leurs
+  graines), l'autre aux bêtes (≈ 2 actions par jour sur 4 : la laine, ≈ 1,3 par jour ; les poules et les œufs, le
+  joueur simulé s'en occupe avant lui).
+- **Les tests** : `tests/engine/village-taches.test.mjs` (chaque tâche par les fonctions du joueur, dans les bornes du
+  monde ; sans outil, rien ; en repos, rien ; pas de double récolte ni de double arrosage ; la journée, la pause, les
+  camarades côte à côte ; à l'heure puis la nuit ; le journal ; la sauvegarde ; les commandes ; le joueur automatique ;
+  éteint, rien) ; `compagnon.test.mjs` reste vert. Éteint, le CSV de la simulation est le même octet pour octet.
+- **Les mesures** (comme I3b+ : Chromium, téléphone émulé 412 × 915, DPR 2, processeur ralenti × 4 ; 15 villageois ;
+  trois fenêtres de 6 s ; la machine très chargée, charge 5 à 11 sur 4 cœurs : les chiffres sont bruités) : le système
+  « villageois » à 15 h (sans tâche), avant → après : 2,0 et 2,9 ms → 2,5 et 2,7 ms (deux paires de mesures : pas d'écart
+  au-delà du bruit) ; 15 villageois au travail (bois, pierre, fauchage, cueillette), 9 h 30 à 10 h 30, la vue sur les
+  postes : 1,5 à 2,3 ms (5 à 9 à l'écran, beaucoup encore en marche vers leur poste). Dans le moteur (Node), à 15
+  villageois au travail : la journée gardée 0,06 ms (0,05 avant), le pas de la ferme 3,4 ms en moyenne sur une heure de
+  jeu, actions comprises (une action relit les pièces quand un arbre tombe) ; sans tâche, rien ne change (0,17 ms).
+  Les postes et l'attente sont gardés tant que rien ne bouge (`signatureTaches`) : sans cela, la journée coûtait
+  10 ms.
+- Reste : ~~la part du villageois et la valeur de ce qu'il produit (I4)~~ (fait, plus bas) ; la brouette, la charrette et un chemin du
+  port plus court pour la navette (I2) ; les postes préférés (I6c, fait) ; montrer ce qu'il porte (un panier, une botte).
+
+## Les villageois : le tableau (I3d, fait)
+
+Ce que chaque villageois a coûté et produit, hier et sur les sept derniers jours, pour décider qui fait quoi.
+
+- **Le calcul** (`js/engine/tableau.js`, pur) : tout se lit dans le journal de chaque villageois (ses 7 derniers jours,
+  `ARRIVEE.JOURNAL` : la sauvegarde n'a pas eu à garder plus, elle reste au format 91). Le **coût** d'un jour : ce
+  qu'il a mangé à la boîte, au prix de vente de chaque aliment (`sellPrice`, le prix fixe du port) ; sa part versée
+  (`J.part`, 0 avant I4) ; et **ce que son travail a pris au coffre** (`J.utilise`, nouveau : les ingrédients d'un plat,
+  la graine ressemée, le blé des poules, ce que la tournée du port vend), au même prix. Sans ce dernier poste, la
+  cuisine comptait son plat sans ses légumes (un plat vaut à peu près ses ingrédients) et la tournée les pièces
+  d'objets que d'autres avaient produits. Le **produit** : chaque objet, sa quantité, sa valeur au port (0 pour ce qui
+  ne se vend pas). Le **solde** : produit moins coût. Le **rendement** : ce que sa tâche a produit (moins ce qu'elle a
+  pris) par jour de travail, en % de la moyenne des tâches faites dans le village sur la période. Des entiers
+  partout. Un jour de repos (`J.repos`, nouveau : noté par la nuit) compte son repas et aucun produit. Les périodes :
+  « hier », « semaine » (les sept jours glissants qui finissent hier). `tableauVillage`, `bilanVillageois`,
+  `trierTableau`, `manqueCourt` (« sans outil : une hache », « en repos : pas assez à manger », « sans poste : … »,
+  « rien à porter au port », « sans tâche »).
+- **La fenêtre** (`js/ui/tableau.js`) : le bouton 📊 sur la carte du joueur, à côté des pièces, dès qu'il y a un
+  villageois ; une ligne par villageois (portrait, prénom, tâche et ce qu'elle a donné, coût, produit, solde,
+  humeur), triable par colonne (un second appui inverse le sens) ; « Hier » et « 7 jours » ; le total du village ;
+  sous la ligne, ce qui lui manque aujourd'hui. Un appui sur un prénom : ses sept jours (chaque jour : sa tâche, ses
+  actions, ce qu'il a mangé, ce qu'il a pris au coffre, ce qu'il a produit, le solde), son rendement, « Sa fiche ».
+  Sur un téléphone, la tâche et l'humeur se replient en icônes sous le prénom et les en-têtes s'abrègent : à 380 px
+  de large, rien ne déborde. Aucune couleur d'alarme (B-1) : un solde négatif s'écrit comme un autre ; la fenêtre dit
+  que c'est un repère. La fiche du villageois n'est pas touchée.
+- **Le joueur automatique** (`bot.js`, `botReattribuer`, `SIMULATION.VILLAGEOIS.REATTRIBUER`) : une fois par jour, il
+  regarde le villageois au solde de la semaine le plus bas ; après une semaine pleine sur sa tâche (7 jours, sans
+  repos : le solde juge la tâche, pas la faim), il relève ce solde ; deux relevés (`SEMAINES`, une semaine juge mal les
+  champs : une récolte tombe ou non dedans) sous `SEUIL` (0), il essaie la première tâche libre qu'il n'a pas faite ;
+  une tâche déjà faite qui a donné mieux, il y retourne et s'y tient. Une première version (une semaine, toute tâche
+  essayée tour à tour) enlevait les champs au villageois qui nourrissait le village : les jours de repos doublaient.
+  Mesure (`node scripts/simulate.mjs --village`, 80 nuits, et la même partie sans la réattribution) : le joueur appliqué déplace un
+  villageois deux fois (les bêtes → la cuisine à la nuit 30, la cuisine → la cueillette à la nuit 49), le minimal quatre
+  fois (les champs → la cuisine → le bois → la pierre, les bêtes → la cuisine). Les pièces à la nuit 80 : 3 346 → 3 456
+  (appliqué, + 3 %) et 1 744 → 3 372 (minimal, ≈ × 2) ; le solde du village sur la partie : 2 821 → 2 860 et −1 308 →
+  −720 ; le palier 6 : nuit 54 → 59 (appliqué) et 70 → 65 (minimal). Mais les jours de repos montent (59 → 77 sur
+  180 → 219 jours-villageois chez l'appliqué, qui loge un quatrième villageois ; 45 → 67 sur 222 chez le minimal) : la
+  cuisine, où il va volontiers (son solde est voisin de zéro, mieux que les bêtes que le joueur simulé soigne déjà),
+  prend à la boîte ce que les autres auraient mangé. Le gain est réel mais petit et bruité ; une semaine de solde ne
+  voit pas qui nourrit le village.
+- **Les tests** : `tests/engine/village-tableau.test.mjs` (une semaine écrite à la main : coût, produit, solde, le jour
+  de repos, ce qui est pris au coffre, la part ; sept jours glissants et hier ; le total, trois soldes différents, le
+  rendement, le tri ; ce qui manque ; le journal de la nuit ; le joueur automatique ; éteint). Éteint, le CSV de la
+  simulation est le même octet pour octet.
+- Reste : ~~les prix et la part (I4 : `J.part` attend d'être versée)~~ (fait : I4 la verse, plus bas) ; ~~les ventes des commerces (lot 5)~~ (I5a : une ligne par commerce) ; ce que les
+  champs d'un villageois récoltent est compté à lui seul, même quand le joueur l'aurait récolté (le premier passé
+  prend) ; l'eau d'arrosage et l'énergie ne sont pas comptées ; le tableau ne garde que sept jours.
+
+## Les villageois : le garde-manger commun et la cuisine du village (I3e, fait)
+
+À la demande de l'utilisateur : « un ou plusieurs villageois peuvent être assignés à une cuisine collective ou une boîte
+à nourriture ou un frigo collectif permet aux habitants de se nourrir ». Et l'équilibrage alimentaire du village qui va
+avec : dans `node scripts/simulate.mjs --village`, le village restait bloqué à trois villageois. Le moteur :
+`js/engine/garde-manger.js` ; les réglages : `VILLAGE.GARDE_MANGER` (`data/village.json`) et
+`SIMULATION.VILLAGEOIS.GARDE_MANGER` ; la page : `js/ui/garde-manger.js` ; la fiche :
+[`docs/fiches/ile/I3e-cuisine-collective.md`](fiches/ile/I3e-cuisine-collective.md).
+
+- **Le constat, avant** (graine 1, 80 nuits) : la boîte à nourriture tient 6 aliments × 10 ; le réfrigérateur, qui la
+  remplace dès son achat (nuit 49 chez le joueur appliqué), 25 unités au niveau 1. Remplis de légumes crus (une carotte :
+  8 d'énergie, le besoin d'un adulte : 50), ils ne tiennent qu'un jour de repas du village : le réfrigérateur arrivé, il
+  se vide chaque nuit, les villageois mal nourris se reposent (53 jours de repos sur 180 jours-villageois, 29 %), et le
+  quatrième ne vient jamais (il faut deux jours de repas de quatre bouches au rangement : 400, plus que le réfrigérateur
+  ne tient de crus). Un plat, lui, nourrit plus que ses ingrédients (la soupe 43 pour 33, le gratin 150 pour 70) et
+  tient en une unité. Le joueur simulé ne moulait presque plus : à la nuit 60, 349 blés au Silo, le Moulin à l'arrêt, pas
+  de farine (appelé avant les champs, il moud de nouveau).
+- **Le garde-manger commun** (`gardeManger`, `designerGardeManger`) : un appui sur la boîte à nourriture ou le
+  réfrigérateur ouvre sa fenêtre ; « Le rendre commun ». La famille et les villageois y mangent, le joueur y dépose comme
+  avant (la fenêtre de la boîte, du réfrigérateur). La boîte et le réfrigérateur sont uniques ; nouveauté : **la boîte
+  rendue commune reste au village quand le réfrigérateur est acheté** (`repas.js rangerBoite` ne la reprend plus ; elle
+  peut aussi se poser après lui, le chantier allumé) : la famille mange au réfrigérateur, les villageois à la boîte
+  (`sourceVillage`). Rendre l'un commun reprend l'autre (un seul garde-manger, `state.gardeManger.sorte`). Ce qui périt
+  garde sa fraîcheur au réfrigérateur alimenté, pas dans la boîte (les règles d'avant : `spoil`, `fridgeNight` ; B-1 coupe
+  la péremption dans le jeu d'aujourd'hui, le test la rétablit pour le vérifier).
+- **Les dépôts du travail, automatiques jusqu'à une réserve réglable** (`deposerDuTravail`, à chaque action de
+  `taches.js`) : ce qu'une action produit qui se mange va au garde-manger tant qu'il contient moins de `RESERVE` (3) jours
+  de repas du village (le besoin de chaque villageois, adulte ou enfant) ; le reste va au coffre, comme avant. Le joueur la
+  règle dans la fenêtre (`RESERVES` : rien, 1, 2, 3, 5 jours ; la commande `village.reserve`). Pourquoi pas une part fixe :
+  une part prise sur chaque récolte remplirait la boîte même pleine et viderait le coffre qu'on vend ; une réserve visée
+  dit ce que le joueur veut (de quoi tenir N jours) et s'arrête d'elle-même. La cuisine du village tournant, ce qu'elle
+  n'attend pas (ni un plat, ni ce qui nourrit bien — `ENERGIE_MIN` 12 : les œufs, le lait, les patates, le poisson —, ni
+  l'ingrédient d'un plat qu'elle peut faire, `utileAuGardeManger`) laisse aux plats `PLACES_PLATS` places (une sorte de la
+  boîte, 4 unités du réfrigérateur) ; un plat ou un ingrédient attendu qui ne trouve pas de sorte libre dans la boîte y
+  fait de la place : l'aliment qu'on n'attend pas qui nourrit le moins retourne au coffre (`faireDeLaPlace`).
+- **La cuisine du village** (`cuisineDuVillage`, `platDuVillage`) : un appui sur une cuisinière ou un four posés dans une
+  maison ouvre sa fenêtre ; « Cuisine du village » désigne **ce bloc-là** (la carte passe la case touchée à la fenêtre :
+  `chantier.js stationAt`, `farm-stage.js`, `choisirBloc` ; `CUISINE.MAX` 2 blocs). On peut garder la cuisinière du foyer
+  à la famille et en poser une autre près de la table commune.
+- **La tâche `cuisine` devient la cuisine du village** (le choix) : avec un garde-manger commun et un bloc du village, le
+  villageois à qui l'on confie la cuisine se tient devant ce bloc (deux postes par bloc : on y cuisine à deux) et fait
+  `CUISINE.ACTIONS` (4) plats par jour, au lieu de lancer 2 préparations dans la file de la cuisinière du joueur. Ses
+  ingrédients qui se mangent viennent du garde-manger ; ceux qui ne s'y rangent pas (la farine, l'huile, le sucre), du
+  coffre ; l'eau, du réservoir ; le plat va au garde-manger, sans passer par la station du joueur (sa file reste libre ;
+  le plat compte pour les paliers comme le sien : `noteRecipeDone`). Le menu, `CUISINE.RECETTES` (15 plats de la
+  cuisinière et du four, débloqués) ; le plat choisi est celui qui manque le plus au garde-manger (la variété), puis
+  celui qui nourrit le mieux. Pourquoi ne pas ajouter une tâche : la cuisine d'I3c prenait au coffre ce que les autres
+  auraient mangé et y remettait un plat que personne n'allait chercher (I3d l'a mesuré : un solde voisin de zéro, plus de
+  jours de repos) ; la même tâche, branchée sur le garde-manger, nourrit le village, et sans cuisine du village elle reste
+  celle d'I3c. Plusieurs cuisiniers font plus de plats (chacun ses 4 ; deux amis, une action de plus, I6b). La fiche du
+  villageois dit « La cuisine du village », ses phrases sont les siennes (`CUISINE.PHRASES`), le tableau compte ses
+  ingrédients dans son coût.
+- **La tablée** (`villageois.js tablee`, `servirLaTable`) : la cuisine du village tournant, le soir, chacun mange d'abord
+  ses provisions, puis on sert la table au garde-manger pour ce qui reste du besoin de tous (les plats d'abord, un de
+  chaque sorte avant un second) ; chacun y prend jusqu'à son besoin, dans l'ordre des id, et **une part entamée passe au
+  suivant** (un gratin nourrit trois villageois ; avant, le premier le mangeait seul) ; ce qui n'est pas entamé retourne
+  au garde-manger. Chacun goûte à tous les plats de la table : leur bonheur et celui de la variété comptent pour tous. Le
+  plat ouvert est compté à qui l'entame (le coût du tableau). Le jour, la journée met la table commune d'abord
+  (`villageois-journee.js` : même celui qui a sa table chez lui vient manger avec les autres).
+- **Ce qu'on voit** : la cuisinière du village fume tant qu'un cuisinier y travaille (`cuisineVillageAllumee`, la vapeur
+  existante de `vapeur.js`) ; les cuisiniers remuent la marmite à deux (le geste de la cuisine) et causent ; la tablée à
+  la table commune, à midi et le soir. **Aucun dessin nouveau** : la cuisinière, le four, la boîte, le réfrigérateur, la
+  table de jardin et ses chaises.
+- **L'interface** : en tête de la fenêtre de la boîte (et de celle du réfrigérateur), la carte du garde-manger commun :
+  « Le rendre commun » ou « Ne plus le partager », combien de jours de repas il contient (son énergie pour le besoin d'un
+  jour du village), la réserve visée (cinq boutons), ce que le travail y a déposé et ce que la cuisine y a fait
+  aujourd'hui, ce qui a été mangé hier soir, ce que la cuisine du village peut faire et ce qui lui manque surtout ; en
+  tête de la fenêtre de la Cuisine et du Four, la carte de la cuisine du village : « Cuisine du village » ou « Rendre à
+  la famille », qui cuisine (au travail, ses plats du jour), ce que le menu peut faire. Le tableau des villageois (I3d) a
+  sa ligne « 🏘️ Le garde-manger commun » (`ligneGardeManger` : qui cuisine, les plats faits, ce qui a été déposé, cuisiné,
+  mangé, en pièces au prix du port, la réserve en jours). L'aide de l'île (deux lignes) et le livre de l'île (l'entrée
+  « Le garde-manger commun et la cuisine du village »).
+- **La sauvegarde** : format 103 (`state.gardeManger = { commun, sorte, reserve, cuisines, journal }` : le journal garde
+  `JOURNAL` jours de ce qui a été déposé, cuisiné, mangé) ; la migration 102 → 103 (`reparerGardeManger`) répare ce qui est
+  abîmé et retire ce qui est illisible ; une partie d'avant n'est pas touchée. (I7f avance en parallèle : renuméroter à
+  l'intégration.) Les commandes `village.commun`, `village.reserve`, `village.cuisine`.
+- **Le joueur automatique** (`botGardeManger`, `botGarnir`) : dès le premier villageois, il rend commune la boîte (elle le
+  reste, le réfrigérateur acheté) ; sa cuisinière et son four deviennent la cuisine du village ; un cuisinier dès 3
+  villageois adultes, deux dès 6 (`CUISINIERS`), pris parmi les derniers arrivés qui ne font ni les champs ni un
+  commerce ; la cuisine ne se retire pas (le tableau ne la lui reprend plus) ; il garnit le garde-manger (les plats, ce
+  que la cuisine peut cuisiner et ce qui nourrit bien, puis le reste, en gardant `GARDE` 6 de chaque aliment pour sa
+  propre cuisine) au lieu d'y verser tout ; il moud la farine de la cuisine du village avant d'aller aux champs et ne la
+  prend pas pour lui.
+- **La simulation** (`node scripts/simulate.mjs --village`, graine 1, 80 nuits ; « palier 7 dès » : le palier 6 franchi) :
+
+  | | appliqué, avant | appliqué, après | minimal, avant | minimal, après |
+  |---|---|---|---|---|
+  | villageois aux nuits 40 / 60 / 80 | 3 / 3 / 3 | 4 / 4 / 6 | 4 / 4 / 4 | 2 / 4 / 5 |
+  | le 4ᵉ, le 5ᵉ, le 6ᵉ villageois | jamais | nuits 36, 69, 72 | nuit 39, jamais | nuits 51, 78, — |
+  | jours de repos (mal nourris) | 53 sur 180 (29 %) | 10 sur 249 (4 %) | 75 sur 222 (34 %) | 5 sur 204 (2 %) |
+  | commerces (le 2ᵉ) | 1 (jamais) | 2 (nuit 51) | 2 (nuit 58) | 2 (nuit 63) |
+  | paliers 5 / 6 / 7 dès | 32 / 37 / 69 | 31 / 34 / 68 | 34 / 50 / jamais | 36 / 46 / 75 |
+  | pièces à la nuit 80 | 156 | 433 | 4 802 | 259 (le port au niveau 3, payé) |
+
+  La réserve du garde-manger ne tombe plus à zéro après la nuit 50 (492 et 596 d'énergie à la nuit 80, deux à trois jours
+  de repas). Le palier 7 (dix villageois, deux commerces, trois proches, trois styles) reste en cours : deux commerces,
+  mais 6 villageois sur 10, 2 proches sur 3, 2 styles sur 3.
+- **Le verrou qui reste : le plafond du port** (`VILLAGE.ARRIVEE.PLAFOND`, pas changé). Au niveau 3 du port (payé vers la
+  nuit 68), il laisse venir 6 villageois ; le niveau 4 en laisse 9, **moins que les dix du palier 7** : le palier 7 demande
+  aujourd'hui le port au niveau 5 (24 000 pièces), hors de portée de la simulation même en 130 nuits (le joueur appliqué reste à 6 villageois de la
+  nuit 72 à la nuit 130, le port au niveau 3 ; le minimal y arrive à la nuit 81). Réglage proposé, à faire choisir : `PLAFOND` `{ "1": 2, "2": 5, "3": 10,
+  "4": 12, "5": 14 }` (mesuré en mémoire, pas écrit : le joueur appliqué a son 5ᵉ villageois à la nuit 51, son 7ᵉ à la nuit
+  78 ; le minimal son 5ᵉ à la nuit 54, son 6ᵉ à la nuit 78 ; le palier 7 toujours en cours à la nuit 80), ou au moins `"4": 10` pour que le niveau 4
+  suffise au palier 7. Le plafond des commerces (`ARTISANS.PLAFOND`, 4 villageois et le port 2 pour un second) n'est plus
+  le verrou : le second commerce ouvre aux nuits 51 et 63. Les proches et les styles du palier 7, le joueur automatique ne
+  les vise pas (I6b, I7a : à faire).
+- Éteint, le CSV de la simulation est le même octet pour octet que celui de 3201581.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, quatre villageois, la place et sa table commune, une petite maison où
+  l'on pose une cuisinière pour le village, celle du foyer restant à la famille) : la fenêtre de la boîte, « Le rendre
+  commun » (1,5 jour de repas) ; un appui sur la cuisinière, « Cuisine du village » ; la tâche donnée par la fiche ; à 10 h,
+  les deux cuisiniers devant la cuisinière, qui fume, causent (« Tu as l'œil, Marius ! ») ; la villageoise des champs
+  dépose ses patates au garde-manger ; à 17 h, 3 jours de repas (9 patates, 2 omelettes, 1 mayonnaise, 6 soupes) ; à midi,
+  les quatre attablés à la table commune ; la nuit, le village mange (2 omelettes, la mayonnaise, une soupe, une patate,
+  personne au repos) : au matin, 1,8 jour ; le tableau, sa ligne (« Eugène, Douce : 6 🍲 2 🍳 1 ; déposé 36, cuisiné 130,
+  mangé 74 ; 2 j »). L'appui réel sur la cuisinière ouvre sa fenêtre ; celui sur la boîte (au fond du foyer, derrière la
+  famille) a été remplacé par l'action de la page. Aucune erreur dans la console.
+- **Les tests** : `tests/engine/village-garde-manger.test.mjs` (18 : les réglages ; commun, ses refus, la réserve ; les dépôts
+  jusqu'à la réserve, le reste au coffre, rien à 0 ; les champs qui déposent ; le réfrigérateur acheté, la boîte qui reste
+  au village ; la fraîcheur, la péremption rétablie ; la cuisine du village, ses postes, sa tâche ; un cuisinier, ses plats,
+  la file libre ; deux cuisiniers ; la variété, la boîte pleine de sortes ; la tablée ; sans cuisine, comme avant ; le
+  tableau ; la journée à la table commune et la vapeur ; la sauvegarde ; les commandes ; le joueur automatique ; éteint).
+  `village-mercerie` lit le format courant.
+- Reste : le plafond du port et les objectifs du palier 7 (le réglage proposé) ; le joueur automatique et les proches,
+  les styles ; une part entamée qu'aucun villageois ne finit est perdue (ce qui reste d'un gratin) ; la boîte commune ne
+  tient que six sortes (c'est elle qui limite le village avant le réfrigérateur) ; la tablée n'a pas d'objet posé sur la
+  table (pas de nouveau dessin) ; les cuisiniers ne portent pas les plats à la table ; la famille ne s'attable pas avec le
+  village ; un repas apporté (I6b) ne prend toujours rien au garde-manger.
+
+## Les villageois : l'amitié (I6a, fait)
+
+Ce qui liait le joueur aux habitants des hameaux, rebranché sur les villageois, sans rien recopier : l'amitié d'un
+villageois est celle d'`amitie.js` (les mêmes paliers, `RECIT.PALIERS` ; les mêmes gains, `data/amitie.json`), sous le
+« hameau » `HAMEAU_VILLAGE` (`'village'` ; la clé : l'id du villageois, `state.amitie.pnj['vg-1']`). `trouverPnj` le
+trouve ; `parlerAmitie`, `offrir`, `amitieAvec`, `rendreDemande`, `inviter`, `servirRepas`, `souvenirParole` servent tels
+quels. Ce qui est propre à l'île est dans `js/engine/villageois-amitie.js` et `VILLAGE.AMITIE` (`data/village.json`).
+
+- **Les gains** : l'accueil (`ACCUEIL`, 10 points : « poli », la famille l'a accueilli), la première conversation du
+  jour (`AMITIE.PAROLE`, 2), les retrouvailles (`RETROUVAILLES` : revu après 7 jours sans échange, 3 de plus ; il le
+  dit, et le salut de la scène aussi), un cadeau par jour (`AMITIE.CADEAU` : adoré 8, aimé 4, neutre 1, détesté −4),
+  une demande honorée (`DEMANDES.AMITIE`, 6), un repas partagé (`AMITIE.INVITATION.REPAS`). Jamais de perte par
+  l'absence.
+- **Les goûts : tirés, pas « par tâche préférée ».** Ils sont tirés à son arrivée (`goutsTires` : parmi les listes de
+  tous les métiers adultes des hameaux et la liste commune, `AMITIE.GOUTS` de chaque sorte) et gardés avec lui
+  (`v.gouts`). Pourquoi : la tâche est choisie par le joueur et change d'un clic ; des goûts qui la suivraient
+  changeraient avec elle (un cadeau adoré hier, neutre demain) et feraient de la tâche un levier d'amitié ; il n'y a
+  pas encore de « tâche préférée » (elle viendra avec les traits, I6c) ; les goûts tirés ont le grand tas de tous les
+  métiers, deux villageois ne se ressemblent pas. Avant I6a, les villageois tiraient ceux du « jardinier ».
+- **Ce que l'amitié change**, sans cadence d'usine et sans bonus de production (un test : la même journée de travail,
+  ami intime ou simple connaissance) :
+  - **le salut au personnage** (`villageois-liens.js` `echangeVillageois(…, 'joueur')`) suit le palier :
+    `SOCIAL.JOUEUR.proche` et `intime`, plus chaleureux, avec ❤️ 🥰 ; `retrouvailles` ; un ami proche (ou qui garde un
+    présent) salue de plus loin (`CROISE.JOUEUR_AMI`, 56 px au lieu de 28) et plus longtemps ;
+  - **la famille est son amie** dans la vie sociale (`connaissance(state, id, 'famille')`) dès le palier
+    `FAMILLE_AMI` (« cordial ») ; avant, une connaissance (I3b+ disait : après 4 jours ; la scène suit maintenant ce
+    que le joueur a vécu avec lui) ;
+  - **il dit ses goûts** : dès `CONFIE.PALIER` (« cordial »), une fois sur `CONFIE.CHANCE` (0,35) à la première
+    conversation du jour, et chaque fois qu'un cadeau lui fait passer un palier (`confierGout` ; « Tu sais ce que
+    j'adore ? la tarte aux pommes ! ») ;
+  - **le présent d'un ami** (`AMITIE.RETOUR`) : la nuit, un ami « proche » ou plus en prépare un (15 %, 25 % intime),
+    un objet de son métier (`VILLAGE.AMITIE.METIERS` : la tâche donne le métier des hameaux dont il prend les
+    présents et les besoins ; sans tâche, le jardinier) ; il ne le pose pas devant la porte : il te le donne en main
+    propre, en te saluant (🎁) ou quand tu lui parles (`donnerPresent`) ; s'il attend, rien ne se perd ;
+  - **la tâche acceptée sans perdre d'humeur** dès `TACHE_SANS_HUMEUR` (« proche ») : `tacheSansHumeur` ; il n'y a
+    pas encore de tâche qu'il n'aime pas (les traits, I6c, la liront) ;
+  - **un artisan ami apprend de nouvelles pièces** : I5a lira `palierVillageois`.
+- **Parler** (la bulle de la carte, `parlerVillageois` après `paroleVillageois`) : son palier, sa jauge, le gain
+  (+2), « 🎁 Offrir » et « 📋 Sa fiche » ; le texte dit, dans l'ordre : le présent qu'il te donne, le souvenir d'un
+  repas partagé, sa demande (la première fois du jour, puis un appui sur deux), un goût confié, un sujet du moment
+  (`PROPOS_PART`, 0,4 ; pas au travail ni s'il attend son outil), sinon ce qu'il fait. Sa joie se voit (😊, son
+  visage sourit : `villageoisEmotion`) ; un palier passé, une notification.
+- **Offrir** (la fenêtre « Offrir » des habitants, `data-hameau="village"` : `offrirVillageois`) : l'objectif du jour
+  `cadeau_villageois` ; dans la scène, sa réaction (`PHRASES.cadeau`, 😊 ou 🤢), puis le goût qu'il confie
+  (`FarmStage.villageoisDit`).
+- **Les demandes** (`demandes.js` `demandesVillageoisNuit`, après `demandesNuit`) : chaque nuit, avec
+  `DEMANDES.CHANCE` (0,35), un villageois là depuis `DEPUIS` jours (2), sans demande ouverte, en fait une, selon sa
+  tâche (les `DEMANDES.BESOINS` du métier de `METIERS`) ; `MAX` (2) ouvertes pour le village, à part du compte des
+  hameaux ; annoncée au matin (`PHRASES.annonce`, le carnet 📜 dit « du village ») ; elle dure `DEMANDES.DUREE`
+  (7 jours) puis s'oublie sans rien coûter (B-1) ; honorée depuis « Offrir » ou sa fiche : l'amitié et un présent.
+- **Les invitations** (`invitations.js`) : `relationsInvitables` liste les villageois (tous connus ; leur « métier » :
+  leur tâche) ; le message passe « de porte en porte » (plus d'Achille quand on n'invite que des villageois) ; le jour
+  dit, le villageois vient lui-même (`invites.js` : il quitte sa journée, `m.invite`, part de là où il est, sinon de sa
+  porte, s'assoit, mange, remercie, puis reprend sa journée de là où il s'est levé) ; à table, ni calèche ni « chez
+  nous » (`PHRASES.table`). Il s'en souvient ensuite, comme un habitant.
+- **Les propos** (`proposVillageois`, `VILLAGE.PROPOS`) : `GARDES`, les sujets des habitants dits tels quels (la
+  ferme, la lune, la météo, le mois, ses goûts) ; réécrits pour le village : `ferme_cultures`, `ferme_poules`,
+  `ferme_maison`, `cadeau_merci`, `ami_proche`, `jours` ; nouveaux : `village_ami`, `village_voisin`,
+  `village_collegue`, `village_nouveau`, `village_depuis`, `port_bac`. Retirés (jamais dits par un villageois) : le
+  hameau, la calèche, les cousins, les visites et l'entraide des hameaux, la réserve, les projets, les fêtes, les
+  sujets d'enfant. Chaque phrase tient en une bulle (96 caractères au plus, un test).
+- **L'interface** : la fiche du villageois gagne son palier (la jauge, ce qu'il reste), ses goûts connus, le présent
+  qu'il garde, sa demande en cours (de quoi la rendre), « 🎁 Offrir » et « 🍽️ L'inviter à un repas » (la fenêtre
+  des évènements, lui coché) ; la liste des villageois dit le palier de chacun (🎁, 📜) ; la fenêtre des amis (💌)
+  commence par « 🏝️ Sur l'île » : les villageois, leur palier, un appui ouvre leur fiche (même sans compte en ligne).
+- **La sauvegarde** : format 91 ; la migration 90 → 91 (`reparerAmitieVillageois`) : chaque villageois a ses goûts
+  (tirés s'ils manquent) et sa fiche d'amitié (`ACCUEIL` s'il n'en avait pas) ; un présent illisible s'en va ; la
+  demande d'un villageois parti s'oublie. Les amitiés des hameaux ne sont pas touchées (I7f). Sans villageois, rien.
+- **Les tests** : `tests/engine/village-amitie.test.mjs` (l'arrivée et les goûts, parler et les retrouvailles, les
+  cadeaux et le goût confié, le présent en main propre, le salut et la famille, pas de bonus de production, les
+  demandes, les invitations et le souvenir, les propos et la bulle, la sauvegarde, éteint) ; `amitie`, `demandes`,
+  `invitations`, `propos` restent verts réglage éteint ; `village-social` suit la famille amie par l'amitié. Éteint,
+  le CSV de la simulation est le même octet pour octet.
+- Reste : le joueur automatique ne parle pas aux villageois et n'offre rien (il les invite quand il invite) ; les
+  tâches qu'il aime et les humeurs (I6c, fait) ; ~~les pièces de l'artisan ami (I5a)~~ (fait) ; le retrait du récit (l'échelle est
+  maintenant `AMITIE.ECHELLE`, I7c) ; le bot ne rend pas les demandes des villageois.
+
+## Les villageois : les liens entre eux (I6b, fait)
+
+Ce qu'I3b+ déduisait chaque jour (qui se connaît) est maintenant une affinité gardée, qui monte de ce que les
+villageois vivent ensemble ; elle change leurs habitudes, leur bonheur, leur travail, et deux proches peuvent fonder un
+foyer. Le moteur : `js/engine/liens.js` ; les réglages : `VILLAGE.LIENS` (`data/village.json`) ; la page :
+`js/ui/liens.js`. Tout reste doux (B-1) : les liens ne baissent jamais, personne ne se sépare.
+
+- **L'affinité** (`state.liens`) : entre deux villageois, un entier de 0 à 100, gardé dans une demi-matrice compacte
+  (`aff` : deux chiffres en base 36 par paire, dans l'ordre `ordre` des villageois ; 15 villageois : 210 caractères).
+  Chaque nuit (`liensNuit`, dans `runNight` après les tâches et avant la nuit des villageois : la journée lue est celle
+  qu'ils ont vécue), elle monte de `GAINS` : `ILE` 1 (ils vivent sur la même île), `VOISIN` 1 (boîtes aux lettres à
+  `VOISINE` 14 cases au plus), `POSTE` 4 (la même tâche, le même jour ; le même commerce s'y ajoutera avec I5a),
+  `TABLE` 1 (la même table au même repas), `SORTIE` 1 (une visite, un rendez-vous, une promenade, un banc à deux),
+  `FETE` 4 (le même repas du joueur, l'invitation d'I6a ; les fêtes d'I8a s'y brancheront), `FOYER` 3 (le même toit),
+  `ENTRAIDE` 5 (un repas apporté). Au-delà de `LENT` (45), un gain compte pour moitié : on devient proche plus lentement
+  qu'ami. Elle ne baisse jamais. Une paire qui n'a pas encore passé de nuit ensemble (un nouveau venu, une partie
+  d'avant I6b) vaut l'estimation d'I3b+ (`SOCIAL.CONNAISSANCE` : les jours ensemble et l'affinité tirée), la même que la
+  partie montrait : la migration ne change rien à l'écran ; un nouveau venu part de l'affinité tirée seule (0 à
+  `AFFINITE` 20).
+- **Les paliers** (`PALIERS`) : connaissance (10), camarade (25), ami (45), proche (75). `connaissance(state, a, b)`
+  rend toujours `{ degre, nom, score, jours }` (et `palier`, 0 à 4) : seul le corps de `scoreDe` a changé
+  (`scorePaire`) ; le degré lu par la journée, la scène et les répliques : 1 connaissance ou camarade, 2 ami, 3
+  proche (`degre >= 2` : des amis). Les répliques gagnent `proche`, `soiree`, `apporte`, `banc`.
+  Au même poste (le fauchage), deux villageois partis de 12 sont camarades après 2 nuits et amis après 5 (Chromium ;
+  en Node, partis de 16 : 2 et 5) ; les autres, sans poste commun, restent camarades sur le même temps. Au bois, quand
+  les arbres autour de leur maison sont abattus, le travail attend (I3c) et ils se lient moins vite.
+- **Ce que les liens changent** :
+  - **le bonheur** (`bonheurDesLiens`, lu par la nuit du villageois) : un ami au village monte sa cible de
+    `BONHEUR.AMI` (4), un proche de `BONHEUR.PROCHE` (6, le plus grand des deux) ; un repas apporté, de
+    `ENTRAIDE.BONHEUR` (6) cette nuit-là ;
+  - **le travail à deux** (`taches.js` `actionsDuJour`) : deux amis (`TRAVAIL.PALIER` 3, « ami ») à la même tâche, qui
+    y travaillent tous deux aujourd'hui, gagnent `TRAVAIL.ACTIONS` (1) action par jour à eux deux (celui des deux qui a
+    le plus petit id) ; dans une équipe plus grande, les paires d'amis se forment dans l'ordre des id ; la fiche et
+    « qui fait quoi » le disent (9 / 9 au lieu de 8) ;
+  - **l'entraide** (reprise de `voisins.js` : un foyer qui a eu faim reçoit à manger d'un ami) : qui se repose demain
+    (mal nourri ou sans lit) reçoit au repas de midi la visite de son meilleur ami (ami ou proche, ni au repos, ni
+    sous le même toit), qui lui apporte un repas (`planifierEntraide`, `liensFinDeNuit` ; `entraidesDuJour`) : il va
+    à sa porte avec 🍲, frappe, l'autre sort, ils causent (`REPLIQUES.apporte`). Ni la boîte ni le coffre ne paient ce
+    repas (il le partage de bon cœur) : du bonheur et de l'affinité, pas de nourriture en plus ;
+  - **les habitudes** (`villageois-journee.js`) : deux amis s'assoient côte à côte sur deux bancs voisins (le but
+    « banc », `SOCIAL.BUTS.POIDS.banc` 1,5, l'état « flaner », ils causent comme à table) ; à table, chacun prend le
+    siège le plus près d'un ami déjà assis ; la **visite du soir** (`visitesDuSoir`, `SOIR`) : après le souper, chacun,
+    avec `CHANCE` 0,35, va voir un ami (plutôt un voisin, plutôt le plus lié) ; il frappe, l'ami sort, ils causent
+    (`REPLIQUES.soiree`, 🌙), une heure au plus (`DUREE`), une visite par `PAR` (3) villageois au plus chaque soir ;
+    la promenade à deux d'I3b+ continue.
+- **Les foyers** : deux proches (`FOYER.PALIER`) peuvent vivre ensemble si le joueur le leur propose (le bouton
+  « 🏡 Leur proposer un foyer » de la fiche, `formerFoyer`, la commande `villageois.foyer`) dans une maison à deux lits
+  (une maison de villageois avec deux lits d'adulte que la famille ne prend pas, où n'habite personne d'autre
+  qu'eux : `maisonsPourFoyer`) : ils s'y installent, chacun son lit, mangent à sa table s'il y en a une ; l'autre
+  maison se libère (un nouveau venu pourra la prendre). `verifierMaisons` laisse à chacun son lit sous un toit
+  partagé ; rien ne les sépare. **L'enfant** : un foyer dont la maison a un lit d'enfant libre peut en accueillir un
+  si le joueur le propose (« 👶 Accueillir un enfant », `accueillirEnfant`, `villageois.enfant`) : il vient par le
+  prochain bac (le seul nouveau venu de ce passage ; la nuit l'installe d'un coup s'il n'est pas venu), dort dans le
+  lit d'enfant, mange (le besoin d'un enfant), ne travaille pas (`attribuer` refuse) et joue sur la place (le but
+  « jeu », 🪁) ; ses parents et lui sont proches dès son arrivée (`ENFANT.PARENTS` 85). Il ne compte pas dans le
+  plafond du port. La scène lui donne la planche d'un enfant.
+- **La scène** (`villageois-social.js`, `villageois.js`) : le banc à deux (assis, ils causent), la visite du soir et
+  le repas apporté se jouent comme une visite (il frappe, l'ami sort, ils se font face et causent), avec leur emoji
+  (🍲 🌙) gardé pendant la causerie ; le salut des amis et des proches (degré 3) comme avant. **Les bulles ne se
+  recouvrent plus** : celles de ceux qui parlent ensemble (un salut à trois, une table, une causerie) sont placées
+  l'une après l'autre dans l'image ; celle qui en chevauche une monte au-dessus (sinon passe dessous).
+- **L'interface** (`js/ui/liens.js`) : la fiche d'un villageois montre son foyer et ses liens (un portrait, le palier,
+  une jauge, du plus fort au plus faible ; un appui ouvre la fiche de l'autre), « 🏡 Leur proposer un foyer » pour un
+  proche (la liste des maisons qui conviennent, sinon ce qu'il faut bâtir), « 👶 Accueillir un enfant » ; la liste
+  des villageois mène à **la vue d'ensemble** (« 🤝 Les liens du village » : les foyers, puis les proches, les amis,
+  les camarades, deux portraits et une jauge par paire). Les avis de la nuit deviennent des notifications (« 😊 X et Y
+  sont devenus amis », « 💞 … proches », « 🏡 … s'installent ensemble », « 👶 … est arrivé par le bac », « 🍲 X a
+  apporté un repas à Y »).
+- **Les propos** (`VILLAGE.PROPOS`, `villageois-amitie.js`) : les sujets des habitants, rebranchés sur les liens de
+  l'île : `voisin` (son plus proche voisin qu'il connaît), `lien_ami` (son meilleur ami), `visite_recue`,
+  `visite_faite` (une visite du soir), `entraide_recue`, `entraide_donnee` (un repas apporté), et `foyer`, `enfant`.
+  Ce qui se passe rejoint les événements entre voisins (`voisins.js` `noterEvenement`, hameau « village », `RECENT`
+  jours, `EVENEMENTS` gardés) : rien n'est recopié.
+- **La sauvegarde** : format 92 ; la migration 91 → 92 (`reparerLiens`) pose des liens vides (les paires partent de
+  leur estimation à la première nuit) et répare ce qui est abîmé (un id ou un chiffre illisible, un foyer dont un
+  membre n'est plus là, une entraide vers personne). Sans villageois, rien.
+- **Les tests** : `tests/engine/village-liens.test.mjs` (l'affinité gardée et ses causes, une à une, jamais de baisse,
+  la moitié au-delà de LENT ; les paliers et le degré ; camarades puis amis au même poste ; le bonheur ; le travail à
+  deux ; l'entraide de bout en bout ; le banc à deux, à table près d'un ami, la visite du soir ; le foyer ; l'enfant ;
+  le déterminisme ; la sauvegarde et les commandes ; éteint). `village-social` suit les nouveaux paliers ;
+  `village-amitie` laisse dire aux villageois `voisin`, `lien_ami`, `visite_*`, `entraide_*` (ceux de l'île) ;
+  `voisins.test.mjs` est vert réglage éteint. Éteint, le CSV de la simulation est le même octet pour octet.
+- **Les mesures** (comme I3b+ : Chromium, téléphone émulé 412 × 915, DPR 2, processeur ralenti × 4 ; 15 villageois
+  installés, la place à 15 h ; trois fenêtres de 6 s ; deux paires de mesures avant → après, chaque fois une partie
+  neuve, donc une autre ferme ; la machine chargée, charge 2,3 à 2,9 sur 4 cœurs) : le système « villageois » coûte 1,64
+  et 2,05 ms par passage avant, 1,67 et 1,69 ms après (10 à 15 villageois à l'écran) : pas d'écart au-delà du bruit. Le
+  temps d'une image (médiane, 19 à 32 ms) varie surtout avec le soleil et le brouillard de la ferme tirée. Dans le
+  moteur (Node), la nuit des liens à 15 villageois (105 paires) relit la journée gardée ; la journée se recalcule une
+  fois par jour, comme avant (sa clé compte maintenant la signature des liens).
+- **Vérifié dans Chromium** (`jeu.html?village=1`, quatre villageois, la place avec deux bancs côte à côte, une maison
+  à deux lits) : deux villageois au fauchage, partis de 12, sont camarades après 2 nuits et amis après 5 (« 😊 Achille
+  et Garance sont devenus amis »), le travail à deux leur donne 9 actions au lieu de 8 ; ils mangent ensemble à la table
+  commune et causent ; l'une au repos, l'autre lui apporte un repas à midi (🍲, « Toc, toc ! », « Tiens, c'est pour
+  toi. Repose-toi bien. » — « Tu es trop gentil, Achille. ») ; deux amis assis côte à côte sur deux bancs ; une visite
+  du soir (« J'ai vu ta lumière, alors je passe. ») ; proches, la fiche propose un foyer, ils s'installent dans la
+  maison à deux lits et y dorment côte à côte ; la vue d'ensemble des liens ; quatre bulles à table ne se recouvrent
+  plus (avant : empilées l'une sur l'autre). Aucune erreur dans la console.
+- Reste : le même commerce (I5a) et les fêtes (I8a) comme causes de lien ; les traits et leurs affinités (I6c, fait) ; un
+  repas apporté ne nourrit pas (choix B-1 : pas de nourriture tirée de rien) ; l'enfant ne grandit pas ; à table, une
+  table de jardin d'une case ne laisse pas de « côte à côte » (ses quatre sièges se touchent tous) ; le joueur
+  automatique ne propose ni foyer ni enfant ; les liens en ligne (I9d).
+
+## Les prix des filières, la part et la bourse (I4, fait)
+
+Rendre l'économie des villageois juste et lisible : chaque transformation ajoute de la valeur, le villageois garde une
+part de ce qu'il produit, et sa bourse sert à quelque chose. Le calcul des prix : `js/engine/catalog.js` ; la part, la
+bourse et l'étal : `js/engine/bourse.js` ; les réglages : `VILLAGE.PRIX`, `VILLAGE.PART`, `VILLAGE.BOURSE`
+(`data/village.json`) et `coefPrix` sur les recettes (`data/recipes.json`).
+
+- **Le relevé, avant** (au prix écrit ; 125 recettes de prix : 93 de l'Atelier, 14 transformations des stations, et
+  les 18 recettes d'artisans posées ici, que le lot 5 fabriquera) : 67 recettes rendaient **moins** que leurs
+  entrées, 34 entre 100 et 129 %, 21 dans la fourchette, 3 au-dessus (le mur de bois 250 %, le carrelage 200 %).
+  Les filières de la fiche :
+
+  | Filière | Avant (entrées → sortie) | Après, sur l'île |
+  |---|---|---|
+  | bois → planche | 2 bois (4) → 4 : 100 % | 4 → 6 : 150 % |
+  | planche → porte | 3 planches (12) → 12 : 100 % | 18 → 24 : 133 % |
+  | planche → meuble (chaise, lit) | 2 planches (8) → 7 : 88 % ; 6 planches + 2 tissus (60) → 30 : 50 % | 12 → 17 : 142 % ; 100 → 145 : 145 % |
+  | minerai → lingot → outil | 4 minerais + 3 bois (14) → 15 : 107 % ; l'outil n'a pas de prix | 14 → 20 : 143 % (le lingot reste invendable : il sert à l'arbre et au port) |
+  | lingot → porte de fer, candélabre | 34 → 22 : 65 % ; 38 → 30 : 79 % | 46 → 67 : 146 % ; 48 → 72 : 150 % |
+  | laine → tissu → vêtement | 2 laines (24) → 18 : 75 % ; 3 tissus (54) + 20 de façon → 36 : 67 % (sans la façon) | 24 → 32 : 133 % ; 96 → 139 : 145 % |
+  | lait → fromage | 3 laits (24) → 31 : 129 % (un plat) ; 3 laits d'alpage (36) → 47 : 131 % | le plat garde son coefficient ; la tomme : 36 → 49 : 136 % |
+  | blé → farine → pain | 1 blé (2) → 2 : 100 % ; 2 farines + l'eau (5) → 8 : 160 % | 2 → 3 : 150 % ; 7 → 11 : 157 % |
+  | fibre → corde, paillasse ; paille | 3 fibres (3) → 3 : 100 % ; 2 → 3 : 150 % ; 10 fibres → 10 pailles (la botteleuse) | 3 → 4 : 133 % ; 2 → 3 : 150 % ; la paille : exception notée |
+  | l'équipement, les machines (brouette, charrette, tente, meule) | 34 à 52 % | 144 à 150 % |
+
+- **La règle** : sur l'île, toute transformation rend entre `VILLAGE.PRIX.FOURCHETTE` (130 et 160) % de ses entrées.
+  Chaque recette porte son `coefPrix` (une entrée : 135, deux : 145, trois ou plus : 150 ; le bois en planche,
+  plancher, mur, poteau : 145, pour que l'arrondi tienne) et le prix de sa sortie s'en déduit au chargement
+  (`prixDeLIle` : comme les plats, de recette en recette, à l'entier le plus proche, une pièce au moins). Les plats
+  gardent leurs coefficients, recalculés sur les prix de l'île de leurs ingrédients (le pain 8 → 11, la tarte aux
+  pommes 26 → 29). `VILLAGE.PRIX.ARTISANS` : le tissu, les gants, le manteau, la salopette, onze meubles (la chaise, le
+  lit, le canapé, l'armoire…), les recettes des commerces du lot 5, qui donnent dès maintenant leur prix de l'île.
+  `VILLAGE.PRIX.EXCEPTIONS` : la paille (une machine, une pièce l'unité, un prix ne descend pas sous 1). Les sorties
+  invendables (la ruche, les bacs, les meubles de jardin) et les recettes sans objet (les outils, les bêtes) n'en ont
+  pas. Après : **125 recettes sur 125 dans la fourchette, une fois les prix arrondis.** Le contrôle :
+  `scripts/lib/data.mjs` (un `coefPrix` hors de la fourchette, sans exception notée, est une erreur des données) et
+  `tests/test-data.mjs` (les prix arrondis, et les filières qui ne perdent plus rien).
+- **La voie choisie : des prix nouveaux seulement le réglage allumé.** `DATA.OBJETS[…].prix` reste le prix écrit ; les
+  prix de l'île sont à part (`DATA.PRIX_ILE`, ceux qui changent ; `prixIle(objet)`) ; `market.js`
+  `sellPrice(objet, state)` rend l'un ou l'autre selon `villageActif(state)` (la vente, l'achat, le cours) ; le code
+  du chantier (le port, le bac et ses commandes, le tableau, la fenêtre du port, l'étal) lit ceux de l'île. Éteint, le
+  CSV de la simulation est le même octet pour octet ; la bascule (I9h) n'aura qu'à faire des prix de l'île les prix
+  tout court. Rien à migrer (les prix ne se gardent pas) : la fenêtre de retour d'I7f le dira en une ligne.
+- **La part** (`VILLAGE.PART` = 30 %) : chaque nuit, une fois que tous ont mangé, chacun garde 30 % de la valeur de ce
+  que son travail a produit ce jour-là (au prix de l'île, moins ce qu'il a pris au coffre pour le faire : la cuisine
+  ne prend que sur ce qu'elle ajoute ; la tournée du port, rien : ses pièces sont celles du joueur). Elle est **prise
+  sur le produit, jamais sur la caisse** (B-1) : des objets de sa récolte quittent le coffre (l'inventaire, le
+  réfrigérateur, le blé du Silo) pour son panier (`v.panier`), ce qui ne se mange pas d'abord, jamais les graines
+  (sauf s'il n'a produit que cela) ; ce qui est déjà vendu ou mangé ne se reprend pas ; un reste plus petit qu'un
+  objet attend le lendemain (`v.reste`, jamais plus que l'objet le plus cher de sa journée). S'il a encore faim après
+  la boîte commune, il mange de son panier (il est à lui). Le panier se vend pour lui au passage suivant du bac (sa
+  bourse ; les objets partent dans les caisses). Le tableau (I3d) l'affiche dans le coût (`J.part`, « 👛 Sa part »).
+- **La bourse dépensée** (`VILLAGE.BOURSE`) :
+  - **l'étal du joueur** : un bloc fabriqué à l'Atelier (4 planches, 3 fibres), posé dehors, deux cases de large, un
+    seul. Un appui dessus ouvre sa fenêtre (`js/ui/etal.js`) : ce qui est en vente (6 sortes, 20 de chacune, au prix
+    de l'île ; qui l'aime, ❤️ s'il l'adore), ce qu'on y met de l'inventaire, les bourses du village. Chaque jour,
+    `achatsDuJour` décide qui y va : dans l'ordre des id, un objet chacun, ce qu'il adore, puis ce dont il a besoin
+    (`BESOINS` : un vêtement, un meuble pour sa maison, une fois chacun), puis ce qu'il aime, s'il peut le payer ;
+    jamais ce qu'il déteste. Sa journée lui donne un créneau de la fin d'après-midi devant l'étal (le but « etal »,
+    🛒, ce qu'il dit en arrivant : `BOURSE.PHRASES`) ; le moteur fait l'achat au milieu du créneau (`avancerAchats`,
+    à chaque pas de la ferme ; la nuit fait celui qu'on n'a pas vu). Ses pièces vont au joueur (« Étal : … », une
+    notification), son plaisir monte sa cible de bonheur cette nuit-là (adoré 6, besoin 4, aimé 3) ; ce qui se mange,
+    il le mange à son repas (`v.provisions`, avant la boîte : le tableau ne le compte pas) ; un vêtement, un meuble va
+    à ses affaires (`v.affaires`). Remis en vente dans la journée, un objet peut tenter un autre villageois ;
+  - les commerces : le lot 5 (I5a, fait : plus bas, le comptoir d'un commerce) ;
+  - **le bac** (`IMPORT`) : au passage du bac, qui a 120 pièces ou plus commande pour lui un objet qu'il adore (le prix
+    de l'île × 150 %, 30 au moins ; 4 au plus, en gardant 40 pièces pour l'étal) : l'argent quitte l'île ; l'objet
+    arrive au passage suivant (son plaisir, 5 ; ce qui se mange, il le mange).
+  - La fiche du villageois dit sa bourse (ses pièces, sa part qui attend le bac, ses derniers achats, sa commande).
+- **La sauvegarde** : format 93 (`v.panier`, `v.reste`, `v.achat`, `v.achats`, `v.affaires`, `v.provisions`,
+  `v.commande`, `v.plaisir`, `v.vente` ; `state.etal`). La migration 92 → 93 (`reparerBourse`, `reparerEtal`) remet à
+  vide ce qui est illisible et garde la bourse. Les commandes `etal.mettre` et `etal.reprendre`.
+- **Le dessin** (`scripts/batiments/etal.py`, `assets/meuble_etal_<vide|garni>.png`, 32 × 40, vu de haut à 45°) : le
+  comptoir de planches (10 rangées de face, 10 de plateau), deux poteaux, l'auvent rayé rouge et crème (son dessus
+  raccourci, son lambrequin à festons), l'ardoise des prix ; vide, une cagette dont on voit le fond et un torchon
+  plié ; garni, un panier de pommes, une cagette de carottes, un pot de miel et une meule entamée. 733 couleurs
+  (vide) et 759 (garni) ; un dessin en aplats de la même chose en aurait 20 à 25.
+- **Le joueur automatique** (`botEtal`, `SIMULATION.VILLAGEOIS.ETAL`) : dès qu'un villageois est là, il fabrique et
+  pose l'étal, et y met chaque jour 2 de ce qu'un villageois aime (sans passer sous 10 dans l'inventaire, 20 de ce qui
+  se mange). Une correction en passant (le réglage allumé seulement) : il ne remplit plus le réfrigérateur de baies —
+  des milliers, la famille et les villageois n'y trouvaient que cela (cinq baies par repas, la moitié de leur faim).
+  Dès que la part changeait le chemin de la partie simulée, il achetait le réfrigérateur et les villageois se
+  reposaient un jour sur deux.
+- **L'équilibre** (`node scripts/simulate.mjs --village` et une mesure jour par jour du tableau, graine 1, 80 nuits ;
+  le rapport : ce que sa tâche rapporte, moins ce qu'elle prend au coffre, sur son coût, le repas et la part) :
+  - joueur appliqué : **les champs 2,07** (87 pièces par jour de travail, 16 de repas, 26 de part ; 2,87 avant I4,
+    sans part) : bien placé, dans la fourchette 1,5–2,5 ; les bêtes 0,23, le fauchage 0,27, la cueillette 0,43 : mal
+    placés (le joueur simulé soigne ses bêtes lui-même ; la fibre vaut une pièce), **sous** leur coût, comme avant I4
+    (0,22, 0,27, 0,41) ;
+  - joueur minimal : la pêche 1,20, les champs 0,69, les bêtes 0,63 (il ne laboure presque pas : le villageois des
+    champs a peu à récolter) ;
+  - la part sur la partie : 2 010 pièces (appliqué), 540 (minimal) ; dépensées : 45 achats à l'étal (162 pièces, au
+    joueur) et 8 imports (900 pièces, hors de l'île) ; 611 restent dans les bourses à la nuit 80 (474 chez celle des
+    champs) ;
+  - les pièces en caisse à la nuit 80 : 2 727 (appliqué : la borne d'I0b, 2 fois la dépense des 20 dernières nuits,
+    vaut 1 412 : constat en échec ; il a payé le niveau 2 du port tôt, nuit 34, et n'atteint pas le niveau 3 avant la
+    nuit 80, faute de matériaux, pas de pièces) ; 242 (minimal, le port au niveau 3). Avant I4 : 1 842 (borne 3 646)
+    et 3 483. Le palier 6 : nuit 62 (69 avant) et 44 (62 avant).
+  - la part à 20 % : les champs 2,51 ; à 40 % : la partie s'appauvrit (les champs à 0,81). 30 % est gardé.
+  - les prix des niveaux du port (1 800 / 5 000 / 11 000 / 24 000) : pas changés. Le niveau 3 à 3 500 ou 4 000 ne
+    change rien chez le joueur appliqué (ce sont ses matériaux qui manquent), le minimal le paie de toute façon vers
+    la nuit 75 ; les niveaux 4 et 5 sont hors de portée des 80 nuits simulées : à revoir quand les commerces (lot 5)
+    rapporteront.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, trois villageois, quatre nuits jouées par le moteur : des parts, un
+  bac passé) : l'étal posé près de la place, garni ; en fin d'après-midi, un villageois quitte la place, s'arrête
+  devant l'étal, tourné vers lui, et dit « Ça, je le prends : ratatouille 🍲. Voilà les pièces. » ; au milieu de son
+  créneau, la notification « 🛒 Arthur a acheté 🍲 ratatouille à ton étal : +18 » (une autre fois : « Théo a acheté
+  🍚 riz au lait à ton étal ❤️ : +16 ») ; le tableau (la part dans le coût, « 👛 Sa
+  part » jour par jour), la fiche (« 👛 Bourse : 67 · sa part (30 % de ce qu'il produit) : rien en attente ; ⛴️ Attend
+  du bac : 2 × soupe de légumes »), la fenêtre de l'étal ; l'étal le soir. Aucune erreur dans la console.
+- **Les tests** : `tests/engine/village-bourse.test.mjs` (la part prise sur le produit, jamais sur la caisse, pas de
+  dette, le reste ; la nuit et le tableau ; le bac, le panier vendu, l'import et ses provisions ; l'étal, ses refus,
+  les commandes ; qui y va, son créneau, l'achat au milieu, ses pièces au joueur, un par jour ; la nuit, le plaisir,
+  ce qu'il mange ; le joueur automatique ; la sauvegarde ; éteint) ; `tests/test-data.mjs` (la fourchette, les
+  filières, les refus) ; `cuisine.test.mjs` (les plats sur l'île, la vente selon le réglage) ; `village-tableau`
+  (les prix de l'île) et `colorants` (la recette du mortier, son `coefPrix`) adaptés.
+- Reste : les commerces (lot 5 : la bourse y dépensée, les recettes d'artisans fabriquées ; I5a, fait pour la forge) ; les tâches mal placées
+  restent sous leur coût (une proposition : compter la fibre et la paille à ce qu'elles font gagner — la botte, la
+  corde —, ou donner plus d'actions au fauchage et à la cueillette ; c'est I3c qui les règle) ; la part fixe (selon
+  l'amitié, les traits : I6c) ; ce qui est en vente à l'étal ne périt pas ; l'étal repris, ce qu'il portait reste en
+  vente (la fenêtre permet de le reprendre) ; les meubles achetés vont aux affaires du villageois, pas encore dans sa
+  maison ; la bourse du meilleur producteur monte encore (474 à la nuit 80) : `IMPORT.MAX` est le réglage.
+
+## Les commerces d'artisans : le socle et la forge (I5a, fait)
+
+Un villageois qui a pratiqué une filière peut en faire son métier : il ouvre un commerce, achète ses matières au coffre
+de la ferme, transforme, vend au comptoir. Tout reste artisanal (D5) : un établi, un artisan, quelques lots par jour,
+pas d'électricité. Le moteur : `js/engine/artisans.js` ; les réglages : la section `ARTISANS` (`data/village.json`) ;
+la page : `js/ui/commerce.js` (la fenêtre du commerce, la fiche, les notifications) ; les dessins :
+`scripts/batiments/forge.py`.
+
+- **Le socle** : une sorte de commerce est une entrée de `ARTISANS.COMMERCES` (`forge` : son nom, son icône, la tâche de
+  sa filière `tache`, son établi `etabli` et son enseigne `enseigne` (des blocs), son geste et son emoji, ses phrases
+  `ENVIE` et `PHRASES`, ses `RECETTES` `{ entrees, sortie, palier }`, ses `CLIENTS`). Le local : une pièce close du genre
+  « commerce » (`blocs.js` : l'établi et le comptoir seulement, un de chaque) et l'enseigne dehors, à `ENSEIGNE` (2)
+  cases au plus d'une porte (`locaux`, `localDe`). Le comptoir (`comptoir`) est commun à toutes les sortes. L'artisan a
+  pour tâche celle de son commerce : `v.tache` = la sorte, que `taches.js tacheDef` lit dans `ARTISANS.COMMERCES`
+  (`tacheCommerce` : elle n'est pas dans `TACHES.LISTE`, le joueur ne la confie pas) ; son poste est devant l'établi
+  (le lieu « commerce », `postesCommerce`) ; une action est un lot (`lotCommerce`) ; la journée, la nuit, le journal du
+  villageois, le tableau suivent comme pour toute tâche. **I5b et I5c n'ont qu'à ajouter une sorte** (ses données, ses
+  deux blocs, leurs dessins, ses recettes).
+- **Ouvrir (D15)** : trois conditions, puis la décision du joueur.
+  - **l'envie** : chaque nuit (`artisansNuit`), une journée de travail compte un jour de pratique de sa tâche
+    (`v.pratique`) ; à `JOURS` (10) jours de la tâche de la filière, l'envie naît (`v.envies`) : une notification au
+    réveil, une ligne de la chronique (le type `envie`, « Albin rêve d'ouvrir une forge. »), sa bulle quand on lui parle
+    (`ENVIE`, à la première conversation du jour puis une fois sur deux : `envieAParler`, `parlerVillageois`), la marque
+    « 💭 Envie » sur sa fiche. Elle ne s'éteint pas (B-1), même s'il change de tâche ;
+  - **l'affinité** : l'amitié avec le joueur au palier `AMITIE` (2, « cordial » ; celui du palier 6 de l'île) ;
+  - **le local** bâti, libre.
+  La fiche dit chaque condition (✅ ou ⏳, et ce qui manque : « encore 7 points d'amitié », « l'enseigne du forgeron
+  dehors, à 2 cases au plus de la porte ») et porte le bouton « Ouvrir la forge » ; rien ne presse, aucune minuterie
+  cachée. À l'ouverture (`ouvrirCommerce`) : le nom proposé et la ligne de la chronique (I7g `commerceOuvert`, « Albin
+  ouvre la forge des Saules »), écrit sur l'enseigne (`nomDe` ; renommé dans la fenêtre du commerce, « 🎲 » propose un
+  autre nom), la fête de l'ouverture (I8a `fixerFeteOuverture`, le premier jour libre), le villageois devenu artisan.
+  Le palier 6 (`commerces`) compte `state.commerces` (le contrat d'I7a gardé).
+- **Le travail** : `LOTS` (3) lots par jour, un de plus tous les `ANCIENNETE` (20) jours de travail, `LOTS_MAX` (5) au
+  plus ; ni l'argent ni une machine ne les font monter, ni le travail à deux. Un lot : d'abord une commande du joueur,
+  sinon la première recette connue (l'ordre des données : il fond d'abord) dont il a moins de `STOCK` (4) au comptoir.
+  Ses matières : son stock d'abord (ses lingots), puis le coffre de la ferme (l'inventaire du joueur, en lui laissant
+  `GARDE` (2) de chacune), **achetées de sa bourse au prix de vente de l'île : les pièces vont au joueur** (« Forge des
+  Saules : 4 minerai de fer, 3 bois » dans les Comptes). Bourse vide, il ne fait que les commandes. **L'amitié lui
+  apprend des pièces** (le `palier` de chaque recette, `recettesConnues`) : au palier « cordial », le lingot de fer, les
+  clous, la lame d'outil ; « proche », les charnières et le lingot de cuivre ; « intime », le lingot d'or.
+- **La vente** :
+  - au joueur, dans la fenêtre du commerce (au prix de vente ; le lingot, invendable au port, a le sien au comptoir) :
+    ses pièces vont dans la bourse de l'artisan ;
+  - aux villageois (`achatsCommercesDuJour`) : un achat par jour au plus, ce qu'ils adorent, puis ce dont ils ont besoin
+    (`CLIENTS` : une lame d'outil tous les `ENTRETIEN` (7) jours pour qui tient un outil), puis ce qu'ils aiment, s'ils
+    peuvent le payer ; leur journée leur donne un créneau de la fin d'après-midi dans la pièce, devant le comptoir (le
+    but « commerce », 🏪, ce qu'ils disent en arrivant : `PHRASES_COMPTOIR`) ; le moteur fait l'achat au milieu du
+    créneau (`avancerCommerces` ; la nuit, celui qu'on n'a pas vu) ; une notification ;
+  - au bac : à son passage (`commercesAuBac`, `bac.js`), ce qui dépasse `BAC` (1) de chaque pièce qui se vend au port
+    part dans ses caisses, pour la bourse de l'artisan. (La fiche disait « la navette » : c'est le bac qui l'emporte,
+    sans tournée ; la tournée des villageois reste celle du joueur.)
+  - **à façon** : le joueur apporte la matière (elle quitte son inventaire à la commande) et paie `FACON` (25) % du prix
+    de la pièce (`FACON_MIN` 2 au moins) ; ou **payée d'avance** (le prix de la pièce ; l'artisan achète la matière au
+    coffre). `COMMANDES` (3) en attente au plus ; elles passent avant le reste ; la pièce entre dans l'inventaire (une
+    notification).
+- **L'Atelier du joueur** : les clous, les charnières et les lames sont des recettes de l'Atelier (`commerce: "forge"`),
+  qui ne s'y font plus **seulement quand une forge ouverte les sait** (`atelier.js recetteDebloquee`, `c.connues`) : sans
+  forge, le joueur fait tout lui-même ; une forge qui ne sait pas encore les charnières les laisse à l'Atelier. Elles
+  entrent dans le comptoir (4 planches, 4 clous) et l'enseigne (2 planches, 2 charnières, 2 clous) : le premier
+  commerce se bâtit avec les pièces de l'Atelier, les suivants avec celles de la forge. Prix de l'île : lingot de fer
+  20, clous 7 (×4 par lingot, 140 %), charnière 14 (×2, 140 %), lame 32 (145 %).
+- **Le journal et le tableau** : chaque commerce garde ses `JOURNAL` (7) jours (`c.journal` : lots, ce qu'il a fait,
+  acheté, payé à la ferme, ses ventes au joueur, aux villageois, au bac, la façon). Le tableau des villageois a une
+  ligne « 🏪 Les commerces » (`tableauVillage().commerces`, `bilanCommerce`) : fait, payé à la ferme, vendu, en vente,
+  sa bourse ; dans la ligne de l'artisan, son produit est ce qu'il a payé à la ferme (`J.produit.pieces`, comme la
+  tournée du port) et il ne prend pas de part (son commerce le paie).
+- **L'enseigne** : la carte écrit le nom du commerce sur sa planche (`BLOCS_CARTE.enseigne` « commerce »). I8a : dès le
+  palier « Un village où il fait bon vivre », la fenêtre propose les lettres débloquées (`couleursEnseigne` : dorées,
+  de lune ; `choisirLettres`).
+- **Les dessins** (`scripts/batiments/forge.py`, vus de haut à 45°, la lumière en haut à gauche, un contour d'un pixel,
+  sans ombre portée) : l'enclume et son foyer (32 × 46 : le foyer de pierres, sa margelle dont on voit le dessus, la
+  cuvette du feu vue d'en haut — le fond plus clair vers l'avant, la paroi gauche éclairée, la droite dans l'ombre —, la
+  cheminée de briques et sa gueule, le soufflet ; le billot aux cernes et l'enclume d'acier poli, la bigorne, le
+  marteau) éteint, et allumé en deux images de braises qui alternent (`enclume_foyer_braise_0` et `_1` : la lumière du
+  feu teinte la margelle, la gueule, le flanc de l'enclume) ; le comptoir (32 × 26 : les panneaux encadrés, le plateau,
+  le registre, la sébile, la clochette) ; l'enseigne du forgeron (32 × 46 : le poteau sur son socle, la potence de fer
+  forgé et son enclume découpée, la planche pendue, son dessus raccourci, une enclume peinte sous le nom). **Couleurs
+  comptées** : enclume et foyer 497 (allumé 566 et 567), comptoir 313, enseigne 296 (un dessin en aplats des mêmes
+  aurait 20 à 30 couleurs). La scène (`chantier.js`) : la forge d'un commerce ouvert rougeoie (ses braises alternent,
+  `BLOCS_CARTE.forge`, devenu `BLOCS_CARTE.commerces` avec I5b et I5c), et le soir sa lueur passe dans le voile, dedans et à travers le toit. **Le geste « forger »**
+  (`habitants.js`, `forge`) : les cases de la pioche, trois coups courts, de profil, devant l'enclume ; pas de planche
+  nouvelle.
+- **La sauvegarde** : format 99 (`state.commerces` ; `v.pratique`, `v.envies`, `v.commerce`, `v.achatCommerce`,
+  `v.entretien`). La migration 98 → 99 (`reparerCommerces`, `reparerArtisan`) : un commerce d'une sorte inconnue s'en
+  va, son stock et ses commandes sont bornés, un commerce sans son artisan est fermé, un artisan sans commerce reprend
+  « sans tâche » ; une partie d'avant n'est pas touchée. Les commandes du moteur `commerce.ouvrir`,
+  `commerce.acheter`, `commerce.commander`, `commerce.lettres`.
+- **Le joueur automatique** (`bot.js`, `botCommerce`, `SIMULATION.VILLAGEOIS.COMMERCE`) : dès le palier 4, il met un
+  villageois à la pierre (le dernier arrivé hors des champs ; le tableau ne le lui reprend pas), lui parle chaque jour,
+  bâtit le local dès que l'envie est née (les clous et charnières de l'Atelier d'abord), décide l'ouverture ; ouvert, il
+  garde au coffre 12 minerais de fer et 8 bois (des bruts qu'il « va chercher plus loin », comptés comme les autres :
+  `materiauxFournis`). Mesure (`node scripts/simulate.mjs --village`, graine 1, 80 nuits) : **la simulation dépasse le
+  palier 6**. Joueur appliqué : l'envie à la nuit 33, la forge ouverte à la nuit 34, le palier 6 franchi à la nuit 68
+  (le port au niveau 3 venait en dernier), le palier 7 en cours dès la nuit 69 (il attend dix villageois — le port en
+  laisse venir 6 au niveau 3 — et deux commerces, I5b, I5c) ; joueur minimal : l'envie 32, la forge 36, le palier 6
+  franchi à la nuit 80. La forge lui rapporte ce qu'elle paie pour sa matière : ≈ 760 et 880 pièces de plus sur la partie
+  (`gain_autres` 980 → 1 739, 1 180 → 2 063) ; elle fait 4 lots par jour après 20 jours, en vend surtout au bac (328
+  pièces sur sa dernière semaine), sa bourse monte (284 à la nuit 80). Personne ne lui achète de lame dans la partie
+  simulée (les villageois à outil y sont rares : les champs, les bêtes). Le palier 5 du minimal passe de la nuit 41 à 51
+  (un villageois à la pierre dès le palier 4). Éteint, le CSV est le même octet pour octet.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, trois villageois) : au réveil, « 💭 Paul rêve d'ouvrir une forge : va
+  lui parler, et regarde sa fiche. » ; sa bulle (« Une forge à moi, avec une enclume : j'y pense souvent. ») ; sa
+  fiche (les trois conditions, le local manquant) ; le local bâti (dehors, le toit et l'enseigne ; dedans, l'enclume, le
+  foyer, le comptoir) ; la décision (« Paul ouvre la forge du Vieux Chêne ! La fête de l'ouverture : … ») ; le forgeron à
+  l'enclume (le geste, un GIF), ses lots (trois lingots de fer dans la journée, la matière payée au joueur : 42 pièces) ; la forge le soir,
+  dehors (sa lueur sur le toit) et dedans ; un villageois qui vient chercher une lame au comptoir (« Pour moi : lame d'outil 🔪, s'il te plaît. »,
+  la notification) ; la fenêtre du commerce (ce qu'il fait aujourd'hui, en vente, lui commander),
+  un achat du joueur, une commande à façon ; la fenêtre sur un téléphone ; la ligne du tableau ; la chronique. Aucune
+  erreur dans la console.
+- **Les tests** : `tests/engine/village-artisans.test.mjs` (l'envie, comptée la nuit, sa ligne et sa bulle, qui ne
+  s'éteint pas ; les conditions, ce qui manque, la décision, ce qu'elle fait ; le poste, `LOTS`, l'ancienneté, pas
+  l'argent ; les matières de sa bourse, son stock d'abord, `GARDE`, bourse vide ; l'amitié et les recettes ; la vente
+  au joueur, aux villageois, au bac ; la façon et les commandes payées ; l'Atelier jamais bloqué ; le tableau ; la
+  sauvegarde ; les commandes ; le joueur automatique ; éteint).
+- Reste : fermer un commerce, changer d'artisan (un commerce sans artisan n'existe que par une sauvegarde abîmée) ; la
+  ~~mercerie (I5b)~~ (fait : plus bas) et les autres commerces (I5c) ; le même commerce comme cause de lien entre villageois (I6b) ; les
+  pièces de la forge dans d'autres recettes de l'Atelier (aujourd'hui : le comptoir et l'enseigne ; la porte de fer, la
+  brouette, la charrette pourraient les prendre sur l'île) ; la forge n'achète que ce que le coffre a (le joueur ne
+  choisit pas ce qu'il lui laisse, au-delà de `GARDE`) ; l'enseigne n'a qu'un dessin (pas de variante de bois) ; la
+  fumée de la cheminée de la forge ; un villageois à la pierre trouve vite les rochers de la ferme épuisés (sans
+  rochers, pas de jour de pratique : l'envie tarde).
+
+## La mercerie (I5b, fait)
+
+La filière de la laine, sur le socle d'I5a : un villageois qui s'occupe des bêtes ouvre une mercerie, file, tisse, teint
+et coud, quelques pièces par jour. Les réglages : `ARTISANS.COMMERCES.mercerie`, `ARTISANS.TEINTURE`, `ARTISANS.CHAUD`
+(`data/village.json`) ; le moteur : `js/engine/artisans.js` (rien de propre à la mercerie : ce qu'elle demandait est
+ajouté au socle par petites fonctions) ; les dessins : `scripts/batiments/mercerie.py`.
+
+- **La sorte** : la tâche de la filière `betes` (dix jours aux bêtes : l'envie), l'établi « rouet et métier à tisser »
+  (`rouet_metier`, deux cases), l'enseigne de la mercerie (`enseigne_mercerie`), le comptoir commun ; le geste « filer »,
+  l'emoji 🧶, ses phrases (`ENVIE`, `PHRASES`, `PHRASES_COMPTOIR` : une sorte peut avoir les siennes au comptoir) ; à
+  l'Atelier, l'établi (6 planches, 2 bois, 4 fibres) et l'enseigne (2 planches, 2 charnières, 2 clous), dans la
+  catégorie « Commerces ». **Les recettes en trois étapes** (`etape`) : filer (2 laines → 2 fils), tisser (2 fils → 1
+  tissu), coudre (le manteau chaud, 3 tissus ; la salopette, 2 tissus et un lingot de fer, au palier « proche » ; les
+  gants, 1 tissu ; le tablier, 8 fibres, comme à l'Atelier ; les tapis rouge et bleu, 2 tissus et leur colorant, au
+  palier « proche »). `LOTS` (3) par jour, toutes étapes confondues. L'ordre des recettes est celui où il les choisit :
+  il coud dès qu'il a le tissu, sinon il tisse, sinon il file ; la laine de la tonte devient un manteau le troisième jour
+  (jour 1 : 4 fils, 1 tissu ; jour 2 : 2 tissus, 2 fils ; jour 3 : le manteau).
+- **Les prix (I4)** : `VILLAGE.PRIX.ARTISANS` gagne le fil (1 laine → 1 fil, 130 %) et le tissu se fait de 2 fils (135 %) :
+  laine 12 → fil 16 → tissu 43 → manteau 187, gants 60, salopette 154, tapis teints 131 (le tissu valait 32 : les
+  meubles de tissu de l'île montent avec lui, le lit 177, le canapé 230). Chaque recette de la mercerie rend dans la
+  fourchette, une teinte comprise ; chaque étape vaut plus que la précédente. Le jeu éteint garde ses prix écrits.
+- **La teinture** (`TEINTURE`, `colorantPourTeindre`, `prixTeint`) : une recette marquée `teinte` (les quatre vêtements)
+  prend un colorant de plus quand l'artisan en a un (son stock, sinon le coffre au-delà de `GARDE`, acheté de sa bourse
+  comme le reste) : celui qu'il a le plus. Aucune matière nouvelle : les six colorants du mortier. La pièce teinte se
+  garde au comptoir avec sa couleur (`c.teintes = { objet: { couleur: n } }`, une part de `c.stock`) et vaut son prix
+  plus `COEF` (145) % du colorant (le manteau rouge : 193). Le joueur n'achète que les pièces sans teinte (la famille n'a
+  pas de vêtements de couleur : hors périmètre) ; les teintes sont pour les villageois. Les tapis teints sont ceux qui
+  existaient (le rouge, le bleu).
+- **Les vêtements des villageois** : au comptoir, ce qui lui manque (`VILLAGE.BOURSE.BESOINS`, un vêtement, un meuble pour
+  sa maison) est un besoin, comme à l'étal (`envieAuComptoir` lit `besoinDe`) ; un vêtement acheté va à ses affaires. Un
+  vêtement de corps teint (`TEINTURE.CORPS` : le manteau, la salopette, le tablier), il le porte : le haut de sa tenue
+  prend la couleur (`TEINTURE.COULEURS[].tissu`, une couleur des tenues de `FAMILLE.PROFIL.APPARENCE.TISSU` : rouge,
+  orange, jaune, vert, ciel, lilas). Un villageois qui a un manteau chaud (`ARTISANS.CHAUD`, `auChaud`) ne s'abrite plus
+  sous la pluie : il reste à son poste dehors (`villageois-journee.js sousLaPluie`).
+- **Ce qu'elle garde pour son travail** (`pourSonTravail`) : une sortie qui est l'entrée d'une autre de ses recettes (le
+  fil, le tissu) ne part pas au bac ; les pièces sans teinte partent d'abord, puis les teintes à leur prix. (La forge n'y
+  perd rien : ses lingots ne se vendent pas au port.)
+- **Sans mercerie, le joueur n'est jamais bloqué** : l'Atelier, le chantier allumé, tisse (2 laines → 1 tissu) et coud
+  les gants, le manteau et la salopette comme la couture d'avant I7c (sans façon à payer) ; ces recettes, et le tablier,
+  sont marquées `commerce: "mercerie"` : une mercerie ouverte qui les sait les fait désormais (`atelier.js`, comme la
+  forge pour les clous).
+- **Deux artisans** (le socle d'I5a ne le permettait pas : un commerce, un `qui`) : une sorte qui a `DEUX` (la mercerie ;
+  la forge se tient seule) peut avoir un second artisan (`c.second`) quand le village compte `DEUX.VILLAGEOIS` (6)
+  villageois : un villageois qui a l'envie de cette sorte et l'amitié du joueur (`conditionsSecond`) la rejoint, le
+  joueur le décide sur sa fiche (« Rejoindre la mercerie… », `rejoindreCommerce`, la commande `commerce.rejoindre`).
+  Chacun fait ses `LOTS` (le double, sans machine), le titulaire les étapes `TITULAIRE` (filer, tisser), le second
+  `SECOND` (coudre) (`etapesDe`) ; seul, le titulaire fait tout. Une bourse, celle du titulaire (`caisseDe`) : elle paie
+  la matière, reçoit les ventes. Le second a son poste à côté du premier, devant l'établi (`postesCommerce` rend les deux
+  postes, le sien d'abord ; la journée de l'équipe les partage). La fenêtre du commerce dit « Paul file et tisse, Léa
+  coud » et compte les lots des deux.
+- **Les changements au socle** (pour I5c, qui avance en parallèle) : `commerceDuVillageois` (le titulaire ou le second),
+  `secondDe`, `artisansDuCommerce`, `deuxDe`, `conditionsSecond`, `rejoindreCommerce`, `etapesDe`, `caisseDe` ;
+  `recettesDe` lit `etape` et `teinte` ; `couleursTeinture`, `prixTeint`, `teintesDe`, `colorantPourTeindre`,
+  `pourSonTravail`, `offresDuComptoir` (en vente pièce par pièce : `enVenteAuCommerce` rend `teinte`) ;
+  `acheterAuComptoir(…, teinte)` ; `phraseComptoir(…, sorte)` ; `commercesPourLaFiche` rend `rejoindre`. Les données d'un
+  établi : `ouvert` (son image, le commerce ouvert : `js/ui/stage.js`). La carte : `BLOCS_CARTE.forge` devient
+  `BLOCS_CARTE.commerces` (par dessin d'établi : ses images, au hasard ou dans l'ordre — `suite` —, et une `lueur`
+  facultative) ; la forge rougeoie et luit le soir comme avant, le rouet de la mercerie tourne, sans lueur (rien n'y
+  brûle) ; la fenêtre d'un appui sur un bloc de commerce et sa hauteur (`stationAt`) se lisent de `BLOCS_CARTE.fenetres`.
+- **Les dessins** (`scripts/batiments/mercerie.py`, vus de haut à 45°, la lumière en haut à gauche, un contour d'un
+  pixel, sans ombre portée ; le comptoir est celui de la forge) : le rouet et le métier à tisser (32 × 46 : le métier de
+  frêne, ses montants, sa traverse où sèchent quatre écheveaux teints aux tons exacts de `PALETTES` tissu_rouge,
+  tissu_bleu, tissu_moutarde, tissu_vert, les lames et leurs lisses, la nappe de la chaîne vue d'en haut et la navette,
+  la toile tissée, la poitrinière, dessous l'ensouple et les pédales dans l'ombre ; le rouet de noyer, son banc, la roue
+  de frêne dont on voit le dessus de la jante et, entre les rayons, le sol à travers, la manivelle, la bielle et la
+  pédale, l'épinglier et sa bobine, la quenouille et son nuage de laine) au repos, et le rouet qui tourne en quatre images
+  (`rouet_metier_0` à `_3` : les rayons d'un quart, la bielle et la pédale, la bobine, le fil qui file) ; l'enseigne de la
+  mercerie (32 × 46 : le poteau, la potence, la bobine de fil rouge qui la coiffe, son dessus raccourci ; la planche où la
+  carte écrit le nom, au même endroit que chez le forgeron ; une pelote bleue piquée de son aiguille). **Couleurs
+  comptées** : le rouet et le métier 509 (qui tourne : 515 à 518), l'enseigne 290 (un dessin en aplats aurait 20 à 30
+  couleurs). **Le geste « filer »** (`habitants.js`, `villageois-travail.js`) : assise, d'après les sièges (les cases
+  « assis »), de dos devant l'établi ; les deux images assises alternent lentement, elle reste assise entre deux gestes et
+  quand elle cause.
+- **La sauvegarde** : format 101 (`c.second`, `c.teintes` ; 100 est celui d'I5c, écrite en même temps). La migration
+  100 → 101 (`reparerCommerces`, `reparerArtisan`) :
+  un second absent, ou d'une sorte qui se tient seule, s'en va et reprend « sans tâche » ; les teintes d'une couleur
+  inconnue s'en vont, celles qui dépassent le stock sont bornées ; une partie d'avant n'est pas touchée.
+- **Le joueur automatique** (`bot.js`, `SIMULATION.VILLAGEOIS.COMMERCES`, une liste : la forge dès le palier 4, puis la
+  mercerie dès le palier 6) : il prépare un commerce à la fois (`botUnCommerce`), entretient ceux qui sont ouverts
+  (`botEntretenirCommerce`) ; ne prend jamais un artisan pour candidat ; achète à la forge (ou lui commande) les clous et
+  les charnières que l'Atelier ne fait plus ; garde au coffre la laine de la mercerie ouverte (`GARDER` : 12) au lieu de
+  la vendre au port ; et, sa caisse sous `AVANCE` (60) pièces, lui commande des pièces payées d'avance (une artisane qui
+  ouvre la bourse vide ne peut pas acheter sa laine). Mesure (`node scripts/simulate.mjs --village`, graine 1, 80 nuits) :
+  la forge comme avant (joueur appliqué : l'envie à la nuit 33,
+  la forge à 34, le palier 6 en cours dès 38) ; l'envie de la mercerie naît à la nuit 47 (la bergère, dix jours aux
+  bêtes), la mercerie ouvre à la nuit 50 (minimal : 58, le palier 6 franchi à 50) ; le palier 6 de l'appliqué est franchi
+  à la nuit 70 (69 avant I5b : un villageois de moins aux bêtes). La mercerie fait peu : une dizaine de journées de lots
+  sur trente (du fil, du tissu, une paire de gants), car la boîte commune est vide dès la nuit 50 et la mercière, mal
+  nourrie, se repose la plupart des jours (c'était déjà vrai avant I5b pour le troisième villageois) ; le palier 7 reste
+  en cours (dix villageois). Éteint, le CSV est le même octet pour octet.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, trois villageois puis six) : la bergère et son envie, sa fiche (les
+  trois conditions), le local (dehors : l'enseigne écrite ; dedans : le rouet et le métier, le comptoir), la décision
+  (« Mathurin ouvre la mercerie du Coq ! »), la mercière au rouet (le geste, un GIF), les trois jours (le premier, 4 fils et
+  un tissu ; le deuxième, 2 tissus et 2 fils ; le troisième, le manteau teint en rouge, 193 pièces, « pour les
+  villageois » dans la fenêtre), un villageois qui vient le chercher au comptoir (« Pour l'hiver : manteau chaud 🧥,
+  s'il te plaît. », la notification) et le porte dehors (le haut de sa tenue, rouge), la fiche d'une seconde villageoise
+  (« Rejoindre la mercerie »), la fenêtre à deux, les deux artisans assis devant l'établi, leurs six lots de la nuit ; la
+  fenêtre sur un téléphone ; le soir. Aucune erreur dans la console.
+- **Les tests** : `tests/engine/village-mercerie.test.mjs` (la sorte, ses étapes, ses prix dans la fourchette, une teinte
+  comprise, la filière qui vaut plus à chaque étape ; de bout en bout, trois jours d'artisan jusqu'au manteau teint ; la
+  teinture, le joueur et les teintes ; l'achat d'un villageois, sa tenue, la pluie ; le bac et ce qu'elle garde ; à deux,
+  les étapes, les postes, la caisse ; l'Atelier jamais bloqué ; la sauvegarde 100 → 101 ; le joueur automatique ;
+  éteint). `equipement.test.mjs` et `colorants.test.mjs` restent verts.
+- Reste : le chapeau de laine de la fiche n'existe pas (un vêtement neuf : hors périmètre) ; le tablier de la mercerie
+  est de fibre, comme à l'Atelier (de tissu, il vaudrait moins que sa matière) ; la famille ne porte pas de couleur (le
+  joueur n'achète pas les teintes) ; un tapis ne se teint qu'en rouge ou en bleu (les deux qui existent) ; le second ne
+  quitte pas le commerce (comme le titulaire, I5a) ; le joueur automatique ne prend pas de second ; la faim du village à
+  partir de la nuit 50 dans la simulation (la boîte commune vide : c'était déjà là avant I5b) laisse la mercière au repos
+  la plupart des jours ; un vêtement ne s'use pas (un villageois n'en rachète jamais).
+
+## La scierie, la boulangerie, la fromagerie (I5c, fait)
+
+Trois commerces de plus sur le socle d'I5a, presque sans code neuf : trois entrées de `ARTISANS.COMMERCES`
+(`data/village.json`), leurs six blocs (`data/recipes.json`), leurs dessins (`scripts/batiments/commerces.py`), leurs noms
+(`NOMS.COMMERCES` les avait déjà). Le moteur reste `js/engine/artisans.js` ; la page, `js/ui/commerce.js`.
+
+- **La règle commune** : **un commerce ne retire rien au joueur** : il peut toujours scier (l'Atelier : 2 bois → 1
+  planche), cuire (son four) et cailler (les chaînes, la vocation productive) lui-même ; un commerce fait **mieux ou
+  autre chose, en petite quantité** (ses lots du jour, D5). Aucune recette de l'Atelier n'est retirée par ces trois
+  commerces (`commerce:` n'est posé sur aucune). La forge d'I5a reste l'exception notée : ses clous, ses charnières, ses
+  lames quittent l'Atelier quand une forge ouverte les sait (des pièces nées avec elle).
+- **La scierie-menuiserie** (`scierie`, la filière du bois ; le menuisier, à l'établi) : des planches (4 bois → 2
+  planches, 150 % : la fourchette d'I4 ne permet pas un meilleur rendement que l'Atelier, il « fait mieux » en sciant à la
+  place du joueur), puis **les 36 meubles** de `MEUBLES` : leurs recettes sont celles de `VILLAGE.PRIX.ARTISANS`, qui
+  portent maintenant `commerce: "scierie"` et leur palier d'amitié (`recettesDesPrix` : une recette de commerce peut
+  venir des prix de l'île ; les 19 meubles qui n'en avaient pas en ont reçu une : les tableaux, les armoires, les bas de
+  cuisine, la poubelle, le lampadaire, le coffre, les dix plantes en pot — une planche ou une pierre pour le pot,
+  l'engrais du compost). Le vendeur « hameau » n'est plus lu sur l'île (`ateliersDuHameau` y rend déjà rien) : le
+  menuisier est la seule source de meubles. Un meuble marqué `commande` ne se fait que **sur commande du joueur** ; huit
+  (la chaise, le chevet, la table basse, la commode, la bibliothèque, les trois tapis : ceux de `BOURSE.BESOINS`) ont
+  `stock: 1` et garnissent son comptoir **pour les maisons des villageois** (le client « maison » : un villageois dont
+  la maison en a besoin l'achète, il va à ses affaires). Commandé ou acheté par le joueur, un meuble **entre dans sa
+  maison** comme un meuble acheté (`donnerAuJoueur` → `meubles.js ajouterMeuble` : compté pour le bonheur de la
+  famille, l'objet à poser) ; la commande est refusée si la maison en a déjà assez, commandes en attente comprises
+  (`refusMeubleJoueur`, la fenêtre le dit). Les styles (`styles.js`) ne changent pas. Le geste « scie » (les cases de la
+  hache, des allers-retours).
+- **La boulangerie** (`boulangerie`, la filière des champs ; le boulanger, au four à bois) : le pain (5 farines → 2 pains,
+  147 %), les tartes aux pommes (palier 2), aux myrtilles et aux fraises (3), le pain d'épices (4) — les plats du four,
+  au même prix de l'île que ceux du joueur. **Le boulanger nourrit le village** : le client « repas » (un villageois qui
+  n'a plus de provisions) vient chercher son pain après le travail ; il va à ses provisions (`rangerAchat`, comme à
+  l'étal) et il le mange à son repas de la nuit (`bourse.js mangerSesProvisions`, avant la boîte commune) : un plat du
+  four, qui compte dans ses plats et son bonheur (`bonheur.js platsBonheur`, `villageois.js nuitDe`) ; la notification
+  dit « (pour son repas) ».
+- **La fromagerie** (`fromagerie`, la filière des bêtes ; le fromager, à la cave) : la **faisselle** (2 laits → 1, 140 %)
+  et la **tomme de cave** (2 faisselles → 1, 150 %), deux objets neufs du chantier (`village: true`, leurs prix de l'île
+  par `VILLAGE.PRIX.ARTISANS`) ; le fromage frais et le fromage d'alpage des chaînes restent à la vocation productive.
+  **L'affinage** : une recette `cave: 4` met son lot en cave (`c.cave`, `CAVE` 6 meules au plus) ; chaque nuit
+  (`affinerCaves`, dans `artisansNuit`, comme les nuits du tonnelet) une nuit de plus ; affinée, la tomme passe au
+  comptoir, ou au joueur s'il l'a commandée (« sortie de cave »). Ce qui est en cave compte pour garnir le comptoir.
+  La fenêtre dit la cave (« prête dans 3 nuits, pour toi »).
+- **Le socle, ce qu'il gagne** (de petites fonctions, rien de remanié) : `recettesDesPrix` et les champs d'une recette
+  (`commande`, `stock`, `cave`) ; `donnerAuJoueur`, `refusMeubleJoueur` ; `besoinAuComptoir` (les clients « outil »,
+  « repas », « maison ») et `rangerAchat` ; `affinerCaves` ; `plafondCommerces` (une quatrième condition, `plafond`) ;
+  `reparerCave`. Le texte de la fenêtre lit `ou` (« à l'enclume », « au four à bois »).
+- **Le plafond** (`ARTISANS.PLAFOND`) : le k-ième commerce ouvert attend `VILLAGEOIS[k-1]` villageois adultes et le port
+  au niveau `PORT[k-1]` : `{ VILLAGEOIS: [1, 4, 6, 8, 10, 12], PORT: [1, 2, 3, 3, 4, 5] }` (un commerce dès le premier
+  villageois — la forge du joueur automatique ne bouge pas —, deux à quatre villageois et le port 2, trois à six et le
+  port 3, quatre à huit ; huit villageois, c'est le port au niveau 4 : quatre commerces). La fiche le dit avec les trois
+  autres conditions (« Un 2e commerce attend 4 villageois (3 aujourd'hui) et le port au niveau 2 (1 aujourd'hui). »).
+- **La lueur** : le four du boulanger s'allume comme la forge, de façon générale. Écrit en même temps qu'I5b, qui avait
+  fait de même pour le rouet ; l'intégration garde une seule table (voir plus bas) : l'établi porte `ouvert` (son image
+  le commerce ouvert : `enclume_foyer_braise_0`, `four_boulanger_feu_0`), que `stage.js` lui donne ;
+  `BLOCS_CARTE.commerces` (`config.js`, un réglage par dessin : ses images, au hasard ou à la suite — `suite` —, sa
+  `lueur` du soir et son halo) remplace `BLOCS_CARTE.forge` ; `chantier.js` (`etablisAnimes`) anime l'un et l'autre, et
+  pose leur lueur dans le voile le soir.
+- **Les dessins** (`scripts/batiments/commerces.py`, vus de haut à 45°, la lumière en haut à gauche, un contour d'un
+  pixel, sans ombre portée ; la toile, la maçonnerie, les matières et l'enseigne de `forge.py`, la houle des flammes de
+  `four.py`) : la scie de long et l'établi (32 × 40 : le plateau de quatre planches vu d'en haut, la ceinture, les pieds,
+  la tablette du bas et ses planches empilées, l'ombre dessous ; la presse, le rabot, les copeaux ; la scie à cadre
+  penchée dans la coupe, sa corde tordue, sa lame ; la sciure) ; le four à bois et l'étal à pains (32 × 46 : le dôme de
+  briques modelé comme une sphère, sa cheminée, le socle et le tablier dont on voit le dessus, la gueule avec sa sole
+  plus claire vers l'avant, la paroi gauche éclairée et la droite dans l'ombre ; les bûches ; l'étal, ses deux tablettes,
+  les miches grignées, les baguettes, le panier ; éteint, et quatre images de feu dont la lumière teinte le tablier, le
+  dôme, les pains) ; la cave d'affinage (32 × 46 : la niche voûtée, le mur du fond dans l'ombre fraîche, les parois, le
+  sol de la cave plus clair vers l'avant, trois tablettes et leurs meules — dessus, flanc, une entamée —, le seau de
+  caillé) ; trois enseignes (l'enseigne de la forge, `enseigne(coiffe, embleme, peinture)` : une scie et un rabot, un
+  croissant et une miche, une meule et une part). **Couleurs comptées** : scie de long 415, four 522 (allumé 578 à 582),
+  cave 718, enseignes 292, 306, 307 (en aplats : 20 à 30). La forge redessinée par la même fonction : ses images
+  identiques octet pour octet.
+- **La sauvegarde** : format 100 (`c.cave`) ; la migration 99 → 100 relit les commerces (`reparerCommerces`, la cave
+  réparée : une recette à cave de la sorte, des entiers, `CAVE` au plus) ; une partie d'avant n'est pas touchée.
+- **Le joueur automatique** : inchangé (la forge seule ; I5b ajoutera plusieurs sortes). Mesure (`node scripts/simulate.mjs
+  --village`) : le même CSV qu'avant, octet pour octet : le palier 6 franchi à la nuit 68, le palier 7 en cours dès la
+  nuit 69 (il attend dix villageois et deux commerces : le joueur automatique n'en ouvre qu'un). Éteint, le CSV est le
+  même octet pour octet.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, huit villageois, le port au niveau 4) : la fiche du futur menuisier
+  (les quatre conditions, le plafond compris) et l'ouverture ; les trois commerces ouverts (leurs locaux, dedans et
+  dehors) ; le four du boulanger le soir (sa lueur sur le toit ; dedans, le feu) ; une table commandée au menuisier (« Ta
+  commande est prête : table, dans ton inventaire (à poser dans la maison). ») ; un villageois au comptoir du boulanger
+  (« Pain 🍞 ! Voilà les pièces. », « … a acheté pain à la boulangerie du Pont (pour son repas) »), qui le mange à son
+  repas de la nuit ; la cave du fromager (deux tommes, « prête dans 3 nuits ») ; le tableau, trois lignes « commerce ».
+  Aucune erreur dans la console.
+- **Les tests** : `tests/engine/village-commerces.test.mjs` (les trois sortes et leurs blocs ; les recettes des quatre
+  commerces dans la fourchette ; la scierie, ses planches, ses meubles au comptoir ou commandés ; un meuble commandé dans
+  la maison du joueur, jamais de trop ; un villageois qui achète un meuble pour sa maison ; le pain du boulanger acheté
+  et mangé ; la faisselle, la tomme en cave, ses nuits, la commande qui sort de cave ; le plafond ; trois commerces dans
+  un village de huit, trois lignes au tableau ; la sauvegarde 99 → 100 ; éteint).
+- Reste : le joueur automatique n'ouvre que la forge (le palier 7 attend I5b) ; un meuble acheté par un villageois va à
+  ses affaires, pas encore dans sa maison (I4) ; la scierie ne rend pas plus de planches que l'Atelier (la fourchette) ;
+  les plantes vertes chez le menuisier (la fiche voulait les 36 meubles) ; le boulanger cuit sans bois (son four n'en
+  prend pas) ; une seule forme d'enseigne par sorte ; les icônes de la faisselle et de la tomme sont des emoji simples.
+
+## La mercerie et les trois autres commerces ensemble (I5b sur I5c, l'intégration)
+
+I5b et I5c ont été écrites en parallèle sur le socle d'I5a ; chacune l'a fait évoluer de son côté. L'intégration garde
+tout ce que chacune apporte :
+
+- **Une seule table d'animation des établis** : `BLOCS_CARTE.commerces` (`js/carte/ferme/config.js`), par dessin
+  d'établi : ses `images` au hasard ou à la suite (`suite`), et une `lueur` du soir facultative (`allume`, `vacille`,
+  la flaque `sol`, le `foyer`, le `halo`). La forge (au hasard) et le four du boulanger (à la suite) rougeoient le jour
+  et luisent le soir ; le rouet de la mercerie tourne, sans lueur. `BLOCS_CARTE.foyers` (I5c) n'existe plus, ni
+  `foyerDe` : `chantier.js etablisAnimes` sert aux deux. Côté données, un seul champ sur l'établi : `ouvert`, l'image du
+  commerce ouvert (`enclume_foyer_braise_0`, `four_boulanger_feu_0`, `rouet_metier_0`) ; le champ `allume` d'I5c
+  (« braise », « feu ») est retiré, ce qu'il faisait passe par `ouvert` et la table. `stationAt` : l'établi et
+  l'enseigne d'un commerce restent hauts (I5c), ses blocs se lisent de `fenetres` (I5b).
+- **La sauvegarde** : format 101. La migration 99 → 100 reste celle d'I5c (la cave) ; celle d'I5b devient 100 → 101 (le
+  second artisan, les teintes), et son test suit (`village-mercerie`). `reparerCommerces` répare les deux.
+- **Les recettes de la mercerie** restent dans `ARTISANS.COMMERCES.mercerie.RECETTES` (la façon d'I5b) : leurs étapes,
+  leur teinte, leur ordre (il coud, sinon il tisse, sinon il file), leurs lots (2 laines → 2 fils) et le tablier de
+  fibre n'iraient pas dans `VILLAGE.PRIX.ARTISANS` sans changer un prix ou l'ordre. Les entrées de `PRIX.ARTISANS` du fil,
+  du tissu et des vêtements ne portent pas `commerce` : elles ne donnent que les prix. Aucun doublon : `recettesDe`
+  prend une fois chaque id (celle de `RECETTES` l'emporte sur celle des prix). Les tapis rouge et bleu sont des deux
+  côtés à dessein (le menuisier les a par `PRIX.ARTISANS`, la mercière les coud) : les tests des deux fiches le veulent.
+  Une recette porte maintenant tous les champs : `commande`, `stock`, `cave`, `etape`, `teinte`.
+- **Le comptoir** : `besoinAuComptoir` (I5c) dit pour qui c'est : « outil », « repas », « maison », et « vetement »
+  (I5b : un vêtement qui lui manque, `besoinDe`) ; `envieAuComptoir` le lit. `rangerAchat` range ce qui se mange à ses
+  provisions, un meuble dont il avait besoin et tout vêtement à ses affaires ; `porterTeinte` habille. Les achats
+  gardent la teinte (I5b) et le « pour » (I5c) ; la notification dit « (pour son repas) », « (pour sa maison) » ou
+  « (il n'en avait pas) ». Le joueur n'achète que les pièces sans teinte, et pas un meuble de trop (`refusMeubleJoueur`).
+  Un lot de l'artisan suit les deux : les recettes à commande ou à cave (I5c), ses étapes à deux et la teinture (I5b).
+- **Le plafond d'I5c touche la mercerie** : un 2e commerce attend quatre villageois et le port au niveau 2. Le test du
+  joueur automatique d'I5b (`village-mercerie`) prend donc quatre villageois et le port 2.
+- **Le joueur automatique** prend la liste `COMMERCES` d'I5b (la forge, puis la mercerie) ; aucune sorte d'I5c n'y est
+  ajoutée : elle ne changerait rien, le plafond ne laissant pas ouvrir un 2e commerce. Mesure (`node scripts/simulate.mjs
+  --village`, graine 1, 80 nuits) : la forge comme avant (l'envie à la nuit 34, ouverte à 35) ; le palier 7 en cours dès
+  la nuit 70 (appliqué ; le minimal : le palier 6 dès 51) ; la mercerie n'ouvre plus (la bergère a son envie dès la nuit
+  48, mais le village reste à trois villageois : le quatrième n'arrive pas, la boîte commune vide ; à 130 nuits non
+  plus). Le palier 7 demande dix villageois et deux commerces : il reste en cours. Éteint, le CSV est le même octet pour
+  octet que celui d'I5c.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, huit villageois, le port au niveau 4 : le plafond en tient quatre) :
+  les quatre commerces ouverts dans la même partie (la mercerie par la fiche, les quatre conditions), leurs établis
+  animés le jour (la forge, le four, le rouet : leurs images défilent), la forge et le four allumés le soir (le feu
+  dedans, la lueur sur le toit), un manteau teint en rouge acheté par un villageois qui n'en avait pas (« … a acheté
+  manteau chaud, teint en rouge à la mercerie du Puits (il n'en avait pas) : 193 💰 pour l'artisan. », le haut de sa
+  tenue rouge), la mercerie tenue à deux (« Benoît rejoint la mercerie du Puits : ils la tiennent à deux. », les deux
+  au rouet, huit lots la nuit). Aucune erreur dans la console.
+- **Les tests** : `village-artisans`, `village-commerces` (et la table de la carte : chaque établi qui a une image
+  `ouvert` y est animé, la forge et le four luisent, pas le rouet ; une seule table), `village-mercerie`.
+- Deux retouches : le joueur qui achète au comptoir ôte ses pièces du stock sans toucher aux teintes (I5b les
+  comptait de travers) ; la fenêtre d'un commerce tenu à deux compte les lots d'un artisan pour dire s'il en gagnera un.
+- Reste : le joueur automatique n'ouvre pas de 2e commerce dans la simulation (le plafond, le village de trois) ; les
+  tapis teints chez deux artisans.
+
+## Les villageois : les traits de personnalité (I6c, fait)
+
+Chaque villageois a son caractère : deux ou trois traits qui changent ses horaires, ce qu'il dit, les postes où il est
+bien et ceux avec qui il s'entend, sans mimique ni animation nouvelle (D6). Le moteur : `js/engine/traits.js` ; les
+réglages : `TRAITS` (`data/village.json`). Aucun code n'est propre à un trait : chaque effet est un réglage, que
+`traits.js` lit et combine pour les autres modules. Tout reste doux (B-1).
+
+- **Les traits** (`TRAITS.LISTE`, douze) : matinal / couche-tard, bavard / réservé, travailleur / flâneur, casanier /
+  curieux, gourmand, rêveur, soigneux, taquin ; chacun son nom aux deux genres, son icône, ce qui le montre (`dit`).
+  `NOMBRE` [2, 3] (trois une fois sur deux, `TROIS`), tirés à l'arrivée de la graine de la partie et du rang
+  (`tirerTraits`, `traitsTires`) : jamais deux opposés, jamais la liste d'un autre villageois ; gardés (`v.traits`).
+  Un enfant n'en a pas.
+- **Ce qu'un trait change** :
+  - **l'horaire** (`HORAIRE` : des décalages du lever, de la sortie, des repas, de la rentrée, du coucher, ajoutés au
+    retard de chacun ; `FLANER`, `CHEZ_LUI`, `TRAVAIL` : début, fin, pauses ; `BUTS` : le poids des buts des sorties ;
+    `SOIR` : la visite du soir ; `villageois-journee.js`) : le matinal se lève à 6 h, sort vers 6 h 30 (les autres à
+    7 h 30 et plus) et se couche avant les autres ; le couche-tard sort après 8 h, s'attarde au souper jusqu'à
+    20 h 15 passé, se couche le dernier et rend visite le soir deux fois plus ; le gourmand est à table à 11 h 30 et en
+    part après les autres ; le travailleur est à son poste de 7 h 30 à 17 h sans pause (le même nombre d'actions) ; le
+    flâneur flâne et s'assoit ; le casanier reste chez lui un créneau libre sur trois (l'état « rentrer ») ; le curieux
+    va voir le jardin, les bêtes, les ouvrages, le port ; le bavard rend visite et retrouve ses amis plus souvent ;
+  - **la parole** : `PAROLE.PART` (le bavard dit un sujet du moment deux fois plus souvent, le réservé 2,5 fois moins),
+    `PAROLE.BREF` (la bulle du réservé ne dit ni le salut ni son humeur), `PROPOS` (le poids des sujets : le gourmand
+    parle de plats et de ses goûts, le rêveur de la lune et du temps, le curieux du bac et des nouveaux venus ;
+    `propos.js` `direSujet` tire au poids, le même tirage), `PHRASES` (3 ou 4 par trait, dites une fois sur
+    `PAROLE.CHANCE` 0,3 quand on lui parle, plutôt d'un trait qu'on ne connaît pas ; `{plat}` : un plat qu'il aime),
+    `REPLIQUES` (le bavard, le réservé, le curieux, le gourmand, le taquin : une fois sur `PAROLE.REPLIQUE` 0,3 en
+    croisant un autre, une réplique à eux, l'emoji 😄 ou 😜) ; au travail, à la tâche qu'il aime ou boude, une phrase
+    de `PAROLE.POSTE` une fois sur deux ;
+  - **la scène** (`SCENE.CAUSE`, `liensPourLaCarte` `cause`, `villageois-social.js`) : un salut dure 1,6 fois plus avec
+    un bavard (0,6 avec un réservé), une causerie relance plus vite ;
+  - **les postes** (`POSTE` : une tâche aimée, une boudée par trait ; aimée et boudée par deux traits : rien) : la nuit,
+    s'il y a travaillé, sa cible de bonheur monte de `POSTES.AIME` (6) à la tâche qu'il aime, baisse de `POSTES.BOUDE`
+    (3) à celle qu'il boude, sauf un ami proche du joueur (`tacheSansHumeur`, I6a) ; le bonheur ne baisse jamais (B-1),
+    le rendement ne change pas (un test : les mêmes actions) ;
+  - **les affinités** (`ACCORDS`, 17 paires : deux matinaux, un bavard et un taquin, un réservé et un rêveur…) : chaque
+    nuit, `ACCORD.GAIN` (1) d'affinité de plus par paire accordée, `ACCORD.MAX` (2) au plus (`liens.js` `liensNuit`) ;
+    aucune ne fait baisser l'affinité.
+- **La découverte** : la fiche dit « ? » pour chaque trait à découvrir. Un trait se révèle par ce qu'on voit : une
+  fois par seconde, la carte dit qui est dans la vue (le geste « vus », `observerTraits`) ; celui qui fait ce que montre
+  un de ses traits (`SIGNE` : des états, des buts, des heures ; le matinal dehors avant 7 h 30, le couche-tard au souper
+  après 20 h, le gourmand à table avant midi, le travailleur à son poste avant 8 h ou après 16 h 30, le flâneur qui
+  flâne, le casanier chez lui en journée, le curieux qui regarde, le bavard qui cause, le réservé seul au puits) compte un
+  indice par jour, révélé à `DECOUVERTE.VU` (3) jours ; ou par ce qu'il dit : ses phrases et ses répliques, à
+  `DECOUVERTE.DIT` (2) fois (le rêveur, le soigneux et le taquin ne se révèlent qu'ainsi). Révélé, une notification
+  (« 🌅 Tu as remarqué que Hélène est matinale : c'est noté dans sa fiche. »), et la fiche le note (`v.traitsConnus`,
+  `v.indices`).
+- **L'interface** : la fiche du villageois gagne une ligne « ✨ Caractère » (les traits connus, un « ? » par trait à
+  découvrir, et la tâche qu'il aime, celle qu'il boude, une fois connues) ; la liste des tâches et le tableau (I3d)
+  marquent discrètement la tâche « 💚 à son goût » ou « 🙄 pas son goût » (sur un téléphone, l'icône seule).
+- **La sauvegarde** : format 94 ; la migration 93 → 94 (`reparerTraits`) donne aux villageois d'avant leurs traits
+  (tirés de la graine et de leur rang ; aucun connu) et répare ce qui est abîmé (des opposés, une liste en double, un
+  trait connu qu'il n'a pas, un indice illisible). Sans villageois, rien.
+- **Les tests** : `tests/engine/village-traits.test.mjs` (le tirage sur 4 graines × 30 villageois ; l'horaire, la
+  flânerie, le casanier, le travailleur et les mêmes actions ; la parole, le poids des sujets, les phrases, les répliques,
+  la bulle courte ; le bonheur aux postes, l'ami proche ; les accords ; la découverte, la fiche, le tableau ; la
+  migration ; éteint) ; chaque effet est relu après un changement de son réglage. `village-journee` et `village-liens`
+  vérifient l'horaire commun et les gains un à un sans traits. `build-data` vérifie les traits (un opposé réciproque,
+  des tâches qui existent, des accords, des phrases d'une bulle).
+- **Le joueur automatique** : `node scripts/simulate.mjs` (éteint) : le CSV est le même octet pour octet ; `--village` :
+  code 0 ; les villageois vivent autrement (leurs horaires, leur bonheur aux postes, les accords), la partie aussi : le
+  chapitre 6 vient à la nuit 60 au lieu de 69 (appliqué) et 55 au lieu de 62 (minimal), et le joueur appliqué, qui n'a
+  plus rien à acheter après la nuit 60, garde 3 502 pièces à la nuit 80 (1 842 avant ; un constat du rapport, pas un
+  échec). Le lien entre les traits et ce chapitre n'est pas démêlé.
+- **Les mesures** (comme I6b : Chromium, téléphone émulé 412 × 915, DPR 2, processeur ralenti × 4 ; 15 villageois, la
+  place à 15 h ; trois fenêtres de 6 s ; la machine très chargée par d'autres travaux, charge 5 à 14 sur 4 cœurs) : le
+  système « villageois » coûte 1,75 et 3,93 ms par passage avant (4 et 13 villageois à l'écran), 2,46 et 4,34 ms après
+  (11 et 13 à 15 à l'écran) : à nombre égal à l'écran, l'écart (≈ 10 %) reste dans le bruit de cette machine. Ce que la
+  fiche ajoute à la scène : un appel par seconde (`vus`, la position de ceux qui sont dans la vue) et un facteur lu par
+  salut.
+- **Vérifié dans Chromium** (`jeu.html?village=1`, quatre villageois aux traits posés pour l'essai) : Hélène (matinale,
+  bavarde) est au puits à 7 h 10 quand les autres se lèvent ; Capucine (travailleuse) à son poste à 7 h 45 ; Étienne
+  sort vers 7 h 40, Eugène (couche-tard) après 8 h ; trois matins vue dehors, « 🌅 matinale » se note dans sa fiche
+  (« ? » avant) ; touchés au même moment, la bavarde dit son salut, un sujet du moment et son humeur, le réservé une
+  phrase courte ; au travail, Capucine dit deux de ses phrases (« Tu cours toujours partout ! Tu vas finir par
+  t'envoler. », « Les autres disent que je suis taquine. Moi ? Jamais ! ») : « 😜 taquine », et le tableau marque sa
+  tâche (le fauchage) « 💚 à son goût » ; à 20 h 30, Eugène est seul encore à table. Aucune erreur dans la console.
+- **Le réglage choisi** : deux réglages filmés, « marqué » (en place : le matinal sort une heure avant, le couche-tard
+  une demi-heure après ; bavard × 2 et × 1,6 ; phrases de trait 0,3) et « doux » (une demi-heure, un quart d'heure ;
+  × 1,5 et × 1,3 ; 0,2). « Marqué » se voit d'un coup d'œil (la matinale seule dehors une bonne demi-heure) ; « doux »
+  se perd dans le retard de chacun. À faire choisir à l'utilisateur.
+- Reste : le joueur automatique ne regarde pas les goûts des villageois pour leur confier une tâche ; les traits en
+  ligne (I9d) ; un trait ne change pas encore les répliques à table ni au travail ; la fiche ne dit pas les accords entre
+  deux villageois.
+
+## Le nouveau départ (I7b, fait)
+
+Ce qui est posé (I7b ; les réglages : `VILLAGE.DEPART`, data/village.json ; le moteur : `js/engine/depart-ile.js`,
+`js/engine/didacticiel-ile.js` ; l'écran : `js/ui/depart.js` ; la bulle : `js/ui/didacticiel-ile.js`) :
+
+- **L'écran de départ** : une phrase, « Une île, un abri, un port. Tout est à bâtir. », et deux boutons. « 🧍 Seul » :
+  un adulte tiré de la graine (`familleSeule` : un genre, un personnage et un prénom des villageois, le nom de famille
+  proposé), sans compagnon ni enfant ni animal. « 👪 En famille » : les écrans d'avant (1 à 6 membres, jusqu'à 3
+  chiens ou chats), le compagnon devient facultatif (« Quelqu'un partage sa vie ? » ; il se retire au récapitulatif).
+  Puis le nom de l'île : un nom de `NOMS_ILE` proposé (tiré de la graine), modifiable, borné comme le nom de famille
+  (`DEPART.NOM_MIN` à `NOM_MAX`), écrit dans `state.noms = { ile }` (`nommerIle` ; I7g fera le module des noms autour).
+  Une partie « seul » commence en trois appuis : Nouvelle partie, Seul, Commencer.
+- **La terre vierge** : la ferme n'a plus de chemin intérieur. `genererMonde(graine, port, vierge)` (monde.js) donne
+  le même monde (arbres, rochers, étangs, plan, sol du dehors : rien ne bouge) sans le chemin peint de la ferme : ses
+  coins (`SOMMETS`) n'ont plus de chemin, la couche `ground` met de l'herbe à sa place (dessinée comme l'herbe de
+  `genererFerme`), et les lignes du moteur (`LIGNES`, refaites par `terrainOfMap`) rendent ces cases labourables et
+  bâtissables. Le seul chemin part de la case devant la porte de l'abri et va à la sortie de la ferme, où commence le
+  tronçon du port (I2) : des blocs de chemin du joueur (`state.sols`, `tronconAbri`), tracés le long de l'ancien
+  couloir (un pas hors de lui coûte `HORS_COULOIR`), `LARGEUR` cases de large, trois sur les `SORTIE` dernières
+  colonnes. 160 à 215 cases selon la graine ; elles pèsent 3,3 à 4,2 Ko dans la sauvegarde (une partie neuve : 6,3 Ko
+  avant, 9,2 à 10,2 Ko après). La partie le dit par `state.dehors.ferme = 'vierge'` (`fermeVierge`), posé quand elle
+  commence (après l'abri, placé comme avant) : une partie d'essai d'avant garde son chemin peint. L'abri ne change pas.
+- **Seul** : rien ne supposait un second adulte dans le moteur. Avec le joueur automatique, une partie seule mange
+  toutes les nuits (couverture 100 %), garde son bonheur (60), loge son premier villageois vers la nuit 13 et en a quatre
+  à la nuit 40 ; personne d'autre ne mange à la boîte, le compagnon absent n'aide pas (`aidant` nul).
+- **Le premier jour sans visite** : la visite de bienvenue est notée faite (`state.bienvenue.etat`), la scène de
+  l'arrivée du récit (Fernand) notée dite : l'horloge ne s'arrête plus. Le plat qu'elle offrait (`BIENVENUE.PLATS`,
+  un gratin de patates) attend dans une boîte à nourriture posée dans l'abri (la rangée du bas, au fond à droite : le
+  four et la cuisinière gardent leur place, le passage derrière la porte reste libre).
+- **Le didacticiel de l'île** (`state.didacticielIle = { etape, fini, passees }`) : 15 étapes (`DEPART.ETAPES`) —
+  ramasser pierres et bois, bâtir l'Atelier, la houe, labourer, semer, le puits et la cruche, arroser, la première
+  récolte, **la charger** (le portage d'I2 : sans charge, rien ne se vend ; une étape de plus que la fiche), suivre le
+  chemin jusqu'au port (la boussole y mène dès l'étape), vendre au comptoir, acheter des graines, bâtir une maison
+  libre, accueillir le premier villageois, lui donner une tâche. Une bulle d'une ligne en bas de l'écran (l'icône, ce
+  qu'il faut faire selon ce que fait le joueur, le rang, un compteur s'il y en a, « Passer › » et ✕), une flèche dorée
+  au-dessus de ce qu'il faut toucher, la lueur du didacticiel, et sur la carte ce qui brille. Une étape dont le but est
+  atteint (maintenant ou avant : des états et des compteurs qui ne redescendent pas) passe d'elle-même, à chaque rendu
+  et à chaque nuit ; chacune se passe, le tout aussi : rien ne bloque. Pendant ce temps, le carnet des objectifs du jour
+  se tait (ses jours se font et donnent leur récompense, sans pastille ni mot) : un seul guide à la fois. L'achat au
+  port compte maintenant `achatsPort` (port.js).
+- **Les pièces de départ** : `DEPART.PIECES` (450) remplace `DEPART.PIECES_SAUVAGE` (300, inchangé pour le jeu publié)
+  sur l'île. Mesuré (joueur appliqué, 40 nuits, graines 1 et 2) : la première vente au port tombe la nuit 4 comme à la
+  calèche, mais elle rapporte 40 pièces (12 volumes portés à la main) au lieu de 446 ; à 300, la caisse passe sous 50
+  pièces trois nuits sur les vingt premières (13 à 25 au plus bas) ; à 450, jamais (163 à 175 au plus bas) ; à 600,
+  rien de plus pour la progression. Les paliers ne bougent pas (2 à la nuit 5, 3 à la nuit 12, 4 à la nuit 23-24).
+  `node scripts/simulate.mjs --village` (80 nuits, graine 1, joueur appliqué), avant → après I7b : paliers 2@5 3@12 4@22
+  5@33 6@69 → 2@5 3@12 4@25 5@32 6@46 ; aucune nuit sans repas ; la caisse ne passe plus sous 175 pièces après la
+  nuit 4 (22 avant) ; en caisse à la nuit 80, 1 842 → 363 pièces (5 000 dépensées sur les nuits 61 à 80 : le port
+  agrandi plus tôt) ; la vérification de l'argent qui s'empile passe toujours. Le joueur simulé garde sa famille de
+  départ (quatre membres) : il ne joue pas « seul ».
+- **La sauvegarde** : format 95 ; la migration v94 → v95 n'ajoute rien à une partie d'avant, répare `noms` et
+  `didacticielIle` s'ils sont là.
+- **Les tests** : `tests/engine/village-depart.test.mjs` (seul, le nom de l'île, la terre vierge et son chemin d'un
+  seul tenant, la visite et le plat, le didacticiel qui passe et se passe, une partie seule et une partie à six jouées
+  par le joueur automatique jusqu'au premier villageois à sa tâche — nuit 12 à 14 —, la migration, éteint).
+- **Vérifié dans Chromium** (`jeu.html?village=1`, téléphone 412 × 915 et ordinateur) : l'écran de départ, « seul » en
+  trois appuis, « en famille » sans compagnon (trois paillasses), le nom de l'île, la terre vierge et son chemin, les
+  étapes jusqu'au port (la flèche sur la boussole), l'arrivée sous la halle, « Tout décharger », la maison, le
+  villageois et sa tâche. Aucune erreur dans la console.
+- Reste : le test avec un joueur qui ne connaît pas le jeu (`docs/test-utilisateur.md`) n'est pas fait ; sous une
+  fenêtre par-dessus (la liste des villageois), la bulle passe sous son voile ; le panneau « Ville » au bout de
+  l'ancien chemin reste ; retirer `bienvenue.js` et l'ancien didacticiel de la page (I7d ; le moteur ne lit plus la
+  visite allumé, I7c).
+
+## Le récit retiré du moteur (I7c, fait)
+
+Le moteur d'une partie du chantier ne lit plus rien du récit : ni personnages écrits, ni scènes, ni répliques, ni
+confiance, ni courrier, ni ateliers tenus par un personnage, ni visite de bienvenue, ni pierre de lune, ni secrets.
+Éteint, le jeu est le même octet pour octet (le CSV de la simulation, les tests du récit).
+
+- **L'aiguillage** (`js/engine/recit-aiguillage.js`) : le seul point d'entrée du moteur vers le récit. Deux
+  implémentations d'une même petite interface : `RECIT_ANCIEN` (`recit-ancien.js`, le jeu publié : elle passe aux
+  modules du récit tels quels) et `RECIT_MUET` (`recit-muet.js`, l'île : aucun fait, aucune relation, aucune
+  confiance, aucune scène, aucun lieu qui parle, la nuit ne fait rien du récit). `recitPour(state)` choisit, en un seul
+  `if`, celle de la partie ; `recitDAvant()` sert aux migrations des formats d'avant le chantier. L'interface :
+  `nouveauRecit`, `nouvelleBienvenue` (la partie neuve), `nuit` (la visite, l'empreinte, la dérive, les toits),
+  `aFait`, `ageFait`, `noterFait`, `premierJourFait`, `faitNote` (les faits), `ecrit`, `relation`, `ajouterRelation`,
+  `confiance`, `ajouterConfiance`, `ecritsDuHameau`, `nomCocher`, `facteurPousse` (la pierre de lune), et ce que la
+  page demande au récit : `scenesPossibles`, `jouerScene`, `paroleHameau`, `toucherLieu`, `noterVisite`,
+  `visiteObservatoire`, `geodeLuit`, `fermeLuit`, `ouvrirSecret`, `ateliersDuHameau` (ré-exportés par l'aiguillage
+  sous leur nom ; la page les y prend : `js/ui/scene.js`, `stage.js`, `habitants.js`, une ligne d'import chacun).
+- **Hors de l'aiguillage**, ce qui n'est pas du récit en sort : l'échelle de l'amitié (`AMITIE.ECHELLE`,
+  data/amitie.json : la même que `RECIT.RELATION_MAX`, `PALIERS`, `PALIER_NOMS`, build-data le vérifie ; amitie.js,
+  invitations.js, villageois-amitie.js la lisent), `genreJoueur` (family.js : le courrier), `deHameau` (fetes.js : les
+  fêtes et les propos), le plat du premier jour (`VILLAGE.DEPART.PLAT`, depart-ile.js, à la place de `platDuVisiteur`).
+  depart-ile.js ne note plus la scène d'arrivée dite : aucune scène ne se joue sur l'île.
+- **Le relevé** (21 fichiers du moteur, dont les six du récit ; la version complète est jointe au compte rendu de la
+  fiche) : amitie.js (l'échelle, les personnages écrits, leurs relations, la confiance de la nuit), caleche.js (le nom
+  du cocher, une vente notée : déjà inerte allumé, I1b), campaign.js (les faits du courrier ; `DATA.COURRIER` reste, le
+  courrier ne part pas allumé, I7a), crops.js (la pierre de lune ; les effets de la lune passent par lune.js, pas par
+  fil-lune.js : inchangés), decouverte.js (la condition `fait:`), habitants.js (les personnages écrits installés dans
+  les hameaux garantis : aucun allumé), invitations.js, night.js (`bienvenueNuit`, `recitNuit`), projets.js (la
+  confiance d'un projet de hameau), state.js (la partie neuve ; les migrations 61 à 64 par `recitDAvant`),
+  villageois-amitie.js, depart-ile.js, fetes.js et propos.js (`deHameau`) : tous passent par l'aiguillage ou n'en ont
+  plus besoin. Restent, inertes allumé : l'index (`export *` des six modules, pour la page et les tests d'avant : rien
+  n'y tourne à l'import), `DATA.COURRIER` (campaign.js), `DATA.BIENVENUE.PLATS` (la fête d'un hameau, I7e),
+  `state.bienvenue` marquée faite (la page d'avant le lit, I7d), les lieux du récit du plan du monde.
+- **Les mécaniques** : la **confiance** est retirée ; elle ne débloquait rien de mécanique (aucune condition de scène
+  ni de réplique ne la lit ; elle choisissait le salut des habitants). Ce que le récit ouvrait d'autre : les ateliers
+  de Basile et Garance → les commerces, ouverts au palier 6 (paliers, I5a à I5c ; les meubles de l'ébéniste : au
+  catalogue d'import du port, proposé, pas fait) ; les graines de la serre → le palier 6 (déjà, I7a) ; les espèces de
+  l'exploration → les sauvages du port (I1c) ; la pierre de lune, l'enveloppe, les trésors des secrets : rien. La
+  **veillée** du récit ne se joue plus allumé (ni au Gué ni à la ferme : aucune scène) ; celle du village (I8a) se tient
+  seule. Les **ateliers** : `ateliersDuHameau` rend [] allumé, la calèche ne s'ouvre plus. Les **lieux du récit**
+  (l'observatoire, l'atelier de Frida, l'épave, la cale, l'amas d'améthyste) et les secrets restent sur la carte, muets :
+  ils sont placés avant le port, les ôter le déplacerait. Le carnet du récit : rien du chantier ne le lit.
+- **La sauvegarde** : pas de nouveau format. Une partie du chantier garde un `state.recit` vide, que rien n'écrit, et
+  sa visite de bienvenue marquée faite (la page d'avant les lit encore).
+- **Les tests** : `tests/engine/village-sans-recit.test.mjs` (la lecture des imports : aucun module du moteur
+  n'importe le récit, hors ses modules, `recit-ancien.js` — que seul l'aiguillage importe — et l'index ; depuis
+  village.js, et depuis tout module, le récit ne s'atteint que par l'aiguillage ; la page prend à l'aiguillage ce qui
+  ferait parler le récit ; le récit vidé — `DATA.RECIT`, `SECRETS`, `ILE`, `COURRIER` —, les hameaux garantis peuplés,
+  30 nuits du joueur automatique sans erreur : ni personnage écrit, ni fait, ni courrier, aucune scène, aucun lieu ni
+  secret qui parle ; éteint, le récit d'avant ; les deux récits ont la même interface). `village-depart` vérifie
+  qu'aucune scène ne se joue au premier jour. Les tests du récit restent verts éteint.
+- **La simulation** : éteint, le CSV est le même octet pour octet ; `--village`, le même aussi (le joueur simulé ne
+  touchait pas au récit ; le plat de bienvenue posé la nuit ne changeait rien).
+- **Vérifié dans Chromium** : une partie de l'île (`?village=1`, « Seul ») jouée 35 jours (le joueur automatique et le
+  bouton « Dormir »), deux pleines lunes (la veillée du village le jour 34), sans erreur de console ; aucun nom de
+  personnage écrit, ni lettre, ni scène, ni page de carnet ; `state.recit` vide. Une partie normale : la scène d'arrivée
+  sur la carte, la visite de bienvenue le deuxième jour.
+- ~~Reste (I7d) : la page lit encore le récit pour le reste (le carnet et son bouton, l'inventaire, la calèche, la boucle
+  du jeu, l'ancien didacticiel, les noms des paliers d'amitié), l'élément « veillee » du niveau 10 et son texte~~ (fait :
+  plus bas) ; (I7e) les hameaux, leurs fêtes et leurs projets ; (I7f) le `state.recit` et la visite des parties d'avant, la ligne
+  `avant` de la chronique ; (I9h) les fichiers du récit, l'aiguillage et `recit-ancien.js`.
+
+## Le récit retiré de l'interface, de l'aide et de l'encyclopédie (I7d, fait)
+
+Le joueur d'une partie de l'île ne rencontre plus le récit dans ce qu'il voit : ni carnet, ni scène, ni visite, ni
+calèche qui parle, ni enveloppe, ni pierre, ni veillée des hameaux, ni personnage dans l'aide ou l'encyclopédie, ni
+prénom du récit parmi les villageois. Éteint, le jeu est le même (le CSV de la simulation octet pour octet, les tests
+du récit, la page publique de l'encyclopédie, `index.html` et le README).
+
+- **La page ne lit plus le récit qu'à travers l'aiguillage** (`js/engine/recit-aiguillage.js`) : aucun fichier de
+  `js/ui`, `js/carte` ni `js/*.js` n'importe un module du récit (`recit.js`, `fil-lune.js`, `usure.js`, `secrets.js`,
+  `ile.js`, `bienvenue.js`). L'interface gagne `page()` : le récit d'avant y rend, en un objet, ce que la page d'avant
+  lit encore (`RECIT`, `ILE`, `BIENVENUE`, `FIL`, `USURE`, le carnet, l'acte, les faits, les toits des hameaux, la
+  visite de bienvenue, les promesses et les ateliers de la calèche, l'enveloppe, la pierre, la veillée à la ferme) ; le
+  récit muet rend `null`. La page le demande par `recitPage(state)` et n'en montre rien sur l'île :
+  - le **carnet** (`js/ui/carnet.js`, `pagesDuCarnet`) : pas de bouton, il ne s'ouvre pas ; la **chronique** (📜) est
+    à sa place dans le menu (`carnetBouton`, `chroniqueBouton` : chacun ne paraît que dans sa partie) ;
+  - **l'inventaire** : l'enveloppe, la pierre de lune et la cloche (leurs lignes, « L'ouvrir », « La poser ») ;
+  - **la calèche** (`js/ui/caleche.js`) : ses lectures du récit passent par de petites fonctions (`parLeRecit`) qui ne
+    rendent rien sur l'île (ni promesse, ni atelier, ni réplique du cocher ; elle n'y commerce déjà plus, I1b) ;
+  - **la boucle** (`js/ui/loop.js`) : ni scène, ni scène de la calèche, ni annonce des veillées et de la fête du récit,
+    ni veillée à la ferme ; **la visite de bienvenue** (`js/ui/bienvenue.js`) ne se lance pas, la carte n'a pas de
+    visiteur ; **la scène** (`js/ui/scene.js`) ; **les toits des hameaux** (`js/ui/habitants.js`, `stage.js`) ;
+  - **l'ancien didacticiel** (`js/ui/didacticiel.js`) : le nom du cocher par l'aiguillage, `deHameau` de `fetes.js`
+    (une partie de l'île suit le didacticiel d'I7b) ;
+  - **les noms des paliers d'amitié** : `AMITIE.ECHELLE.NOMS` (villageois.js, amitie.js, aide.js, plans.js), les mêmes.
+- **L'index** (`js/engine/index.js`) ne ré-exporte plus les six modules du récit : la page éteinte n'en dépendait pas
+  (chaque module de la page importe directement ; seule la console, `FF.engine`, perd ces noms) ; trois tests d'avant
+  (`amitie`, `niveaux`, `secrets`) les importent de leur module.
+- **Les textes de l'île** (`VILLAGE.SANS_RECIT`, data/village.json) : `NOMS` (les 18 de la fiche) et `MOTS` (calèche,
+  cocher, hameau) ; `texteDuRecit(texte)` (village.js) les cherche (un nom sans son article, en mot entier, avec sa
+  majuscule : « au Gué » oui, « le gué de la rivière » non ; un mot au pluriel aussi). Ce qu'il change :
+  - **les prénoms** : `prenomsDuJeu(state, genre)` rend `HABITANTS.PRENOMS` sans Odile, Garance, Lise, Achille, Basile,
+    Fernand et Théo (les sept prénoms du récit qui y sont) sur l'île : les villageois, leurs enfants, le joueur « seul »,
+    les habitants des hameaux tant qu'ils sont là ; éteint, la liste telle quelle (le même tableau) ;
+  - **les noms proposés** (noms.js) : ni « Bois-Joli » (Bois + -Joli), ni « Île aux Mouettes », ni « … des Mouettes » ;
+  - **le niveau 10** : sur l'île, l'élément « veillee » (« les voisins des hameaux viennent veiller chez toi ») n'est
+    plus montré ; la note du niveau dit que la veillée du village se tient d'elle-même, sans niveau (deux villageois et
+    une place, I8a) ; la carte postale du niveau 9 n'est plus annoncée (`elementDuNiveau`, `noteDuNiveau` ; l'écran du
+    niveau, js/ui/niveaux.js, et sa phrase sur l'XP : « au port », « chaque palier de l'île ») ;
+  - **les invitations** : le message passe « de porte en porte » sur l'île (plus « Achille porte le message »), et la
+    réplique de table sur la calèche n'y est plus dite ;
+  - **les emojis** : ✉️ et 🔔 ne s'appellent plus « Enveloppe de Maurice », « Cloche de Maurice » pour les lecteurs
+    d'écran (main.js : un objet du récit ne prête plus son nom à son emoji ; aussi éteint : une correction, rien de
+    visible) ;
+  - **le carnet de plans** : « Explore-le pour y trouver ses plans », sans l'ami d'un hameau.
+- **L'aide** (`js/ui/aide-ile.js`, lu par `js/ui/aide.js` et par les tests) : la fiche **« L'île à bâtir »**, en tête
+  des fiches d'À propos : l'île et ses paliers, le port, le chemin et le portage, le bac, ses commandes, l'import, les
+  niveaux du port, les villageois, les tâches, le tableau, la part, l'étal, l'amitié, les liens, les traits, les
+  commerces (une entrée générique : la forge d'I5a s'y ajoutera), les vocations, les fêtes, les projets, la chronique et
+  les noms ; des règles, pas d'histoire, les nombres pris aux données. **Le grand monde** de l'île : sans les hameaux,
+  leurs habitants, l'amitié des hameaux, la visite, les invitations, la calèche ni les projets des hameaux ; les
+  chemins, la carte du monde, l'Atelier, les styles et les plans réécrits. **À propos** : la règle de la calèche devient
+  celle du port et du bac, celle des chapitres celle des paliers ; l'Arbre des technologies parle des paliers ;
+  l'équipement cousu aux Genêts « viendra d'un commerce de l'île ». Une partie d'avant garde toute son aide.
+- **L'encyclopédie : deux sources pendant le chantier** (c'est dit dans `scripts/build-encyclopedie.mjs`) :
+  `encyclopedie_ferme_familiale.json` (le jeu publié, la page publique, inchangée) et `encyclopedie_ile.json`, lu
+  par-dessus (`livreDeLIle`) : les catégories retirées (l'île de Céron et ses personnages, les hameaux, les secrets du
+  monde, le commerce de la calèche), le courrier ; la tente et la lanterne-tempête gardées (à la Famille) ; les liens
+  renommés (le comptoir → le port…) ; 29 entrées réécrites (le verger, la vigne, les fruitiers, les pièces, les graines,
+  la laine, le miel, le bois et la pierre, le grand monde, les chemins, le brouillard, la carte, les paliers à la place
+  des chapitres, la famille, l'équipement…) ; deux catégories neuves en tête : **⚓ Le port** (le port, le bac, les
+  commandes, l'import, les niveaux, le chemin, le portage) et **🏝️ L'île et son village** (le village, la maison d'un
+  villageois, les villageois, les tâches, le tableau, la part, l'étal et la bourse, l'amitié, les liens, les traits,
+  les commerces, les vocations, les fêtes, les projets, la chronique, les noms, les styles, les plans). 248 termes en
+  16 catégories (280 en 18 pour le jeu publié). Le livre de l'île : `js/encyclopedie-ile.generated.js` ;
+  `js/engine/encyclopedie.js` choisit le livre de la partie (`categoriesDe(state)`, `entreeEncyclopedie(id, state)`…) ;
+  une condition de découverte neuve, `villageois` (decouverte.js). À la bascule (I9h) : appliquer le second au
+  premier, le retirer, régénérer la page publique.
+- **La page d'accueil et le README** : leurs textes de l'île sont prêts à part, `docs/ile/accueil.md` (chaque section
+  d'`index.html` ; les personnages deviennent des traits de villageois, le courrier la chronique) et
+  `docs/ile/readme.md` (l'ouverture, le grand monde, le port, les villageois, la famille, les paliers ; les lignes à
+  revoir) : la fiche I9h les met en place. `js/ui/accueil-vivant.js` n'a pas de texte du récit.
+- **Le son** : rien ne se déclenchait sur une scène hors de la scène elle-même (le babil de ses répliques : aucune ne
+  se joue sur l'île) ; l'essai de la voix (⚙️ Options › Son) prend sur l'île une voix de villageoise et non celle
+  d'Odile ; musiques et ambiances gardées (la musique d'un hameau sort avec eux, I7e).
+- **La sauvegarde** : pas de nouveau format (98).
+- **Les tests** : `tests/engine/village-textes.test.mjs`, le contrôle des textes (les données que lit l'île : les
+  sections du chantier, ses objectifs, les écrans des niveaux, les saluts et les propos de ses villageois ; l'aide de
+  l'île et son grand monde ; le livre de l'île, ses liens, les pages du naturaliste ; 200 rangs de noms proposés ; les
+  prénoms de 60 graines, 8 villageois chacune, et le joueur seul ; 30 nuits du joueur automatique : villageois, noms,
+  chronique, pages découvertes ; éteint, les prénoms, le livre et les niveaux d'avant). `village-sans-recit` : aucun
+  fichier de la page n'importe le récit, l'index ne le ré-exporte pas, `recitPage` (null sur l'île ; éteint, ce que lit
+  la page d'avant).
+- **Vérifié dans Chromium** (`?village=1`, « Seul ») : le menu sans carnet, la chronique à sa place ; 20 jours du
+  joueur automatique (palier 3, deux villageois : Clémence et Gaspard), la page rechargée, puis le texte de la page cherché (le texte
+  visible, les `title` et les `aria-label`) à chaque fenêtre : le menu, la chronique, À propos et chacune des fiches
+  d'aide, les 142 pages du livre une à une, l'Île, l'inventaire, le port, le calendrier, la famille, l'arbre, l'Atelier,
+  la liste et les fiches des villageois, le tableau, les notifications : 176 relevés, aucun nom du récit, ni calèche, ni cocher, ni hameau ; aucune erreur de console. Une partie normale : la
+  scène d'arrivée sur la carte (Fernand), le carnet (son bouton, sa page de Maurice), la calèche au menu, l'aide et le
+  livre d'avant ; aucune erreur de console.
+- Reste : ~~(I7e) les hameaux sont encore sur la carte de l'île~~ (fait, plus bas), avec les noms du plan du monde (le Gué, les Genêts,
+  Bois-Joli, les Mouettes, Brumeval : `PLAN_MONDE.HAMEAUX.GARANTIS`, monde-gen.js), leur fiche, leurs fêtes au
+  calendrier (« Les fêtes des hameaux »), leurs projets, leur musique, la calèche qui roule et sa fenêtre : I7e les
+  retire avec les hameaux (le joueur de l'île ne les croise qu'en explorant) ; (I7f) une partie d'avant passée sur
+  l'île garde son carnet dans l'état (`state.recit`) mais ne le voit plus : la chronique doit en reprendre la trace (la
+  ligne `avant`) ; (I9h) appliquer `encyclopedie_ile.json`, mettre en place `docs/ile/accueil.md` et
+  `docs/ile/readme.md`, retirer `page()` et les branches d'avant de la page avec le récit.
+
+## Les hameaux, la calèche et les boucles de chemins retirés (I7e, fait)
+
+Une partie de l'île naît sur une île sans hameau, sans habitant, sans calèche, avec pour seul chemin le tronçon de la
+ferme au port. Le reste du grand monde ne bouge pas, à la graine près. Éteint, le jeu est le même (le CSV de la
+simulation octet pour octet ; `monde-plan`, `hameaux`, `caleche` verts).
+
+- **Le plan de l'île** (`js/engine/monde-gen.js`, `elementsDuMonde`) : le monde d'un port (`cadre.PORT`, celui de toute
+  partie de l'île, monde.js) ne rend ni hameau (`lieux.hameaux` vide) ni boucle (`chemins` vide). Ils sont tirés comme
+  avant, en **fantômes** : leurs tirages sont consommés, et les lieux du récit (gardés muets par I7c), les secrets et le
+  port les évitent encore (`PP.HAMEAU`, `surChemin`, `distHameaux`, `distChemin`) ; seulement, ils ne sont pas rendus.
+  Le chemin du port (`lieux.port.chemin`, de la sortie de la ferme au port, case à case) ne dépend pas des boucles qu'il
+  longeait : il reste entier. **La preuve** : `tests/engine/ile-monde-temoins.json`, l'empreinte relevée sur le plan
+  d'avant (bb2b7f6) de 50 graines — les eaux, les rivières, les lacs, les entrées de grotte, les coins de pêche, les
+  lieux du récit, les secrets, le port (sa case, son sens, le prix et le tracé de son chemin) et le tronçon du joueur
+  (I2, `tronconDuPort`, dans le Worker) — que `village-monde` compare au plan de l'île : 50 sur 50 identiques. Les
+  biomes et le relief ne lisent pas les hameaux (les champs : des bruits de la graine). C'est la condition d'une
+  migration douce (I7f) : une partie d'avant passée sur l'île garde son port, son chemin et son tronçon.
+- **La place des hameaux** : rien n'y est plus réservé (`reservesDuMonde`, `plansDesHameaux` : ni maison, ni terre
+  battue, ni emprise) ; la végétation, les rochers et les bêtes de son biome y poussent comme autour (ils se tirent
+  case par case ; la nature lit les chemins du plan, qui ne sont plus que le tronçon). Mesuré sur une graine (six
+  hameaux) : la densité des plantes dans un rayon de 6 cases d'un ancien hameau passe de 0 à 0,05 à 0,30 par case,
+  contre 0,11 à 0,23 autour. Ni trou ni clairière carrée ; dans Chromium, la place de Brumeval est une lande comme une
+  autre.
+- **Le Worker et la scène** : le Worker ne calcule plus de tournée (`cadre.PORT` : `tournee: null`) ; ses plans bâtis
+  ne sont plus que le port et les deux bâtisses muettes du récit. La page : `tourneeDe(state)` rend null sur l'île (la
+  calèche ne roule pas, même si un monde d'avant de la même graine a posé sa tournée) ; la malle n'est ni dessinée ni
+  touchable (`malleDepuisCarte`) ; la scène ne charge ni l'image de la calèche ni celle de la malle (`ctx.monde.ile`,
+  js/farm-stage.js), qui sortent de l'atlas de la ferme (scripts/carte/atlas.py ; le jeu d'avant les charge seules, au
+  pixel près). Les habitants : `habitantsDe(state)` rend `{}` sur l'île, `peuplerHameau` refuse : leurs personnages,
+  la musique et l'ambiance d'un hameau ne se chargent jamais. La planche des hameaux reste chargée : le port et les
+  bâtisses du récit y prennent leurs pièces.
+- **Ce qui s'y appuyait** : les projets, les fêtes, les demandes, les liens et les invitations lisent `habitantsDe` :
+  ils ne lisent plus que le village (I6a, I6b, I8a) ; le calendrier n'a plus « Les fêtes des hameaux » (et
+  `DATA.BIENVENUE.PLATS`, le plat d'une fête de hameau, n'est plus donné) ; la musique d'un hameau ne joue jamais
+  (`hameauIci` ne se pose plus) et le réglage du son ne la cite plus sur l'île ; la carte du monde et la boussole n'ont
+  plus de hameau (`lieuxDeLaCarte` lit le plan) ; les objectifs tirés `si: 'hameau'` sortent de la liste de l'île
+  (`listeTiree`). Le contrôle des textes (`village-textes`) s'élargit à la carte du monde : ses lieux tout vus, les
+  plans bâtis, la boussole vers chaque lieu et vers la ferme, sur trois graines.
+- **Les plants sauvages** (une raison d'explorer, codée pour deux biomes ; `VILLAGE.SAUVAGES`, data/village.json ;
+  `js/engine/sauvages.js`) : l'**ail des ours** des sous-bois (la forêt, ses sols « feuilles » et « mousse », 0,4 % des
+  cases libres) et la **salicorne** des plages (le sable, à 1 à 3 cases de l'eau, 1,5 %), à `LOIN` = 40 cases de la
+  ferme au moins. Dans le monde de l'île seulement, la végétation les pose (monde-vegetation.js : de petites plantes,
+  un tirage à elles, seulement sur les cases où aucune autre petite plante n'a poussé : rien d'autre ne bouge,
+  `village-sauvages` le vérifie en les retirant) ; 33 à 47 ails des ours et 9 à 16 salicornes par monde (graines 1, 2,
+  3, 200364 ; le plus proche à 39 à 43 cases, la moitié au-delà de 85 à 107). On les ramasse à la main (data/monde.json
+  RECOLTE : le plant, `plant_ail_ours`, `plant_salicorne`, 1 ou 2), on les repique dans la zone de culture
+  (data/crops.json : `ail_ours`, 4 jours, `salicorne`, 5 jours, marquées `sauvage` ; elles rendent la plante et 1 à 2
+  plants). Leur **première récolte** les inscrit au catalogue d'import du port (`recolteSauvage`, appelée par crops.js ;
+  elle écrit `state.port.sauvages` comme `inscrireSauvage`, sans importer bac.js, qui importe crops.js) : au rang
+  `PORT.IMPORT.SAUVAGES.RANG` (5), par 3 ; la page l'annonce (js/ui/port.js), l'aide de l'île le dit. Ils ne
+  s'achètent pas au comptoir (`rachetable: false`) ; éteint, ils ne paraissent ni dans le monde, ni aux semis
+  (`plantableCropsFor`), ni ne se plantent. Les dessins (`scripts/carte/sauvages.py`, vus de haut à 45° : chaque
+  feuille, chaque brin sa rampe de 128 tons parmi trois voisines, modelés, le bord à l'ombre plus froid, la pointe plus
+  chaude, l'occlusion au pied, le contour sombre) : dans le monde, deux variantes chacune (52 à 87 couleurs), avec leur
+  ombre douce au pied ; sur la ferme, quatre phases (16 à 116 couleurs : le plant repiqué en a peu, la plante mûre le
+  plus), dans la source des cultures (rangée 8), puis planche_cultures.py.
+- **Une raison d'explorer** (la proposition ; seuls les deux premiers plants sont codés) : chaque biome a deux ou trois
+  plants à lui, rares, loin de la ferme : la prairie (la camomille), la lande (le thym serpolet, la bruyère à miel), le
+  marais (le cresson, la menthe aquatique), la montagne (le génépi, la myrtille), la forêt (l'ail des ours, la fraise
+  des bois), la plage (la salicorne, la criste marine). À trancher : qu'ils poussent mal hors de leur sol sans un soin
+  (un bac de terre de forêt, un arrosage à l'eau de mer), ce qui ferait revenir les chercher. Les lieux muets d'I7c
+  (l'observatoire, l'atelier, l'épave, la cale, l'amas d'améthyste) et les secrets restent : chacun pourrait donner un
+  plant qui n'est nulle part ailleurs, sans récit. Le carnet du naturaliste les noterait trouvés, la chronique la
+  première récolte. Plus tard, des sites à exploiter (un gisement à ouvrir, une carrière, un étang à poissons) feraient
+  le pendant de la ferme productive.
+- **Les mesures** (une même partie de l'île, graine 588505, chargée trois fois dans le site d'avant, bb2b7f6, et dans
+  celui d'après ; Chromium sans écran, 1280 × 800) :
+  - au chargement : le jeu affiché en 3,4 s (3,0 à 3,9) avant, 3,3 s (3,0 à 3,6) après ; les lieux du Worker prêts en
+    4,6 s contre 4,6 s ; la mémoire JS de la page, après un ramasse-miettes, 61,0 Mo contre 60,6 Mo : rien de
+    mesurable, la page d'avant ne chargeait presque rien des hameaux tant qu'on n'y allait pas ; les images
+    téléchargées 1 419 Ko contre 1 393 Ko (l'atlas de la ferme sans la calèche ni la malle : 190 → 158 Ko ; les plants
+    sauvages : + 3 Ko aux cultures, + 3 Ko à la végétation) ;
+  - à la place du premier hameau (Brumeval) : avant, il naît (son habitant, sa musique, son ambiance, les couches des
+    personnages : 1,2 Mo de plus téléchargés, dont `musique_hameau.ogg` 437 Ko, `hameau.ogg` 348 Ko, `couches.json`
+    375 Ko), et la mémoire JS monte de 3,2 à 3,7 Mo (65,0 et 68,9 Mo contre 61,8 et 65,2) ; après, rien ;
+  - le Worker (dans Node, huit graines) : les éléments du monde de l'île 706 → 595 ms (− 16 %), dont les plans bâtis
+    78 → 1 ms ; 1 369 → 72 pièces bâties ; le message « pret » envoyé à la page 204 → 7 Ko ; une région 41 → 38 ms.
+- **La sauvegarde** : pas de nouveau format (99) : `state.port.sauvages` existait (I1c).
+- **Le joueur automatique** : `--village`, le CSV est le même octet pour octet (il ne visitait pas les hameaux sur
+  l'île : son excursion suit la tournée de la calèche, qu'il n'a plus) ; éteint, le même aussi.
+- **Les tests** : `tests/engine/village-monde.cas.mjs` (en quatre parties : les 50 graines et leurs témoins, le chemin
+  de la sortie au port case à case, les biomes, le Worker et le calcul direct identiques et sans tournée, la nature à
+  la place des hameaux, une partie de l'île sans hameau ni calèche ni habitant, éteint le monde d'avant) ;
+  `village-sauvages.test.mjs` (leur place, rien d'autre ne bouge, trouvé, ramassé, repiqué, récolté, inscrit une
+  fois ; éteint, rien) ; `village-textes` (la carte du monde) ; `village-port` et `village-sans-recit` revus (l'île n'a
+  pas de hameau ; ceux du monde d'avant n'y naissent pas). Les tests de données d'avant comptent les deux cultures de
+  plus (`potager`, `champ-poulailler`, `cuisine`, `inventaire`).
+- **Vérifié dans Chromium** (`?village=1`, « Seul », graines 942981 et 519829) : la carte du monde tout vue sans
+  hameau (le port et les coins de pêche seuls), la même graine éteinte avec ses sept hameaux ; la place de Brumeval
+  puis des Genêts, une lande comme une autre, la boussole vers le port (la même place éteinte : le hameau, son puits,
+  son habitant) ; un ail des ours en fleurs dans un sous-bois, ramassé (son plant), une salicorne sur une plage,
+  repiqués à la ferme, récoltés : l'annonce, puis le catalogue d'import du port (rang 5) ; le texte de la page cherché à
+  chaque étape : aucun nom du récit, ni calèche, ni cocher, ni hameau ; aucune erreur de console.
+- Reste : ~~(I7f) une partie d'avant passée sur l'île~~ (fait, plus bas : ils sont retirés, les amis deviennent candidats, le
+  tronçon est remis « à poser ») : ses hameaux vus et ses habitants restaient dans l'état
+  (`state.monde.hameaux`, `state.monde.habitants`, et les projets, les demandes, les liens qui les citent), muets
+  (`habitantsDe` rend `{}`) : les retirer, ou les garder pour la chronique ; son tronçon généré (`genere`) suit encore
+  les boucles là où le plan les rejoignait : le convertir ; (I9h) les fichiers (`monde-hameaux.js` hors du port et des
+  bâtisses, `habitants.js`, `caleche.js`, `caleche-tournee.js`, la scène des hameaux), les fantômes du plan (le jour où
+  l'on accepte que le port bouge), les trois cases réservées de la malle au bout du chemin de la ferme (le terrain les
+  garde : les villageois arrivent par elles, villageois.js) ; les autres plants sauvages, leur page au livre de l'île
+  et au carnet du naturaliste ; le joueur automatique ne les cherche pas.
+
+## La chronique et les noms (I7g, fait)
+
+Le joueur nomme son île, son village, ses commerces et ses maisons ; une chronique note d'elle-même les moments qui
+comptent. Le moteur : `js/engine/noms.js` et `js/engine/chronique.js` ; les réglages : `VILLAGE.NOMS` et
+`VILLAGE.CHRONIQUE` (`data/village.json`) ; la page : `js/ui/chronique.js` (et `js/ui/chronique-html.js`, le HTML, lu
+aussi par les tests). Tout est derrière le réglage : éteint, une partie n'a ni `state.noms` ni `state.chronique`.
+
+- **Les noms** (`state.noms = { ile, village, commerces: {}, maisons: {}, avis }`) : proposés à la graine de la ferme
+  (`proposerNom(state, quoi, id, rang)` : « 🎲 Un autre nom » tire le rang suivant ; jamais au-delà de `DEPART.NOM_MAX`),
+  modifiables à tout moment (`renommer`), bornés comme le nom de famille (`DEPART.NOM_MIN` à `NOM_MAX` signes, les
+  blancs repliés : `nomRefus`, `nettoyerNom`). **L'île** : une partie neuve du chantier en reçoit un à la création
+  (`nouveauxNoms`) ; I7b écrira celui que le joueur choisit au départ dans `state.noms.ile` (le reste du champ se répare
+  seul, `nomsDe`). **Le village** : il prend le nom proposé quand le troisième villageois adulte s'installe
+  (`NOMS.VILLAGE_A`, `nommerVillageSiBesoin`) ; la page ouvre alors « Nommer le village » (garder ce nom, un autre, le
+  sien ; « Plus tard »). **Un commerce** : `nommerCommerce(state, id, { sorte })` (« Forge du Vieux Chêne ») ; dans une
+  phrase, `commerceEnPhrase` (« la forge du Vieux Chêne », ou « la forge « La Belle Enclume » »). **Une maison** : sur
+  la fiche du villageois, ✏️ (une chaîne vide efface son nom). `nomAffiche` : le village, sinon l'île (le panneau, le
+  titre de la fenêtre).
+- **Le panneau du village** (`panneau_village`, l'Atelier : 3 planches et 2 bois ; l'onglet Jardin) : deux cases de
+  large, la carte écrit sur sa planche le nom du village (sinon celui de l'île), comme le nom de la famille sur une
+  enseigne de ferme (`stepEnseignes`, `BLOCS_CARTE.enseigne.village`) ; renommer le change aussitôt. Le dessin
+  (`scripts/batiments/panneau_village.py`, vu de haut à 45°) : deux rondins (l'écorce éclairée à gauche), un toit de
+  bardeaux à deux pans, la planche claire du nom (son dessus, deux planches, les clous), des pierres et des fleurs au
+  pied ; 32 × 40, **505 couleurs**. Il ne s'éclaire pas le soir.
+- **La chronique** (`state.chronique = { seq, lignes, faits }`) : une ligne par moment, datée, ses noms figés le jour où
+  elle s'écrit. Le seul point d'entrée : **`noterChronique(state, type, donnees)`** (rien éteint ; une ligne de même clé,
+  `TYPES[type].cle`, ne s'écrit qu'une fois). Les types (`CHRONIQUE.TYPES` : icône, texte, clé) et ce qui les écrit :
+  `arrivee` (la famille débarque : `assurerArrivee`, dès que la famille est configurée, datée du jour 1), `recolte` (la
+  première récolte : `noteCropHarvested`), `vente` (la première vente au port : `vendreCharge`, une commande du bac
+  honorée), `villageois` et `enfant` (`arriverVillageois`, `arriverEnfant` : `chroniqueArrivee`), `village` (son nom,
+  au troisième), `village_nom` et `ile_nom` (renommés un autre jour), `dixieme` (le dixième villageois), `palier`
+  (`completeChapter`, un palier de l'île), `port` (`agrandirPort`), `commerce` (`commerceOuvert(state, { id, sorte,
+  qui })`, prêt pour I5a), `proche` (`liensNuit`), `foyer` (`formerFoyer`), `fete` (`allerALaFete` ; I8a appellera le
+  même type, `{ id, jour, nom, lieu }`), `projet` (`projetsNuit` ; I8a : `{ id, lieu, nom }`), `avant` (la place du
+  récit d'avant, pour I7f : `{ id, texte }`). Renommer change l'affichage, pas les lignes passées ; le jour même, une
+  ligne de nom (l'arrivée, le baptême du village) prend le nom choisi (`renommerEtNoter`).
+- **La borne** (`MAX` 120 lignes, `bornerChronique`) : au-delà, les lignes du mois de lune le plus ancien (pas celui du
+  jour) se résument en une ligne « mois » (« En Solaria : 2 villageois arrivés, un palier franchi et une fête. ») ;
+  puis les résumés les plus anciens se fondent deux à deux (« De Solaria, an 1 à Pluvia, an 1 : … »). Une ligne
+  épinglée ne se résume jamais, ni l'arrivée, ni le récit d'avant ; la clé d'une ligne résumée est gardée (`faits`).
+- **La fenêtre** (📜 « Chronique » dans le menu, à côté du carnet tant que le récit est là ; « 📜 La chronique » dans la
+  liste des villageois) : les noms (« ✏️ Renommer »), les lignes épinglées, puis la chronique par mois de lune, du plus
+  récent au plus ancien. 📌 épingle une ligne (`EPINGLES` 24 au plus) ; ✏️ y écrit une note du joueur (`NOTE_MAX` 140
+  signes, une ligne, la ligne s'épingle ; échappée à l'affichage, comme les noms).
+- **Les souvenirs** (`VILLAGE.PROPOS`, `souvenir_villageois`, `_proche`, `_foyer`, `_commerce`, `_dixieme`, `_fete`,
+  `_projet` ; `villageois-amitie.js`) : un villageois reprend une ligne où il figure (`qui`, `a`, `b`, `avec` :
+  `souvenirsDe`), vieille de `SOUVENIR.DEPUIS` (3) à `JUSQUA` (120) jours (« Tu te souviens ? Il y a 12 jours, Colette
+  et moi, on est devenus inséparables. »). Il en parle quand le sujet est tiré, comme les autres propos.
+- **La sauvegarde** : format 96 ; la migration 95 → 96 répare les noms (l'île nommée à la graine si elle ne l'est pas)
+  et la chronique (une ligne illisible s'en va, une note est bornée) d'une partie du chantier ; une partie d'avant n'est
+  pas touchée.
+- **La simulation** (`node scripts/simulate.mjs --village`, 80 nuits, graine 1, le joueur appliqué) : 17 lignes,
+  1,8 ko ; l'arrivée, la première récolte et la première vente (nuit 4), quatre villageois (12, 15, 33, 63), le village
+  nommé à la nuit 33, cinq paliers, le port au niveau 2 (32), trois paires de proches. Éteint, le CSV est le même octet
+  pour octet.
+- **Les tests** : `tests/engine/village-chronique.test.mjs` (les noms et leurs bornes ; chaque moment écrit sa ligne une
+  fois, dont le port agrandi et deux villageois devenus proches pendant une nuit ; la borne et le résumé par mois ;
+  les épingles ; renommer : l'affichage, pas les lignes passées ; les notes bornées et échappées ; les souvenirs ; la
+  sauvegarde ; éteint).
+- **Ce que d'autres fiches brancheront** : I7c et I7d retireront le carnet (`js/ui/carnet.js`, son bouton
+  `carnetBouton` de `js/ui/stage-windows.js`, `carnet` de `recit.js`) : la chronique en prend la place dans le menu ;
+  I7f écrira le résumé du récit d'avant (`noterChronique(state, 'avant', { id, texte })`) et donnera noms et chronique aux
+  parties d'avant ; I5a appellera `commerceOuvert` (le nom, la ligne) et écrira le nom sur l'enseigne du commerce
+  (`nomDe(state, 'commerce', id)`) ; I8a appellera `noterChronique` pour ses fêtes et ses projets ; I7b posera le nom
+  de l'île choisi au départ.
+- Reste : les commandes du moteur pour nommer et noter (le jeu en ligne, I9) ; le panneau ne s'éclaire pas le soir ;
+  pas de ligne pour un commerce fermé ni pour un villageois parti (personne ne part, B-1).
+
+## La migration des parties en cours (I7f, fait)
+
+Une partie d'avant le chantier passe sur l'île sans rien perdre de ce que le joueur a bâti, gagné ou noué. Le moteur :
+`js/engine/migration-ile.js` ; les réglages et les textes : `VILLAGE.MIGRATION` (`data/village.json`) ; la page :
+`js/ui/storage.js` (la copie de sûreté, l'essai), `js/ui/retour-ile.js` (la fenêtre du retour), ⚙️ Options. Éteint, le
+jeu est le même (le CSV de la simulation octet pour octet ; une partie d'avant ouverte éteinte n'est pas touchée).
+
+- **Quand** : une partie d'avant (`partieDAvant` : elle n'a pas de `state.port`, que toute partie de l'île a dès sa
+  naissance) passe sur l'île à son ouverture sur l'île, une fois, quel que soit le format d'où elle vient :
+  - le réglage allumé (`VILLAGE.ACTIF` ; après la bascule I9h : toujours) : `migrate` le fait, après les migrations de
+    format et `reparerPartie` (`migrationIleDue`, puis `migrerVersLIle` sur une copie : une partie qui ne passe pas reste
+    telle quelle, jamais à moitié, jamais d'exception) ;
+  - pendant le chantier, `jeu.html?village=1` : la partie d'avant enregistrée (ou importée, depuis ⚙️ Options ou l'écran
+    d'accueil) devient une partie d'essai (`state.essais.village`) et passe sur l'île (`essayerSurLIle`,
+    `js/ui/storage.js`). Ouverte sans `?village=1`, une partie d'avant reste celle d'avant.
+- **La copie de sûreté** : à la première ouverture, la sauvegarde d'avant (le texte tel qu'il était sur l'appareil, ou le
+  texte importé) est gardée à part (`ferme-save-avant-ile`), puis la partie est enregistrée ; ⚙️ Options › Sauvegarde
+  propose alors « ⬇️ Télécharger la partie d'avant (.json) », qui se réimporte comme une autre (`state.retourIle.copie`
+  dit au moteur que c'est fait).
+- **L'inventaire de la sauvegarde** (chaque champ touché, ce qu'il devient) :
+
+| Champ | Devient | Pourquoi |
+|---|---|---|
+| la ferme (`blocs`, `sols`, `hauteurs`, `fenetres`, `blocsDessus`, `meubles`, `potager`, ses chemins peints), l'inventaire, `pieces`, `progression`, `technologies`, `pointsTech`, les bêtes, `famille`, `equipement`, `plans`, les styles, `encyclopedie`, `outils`, `monde.vues`, `monde.vu`, `monde.pris`, les objectifs du jour | gardé | ce que le joueur a bâti ou gagné ; le brouillard levé reste levé ; pas de terre vierge (`dehors.ferme` absent) |
+| `port` | neuf (`nouveauPort` : les bacs d'avant comptés passés) | le port paraît, connu d'emblée (la carte du monde, la boussole : I1a) |
+| `dehors` | `{ troncon: 'a_poser', chemins: [] }` | le tronçon devient des blocs du joueur (I2) : la page le pose d'après le Web Worker, `assurerTroncon` dans Node ; grâce aux fantômes d'I7e, c'est celui d'une partie neuve de la même terre (vérifié) |
+| `campagne.chapitre` → `palier` | le même rang ; `recompenses` gardé ; `annonces` vidé | les récompenses reçues ne sont pas redonnées ; les écrans de fin pas encore vus étaient déjà récompensés |
+| `noms`, `chronique` | neufs : l'île nommée à la graine ; les lignes « avant » | la chronique ne note pas l'arrivée de la famille sur l'île (elle était là) |
+| `monde.hameaux`, `monde.habitants`, `voisins`, `projets`, `amitie.visites` | retirés (vidés) | muets sur l'île depuis I7e (`habitantsDe` rend `{}`) ; leur trace passe à la chronique et aux candidats |
+| `amitie.pnj` | seuls les villageois (`vg-…`) restent | les amis deviennent des candidats, avec leurs points |
+| `candidats` (nouveau) | les voisins (ni personnage écrit, ni enfant) au palier `MIGRATION.AMI` (2, « cordial ») ou plus | ils arriveront les premiers ; les autres sont oubliés sans bruit |
+| `demandes`, `invitations` | celles du village seulement | celles des voisins n'ont plus personne |
+| `caleche` (coffre, malle, commandes) | neuve (vide), la malle vidée d'abord | les commandes payées sont remboursées en pièces (`annulerCommande` : « Commande annulée » aux Comptes) ; ce qui était déposé, repris ; ce qui était livré, pris ; le coffre était au marchand |
+| les commandes aux ateliers des voisins (`habitants[].commandes`) | livrées (ce qu'elles devaient rendre) | payées, pas reçues |
+| `projets[].recu` | rendu dans l'inventaire | un projet inachevé : tout ce qu'il a reçu est rendu (on ne sait pas ce qui venait du joueur : il reçoit aussi la part des familles, jamais moins) |
+| `amitie.porte` | ramassé | des présents laissés devant la porte |
+| `courrier` | vidé ; les pièces d'une lettre jamais ouverte, versées (« Lettre jamais ouverte ») | plus de courrier sur l'île (I7a) ; aucune lettre ne porte plus de pièces aujourd'hui : la règle est là pour les données |
+| `enveloppe_maurice` (pas ouverte) | ouverte : ses 15 000 pièces (« Enveloppe ouverte ») | elle ne s'ouvre plus sur l'île (I7d) |
+| `cloche_maurice`, `pierre_lune` | retirées de l'inventaire | des souvenirs du récit, sans valeur ni usage sur l'île. **La pierre posée** (le fait « pierre.posee ») : son effet (tout pousse plus vite) ne joue plus sur l'île depuis I7c — une perte décidée par I7c (« la pierre de lune : rien »), à confirmer |
+| `recit`, `bienvenue` | ceux d'une partie de l'île (vides, la visite faite) | le récit ne se garde que résumé dans la chronique |
+| `monde.but` | effacé s'il visait un voisinage | le lieu n'existe plus |
+| `retourIle` (nouveau) | la fenêtre du retour, effacée quand on la ferme | voir plus bas |
+
+- **Les amis** (`candidatsDAvant`) : du plus ami au moins ami ; chacun garde son prénom, son personnage, son apparence,
+  ses goûts (ceux de son métier, `goutsDe`, et ceux qu'on avait découverts) et ses points d'amitié. Un prénom du récit
+  (Odile, Basile… : un habitant pouvait le porter) est changé pour un prénom de l'île, tiré de son id (`prenomsDuJeu`). Au
+  bac, quand une maison libre l'attend (les règles d'I3a : la réserve de nourriture, le plafond du port), le premier
+  candidat débarque avant tout villageois tiré (`arriverVillageois` prend `state.candidats`) : `v.ancienAmi`, ses traits
+  tirés de son rang (il n'en avait pas), sa ligne dans la chronique comme un autre.
+- **La chronique d'avant** (`MIGRATION.CHRONIQUE`, le type « avant », qui ne se résume jamais ; sans nom propre) : la
+  famille s'installe (jour 1), la première vente (le fait du récit, s'il est noté), chaque voisinage rencontré (le jour de
+  sa découverte, son lieu d'après son style : « Tu rencontres des voisins dans la lande. »), les amis qu'on s'y est faits,
+  le bilan (« Avant l'île : 6 chapitres de la ferme franchis, le niveau 8 atteint. ») et l'ouverture du port, le jour de
+  la migration. Les jours des chapitres ne se gardaient pas (les écrans vus s'effacent) : ils vont au bilan. Aucun nom du
+  récit, ni « hameau » ni « calèche » (le contrôle des textes de l'île lit `VILLAGE.MIGRATION`).
+- **La fenêtre du retour** (« 🏝️ Bienvenue sur l'île à bâtir », une page, dès que la page est calme, avant celle de
+  l'absence) : cinq lignes (le port et le bac ; les villageois et leur maison ; les amis d'avant qui viendront, ou qu'ils
+  sont partis ; ce qui est rendu ; les prix : ce qu'on fabrique se vend de 30 à 60 % plus cher que ses matières,
+  `VILLAGE.PRIX.FOURCHETTE`, et les villageois gardent 30 %, `VILLAGE.PART` — I4 n'a rien à migrer), puis le cadeau de
+  bienvenue (`MIGRATION.CADEAU` : 300 pièces, une boîte aux lettres, 30 planches, 20 pierres : de quoi marquer une
+  première maison), donné quand on la ferme (le bouton, la croix ou le fond ; une fois).
+- **La sauvegarde** : format 102. La migration 101 → 102 répare `candidats` et `retourIle` d'une partie de l'île (un
+  candidat illisible s'en va) ; elle n'ajoute rien à une partie d'avant. Le passage sur l'île, lui, ne dépend pas du format.
+- **Les tests** : `tests/engine/village-migration.test.mjs` (9 tests) : les neuf parties d'avant (les deux d'avant la
+  ferme générée et deux récentes de `anciennes-parties.json`, les cinq époques de `temoins.json`) passent sur l'île, une
+  seule fois, leur ferme identique (l'empreinte des blocs, des sols, des hauteurs, des fenêtres, des meubles, des
+  parcelles) à celle de la même partie migrée éteinte, leurs pièces jamais en baisse, puis jouent 10 nuits du joueur
+  automatique ; les amis candidats et leur arrivée ; les remboursements (la malle, l'atelier, le projet, la lettre,
+  l'enveloppe, les Comptes) ; le palier ; la chronique ; la fenêtre et le cadeau ; le tronçon d'une partie neuve ; éteint ;
+  l'essai ; le format 102. `anciennes-parties.json` gagne deux parties récentes, jouées le réglage éteint par le joueur
+  automatique (graine 1) : `recente_debut` (6 nuits, le chapitre 2) et `recente_avancee` (45 nuits, le chapitre 7, sept
+  voisinages vus, sept amis, puis une commande de semences et un dépôt dans la malle, une commande au métier à tisser, un
+  apport au projet d'un voisinage). `village-bac`, `village-paliers`, `village-mercerie` revus (une partie d'avant
+  ouverte allumée passe sur l'île).
+- **La simulation** : éteint, le CSV est le même octet pour octet ; `--village` aussi (une partie neuve).
+- **Vérifié dans Chromium** (le site construit) : une partie d'avant faite dans la page, le réglage éteint (graine 424242,
+  45 nuits du joueur automatique : le chapitre 7, sept voisinages, trois amis, la calèche), une commande de semences et un
+  dépôt dans la malle ; ouverte telle quelle (sa carte du monde : ses voisinages et la calèche), puis avec `?village=1` :
+  la fenêtre du retour (les trois amis, les graines et le bois rendus), le cadeau reçu, la ferme intacte, la chronique et
+  ses lignes « avant », la carte du monde sans voisinage, avec le port, le port lui-même, la copie dans ⚙️ Options ; une
+  maison, le jour du bac : Aimé, un ami d'avant, débarque (« Aimé est arrivé par le bac et s'installe dans sa maison »,
+  cordial) ; aucune erreur de console.
+- **Ce que le lot 9 et I9h auront à faire** : I9h retire la branche `?village=1` de `js/ui/storage.js` (allumé, `migrate`
+  suffit) ; `partieDAvant` reste (une sauvegarde exportée se réimporte des années plus tard) ; ce que la migration lit
+  encore du jeu d'avant (`caleche.js` pour la malle, `DATA.ILE.ATELIERS`, `DATA.RECIT.ENVELOPPE`, `DATA.COURRIER`,
+  `state.monde.habitants`) est à garder pour elle, ou à recopier dans `VILLAGE.MIGRATION`, avant de retirer ces fichiers.
+  I9f : un monde en ligne d'avant (E-2) n'est pas migré ici (son état vient du serveur, pas de `migrate`) : sa migration
+  s'écrit avec la sienne, avec les mêmes fonctions. (I9f : fait, `MondeRegistre.mettreAJour`, `migrerVersLIle`.)
+- Reste : la pierre posée (son effet perdu) à confirmer ; les objectifs du jour d'une partie d'avant en pleine semaine
+  continuent dans la semaine de l'île au même rang ; le joueur automatique ne ferme pas la fenêtre du retour (le cadeau
+  ne vient qu'en la fermant).
+
+## Les vocations : le village convivial (I8a, fait)
+
+L'île prend une vocation de ce que le joueur y bâtit, sans menu : la première est un village convivial. Le socle sert
+aussi à la vocation productive (I8b) et à une troisième.
+
+- **Le socle** (`js/engine/vocations.js`) : une vocation = une entrée de `VOCATIONS` (`data/village.json` : `nom`,
+  `icone`, `texte`, `PALIERS: [{ score, nom, icone, debloque: [clés] }]`, ses causes et réglages) et un fichier de calcul
+  (`js/engine/vocation-<id>.js`) qui s'enregistre : `enregistrerVocation(id, calcul)`, `calcul(state) → { score, causes:
+  [{ id, nom, valeur }] }` (des entiers). `scoreVocation`, `palierVocation` (`{ palier, suivant, debloque, score, atteint }` :
+  le palier gardé ; `suivant.manque` 0 quand le score l'atteint, il se passe la nuit), `listeVocations`, `vocationsNuit`
+  (dans `runNight`, après la nuit des villageois : le plus haut palier atteint est noté dans `state.vocations.paliers[id]`,
+  jamais perdu), `debloque(state, clé)` (un palier gardé la donne), `quiDebloque`, `nommerDeblocage` / `texteDeblocage`
+  (chaque vocation nomme ses clés pour la page). Deux vocations montent ensemble. Les calculs s'enregistrent dans une
+  déclaration de fonction (prête pendant un cycle d'imports) ; `night.js` charge `vocation-village.js`.
+- **La convivialité** (`js/engine/vocation-village.js`, `VOCATIONS.village.CAUSES`) : le bonheur moyen des villageois
+  adultes (au-dessus de 40, un point par 2 ; 25 au plus), les paires « ami » (2 chacune, 30 au plus) et « proche » (4, 30
+  au plus), les fêtes tenues (6, 60 au plus), les projets finis (10, 60 au plus), les repas partagés avec des villageois
+  (2, 20 au plus : `servirRepas` les compte, `noterRepasPartage`), le décor de la place (25 au plus : les blocs à
+  `DECOR.RAYON` 7 cases du centre de la place — le panneau du village d'I7g s'il est posé (`panneau_village`, à
+  confirmer), sinon le puits, sinon une table de jardin —, chaque sorte ses points : banc, chaise, table 1, lanterne 2,
+  bacs, massifs, rosiers, guirlandes 1, fontaine de jardin 3, kiosque, lavoir, four commun 4…). Au plus 250.
+- **Les paliers** : 20 « Des voisins qui se saluent » (les plans du banc de pierre et de la lanterne de papier, le
+  projet du kiosque) ; 50 « Un village en fête » (une seconde fête par mois, la table et le banc en rondins, la fontaine
+  du village) ; 90 « Un village accueillant » (un nouveau venu a déjà un ami ou un parent au village : `lienArrivee`,
+  son affinité posée à 50 ou 80 ; la pergola, la jardinière de pierre, le four commun) ; 140 « Un village où il fait bon
+  vivre » (deux couleurs d'enseigne pour les commerces, `couleursEnseigne`, que les commerces d'I5a liront ; la chaise
+  peinte, le bassin, la jarre aux coquillages). Un plan débloqué : `planTrouve` (atelier.js) le compte trouvé ; la recette
+  refusée dit le palier. Rien qui produise plus.
+- **Les fêtes du village** (`js/engine/fetes-village.js`, `VOCATIONS.village.FETES`) : la fête que le joueur fixe
+  (`fixerFete` : un jour à venir, 40 jours au plus, une par mois de lune, deux avec le palier 2 ; il faut une place, et un
+  plat cuisiné de l'inventaire par deux villageois, 2 au moins, choisis variés ou donnés ; mis de côté, rendus si on
+  l'annule : `annulerFete`) ; la veillée de pleine lune (d'elle-même, le premier jour de pleine lune du mois, deux
+  villageois au moins, sans plats, de 19 h 45 à 21 h) ; la fête de l'ouverture d'un commerce (`fixerFeteOuverture`, pour
+  I5a : le premier jour libre après l'ouverture). De 17 h à 21 h, tous ceux qui sont là viennent sur la place
+  (`villageois-journee.js` `planDeFete`) : attablés aux tables du dehors (la commune d'abord), assis sur les bancs proches,
+  debout dans les cercles de la place, puis deux à deux face à face ; chaque table, banc ou groupe cause ensemble
+  (`VILLAGE.SOCIAL.REPLIQUES.fete`, douze échanges) ; un enfant joue ; la pluie ne les chasse pas. La nuit
+  (`fetesVillageNuit`) : la fête est tenue ; chaque paire présente gagne `LIENS.GAINS.FETE` (liens.js `presentsALaFete`),
+  chacun vise 6 de bonheur de plus et un par sorte de plat (3 au plus).
+- **Les projets du village** (`js/engine/projets-village.js`, `VOCATIONS.village.PROJETS`) : la place et le jardin
+  partagé (sans bâtiment : leur décor entre dans l'inventaire), le lavoir (3 × 2 cases), le kiosque (3 × 3), la fontaine
+  du village (2 × 2), le four commun (2 × 2). Un à la fois : `lancerProjet` (un bâtiment : son chantier entre dans
+  l'inventaire, à poser avec Construire), `apporterAuProjetVillage`, `envoyerAuChantier` (`v.chantier`) ; tant que tout est
+  là et le chantier posé (sans bâtiment : la place trouvée), ceux qui y sont envoyés y travaillent à la place de leur
+  tâche (`auChantier` : `travailleAujourdhui` faux ; la journée leur donne leurs créneaux de travail autour du chantier,
+  `postesChantier`, le geste de la hache, 🔨 ; les répliques `chantier`) ; la nuit (`projetsVillageNuit`, après les
+  tâches) chacun compte une journée (le kiosque : trois) ; le journal note `tache: 'chantier', chantier: <sorte>` et le
+  tableau le montre à la place de la tâche (`bilanJour.chantier`, `joursChantier`, hors du rendement) ; fini, le bâtiment
+  prend son dessin achevé (`dessinProjet`), les villageois reprennent leur tâche. `abandonnerProjet` (chantier non posé).
+- **Les dessins** (`scripts/batiments/projets_village.py`) : le kiosque, le lavoir, la fontaine du village, le four
+  commun, chacun en chantier et achevé, et la guirlande de lampions de la fête (le jour, allumée) : des volumes simples
+  vus selon la projection de la carte (le dessus et la face avant de tout, l'intérieur des ouvertures), des rampes de
+  160 tons par élément, le biseau, l'occlusion, la braise qui teinte la gueule du four. Couleurs comptées : kiosque 886
+  (chantier 621), lavoir 726 (588), fontaine 419 (417), four 580 (515), lampions 199 et 201.
+- **La scène** (`js/carte/ferme/fete.js`) : pendant la fête, une guirlande de lampions derrière chaque table ; le soir,
+  les lampions s'allument et posent leur lueur dans le voile, une flaque de lumière dorée sur chaque table et chaque
+  groupe ; assis sur un banc à la fête, ils causent aussi (villageois-social.js).
+- **L'interface** : la fenêtre « L'île » a deux onglets, « Les paliers » et « Vocations » (`js/ui/vocations.js`) : pour
+  chaque vocation, son score, son palier, le palier suivant (une jauge, ce qu'il débloque), ses causes (valeur, plafond,
+  ce qui la fait), ses paliers ; pour le village, ses fêtes (celles qui viennent, en fixer une, l'annuler) et ses projets
+  (le projet en cours : les matériaux, « Apporter », les journées, le chantier à poser, qui y va — « Envoyer »,
+  « Rappeler » ; les autres : lancer, fermés jusqu'au palier, finis). Le calendrier marque les fêtes du village ; « Créer
+  un évènement » propose de fixer la fête ce jour-là. Au matin, des notifications : la fête d'hier, le chantier, un palier
+  passé (ce qu'il débloque), les fêtes des trois jours qui viennent ; « X n'arrive pas en inconnu ».
+- **La sauvegarde** : format 97 ; la migration 96 → 97 (`reparerVocations`, state.js) :
+  rien sans vocations ; sinon les paliers bornés (une vocation inconnue s'en va), les fêtes lisibles (une par jour), les
+  projets connus, les matériaux bornés au besoin ; un villageois envoyé à un projet qui n'est plus en cours reprend sa
+  tâche.
+- **Les tests** : `tests/engine/village-vocations.test.mjs` (le socle et une troisième vocation, les paliers jamais
+  perdus ; chaque cause et son plafond ; les déblocages : plan, projet, seconde fête, arrivée liée ; une fête : fixer,
+  refus, plats, annuler, le jour dit — attablés, ils causent —, la nuit — affinité, bonheur, tenue — ; la veillée ; le
+  kiosque en trois journées, le journal et le tableau ; la place et son décor ; la sauvegarde ; éteint). Éteint, le CSV
+  de la simulation est le même octet pour octet ; `fetes.test.mjs` et `projets.test.mjs` restent verts.
+- **Pour la chronique (I7g)** : une fête est tenue dans `fetesVillageNuit` (fetes-village.js, à `v.tenues += 1`) ; un
+  projet est fini dans `projetsVillageNuit` (projets-village.js, à `p.faits.push`) ; un palier dans `vocationsNuit`.
+- Reste : le joueur automatique ne fixe pas de fêtes et ne lance pas de projets ; les mimiques pendant les fêtes (hors
+  périmètre) ; le joueur n'a rien de propre à faire à la fête (y être ne donne pas d'amitié) ; les couleurs d'enseigne
+  attendent les commerces (I5a) ; le panneau du village (I7g) : son id est supposé `panneau_village` ; les bâtiments ne
+  servent qu'au décor et à la convivialité (le four ne cuit pas, le lavoir ne lave pas) ; l'eau des fontaines et du
+  lavoir ne s'anime pas.
+
+## La vocation « ferme productive » (I8b, fait)
+
+Une grosse économie, une ferme presque industrielle et automatisée, sans pollution ni malus de bonheur : un autre goût
+de jeu. Les réglages : `VOCATIONS.production` et `PRODUCTION` (`data/village.json`) ; le moteur :
+`js/engine/vocation-production.js` (le score), `contrats.js` (les contrats d'export), `production.js` (ce que la ferme
+garde de ses jours), `taches.js` (« Conduire les machines », la tournée en volume) ; la page : l'onglet Contrats 📜 du
+port (`js/ui/port.js`). Les chiffres qui dépendent des prix sont à refaire après I4.
+
+- **Le socle des vocations** (`js/engine/vocations.js`) : posé ici en **version minimale**, à l'interface convenue avec
+  I8a (`enregistrerVocation`, `scoreVocation`, `palierVocation`, `listeVocations`, `vocationsNuit`, `debloque`) ; I8a en
+  écrit la vraie version, qui la remplace à l'intégration. Un palier atteint est noté la nuit (`state.vocations.paliers`)
+  et le reste ; **ce qu'il débloque s'ouvre à cette nuit-là** (`debloque` ne relit que les paliers notés : les machines
+  le lisent à chaque pas, et le score lit les machines). L'onglet « Vocations » de la fenêtre « L'île » est d'I8a ; le
+  score de la ferme productive s'y liste (`listeVocations`) et se lit déjà en tête de l'onglet Contrats.
+- **Le score** (`calculProduction`, des entiers) : la valeur exportée au port sur le mois de lune (`LUNE.JOURS_MOIS`
+  jours glissants ; toute vente au port la note : `bac.js noterVenteBac` → `production.js noterExport`), un point par
+  `CAUSES.export.PIECES` (25) pièces ; les machines en état de marche (les chaînes prêtes, le Moulin bâti, le robot, le
+  quai de chargement), `CAUSES.machines.POINTS` (15) chacune ; l'énergie produite sur le mois (notée chaque nuit,
+  `productionNuit`), un point par `CAUSES.energie.WH` (4 000) Wh ; les contrats honorés, `CAUSES.contrats.POINTS` (40)
+  chacun, depuis le début. Les paliers : 120, 300, 600, 1 000.
+- **Les contrats d'export** (`PRODUCTION.CONTRATS`) : à partir du port de niveau 2, chaque passage du bac en propose
+  `PROPOSES` (0, 1, 2, 2, 3 selon le niveau), tirés de la graine et du jour parmi `OBJETS` (le pain, les fromages, les
+  conserves, les jus, la compote, la bière, l'huile, la farine, le lait, les œufs, la laine) que le joueur sait produire
+  (ses récoltes, ses plats, le pain cuit, la farine de son Moulin, ce que font ses chaînes). Leur taille suit le niveau
+  du port (`VALEUR` : 400, 800, 1 400, 2 200 pièces au prix de vente, ± 20 %, arrondie à 10, de 20 à 300 unités : 50
+  pains au niveau 2, 100 au niveau 3, 275 au niveau 5), une prime de 30 à 50 %. On en accepte au comptoir jusqu'au
+  passage suivant (`MAX` 2 à la fois) ; accepté, il court sur `PASSAGES` (3) passages du bac : on y livre, en autant de
+  fois qu'on veut, ce qu'on a porté (« Livrer ») ou ce que la tournée des villageois emporte ; chaque livraison est
+  payée au prix de vente (« Contrat : … », elle part avec les caisses du bac) ; complet, la prime (« Prime du contrat :
+  … ») et `XP` 60. Le bac de son dernier passage reparti, un contrat incomplet s'efface sans pénalité. Les commandes
+  `port.contrat` et `port.livrer`.
+- **Conduire les machines** (`TACHES.LISTE.chaine`, 16 actions par jour, sans outil) : une action est un tour des
+  machines (`machinesDeLaFerme`) : chaque chaîne prête est vidée (son tas au coffre : une chaîne au tas plein repart)
+  puis alimentée (`verserChaine`, du coffre) ; au Moulin, il verse `MOULIN` (10) blés quand il n'en a plus guère à
+  moudre (`GARDE` 10 blés et trois nuits du blé des poules restent) ; au four libre, il relance la `FOURNEE` (le pain).
+  Ses postes : devant l'entonnoir, la meule, le four ; un appui long sur une machine propose la tâche. La farine et le
+  pain comptent à leur lancement (comme la cuisine). Le courant de ce qu'il verse (les cycles des chaînes, la farine du
+  Moulin, en Wh) va dans sa journée (`v.travail.courant`, puis `J.courant`) ; **le tableau le compte dans son coût**, une
+  pièce par `PRODUCTION.COURANT.WH_PAR_PIECE` (250) Wh (« ⚡ Le courant des machines »). Une chaîne servie tourne tout le
+  jour : le joueur seul n'a pas le temps d'y revenir.
+- **La tournée en volume** (`porteeNavette`) : 10 objets par aller (`PORTEE`), 25 avec une brouette à la ferme, 60 avec
+  une charrette et un cheval ; un **quai de chargement** posé regroupe les envois : 200 % (la tournée y part et y
+  revient). Elle livre d'abord les contrats acceptés (sans rien de marqué « à vendre »), puis ce qui est marqué.
+  Plusieurs villageois peuvent la faire.
+- **Le quai de chargement** (`quai_chargement`, l'Atelier : 12 planches, 8 pierres, 2 lingots de fer ; à partir du port
+  de niveau 2, `recette.port`, `atelier.js`) : un bloc de deux cases, dehors sur la ferme, unique. Son dessin
+  (`scripts/batiments/quai_chargement.py`, vu de haut à 45°) : la plate-forme de planches (10 rangées de dessus, 7 de
+  face sur trois poteaux boulonnés), deux caisses empilées, une caisse au bord, un tonneau cerclé, la potence de
+  chargement et la caisse qui pend à sa corde ; 32 × 44, **480 couleurs**.
+- **Les paliers débloquent** : `contrats_gros` (les contrats `GROS` 150 %), `machines_grandes` (le réservoir d'une
+  chaîne : `MACHINES.RESERVOIR` 200 %, 60 ingrédients), `import_plein_champ` (les semences du blé, du tournesol, du riz,
+  du houblon en vrac au catalogue d'import : par `IMPORT.LOT` 50, au prix de vente × 150 %, rang 2 ; `bac.js`, la sorte
+  `vrac`), `robot_second` (la tournée du robot à deux : chaque tâche en `100 / ROBOT.VITESSE` de son temps). Rien qui
+  touche à la convivialité.
+- **La sauvegarde** : format 98 (`state.production` : `ventes` et `energie` des derniers jours, `contrats` ;
+  les paliers des vocations : I8a) ; la migration 97 → 98 répare ce qui est abîmé et n'ajoute rien à une partie d'avant.
+- **Le joueur automatique** : `node scripts/simulate.mjs --vocations` joue deux stratégies (`SIMULATION.VOCATIONS`) :
+  « village », le joueur appliqué tel qu'il est (I8a n'a pas encore de fêtes ni de projets pour lui), et
+  « production » : ses villageois aux champs, aux machines, à la cuisine, à la tournée du port (qui porte aussi le
+  pain), sans réattribution ; la farine gardée pour le pain ; au port, il accepte les contrats de pain, de laine, d'œufs
+  et de lait et les livre ; il pose le quai dès que le port l'ouvre. Mesure (80 nuits, graines 1, 2, 3 ; village →
+  production) : gagné sur la partie 11 592 → 13 339, 10 797 → 12 022, 11 149 → 11 431 (+ 15 %, + 11 %, + 3 % ; le
+  pain vendu par la tournée : 2 120, 1 464, 560 pièces) ; pièces en caisse à la nuit 80 : 1 842 → 2 089, 523 → 3 572,
+  685 → 117 ; score de la ferme productive 208 → 284, 120 → 203, 153 → 131 ; contrats honorés 0 → 1, 0, 0 (le joueur
+  simulé accepte des contrats de lait et d'œufs que sa petite ferme ne tient pas). Le bonheur reste à 60 partout, et
+  les liens « ami » ou « proche » sont 3 contre 6 : **sans les fêtes et les projets d'I8a, la stratégie « village » ne
+  gagne ni bonheur ni liens** ; la conclusion sur l'équilibre attend I8a (et les prix d'I4).
+- **Les tests** : `tests/engine/village-production.test.mjs` (le score et chacune de ses causes ; les paliers notés la
+  nuit, ce qu'ils débloquent ; un contrat sur trois passages, sa prime ; un contrat manqué, sans pénalité ; « Conduire
+  les machines » : une chaîne vidée et alimentée, le Moulin, la fournée, le courant dans le coût ; la tournée : les
+  contrats d'abord, la brouette, le quai ; un contrat de 100 pains honoré en trois passages par un boulanger, une
+  chaîne et deux tournées ; les paliers ; la sauvegarde ; éteint, rien). Éteint, le CSV de la simulation est le même
+  octet pour octet ; `chaines.test.mjs` et `automatisation.test.mjs` restent verts.
+- Reste : refaire les chiffres après I4 (la valeur des contrats, les seuils, le prix du courant) ; brancher le socle
+  d'I8a ; dessiner le second robot sur la carte (aujourd'hui, sa tournée va deux fois plus vite) ; la bulle d'un
+  villageois qui conduit les machines reste celle du ramassage (le geste « ramasse ») ; la tournée ne montre pas encore
+  la charrette qu'elle mène ; la stratégie « village » attend les fêtes et les projets d'I8a.
+
+## L'île partagée : la frontière et le poids (I9a, fait)
+
+La nouvelle frontière est dans `docs/monde-partage.md`, § 13 (« L'île partagée ») : elle remplace E-8 et F.2 pour
+les mondes du chantier. Ce qui est commun : l'île et ses changements, la ferme, le coffre, la caisse, le port, les
+villageois, la chronique, l'heure. Ce qui reste à chacun : son personnage, son énergie, son brouillard, son sac, son
+amitié avec chaque villageois, ses réglages.
+
+Ce qui est posé :
+
+- **La frontière au moteur** (`js/engine/frontiere.js`) : `ilePartagee` (le chantier allumé pour la partie du monde),
+  `caseDansLaFerme`, `commandeHorsDeLaFerme`, `refusFrontiere`. Le serveur (`worker/src/monde.mjs`) et le jeu
+  (`js/ui/en-ligne.js`) font le même contrôle.
+- **La barrière levée** : en ligne, sur une île, pas de borne ; le personnage sort, la vue le suit ; chacun voit le
+  relief de l'île, tiré de la graine chez lui ; son brouillard est à lui (dans son navigateur, par monde : `unirVu`,
+  `js/engine/monde-vu.js`) ; hors de la ferme, un bandeau dit que rien d'autre n'est encore synchronisé, et un geste
+  dehors est refusé avant d'être envoyé. Le chantier éteint, rien ne change (la borne et le mot d'E-8).
+- **Le plafond** : `VILLAGE.EN_LIGNE` (`data/village.json`) : 256 Ko la partie du monde, 64 Ko l'île hors de la ferme.
+- **La mesure** : `node scripts/poids-ile.mjs`. Pas de nouveau format (103) : rien n'entre dans la sauvegarde.
+- **Les tests** : `tests/test-monde.mjs` (la frontière, le mot de chaque monde ; le monde de l'invité, refait dans un
+  autre processus, identique à celui de l'hôte : `tests/engine/monde-de-la-graine.mjs`), `tests/test-synchro.mjs` (le
+  brouillard sur la partie locale, la confirmée intacte), `tests/deux-joueurs.mjs` (8a à 8d : deux joueurs sortent et
+  se voient ; 8e, avec `PORT=1` : l'invité suit l'hôte jusqu'au port, ≈ 95 s).
+
+Les mesures (le joueur automatique, graine 1 ; le détail : `docs/monde-partage.md` § 13) :
+
+| Moment | Villageois | La partie | La copie du monde | Hors de la ferme | Le village et le port |
+|---|---|---|---|---|---|
+| Début (jour 11) | 0 | 26,1 Ko | 26,2 Ko | 1,0 Ko | 0,9 Ko |
+| Milieu (jour 41) | 4 | 58,2 Ko | 57,3 Ko | 1,0 Ko | 17,2 Ko |
+| Avancée (jour 81) | 6 | 80,3 Ko | 74,7 Ko | 1,0 Ko | 35,6 Ko |
+
+Une île très exploitée ajouterait ≈ 39 Ko de pièces prises ; chaque villageois ≈ 2,7 Ko. Ce qui se recalcule de la
+graine (46 210 arbres, plantes et rochers, la carte de 5,7 Mo) ne s'envoie jamais ; le refaire coûte 0,3 s (le
+terrain), 0,4 à 0,5 s (le contexte du sol), puis ≈ 12 ms par région.
+
+Le plan du lot, d'après les mesures : I9c et I9e sont confirmées telles quelles ; I9a2, I9b, I9d et I9f gardent leur
+objet, avec une section « Revu par I9a » chacune : l'instantané au temps et non au nombre de pas (I9a2) ; le coût du
+contrôle des gestes dehors par le serveur, le brouillard déjà fait, le sac de chacun (I9b) ; `voisins` que l'élagage
+retire (I9d) ; l'élagage et le plafond à la mise en ligne (I9f).
+
+## L'horloge commune (I9a2, fait)
+
+La note de conception, validée telle quelle : `docs/fiches/ile/I9a2-note-horloge.md` (la voie b). D13 remplace F.2
+pour les mondes de l'île : le temps y passe tant qu'un joueur au moins est connecté, pour tous en même temps.
+
+Ce qui est posé :
+
+- **Le pas du monde** (`js/engine/temps-monde.js`) : 5 s d'horloge, 10 minutes de jeu (`VILLAGE.EN_LIGNE.PAS_MS`, une
+  constante du protocole), joué toujours un après l'autre (`avancerJusqua`). Il fait ce que fait `tick`, plus ce que
+  les veilleurs de la page font en solo : la nuit à 22 h, minuit, le réveil, le bac et les contrats, l'arrivée d'un
+  villageois ou d'un enfant, l'accueil à la fin de l'heure d'arrivée, l'arrivée notée dans la chronique, et les maisons
+  (une fois toutes les six pas). `state.horloge = { pas, sommeil, reveils }`. Un pas de 60 s ne donne pas la même
+  partie que 12 pas de 5 s (un test le garde écrit) ; les mêmes pas de 5 s, si.
+- **L'énergie de chacun** : `state.energies` (par compte, dans la partie du monde) ; `executerCommande(state, c,
+  { acteur })` pose celle de l'acteur dans `state.energie` le temps de la commande ; la nuit la rend à tous les
+  membres, présents ou non ; un compte nouveau a l'énergie pleine, le propriétaire celle de sa partie.
+- **La nuit d'une île** vient seule ; tous couchés, `temps.sommeil` (la commande du monde) fait filer la nuit dix fois
+  plus vite ; `nuitPartagee` ne refait plus la journée des machines pour une île (`chainesDeLaJournee`,
+  `distribuerGrain(state, false)` : elles ont tourné dans les pas).
+- **Le serveur** (`worker/src/monde.mjs`) : les pas déduits de son heure, rejoués avant chaque geste, le pas sur chaque
+  événement et au journal ; une ancre `{ pas, reel }` gardée avec l'instantané ; un instantané tous les 120 pas ou
+  200 gestes, et au départ du dernier, avec l'empreinte diffusée à tous (`controle`) ; une alarme toutes les
+  10 minutes ; une sauvegarde par heure de jeu et au départ du dernier ; le premier joueur réveille le monde là où il
+  s'était arrêté, le dernier l'endort ; au-delà de 60 pas de retard, la partie entière.
+- **Le jeu** (`js/ui/synchro.js`, `en-ligne.js`, `loop.js`, `stage.js`) : la locale avance à l'heure du serveur, la
+  confirmée la suit de deux pas en arrière ; l'heure affichée glisse entre deux pas ; Construire ne fige plus l'heure ;
+  les veilleurs qui écrivaient dans la partie se taisent en ligne ; « le monde dormait » dit au retour, et dans 👥 et
+  ⚙️ › Jeu en ligne : « Le temps de ce monde passe quand au moins un joueur y est. Sans personne, il dort. »
+- **`Math.hypot`** (la tournée du robot, la distance au comptoir) est devenu une racine carrée exacte, la même d'un
+  navigateur à l'autre. Le CSV de `node scripts/simulate.mjs` est le même octet pour octet.
+- **La sauvegarde** : format 104 (`horloge` et `energies` dans la partie d'un monde ; une partie solo n'y gagne rien).
+- **Les tests** : `tests/engine/village-temps-monde.test.mjs` (le même état deux fois, par JSON au milieu ; 60 s ≠
+  12 × 5 s ; la nuit à 22 h, minuit, le réveil ; une omelette prête à son heure, celle de 21 h 55 à minuit ; l'énergie
+  de deux joueurs ; le bac à 9 h ; le format 104), `tests/test-monde.mjs` (l'horloge s'arrête sans joueur et reprend
+  sans rattrapage ; le pas de chaque geste et le réveil à froid ; la préparation à son heure ; la nuit qui file quand
+  tous dorment et garde son pas quand un seul dort ; les instantanés, les sauvegardes ; le retard de 60 pas ; F.2 pour
+  les mondes d'avant), `tests/test-synchro.mjs` (deux joueurs et le monde au même état après une heure de pas ; un
+  joueur en retard, un en avance), `tests/deux-joueurs.mjs` (9a à 9e, dans Chromium).
+
+Les mesures (`node scripts/cout-horloge.mjs`, le vrai Durable Object sur `node:sqlite` ; l'île avancée, graine 1,
+80 nuits : 78,9 Ko pour la copie du monde ; `--plafond` : la même lestée à 253 Ko ; une heure réelle en ligne) :
+
+| Cas | Pas | Révisions | Écrit (79 Ko / 253 Ko) | Instantanés | Diffusé (à tous) | Alarmes | Calcul du serveur | Le journal couvre |
+|---|---|---|---|---|---|---|---|---|
+| Le temps seul, 1 joueur | 720 | 0 | 471 Ko / 1,5 Mo | 6 | 0,8 Ko | 6 | 3,3 à 3,8 s (le plus gros : 0,8 à 1,1 s, une alarme de 120 pas) | — |
+| Le temps seul, 4 joueurs | 720 | 0 | 471 Ko / 1,5 Mo | 6 | 3,3 Ko | 6 | 3,3 à 3,4 s | — |
+| 4 gestes par minute, 1 joueur | 720 | 240 | 498 Ko / 1,5 Mo | 6 | 48 Ko | 6 | 3,4 à 3,6 s (le plus gros : 36 à 128 ms) | 60 min |
+| 4 gestes par minute, 4 joueurs | 720 | 959 | 581 Ko / 1,6 Mo | 6 | 613 Ko | 6 | 3,8 à 4,2 s (le plus gros : 22 ms) | 31 min (500 gestes) |
+| Tous couchés chaque nuit, 1 joueur | 1 021 | 247 | 655 Ko | 8 | 49 Ko | 6 | 4,2 s | 60 min |
+| Tous couchés chaque nuit, 4 joueurs | 1 014 | 966 | 738 Ko | 8 | 624 Ko | 6 | 4,7 s | 32 min |
+
+Le prix d'un pas (ce que paie aussi chaque joueur, deux fois : sa partie et la confirmée) : de jour 6,7 à 7,2 ms en
+moyenne (p99 16 à 22 ms), de nuit 0,8 ms, à minuit 18 ms ; presque tout est dans `farmStep` (les tâches des villageois,
+I3c). Les maisons revues à chaque pas en coûtaient 5 de plus : elles le sont toutes les six pas. Le calcul du serveur
+reste ≈ 0,1 % du temps ; l'écrit vient surtout des instantanés au temps (six par heure), plus des gestes à quatre ; ce
+qui est diffusé est fait des gestes (le temps seul : l'empreinte de contrôle, six fois par heure).
+
+Ce que les fiches suivantes en reçoivent : une section « Revu par I9a2 » dans I9b à I9g.
+
+Ce qui reste : le geste « accueilli » d'un villageois (la carte) écrit encore dans la partie locale (I9d : fait) ; les
+avis de l'étal et des commerces peuvent se redire après une partie refaite (I9d : fait) ; la botteleuse sort toujours sa botte au
+versement en ligne (E-13 : sa sortie suit la carte, pas l'horloge) ; une alarme qui rejoue 120 pas d'un coup coûte
+≈ 1 s au serveur (à suivre au premier déploiement) ; aucun battement d'heure n'est diffusé : l'heure du serveur se
+mesure à l'accueil seulement (l'aller-retour compris) ; une île déjà en ligne avant I9a2 repart au pas 0, ses joueurs à
+l'énergie pleine.
+
+## Les changements de l'île (I9b, fait)
+
+Ce qu'un joueur change sur l'île hors de la ferme (un arbre coupé, un rocher cassé, une cueillette, un poisson, un
+chemin posé) est vu des autres. L'île se recrée chez chacun de la graine ; seuls les écarts voyagent, dans les gestes
+eux-mêmes (`docs/monde-partage.md` § 13).
+
+### Les deux choix
+
+**1. Ce qu'un geste lâche dehors va au coffre commun.** Pas au sac de chacun, ni au sol.
+
+- C'est la règle de la ferme en ligne (E-9 : la hache, la pioche, la faux y lâchent leur bois, leur pierre, leur fibre
+  droit au coffre ; E-13 : les morceaux qui traînent y entrent à la mise en ligne). Dehors, la même hache fait la même
+  chose : la frontière ne change pas ce que fait un geste, seulement où il se fait.
+- Le jeu solo n'a qu'un inventaire ; en ligne, c'est le coffre commun (F.1). Le bois coupé dehors sert à bâtir la
+  ferme et le port de tous : il doit y être, comme il serait dans l'inventaire en solo.
+- **Le sac de chacun** (§ 13) est celui des **provisions de sortie** (ce qu'il mange loin de la ferme), pas une
+  besace : il est fait ici, par compte (ci-dessous), mais il ne reçoit pas la récolte. Ce que chacun porte pour le
+  vendre (sa charge) est à I9c.
+- **Le sol** (des morceaux à ramasser en marchant dessus, comme en solo) ferait de chaque bûche un objet de la partie
+  du monde, avec sa place tirée par la page de celui qui coupe, ramassé par un autre ou perdu : plus d'écarts, plus de
+  conflits, et rien de mieux qu'un coffre que tous voient.
+
+**2. Le serveur contrôle un geste dehors par l'identifiant de la pièce, sans le sol de sa région** (`refusPieceMonde`,
+`js/engine/monde-recolte.js`), et le moteur refuse un doublon (la pièce déjà prise : `preparer`).
+
+Mesuré (`node scripts/cout-ile.mjs`, l'île de la graine 1, le Durable Object sur `node:sqlite`) :
+
+| | (a) le sol des régions où l'on joue | (b) l'identifiant sans le sol |
+|---|---|---|
+| Au réveil du monde | 0,49 à 0,55 s (le contexte du sol : ses champs, puis ses éléments) | rien |
+| Par région nouvelle | 9,5 ms en moyenne (max 39 ms ; 88 régions) | rien |
+| Une heure à 4 joueurs qui récoltent (6 gestes par minute chacun, une région nouvelle toutes les 5 minutes) | 48 régions tirées (0,54 s), 0,48 ms par geste, + le réveil | 0,5 µs par geste |
+| Mémoire | les 12 dernières régions (≈ 0,5 Mo de sol) | rien |
+| Ce qu'il empêche | une pièce inventée par un jeu trafiqué | une pièce hors de la carte, dans la ferme, d'une sorte qui ne se prend pas ; un doublon (par le geste) |
+
+Pourquoi (b) :
+
+- **Le coût de (a) tombe au pire moment** : le premier geste dehors après le réveil du monde paie 0,5 s de plus,
+  ajoutées au rattrapage des pas (jusqu'à 1,2 s) ; c'est le geste que l'autre doit voir « en moins d'une seconde ».
+- **Ce que (a) protège est mince** : les membres d'un monde sont invités par le propriétaire, ont un rôle, et le
+  geste vérifie déjà l'outil, l'énergie (celle de son auteur), la distance, la pièce prise. Une pièce inventée
+  donnerait un peu de bois à un tricheur, dans le monde de ses amis.
+- **(b) est le même contrôle chez le monde et chez chaque joueur** (le moteur pur) : un geste refusé l'est aussi dans
+  la partie locale, avant d'être envoyé ; avec (a), le monde seul saurait refuser, et un joueur verrait son coup
+  annulé un aller-retour plus tard.
+- **Le sol reste lu là où le moteur en a besoin** : un bloc posé dehors (I2 : ni dans l'eau, ni sur un arbre, ni dans
+  un hameau ; `dehors.js` `poseDehorsStatus`). Le serveur le tire alors de la graine (`solDirect`), en garde les
+  `MONDE.REGIONS_SOL` (12) dernières régions (`limiterSolDirect`) : un chemin posé dehors coûte 0,43 s la première
+  fois, puis 14 à 33 ms. Chez un joueur, une région que sa page n'a pas encore se tire en direct pour rejouer le bloc
+  d'un autre (`poserSolDehors(sol, { repli })` : sinon sa partie confirmée divergerait et tout serait redemandé) ;
+  en solo, rien ne change.
+
+### Ce qui est posé
+
+- **La commande `monde.recolter`** `{ piece, geste?, fort?, variante?, depuis? }` (`js/engine/commandes.js`) :
+  couper, casser, faucher, cueillir ou ramasser la pièce « sorte:x,y » du monde (`recolterPieceMonde` : le contrôle,
+  puis `recolterMonde` sans morceaux au sol). Le rôle : ami jardinier (`js/engine/roles.js`). La page de l'île la joue
+  par le pont de la carte (`js/ui/outils.js` `mondeFromStage` ; `js/ui/stage.js` ne refuse plus `recolte` sur une
+  île) ; le gain s'affiche « au coffre commun », comme les outils de la ferme.
+- **La frontière ouverte commande par commande** (`js/engine/frontiere.js`) : `refusFrontiere(state, args, type)` ;
+  sur une île, `COMMANDES_DEHORS` passe (`monde.recolter`, `outil.pecher` dans un lac, une rivière, la mer, et les
+  blocs : `bloc.poser`, `reprendre`, `remettre`, `deplacer`, `tourner`, `orienter`, `peindre`, `portail.basculer`) ;
+  le moteur les vérifie ensuite (un mur dehors : « pas hors de la ferme »). Une autre commande qui vise dehors (un
+  arbre de la ferme, un labour…) est refusée, avec son mot. Une ferme d'avant garde E-8 (« en ligne, le monde partagé,
+  c'est la ferme »), `monde.recolter` compris.
+- **La repousse** : `runNight` la fait pour une île partagée (`horlogeVivante`) ; elle vient avec minuit, dans les pas,
+  au même pas chez tous. Les quotas (la pêche du jour) sont dans la partie du monde : communs. Une ferme d'avant n'en
+  a toujours pas (E-8).
+- **Le conflit** : deux joueurs sur le même arbre : le premier arrivé au monde l'a ; le second coup est refusé par le
+  moteur (« Il n'y a plus rien ici »), sa partie locale se refait sans lui (son bois disparaît, l'arbre tombe) : rien en
+  double.
+- **L'arbre que l'autre abat tombe sous nos yeux** (`js/carte/ferme/recolte-monde.js` `mondeChuteDistante`, d'après le
+  changement « distant » du modèle) ; un rocher se brise.
+- **L'intérêt par région** (`worker/src/monde.mjs`) : il porte sur les positions, pas sur les gestes. Les gestes vont
+  à tous : la partie confirmée de chacun est celle du monde, et un geste dehors y touche le coffre, l'énergie de son
+  auteur, la région vue, les objectifs, les quotas : un joueur qui n'en recevrait qu'une part n'aurait plus la même
+  partie (l'empreinte de contrôle le verrait, et il redemanderait tout). Un geste pèse ≈ 155 octets. Les positions,
+  elles, ne touchent pas la partie et pèsent dix fois plus : à qui joue dans la même région ou l'une des huit autour,
+  elles vont à leur pas ; aux autres, une toutes les 2 s (`POS_LOIN_MS` : l'avatar reste là où il est) ; à qui entre
+  dans une région, le lot des joueurs qui y sont (`lot`). Les écarts d'une région, eux, sont déjà chez chacun, dans
+  sa partie : y entrer ne demande rien au serveur.
+- **Le bandeau « rien d'autre n'est encore synchronisé » est retiré.**
+- **Le sac de chacun** (`state.sacs`, par compte, dans la partie d'un monde de l'île ; `js/engine/temps-monde.js`
+  `sacDe`) : une commande y pose le sac de son acteur le temps de se jouer (`avecActeur`, comme l'énergie) ; le
+  propriétaire reçoit celui de sa partie à la mise en ligne, un invité arrive sans ; les commandes `sac.poser`,
+  `sac.retirer`, `sac.remplir`, `sac.reprendre` ; `manger { dehors }` : dehors (la page le dit, le monde ne sait pas
+  où est chacun), il ne mange que ce que contient son sac ; la nuit fait périmer chaque sac. La page montre le sien
+  (`js/ui/synchro.js`).
+- **La sauvegarde** passe au format 105 (`sacs` dans la partie d'un monde ; une partie solo n'y gagne rien).
+- **Le jeu solo est le même** : le CSV de `node scripts/simulate.mjs` est identique octet pour octet à celui d'I9a2.
+
+### Les mesures (`node scripts/cout-ile.mjs`)
+
+Les octets diffusés par minute (10 minutes ; chaque joueur récolte 6 fois par minute et envoie sa position 5 fois par
+seconde : il marche) :
+
+| Joueurs | Où | Intérêt par région | Diffusé (tous) | Par joueur | Gestes (evt) | Positions |
+|---|---|---|---|---|---|---|
+| 2 | ensemble (une région) | oui | 63 Ko/min | 32 Ko/min | 3,6 Ko/min | 59 Ko/min |
+| 2 | dispersés | oui | **10 Ko/min** | 5 Ko/min | 3,6 Ko/min | 6 Ko/min |
+| 2 | dispersés | non | 63 Ko/min | 32 Ko/min | 3,6 Ko/min | 59 Ko/min |
+| 4 | ensemble | oui | 362 Ko/min | 90 Ko/min | 14 Ko/min | 346 Ko/min |
+| 4 | dispersés | oui | **50 Ko/min** | 13 Ko/min | 15 Ko/min | 35 Ko/min |
+| 4 | dispersés | non | 362 Ko/min | 91 Ko/min | 15 Ko/min | 346 Ko/min |
+
+Un geste dehors pèse ≈ 155 octets diffusés à chacun, et coûte au serveur 0,3 à 0,5 ms (les pas dus compris).
+Ce qui pèse, ce sont les positions (E-4), pas les écarts.
+
+Une île très exploitée (150 pièces prises par jour pendant 10 jours, par des commandes, chacune revenue au jour dit) :
+1 500 pièces prises, au plus 659 manquantes en même temps, 499 au bout de 10 jours : **17,3 Ko** d'écarts (gzip
+3,3 Ko), l'île hors de la ferme 17,4 Ko (plafond 64 Ko), la partie 25,6 Ko (plafond 256 Ko). Un écart pèse ≈ 35
+octets : les 1 100 pièces prises en même temps qu'I9a supposait feraient 38 Ko. **Le plafond d'I9a tient.**
+
+Entrer dans la région la plus chargée (303 écarts, 10,7 Ko) : son sol 12,5 ms (dans le Worker du sol, comme avant),
+ses 297 pièces manquantes retrouvées en 0,66 ms ; rien à recevoir.
+
+### Les tests
+
+- `tests/engine/rejeu.test.mjs` : un journal de 160 gestes du dehors, tirés à graine fixe (abattre, faucher, ramasser,
+  pêcher, poser et reprendre un chemin, le sac, manger dehors), chacun à son pas, par deux joueurs, sur six journées
+  et plus : rejoué chez l'hôte, l'invité (par JSON) et le monde (sauvé et repris à mi-chemin) : les mêmes résultats
+  un à un, la même partie, la même repousse.
+- `tests/test-monde.mjs` : l'arbre abattu par l'invité (le bois au coffre, rien au sol, un doublon refusé, une pièce
+  inventée ou dans la ferme refusée, le Durable Object réveillé à froid) ; le conflit sur le même buisson, la pêche
+  au lac, la faux, la main, le visiteur ; un chemin posé dehors et repris, un mur refusé ; la repousse au jour dit, au
+  monde et au monde réveillé à froid, et pas dans une ferme d'avant ; l'intérêt par région (près, loin, le lot, une
+  ferme d'avant qui relaie tout) ; le sac de chacun et le format 105.
+- `tests/test-synchro.mjs` : l'hôte, l'invité et le monde pendant six journées de gestes du dehors : la même partie,
+  chaque pièce revenue le même jour chez les trois, le brouillard de chacun à lui ; le conflit dans la partie de chacun.
+- `tests/deux-joueurs.mjs` (Chromium, 10a à 10e) : A abat un arbre, B le voit tomber en moins d'une seconde ; les deux
+  sur le même buisson, un seul gagne ; un chemin posé par B, vu chez A ; le bandeau retiré ; le brouillard de chacun.
+
+### Ce que les fiches suivantes en reçoivent
+
+Une section « Revu par I9b » dans I9c à I9g. En bref : I9c ouvre les commandes du port à la frontière
+(`COMMANDES_DEHORS`) et fait la charge de chacun à côté de son sac ; I9d fait passer les prises des villageois par les
+écarts communs ; I9e revoit la grille des rôles (`monde`, `sac`) ; I9f garde, à la mise en ligne, ce qui est pris, les
+régions vues, les chemins et le sac du propriétaire ; I9g regarde les positions (≈ 90 Ko/min par joueur à quatre dans
+la même région) et le sol tiré en direct chez un joueur (≈ 0,5 s une fois, d'après le serveur).
+
+### Ce qui reste
+
+- **L'intérêt par région ne porte que sur les positions** : les gestes vont à tous (ci-dessus). Si un jour les écarts
+  pesaient (des centaines de joueurs, des milliers de gestes), il faudrait sortir de la partie commune ce qui est
+  pris, et le contrôler à part : ce n'est pas le cas (14 Ko/min à quatre).
+- **Le monde ne sait pas où est chacun** : `depuis` (la distance à la pièce) et `dehors` (manger de son sac) viennent
+  de la page. Un jeu trafiqué pourrait couper un arbre de loin.
+- **Une pièce revient sous les pieds d'un joueur** : `state.monde.ici` (rien ne repousse sous le personnage) est celui
+  de la partie du monde, pas celui de chacun ; un arbre peut repousser sous un joueur dehors au réveil (il en sort en
+  marchant).
+- **Le premier chemin posé loin de soi par un autre** coûte à la page 0,5 s (le sol tiré en direct, une fois).
+- **La sacoche du cheval, la tente** restent celles de la partie (à personne) en ligne.
+- Une île déjà en ligne avant I9b garde le sac de sa partie à personne ; chacun commence sans.
+
+## Le port et la caisse en ligne (I9c, fait)
+
+L'économie se joue à plusieurs sur une île en ligne : le port, le bac, ses commandes, l'import et les niveaux du port
+passent par le monde, avec une caisse et un coffre communs, et chacun voit ce que l'autre vend
+(`docs/monde-partage.md` § 13).
+
+### Les choix
+
+**1. La caisse est la caisse de la partie du monde** (D14). Les pièces de la partie d'un monde sont déjà à tous, comme
+son inventaire (F.1) : il n'y avait rien à « mettre en commun », seulement à ouvrir le port à la frontière, à faire
+porter chacun pour soi et à dire ce que font les autres. Une vente de n'importe quel joueur alimente la caisse, un
+achat y puise ; le bandeau du comptoir, en ligne, dit « La caisse est commune : … 💰 ».
+
+**2. La charge est à chacun, les véhicules à la ferme.** Ce qu'un joueur charge sort du coffre commun et entre dans
+*sa* charge (`state.charges`, par compte, posée dans `state.portage` le temps de ses commandes, comme son énergie et son
+sac : `avecActeur`). Les brouettes et la charrette sont des objets du coffre, donc à tous : une brouette ne sert qu'un
+joueur à la fois (autant de joueurs que de brouettes), la charrette est attelée par un seul. Pour que personne ne la
+bloque en partant : chargée, elle est à celui qui la tient ; vide, elle passe au premier qui la demande (l'autre revient
+à la main). Une file d'attente ou un « rendre » explicite auraient demandé un geste de plus à chacun pour un cas rare.
+
+**3. Une commande du bac s'honore à plusieurs.** En solo, il faut toute la quantité d'un coup. En ligne, chacun ne
+porte que sa charge (12 volumes à la main) : une commande de 30 choux serait hors de portée d'un joueur sans brouette,
+et deux joueurs qui ont chacun la moitié ne pourraient rien. Chacun livre donc ce qu'il a porté (`livre`, dans la
+commande), payé tout de suite au prix de vente ; la prime et l'expérience viennent avec la dernière livraison. Deux
+livraisons qui se croisent : le monde les joue l'une après l'autre, la seconde ne prend que ce qui reste. Le jeu solo
+ne change pas (la règle ne vaut qu'avec `state.charges`).
+
+**4. Le lieu du port est écrit dans la partie.** Le comptoir se trouvait par la page (le Web Worker du sol tire les
+lieux, `watchPort` les pose) ; en ligne, la page n'écrit plus dans la partie (I9a2), si bien que ni le monde ni le jeu
+ne connaissaient le comptoir : tout commerce était refusé. Le monde le calcule à la mise en ligne d'après le plan de la
+graine (`poserLieuDuPort`, `portDuMonde`, ≈ 0,7 s une fois) et l'écrit dans `state.port.lieu` ; `lieuPort` le lit
+d'abord, chez le monde comme chez chacun. Le refaire chez chaque joueur aurait coûté la même chose à chaque entrée, et
+une partie dont le pas lit `lieuPort` (la tournée d'un villageois) doit le lire pareil partout.
+
+**5. La case du geste est contrôlée par la dernière position relayée.** La case d'un geste du port vient de la page
+(I9b l'avait noté) : une vente « au comptoir » depuis l'autre bout de l'île passerait avec un jeu trafiqué. Le monde
+connaît, sans rien de plus, la dernière position que chaque joueur a relayée (E-4, l'intérêt par région) : un geste du
+port ou du portage dont la case est à plus de `ECART_CASES` (12) cases de là est refusé (« Ton personnage n'est pas là
+où ce geste se fait »). Sans position connue, rien n'est comparé. C'est un garde-fou contre l'erreur et la triche
+paresseuse, pas une preuve : un jeu trafiqué peut aussi mentir sur sa position.
+
+### Ce qui est posé
+
+- **La frontière** (`js/engine/frontiere.js`) : `COMMANDES_DU_PORT` (`port.vendre`, `port.acheter`, `port.decharger`,
+  `port.honorer`, `port.importer`, `port.contrat`, `port.livrer`, `port.apporter`, `port.agrandir`, `portage.charger`,
+  `portage.reprendre`, `portage.vehicule`) entre dans `COMMANDES_DEHORS` ; le moteur vérifie la distance au comptoir
+  (`PORT.PORTEE`) ou la ferme (on charge sur la ferme). Une ferme d'avant n'a pas de port et garde E-8. (La fiche
+  nommait `port.commander` et `port.niveau` : ce sont `port.importer`, `port.apporter` et `port.agrandir`.)
+- **La charge de chacun** (`js/engine/portage.js`, `temps-monde.js`) : `state.charges = { compte: { vehicule, charge } }`
+  dans la partie d'un monde de l'île ; `chargeDuCompte`, `chargeVide`, `vehiculesTenus` ; une charge vide, à la main,
+  ne se garde pas ; le propriétaire reçoit le portage de sa partie à la mise en ligne. La page montre la sienne dans
+  `state.portage` (`js/ui/synchro.js`, comme le sac) : la fenêtre du port et la scène la lisent sans changer.
+- **Les commandes du bac à plusieurs** (`js/engine/bac.js`, `livrerCommande`) : `livre` dans la commande ; la fenêtre
+  dit « livré : 6 / 10 · porté par toi : 4 » et « Livrer 4 ».
+- **Le lieu du port** (`js/engine/port.js`) : `lieuPort` lit `state.port.lieu` ; `poserLieuDuPort` ; `reparerPort` le
+  garde.
+- **Les rôles** (`js/engine/roles.js`, la grille d'I9e pour le port) : vendre, décharger, honorer, livrer un contrat et
+  porter, l'ami jardinier ; acheter, importer, accepter un contrat, apporter au chantier du port, le bâtisseur ;
+  agrandir le port, le propriétaire. Le visiteur ne vend ni n'achète.
+- **Le journal du monde** (`worker/src/monde.mjs`) : `bilanCommerce(c, r)` (une vente : `{ objet, n, gain }` ; un
+  déchargement : `{ vendus, gain }` ; un achat : `{ objet, n, cout }` ; une livraison : `{ objet, n, gain, reste? }` ;
+  le port agrandi : `{ niveau }` …) est écrit au journal (la colonne `bilan`, ajoutée une fois à une base d'avant) et
+  joint à l'événement (`evt.bilan`, jamais rejoué). Le journal du propriétaire le dit (« Sam a tout vendu au port :
+  10 🪵 bois (+…) ») ; chaque joueur lit sur le moment ce que les autres font au port (« Alex a vendu 12 🥕 carotte au
+  port (+… à la caisse commune) », `commerceEnMots`, `js/ui/en-ligne.js`).
+- **Le contrôle de la case** (`MondeRegistre.refusDeLaCase`, `MONDE.ECART_CASES` = 12).
+- **Un geste refusé ne touche plus la partie du monde** : `avecActeur` notait l'énergie d'un compte qui n'avait encore
+  rien dépensé même quand le geste était refusé ; le monde gagnait cette ligne, pas les joueurs (l'empreinte de contrôle
+  l'aurait vu, et tout redemandé). Elle n'est notée que si l'énergie change, ou si le compte y est déjà.
+- **La sauvegarde** passe au format 106 (`charges` dans la partie d'un monde, réparées ; une partie solo n'y gagne
+  rien) ; `reparerPort` garde `lieu` et `livre`.
+- **Le jeu solo est le même** : le CSV de `node scripts/simulate.mjs` est identique octet pour octet à celui d'I9b.
+
+### Les mesures
+
+Mesuré (le Durable Object sur `node:sqlite`, des îles neuves des graines 1, 17 et 29 ; 40 allers chargés-vendus par
+deux joueurs) :
+
+| | Graine 1 | Graine 17 | Graine 29 |
+|---|---|---|---|
+| La mise en ligne (dont le lieu du port, d'après le plan : ≈ 0,7 s) | 661 ms | 789 ms | 538 ms |
+| Un geste du port au serveur (charger ou vendre ; moyenne, le plus lent) | 0,28 ms (2,0) | 0,12 ms (0,32) | 0,10 ms (0,29) |
+| Une vente diffusée (l'événement ; sans son bilan) | 207 octets (163) | 208 (164) | 208 (164) |
+| La charge de deux joueurs dans la partie (chacun sa brouette) | 81 octets | 81 | 81 |
+
+Le bilan coûte ≈ 44 octets par geste du commerce ; la charge de chacun, quelques dizaines d'octets par joueur qui
+porte (rien pour qui ne porte rien). Dans Chromium (deux pages en local, `tests/deux-joueurs.mjs` 11d), la caisse monte
+chez l'autre en quelques dizaines de millisecondes.
+
+### Les tests
+
+- `tests/test-monde.mjs` : la mise en ligne (le lieu du port dans la partie, la charge du propriétaire, la frontière
+  ouverte au port, une vente loin du comptoir refusée, la caisse commune de la somme juste, le journal, le Durable Object
+  réveillé à froid) ; deux ventes du même lot en même temps (un seul le charge, un seul est payé) ; une commande honorée
+  à deux (la prime une fois, avec la dernière livraison) ; la charrette attelée par un seul, la brouette une par
+  exemplaire, libre elle passe ; les rôles (visiteur, jardinier, bâtisseur, propriétaire) ; la case comparée à la
+  dernière position ; le format 106.
+- `tests/test-synchro.mjs` : deux ventes du même lot chez chacun (les deux chargent chez eux, le monde garde le premier,
+  la partie de l'autre se refait ; la caisse la même chez les deux et au monde) ; le bac vu par les deux au même pas
+  (A, B et le monde), à quai à 9 h, avec les mêmes commandes.
+- `tests/deux-joueurs.mjs` (Chromium, 11a à 11d) : la charrette attelée par A, refusée à B, qui prend la brouette ; les
+  deux au port ; le bac à quai vu par les deux ; A vend ses carottes, B son bois : la caisse commune monte de la somme
+  juste chez l'autre, le journal dit qui a vendu quoi.
+
+### Ce qui reste
+
+- **La charrette des autres ne se voit pas** : la scène montre la charge du joueur (sa brouette, sa charrette en
+  selle) ; un autre joueur est un avatar relayé (E-4), sans son véhicule. Le cheval est celui de la ferme : « en selle »
+  (`cheval.monte`) reste celui de la partie, à personne.
+- **Une île mise en ligne avant I9c n'a pas de lieu de port** dans sa partie : son comptoir reste fermé en ligne
+  jusqu'à sa migration (I9f) ; son portage reste celui de la partie, à personne. (I9f : fait, à la mise à jour du monde.)
+- **La case contrôlée n'est pas une preuve** (le choix 5).
+- **Les avis du port** (l'étal, les commerces) pouvaient encore se redire après une partie refaite : réglé par I9d
+  (les avis rangés par pas, `js/ui/avis-en-ligne.js`).
+- **Le chargement ne vieillit pas la nuit** (I2) : la charge de chacun non plus.
+- **Les noms au journal et dans les avis** sont ceux que chaque page donne (le prénom du personnage de la partie qu'elle
+  joue) : sur une île en ligne, deux joueurs pouvaient s'y appeler tous deux « Voisin » (vu dans Chromium). Réglé par
+  I9e : la page envoie le prénom avec `hello`.
+
+## Les villageois en ligne (I9d, fait)
+
+Le village vit dans un monde de l'île, au rythme de l'horloge commune (I9a2) : les villageois se lèvent, travaillent,
+mangent, se lient et tiennent leurs commerces dans les pas, sous les yeux de tous les joueurs, qui les voient aux mêmes
+endroits faire les mêmes choses. La règle (`docs/monde-partage.md` § 13) : **le serveur seul fait compter**.
+
+### Ce qui est posé
+
+- **La journée du village dans les pas.** Elle y était depuis I9a2 (`pasDuMonde` → `farmStep` → `avancerTaches`, les
+  repas, les liens et les arrivées à leur heure, les maisons toutes les six pas) : les mêmes fonctions qu'en solo. Ce que
+  les villageois produisent arrive au coffre commun au fil de la journée (le bois avant midi). Ce que la page faisait
+  encore dans la partie est retiré en ligne : le geste « accueilli » de la carte devient la commande
+  `villageois.accueillir` ; ce que la carte voit des traits (`observerTraits`, une réplique entendue) ne s'écrit plus ;
+  le présent qu'un ami tend en saluant attend la conversation (par le monde).
+- **Le pas en lot** (`js/engine/temps-monde.js` : `enLot`, `js/engine/blocs.js`) : le pas de jour d'un monde de l'île
+  calcule une seule fois ce qui parcourt les blocs posés (les pièces closes, les cases couvertes, les maisons, et par
+  `memoEnLot` la boîte à nourriture, l'étal, les locaux des commerces) ; rien dans le pas ne pose ni ne reprend de bloc.
+  Le même résultat (la même empreinte après 720 pas sur l'île du joueur automatique à 7 et à 10 villageois, comparée au
+  moteur d'avant), trois à cinq fois plus vite. Il n'y a pas eu besoin d'étaler les villageois sur plusieurs pas. Le
+  solo n'est pas touché (`tick` n'est pas en lot ; le CSV de `node scripts/simulate.mjs` est le même octet pour octet).
+- **Ce que chacun voit** : la scène place les villageois d'après l'heure interpolée (`villageoisHorloge(heureDuJour())`,
+  `js/ui/villageois.js` ; la même que la lumière : le pas plus la part du pas écoulée) et leur journée, tirée de la
+  graine. Aucune position n'est envoyée.
+- **L'amitié de chacun** (`js/engine/temps-monde.js` : `state.amities`, `amitieDuJoueur`) : par compte, la forme de
+  `state.amitie` ; un villageois qu'un joueur ne connaît pas encore y est à `VILLAGE.AMITIE.ACCUEIL`. Une commande pose
+  l'amitié de son acteur dans `state.amitie` le temps de se jouer (`avecActeur`, avec son énergie, son sac et sa charge
+  d'I9c), puis la range ; la page montre la
+  sienne (`js/ui/synchro.js`, comme l'énergie et le sac). Entre deux commandes, `state.amitie` est l'amitié du village :
+  ce que lisent les pas (`tacheSansHumeur`, les recettes d'un artisan ami, les paliers de l'île) ; elle prend, villageois
+  par villageois, la meilleure des joueurs (`accorderAmitieDuMonde`) et ne baisse jamais. Le propriétaire reçoit celle
+  de sa partie à la création (`MondeRegistre.creer`), et à une restauration dont la sauvegarde n'en a aucune
+  (`restaurer`). Les liens entre villageois (`voisins`) sont du monde : `elaguer` les
+  garde pour une île.
+- **Les commandes** `villageois.parler { id, n?, activite?, but? }` (la bulle, à l'heure du pas : `parlerAuVillageois`),
+  `villageois.offrir { id, objet }`, `villageois.accueillir { id }` ; l'ami jardinier au moins (`js/engine/roles.js`). La
+  page les joue d'abord chez elle : la bulle s'affiche tout de suite. « 🎁 Offrir » passe en ligne sur une île
+  (`actionPermise`).
+- **Le visiteur** voit le village vivre et parle : sa bulle est tirée sur une copie de sa partie, son amitié montrée sans
+  gain, rien n'est envoyé (`parlerEnLigne`).
+- **Le tableau** (I3d) se lit de la partie : le même chez tous (vérifié chez le monde, la confirmée et la locale de deux
+  joueurs).
+- **Sans joueur**, le village dort avec le monde ; la fenêtre du retour le dit : « Le village dormait avec lui : ses
+  villageois n'ont rien produit en ton absence, ils reprennent leur journée. »
+- **Les avis de l'étal et des commerces** portent leur pas dans la partie d'un monde (`bourse.js`, `artisans.js`) : la
+  page ne les redit plus quand sa partie est refaite (`js/ui/avis-en-ligne.js`).
+- **Un villageois et un joueur sur le même arbre** (le conflit d'I9b) : les tâches des villageois ne travaillent que sur
+  la ferme (`ciblesDe` : pas de pièce du grand monde) ; sur la ferme, leurs prises sont celles du joueur
+  (`state.outils.arbres`, `chopTree`…). Le premier joué l'a, dans l'ordre des pas et des gestes : un arbre abattu par le
+  villageois refuse le coup du joueur (« Cet arbre est déjà abattu ») ; un arbre entamé par lui et fini par le joueur, le
+  villageois passe au suivant ; rien en double (le bois : celui du joueur plus celui du villageois).
+- **La sauvegarde** : format 107, après les charges d'I9c (106) (`amities` dans la partie d'un monde, la migration
+  106 → 107 ; un monde d'avant n'en a aucune : chacun commence à l'accueil, et l'amitié de sa partie reste celle du
+  village ; une partie solo n'y gagne rien).
+
+### Les mesures (`node scripts/cout-villageois.mjs`)
+
+Les îles du joueur automatique (graine 1, « applique » : 5 villageois au jour 41 environ, 10 au jour 161 — il n'en fait
+pas venir plus, faute de maisons ; 15 : celle de 10, plus cinq maisons bâties et leurs villageois, une tâche chacun),
+mises en ligne, puis 720 pas (cinq journées). Le moteur d'avant (64cd42a) et celui-ci, sur les mêmes parties ; le même
+travail des deux côtés (les mêmes actions) :
+
+| Villageois | Un pas de jour, avant | Un pas de jour, I9d (p99 / max) | Un pas de nuit | Minuit | 120 pas d'un coup (une alarme), avant → I9d | La partie |
+|---|---|---|---|---|---|---|
+| 5 | 5,8 ms | **1,8 ms** (6,4 / 130, le premier pas, à froid) | 0,6 ms | 16 ms | 653 → **188 ms** | 69 Ko |
+| 10 | 15,6 ms | **3,7 ms** (20 / 24) | 1,2 ms | 34 ms | 1 490 → **383 ms** | 129 Ko |
+| 15 | 27,2 ms | **6,2 ms** (43 / 109) | 1,9 ms | 79 ms (au plus 131) | 3 194 → **835 ms** | 139 Ko |
+
+Sur l'île de test (`tests/engine/village-en-ligne.test.mjs` : quinze maisons, cinq tâches), un pas de jour coûte
+6,5 ms en moyenne. **La limite** : le serveur rejoue au plus 240 pas d'un coup (`RATTRAPAGE_MAX_PAS`), ≈ 1,7 s à quinze
+villageois, loin des 30 s de calcul d'une requête d'un Durable Object ; une heure en ligne (720 pas) ≈ 5 s de calcul à
+quinze ; chaque joueur paie deux fois le pas (sa partie et la confirmée) : ≈ 12 ms toutes les 5 s. Le test garde un pas
+de jour sous 25 ms en moyenne à quinze. **Étaler les villageois sur plusieurs pas n'a pas été nécessaire.** Ce qui
+reste cher : minuit (la nuit du village, `runNight` : jusqu'à 131 ms à quinze, une fois par journée de jeu) et les
+signatures que `journeeDuVillage` refait pour chaque villageois (`signatureTaches`, `signatureGardeManger`,
+`commercesSignature` : à I9g). La partie grossit de ≈ 3 Ko à cinq villageois, ≈ 6 Ko à dix (`voisins` gardé).
+
+### Les tests
+
+- `tests/engine/village-en-ligne.test.mjs` : une journée du village jouée deux fois (et par un joueur arrivé à midi) :
+  la même partie à chaque heure, le bois au coffre avant midi ; la même position de chaque villageois chez deux joueurs,
+  à dix heures tirées au hasard ; l'amitié par joueur (parler, offrir ; celle du village ; une partie solo) ; l'accueil
+  par commande, les rôles ; le temps d'un pas à quinze villageois sous la limite (25 ms en moyenne) et le même tableau ;
+  le conflit sur un arbre ; le format 107.
+- `tests/test-monde.mjs` : l'amitié du propriétaire vient de sa partie, celle de l'invité commence à l'accueil ; les
+  liens du village gardés (une ferme d'avant les retire) ; le visiteur refusé ; le journal rejoué à froid.
+- `tests/test-synchro.mjs` : une journée du village (6 h → 22 h), le monde et deux joueurs, des paroles et un cadeau :
+  la même partie partout, le bois avant midi, chacun son amitié, le même tableau.
+- `tests/deux-joueurs.mjs` (Chromium, 12a à 12e, après les 11a à 11d d'I9c) : les mêmes villageois aux mêmes postes chez A et B, au travail puis à
+  table ; le bois au coffre dans la matinée ; A parle, l'amitié de B reste la sienne ; le même tableau. Le 10b (I9b, deux
+  coups « au même instant » sur un buisson) accepte aussi que l'un des deux soit refusé dans sa partie locale, quand
+  l'événement de l'autre l'a précédé de quelques millisecondes : le même conflit, tranché plus tôt.
+
+### Ce qui reste
+
+- **Les gestes de la fiche d'un villageois** (confier une tâche, un outil, la navette, un foyer, un enfant) et des
+  commerces tenus par la page appelaient encore le moteur sur la partie locale : branchés sur leurs commandes avec la
+  grille des rôles par I9e, comme la fenêtre « Nommer le village » (I7g).
+- **Ce qu'on sait des traits** est du monde (ce qu'un villageois dit de lui en parlant s'écrit dans la commande) ; ce
+  que la carte voit ne s'écrit plus en ligne : un joueur en ligne découvre moins de traits qu'en solo. I9e les garde
+  communs (des faits sur le villageois), confirmé (D18).
+- **Les présents d'un ami** ne se préparent pas la nuit dans un monde partagé (`amitieVillageoisNuit`, comme avant) ; les
+  invitations à un repas, les demandes rendues restent fermées en ligne.
+- **La scène** fait marcher chaque villageois chez chacun : au même poste, au même but, mais pas au pixel près (jusqu'à
+  une case d'écart mesurée, le temps que les deux cartes l'aient fait partir au même instant).
+- **Une île mise en ligne avant I9d** n'a pas d'amitiés par joueur : chacun y commence à l'accueil (I9f : rendre au
+  propriétaire la sienne ; fait, à la mise à jour du monde).
+- **Le pas en lot** suppose qu'un pas ne pose ni ne reprend de bloc : vrai aujourd'hui ; une machine qui bâtirait seule
+  devrait sortir du lot.
+
+## Les rôles en ligne (I9e, fait)
+
+**Le but du jeu en ligne**, dit par le joueur qui l'a voulu : « inviter des amis sur sa propre partie afin de faire
+progresser plus vite le village d'un ami ». Le monde en ligne est donc **l'île d'un propriétaire** ; ses amis invités
+viennent l'aider à faire grandir **son** village. Les rôles sont une grille de confiance entre lui et eux : l'ami aidant
+doit être vraiment utile (il produit, vend, se lie aux villageois, les outille, bâtit), et le propriétaire garde ce qui
+est structurant pour son village. D15 est lue ainsi : en ligne, « le joueur » qui attribue les tâches et décide des
+commerces est le propriétaire de l'île.
+
+### La grille (`js/engine/roles.js`, `GRILLE_ILE` ; `docs/monde-partage.md` § 10)
+
+| Rôle | Ce qu'il fait sur une île (en plus du rôle d'avant) |
+|---|---|
+| 👀 Visiteur | Il regarde, se promène, parle aux villageois (sa page seule : rien n'est envoyé), dort avec les autres. Il ne change rien. |
+| 🌱 Ami jardinier | Le potager, les bêtes, la cuisine, les outils ; récolter sur l'île ; vendre au port et à l'étal, porter ; parler, offrir, accueillir ; **fabriquer à l'Atelier** ; **confier ou reprendre un outil** à un villageois, **la navette** (ce qu'il porte au port) ; **suggérer un commerce** au propriétaire ; **épingler et annoter la chronique** (signé). |
+| 🔨 Bâtisseur | Construire (sur l'île aussi : chemins, ponts, bancs) ; acheter au port et aux commerces, l'import, les contrats, le chantier du port ; régler la cuisine et le garde-manger du village ; **attribuer les tâches si le propriétaire le lui confie** (le réglage du monde). |
+| 🏡 Propriétaire | **Attribuer les tâches** ; **décider qu'un villageois ouvre ou rejoint un commerce**, son enseigne ; **former un foyer, accueillir un enfant** ; **nommer** l'île, le village, une maison, un commerce ; agrandir le port ; **retirer la maison d'un villageois** (sa boîte aux lettres, sa porte, ses murs, son lit) ; retirer une structure sensible ; inviter, changer les rôles, retirer un membre, les sauvegardes, les réglages du monde. |
+
+Pourquoi cette ligne de partage : tout ce qui **fait avancer** le village sans en changer la forme (produire, vendre,
+outiller un villageois, se lier à lui, bâtir ce que le propriétaire a voulu) est ouvert aux amis, parce que c'est
+pour cela qu'il les invite ; ce qui **décide de la forme** du village (qui fait quoi, quel commerce, quel foyer, quels
+noms, la taille du port, la maison d'un habitant) reste au propriétaire, parce que c'est son village et qu'un ami
+bien intentionné ne doit pas le défaire. La délégation des tâches couvre le cas d'un ami de confiance qui joue
+pendant que le propriétaire n'est pas là. Une ferme d'avant (E-8, sans le chantier) garde la grille d'E-11 telle quelle
+(`roleDemande` ne lit `GRILLE_ILE` que pour une île).
+
+### Les décisions
+
+1. **Les gestes de gestion du village sont des commandes du monde.** La fiche d'un villageois (la tâche :
+   `villageois.attribuer` ; l'outil : `villageois.outil` ; la navette : `villageois.vendre`), ses liens (un foyer :
+   `villageois.foyer` ; un enfant : `villageois.enfant`), les noms (`nom.donner { quoi, texte, id? }`, nouvelle : la
+   fenêtre « Nommer », celle du commerce) et la chronique (`chronique.epingler`, `chronique.noter`, nouvelles) écrivaient
+   dans la partie locale : en ligne, ce n'étaient que des prédictions que la partie refaite effaçait. La page les envoie
+   maintenant au monde (`executer`) ; en solo, elle appelle le moteur comme avant (le jeu solo ne change pas). Les
+   commerces et l'étal, qui passaient déjà par `executer`, sont ouverts sur une île (`actionPermise`). Le chantier d'un
+   projet du village (`vocation-projet-envoyer`, `-abandonner`) n'a pas encore de commande : refusé en ligne plutôt que
+   joué sur la seule page.
+2. **La délégation est un réglage du monde**, pas de la partie : `meta.reglages = { taches }` au Durable Object, éteint
+   par défaut ; le propriétaire seul le change (`{ t: 'reglages', taches }` sur la WebSocket ; la fenêtre 👥 : « 🧺
+   Confier l'attribution des tâches aux bâtisseurs ») ; l'accueil et la diffusion le disent à chacun ; un bâtisseur est
+   prévenu quand il change. Elle ne couvre que les tâches (le reste au propriétaire ne se délègue pas).
+3. **L'envie d'un commerce : l'affinité qui compte est celle du propriétaire.** Seul le propriétaire joue
+   `commerce.ouvrir`, et une commande se joue avec l'amitié de son acteur (I9d, `avecActeur`) : c'est la sienne que lit
+   la condition. L'envie (`v.envies`) vient des jours de pratique du villageois et se voit par tous (sa bulle, sa fiche).
+   **Un invité très ami peut la suggérer** : `commerce.suggerer { id, sorte }` (l'ami jardinier) vérifie l'envie et
+   l'amitié **de l'invité** au palier des artisans, ne change rien à la partie, va au journal du monde (signée) et
+   prévient le propriétaire (« Sam suggère que Léa ouvre une forge. À toi de décider (sa fiche). »).
+4. **Les garde-fous.** Un ordre de tâche est daté et signé dans le journal (son bilan : le villageois, la tâche d'avant
+   et d'après : `bilanGeste`, qui généralise le `bilanCommerce` d'I9c ; aussi un outil, un foyer, un commerce ouvert ou
+   suggéré, un nom). La maison d'un villageois ne se retire que par le propriétaire (`bloc.reprendre`, `bloc.remettre`,
+   `bloc.deplacer`, `mur.abaisser` sur sa boîte aux lettres, ses portes, ses lits ou les murs autour de sa pièce) ; une
+   maison libre, si. Un villageois ne se renvoie pas : aucune commande ne le fait (un test le garde).
+5. **La vue « qui fait quoi » est à tous** ; ses boutons ne paraissent qu'à qui a le droit (`gestePermis`,
+   `js/ui/en-ligne.js`) : « Tâche » au propriétaire (ou au bâtisseur délégué ; les autres lisent « 🔒 Le propriétaire de
+   l'île attribue les tâches. »), « Donner », « Reprendre » et « Choisir » (la navette) à l'ami jardinier, « Ouvrir »
+   un commerce au propriétaire (les autres : « 💡 Le lui suggérer »), « ✏️ » des noms au propriétaire, 📌 et ✏️ de la
+   chronique à l'ami jardinier. Un geste tenté quand même est refusé par la page avec un mot clair, et par le monde.
+6. **La chronique est celle du monde** ; une ligne épinglée ou annotée porte le compte de qui l'a fait (`par`, posé par
+   la commande : `acteurEnCours`, `js/engine/temps-monde.js`), et la fenêtre dit son prénom (« — Sam »). Le baptême du
+   village n'est proposé qu'au propriétaire.
+7. **Les noms.** Chaque page envoie le prénom du personnage de sa partie solo avec `hello` (`prenom`) ; le monde le
+   nettoie (`prenomDuJoueur` : sans balise, 20 signes) et redit la liste des membres s'il a changé. Le prénom passait
+   déjà dans l'adresse de la WebSocket, mais un monde créé ou rejoint par une route sans lui gardait « Voisin » tant
+   qu'aucune connexion ne l'avait renommé (c'était le cas de `tests/deux-joueurs.mjs`, qui ouvre les WebSockets sans
+   passer par la route du Worker). Le journal, les avis (« Alex a confié à Léa : 🧺 cueillette (avant : 🪓 bois) ») et
+   les avatars disent le vrai prénom.
+8. **Ce qu'on sait des traits d'un villageois reste commun au monde** (ce sont des faits sur lui ; ce qu'il dit de lui
+   en parlant s'écrit dans `villageois.parler`). **Confirmé par le joueur** (D18) : les traits découverts sont
+   partagés entre tous les joueurs.
+9. **Les chemins posés dehors ne sont pas protégés.** Un bâtisseur est un ami à qui le propriétaire confie la
+   construction ; un chemin se repose en un geste, le journal dit qui l'a repris et une sauvegarde le rend. Les protéger
+   demanderait de savoir qui a posé quoi (la partie ne le garde pas) pour peu de chose. Ce qui ne se rattrape pas (une
+   structure sensible, la maison d'un villageois) est protégé.
+10. **La présence d'un visiteur compte** pour l'horloge (une connexion ouverte fait tourner le monde, D13) et pour les
+    lits (il retient la nuit tant qu'il n'est pas couché) : confirmé. Un visiteur qui ne se couche pas retient la nuit
+    comme un autre ; le propriétaire peut changer son rôle ou le retirer.
+11. **La charrette (I2b, faite)** : la fiche I2b a tranché autrement : acheter un palier (`charrette.palier`) est au
+    **propriétaire** (une grosse dépense de la caisse commune, comme agrandir le port), noté dans `GRILLE_ILE` ; poser et
+    reprendre des rails est au bâtisseur (des blocs, `bloc.*`) ; mettre un villageois à la tournée, à qui attribue les
+    tâches.
+
+### Ce que l'ami gagne en aidant (des propositions, pas codées)
+
+L'ami prend du temps sur sa propre île pour aider celle d'un autre. Ce qu'il peut y gagner, sans rien prendre au
+propriétaire : **ses amitiés** avec les villageois de l'ami (déjà par joueur, I9d) qui lui ouvrent des présents ; **une
+part de ce qu'il vend** au port, versée à sa propre caisse solo au retour (une « paie d'ami », bornée par jour) ; **des
+graines et des plants sauvages** de l'île de l'ami, rapportés dans sa malle ; **des recettes ou des pièces d'artisan**
+que les commerces de l'ami lui apprennent ; **son nom dans la chronique** de l'île (« Sam a aidé à bâtir le pont ») ;
+**une invitation en retour** facilitée (les amis, `amis.mjs`) et un compteur d'entraide sur sa fiche d'ami. Le plus
+simple et le plus juste d'abord : la paie d'ami et la chronique.
+
+### Les mesures
+
+Le contrôle des rôles est presque gratuit : `roleDemande` d'un ordre de tâche ≈ 0,5 µs ; celui d'un `bloc.reprendre`
+sur une île (la maison d'un villageois : les pièces closes relevées) ≈ 0,3 à 0,6 ms de cinq à quinze maisons, 0 ms
+quand la case est sa boîte ou son lit. Un ordre de tâche diffusé porte un bilan de ≈ 60 octets.
+
+### Les tests
+
+- `tests/engine/village-roles.test.mjs` : la grille complète (34 commandes, chacune son rôle minimal, chacun des quatre
+  rôles permis ou refusé, un refus en mots) ; la délégation ; la maison habitée (la boîte, la porte, le lit, un mur ;
+  une maison libre) ; chaque geste de gestion joué en commande fait ce que fait le moteur ; la suggestion (l'envie,
+  l'amitié de l'invité, rien ne change) ; la chronique signée, rien en solo ; aucune commande ne renvoie un villageois ;
+  le format 108.
+- `tests/test-monde.mjs` : les gestes de gestion par le monde selon le rôle, refusés même si le jeu est modifié ; la
+  délégation (le propriétaire seul la change, à tous, dans l'accueil) ; les vrais prénoms par `hello` ; le journal
+  (chaque ordre et son auteur nommé, le bilan) ; le monde réveillé à froid ; une ferme d'avant garde la grille d'E-11.
+- `tests/test-synchro.mjs` : l'ordre du propriétaire et l'outil de l'ami joués chez eux puis par le monde ; l'ordre d'un
+  ami (un jeu modifié) refusé et retiré de sa partie ; la même partie chez A, B et le monde.
+- `tests/deux-joueurs.mjs` (Chromium, 13a à 13e) : les vrais prénoms ; B (bâtisseur) lit la tâche sans bouton, son
+  geste est refusé avec un mot clair ; A la change par la fiche, B le voit et son avis dit « Alex a confié à … » ; A
+  confie les tâches aux bâtisseurs, B est prévenu et donne un ordre ; le journal porte chaque ordre et son auteur.
+
+### La sauvegarde
+
+Format 108 : dans un monde de l'île, une ligne de la chronique peut porter `par` (le compte de qui l'a épinglée ou
+annotée) ; la migration 107 → 108 relit la chronique de la partie d'un monde (une signature illisible s'en va) ; une
+partie solo n'y gagne rien. Les réglages du monde sont au Durable Object, pas dans la partie.
+
+### Ce qui reste
+
+- **Les fêtes et les projets du village** (I8a) n'ont pas de commandes : en ligne, ils restent refusés (« ne se fait
+  pas encore »). Fixer une fête serait au propriétaire, apporter au chantier à l'ami jardinier.
+- **La famille de la partie** (la fiche d'un membre, ses habits, un animal) et le choix d'un lit s'écrivent encore dans la
+  partie locale en ligne (des gestes d'avant I9e, à revoir avec I9f). (I9f : refusés en ligne, on les change en solo ; le
+  lit l'était déjà.)
+- **La suggestion d'un commerce** n'est gardée qu'au journal : un propriétaire absent la lit dans 📜, pas sur la fiche.
+- **« La charrette est à moi »** (un réglage du propriétaire, I9c) n'est pas fait : la règle d'I9c (vide, elle passe à
+  qui la demande) a suffi dans les essais.
+- **Ce que l'ami gagne** : à décider et à faire dans une fiche à elle.
+
+## La charrette du village (I2b, fait)
+
+La fiche : `docs/fiches/ile/I2b-charrette-du-village.md`. Le moteur : `js/engine/charrette.js` (et `taches.js`
+`avancerCharrette`, `dehors.js` les rails) ; la scène : `js/carte/ferme/charrette-village.js` ; la fenêtre : l'onglet 🛞 du
+port (`js/ui/port.js`) ; les dessins : `scripts/carte/charrette_village.py` ; les réglages : `data/village.json`
+`CHARRETTE` ; les tests : `tests/engine/village-charrette.test.mjs` (14 tests).
+
+- **Une charrette, au village** (D17) : née au premier villageois mis à la tournée du port, aux paliers 1. Les villageois
+  de la tournée sont ses charretiers ; le voyage k revient au charretier de rang k parmi ceux qui travaillent aujourd'hui
+  (ni au repos, ni à l'accueil, ni au chantier) : un jour de repos ne l'arrête plus, le relais ne la rend pas plus
+  rapide. Ce qu'elle porte : la réunion de ce qui est marqué « à vendre » sur la fiche de ses charretiers, les contrats
+  d'abord, le plus cher au volume ensuite, en volumes (I2).
+- **Tout se déduit de l'heure** : la route (Dijkstra à huit voisins du coffre, ou du quai, au comptoir ; au pas de la
+  vitesse sur les chemins possédés, sur la ferme et aux abords du port, à 50 % ailleurs ; elle ne lit que la partie, pas
+  le sol de la page : le monde et chaque joueur trouvent la même), les voyages entiers de 7 h à 17 h, où est la
+  charrette. La vente d'un voyage se fait à l'heure de son arrivée (le port ouvert à cette heure-là), à chaque pas de la
+  ferme ; la nuit vend ce qui reste à leur heure. La journée du charretier porte ses voyages (des segments « travail » au
+  lieu « charrette » : il mange au port) ; la scène le dessine sur la charrette, de sa planche.
+- **Les deux branches sont libres** (décision du joueur) ; le cheval de trait (V3) demande l'Écurie et une place, vient
+  par le bac au passage suivant (`cheval.arrive`), mange 2 pailles la nuit (le tableau : « 🐴 La ration du cheval ») ; le
+  wagonnet (V5) demande la voie complète ; la voie coupée, la charrette reprend le chemin au trot.
+- **Les rails** : un bloc de l'Atelier (1 lingot, 2 planches, 1 pierre → 8), commandé aussi à la forge (6 pièces la case) ;
+  une couche à part, `state.dehors.rails` (des segments), sur la ferme et dehors, sur l'herbe, un chemin (le passage
+  planchéié) ou un pont ; vingt images d'après les voisins (les droites, les quarts de cercle, le passage planchéié ;
+  une voie posée en escalier se lit en diagonale : les cordes et les demi-courbes, `formeRails`, `courbeRails`, que le
+  wagonnet suit, `traceSurRails`). La voie : des rails voisins de la gare (contre le quai, à
+  défaut contre le bord de la ferme) au bord de l'emprise du port ; ce qui manque, compté et montré (« Montre-moi »).
+- **Ce qu'elle remplace** : `PORTEE`, `PRODUCTION.NAVETTE` (retirés : la tournée n'emprunte plus la brouette ni la
+  charrette du joueur, qui restent au joueur, inchangées) ; le quai est le départ de la charrette et la gare de la voie.
+- **La sauvegarde** : format 109 ; la migration 108 → 109 donne à une tournée la charrette au palier de ce qu'elle portait
+  (rien : C1 V1 ; une brouette : C2 V2 ; la charrette et le cheval du joueur : C3 V3 avec son cheval si l'Écurie a la
+  place, sinon V2).
+- **En ligne** : `charrette.palier` au propriétaire (GRILLE_ILE, le bilan au journal), les rails au bâtisseur ; aucune
+  commande n'attelle la charrette du village ; ses voyages se jouent dans le pas du monde.
+
+**Les mesures** (graine 1, 80 nuits ; le jeu éteint : le CSV identique octet pour octet). `--village` : le joueur simulé
+met son deuxième villageois à la tournée (nuit 16) et lui fait porter les récoltes qui s'entassaient au coffre. Joueur
+appliqué : paliers C2@21 V2@23 C3@51 C4@61 (4 200 pièces), 10 000 volumes vendus par la charrette (+18 523 pièces), les
+20 dernières nuits 2 voyages et 320 volumes par jour ; ses ventes de récoltes passent de 7 481 à 24 250 pièces, il gagne
+27 897 pièces au lieu de 13 643, le palier 7 à la nuit 65 (74 avant), 1 336 pièces à la nuit 80 (464). Joueur minimal :
+C2@21 V2@31 C3@73 (1 700), 4 520 volumes (+9 796), 112 volumes par jour à la fin ; mais il finit au palier 6 (le palier 7
+à la nuit 75 avant) : le villageois mis à la tournée n'est plus celui qui ouvrait la forge (à revoir avec le joueur
+automatique). `--vocations` : la ferme productive (sa tournée porte le pain) gagne 12 174 pièces (11 918 avant) et ne vend
+pas 300 volumes par jour : la fiche proposait alors de baisser les prix des paliers 4 et 5 ; c'est laissé au joueur
+(un constat, pas un changement).
+
+**Ce qui reste** : la boussole ne mène pas encore à la charrette ; le joueur automatique ne pose pas de rails (le sol du
+monde, région par région) ; C5 (la longue charrette à quatre roues, le second wagonnet) se dessine comme C4 ; le journal
+du monde ne dit pas encore les ventes de la charrette (elles sont aux Comptes) ; la route traverse les champs sans
+regarder l'eau quand le chemin est coupé.
+
+## Mettre son île en ligne et migrer les mondes d'avant (I9f, fait)
+
+La fiche : `docs/fiches/ile/I9f-mise-en-ligne.md`. Le serveur : `worker/src/monde.mjs` (`MondeRegistre.copie`, `remplacer`,
+`mettreAJour`, `refusDuJeu`) et `worker/src/index.js` (la route `remplacer`) ; le jeu : `js/ui/compte.js` (⚙️ Options ›
+Jeu en ligne), `js/ui/en-ligne.js`, `js/ui/retour-ile.js` ; le moteur : `js/engine/migration-ile.js` (`cadeauDuMonde`,
+`lignesRetour` en ligne), `js/engine/frontiere.js` (`poidsDuMonde`), `js/engine/state.js` (`migrate(…, { ile: false })`) ;
+les textes : `VILLAGE.MIGRATION.MONDE`. La mesure : `node scripts/cout-mise-en-ligne.mjs`.
+
+### Ce qui est posé
+
+- **La copie d'une île emporte l'île** (`copie`, la même pour la mise en ligne et la copie remise à jour) : l'élagage d'une
+  île (`elaguer`, `GRAND_MONDE_ILE`) ne retire plus que les hameaux et leurs habitants ; il garde ce qui est pris dehors et
+  le jour où cela revient (`monde.pris`), les régions vues du monde (`monde.vues`), les chemins et les rails (`dehors`), les
+  liens du village (`voisins`) ; la charrette du village, le port et son lieu, les villageois et ce qu'on sait de leurs
+  traits, les commerces, la chronique et les noms passent tels quels ; l'énergie, le sac, la charge et l'amitié du
+  propriétaire sont celles de sa partie (`preparerIle`). Ce qui se tire de la graine n'est pas dans la partie. **Le
+  brouillard du propriétaire** part dans son navigateur (`ferme-brouillard-<monde>`, posé par ⚙️ Options à la mise en
+  ligne, uni à l'ancien à une remise à jour) ; le monde garde le vu des régions de sa ferme (`vuDesRegions`), celui que
+  chacun a en entrant. La fenêtre du retour d'une partie solo migrée (I7f) reste au solo, son cadeau aussi.
+- **Le plafond** (`VILLAGE.EN_LIGNE`) est vérifié à la copie d'une île (`poidsDuMonde` : la partie, et l'île hors de la
+  ferme) ; au-delà, refusé (413) avec le poids, par exemple : « Ton île pèse 312 Ko en ligne : un monde en porte 256 Ko au plus » ;
+  « Ce qui a changé sur ton île hors de la ferme pèse 71 Ko : … Laisse repousser ce que tu as pris dehors ». La route
+  garde 2 Mo à l'envoi (le brouillard et ce que le monde ne garde pas n'y comptent pas) ; une ferme d'avant (le chantier
+  éteint) garde la limite d'avant.
+- **Deux îles** : ⚙️ Options › Jeu en ligne dit, pour une partie de l'île, « 🌐 Mettre mon île en ligne », ce que la copie
+  emporte et son poids à peu près, et : « Ta partie solo et ton île en ligne sont deux îles : après la copie, chacune vit
+  sa vie… ». Le monde prend le nom de l'île.
+- **La copie remise à jour** (« 🔄 Remettre à jour », à côté de chaque île dont on est le propriétaire ; une confirmation
+  qui dit ce qui est remplacé et que le monde est sauvegardé d'abord) : `POST /mondes/<id>/remplacer { partie }` ; le
+  Durable Object fait une sauvegarde (« avant la copie remise à jour »), puis `remplacer` : la copie de la partie solo du
+  jour remplace celle du monde (une révision, la marque `monde.remplacer` au journal, un instantané) ; les membres
+  restent, avec leurs rôles et les réglages du monde ; ce qui était à chacun dans l'île en ligne (énergie, sac, charge,
+  amitiés) repart de zéro ; chacun reçoit la partie et un mot (« Le propriétaire a remis son île en ligne à jour… »).
+- **Les sauvegardes** portent l'île entière (la partie du monde) ; on en garde 14, comme avant (le plafond le permet :
+  3,5 Mo au plus). Une île restaurée garde sa nuit en cours (une ferme d'avant naît de jour) ; une sauvegarde d'une ferme
+  d'avant (celle d'avant le passage sur l'île) restaurée y repasse, sans redonner le cadeau.
+- **La mise à jour d'un monde** (`mettreAJour`, à sa première ouverture par un serveur d'une autre version : `meta`
+  `version`, nouveau `format`) : le dernier instantané passe au format du serveur (`migrate`, sans l'île), le journal
+  d'après se rejoue sur lui (une commande qui ne passe plus est sautée et comptée : `perdus`, dit au journal), la partie
+  d'avant est gardée (la table `avant_migration`, et une sauvegarde du monde « avant une mise à jour du jeu » ou « avant le
+  passage sur l'île », faite par le Durable Object avant toute autre chose) ; la marque `monde.migrer` au journal (un
+  joueur qui revient d'avant elle reçoit la partie entière) ; le monde prend la version et le format du serveur.
+- **Une ferme d'avant passe sur l'île** à sa première ouverture, le chantier allumé (`ileDue`, `versLIle` ; à la bascule,
+  I9h : tous les mondes ; pendant le chantier, seul un Durable Object d'essai, `env.ILE_ESSAI`, en fait une île d'essai,
+  comme `?village=1` en solo) : la migration d'I7f (`migrerVersLIle`), la même qu'en solo — la ferme et le coffre
+  intacts ; l'horloge, figée jusque-là, devient vivante (I9a2 : son jour et son heure gardés, son pas à 0) ; l'énergie de
+  la partie (celle du coffre) au propriétaire, son sac, son portage et son amitié aussi ; le port neuf, son lieu tiré du
+  plan de la graine, le tronçon posé en chemins (`assurerTroncon`) ; aucun villageois (ils arriveront) ; le cadeau de
+  bienvenue donné au coffre commun, une fois par monde (`cadeauDuMonde`). Une île mise en ligne avant I9b, I9c ou I9d reçoit
+  ce qui lui manque : le lieu du port, le sac, le portage et l'amitié du propriétaire.
+- **La fenêtre du retour de chacun** (`js/ui/retour-ile.js`, `lignesRetour(state, { enLigne, proprietaire })`) : chaque
+  membre la voit une fois (gardé dans son navigateur, par monde), avec les lignes d'I7f et celles d'un monde
+  (`MIGRATION.MONDE`) : l'horloge qui vit ; au propriétaire, que **la grille des rôles change** (celle d'une île, I9e :
+  ses amis jardiniers fabriquent à l'Atelier, lui attribue les tâches, décide des commerces, nomme, agrandit le port) et
+  que la ferme d'avant est dans 💾 ; aux autres, que leur rôle suit celui d'une île. La fermer ne change rien à la partie
+  (le cadeau est déjà au coffre commun).
+- **Les versions** (`refusDuJeu`) : `hello` porte maintenant le format du jeu (`format`, `STATE_VERSION`). Un jeu plus
+  ancien que le monde (sa version, son format ; ou sans format, d'avant I9f, dans un monde mis à jour) est refusé :
+  « … recharge la page pour mettre le jeu à jour » ; un plus récent : « le serveur se met à jour, réessaie dans quelques
+  minutes ». La connexion garde le jeu de son `hello` : une commande d'un jeu qui ne joue pas la version du monde est
+  refusée.
+- **Ce qui s'écrivait encore dans la partie locale en ligne** : la fiche d'un membre de la famille (son prénom, son
+  allure), en ajouter ou en retirer un, ses habits, sa tente, un animal, l'aide du compagnon sont refusés en ligne, avec
+  un mot (« En ligne, la famille, ses habits et ses animaux ne changent pas : on les change dans sa partie solo ») : la
+  famille de la partie d'un monde est celle de son propriétaire, et ces gestes ne s'écrivaient que dans la partie locale,
+  effacés au geste suivant d'un autre. Le choix d'un lit l'était déjà (E-10).
+- **Le journal** dit « Qui a fait quoi dans ton île » sur une île, et les marques : « Le monde est passé sur l'île à bâtir
+  (la ferme d'avant est gardée dans 💾) », « … a remis l'île en ligne à jour depuis sa partie solo ».
+- **Les noms** (« Voisin ») se corrigent à la première connexion de chacun (`hello.prenom`, I9e) ; **les réglages du
+  monde** (`meta.reglages`) sont au Durable Object : la mise à jour et la copie remise à jour les laissent.
+- **La sauvegarde du jeu** : pas de nouveau format (109). `retourIle.monde` et `retourIle.donne` vivent dans un champ qui
+  existe (la migration 101 → 102 le relit) ; la version et le format du monde sont au Durable Object (`meta`).
+- **Le jeu solo est le même** : le CSV de `node scripts/simulate.mjs` est identique octet pour octet à celui d'I2b.
+
+### Les mesures (`node scripts/cout-mise-en-ligne.mjs --nuits 40,80,160`)
+
+L'île du joueur automatique (graine 1, « applique ») :
+
+| Moment | Villageois | Envoyée | La copie du monde (gzip) | Hors de la ferme | Mise en ligne | Une sauvegarde | 14 gardées | Restauration |
+|---|---|---|---|---|---|---|---|---|
+| Jour 41 | 3 | 53,0 Ko | 53,5 Ko (10,7) | 0,1 Ko | 5 ms | 53,6 Ko | 0,73 Mo | 2 ms |
+| Jour 81 | 4 | 82,2 Ko | 82,7 Ko (14,3) | 0,1 Ko | 3 ms | 82,8 Ko | 1,13 Mo | 2 ms |
+| Jour 161 | 8 | 120,3 Ko | 120,9 Ko (19,4) | 0,1 Ko | 4 ms | 121,0 Ko | 1,65 Mo | 4 ms |
+
+La mise en ligne d'une partie dont le lieu du port n'est pas encore posé (une partie de Node, une ferme d'avant) tire le
+plan de la graine : ≈ 0,7 à 0,8 s, une fois (une île de test de trois villageois : 0,8 s). Au plafond, 14 sauvegardes
+font 3,5 Mo par monde : on en garde 14.
+
+Un monde d'avant (la partie récente avancée de `tests/engine/anciennes-parties.json` : 45 nuits, le chapitre 7, mise en
+ligne le chantier éteint, sa partie ramenée au format 103) : **870 ms** pour sa mise à jour et son passage sur l'île (le
+format, la migration d'I7f, le lieu du port, le tronçon, la sauvegarde d'avant) ; 45,9 Ko avant, 44,8 Ko après (le
+tronçon : 0,7 Ko) ; sa sauvegarde « avant le passage sur l'île » : 46,1 Ko.
+
+### Les tests
+
+- `tests/test-monde.mjs` (7 tests I9f) : une île avancée mise en ligne (ce qui est pris dehors, les régions vues, le
+  chemin, les rails, la charrette, les villageois et leurs traits connus, leurs liens, la chronique, les noms, le port ;
+  le brouillard reste au navigateur ; la partie solo intacte ; le plafond tenu) ; le plafond dépassé (la partie, l'île
+  hors de la ferme : le message et son poids ; une ferme d'avant garde la limite d'avant) ; la copie remise à jour (le
+  propriétaire seul, les membres gardés, chacun à zéro, la marque, un joueur en retard reçoit tout, réveillé à froid) ; un
+  monde d'avant au format 103 migré (la ferme et le coffre, le mur d'après l'instantané rejoué, l'horloge vivante au même
+  jour et à la même heure, le port, le tronçon, aucun villageois, le cadeau une fois, la marque, la partie d'avant gardée ;
+  un jeu sans format, plus ancien, plus récent : refusés ; une commande d'un jeu d'avant refusée) ; joué à deux (la grille
+  d'une île, chacun son énergie, réveillé à froid) ; le réglage allumé (sans essai ; un monde à jour ne bouge pas ; une île
+  d'avant I9c reçoit son lieu du port, le portage et l'amitié du propriétaire) ; le Durable Object (la sauvegarde « avant le
+  passage sur l'île », sa restauration sans le cadeau ; la sauvegarde d'une île, son poids, sa restauration).
+- `tests/test-synchro.mjs` : un monde d'avant au format 103, migré, joué à deux pendant une heure de pas : la même partie
+  chez A, chez B et au monde.
+- `tests/deux-joueurs.mjs` (Chromium) : 14a à 14e (A met son île avancée en ligne par ⚙️ Options ; B entre par
+  invitation, est au port, coupe un arbre, parle à un villageois ; A restaure la sauvegarde d'avant ces gestes ; A remet la
+  copie à jour depuis sa partie solo, B est prévenu) ; 15a à 15c (un monde d'avant migre à sa première ouverture, un jeu
+  d'avant y est refusé ; chacun voit sa fenêtre du retour ; la ferme d'avant dans 💾 ; ils y jouent à deux).
+
+### Ce que les fiches suivantes en reçoivent
+
+Une section « Revu par I9f » dans I9g et I9h. En bref : I9g mesure le coût d'une mise à jour de monde au réveil (≈ 0,9 s
+pour une ferme d'avant, à suivre au premier déploiement) et la copie remise à jour d'une grande île ; I9h déploie le
+Worker avant le site (un monde mis à jour refuse les jeux d'avant), retire `env.ILE_ESSAI` et la branche « ferme
+d'avant » des mondes, garde `mettreAJour` (une base d'avant peut se réveiller des mois plus tard).
+
+### Ce qui reste
+
+- **La copie remise à jour remet à zéro ce qui était à chaque invité** (sac, charge, amitiés avec les villageois) :
+  garder les amitiés des villageois qui sont restés les mêmes serait possible (le même id et le même prénom), à
+  confirmer.
+- **Un geste d'avant qui ne se rejoue plus** à la mise à jour est sauté et compté (le journal le dit) ; une ferme d'avant
+  écrit un instantané toutes les 20 révisions : au plus 19 gestes à rejouer, avec le moteur d'aujourd'hui.
+- **Le journal d'un monde mis à jour** garde ses lignes d'avant (lisibles) : elles se lisent avec les mots d'aujourd'hui.
+- **La migration d'un monde publié** n'a lieu qu'à la bascule (I9h) ; pendant le chantier, elle n'est faite que par un
+  Durable Object d'essai (les tests).
+
+## Les performances (I9g, fait)
+
+La fiche : `docs/fiches/ile/I9g-performances.md` ; les tableaux avant/après : `docs/perf.md` (« L'île à bâtir : un village
+de quinze »). Le protocole : `node scripts/cout-performances.mjs` (le moteur et le serveur sur les trois parties de
+référence, 5, 9 et 15 villageois ; `--racine` mesure une autre copie du dépôt sur les mêmes parties, et l'empreinte de
+chaque état final prouve que rien du jeu n'a changé) et `node scripts/mesure-scene-ile.mjs` (la scène d'une île de 15
+dans Chromium, le processeur ralenti ×1, ×4, ×6).
+
+### Ce qui est posé
+
+- **Le lot partout où le moteur avance seul** (`js/engine/blocs.js` `enLot`) : le pas du monde d'I9d, et depuis I9g le
+  `tick` de la page (`energy.js`), le pas de la ferme (`farmStep` : le rattrapage hors ligne aussi) et la nuit
+  (`advanceNight`, `runNight` : minuit relevait les pièces closes pour chaque villageois, plusieurs fois). Un lot dans un
+  lot de la même partie garde celui du dehors. Le principe ne change pas : aucun bloc ne se pose ni ne se reprend pendant
+  un pas (les gestes viennent entre deux), et ce qui est gardé ne lit que les blocs posés.
+- **Les pièces closes sans leur texte** (`calculerPieces`) : les mêmes blocs que la dernière fois (les mêmes cases, dans le
+  même ordre, les mêmes sortes) se reconnaissent case par case ; le texte JSON de tous les blocs, la clé d'avant, n'est
+  refait que s'ils semblent avoir changé. La même clé, donc la même liste rendue.
+- **Les maisons des villageois relevées d'un coup** (`maisonsMarquees` : les pièces une fois pour toutes les boîtes) : le
+  contrôle d'un `bloc.reprendre` sur une île (I9e) passe de 0,95 à 0,11 ms à quinze maisons ; un cache par pas n'a pas été
+  utile (chaque reprise change les blocs).
+- **Gardés le temps d'un pas** (`memoEnLot`) : le quai de chargement (la route de la charrette le demandait à chaque
+  signature de la journée du village), le nombre de blocs (`signatureTaches`), le nombre de sols (`lieuxDuVillage` : les
+  chemins de l'île en font des milliers), les cases devant un comptoir (`devantComptoir`, pour un local donné).
+- **Le même jeu** : les mêmes états octet pour octet (les empreintes du protocole ; `simulate.mjs`, `--village`,
+  `--vocations` identiques à la base) ; pas de nouveau format.
+
+### Les mesures (15 villageois ; avant → I9g)
+
+Minuit 64 → 6 ms (en solo 65 → 7) ; un pas de nuit 1,9 → 0,35 ms ; un pas de jour 5,8 → 3,2 ms (p99 29 → 19) ; une
+alarme du serveur de 120 pas 775 → 388 ms (240 pas, le plus gros rattrapage : ≈ 0,8 s) ; le `tick` solo d'une seconde
+7,7 → 1,3 ms (p99 58 → 8). La copie remise à jour : 6 à 8 ms au serveur, 3 à 4 ms chez le joueur (la confirmée et la
+locale refaites), 27 à 180 ms pour la page (setState, refresh, l'image suivante ; du bureau au téléphone modeste émulé).
+Un monde d'avant mis à jour à son réveil : ≈ 0,5 s (le lieu du port tiré du plan de la graine : une fois, laissé tel
+quel). La partie d'une île de 15 : 143 Ko en ligne, sous le plafond (256 Ko) : rien à compacter.
+
+### Les tests
+
+- `tests/engine/village-lots.test.mjs` : la même partie, octet pour octet, avec et sans les calculs gardés
+  (`reglerLots({ sans: true })` : ni lot, ni pièces reconnues sans leur texte) : le pas du monde sur trente heures (jour,
+  nuit, minuit), deux journées de la page en solo, le joueur automatique (25 nuits, `sleep`) ; aucun calcul gardé ne
+  change pendant son lot (`reglerLots({ verifier: true })` : chacun refait et comparé, sur une île de 10 en ligne et en
+  solo ; vérifié aussi sur 120 nuits du joueur automatique, réglage éteint et allumé, et les deux vocations) ; les pièces
+  closes (recopiées, une porte reprise et remise, un mur changé) ; les maisons relevées d'un coup, celles de chaque boîte.
+- `tests/engine/perf-ferme.test.mjs` : la garde : minuit d'un village de 15 sous 30 ms ; sa partie sous le plafond.
+
+### Ce qui reste
+
+- **La scène** : dans le rendu logiciel de Chromium, ralentie six fois, l'île de 15 tourne à 13 images par seconde (avant
+  comme après : le moteur n'y pèse plus guère). La borne de la fiche (30 images par seconde sur le téléphone modeste) est à
+  mesurer sur le téléphone de référence, avec sa carte graphique (« Mesurer 30 s », le mode test) ; si elle ne tient pas,
+  les pistes de la fiche pour la scène (les villageois loin de la vue animés une image sur deux, les bulles et enseignes
+  en un layer). Les parcours filmés ne sont pas faits.
+- **Le pas de jour** reste fait surtout des signatures de la journée du village (`journeeDuVillage` refait sa clé à
+  chaque question, et ce qu'elle lit change pendant le pas : le travail des villageois) ; les garder demanderait de savoir
+  ce qu'une action change.
+- **La route de la charrette** est gardée par partie (`trajetCharrette`, une WeakMap) : une partie refaite chez un joueur
+  (`Synchro.refaire`, à chaque geste d'un autre) la recalcule une fois (quelques ms).
+
+## La bascule (I9h, faite : la répétition, l'allumage, le retrait)
+
+La fiche : `docs/fiches/ile/I9h-bascule.md` (« Fait : la première PR » : le détail, l'ordre du déploiement, ce que la
+seconde PR aura à faire). En bref :
+
+- **`main` fusionné** dans le chantier (un vrai commit de fusion : 01f8e5c, le niveau 2 de la maison, est ancêtre) ; tout
+  y était déjà reporté, l'arbre ne change pas ; pas de nouveau format (109).
+- **La répétition** : `node scripts/repetition-bascule.mjs [sauvegardes exportées…]` (sans argument : les 11 parties
+  gardées dans `tests/engine/`, dont deux faites par le moteur de `main` avec une maison au niveau 2 meublée,
+  `parties-main.json` : toutes passent sur l'île, leur ferme identique, puis jouent) ; `node scripts/repetition-monde.mjs
+  <copie de main>` (un monde du serveur d'avant mis à jour et passé sur l'île par celui d'aujourd'hui, sans essai, puis
+  joué à deux ; `repetition-monde-navigateur.mjs`, le même dans deux onglets de Chromium). Les trois parties réelles du mainteneur restent à faire passer par le premier, avant de fusionner. Elle a
+  trouvé deux défauts, corrigés : l'inventaire « réparé » à chaque ouverture (les objets du départ revenaient : 160
+  conserves) et le site qui ne se construisait plus (`charrette-village.js`).
+- **L'allumage** : `VILLAGE.ACTIF: true`, la version 2.0.0 (le jeu et le Worker, qui embarque le moteur : tous les mondes
+  d'avant passent sur l'île à leur premier réveil, `ILE_ESSAI` n'y sert plus). Les tests du jeu d'avant forcent le réglage
+  éteint (`tests/engine/aide.mjs`) ; `simulate.mjs` joue l'île par défaut (`--eteint` : le jeu d'avant), son CSV est celui
+  de `--village` d'avant, octet pour octet ; le site construit pèse 28,5 Mo (26,9 pour celui de `main`) jusqu'au retrait.
+- **Le retrait** (la seconde PR) : le réglage (`VILLAGE.ACTIF`, `villageActif`, l'essai `?village=1` et son bandeau,
+  `ILE_ESSAI` du Worker, `--eteint` et `--village` de `simulate.mjs`) ; le récit (`recit.js`, son aiguillage,
+  `fil-lune.js`, `secrets.js`, `ile.js`, `bienvenue.js`, `usure.js`, `data/recit.json`, `ile.json`, `secrets.json`,
+  le courrier, `docs/recit/` ; D16 : la pierre de lune et la lueur de la ferme) ; les hameaux et la calèche
+  (`habitants.js` du moteur, `caleche.js`, `caleche-tournee.js`, `projets.js`, `fetes.js`, leurs fenêtres, leurs
+  dessins, `data/projets.json`) ; les tests du jeu d'avant. **Ce qui reste pour les anciennes parties** :
+  `js/engine/migration-avant.js` (ce que les migrations lisaient du jeu d'avant, figé : le récit, la visite et la
+  calèche vides, l'enveloppe et ses 15 000 pièces, les souvenirs, la malle à vider, ce que rendaient les ateliers
+  des hameaux, le remboursement du commerce) et `js/engine/migration-ile.js` (le passage sur l'île) ; la commande
+  `nuit.partagee` du moteur, pour rejouer le journal d'un monde d'avant ; leurs tests (`migrations`, `temoins`,
+  `village-migration`, `village-bascule`, la répétition). **Ce qui garde son nom** : les clés des sauvegardes
+  (`state.monde.hameaux`, `state.caleche`, `state.recit`, `state.courrier`, `state.bienvenue`, les compteurs
+  `calecheVentes` et `achatsHameaux`), le générateur du monde (`lieux.hameaux`, `DATA.HAMEAUX`, `monde-hameaux.js` :
+  le port et les bâtisses en sont faits ; le monde de l'île est tiré du monde d'avant), le moteur des personnages
+  de la scène (`js/carte/ferme/habitants.js`, que les villageois reprennent). L'encyclopédie n'a plus qu'une source
+  (`encyclopedie_ferme_familiale.json`, le livre de l'île). Le jeu n'a pas changé : le CSV de `simulate.mjs` est le
+  même octet pour octet, les parties migrées aussi (au rapport de la nuit près : `nuit.amitie`, `nuit.plans`,
+  `nuit.projets`, qui ne rapportaient que la vie des hameaux). Le site construit pèse 29,0 Mo (29,9 avant le
+  retrait), le paquet du jeu 1 853 Ko (2 192).
+- **Le déploiement** (fait par le mainteneur) : le Worker avant le site, l'ordre exact dans la fiche ; puis relire le
+  rapport des sessions et les journaux des mondes (`monde.migrer`, `perdus`).
+
+## Les règles qui ne changent pas
+
+- **Sans pénalité** (B-1) : un villageois mal nourri se repose, il ne part pas ; une commande du bac
+  manquée ne coûte rien ; rien ne se perd par absence.
+- **Chiffres entiers** partout (pièces, énergie, parts en %).
+- **Le hasard à graine** : villageois, traits, liens et commandes du bac se tirent de la graine de la
+  partie ; la même partie rejoue la même chose.
+- **La vue à 45°** pour tout nouveau dessin (`CLAUDE.md`).
+- **Le français** dans le code, les commentaires et les textes.

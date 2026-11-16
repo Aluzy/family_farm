@@ -56,7 +56,7 @@
     "  forêt (une terre ouverte à LISIERE tuiles) ; la note d'une place : un tirage, plus OUVERT",
     "  sur une terre ouverte, plus LOIN_BONUS au plus selon sa distance à la ferme (jusqu'à LOIN",
     "  tuiles) ; NOMS : les noms qu'on leur donne (tirés sans répétition) ; GUE : le nom du hameau le plus proche de la",
-    "  ferme, toujours (le Gué du récit, docs/recit/bible.md : le hameau natal de Maurice ; sa première maison est celle",
+    "  ferme, toujours (le Gué du récit, archive/jeu-avant-ile:docs/recit/bible.md : le hameau natal de Maurice ; sa première maison est celle",
     "  de Maurice et Philomène, partis en voyage, sans foyer). GARANTIS : les autres hameaux du récit, dans l'ordre où ils choisissent : chacun prend",
     "  le hameau qui reste dont le pays (cote, montagne, foret, lande) pèse le plus autour de lui ; metier : celui de",
     "  ses habitants, si un peu de ce pays l'entoure (sinon celui que le lieu suggère, monde-hameaux.js).",
@@ -76,7 +76,7 @@
     "  basse à PIED tuiles), à ECART tuiles l'une de l'autre, à FERME tuiles de la ferme au moins.",
     "PECHE : MER, le nombre de coins de pêche sur le rivage, à ECART tuiles l'un de l'autre ; un",
     "  coin par lac et par rivière.",
-    "RECIT : les lieux garantis du récit (docs/recit/bible.md), une case chacun, dans lieux.recit ({ id, sorte, case }) :",
+    "RECIT : les lieux garantis du récit (archive/jeu-avant-ile:docs/recit/bible.md), une case chacun, dans lieux.recit ({ id, sorte, case }) :",
     "  l'observatoire de Maurice, la « cabane » (dans la forêt, à CHEMIN tuiles au moins de tout chemin, HAMEAU de tout hameau, FERME de la",
     "  ferme : la plus loin des chemins), l'atelier de Frida (sur la rive d'un lac, ou d'une rivière s'il n'y a pas de",
     "  lac : la rive la plus près de deux hameaux à la fois, à HAMEAU tuiles au moins de chacun), l'épave (sur la plage,",
@@ -224,7 +224,9 @@
       { "nom": "pierre", "genre": "basse", "variantes": 1 },
       { "nom": "champignon_blanc", "genre": "basse", "variantes": 1 },
       { "nom": "champignon_jaune", "genre": "basse", "variantes": 1 },
-      { "nom": "champignon_bleu", "genre": "basse", "variantes": 1 }
+      { "nom": "champignon_bleu", "genre": "basse", "variantes": 1 },
+      { "nom": "ail_ours_sauvage", "genre": "basse", "variantes": 2, "penche": true },
+      { "nom": "salicorne_sauvage", "genre": "basse", "variantes": 2, "penche": true }
     ],
     "REMPLACE": [
       { "biome": "foret", "sols": ["feuilles", "mousse"], "de": "feuillu", "vers": "chataignier", "part": 0.0625 }
@@ -453,7 +455,9 @@
       "pierres_moussues": { "geste": "ramasser", "fin": { "pierre": [1, 1] }, "retour": [4, 6] },
       "coquillages": { "geste": "ramasser", "fin": { "coquille": [1, 1] }, "chance": { "bulot": 30 }, "retour": [2, 4] },
       "etoile_mer": { "geste": "ramasser", "fin": { "etoile_mer": [1, 1] }, "retour": [3, 5] },
-      "algues": { "geste": "ramasser", "fin": { "algues": [1, 2] }, "retour": [2, 4] }
+      "algues": { "geste": "ramasser", "fin": { "algues": [1, 2] }, "retour": [2, 4] },
+      "ail_ours_sauvage": { "geste": "ramasser", "fin": { "plant_ail_ours": [1, 2] }, "retour": [8, 12] },
+      "salicorne_sauvage": { "geste": "ramasser", "fin": { "plant_salicorne": [1, 2] }, "retour": [8, 12] }
     }
   },
   "//LIEUX": [
@@ -842,30 +846,6 @@
       "fete_place": ["La place est belle, maintenant ! On y joue tous les jours.", "Tu as vu la nouvelle place ? C'est grâce à toi aussi !", "On a fait une fête sur la place. Tu aurais dû venir !"]
     }
   },
-  "//CALECHE": [
-    "La calèche (fiche 7c, js/engine/caleche.js ; la scène : js/carte/ferme/caleche.js). Elle fait chaque jour",
-    "le tour du monde par les chemins du plan (monde-gen.js : la boucle qui relie la sortie de la ferme et les",
-    "hameaux), dans le sens où ils sont reliés. Ses arrêts : la ferme (la case au bout de sa sortie, devant son",
-    "entrée) et la place de chaque hameau. L'horaire, le même chaque jour : elle arrive à la ferme à FERME h et",
-    "y reste ARRET_FERME h ; chaque hameau la garde ARRET h. Sa vitesse (tuiles par heure de jeu) est celle qui",
-    "fait tenir le tour en JOURNEE heures, au moins VITESSE. Elle dort dans le hameau (le gîte) d'où elle part",
-    "le plus près de DEPART h pour être à la ferme à l'heure. Sa position se calcule d'après le jour et l'heure.",
-    "PORTEE : à tant de cases d'elle (arrêtée), on commerce ; HELER : à tant de cases, on la hèle en chemin ;",
-    "PROCHE : à tant de cases, une icône au bord de l'écran montre où elle est. RETENUE : hélée, ou retenue",
-    "par le commerce, elle attend tant d'heures (RETENUE_MAX au plus par jour, puis elle repart).",
-    "Elle achète la réserve de chaque hameau où elle s'arrête (habitants.js) : ACHAT_HAMEAU % du prix de",
-    "vente, payés aux bourses des foyers ; PRIS au plus de chaque objet par arrêt, son coffre en garde",
-    "COFFRE_MAX de chacun ; chaque matin, elle a vendu en route tout sauf GARDE % de son coffre. Elle revend",
-    "au joueur ce que son coffre porte, à VENTE % du prix de vente, et les semences (au cours du Marché :",
-    "market.js) ; elle lui achète tout ce qui se vend, au prix de vente. RATTRAPAGE : les jours d'arrêts",
-    "rattrapés au plus après une absence."
-  ],
-  "CALECHE": {
-    "NOM": "La calèche", "ICONE": "🐴",
-    "FERME": 10, "ARRET_FERME": 1, "ARRET": 0.5, "DEPART": 6.5, "JOURNEE": 15, "VITESSE": 150,
-    "PORTEE": 4, "HELER": 9, "PROCHE": 70, "RETENUE": 0.5, "RETENUE_MAX": 3,
-    "ACHAT_HAMEAU": 60, "VENTE": 150, "PRIS": 20, "COFFRE_MAX": 40, "GARDE": 50, "RATTRAPAGE": 3
-  },
   "//DECOUVERTE": [
     "S'orienter (fiche 8, js/engine/monde-vu.js ; la scène : js/carte/ferme/brouillard.js, boussole.js ; la carte",
     "du monde : js/ui/carte-monde.js). Le monde se découpe en cellules de CELLULE × CELLULE cases, vues ou non (un",
@@ -883,30 +863,5 @@
     "RAYONS": { "prairie": 12, "lande": 15, "plage": 15, "falaise": 15, "montagne": 18, "sommet": 22, "foret": 7, "marais": 9 },
     "NUIT": 0.5, "RAYON_MIN": 5,
     "ARRIVEE": 4
-  },
-  "//BIENVENUE": [
-    "La visite de bienvenue (fiche 18, js/engine/bienvenue.js ; la scène : js/carte/ferme/visite.js ; la page :",
-    "js/ui/bienvenue.js). Une fois par partie, le jour JOUR, de HEURE à FIN h, un habitant du hameau le plus proche",
-    "de la ferme (un adulte, tiré de la graine du monde) vient à pied jusqu'à la porte du foyer, frappe (TOC) et",
-    "attend ATTENTE s (de jeu réel) que le personnage soit à PROCHE px de lui. Alors il dit une phrase d'accueil",
-    "(PHRASES, l'une d'elles ; {prenom}, {hameau} (« de Brume-Haute »), {plat}) et donne un plat de sa cuisine",
-    "(PLATS, selon le métier de son hameau ; « * » sans hameau ou pour un autre métier ; DITS : comment il le dit) :",
-    "+1 à l'inventaire. Le",
-    "personnage n'est pas venu (ou la journée a passé sans visite, ou la scène de la ferme n'était pas ouverte) :",
-    "le plat est posé devant la porte (ABSENT) et donné quand le personnage y revient (à PROCHE px de la porte).",
-    "Sans hameau connu (les plans du monde pas encore là), un voisin sans hameau (VOISIN)."
-  ],
-  "BIENVENUE": {
-    "JOUR": 2, "HEURE": 11, "FIN": 17, "ATTENTE": 45, "PROCHE": 64,
-    "PLATS": { "bucheron": "gratin_patates", "pecheur": "tarte_pommes", "mineur": "gratin_patates", "berger": "raclette", "cueilleur": "tarte_myrtilles", "*": "gratin_patates" },
-    "DITS": { "gratin_patates": "un gratin de patates tout chaud", "tarte_pommes": "une tarte aux pommes", "raclette": "une raclette", "tarte_myrtilles": "une tarte aux myrtilles" },
-    "TOC": "Toc, toc ! Il y a quelqu'un ?",
-    "PHRASES": [
-      "Bienvenue ! Je suis {prenom}, {hameau}. Je vous ai apporté un bon plat : {plat}. Bonne installation !",
-      "Bonjour, et bienvenue parmi nous ! Moi, c'est {prenom}, {hameau}. Tenez, un bon plat pour vous : {plat}.",
-      "Bienvenue chez vous ! {prenom}, {hameau}. Une ferme, ça creuse : je vous ai apporté {plat}."
-    ],
-    "VOISIN": { "m": "votre voisin", "f": "votre voisine" },
-    "ABSENT": "Personne… Je laisse le plat devant la porte."
   }
 }

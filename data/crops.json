@@ -232,6 +232,35 @@
       "graines": { "item": "plant_vigne", "mode": "plant" },
       "vivace": { "stade": 4 },
       "sprite": { "r": 17, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
+    },
+    "//ail_ours": [
+      "Les plants sauvages de l'île (le chantier « l'île à bâtir », fiche I7e : data/village.json VILLAGE.SAUVAGES). sauvage :",
+      "le biome où on le trouve. Le plant se ramasse dans le grand monde de l'île (data/monde.json RECOLTE.SORTES, sa sorte",
+      "« <culture>_sauvage »), ne s'achète pas (rachetable : false) ; repiqué dans la zone de culture, il pousse comme une",
+      "autre culture et rend des plants. Sa première récolte l'inscrit au catalogue d'import du port (js/engine/bac.js",
+      "inscrireSauvage). Le jeu d'avant ne les pose nulle part : ils n'y paraissent pas."
+    ],
+    "ail_ours": {
+      "nom": "Ail des ours",
+      "icone": "🌿",
+      "lieux": ["potager"],
+      "sauvage": "foret",
+      "stades": 4,
+      "litres": 2,
+      "rendement": 5,
+      "graines": { "item": "plant_ail_ours", "mode": "recolte", "min": 1, "max": 2 },
+      "sprite": { "r": 18, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
+    },
+    "salicorne": {
+      "nom": "Salicorne",
+      "icone": "🌱",
+      "lieux": ["potager"],
+      "sauvage": "plage",
+      "stades": 5,
+      "litres": 3,
+      "rendement": 6,
+      "graines": { "item": "plant_salicorne", "mode": "recolte", "min": 1, "max": 2 },
+      "sprite": { "r": 19, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     }
   },
   "//POTAGER": [

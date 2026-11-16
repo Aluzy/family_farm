@@ -1986,7 +1986,7 @@ test('ferme générée : le Marché ouvre au niveau 3 ; le panneau, la pompe, la
   for (const t of ['panneau', 'pompe', 'reservoir', 'batterie']) removeStarter(s, t);   // (une partie neuve)
   // avant le niveau 3 : le Marché est fermé, sans panneau ni pompe ou avec
   assertEqual(marcheOuvert(s), false);
-  assertEqual(buyItem(s, 'graine_carotte', 1).error, 'La calèche commerce avec toi à partir du niveau 3.');
+  assertEqual(buyItem(s, 'graine_carotte', 1).error, 'Le port commerce avec toi à partir du niveau 3.');
   assertEqual(sellItem(s, 'conserve', 1).ok, false);
   assertEqual(buyHoe(s).ok, false);
   // au niveau 3 : il ouvre, sans panneau ni pompe

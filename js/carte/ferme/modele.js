@@ -146,7 +146,7 @@
       this.syncGisements(model.gisements);
       this.syncRocks(model.rochers);
       this.syncFelled(model.abattus);
-      if (this.ctx.monde) this.syncMonde(model.monde);   // (ce qui est pris dans le grand monde : recolte-monde.js)
+      if (this.ctx.monde) this.syncMonde(model.monde, distant);   // (ce qui est pris dans le grand monde : recolte-monde.js ; I9b : par un autre joueur)
       this.syncCutGrass(model.fauchees);
       this.syncSprinklers(model.asperseurs);
       this.syncRobot(model.robot);

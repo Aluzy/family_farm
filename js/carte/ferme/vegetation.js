@@ -250,6 +250,8 @@
         if (penche) o.herbe = { img, fleurs: null, x, y, base: n, t: -1, dir: 1, inside: false };
         // (un arbre d'un jardin de hameau : la hache le dit, hameaux.js)
         if (pl.cle === 'hameaux' && s.genre === 'arbre') o.nomHameau = s.nom;
+        // (une lanterne du port, fiche I1a : ses images, éteinte puis allumées ; hameaux.js stepLanternesPort)
+        if (pl.cle === 'hameaux' && s.nom === 'lanterne_port') o.lanternePort = pl.images[im[k]];
         // (un lieu dessiné : sa sorte ; l'amas d'améthyste du récit luit la nuit, lumineux.js)
         if (pl.cle === 'lieux_monde') o.lieuNom = s.nom;
         if (s.genre === 'mer' && pl.ecume.length) {

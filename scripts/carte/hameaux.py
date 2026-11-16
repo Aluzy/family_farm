@@ -22,7 +22,8 @@
 # les paniers du cueilleur, le poulailler, le coffre de la salle commune. Les toits (tuiles, ardoise,
 # chaume, roseaux) sont dessinés par la scène (CarteKit.toit, js/carte/toit.js).
 #
-# Les sortes, leur ordre et leurs variantes sont ceux de data/monde.json (HAMEAUX.SORTES) ; la table
+# Les sortes, leur ordre et leurs variantes sont ceux de data/monde.json (HAMEAUX.SORTES), puis ceux du port
+# (data/village.json PORT.SORTES : scripts/carte/port.py, le chantier « l'île à bâtir ») ; la table
 # (assets/hameaux.json : { "sorte": [[x, y, l, h, px, py]…] }, une entrée par variante : le rectangle
 # dans la planche et le pied, le point posé au sol) a la forme de celle des rochers. Le pied d'une
 # pièce d'une case : le milieu du bas de sa case ; de deux ou trois cases : le milieu du bas de ses
@@ -962,13 +963,18 @@ def main():
     images['terre'] = [(terre, None)]
     images['potager'] = [(legume(n), None) for n in LEGUMES]
     images['tapis'] = [(meuble(f'tapis_{k}'), None) for k in (1, 2, 3)]
+    # le port (le chantier « l'île à bâtir », fiche I1a : scripts/carte/port.py), à la suite : ses sortes sont
+    # celles de data/village.json (PORT.SORTES), rangées après celles des hameaux
+    import port
+    images.update(port.images(hauts, ch))
+    sortes = donnees['SORTES'] + json.load(open(os.path.join(ROOT, 'data', 'village.json'), encoding='utf-8'))['PORT']['SORTES']
 
     # la planche : les images rangées de gauche à droite, une rangée après l'autre
     table, places, x, y, hl = {}, [], 0, 0, 0
-    for s in donnees['SORTES']:
+    for s in sortes:
         liste = images[s['nom']]
         if len(liste) != s['variantes']:
-            raise SystemExit(f"{s['nom']} : {len(liste)} images pour {s['variantes']} variantes (data/monde.json)")
+            raise SystemExit(f"{s['nom']} : {len(liste)} images pour {s['variantes']} variantes (data/monde.json, data/village.json)")
         table[s['nom']] = []
         for im, pied in liste:
             w, h = im.size

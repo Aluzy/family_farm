@@ -15,6 +15,97 @@
     "//LISSAGE": "nuits de la moyenne mobile des courbes de bonheur (mode test, scripts/simulate.mjs)",
     "LISSAGE": 7,
     "STRATEGIES": { "applique": { "nom": "Joueur appliqué", "eveilS": 60 }, "minimal": { "nom": "Joueur minimal", "eveilS": 30 } },
+    "//BRUTS": [
+      "I0b : les matériaux bruts que le joueur simulé fournit quand il en manque (il ne va pas les couper, les piocher,",
+      "les faucher ni les fondre pas à pas, hors de ce que la ferme offre chaque matin : js/engine/bot.js botRamasser) ;",
+      "ils ne coûtent pas de pièces dans le jeu et la simulation les compte (materiauxFournis)."
+    ],
+    "BRUTS": ["bois", "pierre", "fibre", "minerai_fer", "minerai_cuivre", "minerai_or", "minerai_platine", "quartz", "lingot_fer", "lingot_cuivre", "lingot_or", "champignon_lumineux"],
+    "//MATERIAUX_GARDES": "I0b : il ramasse les pierres et le bois de la ferme tant qu'il en a moins que ce nombre (les baies, toujours)",
+    "MATERIAUX_GARDES": 40,
+    "//VIVRES_GARDES": "I0b : des légumes, des fruits et des produits qui se mangent, il garde ce nombre de chacun (hors boîte) et vend le reste à la calèche",
+    "VIVRES_GARDES": 10,
+    "//SEMENCES_GARDEES": "I0b : d'une récolte qui est sa propre semence (la patate), il garde ce nombre pour ressemer : ni vendu, ni dans la boîte",
+    "SEMENCES_GARDEES": 6,
+    "//PORT": [
+      "I1b : sur l'île, le joueur simulé va au port (js/engine/bot.js, botSortiePort) quand ce qu'il a à vendre vaut",
+      "SEUIL pièces ou plus, ou qu'il lui manque des graines ; une sortie par jour au plus. Sa marche se compte en",
+      "temps d'éveil : le chemin du port (et la moitié de la ferme) à VITESSE cases par seconde, à l'aller et au",
+      "retour (le personnage marche à 58 px par seconde, 3,6 cases).",
+      "I1c : il y va aussi pour honorer une commande du bac (il a ce qu'elle demande) ou porter les matériaux du",
+      "chantier du port ; il agrandit le port jusqu'au niveau NIVEAU_MAX (l'étape « port » de PRIORITE et de PLAN), et",
+      "en charge les matériaux dès que ses pièces font CHANTIER fois le prix du niveau suivant."
+    ],
+    "PORT": { "SEUIL": 60, "VITESSE": 3.6, "NIVEAU_MAX": 5, "CHANTIER": 0.5 },
+    "//VILLAGEOIS": [
+      "I3c : le chantier allumé, le joueur simulé loge des villageois et leur confie des tâches (js/engine/bot.js,",
+      "botVillageois). Dès le palier MAISON_PALIER des paliers de l'île, tant que le port en laisse venir (le plafond de",
+      "VILLAGE.ARRIVEE), il bâtit une maison de villageois quand aucune n'est libre : une pièce close de 5 × 4 cases, un",
+      "lit, une boîte aux lettres contre sa porte (MAISON : ses pièces maîtresses, fabriquées à l'Atelier ; les murs",
+      "posés d'un coup, comme pour ses autres bâtiments). Le nouveau venu débarque au bac suivant (la nuit l'installe).",
+      "Puis il donne à chacun la première tâche de TACHES qu'aucun autre n'a et qui a son poste (d'abord ce qui nourrit,",
+      "puis ce qui se vend) ; l'outil qu'elle demande, il le fabrique à l'Atelier et le lui donne (puis en refait un",
+      "pour lui quand il en a besoin).",
+      "I3d : REATTRIBUER, il lit le tableau des villageois (js/engine/tableau.js ; bot.js, botReattribuer). Une fois par",
+      "jour, le villageois dont le solde de la semaine (ce qu'il a produit, au prix du port, moins ce qu'il a mangé) est",
+      "le plus bas, s'il a fait sa tâche JOURS jours de suite, en essaie une autre : la première tâche libre de TACHES qu'il",
+      "n'a pas encore essayée ; toutes essayées, celle qui lui a donné le meilleur solde, si elle bat l'actuelle de plus",
+      "de MARGE pièces sur la semaine. Une semaine de solde ne voit pas qui nourrit le village : celui qui fait une tâche de",
+      "GARDER (les champs) la garde, et l'on ne change que pour une tâche de VERS (sans la cuisine, qui prend à la boîte",
+      "ce que les autres auraient mangé)."
+    ],
+    "VILLAGEOIS": {
+      "MAISON_PALIER": 3,
+      "MAISON": { "paillasse": 1, "boite_aux_lettres": 1 },
+      "TACHES": ["champs", "betes", "cuisine", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"],
+      "REATTRIBUER": { "JOURS": 7, "SEMAINES": 2, "SEUIL": 0, "MARGE": 0, "GARDER": ["champs"], "VERS": ["betes", "verger", "peche", "bois", "pierre", "fauchage", "cueillette"] },
+      "//ETAL": "I4 : dès qu'un villageois est là, il pose un étal (bourse.js) et y met chaque jour, de ce qu'un villageois aime ou dont il a besoin, PAR_OBJET unités au plus de chaque objet, sans passer sous VIVRES_GARDES dans l'inventaire.",
+      "ETAL": { "PAR_OBJET": 2 },
+      "//COMMERCES": "I5a, I5b : les commerces qu'il ouvre, dans l'ordre, un à la fois (bot.js botCommerce) : dès le palier PALIER, il prépare un commerce de la sorte SORTE : un villageois à la tâche de la filière, une conversation par jour, le local bâti dès que l'envie est née, puis l'ouverture ; ouvert, il garde au coffre MATIERES (ce qu'il va chercher plus loin : le minerai, le bois de la forge ; la mercerie prend la laine des moutons de la ferme : GARDER, ce qu'il ne vend plus au port), que l'artisan lui achète ; sa caisse sous AVANCE pièces, il lui commande des pièces payées d'avance (botEntretenirCommerce). Puis il prépare le suivant.",
+      "COMMERCES": [{ "PALIER": 4, "SORTE": "forge", "MATIERES": { "minerai_fer": 12, "bois": 8 } }, { "PALIER": 6, "SORTE": "mercerie", "MATIERES": {}, "GARDER": { "laine": 12 }, "AVANCE": 60 }],
+      "//GARDE_MANGER": "I3e : dès qu'un villageois est là, il rend commune la boîte à nourriture (puis le réfrigérateur) et fait de sa cuisinière et de son four la cuisine du village (bot.js botGardeManger) ; il garnit le garde-manger (les plats, ce que la cuisine du village peut cuisiner, ce qui nourrit bien : garde-manger.js utileAuGardeManger) au lieu de remplir le frigo de tout, en gardant GARDE de chaque aliment pour sa propre cuisine ; il moud la farine du menu ; CUISINIERS : { n villageois adultes : cuisiniers } (le plus grand seuil atteint), pris parmi les derniers arrivés qui ne font ni les champs ni un commerce ; la cuisine du village ne se retire pas (REATTRIBUER).",
+      "GARDE_MANGER": { "CUISINIERS": { "3": 1, "6": 2 }, "GARDE": 6 },
+      "//CHARRETTE": "I2b : la tournée du port prend le rang RANG dans TACHES (le deuxième villageois la fait) et ne se retire pas (REATTRIBUER) : la charrette du village porte au port VENDRE (les récoltes qui s'entassent au coffre), marqué « à vendre » sur la fiche de ses charretiers. Il achète un palier (le moins cher des deux branches, bot.js botCharrette) quand ses pièces valent MARGE fois son prix et que le village a plus à vendre (en volumes) que la charrette n'en porte dans la journée ; le palier du cheval attend l'Écurie. COMMERCE : faute d'un autre villageois libre, un commerce qu'il prépare prend le charretier (bot.js charretierPourCommerce) ; la tournée revient au prochain venu. La voie et le wagonnet : pas dans la simulation (poser des rails dehors demande le sol du monde, région par région).",
+      "CHARRETTE": { "RANG": 2, "VENDRE": ["fraise", "poivron", "tomate", "aubergine", "epinard", "oignon", "carotte", "courgette", "pomme", "poire", "baies"], "MARGE": 2, "COMMERCE": true }
+    },
+    "//VOCATIONS": [
+      "I8b : les deux stratégies qui comparent les vocations de l'île (node scripts/simulate.mjs --vocations, le chantier",
+      "allumé ; bot.js simulateVocation, bilanVocation). Elles ne sont jouées qu'avec --vocations (le CSV d'avant ne",
+      "change pas). village : le joueur appliqué tel qu'il est (la fiche I8a lui donnera ses fêtes et ses projets).",
+      "production : le joueur appliqué, plus la ferme productive : ses villageois prennent TACHES dans l'ordre ({ tâche: combien de",
+      "villageois au plus }), sans réattribution (REATTRIBUER : false) ; PART_PLEIN_CHAMP % des",
+      "parcelles en plein champ (du blé pour le pain) ; au port, il accepte les contrats d'export de CONTRATS et les",
+      "livre (il charge leur objet avant le reste) ; QUAI : il pose le quai de chargement dès que le port l'ouvre."
+    ],
+    "VOCATIONS": {
+      "village": { "nom": "Vocation village", "eveilS": 60 },
+      "production": {
+        "nom": "Vocation production", "eveilS": 60, "vocation": "production",
+        "TACHES": { "champs": 1, "chaine": 1, "cuisine": 1, "navette": 1, "betes": 1, "verger": 1, "peche": 1, "bois": 1, "pierre": 1, "fauchage": 1, "cueillette": 1 },
+        "REATTRIBUER": false, "QUAI": true, "FARINE_MAX": 80, "VENDRE": ["pain"],
+        "CONTRATS": ["pain", "laine", "oeuf", "lait"]
+      }
+    },
+    "//BATIR": [
+      "I0b : les pièces maîtresses de chaque bâtiment, fabriquées à l'Atelier avec leurs matériaux avant d'être posées",
+      "(js/engine/bot.js botBatir ; les murs, portes et barrières autour sont posés d'un coup). Aucun n'a de prix en pièces."
+    ],
+    "BATIR": {
+      "foyer": { "paillasse": 4 },
+      "puits": { "puits_pierre": 1 },
+      "boite": { "boite_nourriture": 1 },
+      "four": { "four_pierre": 1 },
+      "cuisine": { "cuisiniere": 1 },
+      "moulin": { "meule": 1 },
+      "poulailler": { "nichoir": 1 },
+      "etable": { "mangeoire": 1 },
+      "serre": { "bac_semis": 1 },
+      "silo": { "bloc_silo": 6 },
+      "panneau": { "panneau_solaire": 1 },
+      "batterie": { "batterie": 1 },
+      "pompe": { "pompe": 1 },
+      "reservoir": { "citerne": 1 }
+    },
     "//CAISSE": ["Ce que le joueur garde ou vise.", "pièces gardées en réserve (graines, blé) : les achats du plan ne les touchent pas"],
     "CAISSE": 20,
     "//CONSERVES_GARDEES": "il ne vend des conserves que pour payer un achat, jamais sous ce stock",
@@ -68,22 +159,26 @@
       "Un élément pas encore débloqué par un chapitre est sauté."
     ],
     "PRIORITE": {
-      "1": [{ "type": "maison" }, { "type": "achat", "id": "panneau" }, { "type": "achat", "id": "pompe" }, { "type": "achat", "id": "reservoir" }, { "type": "houe" }],
-      "//1": "version 1.12 : le départ v2 (maison, panneau, pompe, réservoir, houe) ; la batterie (facultative) vient avec le plan",
+      "1": [{ "type": "maison" }, { "type": "houe" }],
+      "//1": "I0b : la terre sauvage (l'abri est là, la houe se fabrique) ; le panneau, la pompe, la citerne et la batterie se fabriquent à l'Atelier au niveau de l'énergie : ils viennent avec le plan",
       "2": [{ "type": "houe" }, { "type": "silo", "niveau": 2 }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
       "4": [
         { "type": "station", "id": "four" },
         { "type": "station", "id": "moulin" },
-        { "type": "station", "id": "cuisine" }
+        { "type": "station", "id": "cuisine" },
+        { "type": "port", "niveau": 2 }
       ],
       "5": [{ "type": "station", "id": "moulin" }, { "type": "paturage" }, { "type": "moutons", "n": 3 }],
-      "6": [{ "type": "serre" }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }],
+      "6": [{ "type": "serre" }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }, { "type": "port", "niveau": 3 }],
       "7": [],
       "//5": "le Moulin d'abord (la farine), puis l'Étable : ses bêtes mangent la paille fauchée (botScythe)"
     },
     "PLAN": [
       { "type": "houe" },
+      { "type": "achat", "id": "panneau" },
+      { "type": "achat", "id": "pompe" },
+      { "type": "achat", "id": "reservoir" },
       { "type": "achat", "id": "batterie" },
       { "type": "poulailler", "niveau": 1 },
       { "type": "silo", "niveau": 1 },
@@ -126,8 +221,19 @@
       { "type": "arbres", "n": 8 },
       { "type": "vaches", "n": 8 },
       { "type": "moutons", "n": 10 },
-      { "type": "arbres", "n": 12 }
+      { "type": "arbres", "n": 12 },
+      { "//": "I1c : le port agrandi (le chantier allumé ; éteint, l'étape est faite d'office)", "type": "port", "niveau": 3 },
+      { "type": "port", "niveau": 4 },
+      { "type": "port", "niveau": 5 }
     ],
+    "//VERIFS": [
+      "I0b : les seuils des vérifications ajoutées à scripts/simulate.mjs (joueur appliqué) :",
+      "CHAPITRE_7_AVANT : le chapitre 7 doit être en cours avant cette nuit ;",
+      "CAISSE_FOIS_DEPENSE, NUITS_DEPENSE : les pièces en caisse à la dernière nuit restent sous ce multiple de la",
+      "dépense des NUITS_DEPENSE dernières nuits (l'argent qui s'empile : un constat, il ne fait pas échouer le script) ;",
+      "NUITS_DEPENSE est aussi la tranche du résumé (revenu moyen par jour)."
+    ],
+    "VERIFS": { "CHAPITRE_7_AVANT": 60, "CAISSE_FOIS_DEPENSE": 2, "NUITS_DEPENSE": 20 },
     "//DEPANNAGE": "Vérification de la section 8.11 : une unité de cet aliment achetée chaque nuit, encore payable à la nuit donnée.",
     "DEPANNAGE": { "item": "carotte", "nuit": 30 }
   }

@@ -1,4 +1,5 @@
 import { DATA } from './catalog.js';
+import { debloque, quiDebloque } from './vocations.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
@@ -235,21 +236,46 @@ function refusNiveau(state, r) {
 // Une recette « debloque » (le bloc de silo) : à partir du niveau de cet élément (NIVEAUX).
 export function recetteDebloquee(state, id) {
   const r = DATA.ATELIER.RECETTES[id];
+  // (fiche I8b : une recette qui attend un niveau du port, le quai de chargement)
+  if (r && r.port && portAuMoins(state) < r.port) return false;
+  // (fiche I5a : ce que fait un commerce ouvert, l'Atelier ne le fait plus ; sans lui, le joueur reste autonome)
+  if (r && r.commerce && commerceQuiLeFait(state, r.commerce, id)) return false;
   return !!r && (!r.debloque || isUnlocked(state, r.debloque)) && (!r.plan || planTrouve(state, id));
+}
+// Le commerce ouvert de la sorte `sorte` qui sait faire la recette `id` (state.commerces, fiche I5a : c.connues, tenu
+// par js/engine/artisans.js ; lu ici sans l'importer, pour ne pas faire de boucle entre les modules), ou null.
+export function commerceQuiLeFait(state, sorte, id) {
+  const C = state && Array.isArray(state.commerces) ? state.commerces : [];
+  return C.find((c) => c && c.sorte === sorte && c.ouvert !== false && Array.isArray(c.connues) && c.connues.includes(id)) || null;
+}
+// Le niveau du port de la partie (fiche I1c : state.port.niveau ; lu ici sans importer bac.js), 0 sans port.
+function portAuMoins(state) {
+  const p = state && state.port;
+  return p && Number.isInteger(p.niveau) ? p.niveau : 0;
 }
 // Un meuble de collection (le lot 4) : son plan est-il trouvé ? (state.plans.connus, js/engine/plans.js ; lu
 // ici sans l'importer, pour ne pas faire de boucle entre les modules)
+// (fiche I8a : un palier de vocation peut l'offrir, « plan:<id> », vocations.js debloque)
 export function planTrouve(state, id) {
   const P = state && state.plans;
-  return !!(P && P.connus && P.connus[id]);
+  return !!(P && P.connus && P.connus[id]) || debloque(state, `plan:${id}`);
 }
 
 export function craftStatus(state, id) {
   const r = DATA.ATELIER.RECETTES[id];
   if (!r) return { ok: false, raison: 'Recette inconnue.', manque: {} };
-  if (r.plan && !planTrouve(state, id)) return { ok: false, raison: 'Il te faut d\'abord son plan : explore le pays de sa collection, ou attends qu\'un ami de là-bas te l\'offre.', manque: {} };
+  if (r.plan && !planTrouve(state, id)) {
+    // (le chantier de l'île : un palier de vocation l'offre)
+    const q = quiDebloque(`plan:${id}`);
+    return { ok: false, raison: q ? `Il te faut d'abord son plan : ${q.vocation.toLowerCase()} l'offre au palier ${q.rang} (${q.score} points).` : 'Il te faut d\'abord son plan : explore le pays de sa collection, ou attends qu\'un ami de là-bas te l\'offre.', manque: {} };
+  }
   if (!atelierConstruit(state)) return { ok: false, raison: 'Il faut d\'abord construire l\'Atelier.', manque: {} };
   if (r.outil && r.niveau) { const refusN = refusNiveau(state, r); if (refusN) return { ok: false, raison: refusN, manque: {} }; } else if (r.outil && aDejaOutil(state, r.outil)) return { ok: false, raison: 'Tu as déjà cet outil.', manque: {} };
+  if (r.port && portAuMoins(state) < r.port) return { ok: false, raison: `Il faut d'abord le port de niveau ${r.port}.`, manque: {} };
+  if (r.commerce && commerceQuiLeFait(state, r.commerce, id)) {
+    const d = ((DATA.ARTISANS || {}).COMMERCES || {})[r.commerce] || {};
+    return { ok: false, raison: `${d.nom || 'Le commerce'} le fait désormais : achète-le à son comptoir, ou commande-le (à façon, avec ta matière).`, manque: {} };
+  }
   if (!recetteDebloquee(state, id)) return { ok: false, raison: `Se débloque au niveau ${unlockLevel(r.debloque)}.`, manque: {} };
   // (ce qui doit trouver sa place : l'animal, le cheval, le meuble)
   const refus = r.animal ? animalRefus(state, r.animal) : r.cheval ? chevalRefus(state) : r.sacoche ? sacocheRefus(state) : r.meuble ? meubleRefus(state, r.meuble) : null;

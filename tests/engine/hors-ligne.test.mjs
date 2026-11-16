@@ -4,20 +4,16 @@
    ========================================================================== */
 
 import {
-  addItem, advanceTutorial, alertEvents, alertSnapshot, allDevices, awakeRequired, batteryCapacity,
-  canSleep, countItem, createInitialState, DATA, deliverMail, energyStats, formatDuration,
-  fridgeLots, gainXp, GAME_VERSION, getNotifications, harvest, isBroken, isUnlocked, mailReceived,
-  mergeOfflineReports, MIGRATIONS, moveToFridge, newGameFrom, nightHarvest, notificationCount,
-  plant, readMail, seedItem, shear, simulateOffline, skipTutorial, spoil, startMilling,
-  startRecipe, storeWheat, tankCapacity, testAddHens, testAddSeeds, testAddSheep, testBatir,
-  testEmptyBatteries, testFillBatteries, testRipenAll, testSetLevel, testSetWear,
-  testUnlockAllTechs, testWoolReady, tick, toggleDevice, tutorialStep, unlockLevel, unreadMail,
-  updateChapters, water,
+  addItem, advanceTutorial, alertEvents, alertSnapshot, allDevices, awakeRequired, batteryCapacity, canSleep,
+  countItem, createInitialState, DATA, energyStats, formatDuration, fridgeLots, GAME_VERSION, getNotifications,
+  harvest, isBroken, mergeOfflineReports, MIGRATIONS, moveToFridge, newGameFrom, nightHarvest, notificationCount,
+  plant, seedItem, shear, simulateOffline, skipTutorial, spoil, startMilling, startRecipe, storeWheat, tankCapacity,
+  testAddHens, testAddSeeds, testAddSheep, testBatir, testEmptyBatteries, testFillBatteries, testRipenAll,
+  testSetLevel, testSetWear, testUnlockAllTechs, testWoolReady, tick, toggleDevice, tutorialStep, water,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atChapter, atelier, AVANT_DEMENAGEMENT, coldRoom, farm, fillCows, fillSheep,
-  garden, kwh, migreAvant, ml, near, pature, plantRipe, reach, runFor, setInv, setStraw, sleepOnce,
-  test,
+  assert, assertEqual, atelier, AVANT_DEMENAGEMENT, coldRoom, farm, fillCows, fillSheep, garden, kwh, migreAvant, ml,
+  near, pature, plantRipe, reach, runFor, setInv, setStraw, sleepOnce, test,
 } from './aide.mjs';
 
 // Version 1.7 : partie de test placée au début du niveau `n` (chapitre 1).
@@ -33,7 +29,7 @@ test('DATA Lot 11 : hors-ligne plafonné à 8 h, pas de 5 s, sans usure ; trois 
   assertEqual(DATA.HORS_LIGNE, { MAX_S: 28800, PAS_S: 5, USURE: false, ECRAN_S: 60 });
   assertEqual(DATA.AIDE.ETAPES, ['eau', 'potager', 'dormir']);
   assert(/^\d+\.\d+\.\d+$/.test(GAME_VERSION), 'version au format x.y.z');
-  assertEqual(GAME_VERSION, '1.22.0');
+  assertEqual(GAME_VERSION, '2.0.0');
 });
 
 test('Lot 11 : hors-ligne plafonné à 8 h', () => {
@@ -480,7 +476,7 @@ test('récolte de la nuit : quantités négatives, nulles ou produits inconnus i
 test('version 1.3 : format 19, la boîte aux lettres commence vide et la migration l\'ajoute', () => {
   assertEqual(typeof MIGRATIONS[18], 'function');
   const neuf = createInitialState(1);
-  assertEqual([neuf.courrier, unreadMail(neuf), notificationCount(neuf) - getNotifications(neuf).length], [[], [], 0]);
+  assertEqual([neuf.courrier, notificationCount(neuf) - getNotifications(neuf).length], [[], 0]);
   const v18 = JSON.parse(JSON.stringify(createInitialState(3)));
   v18.version = 18;
   delete v18.courrier;
@@ -489,63 +485,3 @@ test('version 1.3 : format 19, la boîte aux lettres commence vide et la migrati
   assertEqual(migreAvant({ v: 18, t: 0, s: v18 }).courrier, [], 'la migration complète garde la boîte');
 });
 
-test('version 1.3, le récit lot 11 : la lettre de la Serre (Adèle, au retour d\'un voyage) : 1 cacao, 1 vanille, 1 café, sans prénom de la famille', () => {
-  const L = DATA.COURRIER.adele_serre;
-  assertEqual([L.quand, L.cadeaux], [{ debloque: 'serre' }, { cacao: 1, vanille: 1, cafe: 1 }]);
-  // les trois cadeaux se plantent tels quels, et seulement dans la Serre
-  for (const item of Object.keys(L.cadeaux)) {
-    assertEqual([seedItem(item), DATA.CULTURES[item].lieux], [item, ['serre']], item);
-    assert(DATA.CULTURES[item].rendement > 1, `${item} : une récolte rend de quoi replanter`);
-  }
-  const lignes = L.texte.map((p) => (typeof p === 'string' ? p : p.m));
-  assert(lignes.length >= 3 && lignes.every((p) => typeof p === 'string' && p.length > 0), 'un texte en paragraphes');
-  assert(L.expediteur === 'Adèle' && /cacao/.test(lignes.join(' ')) && /vanille/.test(lignes.join(' ')) && /café/.test(lignes.join(' ')), 'Adèle parle de ses cadeaux');
-  for (const m of DATA.FAMILLE.MEMBRES) assert(!lignes.join(' ').includes(m.nom), 'pas de prénom dans la lettre');
-});
-
-test('version 1.3 : la lettre arrive quand la Serre se débloque, une seule fois, avec ses trois graines', () => {
-  const avant = atLevel(unlockLevel('serre') - 1);
-  setInv(avant, {});
-  updateChapters(avant);
-  assertEqual([isUnlocked(avant, 'serre'), avant.courrier, countItem(avant, 'cacao')], [false, [], 0], 'rien avant le déblocage');
-  const s = atLevel(unlockLevel('serre'));
-  setInv(s, {});
-  s.day = 57;
-  assertEqual(deliverMail(s), ['adele_serre']);
-  assertEqual(s.courrier, [{ id: 'adele_serre', nuit: 57, lu: false }]);
-  assertEqual([countItem(s, 'cacao'), countItem(s, 'vanille'), countItem(s, 'cafe')], [1, 1, 1]);
-  assertEqual([mailReceived(s, 'adele_serre'), unreadMail(s).length, notificationCount(s) - getNotifications(s).length], [true, 1, 1]);
-  // pas de deuxième lettre ni de deuxième cadeau
-  assertEqual([deliverMail(s), updateChapters(s) >= 0, s.courrier.length], [[], true, 1]);
-  tick(s, 1);
-  sleepOnce(s);
-  assertEqual([s.courrier.length, countItem(s, 'cacao'), countItem(s, 'vanille'), countItem(s, 'cafe')], [1, 1, 1, 1], 'ni le temps ni la nuit n\'en redonnent');
-  // la lettre lue reste dans la boîte, et ne compte plus dans la pastille
-  assertEqual([readMail(s, 'adele_serre').ok, s.courrier[0].lu, unreadMail(s), readMail(s, 'inconnue').ok], [true, true, [], false]);
-  assertEqual(JSON.parse(JSON.stringify(s)).courrier, s.courrier, 'le courrier se sauvegarde');
-});
-
-test('version 1.3 : la lettre arrive par le jeu lui-même, au niveau qui ouvre la Serre', () => {
-  const s = atLevel(unlockLevel('serre') - 1);
-  assertEqual(s.courrier, []);
-  const vanille = countItem(s, 'vanille');
-  gainXp(s, DATA.NIVEAUX.SEUILS[unlockLevel('serre') - 1] - s.progression.xp); // l'XP du niveau de la Serre
-  tick(s, 0.2); // le pas de jeu suivant fait arriver le courrier
-  assertEqual([isUnlocked(s, 'serre'), s.courrier.map((l) => l.id), countItem(s, 'vanille') - vanille], [true, ['adele_serre'], 1]);
-});
-
-test('version 1.3 : une partie d\'avant la version 1.3, Serre déjà ouverte, reçoit la lettre au premier passage', () => {
-  const v18 = JSON.parse(JSON.stringify(atChapter(7)));
-  v18.version = 18;
-  delete v18.courrier;
-  const m = migreAvant({ v: 18, t: 0, s: v18 });
-  assertEqual(m.courrier, [], 'la migration ne distribue rien elle-même');
-  const cacao = countItem(m, 'cacao');
-  tick(m, 0.2);
-  // (le récit, lot 9 : la lettre d'Adèle sur la première récolte arrive aussi, le chapitre 2 passé)
-  assertEqual([m.courrier.map((l) => [l.id, l.lu]), countItem(m, 'cacao') - cacao], [[['adele_recolte', false], ['adele_serre', false]], 1]);
-  // boîte abîmée : elle est refaite, sans plantage
-  const t = atChapter(7);
-  t.courrier = 'x';
-  assertEqual([unreadMail(t), deliverMail(t), t.courrier.length], [[], ['adele_recolte', 'adele_serre'], 2]);
-});

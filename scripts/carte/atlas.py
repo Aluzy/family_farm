@@ -35,11 +35,11 @@ BORD = 1
 # crops, terre_bords, terre_serre), les grandes (blocs, murs, clôtures) et les personnages, chargés à part)
 FERME = [
     'chat.png', 'chat_2.png', 'chat_3.png', 'chien.png', 'chien_2.png', 'chien_3.png',
-    'cheval.png', 'cheval_monte.png', 'poteau_attache.png', 'caleche.png', 'malle.png',
+    'cheval.png', 'cheval_monte.png', 'poteau_attache.png',
     'vache.png', 'mouton.png', 'poule.png', 'herbe_haute.png', 'herbe_haute_fleurs.png',
     'puits.png', 'citerne.png', 'asperseur.png', 'robot.png', 'station_robot.png',
     'verger.png', 'arbre_clair_sp.png', 'pin_clair_sp.png', 'ramassables.png', 'pas_japonais.png',
-    'portails.png', 'soil_dry.png', 'soil_wet.png', 'soil_wet_serre.png', 'tente.png',
+    'portails.png', 'soil_dry.png', 'soil_wet.png', 'soil_wet_serre.png', 'tente.png', 'brouette.png', 'charrette.png',
 ]
 
 

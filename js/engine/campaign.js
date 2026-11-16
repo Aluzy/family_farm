@@ -1,7 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, isOwned, starterOf, storedEnergy } from './devices.js';
-import { earn } from './compta.js';
 import { addItem, countItem, penalite } from './inventory.js';
 import { averageHappiness } from './bonheur.js';
 import { plantableCrops } from './crops.js';
@@ -9,13 +8,11 @@ import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.j
 import { gainXp, levelReached, unlockLevel } from './levels.js';
 import { houseRepaired } from './depart.js';
 import { farmTerrain } from './terrain.js';
-import { hameauxVus } from './monde-hameaux.js';
 import { partVue } from './monde-vu.js';
-import { ageFait, aFait, genreJoueur } from './recit.js';
 import { offrirPlan } from './plans.js';
-import { habitantsDe } from './habitants.js';
-import { cleDe, palierAmitie } from './amitie.js';
 import { styleMaison } from './styles.js';
+import { compterObjectifIle, listeDesChapitres, paliersSuivis } from './paliers.js';
+import { chroniqueRecolte, noterChronique } from './chronique.js';
 
 /* ---------- Lot 9 : chapitres ---------- */
 
@@ -61,15 +58,28 @@ export function newCampaignCounters() {
 
 /* -- chapitres et déblocages -- */
 
-export function chapterCount() {
-  return DATA.CHAPITRES.liste.length;
+// Le chantier « l'île à bâtir » (fiche I7a, paliers.js) : une partie qui suit les paliers de l'île les a à la
+// place des chapitres (listeDesChapitres : DATA.VILLAGE.PALIERS), autant qu'eux ; sans partie, les chapitres.
+export function chapterCount(state = null) {
+  return listeDesChapitres(state).length;
+}
+
+// Le numéro du chapitre (ou du palier) en cours : state.palier pour une partie qui suit les paliers,
+// state.campagne.chapitre sinon. poserChapitre les tient égaux (ce qui lit state.campagne.chapitre, le
+// compte rendu de la nuit, la mesure d'audience, les migrations, voit le palier).
+function numeroEnCours(state) {
+  return paliersSuivis(state) ? state.palier : state.campagne.chapitre;
+}
+export function poserChapitre(state, n) {
+  state.campagne.chapitre = n;
+  if (paliersSuivis(state)) state.palier = n;
 }
 
 // Chapitre atteint : 1 à 7 pendant la campagne, 8 en mode libre (tout est débloqué).
 export function chapterReached(state) {
   const c = state.campagne;
   if (!c) return chapterCount() + 1;
-  return c.fini ? chapterCount() + 1 : c.chapitre;
+  return c.fini ? chapterCount(state) + 1 : numeroEnCours(state);
 }
 
 // Version 1.7 : un élément (bâtiment, atelier) ou une culture est débloqué par
@@ -85,13 +95,13 @@ const LEGACY_CHAPTER = {
   paturage: 5, moutons: 5, serre: 6, verger: 6, frigo: 6,
 };
 
-// Numéro du premier chapitre qui porte un objectif de ce type.
-export function objectiveChapter(type) {
-  return DATA.CHAPITRES.liste.findIndex((ch) => ch.objectifs.some((o) => o.type === type)) + 1;
+// Numéro du premier chapitre qui porte un objectif de ce type (de la liste que suit `state` : ses paliers).
+export function objectiveChapter(type, state = null) {
+  return listeDesChapitres(state).findIndex((ch) => ch.objectifs.some((o) => o.type === type)) + 1;
 }
 
-export function objectiveDef(type) {
-  for (const ch of DATA.CHAPITRES.liste) {
+export function objectiveDef(type, state = null) {
+  for (const ch of listeDesChapitres(state)) {
     const o = ch.objectifs.find((x) => x.type === type);
     if (o) return o;
   }
@@ -107,6 +117,7 @@ export function cropUnlocked(state, culture) {
 
 // Cultures qu'on peut planter dans ce lieu avec les chapitres atteints. Comme
 // pour les bâtiments, c'est un masquage : plant() lui-même reste libre.
+// (les plants sauvages de l'île compris, fiche I7e)
 export function plantableCropsFor(state, lieu) {
   return plantableCrops(lieu).filter((c) => cropUnlocked(state, c));
 }
@@ -118,6 +129,7 @@ export function noteCropHarvested(state, culture) {
   c.compteurs.recoltes = (c.compteurs.recoltes || 0) + 1;
   if (!Array.isArray(c.compteurs.cultures)) c.compteurs.cultures = [];
   if (!c.compteurs.cultures.includes(culture)) c.compteurs.cultures.push(culture);
+  chroniqueRecolte(state, culture);   // (l'île à bâtir, fiche I7g : la première récolte, dans la chronique)
 }
 
 // FLU-42 : record de parcelles arrosées en même temps (un arrosage vaut pour la journée).
@@ -145,19 +157,19 @@ export function noteRecipeDone(state, recette, qty) {
   const c = state.campagne;
   const r = DATA.RECETTES[recette];
   if (!c || !r || r.transformation) return;
-  const pain = objectiveDef('pains');
+  const pain = objectiveDef('pains', state);
   if (pain && recette === pain.recette) {
     c.compteurs.pains += qty;
     return;
   }
-  const exclus = (objectiveDef('plats') || {}).exclut || [];
+  const exclus = (objectiveDef('plats', state) || {}).exclut || [];
   if (!exclus.includes(recette) && !c.compteurs.plats.includes(recette)) c.compteurs.plats.push(recette);
 }
 
 // Version 1.22 : les objets suivis par un objectif « objet » (minerai de fer, lingot de
 // fer…), de tous les chapitres.
-function trackedItems() {
-  return [...new Set(DATA.CHAPITRES.liste.flatMap((ch) => ch.objectifs.filter((o) => o.type === 'objet').map((o) => o.item)))];
+function trackedItems(state) {
+  return [...new Set(listeDesChapitres(state).flatMap((ch) => ch.objectifs.filter((o) => o.type === 'objet').map((o) => o.item)))];
 }
 
 // Le record de chacun de ces objets dans l'inventaire : un minerai fondu ou un lingot
@@ -166,7 +178,7 @@ function trackedItems() {
 function noteItemRecords(state) {
   const c = state.campagne;
   if (!c) return;
-  for (const item of trackedItems()) {
+  for (const item of trackedItems(state)) {
     const n = countItem(state, item);
     if (!c.compteurs.objets || typeof c.compteurs.objets !== 'object') c.compteurs.objets = {};
     if (n > (c.compteurs.objets[item] || 0)) c.compteurs.objets[item] = n;
@@ -188,16 +200,13 @@ function partDuMonde(state) {
   return vuMemo.pct;
 }
 
-// Les habitants des hameaux au palier d'amitié `palier` ou plus.
-function amisAuPalier(state, palier) {
-  let n = 0;
-  for (const h of Object.values(habitantsDe(state))) for (const f of (h && h.foyers) || []) for (const m of f.membres || []) if (palierAmitie(state, cleDe(m)) >= palier) n++;
-  return n;
-}
 
 // Valeur actuelle d'un objectif.
 export function objectiveValue(state, obj) {
   const k = state.campagne.compteurs;
+  // le chantier « l'île à bâtir » (fiche I7a) : le port, les villageois, leurs tâches, les commerces, l'amitié
+  const ile = compterObjectifIle(state, obj);
+  if (ile !== null) return ile;
   switch (obj.type) {
     case 'litres': return Math.floor((k.eauMl || 0) / 1000);
     case 'wh': return Math.floor((k.mwhMax || 0) / 1000);
@@ -209,7 +218,7 @@ export function objectiveValue(state, obj) {
     case 'laines': return k.laines;
     // la nouvelle vision (après le lot 6, à la place de l'autonomie) : les amis, les repas partagés, les
     // projets des hameaux, les styles, les plans
-    case 'amis': return amisAuPalier(state, obj.palier || 0);
+    case 'amis': return 0;   // (les amis des hameaux d'avant : retirés à la bascule, I9h ; l'île compte amitieVillageois)
     case 'repas': return k.repasInvites || 0;
     case 'projets': return Object.values(state.projets && typeof state.projets === 'object' ? state.projets : {}).reduce((n, p) => n + (p && Array.isArray(p.faits) ? p.faits.length : 0), 0);
     case 'styles': { const m = styleMaison(state); return m.complet ? obj.cible : Math.min(obj.cible, m.varies.length); }
@@ -231,10 +240,11 @@ export function objectiveValue(state, obj) {
     // version 1.22 : le plus d'exemplaires d'un objet (`item`) eus en même temps
     case 'objet': return Math.max(countItem(state, obj.item), (k.objets && k.objets[obj.item]) || 0);
     // fiche 9b : le grand monde
-    case 'caleche': return Math.floor(k.calecheVentes || 0);
+    // (l'île, fiche I1b : les ventes au port comptent ; celles d'une partie d'avant à la calèche aussi)
+    case 'caleche': return Math.floor((k.calecheVentes || 0) + (k.ventesPort || 0));
     case 'achatsHameaux': return Math.floor(k.achatsHameaux || 0);
     case 'pecheMer': return Math.floor(k.pecheMer || 0);
-    case 'hameaux': return Object.keys(hameauxVus(state)).length;
+    case 'hameaux': return Object.keys((state.monde && state.monde.hameaux) || {}).length;
     case 'monde': return partDuMonde(state);
     case 'faune': return Object.keys(evenements(state)).filter((e) => e.startsWith('faune:')).length;
     default: return 0;
@@ -242,25 +252,19 @@ export function objectiveValue(state, obj) {
 }
 
 // Progression d'un chapitre : { chapitre, titre, icone, intro, objectifs: [{ ...objectif,
-// valeur, ok, ratio }], fait }.
+// valeur, ok, ratio }], fait, palier }.
 // Sur une terre sauvage, l'intro et les libellés ont leur version (introSauvage,
 // libelleSauvage) quand elle existe ; les objectifs marqués sauvage: false n'y existent pas (le
 // panneau, la pompe, la citerne).
-export function chapterProgress(state, chapitre = state.campagne.chapitre) {
-  const def = DATA.CHAPITRES.liste[chapitre - 1];
+// Une partie qui suit les paliers de l'île (fiche I7a) : le palier en cours (palier: true), sans intro.
+export function chapterProgress(state, chapitre = numeroEnCours(state)) {
+  const palier = paliersSuivis(state);
+  const def = listeDesChapitres(state)[chapitre - 1];
   const objectifs = def.objectifs.filter((o) => o.sauvage !== false).map((o) => {
     const valeur = objectiveValue(state, o);
     return { ...o, libelle: o.libelleSauvage || o.libelle, valeur, ok: valeur + EPS >= o.cible, ratio: Math.max(0, Math.min(1, valeur / o.cible)) };
   });
-  return { chapitre, titre: def.titre, icone: def.icone, intro: def.introSauvage || def.intro, objectifs, fait: objectifs.every((o) => o.ok) };
-}
-
-// Le texte de la lettre `id` : sa version d'une terre sauvage (texteSauvage) s'il y en a une. Une ligne
-// { m, f } prend la variante du genre du personnage principal (texteRecit, le récit) ; {nom} reste à
-// remplacer par la page.
-export function mailText(state, id) {
-  const def = DATA.COURRIER[id];
-  return (def.texteSauvage || def.texte).map((l) => (l && typeof l === 'object' ? l[genreJoueur(state)] || l.m || '' : l));
+  return { chapitre, titre: def.titre, icone: def.icone, intro: palier ? '' : def.introSauvage || def.intro, objectifs, fait: objectifs.every((o) => o.ok), palier };
 }
 
 // Le lot 6 : la récompense du chapitre `n` (data/campaign.json recompense), donnée une fois : ses plans
@@ -268,7 +272,7 @@ export function mailText(state, id) {
 // meuble lui-même) et ses objets de décor. `annonce` : les plans sont annoncés par l'écran de fin (true) ou au
 // matin (false : une ancienne partie, rattrapée). → { plans: [id], objets: { id: n } }
 export function recompenseChapitre(state, n, annonce = true) {
-  const c = state.campagne, r = (DATA.CHAPITRES.liste[n - 1] || {}).recompense || {};
+  const c = state.campagne, r = (listeDesChapitres(state)[n - 1] || {}).recompense || {};
   const out = { plans: [], objets: {} };
   if (!c) return out;
   if (!Array.isArray(c.recompenses)) c.recompenses = [];
@@ -290,10 +294,10 @@ function rattraperRecompenses(state) {
   const c = state.campagne;
   if (Array.isArray(c.recompenses)) return;
   c.recompenses = [];
-  const faits = c.fini ? chapterCount() : Math.max(0, (c.chapitre || 1) - 1);
+  const faits = c.fini ? chapterCount(state) : Math.max(0, (numeroEnCours(state) || 1) - 1);
   for (let n = 1; n <= faits; n++) {
     c.recompenses.push(n);
-    for (const id of (DATA.CHAPITRES.liste[n - 1].recompense || {}).plans || []) offrirPlan(state, id, false);
+    for (const id of (listeDesChapitres(state)[n - 1].recompense || {}).plans || []) offrirPlan(state, id, false);
   }
 }
 
@@ -302,14 +306,18 @@ function rattraperRecompenses(state) {
 export function completeChapter(state) {
   const c = state.campagne;
   if (!c || c.fini) return fail('La campagne est terminée.');
-  c.annonces.push({ chapitre: c.chapitre, nuit: state.day, recompense: recompenseChapitre(state, c.chapitre) });
+  // (fiche I7a : un palier de l'île compte comme le chapitre de son rang : mêmes points, même XP)
+  const n = numeroEnCours(state), palier = paliersSuivis(state);
+  c.annonces.push({ chapitre: n, nuit: state.day, recompense: recompenseChapitre(state, n) });
   // Arbre v2 : chaque chapitre terminé rapporte des points de technologie.
-  grantTechPoints(state, DATA.ARBRE.POINTS.CHAPITRES[c.chapitre - 1] || 0, `Chapitre ${c.chapitre} terminé`);
+  grantTechPoints(state, DATA.ARBRE.POINTS.CHAPITRES[n - 1] || 0, palier ? `Palier ${n} franchi` : `Chapitre ${n} terminé`);
   // Version 1.7 : et de l'expérience (le succès « chapitre n terminé »).
-  gainXp(state, DATA.NIVEAUX.CHAPITRES_XP[c.chapitre - 1] || 0);
-  if (c.chapitre >= chapterCount()) c.fini = true;
-  else c.chapitre += 1;
-  return { ok: true, chapitre: c.chapitre, fini: c.fini };
+  gainXp(state, DATA.NIVEAUX.CHAPITRES_XP[n - 1] || 0);
+  // (fiche I7g : un palier de l'île franchi, dans la chronique)
+  if (palier) { const P = listeDesChapitres(state)[n - 1] || {}; noterChronique(state, 'palier', { n, titre: P.titre || '', icone: P.icone || undefined }); }
+  if (n >= chapterCount(state)) c.fini = true;
+  else poserChapitre(state, n + 1);
+  return { ok: true, chapitre: numeroEnCours(state), fini: c.fini };
 }
 
 // Passe au chapitre suivant tant que l'objectif du chapitre en cours est rempli.
@@ -320,12 +328,11 @@ export function updateChapters(state) {
   noteItemRecords(state);
   rattraperRecompenses(state);
   let done = 0;
-  while (!c.fini && done < chapterCount() && chapterProgress(state).fait) {
+  while (!c.fini && done < chapterCount(state) && chapterProgress(state).fait) {
     completeChapter(state);
     done++;
   }
   checkMastery(state); // Arbre v2 : jalons de maîtrise
-  deliverMail(state); // version 1.3 : le courrier que ce stade de la partie fait arriver
   return done;
 }
 
@@ -354,75 +361,6 @@ export function chapitresAuPas(state) {
   return 0;
 }
 
-/* ---------- version 1.3 : le courrier ---------- */
-
-export function mailbox(state) {
-  return Array.isArray(state.courrier) ? state.courrier : [];
-}
-
-export function mailReceived(state, id) {
-  return mailbox(state).some((l) => l.id === id);
-}
-
-// Lettres pas encore lues, dans l'ordre d'arrivée.
-export function unreadMail(state) {
-  return mailbox(state).filter((l) => !l.lu);
-}
-
-// La condition d'une lettre est-elle remplie ? Toutes ses clés doivent l'être (une lettre sans clé connue
-// n'arrive jamais). Le récit, lot 9 : chapitre (le chapitre de la campagne atteint), fait (un fait du récit,
-// ou une liste : tous notés) et apres (avec fait : au moins ce nombre de jours depuis que le premier l'a été).
-function mailDue(state, def) {
-  const q = def.quand || {};
-  const tests = [];
-  if (q.depart) tests.push(!!(state.departV2 && state.famille && state.famille.configuree));
-  if (q.debloque) tests.push(!!state.campagne && isUnlocked(state, q.debloque));
-  if (q.niveau) tests.push(levelReached(state) >= q.niveau); // version 1.14
-  if (q.chapitre) tests.push(!!state.campagne && chapterReached(state) >= q.chapitre);
-  if (q.fait) {
-    const faits = Array.isArray(q.fait) ? q.fait : [q.fait];
-    tests.push(faits.every((f) => aFait(state, f)) && (!q.apres || ageFait(state, faits[0]) !== null && premierJour(state, faits[0]) + q.apres <= state.day));
-  }
-  return tests.length > 0 && tests.every(Boolean);
-}
-
-// Le jour où le fait `id` a été noté la première fois (state.recit.faits : [premier, dernier, fois]).
-function premierJour(state, id) {
-  const f = state.recit && state.recit.faits && state.recit.faits[id];
-  return Array.isArray(f) && Number.isInteger(f[0]) ? f[0] : state.day;
-}
-
-// Fait arriver les lettres dont la condition vient d'être remplie : les cadeaux
-// vont dans l'inventaire, la lettre dans state.courrier (non lue). Une lettre
-// n'arrive qu'une fois ; une partie qui remplissait déjà la condition avant la
-// version 1.3 la reçoit au premier passage. Renvoie les identifiants arrivés.
-export function deliverMail(state) {
-  const arrivees = [];
-  for (const [id, def] of Object.entries(DATA.COURRIER)) {
-    if (mailReceived(state, id) || !mailDue(state, def)) continue;
-    if (!Array.isArray(state.courrier)) state.courrier = [];
-    for (const [item, qty] of Object.entries(def.cadeaux || {})) addItem(state, item, qty);
-    state.courrier.push({ id, nuit: state.day, lu: false });
-    arrivees.push(id);
-  }
-  return arrivees;
-}
-
-// Le joueur a ouvert la lettre : elle reste dans le courrier, marquée lue.
-export function readMail(state, id) {
-  const l = mailbox(state).find((x) => x.id === id);
-  if (!l || !DATA.COURRIER[id]) return fail('Lettre introuvable.');
-  l.lu = true;
-  // Version 1.14 : les pièces d'une lettre sont versées une fois, à l'ouverture (sans XP).
-  const pieces = DATA.COURRIER[id].pieces || 0;
-  if (pieces && !l.verse) {
-    earn(state, pieces, `Lettre : ${DATA.COURRIER[id].expediteur || 'courrier'}`);
-    l.verse = true;
-    return { ok: true, id, pieces };
-  }
-  return { ok: true, id, pieces: 0 };
-}
-
 // Le joueur a vu l'écran de fin du chapitre : on l'enlève de la file.
 export function acknowledgeChapter(state) {
   const c = state.campagne;
@@ -440,7 +378,7 @@ export function recordNight(state) {
   if (!c) return;
   const k = c.compteurs;
   // (B-1 : PENALITES.SERIE_REMISE coupée, une nuit sans œuf ne remet pas la série à zéro : les nuits se cumulent)
-  if (chapterReached(state) >= objectiveChapter('pontes')) k.serieOeufs = (state.nuit.oeufs || 0) > 0 ? k.serieOeufs + 1 : penalite('SERIE_REMISE') ? 0 : k.serieOeufs;
+  if (chapterReached(state) >= objectiveChapter('pontes', state)) k.serieOeufs = (state.nuit.oeufs || 0) > 0 ? k.serieOeufs + 1 : penalite('SERIE_REMISE') ? 0 : k.serieOeufs;
   if (c.fini) {
     const pt = techPoints(state);
     pt.libre += 1;

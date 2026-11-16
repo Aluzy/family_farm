@@ -121,7 +121,7 @@ test('cultures de plein champ : la Zone de culture les fait pousser comme les l�
   assertEqual(plant(s, 'potager-3', 'carotte').ok, true, 'aucune restriction de lieu : la carotte à côté du blé');
   assertEqual(plant(s, 'potager-4', 'riz').ok, true);
   assertEqual(plant(s, 'potager-5', 'houblon').ok, true);
-  assertEqual(plantableCrops('potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'epinard', 'fraise', 'ble', 'tournesol', 'riz', 'houblon', 'vigne']);
+  assertEqual(plantableCrops('potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'epinard', 'fraise', 'ble', 'tournesol', 'riz', 'houblon', 'vigne', 'ail_ours', 'salicorne']);
   assertEqual(plantableCrops('champ'), [], 'plus aucun lieu « champ »');
   assertEqual(s.eauMl, ml(40));
   assertEqual(water(s, 'potager-1').ok, true);

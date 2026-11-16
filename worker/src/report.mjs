@@ -56,14 +56,45 @@ export const GAME_ACTIONS = {
   'shear': 'Tondre les moutons',
   'cow-herbs': 'Nourrir les vaches aux herbes de montagne',
   'start-recipe': 'Cuisiner (préparer une recette)',
-  'sell-item': 'Vendre',
-  'buy-item': 'Acheter à la calèche (une semence, un produit des hameaux)',
-  'caleche-heler': 'Héler la calèche',
-  'deposer-item': 'Déposer dans la malle ce que la calèche vendra',
-  'malle-reprendre': 'Reprendre de la malle ce qui attendait d\'être vendu',
-  'commander-item': 'Commander à la calèche (livré dans la malle)',
-  'malle-annuler': 'Annuler une commande à la calèche',
-  'malle-prendre': 'Prendre dans la malle ce que la calèche a livré',
+  'port-vendre': 'Vendre au port',
+  // (l'île à bâtir, fiche I3c : les tâches des villageois, js/ui/villageois.js)
+  'villageois-attribuer': 'Confier une tâche à un villageois',
+  'villageois-donner': 'Donner un outil à un villageois',
+  'villageois-reprendre': 'Reprendre l\'outil d\'un villageois',
+  'villageois-vendre-ok': 'Marquer ce qui est à vendre (la tournée du port)',
+  // (fiche I6b : les liens entre villageois, js/ui/liens.js)
+  'liens-foyer-ok': 'Installer deux villageois proches dans un foyer',
+  'liens-enfant': 'Proposer à un foyer d\'accueillir un enfant',
+  // (fiche I7g : la chronique et les noms, js/ui/chronique.js)
+  'chronique-epingler': 'Épingler une ligne de la chronique (ou la détacher)',
+  'chronique-note-ok': 'Écrire une note sur une ligne de la chronique',
+  'chronique-note-effacer': 'Effacer sa note sur une ligne de la chronique',
+  'noms-ok': 'Nommer l\'île, le village ou une maison',
+  'commerce-nommer': 'Nommer un commerce',
+  'commerce-suggerer': 'Suggérer un commerce au propriétaire (en ligne)',
+  // (fiche I8a : les vocations de l'île, les fêtes et les projets du village, js/ui/vocations.js)
+  'vocation-fete-fixer': 'Fixer la fête du village',
+  'evt-fete': 'Fixer la fête du village (depuis le calendrier)',
+  'vocation-fete-annuler': 'Annuler la fête du village',
+  'vocation-projet-lancer': 'Lancer un projet du village',
+  'vocation-projet-apporter': 'Apporter des matériaux au projet du village',
+  'vocation-projet-envoyer': 'Envoyer un villageois au chantier du village (ou l\'en rappeler)',
+  'vocation-projet-abandonner': 'Abandonner le projet du village',
+  'port-acheter': 'Acheter au port (une semence)',
+  'port-decharger': 'Décharger sous la halle du port (tout ce qui est chargé se vend)',
+  'port-honorer': 'Honorer une commande du bac',
+  'port-contrat': 'Accepter un contrat d\'export',
+  'port-livrer': 'Livrer à un contrat d\'export',
+  'port-importer': 'Commander au catalogue d\'import du bac',
+  'port-apporter': 'Apporter des matériaux au chantier du port',
+  'port-agrandir': 'Agrandir le port (le niveau suivant)',
+  // (fiche I2b : la charrette du village)
+  'charrette-palier': 'Améliorer la charrette du village (un palier)',
+  'portage-charger': 'Charger pour le port (sur la ferme)',
+  'portage-recoltes': 'Charger les récoltes pour le port',
+  'portage-reprendre': 'Reprendre à la ferme ce qui était chargé',
+  'portage-vehicule': 'Choisir comment porter au port (à la main, la brouette, la charrette)',
+  'port-boussole': 'Mener la boussole au port',
   'bac-semer': 'Semer une graine de fleur dans un bac à fleurs',
   'galop-pomme': 'Lancer ou arrêter le galop du cheval (une pomme de la sacoche)',
   'cheval-fiche': 'Ouvrir la fiche du cheval',
@@ -74,7 +105,6 @@ export const GAME_ACTIONS = {
   'compost-jeter': 'Jeter des aliments dans un bac à compost',
   'engrais-many': 'Glisser l\'engrais sur des cultures arrosées',
   'engrais-toggle': 'Prendre l\'engrais en main ou le ranger',
-  'promesse-confier': 'Confier au cocher de quoi tenir une promesse de Maurice (le récit)',
   'carte-monde-but': 'Choisir le but de la boussole (carte du monde)',
   'carte-monde-ferme': 'Ramener la boussole à la ferme',
   'plant-all': 'Planter partout',
@@ -82,15 +112,9 @@ export const GAME_ACTIONS = {
   'water-many': 'Arroser en glissant',
   'plant-many': 'Semer en glissant',
   'ami-offrir': 'Offrir un cadeau à un habitant (l\'amitié)',
-  'projet-apporter': 'Apporter des matériaux au projet d\'un hameau',
   'evt-inviter': 'Inviter des amis à un repas (le calendrier)',
   'evt-annuler': 'Annuler une invitation à un repas',
   'repas-servir': 'Servir le repas aux invités',
-  'ile-commander': 'Commander à un atelier de hameau (la scierie, le tissage, la couture : le récit)',
-  'ile-meuble': 'Acheter un meuble dans un hameau (l\'ébéniste, les tapis)',
-  'toit-reparer': 'Réparer le toit abîmé d\'une maison de hameau (le récit)',
-  'enveloppe-ouvrir': 'Ouvrir l\'enveloppe de Maurice et garder ses pièces (le récit)',
-  'pierre-poser': 'Poser la pierre de lune sur la ferme (le récit)',
   'harvest-tree': 'Cueillir un arbre',
   'buy-pasture': 'Acheter une place à l\'Étable',
   'mill-start': 'Moudre du blé au Moulin',
@@ -158,6 +182,16 @@ export const GAME_ACTIONS = {
   'fridge-in': 'Utiliser le réfrigérateur',
   'boite-deposer': 'Remplir la boîte à nourriture',
   'boite-reprendre': 'Remplir la boîte à nourriture',
+  'etal-mettre': 'Tenir l\'étal des villageois',
+  'etal-reprendre': 'Tenir l\'étal des villageois',
+  'garde-manger-commun': 'Tenir le garde-manger commun',
+  'garde-manger-reserve': 'Tenir le garde-manger commun',
+  'cuisine-village': 'Tenir le garde-manger commun',
+  'commerce-ouvrir': 'Ouvrir un commerce',
+  'commerce-rejoindre': 'Rejoindre un commerce en second',
+  'commerce-acheter': 'Acheter à un commerce',
+  'commerce-commander': 'Commander à un commerce',
+  'commerce-lettres': 'Choisir les lettres de l\'enseigne d\'un commerce',
   'fridge-in-all': 'Utiliser le réfrigérateur',
   'fridge-in-urgent': 'Utiliser le réfrigérateur',
   'frigo-ranger': 'Utiliser le réfrigérateur',
@@ -182,18 +216,35 @@ export const GAME_ACTIONS = {
 // part, jamais dans le classement des actions.
 export const INTERFACE_ACTIONS = new Set([
   // (les amis : js/ui/amis.js)
-  'amis-ouvrir', 'amis-fermer', 'amis-fiche', 'amis-fiche-fermer', 'amis-ajouter', 'amis-envoyer', 'amis-repondre', 'amis-inviter', 'amis-rejoindre',
+  'amis-ouvrir', 'amis-fermer', 'amis-villageois', 'amis-fiche', 'amis-fiche-fermer', 'amis-ajouter', 'amis-envoyer', 'amis-repondre', 'amis-inviter', 'amis-rejoindre',
   'amis-visite', 'amis-signe', 'amis-retirer', 'amis-retirer-non', 'amis-retirer-oui', 'amis-message', 'amis-copier', 'amis-partager', 'amis-connexion',
+  // (l'île à bâtir, fiche I3a : la liste des villageois, la fiche d'un villageois : js/ui/villageois.js)
+  'villageois-liste', 'villageois-fiche',
+  // (fiche I3c : la liste des tâches, ce que porte la tournée du port)
+  'villageois-taches', 'villageois-vendre',
+  // (fiche I2b : montrer où manquent des rails)
+  'charrette-voie',
+  // (fiche I3d : le tableau des villageois : js/ui/tableau.js)
+  'tableau-ouvrir', 'tableau-periode', 'tableau-tri', 'tableau-detail',
+  // (fiche I6b : la vue d'ensemble des liens, proposer un foyer)
+  'liens-village', 'liens-foyer',
+  // (fiche I7g : la chronique, ses notes, nommer)
+  'chronique-open', 'chronique-note', 'noms-renommer', 'noms-autre',
+  // (fiche I5a : la fenêtre d'un commerce, ses onglets, un autre nom proposé)
+  'commerce-onglet', 'commerce-nom-autre',
+  // (fiche I8a : les onglets de la fenêtre « L'île »)
+  'ile-onglet',
+  // (fiche I7f : la fenêtre du retour d'une partie d'avant passée sur l'île ; sa sauvegarde d'avant, téléchargée)
+  'retour-ile-ok', 'download-avant-ile',
   // (les gemmes : js/ui/gemmes.js)
   'gemmes-ouvrir', 'gemmes-onglet', 'gemmes-pack', 'gemmes-payer', 'gemmes-acheter', 'gemmes-connexion',
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',
   'open-feedback', 'send-feedback', 'help', 'chaine-mode-emploi', 'tuto-next', 'plant-open', 'semis-open',
   'cancel-queued', 'stop-recipe', 'recette-choisir', 'recette-qte', 'recettes-deplier', 'ack-chapter',
   'frigo-tiroir', 'frigo-choisir', 'frigo-qte', // la fenêtre du frigo : le tiroir « Ranger au frais », l'aliment, la quantité
-  'scene-suite', 'scene-fermer', 'carnet-open', // le récit : la réplique suivante d'une scène, la fermer ; ouvrir le carnet
   'ask-new-game', 'cancel-new-game', 'copy-export',
-  'compte-lien', 'compte-autre', 'compte-deconnexion', 'compte-supprimer', 'compte-supprimer-non', 'compte-supprimer-oui', 'monde-creer', 'monde-quitter', 'monde-membres', 'monde-inviter', 'monde-copier', 'monde-partager', 'monde-retirer', 'monde-retirer-non', 'monde-retirer-oui', 'monde-role', 'monde-journal', 'monde-journal-suite', 'monde-sauvegardes', 'monde-sauvegarder', 'monde-restaurer', 'monde-restaurer-non', 'monde-restaurer-oui', 'demandes-open', // E-0, E-2, E-3, E-11, E-12 ; V-2 : le compte du jeu en ligne, les mondes
-  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-apparence', 'accueil-apparence-hasard', 'accueil-apparence-retour', 'accueil-espece', 'accueil-retour', 'accueil-modifier', 'accueil-retirer', 'accueil-ajouter', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier', 'objectifs-carnet', 'objectifs-montrer', 'objectifs-arreter', 'objectifs-changer',
+  'compte-lien', 'compte-autre', 'compte-deconnexion', 'compte-supprimer', 'compte-supprimer-non', 'compte-supprimer-oui', 'monde-creer', 'monde-quitter', 'monde-membres', 'monde-inviter', 'monde-copier', 'monde-partager', 'monde-retirer', 'monde-retirer-non', 'monde-retirer-oui', 'monde-role', 'monde-journal', 'monde-journal-suite', 'monde-deleguer', 'monde-sauvegardes', 'monde-sauvegarder', 'monde-restaurer', 'monde-restaurer-non', 'monde-restaurer-oui', 'monde-remplacer', 'monde-remplacer-non', 'monde-remplacer-oui', 'demandes-open', // E-0, E-2, E-3, E-11, E-12, I9f ; V-2 : le compte du jeu en ligne, les mondes
+  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-apparence', 'accueil-apparence-hasard', 'accueil-apparence-retour', 'accueil-espece', 'accueil-retour', 'accueil-modifier', 'accueil-retirer', 'accueil-ajouter', 'accueil-seul', 'accueil-famille', 'accueil-vers-ile', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier', 'ile-passer', 'ile-arreter', 'objectifs-carnet', 'objectifs-montrer', 'objectifs-arreter', 'objectifs-changer',
   'do-export', 'do-import', 'download-export', 'import-file', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', 'atelier-tab', 'atelier-groupe', 'atelier-choisir', 'silo-agrandir', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,
@@ -205,9 +256,8 @@ export const INTERFACE_ACTIONS = new Set([
   'carte-monde-open', 'carte-monde-zoom', 'carte-monde-centre', 'carte-monde-lieu', // fiche 8 : la carte du monde (l'ouvrir, la régler, choisir un lieu)
   'arbre-planter', 'arbre-annuler', 'arbre-case', // planter un arbre depuis l'Inventaire : choisir la case // l'Encyclopédie, un livre qui se remplit au fil de la partie
   'inv-item', // Inventaire : fiche d'un objet
-  'shop-item', 'market-help', // la calèche : fiche d'un article, aide de l'onglet // Famille : mode modification, aide de la ration quotidienne
+  'port-fiche', 'port-aide', // le port (fiche I1b) : fiche d'un article, aide de l'onglet
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
-  'mail-open', // version 1.3 : ouvrir une lettre du courrier
   'toolbar-toggle', // la barre d'outils de la carte : la ranger, la sortir
   'lit-choisir', // fiche 17 : un lit touché sur la carte, la question « Tu veux choisir ce lit ? »
 ]);

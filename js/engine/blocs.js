@@ -26,6 +26,7 @@ import { chainesReprise } from './chaines.js';
 import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
+import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -56,9 +57,10 @@ export function solsPoses(state) {
   return state.sols && typeof state.sols === 'object' ? state.sols : {};
 }
 
-// La sorte du sol posé sur `tile`, ou null.
+// La sorte du sol posé sur `tile`, ou null. (Le chantier « l'île à bâtir », fiche I2 : hors de la ferme, un chemin
+// possédé est un sol « chemin », gardé à part : js/engine/dehors.js.)
 export function solAt(state, tile) {
-  return solsPoses(state)[tile] || null;
+  return solsPoses(state)[tile] || (cheminDehorsSur(state, tile) ? 'chemin' : null);
 }
 
 // Ce qui est posé sur les blocs (la pompe sur le puits, un tableau sur un mur) : { [case]: sorte }.
@@ -265,16 +267,39 @@ function rocherOuArbre(T, tile) {
 // pendant ce temps, ce qui parcourt tous les blocs posés (les cases couvertes, les pièces closes) n'est
 // calculé qu'une fois pour cette partie-là (une autre partie, une partie d'essai `{ ...state }` : comme
 // d'habitude). f ne doit pas changer la partie.
-let lotEtat = null, lotMemo = null;
+let lotEtat = null, lotMemo = null, lotVerifie = false, sansLots = false;
 export function enLot(state, f) {
+  if (sansLots) return f();
+  // (I9g : un lot dans un lot de la même partie — la nuit dans le pas du monde, le pas de la ferme dans tick — garde ce
+  // qui est déjà relevé : rien n'a changé entre-temps)
+  if (state === lotEtat && lotMemo) return f();
   const avant = [lotEtat, lotMemo];
   lotEtat = state; lotMemo = new Map();
   try { return f(); } finally { [lotEtat, lotMemo] = avant; }
 }
 function memoLot(state, cle, calcul) {
   if (state !== lotEtat || !lotMemo) return calcul();
-  if (!lotMemo.has(cle)) lotMemo.set(cle, calcul());
-  return lotMemo.get(cle);
+  if (!lotMemo.has(cle)) { const r = calcul(); lotMemo.set(cle, r); return r; }
+  const m = lotMemo.get(cle);
+  if (lotVerifie) verifierMemo(cle, m, calcul());
+  return m;
+}
+// I9g : pour les tests seulement (tests/engine/village-lots.test.mjs), jamais dans le jeu. `verifier` : chaque calcul gardé dans
+// un lot est refait et comparé à celui qui est gardé ; un écart (un bloc posé pendant le lot, un résultat changé par qui
+// le lit) lève une erreur. `sans` : ni lot, ni pièces reconnues sans leur texte (calculerPieces) : le moteur d'avant
+// I9d, pour comparer les parties jouées avec et sans, octet pour octet.
+export function reglerLots({ verifier = false, sans = false } = {}) {
+  lotVerifie = !!verifier;
+  sansLots = !!sans;
+}
+const enClair = (v) => JSON.stringify(v, (k, x) => (x instanceof Map || x instanceof Set ? [x.constructor.name, ...x] : x));
+function verifierMemo(cle, gardee, fraiche) {
+  if (enClair(gardee) !== enClair(fraiche)) throw new Error(`Le lot a gardé « ${cle} », qui a changé pendant le lot.`);
+}
+// (I9d : la même chose, pour ce qui ne lit que les blocs posés ailleurs qu'ici : la boîte à nourriture, l'étal, les
+// locaux des commerces ; hors d'un lot, `calcul` tout simplement)
+export function memoEnLot(state, cle, calcul) {
+  return memoLot(state, cle, calcul);
 }
 
 export function casesCouvertes(state) {
@@ -473,8 +498,11 @@ export function piecesCloses(state) {
 }
 function calculerPieces(state) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR;
+  // (I9g : les mêmes blocs que la dernière fois, relus case par case sans refaire le texte de tous les blocs, qui coûtait
+  // le quart d'une nuit du village ; le texte, comme avant, seulement quand ils semblent avoir changé)
+  if (memesBlocs(W, B)) return piecesListe;
   const cle = W + ':' + JSON.stringify(B);
-  if (cle === piecesCle) return piecesListe;
+  if (cle === piecesCle) { noterBlocs(W, B); return piecesListe; }
   const F = casesQuiFerment(B), ferme = (t) => F.has(t);
   const faites = new Set(), out = [], max = DATA.ATELIER.PIECE_MAX;
   // une pièce touche forcément un bloc qui ferme : on part des cases voisines des blocs. Chaque
@@ -512,7 +540,25 @@ function calculerPieces(state) {
   }
   piecesCle = cle;
   piecesListe = out;
+  noterBlocs(W, B);
   return out;
+}
+// (les blocs de la dernière pièce relevée, dans l'ordre : leurs cases et leurs sortes. Les mêmes cases, dans le même
+// ordre, avec les mêmes sortes en toutes lettres : le même texte JSON, donc la même clé qu'avant)
+let piecesW = null, piecesK = [], piecesV = [];
+function noterBlocs(W, B) {
+  piecesW = W; piecesK = []; piecesV = [];
+  for (const k in B) { piecesK.push(k); piecesV.push(B[k]); }
+}
+function memesBlocs(W, B) {
+  if (sansLots || W !== piecesW || piecesCle === null || Object.getPrototypeOf(B) !== Object.prototype) return false;
+  let i = 0;
+  for (const k in B) {
+    const v = B[k];
+    if (i >= piecesK.length || k !== piecesK[i] || typeof v !== 'string' || v !== piecesV[i]) return false;
+    i++;
+  }
+  return i === piecesK.length;
 }
 
 // Reprendre le mur (ou la porte) de `tile` mêlerait-il deux genres ? null, ou la raison.
@@ -550,7 +596,8 @@ function etageEnPeril(state, blocs) {
 //     clé (et un plancher au sol, state.sols, qui n'est pas un bloc ; les sols n'ont pas de genre).
 // Un bloc d'un autre genre n'y entre pas (poseStatus) ; un mur ou une porte qui, repris,
 // mêlerait deux enceintes de genres différents ne se reprend pas (reprendreBloc).
-export const GENRES_PIECE = { maison: 'la maison', poulailler: 'le Poulailler', paturage: 'l\'Étable', serre: 'la Serre', silo: 'le Silo', moulin: 'le Moulin' };
+// (fiche I5a, le chantier « l'île à bâtir » : un commerce, l'établi de son métier et son comptoir ; artisans.js)
+export const GENRES_PIECE = { maison: 'la maison', poulailler: 'le Poulailler', paturage: 'l\'Étable', serre: 'la Serre', silo: 'le Silo', moulin: 'le Moulin', commerce: 'un commerce' };
 
 // Le genre d'un bloc : 'maison', l'id d'un bâtiment, ou null (sans genre : la batterie ; ou
 // dehors : les murs, les portes, le puits…).
@@ -560,6 +607,7 @@ export function genreBloc(sorte) {
   if (s.batiment) return s.batiment;
   if (s.ecurie) return 'ecurie';
   if (s.station === 'moulin') return 'moulin';
+  if (s.commerce || s.comptoir) return 'commerce';
   if (sorte === 'paillasse' || s.station || s.meuble) return 'maison';
   return null;
 }
@@ -652,11 +700,13 @@ export function conseilsPieces(state) {
   const trous = candidats.filter((x) => !candidats.some((y) => y !== x && y.ferme2.has(x.c))).map((x) => x.c);
   const portesDe = (e) => [...e.bord].filter((t) => sorteDe(B[t]).porte);
   const sansPorte = enceintes.filter((e) => !portesDe(e).length).map((e) => e.cases.sort((x, y) => x - y));
-  const NOMS = { maison: 'Maison', poulailler: 'Le Poulailler', paturage: 'L\'Étable', serre: 'La Serre', silo: 'Le Silo', moulin: 'Le Moulin', ecurie: 'L\'Écurie' };
+  const NOMS = { maison: 'Maison', poulailler: 'Le Poulailler', paturage: 'L\'Étable', serre: 'La Serre', silo: 'Le Silo', moulin: 'Le Moulin', ecurie: 'L\'Écurie', commerce: 'Un commerce : l\'établi et le comptoir, l\'enseigne dehors' };
+  // (fiche I3a : une maison marquée d'une boîte aux lettres est celle d'un villageois)
+  const marquees = new Set(maisonsMarquees(state).map((m) => m.piece));
   const pieces = piecesCloses(state).map((p) => {
     const genre = genreDe(B, p);
     const lits = p.paillasses.length;
-    const texte = genre === 'maison' ? `Maison${lits ? ` · ${lits} couchage${lits > 1 ? 's' : ''}` : ' · sans lit : pose une paillasse'}`
+    const texte = genre === 'maison' ? `${marquees.has(p) ? 'Maison d\'un villageois' : 'Maison'}${lits ? ` · ${lits} couchage${lits > 1 ? 's' : ''}` : ' · sans lit : pose une paillasse'}`
       : genre ? NOMS[genre] || genre
         : 'Pièce vide : une paillasse en fait une maison ; un bloc clé (nichoir, mangeoire, bac à semis, meule), un bâtiment';
     return { cases: p.cases, genre, texte };
@@ -676,6 +726,13 @@ export function genrePiece(state, tile) {
 function refusGenre(state, sorte, p) {
   const B = blocsPoses(state), g = genreBloc(sorte), deja = genreDe(B, p);
   const s = sorteDe(sorte);
+  // (I5a : un commerce a deux blocs, l'établi et le comptoir ; un seul établi)
+  if (deja === 'commerce' && g === 'commerce') {
+    const B2 = blocsDe(B, p.cases);
+    if (s.commerce && B2.some((b) => sorteDe(b.sorte).commerce)) return `Ce commerce a déjà son établi. ${s.nom} : dans une autre enceinte.`;
+    if (s.comptoir && B2.some((b) => sorteDe(b.sorte).comptoir)) return 'Ce commerce a déjà son comptoir.';
+    return null;
+  }
   if (deja && deja !== 'maison') return `Cette enceinte est ${GENRES_PIECE[deja]} : on n'y pose que son bloc (et un plancher). ${s.nom} : dans une autre enceinte.`;
   if (g && g !== 'maison') {
     if (deja === 'maison') return `Cette enceinte est la maison : ${GENRES_PIECE[g]} se bâtit dans une autre enceinte.`;
@@ -719,10 +776,57 @@ export function dansPiece(state, tile) {
 // d'autre ne change de lit. Un lit choisi qui n'est plus un couchage (repris, sa pièce ouverte)
 // ne compte plus : l'ordre des pièces revient.
 export function couchages(state) {
-  const l = piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
+  let l = piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
+  // (fiche I3a : les lits d'une maison marquée d'une boîte aux lettres, celle d'un villageois, passent après les
+  // autres ; la famille n'y dort que s'il ne lui reste pas d'autre lit)
+  const reserves = new Set(maisonsMarquees(state).flatMap((m) => m.piece.paillasses));
+  if (reserves.size) l = l.filter((c) => !reserves.has(c)).concat(l.filter((c) => reserves.has(c)));
   const k = l.indexOf(state.litPrincipal);
   if (k > 0) [l[0], l[k]] = [l[k], l[0]];
   return l;
+}
+
+/* ---------- la maison d'un villageois (le chantier « l'île à bâtir », fiche I3a) ----------
+
+   Une boîte aux lettres (un bloc « villageois », fabriqué à l'Atelier) posée dehors, contre une porte (l'une
+   des huit cases qui l'entourent), marque « à un villageois » la maison de cette porte : une pièce close du genre
+   maison. Le moteur des villageois (js/engine/villageois.js) y installe un nouveau venu ; la famille n'y dort que
+   s'il ne lui reste pas d'autre lit (couchages). La maison se nomme par la case de sa boîte. */
+
+// Les cases des boîtes aux lettres des villageois posées, dans l'ordre des cases.
+export function boitesVillage(state) {
+  const B = blocsPoses(state);
+  return Object.keys(B).map(Number).filter((t) => sorteDe(B[t]) && sorteDe(B[t]).villageois).sort((a, b) => a - b);
+}
+
+// La maison que marque la boîte aux lettres de la case `boite` : la pièce close du genre maison (ou encore
+// vide) dont une porte touche la boîte ; la première dans l'ordre des pièces. null : aucune.
+export function maisonDeBoite(state, boite, pieces = piecesCloses(state)) {
+  const W = farmTerrain(state).LARGEUR, c = boite % W, B = blocsPoses(state);
+  const autour = new Set();
+  for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if ((dr || dc) && c + dc >= 0 && c + dc < W) autour.add(boite + dr * W + dc);
+  return pieces.find((p) => p.portes.some((d) => autour.has(d)) && (genreDe(B, p) || 'maison') === 'maison') || null;
+}
+
+// Les maisons marquées : [{ boite (sa case), piece }], une par pièce (la première boîte d'une pièce la nomme).
+export function maisonsMarquees(state) {
+  return memoLot(state, 'maisonsVillage', () => {
+    // (I9g : les pièces relevées une fois pour toutes les boîtes, et non une fois par boîte : le contrôle d'un geste
+    // de retrait sur une île, roles.js, les relevait quinze fois)
+    const out = [], vues = new Set(), pieces = piecesCloses(state);
+    for (const b of boitesVillage(state)) {
+      const p = maisonDeBoite(state, b, pieces);
+      if (!p || vues.has(p)) continue;
+      vues.add(p);
+      out.push({ boite: b, piece: p });
+    }
+    return out;
+  });
+}
+
+// Les couchages où dort la famille cette nuit (les premiers de couchages, un par personne) : un Set.
+export function litsDeLaFamille(state) {
+  return new Set(couchages(state).slice(0, dormeurs(state).length));
 }
 
 // Un couchage (une case du bas, ou « etage:<case> ») tel que couchages() l'écrit, ou null.
@@ -871,6 +975,17 @@ export function poseStatus(state, sorte, tile, sens = 0) {
     const C = DATA.ATELIER.CONSTRUCTION;
     return { ok: false, raison: `L'Atelier : il faut ${Object.entries(C).map(([o, n]) => `${n} ${DATA.OBJETS[o].nom.toLowerCase()}`).join(' et ')} (ramasse-les sur la carte).` };
   }
+  // (fiche I2b : les rails, une couche à part, sur la ferme comme dehors : dehors.js railsStatus)
+  if (s.rails) {
+    if (horsFerme(T, tile)) return railsStatus(state, tile);
+    const ch = T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
+    const bloque = arbreSurCase(state, tile) || foretSurCase(state, tile) ? 'Un arbre pousse ici.'
+      : ch === 'o' && rocherOuArbre(T, tile) && !freedRockTiles(state).has(tile) ? 'Un rocher ou un arbre occupe cette case : casse-le ou abats-le d\'abord.'
+        : allPlots(state).some((p) => p.case === tile) ? 'Une terre labourée : rebouche-la d\'abord.' : null;
+    return railsStatus(state, tile, { couverte: casesCouvertes(state).has(tile), piece: !!dansPiece(state, tile), bloque });
+  }
+  // (le chantier « l'île à bâtir », fiche I2 : hors de la ferme, sur l'île, les blocs de VILLAGE.DEHORS : dehors.js)
+  if (horsFerme(T, tile)) return poseDehorsStatus(state, sorte, tile);
   // le même mur posé sur un mur : il se rehausse d'un bloc (jusqu'à HAUTEUR_MAX)
   if (s.mur && blocAt(state, tile) === sorte) {
     return hauteurMur(state, tile) < DATA.ATELIER.HAUTEUR_MAX ? { ok: true } : { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
@@ -884,7 +999,6 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (changeMur(blocAt(state, tile), sorte)) {
     return hauteurMur(state, tile) > 1 ? { ok: false, raison: 'Ce mur est rehaussé : reprends d\'abord ses blocs du dessus.' } : { ok: true };
   }
-  if (s.boite && state.frigo && state.frigo.construit) return { ok: false, raison: 'La famille mange au réfrigérateur : la boîte à nourriture ne sert plus.' };
   if (s.unique && dejaPose(state, sorte)) return { ok: false, raison: `Il y a déjà ${s.nom.toLowerCase() === 'citerne' ? 'une' : 'un'} ${s.nom.toLowerCase()} sur la ferme.` };
   // la station du robot : quand il est là (récolte ou semis automatiques)
   if (s.robot && !robotOn(state)) return { ok: false, raison: 'Il faut d\'abord le robot : la récolte ou le semis automatiques (arbre des technologies).' };
@@ -1011,6 +1125,8 @@ function poser(state, sorte, tile, sens = 0) {
   const s = sorteDe(sorte);
   const ancien = blocAt(state, tile);
   if (s.objet) takeItem(state, s.objet, 1);
+  // (fiche I2b : les rails, dans leur couche : dehors.js)
+  if (s.rails) { poserRails(state, tile); return { ok: true, sorte, case: tile }; }
   if (sorte === 'atelier' && !atelierConstruit(state)) buildAtelier(state);   // (ses matériaux quittent l'inventaire)
   if (s.mur && ancien === sorte) {
     setHauteur(state, tile, hauteurMur(state, tile) + 1);
@@ -1060,6 +1176,10 @@ function poser(state, sorte, tile, sens = 0) {
   if (s.sur) {
     if (!state.blocsDessus || typeof state.blocsDessus !== 'object') state.blocsDessus = {};
     state.blocsDessus[tile] = sorte;
+  } else if (s.sol && sorte === 'chemin' && horsFerme(farmTerrain(state), tile)) {
+    // (hors de la ferme, un chemin possédé : dans ses segments, js/engine/dehors.js)
+    poserCheminDehors(state, tile);
+    return { ok: true, sorte, case: tile };
   } else if (s.sol) {
     if (!state.sols || typeof state.sols !== 'object') state.sols = {};
     const avant = state.sols[tile];
@@ -1099,6 +1219,12 @@ function poser(state, sorte, tile, sens = 0) {
 // posé dessus d'abord (la pompe sur le puits), puis le bloc, puis le sol (le plancher).
 export function reprendreBloc(state, tile, opts) {
   // (une case couverte par un meuble, un bloc large : lui)
+  // (fiche I2b : des rails sur la case, par-dessus le chemin ou le pont : eux d'abord)
+  if (!blocDessus(state, tile) && railsSur(state, tile)) {
+    retirerRails(state, tile);
+    addItem(state, sorteDe('rails').objet, 1);
+    return { ok: true, sorte: 'rails', case: tile };
+  }
   if (!blocDessus(state, tile) && !blocAt(state, tile) && casesCouvertes(state).has(tile)) tile = casesCouvertes(state).get(tile);
   const dessus = blocDessus(state, tile), bloc = blocAt(state, tile);
   const sorte = dessus || bloc || solAt(state, tile);
@@ -1149,7 +1275,8 @@ export function reprendreBloc(state, tile, opts) {
   const variante = !dessus && bloc ? varianteBloc(state, tile) : null;
   if (dessus) delete state.blocsDessus[tile];
   else if (bloc) { delete state.blocs[tile]; setHauteur(state, tile, 1); setFenetre(state, tile, null); if (state.sens) delete state.sens[tile]; if (state.teintes) delete state.teintes[tile]; }
-  else delete state.sols[tile];
+  else if (state.sols && state.sols[tile]) delete state.sols[tile];
+  else retirerCheminDehors(state, tile);   // (un chemin possédé hors de la ferme, fiche I2)
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);
   // (une ruche pleine : son miel vient avec elle)

@@ -1,0 +1,1981 @@
+{
+  "//VILLAGE": [
+    "Le chantier « l'île à bâtir » (novembre 2026) : on arrive sur une île vierge, on vend au port, des",
+    "villageois s'installent sur la ferme et y travaillent. Le plan, les décisions et l'ordre des fiches sont",
+    "dans docs/ile.md ; les fiches dans docs/fiches/ile/. Depuis la bascule (fiche I9h, la version 2.0.0), l'île est",
+    "le jeu : une partie d'avant y passe à son ouverture (MIGRATION), un monde en ligne d'avant à son réveil par le",
+    "serveur (I9f). Le réglage de bascule (ACTIF) et la partie d'essai (jeu.html?village=1) sont retirés.",
+    "ARRIVEE (fiche I3a, js/engine/villageois.js) : l'arrivée d'un villageois. Il débarque du bac (fiche I1c,",
+    "js/engine/bac.js : un jour de bac, PORT.BAC.PERIODE, pendant que le bac est à quai, PORT.BAC.HEURES ; la page le",
+    "met en route ; une journée finie avant, la nuit l'installe d'un coup). Il lui faut une maison libre (une pièce",
+    "close du genre maison, marquée par une boîte aux lettres posée dehors contre sa porte, avec un lit que la",
+    "famille ne prend pas) ; à partir du deuxième, de quoi nourrir une bouche de plus (le rangement des repas, le",
+    "réfrigérateur ou la boîte à nourriture, couvre RESERVE_JOURS jours du besoin de tous les villageois, lui",
+    "compris : FAMILLE.AJ.adulte chacun, en énergie des objets) et un port du niveau qu'il faut (PLAFOND[niveau du",
+    "port] : combien de villageois au plus ; un port sans niveau compte pour le niveau 1). Le premier vient dès la",
+    "première maison libre. Un seul par passage. BOURSE : ses pièces à l'arrivée. JOURNAL : les jours que garde son",
+    "journal. TOC : sa bulle quand il frappe ; PHRASES : la ligne qu'il dit ensuite ({prenom} : son prénom), après",
+    "le salut de l'heure (HABITANTS.PHRASES.salut)."
+  ],
+  "VILLAGE": {
+    "ARRIVEE": {
+      "RESERVE_JOURS": 2,
+      "PLAFOND": { "1": 2, "2": 5, "3": 10, "4": 12, "5": 14 },
+      "BOURSE": 20,
+      "JOURNAL": 7,
+      "TOC": "Toc, toc !",
+      "PHRASES": [
+        "Je suis {prenom}, j'arrive par le bac : c'est ma maison ?",
+        "Moi, c'est {prenom}. Merci pour la maison, je m'installe !",
+        "{prenom}, pour te servir : me voilà chez moi."
+      ]
+    },
+    "//HORAIRE": [
+      "La journée d'un villageois sur la ferme (fiche I3b, js/engine/villageois-journee.js ; la scène :",
+      "js/carte/ferme/villageois.js), d'après celle des habitants des hameaux (HABITANTS.HORAIRE). Il dort jusqu'à LEVER,",
+      "se lève et reste chez lui jusqu'à SORTIE, sort ; il mange assis de MIDI à REPRISE et de SOUPER à VEILLEE (à la",
+      "table de sa maison, sinon à la table commune dehors : une table de jardin ou en rondins et ses sièges ; sans place,",
+      "chez lui) ; il rentre à VEILLEE (ses fenêtres s'éclairent) et se couche à COUCHER. Chacun a son retard, tiré de",
+      "la graine, du jour et de son id : de 0 à DECALE h au lever, à la sortie et à la veillée, la moitié aux repas et au",
+      "coucher (ils ne partent pas tous à la même minute). Entre les repas, la journée est faite de créneaux de CRENEAU h",
+      "(les mêmes pour tous) : à chacun, une fois sur FLANER[0] le matin et FLANER[1] l'après-midi, il flâne (assis sur",
+      "un banc libre, sinon debout sur la place, autour du puits ou de la table commune, à PLACE cases au plus) ;",
+      "sinon il sort avec un but (I3b+, la vie sociale : SOCIAL.BUTS) : rendre visite à un ami, le retrouver sur la",
+      "place ou au puits, se promener à deux, puiser de l'eau, aller voir le jardin, les bêtes ou un ouvrage ; à",
+      "défaut, il va et vient (un point des chemins posés, de la place ou, à PROMENADE cases au plus, des abords de sa",
+      "porte). Mal nourri ou sans lit la nuit d'avant (repos), il reste chez lui entre les repas. Sous la pluie",
+      "(meteo.js), il s'abrite chez lui (sans maison : dans l'abri de départ), repas du dehors compris. Tout se déduit",
+      "de l'heure (le même villageois au même endroit pour deux joueurs, I9d) ; loin de la vue, la scène le pose où il",
+      "doit être, sans trajet. VITESSE : sa marche, en fois celle d'un adulte de la famille ; CHEMIN : le prix d'un pas",
+      "hors des chemins posés (1 : aucune préférence) ; il les prend s'ils ne l'allongent pas de plus de ce prix. Le",
+      "réglage choisi sur film parmi trois (calme, normal, animé) : « animé » (VITESSE 1, CRENEAU 0,5, FLANER 0,2 et",
+      "0,4, CHEMIN 1,5) : des créneaux courts (une demi-heure de jeu : quinze secondes), des sorties plus",
+      "nombreuses, on flâne moins."
+    ],
+    "HORAIRE": {
+      "LEVER": 6.5,
+      "SORTIE": 7.5,
+      "MIDI": 12,
+      "REPRISE": 13.25,
+      "SOUPER": 18.5,
+      "VEILLEE": 19.5,
+      "COUCHER": 21.25,
+      "DECALE": 0.5,
+      "CRENEAU": 0.5,
+      "FLANER": [0.2, 0.4],
+      "PLACE": 3,
+      "PROMENADE": 8,
+      "VITESSE": 1,
+      "CHEMIN": 1.5
+    },
+    "//PHRASES": [
+      "Ce que dit un villageois qu'on touche (fiche I3b, js/engine/villageois-journee.js paroleVillageois) : une bulle,",
+      "sans fenêtre. Le salut de l'heure (HABITANTS.PHRASES.salut, sans ce qui parle du hameau), puis une phrase de ce",
+      "qu'il fait (ACTIVITE : lever, dehors, repas, flaner, rentrer, dormir, repos, abri, et recoit : il attend une",
+      "visite chez lui ; au but d'une sortie, celle de SOCIAL.ACTIVITE ; I3c : travail, à son poste, une phrase de sa",
+      "tâche, TACHES.LISTE[tâche].PHRASES ; attend : sa tâche attend, {raison} ce qui manque) et une de son humeur (HUMEUR : heureux,",
+      "content, triste, faim ; humeurVillageois). Tirées de la graine, du jour et du rang de l'appui."
+    ],
+    "PHRASES": {
+      "ACTIVITE": {
+        "lever": ["Je me lève à peine.", "Encore un peu de café et je sors.", "Le jour se lève sur l'île."],
+        "dehors": ["Je fais le tour de la ferme.", "Je me dégourdis les jambes.", "Il fait bon marcher par ici."],
+        "repas": ["C'est l'heure de manger.", "À table !", "Ça sent bon, ce midi."],
+        "flaner": ["Je prends le temps de souffler.", "On est bien, sur ce banc.", "Je regarde pousser tes cultures."],
+        "rentrer": ["Je rentre à la maison.", "La journée s'achève, je rentre.", "Une veillée au chaud, et au lit."],
+        "dormir": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
+        "repos": ["Je me repose aujourd'hui.", "Une journée tranquille à la maison.", "Je reprends des forces."],
+        "abri": ["Quelle averse ! Je reste à l'abri.", "J'attends que la pluie passe.", "Il pleut des cordes."],
+        "recoit": ["J'attends une visite.", "Un ami doit passer me voir.", "Je guette la porte : on vient me voir !"],
+        "travail": ["Je suis au travail.", "Le travail, ça ne se fait pas tout seul !"],
+        "attend": ["J'attends de pouvoir me mettre au travail : {raison}", "Je ne peux pas encore travailler : {raison}"]
+      },
+      "HUMEUR": {
+        "heureux": ["On vit bien, sur l'île.", "La vie est douce, ici.", "Je suis bien, dans ma maison."],
+        "content": ["Ça va, ça va.", "Tout va bien, merci !", "Encore une belle journée."],
+        "triste": ["J'ai eu une petite semaine. Ça ira mieux demain !", "Un peu de soleil me ferait du bien."],
+        "faim": ["La boîte à nourriture est un peu légère, ces jours-ci.", "Je mangerais bien une bonne soupe."]
+      }
+    },
+    "//SOCIAL": [
+      "La vie sociale des villageois (I3b+, après la fiche I3b ; le moteur : js/engine/villageois-liens.js et",
+      "js/engine/villageois-journee.js ; la scène : js/carte/ferme/villageois-social.js). Rien n'est gardé dans la",
+      "partie : tout se déduit de la graine, du jour, des maisons et de l'heure (sauf, depuis I6b, l'affinité : LIENS).",
+      "CONNAISSANCE (connaissance(state, a, b)) : qui se connaît, et à quel degré. Fiche I6b : le score de la paire est",
+      "l'affinité gardée (LIENS, js/engine/liens.js), et ses paliers ceux de LIENS.PALIERS (connaissance, camarade, ami,",
+      "proche ; le degré lu par la journée et la scène : 1 connaissance ou camarade, 2 ami, 3 proche). Ce réglage-ci ne",
+      "sert plus qu'à l'estimation d'une paire qui n'a pas encore passé de nuit ensemble (une partie d'avant I6b) : chaque",
+      "jour passé ensemble sur l'île (depuis l'arrivée du second) compte PAR_JOUR, plus VOISIN si leurs maisons (leurs",
+      "boîtes aux lettres) sont à VOISINE cases au plus, plus TABLE s'ils mangent à la même table, plus COLLEGUE à la",
+      "même tâche (I3c) ; s'y ajoute une affinité tirée de la graine et des deux ids (de 0 à LIENS.AFFINITE). La famille",
+      "du joueur : connue dès l'arrivée (on l'a accueilli), amie dès le palier AMITIE.FAMILLE_AMI de l'amitié du joueur",
+      "avec lui (I6a).",
+      "BUTS : ce qu'il fait d'un créneau dehors, tiré au poids (un poids par but ; un but sans lieu, ou sans ami libre,",
+      "ne se tire pas) : visite (il va à la porte d'un ami, frappe ; l'ami, chez lui, sort après RECOIT h et ils",
+      "causent devant la maison), rdv (il retrouve un ou deux amis sur la place ou au puits, en petit cercle),",
+      "promenade (à deux, côte à côte, jusqu'à un point des chemins ou de la place), eau (il puise au puits), voir (le",
+      "jardin, les bêtes ou un ouvrage de la famille : OUVRAGES, les blocs qu'on va regarder), port (si le chemin du",
+      "port fait PORT_MAX cases au plus). Une visite, un rendez-vous, une promenade durent DUREE créneaux (le temps d'y",
+      "aller et d'y rester), si tous y sont libres ; l'ami qu'on va voir est plutôt un voisin. EMOJI : la bulle qu'il",
+      "montre arrivé à son but.",
+      "CROISE (la scène) : deux villageois qui se connaissent et se croisent à RAYON px s'arrêtent, se tournent l'un",
+      "vers l'autre, montrent une émotion (EMOJI selon le degré et l'humeur) et échangent deux répliques (DUREE s :",
+      "[connaissance, ami]) ; pas deux fois la même paire en ATTENTE s ; deux inconnus se font un signe de tête une",
+      "fois sur SIGNE. Des amis font un bout de chemin ensemble une fois sur ENSEMBLE (au plus BOUT s). Debout, il",
+      "tourne la tête vers un ami qui passe à REGARD px. Le personnage du joueur qui passe à JOUEUR px d'un villageois",
+      "qui le connaît reçoit un salut (pas plus d'une fois en JOUEUR_ATTENTE s par villageois). Dans un groupe, une",
+      "réplique toutes les TOUR s.",
+      "REPLIQUES : les petits échanges [ce que dit le premier, ce que répond l'autre] ; {prenom} : le prénom de",
+      "l'autre, {joueur} : celui du personnage du joueur. Tirés de la graine, du jour, de la paire et du rang de",
+      "l'échange, parmi ceux du degré (connaissance, ami), du moment (matin, jour, soir), de la météo (pluie, clair),",
+      "de l'humeur (triste : l'un des deux est triste ou a faim) et de ce qu'ils font (visite, groupe, promenade, repas à",
+      "la même table ; travail : au même poste, fiche I3c ; en se croisant : ceux du moment, un échange sur deux) ;",
+      "JOUEUR : ce qu'un villageois dit au personnage du joueur (par degré ; I6a : par palier d'amitié, proche et intime",
+      "plus chaleureux ; retrouvailles, revu après AMITIE.RETROUVAILLES.JOURS jours ; present, quand il en a un pour lui).",
+      "CROISE.JOUEUR_AMI (I6a) : la distance d'où un ami proche, ou celui qui a un présent, salue le personnage."
+    ],
+    "SOCIAL": {
+      "CONNAISSANCE": { "PAR_JOUR": 2, "VOISIN": 2, "VOISINE": 14, "TABLE": 1, "AFFINITE": 30, "COLLEGUE": 2 },
+      "BUTS": {
+        "POIDS": { "visite": 2, "rdv": 1.5, "promenade": 2, "banc": 1.5, "eau": 1.5, "voir": 2.5, "port": 1 },
+        "RECOIT": 0.1,
+        "DUREE": 2,
+        "PORT_MAX": 40,
+        "OUVRAGES": ["ruche", "bassin", "fontaine_", "ornement_", "massif_", "bloc_silo", "citerne", "compost", "station_robot", "tonnelet", "tas_citrouilles", "citrouille_halloween", "bonhomme_neige", "bac_", "pommier", "poirier", "cerisier", "abricotier", "pecher", "mangeoire_grain", "distributeur", "lavoir", "kiosque", "fontaine_village", "four_commun"],
+        "EMOJI": { "eau": "💧", "jardin": "🌱", "betes": "🐑", "ouvrage": "👀", "port": "⚓", "promenade": "🌿", "banc": "☺️", "soir": "🌙", "apporte": "🍲", "jeu": "🪁", "fete": "🎉", "chantier": "🔨" }
+      },
+      "CROISE": { "RAYON": 24, "ATTENTE": 40, "DUREE": [1.6, 2.5], "SIGNE": 0.5, "ENSEMBLE": 0.35, "BOUT": 12, "REGARD": 48, "JOUEUR": 28, "JOUEUR_AMI": 56, "JOUEUR_ATTENTE": 60, "TOUR": 3.2 },
+      "EMOJI": { "connaissance": ["👋", "😊"], "ami": ["😄", "❤️", "😊", "👋"], "proche": ["😄", "❤️", "🥰"], "intime": ["❤️", "🥰", "😄"], "retrouvailles": ["😄", "🥰"], "present": ["🎁"], "triste": ["🙂"] },
+      "REPLIQUES": {
+        "connaissance": [
+          ["Bonjour, {prenom} !", "Bonjour ! Ça va bien ?"],
+          ["Salut {prenom} !", "Salut ! Bonne journée !"],
+          ["Tiens, {prenom} !", "Tiens, bonjour !"],
+          ["Ça va, {prenom} ?", "Très bien, et toi ?"],
+          ["On se croise souvent !", "C'est que l'île n'est pas si grande !"],
+          ["Bien installé{e}, {prenom} ?", "Oui, je commence à m'y faire."],
+          ["Bonne journée, {prenom} !", "Merci, à toi aussi !"],
+          ["Tu vas loin comme ça ?", "Juste un petit tour !"],
+          ["Bonjour, voisin{e} !", "Bonjour ! Tout va bien chez toi ?"],
+          ["Il fait bon vivre ici, non ?", "Ah ça, on ne regrette pas le bac !"],
+          ["Toujours en vadrouille, {prenom} ?", "Il faut bien se dégourdir les jambes !"],
+          ["Bien dormi, {prenom} ?", "Comme un loir !"]
+        ],
+        "ami": [
+          ["{prenom} ! Justement je pensais à toi !", "Ha ! Me voilà !"],
+          ["Coucou {prenom} !", "Coucou ! Quelle bonne surprise !"],
+          ["Tu passes ce soir ?", "Avec plaisir, j'apporte des gâteaux !"],
+          ["Ça me fait plaisir de te voir !", "Moi aussi, {prenom} !"],
+          ["Alors, ces nouvelles ?", "Tout va bien ! Et toi ?"],
+          ["Tu as une mine superbe !", "C'est l'air de l'île !"],
+          ["Je te garde une place à table ?", "Oh oui, à côté de toi !"],
+          ["On fait un bout de chemin ?", "Allez, je t'accompagne !"],
+          ["Tu m'as manqué, toi !", "On s'est vus hier, voyons !"],
+          ["Mon ami{e} {prenom} !", "Toujours là, toujours fidèle !"],
+          ["Tu sais quoi ? J'ai bien dormi !", "Ha ! Une grande nouvelle !"],
+          ["Tu viens voir mes fleurs, un de ces jours ?", "Avec joie !"],
+          ["Quel plaisir, {prenom} !", "Le plaisir est pour moi !"],
+          ["Je t'ai cherché{e} partout !", "J'étais au puits, voyons !"]
+        ],
+        "matin": [
+          ["Déjà debout, {prenom} ?", "Le soleil se lève tôt, moi aussi !"],
+          ["Bien le bonjour !", "Bonjour ! Belle matinée, hein ?"],
+          ["Un petit café ce matin ?", "Déjà bu, mais j'en reprendrais bien !"],
+          ["Tu as vu la rosée ?", "Tout brille, ce matin !"],
+          ["On commence la journée ensemble ?", "Bonne idée !"]
+        ],
+        "jour": [
+          ["Bon appétit pour tout à l'heure !", "Merci ! Ça sent bon de partout."],
+          ["Quelle journée, hein ?", "Une belle journée d'île !"],
+          ["Tu as vu les cultures ?", "Elles poussent à vue d'œil !"],
+          ["Il fait bon, cet après-midi.", "On resterait dehors jusqu'au soir !"],
+          ["Tu as fait quoi, ce matin ?", "Pas grand-chose, et c'était parfait !"]
+        ],
+        "proche": [
+          ["Te voilà, toi ! Ma journée est complète.", "La mienne aussi, maintenant !"],
+          ["Je savais que je te trouverais ici.", "Tu me connais trop bien !"],
+          ["Tu viens t'asseoir avec moi ?", "Toujours, tu le sais bien."],
+          ["Qu'est-ce que je ferais sans toi, {prenom} ?", "Tu t'ennuierais, voilà tout !"],
+          ["On est bien, tous les deux.", "Comme toujours."],
+          ["Tu as bien dormi, mon ami{e} ?", "Oui ! J'ai rêvé de l'île."]
+        ],
+        "soir": [
+          ["Bonne soirée, {prenom} !", "Bonne soirée ! Dors bien !"],
+          ["Déjà le soir...", "Les journées filent, ici."],
+          ["On rentre ?", "Oui, la soupe m'attend !"],
+          ["À demain, {prenom} !", "À demain !"],
+          ["Quel beau coucher de soleil !", "On ne s'en lasse pas."]
+        ],
+        "pluie": [
+          ["Quelle averse !", "Bon pour les cultures, au moins !"],
+          ["Tu es trempé{e} !", "Toi aussi, regarde-toi !"],
+          ["Ça va se lever, tu crois ?", "Un peu de patience !"],
+          ["Il pleut des cordes, aujourd'hui.", "Une soupe bien chaude, ce soir !"]
+        ],
+        "clair": [
+          ["Quel beau soleil !", "Une vraie journée d'été !"],
+          ["Pas un nuage !", "Le temps idéal pour se promener !"],
+          ["Il fait doux, hein ?", "On est bien, sur l'île."],
+          ["Tu sens ce petit vent ?", "Ça sent la mer !"]
+        ],
+        "triste": [
+          ["Ça n'a pas l'air d'aller ?", "Une petite fatigue. Ça passera !"],
+          ["Tu veux un peu de compagnie ?", "Oh oui, merci, {prenom}."],
+          ["Courage, {prenom} !", "Merci, ça fait du bien !"],
+          ["Tu as bien mangé ?", "Pas assez... Ça ira mieux demain."]
+        ],
+        "visite": [
+          ["Coucou, c'est moi !", "Oh, entre donc ! Enfin, sortons !"],
+          ["Je passais te dire bonjour !", "Quelle bonne idée !"],
+          ["Tu as un moment ?", "Pour toi, toujours !"],
+          ["Je ne te dérange pas ?", "Jamais, voyons !"],
+          ["Il fallait que je te raconte !", "Raconte, raconte !"],
+          ["J'ai vu de la lumière !", "Viens, on prend l'air !"],
+          ["On fait un brin de causette ?", "Avec plaisir !"],
+          ["Je venais prendre de tes nouvelles.", "C'est gentil ! Tout va bien."]
+        ],
+        "groupe": [
+          ["Vous avez vu le bac, ce matin ?", "Oui ! Il y avait du monde !"],
+          ["Et si on faisait une fête ?", "Bonne idée ! On en parle à la famille ?"],
+          ["L'eau du puits est fraîche !", "La meilleure de l'île !"],
+          ["Qui a planté ces fleurs ?", "La famille, je crois. C'est beau !"],
+          ["On est bien, tous ensemble.", "Ça, c'est vrai."],
+          ["Vous savez la nouvelle ?", "Non ! Raconte !"],
+          ["J'ai entendu un drôle d'oiseau.", "Moi aussi ! Il chantait faux !"],
+          ["On devrait se voir plus souvent.", "On se voit tous les jours, voyons !"],
+          ["Il paraît qu'un nouveau va arriver.", "Il faudra bien l'accueillir !"],
+          ["Ça pousse bien, cette année.", "La famille s'y connaît !"],
+          ["Qu'est-ce qu'on mange ce soir ?", "Une bonne soupe, j'espère !"],
+          ["Vous avez bien dormi ?", "Comme des marmottes !"]
+        ],
+        "repas": [
+          ["Tu me passes le pain ?", "Tiens, il est encore tiède !"],
+          ["C'est bon, hein ?", "Un régal, comme toujours !"],
+          ["Encore un peu de soupe ?", "Juste une louche, merci !"],
+          ["À la vôtre !", "À la nôtre, et à l'île !"],
+          ["Qui a cuisiné, ce soir ?", "La famille ! On a de la chance."],
+          ["On mange bien, ici.", "Mieux que sur le bac, ça !"],
+          ["Il reste de la tarte ?", "Je t'en ai gardé une part !"],
+          ["Bon appétit, tout le monde !", "Bon appétit !"]
+        ],
+        "soiree": [
+          ["Bonsoir ! Je ne te dérange pas ?", "Jamais ! Viens, on prend le frais."],
+          ["J'ai vu ta lumière, alors je passe.", "Tu as bien fait, j'allais m'ennuyer !"],
+          ["Une petite visite avant de dormir ?", "Avec plaisir, il fait si doux."],
+          ["Regarde les étoiles, {prenom} !", "On en voit tellement, d'ici."],
+          ["Tu me racontes ta journée ?", "Oh, il y a tant à dire !"],
+          ["Je t'ai gardé une part de tarte.", "Tu es un amour !"],
+          ["Bonne nuit, à demain !", "Dors bien, à demain !"]
+        ],
+        "apporte": [
+          ["Je t'apporte de la soupe, toute chaude !", "Oh, merci… Ça me touche beaucoup."],
+          ["Tiens, c'est pour toi. Repose-toi bien.", "Tu es trop gentil{e}, {prenom}."],
+          ["Il faut manger pour reprendre des forces !", "Merci, ça va déjà mieux."],
+          ["J'ai fait un peu trop de ragoût…", "Comme par hasard ! Merci, mon ami{e}."],
+          ["Ne bouge pas, je m'occupe de tout.", "Qu'est-ce que je ferais sans toi ?"]
+        ],
+        "banc": [
+          ["On est bien, sur ce banc.", "On y resterait des heures."],
+          ["Tu te souviens de ton premier jour ?", "Comme si c'était hier !"],
+          ["Regarde, le jardin a encore poussé.", "La famille travaille bien."],
+          ["Assieds-toi, je te garde la place.", "Merci, mes jambes te remercient !"],
+          ["Il fait bon, à l'ombre.", "Le meilleur banc de l'île."]
+        ],
+        "promenade": [
+          ["On va jusqu'au bout du chemin ?", "Allons-y, à petits pas !"],
+          ["Il fait bon marcher avec toi.", "On refait ça demain ?"],
+          ["Regarde comme c'est beau, par là.", "On a de la chance de vivre ici."],
+          ["Tu marches trop vite !", "Pardon, j'avais hâte de voir !"],
+          ["Tu te souviens de ton arrivée ?", "Comme si c'était hier !"]
+        ],
+        "travail": [
+          ["On s'y remet, {prenom} ?", "Allez, courage, on y est presque !"],
+          ["Tu me passes un coup de main ?", "Bien sûr, à deux ça va plus vite !"],
+          ["Ça avance bien, non ?", "On fait du bon travail, tous les deux."],
+          ["Tu as vu tout ce qu'on a fait ce matin ?", "Le joueur va être content !"],
+          ["Je commence à avoir faim.", "Tiens bon, c'est bientôt midi !"],
+          ["Tu as l'œil, {prenom} !", "Je regarde comment tu fais, tiens !"],
+          ["Une petite pause ?", "Juste le temps de souffler, alors."],
+          ["Attention où tu mets les pieds !", "Merci, j'ai failli tomber !"],
+          ["On forme une bonne équipe.", "La meilleure de l'île !"],
+          ["Encore un peu et on a fini.", "Après, une bonne soupe !"]
+        ],
+        "fete": [
+          ["Quelle belle fête !", "On devrait en faire plus souvent !"],
+          ["Tu as goûté à tout ?", "Deux fois, même ! Chut !"],
+          ["À la santé du village !", "Et à tous ceux qui y vivent !"],
+          ["Regarde, tout le monde est là.", "On est une vraie famille, ici."],
+          ["Tu danses, {prenom} ?", "Si tu me promets de ne pas rire !"],
+          ["Les lampions sont magnifiques.", "On se croirait dans un conte."],
+          ["Tu te souviens de la première fête ?", "On n'était que trois, à l'époque !"],
+          ["Encore un peu de tarte ?", "Juste une petite part, alors."],
+          ["Merci d'être venu, {prenom}.", "Je n'aurais manqué ça pour rien au monde !"],
+          ["On chante quelque chose ?", "Toi d'abord, je te suis !"],
+          ["Il fait bon, ce soir.", "Une soirée comme on les aime."],
+          ["Quelle chance, cette île.", "Et ces voisins, surtout !"]
+        ],
+        "chantier": [
+          ["Tu tiens la planche, {prenom} ?", "Vas-y, je la tiens bien droite !"],
+          ["Ça prend forme, regarde !", "Le village va être fier !"],
+          ["Encore une pierre et on fait une pause.", "Je t'attends à l'ombre, alors !"],
+          ["On le bâtit pour tout le monde.", "C'est ça qui donne du cœur à l'ouvrage."],
+          ["Tu crois qu'on aura fini pour la fête ?", "Si on s'y met tous, sûrement !"],
+          ["Passe-moi le marteau, tu veux ?", "Tiens, et attention aux doigts !"]
+        ]
+      },
+      "JOUEUR": {
+        "connaissance": ["Bonjour, {joueur} !", "Salut, {joueur} !", "Belle journée, {joueur} !", "Oh, bonjour !", "Ça va, {joueur} ?"],
+        "ami": ["{joueur} ! Ça fait plaisir !", "Coucou, {joueur} !", "Merci pour tout, {joueur} !", "Te voilà, {joueur} !", "Toujours au travail, {joueur} ?"],
+        "proche": ["{joueur} ! Je pensais justement à toi !", "Ah, {joueur} ! Ma journée est plus belle.", "Viens, {joueur}, que je te dise bonjour !", "{joueur} ! Tu as une minute pour moi ?", "Quel plaisir de te croiser, {joueur} !"],
+        "intime": ["{joueur} ! Toi, tu me fais toujours sourire.", "Mon ami {joueur} ! Viens là !", "{joueur} ! L'île ne serait pas pareille sans toi.", "Ah, te voilà enfin, {joueur} ! Je t'attendais.", "{joueur} ! Tu sais que tu comptes, ici ?"],
+        "retrouvailles": ["{joueur} ! Te revoilà ! Ça faisait longtemps !", "Oh, {joueur} ! Tu m'as manqué, tu sais.", "{joueur} ! Quelle joie de te revoir !"],
+        "present": ["{joueur} ! Attends, j'ai un petit quelque chose pour toi !", "Tiens, {joueur}, je t'ai gardé ça !", "{joueur} ! C'est pour toi, de bon cœur."]
+      },
+      "ACTIVITE": {
+        "visite": ["Je rends visite à un ami.", "On cause un peu, devant la porte.", "Je passais dire bonjour."],
+        "etal": ["Je fais mes courses à ton étal.", "Je regarde ce que tu vends.", "Ton étal est bien garni !"],
+        "commerce": ["Je fais un tour au comptoir.", "Je viens voir ce que l'artisan a fait aujourd'hui.", "Une petite emplette au commerce."],
+        "rdv": ["On se retrouve entre amis.", "On bavarde un peu, ici.", "On refait le monde, sur la place."],
+        "promenade": ["On se promène à deux.", "Un petit tour avec un ami.", "On marche un peu ensemble."],
+        "eau": ["Je viens puiser de l'eau.", "L'eau du puits est bien fraîche."],
+        "jardin": ["Je regarde pousser ton jardin.", "Tes cultures ont belle allure !"],
+        "betes": ["Je viens voir les bêtes.", "Elles ont l'air bien, tes bêtes."],
+        "ouvrage": ["J'admire ce que tu as bâti.", "C'est du beau travail, ça."],
+        "port": ["Je descends voir le port.", "J'aime regarder les bateaux."],
+        "banc": ["On se repose un peu, côte à côte.", "Un banc, un ami : que demander de plus ?"],
+        "soir": ["Je passe la soirée chez un ami.", "Une petite visite avant d'aller dormir."],
+        "apporte": ["J'apporte un repas à un ami qui se repose.", "Il faut bien s'entraider !"],
+        "jeu": ["Je joue sur la place !", "On s'amuse bien, ici !"],
+        "fete": ["C'est la fête du village !", "Quelle belle fête, tu ne trouves pas ?", "Tout le village est sur la place !"],
+        "chantier": ["Je travaille au chantier du village.", "On bâtit quelque chose de beau, tous ensemble.", "Le chantier avance bien !"]
+      }
+    },
+    "//AMITIE": [
+      "L'amitié du joueur avec les villageois (fiche I6a ; le moteur : js/engine/villageois-amitie.js, posé sur",
+      "js/engine/amitie.js et data/amitie.json : les mêmes paliers et les mêmes gains qu'avec les habitants des hameaux,",
+      "AMITIE.PAROLE à la première conversation du jour, AMITIE.CADEAU selon son goût, AMITIE.RETROUVAILLES, une demande",
+      "honorée DEMANDES.AMITIE, un repas partagé AMITIE.INVITATION.REPAS). Elle est gardée dans",
+      "state.amitie.pnj[l'id du villageois]. Pas de bonus de production lié à l'amitié.",
+      "ACCUEIL : les points d'amitié de son arrivée (la famille l'a accueilli : « poli »). FAMILLE_AMI : le palier d'où",
+      "la famille du joueur est son amie dans la vie sociale (villageois-liens.js, connaissance(state, id, 'famille') ;",
+      "avant ce palier : une connaissance).",
+      "Ses goûts sont tirés à son arrivée (amitie.js goutsTires : parmi les listes de tous les métiers des hameaux et la",
+      "liste commune, AMITIE.GOUTS objets de chaque sorte) et gardés avec lui (v.gouts) : ils ne changent pas avec sa",
+      "tâche. CONFIE : dès le palier PALIER, il dit un de ses goûts que tu ne connais pas encore, une fois sur CHANCE à",
+      "la première conversation du jour, et chaque fois qu'un cadeau lui fait passer un palier ; ils rejoignent ceux",
+      "qu'on découvre en offrant.",
+      "METIERS : le métier des hameaux dont il prend les présents (AMITIE.RETOUR.PRESENTS) et les besoins",
+      "(DEMANDES.BESOINS), selon sa tâche (I3c ; sans tâche : « * »). Le présent : chaque nuit, un ami au palier",
+      "AMITIE.RETOUR.PALIER ou plus en prépare un avec AMITIE.RETOUR.CHANCE[palier] % de chance, s'il n'en a pas déjà un ;",
+      "il te le donne en main propre, quand il te salue ou que tu lui parles (s'il attend, rien ne se perd).",
+      "DEMANDES : chaque nuit, avec CHANCE, un villageois là depuis DEPUIS jours, sans demande ouverte, en fait une (MAX",
+      "ouvertes au plus pour le village) ; elle dure DEMANDES.DUREE jours, puis s'oublie sans rien coûter (B-1).",
+      "TACHE_SANS_HUMEUR : le palier d'où il accepte une tâche qu'il n'aime pas sans perdre d'humeur (les tâches qu'il",
+      "aime viendront avec les traits, I6c). PROPOS_PART : la part des conversations où il dit un sujet du moment",
+      "(VILLAGE.PROPOS).",
+      "PHRASES : cadeau (sa réaction, par goût), gout (ce qu'il confie ; {Objet} en tête de phrase, {objet} dedans),",
+      "present ({quoi} : ce qu'il donne), retrouvailles, annonce (sa demande, au matin), table (ce qu'il dit à un repas",
+      "partagé, avec AMITIE.INVITATION.PAROLES.TABLE, sans la calèche). Chacune tient en une bulle."
+    ],
+    "AMITIE": {
+      "ACCUEIL": 10,
+      "FAMILLE_AMI": 2,
+      "CONFIE": { "PALIER": 2, "CHANCE": 0.35 },
+      "TACHE_SANS_HUMEUR": 3,
+      "PROPOS_PART": 0.4,
+      "METIERS": { "bois": "bucheron", "pierre": "mineur", "peche": "pecheur", "betes": "berger", "cueillette": "cueilleur", "verger": "cueilleur", "champs": "jardinier", "fauchage": "jardinier", "cuisine": "jardinier", "navette": "jardinier", "forge": "mineur", "*": "jardinier" },
+      "DEMANDES": { "CHANCE": 0.35, "MAX": 2, "DEPUIS": 2 },
+      "PHRASES": {
+        "cadeau": {
+          "adore": ["Oh ! J'adore ça ! Merci !", "Mon préféré ! Tu as deviné ?", "Ça, c'est un vrai cadeau ! Merci !"],
+          "aime": ["Oh, merci ! J'aime bien ça.", "C'est gentil, ça me fait plaisir !", "Merci ! Ça tombe bien."],
+          "neutre": ["Merci, c'est gentil.", "Oh, merci beaucoup !"],
+          "deteste": ["Oh… merci quand même.", "Hum… c'est l'intention qui compte !"]
+        },
+        "gout": {
+          "adore": ["Tu sais ce que j'adore ? {objet} !", "Un secret : {objet}, j'en raffole.", "{Objet}… rien ne me fait plus plaisir !"],
+          "aime": ["J'aime bien {objet}, tu sais.", "{Objet}, ça me fait toujours plaisir.", "Si tu as {objet} en trop, pense à moi !"],
+          "deteste": ["Entre nous, {objet}… très peu pour moi !", "Je te le dis : {objet}, je n'aime pas du tout."]
+        },
+        "present": ["Tiens, c'est pour toi : {quoi}. De bon cœur !", "Je t'ai gardé ça : {quoi}. Pour toi !", "Un petit présent : {quoi}. Merci pour tout !"],
+        "retrouvailles": ["Te revoilà ! Ça faisait longtemps.", "Quelle joie de te revoir !", "Ah, te voilà enfin ! Tu m'as manqué."],
+        "annonce": "📜 {prenom} a une demande pour toi : {n} × {objet}.",
+        "table": ["Ça fait du bien de manger ensemble.", "Quel bon repas, entre voisins !", "On est bien, sur cette île.", "Le village, c'est aussi ça : une table à partager."]
+      }
+    },
+    "//PROPOS": [
+      "Ce que disent les villageois de ce qu'ils voient (fiche I6a ; js/engine/propos.js proposVillageois, comme les",
+      "habitants : HABITANTS.PROPOS dans data/monde.json). GARDES : les sujets des habitants qu'ils disent tels quels (la",
+      "ferme, la lune, la météo, le mois, leurs goûts). Les sujets réécrits pour le village ont ici leurs phrases",
+      "(ferme_cultures, ferme_poules, ferme_maison, cadeau_merci, ami_proche, jours) ; les nouveaux aussi : village_ami et",
+      "village_voisin (un villageois qu'il connaît : {ami}, {voisin}), village_collegue (la même tâche : {collegue}),",
+      "village_nouveau (arrivé depuis 3 jours au plus : {qui}), village_depuis (depuis combien de jours il est là),",
+      "port_bac (le bac passe demain). Les autres (le hameau, la calèche, les cousins, les fêtes, les projets) ne sont",
+      "pas dits par un villageois. {e} : l'accord de celui qui parle. Une phrase tient en une bulle. Les souvenirs",
+      "(fiche I7g, souvenir_<type>) : une ligne de la chronique où il figure (CHRONIQUE.SOUVENIR) : {jours} (il y a",
+      "combien de jours), {jour}, {autre} (l'autre de la ligne), {commerce}, {fete}, {projet}, {village} (les noms",
+      "figés dans la ligne) ; {Commerce}… : la première lettre en capitale."
+    ],
+    "PROPOS": {
+      "GARDES": ["ferme_vide", "ferme_moutons", "ferme_vaches", "ferme_ruches", "ferme_verger", "ferme_moulin", "gout_connu", "lune_pleine", "lune_nouvelle", "lune_croissante", "lune_decroissante", "meteo_pluie", "meteo_brume", "mois"],
+      "ferme_cultures": ["Ton coin de {culture} a fière allure, ce matin !", "Ta {culture} pousse bien. Tu me diras ton secret ?", "Je passe devant ta {culture} chaque jour : quel plaisir !", "{n} parcelles cultivées ? Tu as la main verte.", "La {culture}, ça aime la patience. Toi aussi, on dirait !", "Avec toute cette {culture}, l'île ne manquera pas de soupe."],
+      "ferme_poules": ["Tes {n} poules, elles pondent bien ?", "Je les entends, tes poules, le matin. Ça réveille !", "Des poules sur l'île, c'est des œufs au petit-déjeuner !", "Un peu de blé chaque jour, et tes poules te le rendront en œufs."],
+      "ferme_maison": ["Ta ferme a bien changé depuis que je suis là.", "Tu as encore construit quelque chose ? Tu ne t'arrêtes jamais !", "Le village prend forme, grâce à toi.", "Une maison qui grandit, c'est une famille heureuse."],
+      "cadeau_merci": ["Merci encore pour ton cadeau. J'y pense encore !", "Ton cadeau de l'autre jour m'a fait tellement plaisir.", "Ton cadeau a trouvé sa place chez moi. Merci !"],
+      "ami_proche": ["Quand je te vois arriver, ma journée s'éclaire.", "Je ne regrette pas d'avoir pris le bac jusqu'ici, tu sais.", "Si tu as besoin de quoi que ce soit, tu sais où me trouver.", "Il y a toujours une place pour toi à ma table.", "Sur cette île, je me sens chez moi. Grâce à toi."],
+      "jours": ["Déjà {jours} jours sur l'île ! Le temps file.", "{jours} jours sur l'île… et tant de choses déjà bâties."],
+      "village_depuis": ["Ça fait {jours} jours que j'ai débarqué. Je me sens chez moi.", "Déjà {jours} jours ici ! Je ne regrette pas le voyage."],
+      "village_ami": ["{ami} et moi, on s'entend vraiment bien.", "Si tu cherches {ami}, on est souvent ensemble.", "Avec {ami}, on se raconte tout. Enfin, presque !", "{ami} m'a bien aidé{e} ce matin. Un vrai ami."],
+      "village_voisin": ["Tu connais bien {voisin} ? Dis-lui bonjour de ma part.", "{voisin} m'a parlé de toi hier. Que du bien !", "J'apprends à connaître {voisin}. Quelqu'un de bien.", "{voisin} a ri toute la soirée hier. Ça fait du bien !"],
+      "village_collegue": ["Avec {collegue}, on fait une bonne équipe, au travail.", "{collegue} travaille avec moi : le temps passe plus vite.", "Le travail à deux, avec {collegue}, c'est plus gai."],
+      "village_nouveau": ["Tu as vu ? {qui} vient d'arriver par le bac !", "{qui} s'installe à peine. On l'aidera un peu.", "Bienvenue à {qui} ! Le village grandit."],
+      "voisin": ["{voisin} habite juste à côté. On se fait signe chaque matin !", "Entre voisins, avec {voisin}, on se rend service.", "Je vois la lumière de {voisin} le soir : ça rassure."],
+      "lien_ami": ["{ami} et moi, on ne se quitte plus.", "Tu cherches {ami} ? Demande-moi, je sais toujours où {il_ami} est !", "Avec {ami}, on partage tout : le pain, les nouvelles, les fous rires."],
+      "visite_recue": ["{qui} est passé{e_qui} me voir hier soir. On a bavardé jusqu'à la nuit !", "J'ai eu de la visite : {qui}. Ça m'a fait chaud au cœur."],
+      "visite_faite": ["Hier soir, je suis allé{e} chez {chez}. Quelle bonne soirée !", "J'ai rendu visite à {chez} après le souper. On a bien ri."],
+      "entraide_recue": ["Quand je me reposais, {qui} m'a apporté à manger. On n'oublie pas ça.", "Sans {qui}, j'aurais eu le ventre vide. Quel ami !"],
+      "entraide_donnee": ["J'ai porté un repas à {aide} : entre amis, c'est normal.", "{aide} se reposait : je lui ai apporté de la soupe."],
+      "foyer": ["Avec {conjoint}, on a notre maison à nous. Merci pour tout !", "Vivre avec {conjoint}, c'est le bonheur tout simple.", "Le soir, avec {conjoint}, on regarde la lune depuis la porte."],
+      "enfant": ["{enfant} a encore joué toute la journée sur la place !", "Tu as vu {enfant} ? {il_enfant} grandit si vite !"],
+      "port_bac": ["Le bac passe demain. Qui sait qui il amènera ?", "Demain, c'est jour de bac. J'irai voir le port !", "Le bac arrive demain : l'île va avoir de la visite."],
+      "souvenir_villageois": ["Tu te souviens du jour où j'ai débarqué du bac ? Il y a déjà {jours} jours !", "Il y a {jours} jours, je posais ma valise ici. Je m'en souviens comme d'hier.", "Le jour {jour}, je découvrais {village}. Quel souvenir !"],
+      "souvenir_proche": ["Tu te souviens ? Il y a {jours} jours, {autre} et moi, on est devenus inséparables.", "{autre}, c'est devenu quelqu'un de cher. Depuis le jour {jour}, on ne se quitte plus."],
+      "souvenir_foyer": ["Le jour {jour}, {autre} et moi, on a emménagé ensemble. Je n'oublierai pas.", "Ça fait {jours} jours qu'on vit sous le même toit, {autre} et moi."],
+      "souvenir_commerce": ["Tu te souviens du jour où j'ai ouvert {commerce} ?", "{Commerce} a ouvert il y a {jours} jours. Le temps passe !"],
+      "souvenir_dixieme": ["Quand je suis arrivé{e}, on est devenus dix au village. Tu te souviens ?", "Dixième villageois ! Ça m'a fait drôle, le jour {jour}."],
+      "souvenir_fete": ["Tu te souviens de {fete} ? Quelle journée !", "{Fete}, il y a {jours} jours… On en parle encore."],
+      "souvenir_projet": ["Tu te souviens quand on a fini {projet} ? Il y a {jours} jours déjà.", "{Projet} : quelle fierté d'y avoir mis la main !"]
+    },
+    "//LIENS": [
+      "Les liens entre villageois (fiche I6b ; le moteur : js/engine/liens.js ; la scène : js/carte/ferme/villageois-social.js ;",
+      "la fiche et la vue d'ensemble : js/ui/liens.js). Entre deux villageois, une affinité entière de 0 à 100, gardée",
+      "dans la partie (state.liens : une demi-matrice compacte), qui monte chaque nuit de ce qu'ils ont vécu ensemble",
+      "dans la journée et ne baisse jamais (B-1 : pas de brouille). GAINS, par jour : ILE (ils vivent sur la même île),",
+      "VOISIN (leurs boîtes aux lettres à VOISINE cases au plus), POSTE (ils ont travaillé à la même tâche, à des postes",
+      "voisins, fiche I3c ; le même commerce, I5a, s'y ajoutera), TABLE (ils ont mangé à la même table, au même repas),",
+      "SORTIE (une sortie à plusieurs : une visite, un rendez-vous, une promenade, un banc à deux), FETE (le même repas",
+      "du joueur, l'invitation de la fiche I6a ; les fêtes, I8a), FOYER (ils vivent sous le même toit), ENTRAIDE (l'un a",
+      "apporté un repas à l'autre). Au-delà de LENT, un gain compte pour moitié (arrondi au-dessus) : on devient proche",
+      "plus lentement qu'ami. Une paire qui n'a pas encore passé de nuit ensemble (un nouveau venu, une partie d'avant",
+      "I6b) part de l'estimation d'I3b+ (SOCIAL.CONNAISSANCE : les jours passés ensemble et une affinité tirée de la",
+      "graine), la même que la partie montrait ; un nouveau venu, de cette affinité tirée seule.",
+      "PALIERS : connaissance, camarade, ami, proche (le score d'où l'on y est). Ce qu'ils changent : un ami au village",
+      "monte la cible de bonheur de BONHEUR.AMI, un proche de BONHEUR.PROCHE (le plus grand des deux) ; deux amis",
+      "(TRAVAIL.PALIER ou plus) au même poste gagnent TRAVAIL.ACTIONS action par jour à eux deux ; des amis s'assoient",
+      "côte à côte (deux bancs voisins, SOCIAL.BUTS.POIDS.banc ; à table, à côté d'un ami déjà assis), se rendent visite",
+      "le soir (SOIR : après le souper, CHANCE pour chacun, DUREE h au plus, MAX visites par soir pour un village de",
+      "PAR villageois), et l'entraide (ENTRAIDE) : un villageois en repos (mal nourri ou sans lit) reçoit, au repas de",
+      "midi, la visite d'un ami qui lui apporte à manger (🍲) ; sa cible de bonheur monte de ENTRAIDE.BONHEUR cette",
+      "nuit-là (ni la boîte commune ni le coffre ne paient ce repas : il le partage de bon cœur).",
+      "FOYER : deux proches (PALIER) peuvent former un foyer si le joueur le leur propose et leur a bâti une maison à",
+      "deux lits (une maison de villageois avec deux lits d'adulte libres, où personne d'autre n'habite) : ils s'y",
+      "installent, mangent et dorment sous le même toit ; personne ne se sépare. ENFANT : un foyer dont la maison a un",
+      "lit d'enfant libre peut accueillir un enfant, si le joueur le propose : il vient par le bac (le prochain",
+      "passage, comme un nouveau venu, le seul de ce passage), vit avec eux, ne travaille pas et joue sur la place",
+      "(SOCIAL.BUTS.EMOJI.jeu) ; ses parents et lui sont proches dès son arrivée (PARENTS). Les enfants ne comptent pas",
+      "dans le plafond du port. Ce qui se passe (une visite du soir, un repas apporté) est gardé avec les événements",
+      "entre voisins (js/engine/voisins.js, VOISINS.EVENEMENTS, RECENT) : les villageois en parlent (PROPOS). AVIS : les",
+      "paliers qu'une notification annonce au joueur."
+    ],
+    "LIENS": {
+      "AFFINITE": 20,
+      "PALIERS": { "connaissance": 10, "camarade": 25, "ami": 45, "proche": 75 },
+      "GAINS": { "ILE": 1, "VOISIN": 1, "VOISINE": 14, "POSTE": 4, "TABLE": 1, "SORTIE": 1, "FETE": 4, "FOYER": 3, "ENTRAIDE": 5 },
+      "LENT": 45,
+      "BONHEUR": { "AMI": 4, "PROCHE": 6 },
+      "TRAVAIL": { "PALIER": 3, "ACTIONS": 1 },
+      "SOIR": { "CHANCE": 0.35, "DUREE": 1, "PAR": 3 },
+      "ENTRAIDE": { "BONHEUR": 6 },
+      "FOYER": { "PALIER": 4 },
+      "ENFANT": { "PARENTS": 85 },
+      "AVIS": [3, 4]
+    },
+    "//NOMS": [
+      "Les noms que le joueur donne (fiche I7g ; le moteur : js/engine/noms.js ; la page : js/ui/chronique.js). state.noms =",
+      "{ ile, village, commerces: { id: nom }, maisons: { boîte aux lettres: nom } }. L'île est nommée au départ (fiche",
+      "I7b ; une partie qui n'en a pas reçoit un nom tiré de sa graine) ; le village, quand le VILLAGE_A-ième villageois",
+      "adulte s'installe (le nom proposé est pris d'office et la page propose de le changer) ; un commerce, à son",
+      "ouverture (fiche I5a : nommerCommerce) ; une maison, si le joueur le veut (sa fiche). Tout se renomme à tout moment,",
+      "borné comme le nom de famille (DEPART.NOM_MIN à DEPART.NOM_MAX signes). Les noms proposés sont tirés de la graine",
+      "de la ferme et d'un rang (« un autre nom » tire le suivant) : ILE (« Île » et un complément), VILLAGE (un début et",
+      "une fin accolés), COMMERCES (le mot du commerce, son article, et un complément de COMPLEMENTS), MAISONS (« Maison »",
+      "et un complément). Un nom qui passerait NOM_MAX signes n'est pas proposé."
+    ],
+    "NOMS": {
+      "VILLAGE_A": 3,
+      "ILE": ["Île aux Mouettes", "Île des Brumes", "Île du Grand Vent", "Île aux Saules", "Île des Lucioles", "Île Clairelune", "Île aux Coquelicots", "Île de la Marée", "Île Belle-Anse", "Île des Trois Pins", "Île aux Hérons", "Île du Phare", "Île Douce-Lune", "Île des Galets", "Île aux Abeilles", "Île Verte-Rive"],
+      "VILLAGE": {
+        "DEBUTS": ["Pré", "Val", "Mont", "Bois", "Clair", "Beau", "Roche", "Fontaine", "Rive", "Haute", "Belle", "Font"],
+        "FINS": ["-Fleuri", "-Doré", "-Joli", "-sur-Mer", "-la-Lune", "-aux-Pins", "-le-Vent", "-Tranquille", "-des-Prés", "-les-Bains", "-Soleil", "-les-Saules"]
+      },
+      "COMMERCES": {
+        "forge": ["la", "Forge"], "mercerie": ["la", "Mercerie"], "scierie": ["la", "Scierie"], "boulangerie": ["la", "Boulangerie"],
+        "fromagerie": ["la", "Fromagerie"], "*": ["l'", "Échoppe"]
+      },
+      "COMPLEMENTS": ["du Vieux Chêne", "de la Lune", "du Coq", "de l'Ancre", "des Mouettes", "du Moulin", "du Port", "des Saules", "du Puits", "de l'Étoile", "des Galets", "du Pont"],
+      "MAISONS": ["des Saules", "du Puits", "des Roses", "du Vent", "des Galets", "de la Lune", "aux Volets Bleus", "du Verger", "des Lilas", "du Phare"]
+    },
+    "//CHRONIQUE": [
+      "La chronique de l'île (fiche I7g ; le moteur : js/engine/chronique.js ; la fenêtre : js/ui/chronique.js) : une",
+      "liste datée, écrite d'elle-même aux moments qui comptent, une ligne par événement (state.chronique.lignes).",
+      "noterChronique(state, type, donnees) est le seul point d'entrée : les autres fiches l'appellent (I5a un commerce",
+      "ouvert, I7f le résumé d'avant, I8a les fêtes et les projets du village). TYPES : pour chaque type, son icône,",
+      "son texte ({clé} : un champ des données ; {Clé} : le même, sa première lettre en capitale ; un champ absent",
+      "s'efface ; {lIle} : le nom de l'île dans une phrase, « l'Île aux Mouettes »), et sa clé (cle : une ligne de même clé ne s'écrit qu'une fois). Les noms (l'île, le village, les",
+      "prénoms) sont figés dans la ligne le jour où elle s'écrit : renommer change l'affichage (le titre, le panneau),",
+      "pas les lignes passées ; une ligne de nom écrite le jour même est corrigée (le baptême du jour). MAX : les",
+      "lignes gardées ; au-delà, les plus anciennes se résument par mois de lune (une ligne « mois » : ce qui s'y est",
+      "passé, compté avec RESUME), puis les résumés les plus anciens se fondent deux à deux ; une ligne épinglée ne se",
+      "résume jamais. EPINGLES : les lignes épinglées au plus ; NOTE_MAX : les signes d'une note du joueur (du texte",
+      "libre, échappé à l'affichage). SOUVENIR : un villageois parle d'une ligne où il figure (VILLAGE.PROPOS,",
+      "souvenir_<type>) après DEPUIS jours, jusqu'à JUSQUA jours."
+    ],
+    "CHRONIQUE": {
+      "MAX": 120,
+      "EPINGLES": 24,
+      "NOTE_MAX": 140,
+      "SOUVENIR": { "DEPUIS": 3, "JUSQUA": 120 },
+      "TYPES": {
+        "avant": { "icone": "📖", "texte": "{texte}", "cle": "avant:{id}" },
+        "arrivee": { "icone": "🏝️", "texte": "La famille {famille} débarque sur {lIle} : tout est à bâtir.", "cle": "arrivee" },
+        "recolte": { "icone": "🌱", "texte": "Première récolte de l'île : {culture}.", "cle": "recolte" },
+        "vente": { "icone": "⚓", "texte": "Première vente au port : {objet}.", "cle": "vente" },
+        "villageois": { "icone": "🧳", "texte": "{prenom} débarque du bac et s'installe sur l'île.", "cle": "villageois:{qui}" },
+        "enfant": { "icone": "👶", "texte": "{prenom} arrive par le bac chez {pa} et {pb}.", "cle": "villageois:{qui}" },
+        "village": { "icone": "🏘️", "texte": "Le village prend un nom : {village}.", "cle": "village" },
+        "village_nom": { "icone": "🏘️", "texte": "Le village s'appelle désormais {village}.", "cle": "village_nom:{jour}" },
+        "ile_nom": { "icone": "🏝️", "texte": "L'île s'appelle désormais {ile}.", "cle": "ile_nom:{jour}" },
+        "dixieme": { "icone": "🎉", "texte": "Avec {prenom}, {village} compte dix villageois.", "cle": "dixieme" },
+        "palier": { "icone": "🏅", "texte": "Palier {n} franchi : {titre}.", "cle": "palier:{n}" },
+        "port": { "icone": "🏗️", "texte": "Le port passe au niveau {niveau}.", "cle": "port:{niveau}" },
+        "commerce": { "icone": "🛠️", "texte": "{prenom} ouvre {commerce}.", "cle": "commerce:{id}" },
+        "envie": { "icone": "💭", "texte": "{prenom} rêve d'ouvrir {quoi}.", "cle": "envie:{qui}:{sorte}" },
+        "proche": { "icone": "💞", "texte": "{pa} et {pb} deviennent proches.", "cle": "proche:{a}|{b}" },
+        "foyer": { "icone": "🏡", "texte": "{pa} et {pb} s'installent ensemble.", "cle": "foyer:{id}" },
+        "fete": { "icone": "🎊", "texte": "{Nom} {lieu}.", "cle": "fete:{id}:{jour}" },
+        "projet": { "icone": "🧱", "texte": "{Lieu} achève son projet : {nom}.", "cle": "projet:{id}" }
+      },
+      "RESUME": {
+        "villageois": ["un villageois arrivé", "{n} villageois arrivés"],
+        "enfant": ["un enfant arrivé", "{n} enfants arrivés"],
+        "palier": ["un palier franchi", "{n} paliers franchis"],
+        "port": ["le port agrandi", "le port agrandi {n} fois"],
+        "commerce": ["un commerce ouvert", "{n} commerces ouverts"],
+        "envie": ["une envie de commerce", "{n} envies de commerce"],
+        "proche": ["deux villageois devenus proches", "{n} paires devenues proches"],
+        "foyer": ["un foyer formé", "{n} foyers formés"],
+        "fete": ["une fête", "{n} fêtes"],
+        "projet": ["un projet achevé", "{n} projets achevés"],
+        "*": ["un moment noté", "{n} moments notés"]
+      }
+    },
+    "//PALIERS": [
+      "Les paliers de l'île (fiche I7a, js/engine/paliers.js) : une partie neuve suit ces sept paliers à la",
+      "place des sept chapitres de la campagne (data/campaign.json), sans introduction ni personnage : un titre, une",
+      "icône, des objectifs, une récompense. Le palier n tient la place du chapitre n : il rapporte les mêmes points de",
+      "technologie (ARBRE.POINTS.CHAPITRES) et la même XP (NIVEAUX.CHAPITRES_XP), ouvre les mêmes paliers de l'arbre ;",
+      "sa récompense reprend les plans et le décor du chapitre, et ce que le courrier offrait (il n'y en a plus sur",
+      "l'île : les graines de la serre sont au palier 6). Les objectifs reprennent les types de campaign.js",
+      "(objectiveValue) et ceux du chantier : ventesPort (les pièces gagnées au port), portNiveau (le niveau du port),",
+      "villageois (installés : une maison), taches (villageois qui ont une tâche), commerces (ouverts) et",
+      "amitieVillageois (villageois au palier d'amitié `palier` ou plus, 2 : cordial). La calèche, les hameaux et la",
+      "confiance ne sont pas repris. Le dernier palier franchi ouvre le jeu libre."
+    ],
+    "PALIERS": [
+      {
+        "titre": "S'installer",
+        "icone": "🏕️",
+        "recompense": { "objets": { "bac_carre": 2, "lanterne": 2 } },
+        "objectifs": [
+          { "type": "maison", "cible": 1, "libelle": "Bâtir le foyer (une pièce close, une paillasse)", "unite": "" },
+          { "type": "houe", "cible": 1, "libelle": "Fabriquer une houe à l'Atelier", "unite": "" },
+          { "type": "labours", "cible": 6, "libelle": "Labourer 6 tuiles", "unite": "" },
+          { "type": "semis", "cible": 6, "libelle": "Planter 6 parcelles", "unite": "" },
+          { "type": "arrosees", "cible": 6, "libelle": "Arroser 6 parcelles le même jour", "unite": "" },
+          { "type": "recoltes", "cible": 1, "libelle": "Faire une première récolte", "unite": "" }
+        ]
+      },
+      {
+        "titre": "La première vente au port",
+        "icone": "⚓",
+        "recompense": { "plans": ["pergola"], "objets": { "banc_jardin": 1 } },
+        "objectifs": [
+          { "type": "niveau", "cible": 2, "libelle": "Atteindre le niveau 2", "unite": "" },
+          { "type": "cultures", "cible": 4, "libelle": "Récolter 4 cultures différentes", "unite": "" },
+          { "type": "silo", "cible": 1, "libelle": "Construire le Silo (niveau 3)", "unite": "" },
+          { "type": "ventesPort", "cible": 50, "libelle": "Vendre pour 50 pièces au port", "unite": "💰" }
+        ]
+      },
+      {
+        "titre": "Le premier villageois",
+        "icone": "🧑‍🌾",
+        "recompense": { "plans": ["banc_rondins"] },
+        "objectifs": [
+          { "type": "villageois", "cible": 1, "libelle": "Installer un villageois dans sa maison", "unite": "" },
+          { "type": "siloBle", "cible": 50, "libelle": "Stocker 50 blés au Silo", "unite": "" },
+          { "type": "objet", "item": "minerai_fer", "cible": 4, "libelle": "Rapporter 4 minerais de fer d'un gisement", "unite": "" }
+        ]
+      },
+      {
+        "titre": "Les bêtes",
+        "icone": "🐔",
+        "recompense": { "plans": ["table_rondins"] },
+        "objectifs": [
+          { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
+          { "type": "laines", "cible": 10, "libelle": "Tondre 10 laines", "unite": "" },
+          { "type": "portNiveau", "cible": 2, "libelle": "Agrandir le port (niveau 2)", "unite": "" }
+        ]
+      },
+      {
+        "titre": "Trois villageois au travail",
+        "icone": "🧺",
+        "recompense": { "plans": ["chaise_peinte"] },
+        "objectifs": [
+          { "type": "villageois", "cible": 3, "libelle": "Installer 3 villageois", "unite": "" },
+          { "type": "taches", "cible": 3, "libelle": "Confier une tâche à 3 villageois", "unite": "" },
+          { "type": "pains", "cible": 5, "recette": "pain", "libelle": "Cuire 5 pains", "unite": "" },
+          { "type": "plats", "cible": 3, "exclut": ["pain"], "libelle": "Préparer 3 plats différents (hors pain)", "unite": "" }
+        ]
+      },
+      {
+        "titre": "Le premier commerce",
+        "icone": "🔨",
+        "recompense": { "objets": { "bac_long": 1, "graine_lavande": 3, "cacao": 1, "vanille": 1, "cafe": 1 } },
+        "objectifs": [
+          { "type": "commerces", "cible": 1, "libelle": "Ouvrir un premier commerce", "unite": "" },
+          { "type": "amitieVillageois", "palier": 2, "cible": 1, "libelle": "Devenir « cordial » avec un villageois", "unite": "" },
+          { "type": "objet", "item": "lingot_fer", "cible": 1, "libelle": "Fondre un lingot de fer au Four", "unite": "" },
+          { "type": "portNiveau", "cible": 3, "libelle": "Agrandir le port (niveau 3)", "unite": "" }
+        ]
+      },
+      {
+        "titre": "Un village de dix",
+        "icone": "🏘️",
+        "recompense": { "plans": ["banc_pierre"], "objets": { "lanterne": 3 } },
+        "objectifs": [
+          { "type": "villageois", "cible": 10, "libelle": "Installer 10 villageois", "unite": "" },
+          { "type": "commerces", "cible": 2, "libelle": "Ouvrir 2 commerces", "unite": "" },
+          { "type": "amitieVillageois", "palier": 3, "cible": 3, "libelle": "Devenir « proche » de 3 villageois", "unite": "" },
+          { "type": "styles", "cible": 3, "libelle": "Mêler 3 styles à la ferme (ou un style complet)", "unite": "" }
+        ]
+      }
+    ],
+    "//OBJECTIFS": [
+      "Les objectifs du jour de l'île (fiche I7a, js/engine/objectifs.js) : SEMAINE remplace OBJECTIFS.SEMAINE",
+      "(data/general.json) pour le nouveau départ, sans phrase d'ambiance (pas d'intro) ni hameau ni calèche : la",
+      "vente se fait au port. TIRES.LISTE s'ajoute à OBJECTIFS.TIRES.LISTE (une entrée de même id la remplace) :",
+      "vendre au port, parler aux villageois, leur offrir un cadeau, honorer une commande du bac. Les « si » du",
+      "chantier : villageois (state.villageois en compte un, I3a), bac (state.port.commandes en a une, I1c). Les",
+      "comptes du chantier (objectifs-compte.js, noterObjectif) : vendre (une vente, comme à la calèche : I1b),",
+      "parler (I3b, I6a), cadeau_villageois (I6a), commande_bac (I1c)."
+    ],
+    "OBJECTIFS": {
+      "SEMAINE": [
+        { "titre": "S'installer", "offre": { "graine_carotte": 6 }, "recompense": { "xp": 30, "pieces": 20 },
+          "objectifs": [
+            { "id": "atelier", "icone": "🔨", "libelle": "Poser l'Atelier", "sous": "3 pierres et 3 bois, ramassés autour de toi", "taches": [{ "type": "etat", "quoi": "atelier", "guide": "atelier" }] },
+            { "id": "potager", "icone": "🌱", "libelle": "Préparer le potager", "sous": "La houe, 3 cases labourées, un semis", "taches": [{ "type": "etat", "quoi": "houe", "guide": "houe" }, { "type": "compte", "quoi": "labourer", "n": 3, "guide": "labour" }, { "type": "compte", "quoi": "planter", "n": 1, "guide": "semis" }] }
+          ] },
+        { "titre": "L'eau", "recompense": { "xp": 40, "pieces": 20 },
+          "objectifs": [
+            { "id": "eau", "icone": "💧", "libelle": "Arroser tes semis", "sous": "Le puits, la cruche, puis arroser", "taches": [{ "type": "etat", "quoi": "puits", "guide": "puits" }, { "type": "etat", "quoi": "cruche", "guide": "puits" }, { "type": "compte", "quoi": "arroser", "n": 1, "guide": "arroser" }] },
+            { "id": "faux", "icone": "🌾", "libelle": "Faucher l'herbe haute", "sous": "La faux, puis 6 touffes fauchées", "taches": [{ "type": "etat", "quoi": "faux", "guide": "faux" }, { "type": "compte", "quoi": "faucher", "n": 6, "guide": "fibres" }] }
+          ] },
+        { "titre": "Les outils", "recompense": { "xp": 50, "pieces": 20, "objets": { "planche": 4 } },
+          "objectifs": [
+            { "id": "outils", "icone": "🪓", "libelle": "Fabriquer la hache et la pioche", "sous": "Bois, pierres et fibres", "taches": [{ "type": "etat", "quoi": "hache", "guide": "outils" }, { "type": "etat", "quoi": "pioche", "guide": "outils" }] },
+            { "id": "arbre", "icone": "🌳", "libelle": "Abattre un arbre", "sous": "La hache en main, quelques coups", "taches": [{ "type": "compte", "quoi": "abattu", "n": 1, "guide": "couper" }] },
+            { "id": "rocher", "icone": "🪨", "libelle": "Casser un rocher", "sous": "La pioche en main", "taches": [{ "type": "compte", "quoi": "casse", "n": 1, "guide": "casser" }] }
+          ] },
+        { "titre": "Le confort", "recompense": { "xp": 50, "pieces": 30 },
+          "objectifs": [
+            { "id": "cuisiniere", "icone": "🍳", "libelle": "Poser la cuisinière dans l'abri", "sous": "6 pierres, 4 planches", "taches": [{ "type": "etat", "quoi": "cuisiniere", "guide": "cuisiniere" }] },
+            { "id": "cueillir", "icone": "🫐", "libelle": "Cueillir des baies", "sous": "Touche un buisson qui en porte", "taches": [{ "type": "compte", "quoi": "cueillir", "n": 1, "guide": "cueillir" }] },
+            { "id": "soigner", "icone": "💧", "libelle": "Arroser tes plantes", "sous": "Chaque jour, elles grandissent", "taches": [{ "type": "compte", "quoi": "arroser", "n": 1, "guide": "arroser" }] }
+          ] },
+        { "titre": "L'île", "offre": { "sac": 1 }, "recompense": { "xp": 60, "pieces": 30 },
+          "objectifs": [
+            { "id": "carte", "icone": "🧭", "libelle": "Ouvrir la carte de l'île", "taches": [{ "type": "compte", "quoi": "carte", "n": 1, "guide": "carte" }] },
+            { "id": "sortie", "icone": "🛤", "libelle": "Sortir de la ferme", "sous": "Suis le chemin de terre", "taches": [{ "type": "etat", "quoi": "sortie", "guide": "sortie" }] },
+            { "id": "prise", "icone": "🍄", "libelle": "Récolter quelque chose dehors", "taches": [{ "type": "etat", "quoi": "prise_monde", "guide": "recolte_monde" }] }
+          ] },
+        { "titre": "La première vente", "recompense": { "xp": 80, "pieces": 40 },
+          "objectifs": [
+            { "id": "recolte", "icone": "🥕", "libelle": "Récolter une culture", "sous": "Touche une plante mûre", "taches": [{ "type": "compte", "quoi": "recolter", "n": 1, "guide": "recolter" }] },
+            { "id": "vente", "icone": "⚓", "libelle": "Vendre une récolte au port", "sous": "Sous la halle, au bout du chemin", "taches": [{ "type": "compte", "quoi": "vendre", "n": 1, "guide": "port" }] },
+            { "id": "replanter", "icone": "🌱", "libelle": "Replanter", "taches": [{ "type": "compte", "quoi": "planter", "n": 1, "guide": "semis" }] }
+          ] }
+      ],
+      "TIRES": {
+        "LISTE": [
+          { "id": "vendre", "icone": "⚓", "libelle": "Gagner {n} pièce{s} au port", "quoi": "vendre", "n": [20, 10, 300], "si": "marche", "guide": "port" },
+          { "id": "parler", "icone": "💬", "libelle": "Parler à {n} villageois", "quoi": "parler", "n": [1, 0.25, 4], "si": "villageois", "guide": "parler" },
+          { "id": "cadeau", "icone": "🎁", "libelle": "Offrir un cadeau à un villageois", "quoi": "cadeau_villageois", "n": [1, 0, 1], "si": "villageois", "guide": "parler" },
+          { "id": "commande", "icone": "📦", "libelle": "Honorer {n} commande{s} du bac", "quoi": "commande_bac", "n": [1, 0.25, 3], "si": "bac", "guide": "port" }
+        ]
+      }
+    },
+    "//DEHORS": [
+      "Bâtir hors de la ferme (fiche I2, js/engine/dehors.js ; le mode Construire : js/ui/chantier.js). Sur l'île, hors",
+      "de la terre de la ferme, le mode Construire accepte les blocs de cette liste, et eux seuls (pas de mur ni de",
+      "maison : ils restent sur la terre du joueur). On ne bâtit ni dans l'eau (la mer, un lac : seul le pont de planches",
+      "se pose sur une rivière), ni sur une falaise ou un sommet, ni sur le pied d'un arbre ou d'un rocher (abattu ou",
+      "cassé, sa case se libère), ni dans l'emprise du port (le port, ses abords et une marge : la halle, le quai, la",
+      "cale) ou d'un hameau (son cadre), ni sur une région de l'île que la page n'a pas encore dessinée."
+    ],
+    "DEHORS": ["chemin", "sol_pas_ardoise", "sol_pas_pierre", "sol_pas_bois", "lanterne", "candelabre", "pont_planches", "rails",
+      "barriere", "barriere_blanche", "barriere_rouge", "barriere_grise", "barriere_chene", "barriere_verte", "barriere_lavande",
+      "banc_jardin", "banc_rondins", "banc_pierre"],
+    "//CHEMIN": [
+      "Le chemin du port, possédé (fiche I2, js/engine/dehors.js). Dans une partie neuve du chantier, les cases du tronçon",
+      "généré de la sortie de la ferme au port deviennent des blocs de chemin du joueur (state.dehors.chemins : des",
+      "segments, une rangée à la fois) : il les retire (le bloc revient dans l'inventaire), les déplace, en pose ailleurs ;",
+      "le sol du monde ne peint plus ce tronçon de lui-même (js/engine/monde-sol.js : il peint les chemins possédés). Le",
+      "tronçon tracé (une case de large, de case en case) devient PINCEAU × PINCEAU cases (la case du tracé, celle de",
+      "droite, celles du dessous) ; à PRES_FERME cases de la ferme au plus, les trois cases de large de sa sortie (le",
+      "raccord ne bouge pas). Une case de rivière sous le tronçon reste un gué (on y passe) ; ailleurs, une rivière se",
+      "passe sur un pont de planches. VITESSE : sur un chemin (un chemin posé, sur la ferme ou dehors, le chemin de la",
+      "ferme), le personnage va VITESSE % plus vite, à pied comme à cheval (js/ui/stage.js : la vitesse de sa case)."
+    ],
+    "CHEMIN": { "VITESSE": 100, "PINCEAU": 2, "PRES_FERME": 8 },
+    "//PORTAGE": [
+      "Le portage (fiche I2, js/engine/portage.js ; la fenêtre du port, js/ui/port.js) : ce qu'on vend au port, on l'y",
+      "porte. Sur la ferme, on charge (de l'inventaire et du réfrigérateur, avec leur fraîcheur) ; sous la halle, on",
+      "décharge : tout ce qui est chargé se vend d'un coup, au prix du port. Chaque objet a un volume (un par défaut,",
+      "VOLUMES pour les lourds). On porte MAINS volumes à la main ; une brouette (BROUETTE volumes) ou la charrette",
+      "attelée au cheval (CHARRETTE volumes, en selle seulement) en portent davantage : on choisit sur la ferme comment",
+      "on part. Ce qui ne tient pas reste à la ferme (rien ne se perd) ; on peut tout décharger à la ferme. Les semences",
+      "achetées au port vont droit à la ferme (elles ne pèsent rien). La brouette et la charrette se fabriquent à",
+      "l'Atelier (la charrette : avec un cheval)."
+    ],
+    "PORTAGE": {
+      "MAINS": 12, "BROUETTE": 40, "CHARRETTE": 160,
+      "VOLUMES": { "bois": 2, "planche": 2, "pierre": 3, "minerai_fer": 3, "minerai_cuivre": 3, "minerai_or": 3, "minerai_platine": 3,
+        "lingot_fer": 3, "lingot_cuivre": 3, "lingot_or": 3, "lingot_platine": 3, "bloc_silo": 4, "pierre_angle": 3 }
+    },
+    "//PRIX": [
+      "Les prix des filières (fiche I4 ; le calcul : js/engine/catalog.js, prixDeLIle). Sur l'île, toute transformation",
+      "rend entre FOURCHETTE[0] et FOURCHETTE[1] % de la valeur de ses entrées : chaque recette porte son coefficient",
+      "(coefPrix, en %) et le prix de sa sortie s'en déduit au chargement, comme celui des plats. Les recettes de",
+      "l'Atelier et les transformations des stations ont le leur dans data/recipes.json (une entrée : 135, deux : 145,",
+      "trois ou plus : 150) ; la cuisine garde ses coefficients (CUISINE.COEF_PLAT, les recettes de luxe). ARTISANS :",
+      "les recettes des commerces du lot 5 (le filage et le tissage, la couture de la mercerie, I5b ; la menuiserie, la",
+      "fromagerie) : elles donnent le prix de l'île du fil, du tissu, des vêtements, des meubles et des fromages ; celles qui",
+      "portent commerce (la sorte, ARTISANS.COMMERCES) sont aussi des recettes de ce commerce (I5c : les 36 meubles au",
+      "menuisier, avec leur palier ; la faisselle, la tomme de cave au fromager ; la mercerie a les siennes, ARTISANS). Le jeu",
+      "d'avant (le réglage éteint) garde ses prix écrits. EXCEPTIONS : ce que la règle ne couvre pas, et pourquoi",
+      "(tests/test-data.mjs refuse une recette hors de la fourchette qui n'y est pas notée)."
+    ],
+    "PRIX": {
+      "FOURCHETTE": [130, 160],
+      "ARTISANS": {
+        "fil": { "entrees": { "laine": 1 }, "sortie": { "fil": 1 }, "coefPrix": 130 },
+        "tissu": { "entrees": { "fil": 2 }, "sortie": { "tissu": 1 }, "coefPrix": 135 },
+        "gants_travail": { "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "coefPrix": 140 },
+        "manteau_chaud": { "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "coefPrix": 145 },
+        "salopette": { "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "coefPrix": 145 },
+        "meuble_chaise": { "entrees": { "planche": 2 }, "sortie": { "meuble_chaise": 1 }, "coefPrix": 140, "commerce": "scierie", "palier": 2, "stock": 1 },
+        "meuble_chevet": { "entrees": { "planche": 2 }, "sortie": { "meuble_chevet": 1 }, "coefPrix": 140, "commerce": "scierie", "palier": 2, "stock": 1 },
+        "meuble_table_basse": { "entrees": { "planche": 3 }, "sortie": { "meuble_table_basse": 1 }, "coefPrix": 140, "commerce": "scierie", "palier": 2, "stock": 1 },
+        "meuble_table": { "entrees": { "planche": 4 }, "sortie": { "meuble_table": 1 }, "coefPrix": 140, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_commode": { "entrees": { "planche": 5 }, "sortie": { "meuble_commode": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "stock": 1 },
+        "meuble_bibliotheque": { "entrees": { "planche": 6 }, "sortie": { "meuble_bibliotheque": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "stock": 1 },
+        "meuble_armoire_chene": { "entrees": { "planche": 8 }, "sortie": { "meuble_armoire_chene": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_buffet": { "entrees": { "planche": 6, "pierre": 2 }, "sortie": { "meuble_buffet": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_lit_enfant": { "entrees": { "planche": 4, "tissu": 1 }, "sortie": { "meuble_lit_enfant": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_lit_adulte": { "entrees": { "planche": 6, "tissu": 2 }, "sortie": { "meuble_lit_adulte": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_canape": { "entrees": { "planche": 4, "tissu": 3 }, "sortie": { "meuble_canape": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_tapis_1": { "entrees": { "fibre": 6 }, "sortie": { "meuble_tapis_1": 1 }, "coefPrix": 135, "commerce": "scierie", "palier": 2, "stock": 1 },
+        "meuble_tapis_2": { "entrees": { "tissu": 2, "colorant_rouge": 1 }, "sortie": { "meuble_tapis_2": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "stock": 1 },
+        "meuble_tapis_3": { "entrees": { "tissu": 2, "colorant_bleu": 1 }, "sortie": { "meuble_tapis_3": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "stock": 1 },
+        "meuble_tableau_1": { "entrees": { "planche": 1, "colorant_vert": 1 }, "sortie": { "meuble_tableau_1": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_tableau_2": { "entrees": { "planche": 1, "colorant_rouge": 1 }, "sortie": { "meuble_tableau_2": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_tableau_3": { "entrees": { "planche": 1, "colorant_bleu": 2 }, "sortie": { "meuble_tableau_3": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_armoire_peinte": { "entrees": { "planche": 8, "colorant_bleu": 2 }, "sortie": { "meuble_armoire_peinte": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_armoire_glace": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "meuble_armoire_glace": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_cuisine_porte": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "meuble_cuisine_porte": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_cuisine_tiroirs": { "entrees": { "planche": 4 }, "sortie": { "meuble_cuisine_tiroirs": 1 }, "coefPrix": 140, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_cuisine_sauge": { "entrees": { "planche": 3, "colorant_vert": 1 }, "sortie": { "meuble_cuisine_sauge": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_poubelle": { "entrees": { "planche": 1 }, "sortie": { "meuble_poubelle": 1 }, "coefPrix": 135, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_bibliotheque_vitree": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "meuble_bibliotheque_vitree": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 4, "commande": true },
+        "meuble_lampadaire": { "entrees": { "planche": 1, "lingot_fer": 1, "fibre": 2 }, "sortie": { "meuble_lampadaire": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_coffre_jouets": { "entrees": { "planche": 4, "colorant_rouge": 1 }, "sortie": { "meuble_coffre_jouets": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_plante_ficus": { "entrees": { "planche": 1, "engrais": 1 }, "sortie": { "meuble_plante_ficus": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_plante_monstera": { "entrees": { "planche": 1, "engrais": 2 }, "sortie": { "meuble_plante_monstera": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_plante_sansevieria": { "entrees": { "planche": 1, "engrais": 1 }, "sortie": { "meuble_plante_sansevieria": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_plante_cactus": { "entrees": { "pierre": 1, "engrais": 1 }, "sortie": { "meuble_plante_cactus": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_plante_fougere": { "entrees": { "planche": 1, "engrais": 1, "fibre": 1 }, "sortie": { "meuble_plante_fougere": 1 }, "coefPrix": 150, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_plante_palmier": { "entrees": { "planche": 2, "engrais": 2 }, "sortie": { "meuble_plante_palmier": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_plante_citronnier": { "entrees": { "planche": 2, "engrais": 3 }, "sortie": { "meuble_plante_citronnier": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_plante_orchidee": { "entrees": { "pierre": 1, "engrais": 2 }, "sortie": { "meuble_plante_orchidee": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 3, "commande": true },
+        "meuble_plante_aloe": { "entrees": { "pierre": 1, "engrais": 1 }, "sortie": { "meuble_plante_aloe": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 2, "commande": true },
+        "meuble_plante_bonsai": { "entrees": { "pierre": 2, "engrais": 2 }, "sortie": { "meuble_plante_bonsai": 1 }, "coefPrix": 145, "commerce": "scierie", "palier": 4, "commande": true },
+        "faisselle": { "entrees": { "lait": 2 }, "sortie": { "faisselle": 1 }, "coefPrix": 140, "commerce": "fromagerie", "palier": 2 },
+        "tomme_cave": { "entrees": { "faisselle": 2 }, "sortie": { "tomme_cave": 1 }, "coefPrix": 150, "commerce": "fromagerie", "palier": 2, "cave": 4, "stock": 2 }
+      },
+      "EXCEPTIONS": {
+        "paille": "La botteleuse (une machine, pas une recette) rend une paille par fibre : à une pièce l'unité, un prix ne descend pas sous une pièce."
+      }
+    },
+    "//PART": [
+      "La part du villageois (fiche I4 ; le moteur : js/engine/bourse.js). Chaque nuit, PART % de la valeur de ce que son",
+      "travail a produit ce jour-là (au prix de l'île, moins ce qu'il a pris au coffre pour le faire) lui revient. Elle est",
+      "prise sur le produit, jamais sur la caisse du joueur (B-1 : pas de dette) : il garde des objets de sa récolte, les",
+      "plus chers d'abord, dans son panier (v.panier), qui se vend pour lui au prochain passage du bac (sa bourse). Ce qui",
+      "est déjà parti du coffre (vendu, mangé) ne se reprend pas ; un reste plus petit qu'un objet attend le lendemain",
+      "(v.reste). La tournée du port ne prend rien : ses pièces sont celles du joueur. Le tableau (I3d) compte la part",
+      "dans le coût (J.part)."
+    ],
+    "PART": 30,
+    "//BOURSE": [
+      "La bourse dépensée (fiche I4 ; le moteur : js/engine/bourse.js ; la fenêtre de l'étal : js/ui/etal.js). Un villageois",
+      "achète ce qu'il aime (ses goûts : adoré, puis aimé) et ce dont il a besoin (BESOINS : un vêtement, un meuble pour",
+      "sa maison, une fois chacun) :",
+      "  - à l'étal du joueur (le bloc « etal », fabriqué à l'Atelier, posé dehors) : le joueur y met en vente ce qu'il",
+      "    veut (ETAL.PLACES objets différents, ETAL.QUANTITE de chacun), au prix de vente de l'île ; un villageois qui a",
+      "    de quoi s'y rend après le travail (un créneau de la fin d'après-midi : la journée, villageois-journee.js), un",
+      "    achat par jour au plus (ACHATS), au milieu de son créneau (la nuit fait celui qu'on n'a pas vu) : l'objet",
+      "    quitte l'étal, ses pièces vont au joueur (« Étal : … ») ; ce qu'il adore, ce qu'il aime, ce qui lui manquait",
+      "    monte son bonheur cette nuit-là (BONHEUR) ; ce qu'il déteste, il ne l'achète pas ;",
+      "  - puis aux commerces (le lot 5) ;",
+      "  - enfin par le bac (IMPORT) : au passage du bac, qui a IMPORT.SEUIL pièces ou plus commande pour lui un objet qu'il",
+      "    adore (au prix de l'île × IMPORT.MARGE %, IMPORT.MIN au moins ; IMPORT.MAX unités au plus, en gardant IMPORT.GARDE",
+      "    pièces pour l'étal) : l'argent quitte l'île ; l'objet arrive au passage suivant (IMPORT.BONHEUR cette nuit-là ; ce",
+      "    qui se mange, il le mange).",
+      "PHRASES : ce qu'il dit en arrivant à l'étal ({objet} : ce qu'il vient prendre). Ce qu'il a acheté est gardé (v.achats :",
+      "les ACHATS_GARDES derniers ; v.affaires : ses vêtements et ses meubles)."
+    ],
+    "BOURSE": {
+      "ETAL": { "PLACES": 6, "QUANTITE": 20, "EMOJI": "🛒" },
+      "ACHATS": 1,
+      "ACHATS_GARDES": 6,
+      "BONHEUR": { "adore": 6, "aime": 3, "besoin": 4 },
+      "BESOINS": {
+        "vetement": ["manteau_chaud", "gants_travail", "salopette", "chapeau_paille", "tablier", "bottes"],
+        "meuble": ["meuble_chaise", "meuble_chevet", "meuble_table_basse", "meuble_tapis_1", "meuble_tapis_2", "meuble_tapis_3", "meuble_commode", "meuble_bibliotheque", "lanterne"]
+      },
+      "IMPORT": { "SEUIL": 120, "MARGE": 150, "MIN": 30, "MAX": 4, "GARDE": 40, "BONHEUR": 5 },
+      "PHRASES": [
+        "Pour moi : {objet}, s'il te plaît.",
+        "{objet} ! Juste ce qu'il me fallait.",
+        "Je me fais plaisir : {objet}.",
+        "Ça, je le prends : {objet}. Voilà les pièces."
+      ]
+    },
+    "//GARDE_MANGER": [
+      "Le garde-manger commun et la cuisine du village (fiche I3e ; le moteur : js/engine/garde-manger.js ; la fenêtre : js/ui/garde-manger.js).",
+      "Le garde-manger : la boîte à nourriture ou le réfrigérateur de la ferme (ils sont uniques, le réfrigérateur remplace la boîte),",
+      "rendu commun au village d'un appui (sa fenêtre). Commun, la famille et les villageois y mangent comme avant, et le travail des",
+      "villageois y dépose ce qu'il produit qui se mange tant qu'il a moins",
+      "de RESERVE jours de repas du village (le joueur la règle parmi RESERVES ; 0 : rien n'y va), le reste au coffre. Ce qui périt",
+      "garde sa fraîcheur au réfrigérateur alimenté, pas dans la boîte. La cuisine du village tournant, ce qu'elle n'attend pas",
+      "(ni un plat, ni ce qui a ENERGIE_MIN d'énergie au moins, ni l'ingrédient d'un plat du menu qu'elle peut faire avec lui) laisse",
+      "aux plats PLACES_PLATS places (des aliments différents de la boîte, qui n'en a que six ; des unités du réfrigérateur). JOURNAL : les jours que le garde-manger garde de ce qu'on y a",
+      "déposé, cuisiné, mangé (le tableau des villageois, sa fenêtre).",
+      "CUISINE : la cuisine du village, une cuisinière ou un four posés dans une pièce close, désignés « du village » (MAX blocs au",
+      "plus). Avec un garde-manger commun, la tâche « cuisine » est la sienne : le cuisinier fait ACTIONS plats par jour, tirés de",
+      "RECETTES (débloquées, de la station d'un bloc du village) : le plat qui manque le plus au garde-manger, puis celui qui nourrit",
+      "le mieux ; ce qui se mange est pris au garde-manger, la farine, l'huile, le sucre au coffre, l'eau au réservoir ; le plat va",
+      "au garde-manger. Il ne prend pas la file de la station du joueur. Le soir, le village mange ensemble à la table commune : les",
+      "plats sont partagés et chacun goûte à tous ceux de la table (le bonheur des plats et de leur variété). NOM, SANS, PHRASES : ce",
+      "que disent la tâche et le cuisinier."
+    ],
+    "GARDE_MANGER": {
+      "RESERVE": 3,
+      "RESERVES": [0, 1, 2, 3, 5],
+      "ENERGIE_MIN": 12,
+      "PLACES_PLATS": { "boite": 1, "frigo": 4 },
+      "JOURNAL": 7,
+      "CUISINE": {
+        "MAX": 2,
+        "ACTIONS": 4,
+        "RECETTES": ["soupe_legumes", "ratatouille", "omelette", "omelette_champignons", "mayonnaise", "poisson_grille", "salade_tomates", "riz_au_lait", "gratin_patates", "quiche_epinards", "tarte_pommes", "tarte_fraises", "tarte_myrtilles", "pain_ail", "pain"],
+        "NOM": "La cuisine du village",
+        "SANS": "Le garde-manger commun n'a pas de quoi faire un plat du menu.",
+        "PHRASES": ["Je cuisine pour tout le village.", "Ce soir, on mange ensemble !", "Ça sent bon jusqu'à la place.", "Encore un plat pour le garde-manger."]
+      }
+    },
+    "//DEPART": [
+      "Le nouveau départ (fiche I7b ; le moteur : js/engine/depart-ile.js et js/engine/didacticiel-ile.js ; l'écran : js/ui/depart.js,",
+      "le didacticiel : js/ui/didacticiel-ile.js). L'écran de départ dit PHRASE, puis « Seul » (un adulte tiré de la graine,",
+      "sans compagnon : un appui) ou « En famille » (la famille composée comme avant, le compagnon facultatif) ; puis on nomme",
+      "son île : un nom de NOMS.ILE proposé (tiré de la graine, js/engine/noms.js), modifiable (DEPART.NOM_MIN à NOM_MAX signes, comme le nom de",
+      "famille ; gardé dans state.noms.ile). La ferme est une terre vierge : pas de chemin intérieur (monde.js genererMonde) ;",
+      "le seul chemin part de la porte de l'abri et va à la sortie de la ferme, où commence le tronçon du port : des blocs de",
+      "chemin du joueur (state.sols), tracés le long de l'ancien couloir du chemin (un pas hors de lui coûte HORS_COULOIR",
+      "fois plus), LARGEUR cases de large, trois sur les SORTIE dernières cases. Pas de visite de bienvenue : PLAT (le plat",
+      "qu'elle apportait) attend dans une boîte à nourriture posée dans l'abri (fiche I7c : sans rien lire du récit). Le didacticiel de l'île : ETAPES, dans",
+      "l'ordre, une ligne chacune (la bulle, une flèche sur ce qu'il faut toucher) ; une étape faite (ou déjà faite) passe",
+      "d'elle-même, chacune se passe (« Passer »), le tout aussi ; rien ne bloque. On porte au port ce qu'on y vend (le",
+      "portage, fiche I2) : la récolte se charge sur la ferme avant de partir. PORT : à combien de cases du comptoir on est",
+      "arrivé au port (l'étape du chemin ; la boussole y mène dès qu'elle commence). PIECES : les pièces de départ sur l'île,",
+      "à la place de DEPART.PIECES_SAUVAGE (data/general.json), revues avec la simulation (docs/ile.md, I7b)."
+    ],
+    "DEPART": {
+      "PHRASE": "Une île, un abri, un port. Tout est à bâtir.",
+      "PIECES": 450,
+      "PLAT": "gratin_patates",
+      "LARGEUR": 2, "SORTIE": 6, "HORS_COULOIR": 4,
+      "PORT": 12,
+      "ETAPES": [
+        { "id": "ramasser", "icone": "🪨", "ligne": "Ramasse 3 pierres et 3 morceaux de bois." },
+        { "id": "atelier", "icone": "🔨", "ligne": "Bâtis l'Atelier." },
+        { "id": "houe", "icone": "🛠️", "ligne": "Fabrique la houe à l'Atelier." },
+        { "id": "labour", "icone": "🟫", "ligne": "Laboure 3 cases d'herbe." },
+        { "id": "semis", "icone": "🌱", "ligne": "Sème une graine." },
+        { "id": "cruche", "icone": "💧", "ligne": "Fabrique le puits et la cruche, pose le puits." },
+        { "id": "arroser", "icone": "💦", "ligne": "Remplis la cruche au puits, arrose." },
+        { "id": "recolte", "icone": "🥕", "ligne": "Récolte ta première plante mûre." },
+        { "id": "charger", "icone": "🧺", "ligne": "Charge ta récolte : la fenêtre du port, onglet Porter." },
+        { "id": "port", "icone": "🧭", "ligne": "Suis le chemin jusqu'au port." },
+        { "id": "vendre", "icone": "⚓", "ligne": "Vends une récolte au comptoir, sous la halle." },
+        { "id": "graines", "icone": "🌾", "ligne": "Achète des graines au comptoir." },
+        { "id": "maison", "icone": "🏠", "ligne": "Bâtis une maison libre : un lit, une boîte aux lettres." },
+        { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, au passage du bac." },
+        { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." }
+      ]
+    },
+    "//SANS_RECIT": [
+      "Le récit retiré de ce que voit le joueur de l'île (fiche I7d, docs/ile.md « Le récit retiré de l'interface »).",
+      "NOMS : les noms du récit (ses personnages, ses lieux) ; MOTS : ce que l'île ne dit plus (la calèche, son cocher,",
+      "les hameaux). Aucun texte qu'atteint une partie de l'île ne les contient (tests/engine/village-textes.test.mjs) ;",
+      "les prénoms de HABITANTS.PRENOMS qui en sont ne sont pas tirés pour l'île (village.js prenomsDuJeu : les",
+      "villageois, leurs enfants, le joueur « seul », les habitants des hameaux tant qu'ils sont là). NIVEAUX : ce que",
+      "l'écran d'un niveau dit sur l'île à la place du texte du récit : ELEMENTS (un élément remplacé ; null le retire de",
+      "l'écran) et NOTES (la note d'un niveau, par son numéro ; une chaîne vide la retire). La veillée de la ferme (niveau",
+      "10) était celle des voisins des hameaux ; sur l'île, la veillée du village (VOCATIONS.village.FETES) se tient",
+      "d'elle-même, sans niveau : le niveau 10 le dit dans sa note, l'élément n'est plus montré."
+    ],
+    "SANS_RECIT": {
+      "NOMS": ["Maurice", "Philomène", "Adèle", "Odile", "Achille", "Frida", "Basile", "Théo", "Garance", "Lise", "Fernand", "Céron", "Cadolon", "Le Gué", "Bois-Joli", "Les Genêts", "Les Mouettes", "Brumeval"],
+      "MOTS": ["calèche", "cocher", "hameau"],
+      "NIVEAUX": {
+        "ELEMENTS": { "veillee": null },
+        "NOTES": {
+          "9": "",
+          "10": "Le plus haut niveau. Sur l'île, la veillée de pleine lune se tient d'elle-même, sans niveau : deux villageois et une place (le panneau du village, un puits ou une table de jardin) suffisent"
+        }
+      }
+    },
+    "//SAUVAGES": [
+      "Les plants sauvages de l'île (fiche I7e, docs/ile.md « Une raison d'explorer ») : l'île n'a plus de hameau à",
+      "découvrir ; chaque biome a ses plantes, qu'on rapporte et qu'on cultive. PLANTS : la sorte de la végétation du monde",
+      "(data/monde.json VEGETATION.SORTES, une petite plante ; ce qu'on y ramasse : RECOLTE.SORTES), son biome et les sols",
+      "où elle pousse (ceux de js/engine/monde-sol.js), sa part (des cases libres de ce sol où rien d'autre n'a poussé :",
+      "un tirage à lui, d'après la case, après les autres : rien d'autre ne bouge), eau ([au moins, au plus] cases de",
+      "l'eau ; absent : partout), et sa culture (data/crops.json : le plant ramassé s'y repique). LOIN : à moins de tant",
+      "de cases de la ferme, rien : il faut aller les chercher. Seul le monde de l'île (celui d'un port, monde.js) les",
+      "porte ; le jeu d'avant n'en a pas. La première récolte d'une culture sauvage l'inscrit au catalogue d'import du",
+      "port (PORT.IMPORT.SAUVAGES : son rang, sa marge, son lot)."
+    ],
+    "SAUVAGES": {
+      "LOIN": 40,
+      "PLANTS": {
+        "ail_ours_sauvage": { "biome": "foret", "sols": ["feuilles", "mousse"], "part": 0.004, "culture": "ail_ours" },
+        "salicorne_sauvage": { "biome": "plage", "sols": ["sable"], "part": 0.015, "eau": [1, 3], "culture": "salicorne" }
+      }
+    },
+    "//MIGRATION": [
+      "La migration d'une partie d'avant vers l'île (fiche I7f ; le moteur : js/engine/migration-ile.js ; la fenêtre du retour :",
+      "js/ui/retour-ile.js). Elle se fait à l'ouverture d'une partie d'avant sur l'île (depuis la bascule, I9h :",
+      "toujours). La ferme, l'inventaire, les pièces, le niveau, l'arbre,",
+      "les bêtes, la famille, l'équipement, les plans, les styles ne bougent pas ; le port, son chemin et son tronçon",
+      "paraissent ; les voisins d'avant et le marchand ambulant s'en vont. AMI : le palier d'amitié (AMITIE.ECHELLE : 2,",
+      "« cordial ») à partir duquel un voisin d'avant devient un candidat, qui débarquera par le bac avant tout villageois tiré",
+      "(son prénom, son personnage, son apparence, ses goûts, son amitié gardés) ; les autres sont oubliés sans bruit.",
+      "CADEAU : le cadeau de bienvenue de la fenêtre du retour (des pièces, des objets), donné quand on la ferme. RETOUR :",
+      "ses lignes ({periode} : les jours entre deux bacs ; {amis} : les candidats ; {rendu} : ce qui est rendu ; {de}, {a} :",
+      "ce que gagne ce qu'on fabrique, en %, VILLAGE.PRIX.FOURCHETTE ; {part} : VILLAGE.PART). CHRONIQUE : les lignes",
+      "« avant » qui résument la partie d'avant (le type « avant » de CHRONIQUE.TYPES ; sans nom propre) ; LIEUX : où était",
+      "le voisinage, d'après le style de ses maisons (« * » : un autre). MONDE (fiche I9f) : la fenêtre d'un monde en ligne",
+      "d'avant passé sur l'île (worker/src/monde.mjs, à sa première ouverture) : son intro, l'horloge qui vit, la grille des",
+      "rôles d'une île (ROLES au propriétaire, ROLES_AMI aux autres), la ferme d'avant gardée dans les sauvegardes (au",
+      "propriétaire) ; le cadeau, donné tout de suite au coffre commun, pour tous."
+    ],
+    "MIGRATION": {
+      "AMI": 2,
+      "CADEAU": { "pieces": 300, "objets": { "boite_aux_lettres": 1, "planche": 30, "pierre": 20 } },
+      "RETOUR": {
+        "TITRE": "Bienvenue sur l'île à bâtir",
+        "INTRO": "Ta ferme est intacte. Autour d'elle, l'île a changé :",
+        "PORT": "Le port t'attend au bout du chemin de la ferme : on y vend tout, on y achète les graines, et le bac y passe tous les {periode} jours.",
+        "VILLAGEOIS": "Des villageois débarquent du bac dès qu'une maison libre les attend : une pièce close, un lit, une boîte aux lettres contre sa porte.",
+        "AMIS": "Tes amis d'avant viendront les premiers : {amis}.",
+        "SANS_AMIS": "Tes voisins d'avant sont partis ; d'autres viendront par le bac.",
+        "RENDU": "Tes commandes en cours et ce qui attendait d'être livré te sont rendus : {rendu}.",
+        "SANS_RENDU": "Tu n'avais aucune commande en cours : rien n'est perdu.",
+        "PRIX": "Les prix ont changé : ce qu'on fabrique se vend de {de} à {a} % plus cher que ses matières, et les villageois gardent {part} % de ce qu'ils produisent.",
+        "CADEAU": "Un cadeau de bienvenue : {cadeau}.",
+        "BOUTON": "Merci, au travail !"
+      },
+      "MONDE": {
+        "INTRO": "Ce monde en ligne est passé sur l'île à bâtir. La ferme et le coffre commun sont intacts ; autour d'eux, l'île a changé :",
+        "HORLOGE": "Le temps passe maintenant dans ce monde tant qu'un joueur au moins y est : la nuit vient seule à 22 h, et sans personne, il dort.",
+        "ROLES": "Les rôles suivent ceux d'une île : tes amis jardiniers fabriquent maintenant à l'Atelier, et c'est toi qui attribues les tâches des villageois, décides des commerces, nommes l'île et agrandis le port (👥).",
+        "ROLES_AMI": "Tu aides le propriétaire à faire grandir son village : ce que ton rôle permet suit maintenant celui d'une île (👥).",
+        "SAUVEGARDE": "La ferme d'avant est gardée dans les sauvegardes du monde (👥 › 💾, « avant le passage sur l'île ») : tu peux y revenir.",
+        "CADEAU": "Un cadeau de bienvenue est au coffre commun, pour tous : {cadeau}."
+      },
+      "CHRONIQUE": {
+        "DEBUT": "La famille {famille} s'installe sur sa terre.",
+        "VENTE": "Première vente de la ferme : le début des affaires.",
+        "VOISINS": "Tu rencontres des voisins {lieu}.",
+        "AMI": "Tu te lies d'amitié avec un voisin {lieu}.",
+        "AMIS": "Tu te lies d'amitié avec {n} voisins {lieu}.",
+        "BILAN": "Avant l'île : {chapitres}, le niveau {niveau} atteint.",
+        "CHAPITRE": "un chapitre de la ferme franchi",
+        "CHAPITRES": "{n} chapitres de la ferme franchis",
+        "SANS_CHAPITRE": "le premier chapitre de la ferme en cours",
+        "ILE": "Le port ouvre au bout du chemin : l'île est à bâtir."
+      },
+      "LIEUX": {
+        "lande": "dans la lande", "prairie": "dans la prairie", "cote": "sur la côte", "foret": "dans la forêt",
+        "montagne": "dans la montagne", "marais": "dans le marais", "*": "sur l'île"
+      }
+    },
+    "//EN_LIGNE": [
+      "L'île partagée (fiche I9a ; docs/monde-partage.md, « L'île partagée » ; les mesures : docs/ile.md et",
+      "scripts/poids-ile.mjs) : le plafond de poids d'un monde en ligne de l'île. PARTIE_KO : la partie du monde, en Ko de",
+      "JSON : ce que reçoit un joueur qui entre, chaque instantané (toutes les 20 révisions) et chaque sauvegarde du monde",
+      "(14 gardées). DEHORS_KO : dans elle, ce que pèse l'île hors de la ferme (ce qui y a été pris et le jour où cela revient,",
+      "les chemins et les blocs posés dehors). Ce qui se recalcule de la graine (le relief, les arbres, les rochers, les lieux,",
+      "la carte) ne s'envoie jamais, et le brouillard de chacun reste dans son navigateur.",
+      "I9a2 (l'horloge commune, docs/fiches/ile/I9a2-note-horloge.md ; le moteur : js/engine/temps-monde.js) : PAS_MS, le pas",
+      "du temps d'un monde de l'île, en ms d'horloge (5 s : 10 minutes de jeu), une constante du protocole, la même pour le",
+      "serveur et chaque joueur (un intervalle se rejoue toujours pas à pas : un pas de 60 s ne donne pas le même état que 12",
+      "pas de 5 s). RETARD_PAS : au-delà de ce retard (en pas), un joueur qui revient reçoit la partie entière plutôt que le",
+      "journal et les pas à rejouer."
+    ],
+    "EN_LIGNE": { "PARTIE_KO": 256, "DEHORS_KO": 64, "PAS_MS": 5000, "RETARD_PAS": 60 }
+  },
+  "//TACHES": [
+    "Les tâches attribuées (fiche I3c ; le moteur : js/engine/taches.js ; la journée : js/engine/villageois-journee.js ;",
+    "la scène : js/carte/ferme/villageois-travail.js ; la fiche : js/ui/villageois.js). Le joueur confie une tâche à",
+    "chaque villageois (« Tâche », sur sa fiche) ; il la fait chaque jour, à son poste, par les mêmes fonctions que le",
+    "joueur (une carotte récoltée par lui est une carotte récoltée), sans l'énergie, l'expérience ni les objectifs du",
+    "jour du joueur, dans les bornes du monde (un arbre coupé repousse comme les autres, le quota de pêche du jour vaut",
+    "pour lui). Ce qu'il produit va au coffre de la ferme (l'inventaire, le blé au Silo). En repos (mal nourri ou sans",
+    "lit la nuit d'avant), il ne fait rien.",
+    "TRAVAIL : les heures de travail, le matin et l'après-midi : les créneaux de la journée (VILLAGE.HORAIRE.CRENEAU)",
+    "dont le milieu tombe dans l'une de ces plages sont des créneaux de travail ; PAUSE créneaux de chaque plage",
+    "(tirés de la graine, du jour et de son id) restent des sorties de la vie sociale (I3b+ : le puits, un ami, la",
+    "place) ; les repas, les créneaux d'avant le travail et ceux d'après (le retour, le soir) ne changent pas. POSTE :",
+    "un poste de travail tient POSTE créneaux de suite, puis il passe au suivant (un autre arbre, une autre parcelle).",
+    "Deux villageois à la même tâche travaillent côte à côte (des postes voisins) et causent un peu : une réplique de",
+    "SOCIAL.REPLIQUES.travail toutes les CAUSE s (la scène). ESSAI : une action sans rien à faire (rien de mûr, plus",
+    "de poisson) se retente ESSAI h plus tard. RAYON : à combien de cases de sa maison il cherche un poste (les",
+    "arbres, les rochers, l'herbe haute, les baies de la ferme).",
+    "LISTE : les tâches, dans l'ordre de la fiche. Chacune : nom, icone, ACTIONS (les actions qu'il fait par jour, à",
+    "parts égales sur ses créneaux de travail ; la nuit fait celles qui restent), donne (ce que donne une action :",
+    "celle du joueur), outil (l'outil qu'il faut : le joueur le fabrique à l'Atelier et le lui donne ; null : aucun),",
+    "lieu (où est son poste), geste (celui des habitants, js/carte/ferme/habitants.js), emoji (la bulle à chaque action",
+    "vue), SANS (ce que dit la fiche quand il n'y a pas de poste), PHRASES (ce qu'il dit au travail, quand on le",
+    "touche). Les champs : récolter ce qui est mûr, puis arroser ce qui a soif (l'eau du réservoir), puis ressemer",
+    "une parcelle vide de sa dernière culture (les graines de l'inventaire). Les bêtes : nourrir les poules, prendre",
+    "les œufs, tondre les moutons prêts, prendre le lait et la laine. Le verger : cueillir un arbre en fruits, récolter",
+    "une ruche pleine. Le bois : un coup de hache (l'arbre tombe au troisième, et repousse) ; la pierre : un coup de",
+    "pioche (le minerai d'un gisement aussi ; la pioche améliorée lui profite) ; la pêche : un lancer dans l'étang ou",
+    "la mare de la ferme (le quota du jour du joueur) ; la cueillette : ce que la ferme offre ce matin (baies,",
+    "branches, cailloux) ; le fauchage : un coup de faux (la fibre ; une botteleuse posée en fait de la paille) ; la",
+    "cuisine : une préparation lancée à la cuisinière ou au four (RECETTES, la première dont les ingrédients sont là) ; la",
+    "navette : la tournée du port, faite par la charrette du village (fiche I2b, CHARRETTE) : ses villageois en sont les",
+    "charretiers, qui se relaient ; une action est un voyage entier, la vente au comptoir à l'heure d'arrivée (ACTIONS ne",
+    "sert plus qu'à dire, dans la liste, qu'elle fait plusieurs voyages ; ils se comptent d'après la route et la vitesse).",
+    "Les machines (fiche I8b, « conduire une chaîne ») : une action est un tour des machines de la ferme : il ramasse",
+    "au coffre le tas au bout de chaque chaîne de production (une chaîne au tas plein repart), il jette dans son",
+    "entonnoir les ingrédients du coffre, il verse au Moulin jusqu'à MOULIN blés (ceux qui ne sont pas gardés pour les",
+    "semis), il relance au four la FOURNEE dès qu'il est libre. Une chaîne servie tourne tout le jour : un villageois",
+    "en tire bien plus que le joueur, qui n'a pas le temps d'y revenir. Le courant que ses machines consomment entre dans",
+    "son coût (PRODUCTION.COURANT, le tableau). La tournée du port (fiches I8b, I2b) : elle livre d'abord les contrats",
+    "d'export acceptés, puis ce qui est marqué « à vendre », en volumes, dans la charrette du village (CHARRETTE)."
+  ],
+  "TACHES": {
+    "TRAVAIL": [[8, 11.5], [13.5, 16.5]],
+    "PAUSE": 1,
+    "POSTE": 2,
+    "CAUSE": 26,
+    "ESSAI": 0.5,
+    "RAYON": 28,
+    "LISTE": {
+      "champs": {
+        "nom": "Les champs", "icone": "🌱", "ACTIONS": 12, "outil": null, "lieu": "champs", "geste": "arrose", "emoji": "🌱",
+        "donne": "une parcelle récoltée, arrosée ou ressemée",
+        "SANS": "Il n'y a pas de parcelle labourée sur la ferme.",
+        "PHRASES": ["Je m'occupe des champs.", "Ça pousse bien, cette année !", "Encore une rangée et je fais une pause."]
+      },
+      "betes": {
+        "nom": "Les bêtes", "icone": "🐔", "ACTIONS": 4, "outil": null, "lieu": "betes", "geste": "ramasse", "emoji": "🥚",
+        "donne": "les poules nourries, les œufs pris, un mouton tondu, le lait et la laine pris",
+        "SANS": "Il n'y a ni poulailler ni étable avec des bêtes.",
+        "PHRASES": ["Je soigne les bêtes.", "Les poules ont bon appétit ce matin !", "Doucement, ma belle…"]
+      },
+      "verger": {
+        "nom": "Le verger et les ruches", "icone": "🍎", "ACTIONS": 4, "outil": null, "lieu": "verger", "geste": "ramasse", "emoji": "🍎",
+        "donne": "un arbre en fruits cueilli, une ruche pleine récoltée",
+        "SANS": "Il n'y a ni arbre fruitier planté ni ruche.",
+        "PHRASES": ["Je surveille le verger.", "Les abeilles sont de bonne humeur !", "Ces fruits sentent bon !"]
+      },
+      "bois": {
+        "nom": "Le bois", "icone": "🪵", "ACTIONS": 6, "outil": "hache", "lieu": "arbre", "geste": "hache", "emoji": "🪵",
+        "donne": "un coup de hache : HACHE.BOIS bois, HACHE.CHUTE de plus quand l'arbre tombe (et sa graine)",
+        "SANS": "Il n'y a plus d'arbre debout près de sa maison.",
+        "PHRASES": ["Je coupe du bois.", "Attention, ça va tomber !", "Du bon bois bien sec, pour l'hiver."]
+      },
+      "pierre": {
+        "nom": "La pierre et le minerai", "icone": "🪨", "ACTIONS": 6, "outil": "pioche", "lieu": "rocher", "geste": "pioche", "emoji": "🪨",
+        "donne": "un coup de pioche : PIOCHE.PIERRE pierre (le minerai d'un gisement)",
+        "SANS": "Il n'y a plus de rocher près de sa maison.",
+        "PHRASES": ["Je casse des cailloux.", "Il est coriace, celui-là !", "Encore quelques coups…"]
+      },
+      "peche": {
+        "nom": "La pêche", "icone": "🎣", "ACTIONS": 6, "outil": "canne", "lieu": "rive", "geste": "peche", "emoji": "🐟",
+        "donne": "un lancer dans l'étang ou la mare de la ferme (le quota du jour du joueur)",
+        "SANS": "Il n'y a ni étang ni mare sur la ferme.",
+        "PHRASES": ["Chut, ça mord !", "Le poisson se fait prier aujourd'hui.", "Rien de tel qu'une ligne à l'eau."]
+      },
+      "cueillette": {
+        "nom": "La cueillette", "icone": "🫐", "ACTIONS": 4, "outil": null, "lieu": "cueillette", "geste": "ramasse", "emoji": "🫐",
+        "donne": "ce que la ferme offre ce matin : une baie, une branche, un caillou",
+        "SANS": "La ferme n'offre rien à cueillir ce matin.",
+        "PHRASES": ["Je fais la cueillette.", "Les buissons sont pleins ce matin !", "Une pour le panier, une pour moi…"]
+      },
+      "fauchage": {
+        "nom": "Le fauchage et la paille", "icone": "🌾", "ACTIONS": 8, "outil": "faux", "lieu": "herbe", "geste": "faux", "emoji": "🌾",
+        "donne": "un coup de faux : FAUX.FIBRE fibre (une botteleuse posée en fait de la paille)",
+        "SANS": "Il n'y a plus d'herbe haute près de sa maison.",
+        "PHRASES": ["Je fauche l'herbe haute.", "Ça fera de la bonne paille.", "Quel parfum, l'herbe coupée !"]
+      },
+      "cuisine": {
+        "nom": "La cuisine", "icone": "🍲", "ACTIONS": 2, "outil": null, "lieu": "cuisine", "geste": "cuisine", "emoji": "🍲",
+        "donne": "une préparation lancée à la cuisinière ou au four",
+        "RECETTES": ["soupe_legumes", "ratatouille", "omelette", "poisson_grille", "salade_tomates", "pain", "gratin_patates", "tarte_pommes"],
+        "SANS": "Il faut une cuisinière ou un four dans le foyer.",
+        "PHRASES": ["Je prépare à manger pour tout le monde.", "Ça mijote !", "Une pincée de sel, et voilà."]
+      },
+      "chaine": {
+        "nom": "Conduire les machines", "icone": "🏭", "ACTIONS": 16, "outil": null, "lieu": "machine", "geste": "ramasse", "emoji": "⚙️",
+        "donne": "un tour des machines : il vide les chaînes, les alimente, les relance ; il verse le blé au Moulin, relance la fournée",
+        "MOULIN": 10, "GARDE": 10, "FOURNEE": "pain",
+        "SANS": "Il n'y a ni chaîne de production prête, ni Moulin, ni four sur la ferme.",
+        "PHRASES": ["Je surveille les machines.", "Tout tourne rond !", "Encore une fournée et je vide la chaîne."]
+      },
+      "navette": {
+        "nom": "La tournée du port", "icone": "⚓", "ACTIONS": 2, "outil": null, "lieu": "port", "geste": "ramasse", "emoji": "💰",
+        "donne": "mener la charrette du village au port, voyage après voyage : les contrats, puis ce qui est marqué « à vendre »",
+        "SANS": "Il n'y a pas de port sur l'île.",
+        "PHRASES": ["Je descends au port.", "Le panier est lourd aujourd'hui !", "Je vends tout ça au comptoir."]
+      }
+    }
+  },
+  "//ARTISANS": [
+    "Les commerces d'artisans (fiche I5a ; le moteur : js/engine/artisans.js ; la fenêtre : js/ui/commerce.js ; la fiche du",
+    "villageois : js/ui/villageois.js ; le tableau : js/ui/tableau.js). Un commerce est une pièce close (D5 : artisanal, sans",
+    "électricité) où sont posés l'établi de son métier (le bloc clé : etabli de COMMERCES) et un comptoir (COMPTOIR), avec",
+    "son enseigne posée dehors, à ENSEIGNE cases au plus d'une porte de la pièce. Un villageois y est nommé artisan, à la",
+    "place de sa tâche : sa journée de travail se passe à l'établi (la tâche du commerce : nom, icone, geste, emoji, PHRASES).",
+    "Ouvrir un commerce (D15) : trois conditions, puis la décision du joueur, un bouton sur la fiche du villageois. L'affinité :",
+    "l'amitié du villageois avec le joueur atteint le palier AMITIE (2 : « cordial »). L'envie : il la manifeste de lui-même,",
+    "une fois qu'il a fait JOURS jours la tâche de la filière (tache de COMMERCES ; les jours de travail comptés la nuit,",
+    "v.pratique) : sa bulle quand on lui parle (ENVIE), une marque sur sa fiche, une ligne à la chronique ; elle ne",
+    "s'éteint pas. Le local : une pièce close avec l'établi et le comptoir, et l'enseigne dehors. Rien n'est caché : la",
+    "fiche dit ce qui manque. À l'ouverture : son nom (la chronique, js/engine/noms.js), la ligne de la chronique, la fête de",
+    "l'ouverture (js/engine/fetes-village.js).",
+    "Son économie : chaque jour, LOTS lots (un lot : une recette de RECETTES faite une fois) ; un lot de plus tous les",
+    "ANCIENNETE jours de travail, jusqu'à LOTS_MAX (ni l'argent ni une machine ne le font monter). Il achète ses matières",
+    "au coffre de la ferme (l'inventaire du joueur), de sa bourse, au prix de vente de l'île : les pièces vont au joueur.",
+    "Il fait d'abord ce que le joueur lui a commandé (COMMANDES au plus en attente) : une pièce payée d'avance (son prix",
+    "de vente), ou à façon (le joueur apporte la matière et paie FACON % du prix de la pièce, au moins FACON_MIN pièces) ;",
+    "sa bourse vide, il ne travaille plus qu'à façon (et aux commandes payées). Sinon, il garnit son comptoir : la première",
+    "recette connue (dans l'ordre de RECETTES : il fond d'abord) dont il a moins de STOCK, dont il a les matières (son stock d'abord) et de quoi",
+    "les payer ; il garde au coffre GARDE de chaque matière (le joueur en a besoin). Il vend au comptoir : au joueur (la",
+    "fenêtre du commerce, au prix de vente), aux villageois (leur bourse : ce qu'ils aiment, et CLIENTS : ce dont ils ont",
+    "besoin, une lame d'outil tous les ENTRETIEN jours pour qui tient un outil ; un achat par jour, après le travail, au",
+    "comptoir), et au passage du bac, il lui confie ce qui dépasse BAC de chaque pièce qui se vend au port (sa bourse).",
+    "Ce qu'il fait, achète et vend s'écrit dans le journal du commerce (JOURNAL jours) ; le tableau des villageois en fait",
+    "une ligne « commerce ». L'amitié lui apprend de nouvelles pièces : une recette a son palier (palier : celui de",
+    "l'amitié avec le joueur). Ce que la forge fait, l'Atelier du joueur ne le fait plus une fois une forge ouverte (les",
+    "recettes de l'Atelier marquées commerce: forge, data/recipes.json) : sans forge, le joueur reste autonome.",
+    "PHRASES_COMPTOIR : ce que dit un villageois en arrivant au comptoir ({objet}). COMMERCES : chaque sorte, son nom,",
+    "son icône, son métier (métier : pour sa fiche), la tâche de la filière, l'établi et l'enseigne (des blocs de",
+    "data/recipes.json), ce que la tâche du commerce dit et montre, ENVIE (ce qu'il dit de son envie), SANS (ce que la fiche",
+    "dit quand le local n'est plus complet), un (la sorte dans une phrase : « une forge »), LOCAL (l'établi et l'enseigne dans une phrase, ce que la fiche dit qu'il manque), RECETTES ({ entrees, sortie, palier }) et CLIENTS ({ objet: 'outil' } : qui en",
+    "a besoin ; un vêtement ou un meuble qui lui manque, VILLAGE.BOURSE.BESOINS, l'est aussi au comptoir), PHRASES_COMPTOIR (les",
+    "siennes, sinon celles de tous). La mercerie (I5b), la scierie, la boulangerie et la fromagerie (I5c) n'ajoutent qu'une",
+    "sorte ici, leurs blocs et leurs dessins.",
+    "I5c, la règle commune : un commerce ne retire rien au joueur (il peut toujours scier, cuire, cailler lui-même) ; il",
+    "fait mieux ou autre chose, en petite quantité. Une recette d'un commerce peut aussi venir de VILLAGE.PRIX.ARTISANS",
+    "(celles qui y portent commerce : la sorte ; leur prix de l'île s'en déduit : les meubles du menuisier, les fromages ;",
+    "une recette de RECETTES l'emporte sur celle des prix qui a le même id).",
+    "Une recette peut porter : commande (true : il ne la fait que sur commande, pas pour garnir son comptoir), stock (ce",
+    "qu'il en garde au comptoir, à la place de STOCK), cave (des nuits d'affinage : le lot va à la cave, CAVE meules au",
+    "plus ; chaque nuit, ce qui a fini de s'affiner passe au comptoir, ou au joueur pour une commande), etape (I5b : filer,",
+    "tisser, coudre…) et teinte (I5b : TEINTURE). CLIENTS : « outil »",
+    "(une lame tous les ENTRETIEN jours pour qui tient un outil), « repas » (ce qu'il mangera, s'il n'a plus de provisions :",
+    "ce qu'il achète au boulanger ou au fromager compte dans ses repas et son bonheur), « maison » (un meuble dont sa",
+    "maison a besoin, VILLAGE.BOURSE.BESOINS). Le meuble que le joueur achète ou commande au menuisier entre dans sa maison",
+    "comme un meuble acheté (js/engine/meubles.js ajouterMeuble). ou : où il travaille, dans une phrase (« à l'enclume »).",
+    "PLAFOND : le nombre de commerces ouverts suit le village : le k-ième commerce attend VILLAGEOIS[k-1] villageois et le",
+    "port au niveau PORT[k-1] (au-delà des listes : plus de commerce) ; la fiche dit ce qui manque.",
+    "I5b : ce que le commerce fait",
+    "pour lui-même (une sortie qui est l'entrée d'une autre de ses recettes : le fil, le tissu) reste au comptoir pour son",
+    "travail : le bac ne l'emporte pas. DEUX (une sorte qui le permet) : quand le village a VILLAGEOIS villageois ou plus, un",
+    "second villageois qui a l'envie de ce commerce et l'amitié du joueur peut le rejoindre (le joueur le décide) ; chacun",
+    "fait ses lots (le double, sans machine), le titulaire les étapes TITULAIRE, le second les étapes SECOND (seul, le",
+    "titulaire les fait toutes) ; une bourse, celle du titulaire : la caisse du commerce."
+  ],
+  "ARTISANS": {
+    "AMITIE": 2,
+    "JOURS": 10,
+    "LOTS": 3,
+    "LOTS_MAX": 5,
+    "ANCIENNETE": 20,
+    "STOCK": 4,
+    "GARDE": 2,
+    "BAC": 1,
+    "FACON": 25,
+    "FACON_MIN": 2,
+    "COMMANDES": 3,
+    "JOURNAL": 7,
+    "ENSEIGNE": 2,
+    "ENTRETIEN": 7,
+    "COMPTOIR": "comptoir",
+    "CAVE": 6,
+    "PLAFOND": { "VILLAGEOIS": [1, 4, 6, 8, 10, 12], "PORT": [1, 2, 3, 3, 4, 5] },
+    "EMOJI": "🏪",
+    "PHRASES_COMPTOIR": [
+      "Pour moi : {objet}, s'il te plaît.",
+      "{objet} ! Voilà les pièces.",
+      "Pour mon outil : {objet}, s'il te plaît."
+    ],
+    "COMMERCES": {
+      "forge": {
+        "nom": "La forge", "un": "une forge", "icone": "⚒️", "metier": "forgeron", "tache": "pierre",
+        "etabli": "enclume_foyer", "enseigne": "enseigne_forge",
+        "LOCAL": { "etabli": "l'enclume et son foyer", "enseigne": "l'enseigne du forgeron" },
+        "geste": "forge", "emoji": "🔨", "ou": "à l'enclume",
+        "donne": "un lot à l'enclume : il fond un lingot, ou forge des clous, des charnières, une lame",
+        "SANS": "Le local de la forge n'est plus complet : l'enclume et le foyer, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "J'aimerais bien ouvrir une forge… le minerai, je le connais.",
+          "Une forge à moi, avec une enclume : j'y pense souvent.",
+          "Tout ce minerai… j'aimerais le fondre moi-même, dans une forge."
+        ],
+        "PHRASES": ["Je bats le fer tant qu'il est chaud !", "Encore un lingot, et je forge des clous.", "Le foyer ronfle bien aujourd'hui."],
+        "RECETTES": {
+          "lingot_fer": { "entrees": { "minerai_fer": 4, "bois": 3 }, "sortie": { "lingot_fer": 1 }, "palier": 2 },
+          "clous": { "entrees": { "lingot_fer": 1 }, "sortie": { "clous": 4 }, "palier": 2 },
+          "charniere": { "entrees": { "lingot_fer": 1 }, "sortie": { "charniere": 2 }, "palier": 3 },
+          "lame": { "entrees": { "lingot_fer": 1, "bois": 1 }, "sortie": { "lame": 1 }, "palier": 2 },
+          "lingot_cuivre": { "entrees": { "minerai_cuivre": 4, "bois": 3 }, "sortie": { "lingot_cuivre": 1 }, "palier": 3 },
+          "lingot_or": { "entrees": { "minerai_or": 4, "bois": 4 }, "sortie": { "lingot_or": 1 }, "palier": 4 },
+          "rails": { "entrees": { "lingot_fer": 1, "planche": 2, "pierre": 1 }, "sortie": { "rails": 8 }, "palier": 2, "commande": true }
+        },
+        "CLIENTS": { "lame": "outil" }
+      },
+      "scierie": {
+        "nom": "La scierie", "un": "une scierie", "icone": "🪚", "metier": "menuisier", "tache": "bois",
+        "etabli": "scie_long", "enseigne": "enseigne_scierie",
+        "LOCAL": { "etabli": "la scie de long et l'établi", "enseigne": "l'enseigne du menuisier" },
+        "geste": "scie", "emoji": "🪚", "ou": "à l'établi",
+        "donne": "un lot à l'établi : il scie des planches, ou fait un meuble (pour le comptoir, ou commandé)",
+        "SANS": "Le local de la scierie n'est plus complet : la scie de long et l'établi, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Tout ce bois… j'en ferais bien des planches, et des meubles, dans une scierie.",
+          "Une scierie à moi, avec un établi : une chaise, une table, un lit…",
+          "J'aimerais tant ouvrir une scierie : le bois, je le connais."
+        ],
+        "PHRASES": ["Une planche droite, une !", "Ce chêne fera une belle table.", "Ça sent bon la sciure, ici."],
+        "RECETTES": {
+          "planches": { "entrees": { "bois": 4 }, "sortie": { "planche": 2 }, "palier": 2 }
+        },
+        "CLIENTS": {
+          "meuble_chaise": "maison", "meuble_chevet": "maison", "meuble_table_basse": "maison", "meuble_tapis_1": "maison",
+          "meuble_tapis_2": "maison", "meuble_tapis_3": "maison", "meuble_commode": "maison", "meuble_bibliotheque": "maison"
+        }
+      },
+      "boulangerie": {
+        "nom": "La boulangerie", "un": "une boulangerie", "icone": "🥖", "metier": "boulanger", "tache": "champs",
+        "etabli": "four_boulanger", "enseigne": "enseigne_boulangerie",
+        "LOCAL": { "etabli": "le four à bois et l'étal à pains", "enseigne": "l'enseigne du boulanger" },
+        "geste": "cuisine", "emoji": "🍞", "ou": "au four à bois",
+        "donne": "une fournée au four à bois : deux pains, une tarte, un pain d'épices",
+        "SANS": "Le local de la boulangerie n'est plus complet : le four à bois, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Tout ce blé… j'en ferais bien du pain, dans un four à bois.",
+          "Une boulangerie à moi : l'odeur du pain chaud dès le matin !",
+          "J'aimerais ouvrir une boulangerie, pour nourrir tout le village."
+        ],
+        "PHRASES": ["Le four est chaud : la fournée arrive !", "Du bon pain pour tout le village.", "Encore une tarte, et je souffle un peu."],
+        "RECETTES": {
+          "pain": { "entrees": { "farine": 5 }, "sortie": { "pain": 2 }, "palier": 2, "stock": 6 },
+          "tarte_pommes": { "entrees": { "farine": 2, "pomme": 3, "oeuf": 1 }, "sortie": { "tarte_pommes": 1 }, "palier": 2, "stock": 2 },
+          "tarte_myrtilles": { "entrees": { "farine": 2, "myrtille": 4, "sucre": 1 }, "sortie": { "tarte_myrtilles": 1 }, "palier": 3, "stock": 2 },
+          "tarte_fraises": { "entrees": { "farine": 2, "fraise": 3, "oeuf": 1 }, "sortie": { "tarte_fraises": 1 }, "palier": 3, "stock": 2 },
+          "pain_epices": { "entrees": { "farine": 2, "miel": 1, "epices": 1 }, "sortie": { "pain_epices": 1 }, "palier": 4, "stock": 2 }
+        },
+        "CLIENTS": { "pain": "repas" }
+      },
+      "fromagerie": {
+        "nom": "La fromagerie", "un": "une fromagerie", "icone": "🧀", "metier": "fromager", "tache": "betes",
+        "etabli": "cave_affinage", "enseigne": "enseigne_fromagerie",
+        "LOCAL": { "etabli": "la cave d'affinage", "enseigne": "l'enseigne du fromager" },
+        "geste": "ramasse", "emoji": "🧀", "ou": "à la cave",
+        "donne": "un lot au chaudron : il caille du lait en faisselles, ou met une tomme en cave",
+        "SANS": "Le local de la fromagerie n'est plus complet : la cave d'affinage, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Tout ce lait… j'en ferais bien des fromages, dans une cave à moi.",
+          "Une fromagerie, avec ses meules qui s'affinent en cave : j'y pense souvent.",
+          "J'aimerais ouvrir une fromagerie : le lait, je le connais."
+        ],
+        "PHRASES": ["Une tomme de plus en cave !", "Il faut les retourner chaque jour, mes meules.", "Le caillé prend bien ce matin."],
+        "RECETTES": {},
+        "CLIENTS": { "faisselle": "repas" }
+      },
+      "mercerie": {
+        "nom": "La mercerie", "un": "une mercerie", "icone": "🧶", "metier": "mercier", "tache": "betes",
+        "etabli": "rouet_metier", "enseigne": "enseigne_mercerie",
+        "LOCAL": { "etabli": "le rouet et le métier à tisser", "enseigne": "l'enseigne de la mercerie" },
+        "geste": "filer", "emoji": "🧶", "ou": "au rouet et au métier",
+        "donne": "un lot au rouet ou au métier : il file la laine, tisse le fil, coud un vêtement (teint s'il a un colorant) ou un tapis",
+        "SANS": "Le local de la mercerie n'est plus complet : le rouet et le métier à tisser, le comptoir dans la pièce, l'enseigne dehors.",
+        "ENVIE": [
+          "Toute cette laine… j'aimerais la filer moi-même, dans une mercerie.",
+          "Un rouet, un métier à tisser, un comptoir : une mercerie à moi, j'y pense souvent.",
+          "Je tonds les moutons ; je voudrais aussi coudre les manteaux du village."
+        ],
+        "PHRASES": ["Le rouet tourne, le fil vient tout seul.", "Encore une pièce de tissu, et je couds un manteau.", "Une belle laine, bien filée !"],
+        "PHRASES_COMPTOIR": [
+          "Pour moi : {objet}, s'il te plaît.",
+          "{objet} ! Voilà les pièces.",
+          "Pour l'hiver : {objet}, s'il te plaît."
+        ],
+        "RECETTES": {
+          "manteau_chaud": { "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "palier": 2, "etape": "coudre", "teinte": true },
+          "salopette": { "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "palier": 3, "etape": "coudre", "teinte": true },
+          "tissu": { "entrees": { "fil": 2 }, "sortie": { "tissu": 1 }, "palier": 2, "etape": "tisser" },
+          "fil": { "entrees": { "laine": 2 }, "sortie": { "fil": 2 }, "palier": 2, "etape": "filer" },
+          "gants_travail": { "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "palier": 2, "etape": "coudre", "teinte": true },
+          "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 }, "palier": 2, "etape": "coudre", "teinte": true },
+          "meuble_tapis_2": { "entrees": { "tissu": 2, "colorant_rouge": 1 }, "sortie": { "meuble_tapis_2": 1 }, "palier": 3, "etape": "coudre" },
+          "meuble_tapis_3": { "entrees": { "tissu": 2, "colorant_bleu": 1 }, "sortie": { "meuble_tapis_3": 1 }, "palier": 3, "etape": "coudre" }
+        },
+        "DEUX": { "VILLAGEOIS": 6, "TITULAIRE": ["filer", "tisser"], "SECOND": ["coudre"] }
+      }
+    },
+    "//TEINTURE": [
+      "La teinture (fiche I5b ; js/engine/artisans.js) : une recette marquée teinte (un vêtement de la mercerie) prend un colorant",
+      "de plus quand l'artisan en a un (son stock, sinon le coffre de la ferme au-delà de GARDE, acheté de sa bourse comme le",
+      "reste) : celui qu'il a le plus, à égalité dans l'ordre de COULEURS. Aucune matière nouvelle : les six colorants du",
+      "mortier. La pièce teinte se garde au comptoir avec sa couleur (c.teintes) et vaut son prix plus COEF % de celui du",
+      "colorant. Le joueur achète les pièces sans teinte (la famille n'a pas de vêtements de couleur) ; un villageois qui",
+      "achète un vêtement de corps teint (le manteau, la salopette, le tablier) le porte : le haut de sa tenue prend le tissu",
+      "`tissu` (les couleurs des tenues, data/general.json FAMILLE.PROFIL.APPARENCE.TISSU, aux tons exacts des personnages).",
+      "`palette` : la rampe de data/meubles.json PALETTES qui peint l'écheveau de cette couleur sur le métier (null : celles",
+      "des colorants sans rampe de tissu, dessinées à part) ; `point` : la pastille de la couleur dans la fenêtre du commerce."
+    ],
+    "TEINTURE": {
+      "COEF": 145,
+      "CORPS": ["manteau_chaud", "salopette", "tablier"],
+      "COULEURS": {
+        "rouge": { "colorant": "colorant_rouge", "nom": "rouge", "tissu": "rouge", "palette": "tissu_rouge", "point": "#c0564e" },
+        "orange": { "colorant": "colorant_orange", "nom": "orange", "tissu": "orange", "palette": null, "point": "#e8862e" },
+        "jaune": { "colorant": "colorant_jaune", "nom": "jaune", "tissu": "jaune", "palette": "tissu_moutarde", "point": "#dcb850" },
+        "vert": { "colorant": "colorant_vert", "nom": "vert", "tissu": "vert", "palette": "tissu_vert", "point": "#70a86e" },
+        "bleu": { "colorant": "colorant_bleu", "nom": "bleu", "tissu": "ciel", "palette": "tissu_bleu", "point": "#6a8ec4" },
+        "violet": { "colorant": "colorant_violet", "nom": "violet", "tissu": "lilas", "palette": null, "point": "#9c6ed6" }
+      }
+    },
+    "//CHAUD": "Un villageois qui a un manteau chaud (CHAUD, dans ses affaires : acheté à l'étal ou au comptoir) ne s'abrite pas sous la pluie : il reste à son poste dehors (js/engine/villageois-journee.js sousLaPluie).",
+    "CHAUD": ["manteau_chaud"]
+  },
+  "//TRAITS": [
+    "Les traits de personnalité (fiche I6c ; le moteur : js/engine/traits.js ; la journée : js/engine/villageois-journee.js ;",
+    "la fiche : js/ui/villageois.js ; le tableau : js/ui/tableau.js). Chaque villageois a NOMBRE[0] ou NOMBRE[1] traits",
+    "(le second une fois sur TROIS), tirés de la graine de la partie et de son rang d'arrivée, jamais deux opposés",
+    "(oppose), et deux villageois n'ont pas la même liste. Un trait ne fait rien qui ne soit un réglage ci-dessous :",
+    "HORAIRE : un décalage, en heures, du lever (LEVER), de la sortie (SORTIE), des repas (MIDI, REPRISE, SOUPER : la",
+    "durée du repas), de la rentrée (VEILLEE), du coucher (COUCHER), qui s'ajoute au retard de chacun (VILLAGE.HORAIRE.DECALE) ;",
+    "FLANER : ce qui s'ajoute à la chance de flâner, le matin et l'après-midi ; CHEZ_LUI : la chance de rester chez",
+    "lui à un créneau libre ; TRAVAIL : DEBUT et FIN déplacent le début de sa première plage et la fin de sa dernière",
+    "(TACHES.TRAVAIL), PAUSE s'ajoute à ses pauses (le nombre d'actions ne change pas) ; BUTS : un facteur sur le poids",
+    "des buts de ses sorties (SOCIAL.BUTS.POIDS : visite, rdv, promenade, banc, eau, voir, port) ; SOIR : un facteur sur",
+    "la chance de la visite du soir (LIENS.SOIR.CHANCE) ; PAROLE : PART, un facteur sur la chance de dire un sujet du",
+    "moment (AMITIE.PROPOS_PART), BREF (sa bulle ne dit ni le salut ni son humeur) ; PROPOS : un facteur sur le poids des sujets",
+    "(VILLAGE.PROPOS ; « lune_* » : tous ceux qui commencent ainsi) ; PHRASES : ce qu'il dit de lui (une bulle ; {e} :",
+    "son accord, {plat} : un plat qu'il aime) ; REPLIQUES : des répliques à deux quand il croise un autre villageois",
+    "(la première est de lui ; {prenom}, {e} : ceux de l'autre, puis les siens) ; SCENE : CAUSE, un facteur sur la durée",
+    "d'un salut et la cadence d'une causerie (le plus grand des deux), EMOJI, son émotion quand il dit une de ses",
+    "répliques ; POSTE : la tâche où il est bien (« aime ») et celle qu'il boude (« boude ») ; une tâche qu'un trait",
+    "aime et qu'un autre boude ne compte pas ; SIGNE : ce qu'on le voit faire (etats, buts, heures : des plages [de, à]) ; nom :",
+    "[au féminin, au masculin] ; icone ; dit : ce qui le montre, pour la fiche.",
+    "POSTES : à la tâche qu'il aime, s'il y a travaillé ce jour-là, sa cible de bonheur monte de AIME ; à celle qu'il",
+    "boude, elle baisse de BOUDE (pas pour un ami proche du joueur : VILLAGE.AMITIE.TACHE_SANS_HUMEUR) ; le bonheur ne",
+    "baisse jamais (B-1) et le rendement ne change pas. ACCORDS : des paires de traits qui s'accordent ; chaque nuit,",
+    "deux villageois gagnent ACCORD.GAIN d'affinité de plus par paire accordée (ACCORD.MAX au plus ; VILLAGE.LIENS) ;",
+    "aucune ne fait baisser l'affinité. PAROLE : quand on lui parle, une fois sur CHANCE il dit une de ses PHRASES",
+    "(plutôt d'un trait qu'on ne connaît pas encore) ; au travail, à la tâche qu'il aime ou boude, une fois sur deux,",
+    "une phrase de POSTE ; un villageois qui en croise un autre dit une de ses REPLIQUES une fois sur REPLIQUE. DECOUVERTE : les traits ne s'affichent pas d'emblée (la fiche dit « ? ») ; un trait se",
+    "révèle quand on l'a vu faire ce qui le montre (son SIGNE, dans la vue) VU jours, ou l'a entendu en parler DIT",
+    "fois ; il se note alors dans sa fiche (et, sur la tâche qu'il aime ou boude, le tableau le marque)."
+  ],
+  "TRAITS": {
+    "NOMBRE": [2, 3],
+    "TROIS": 0.5,
+    "DECOUVERTE": { "VU": 3, "DIT": 2 },
+    "PAROLE": {
+      "CHANCE": 0.3, "REPLIQUE": 0.3,
+      "POSTE": {
+        "aime": ["Ce travail-là, c'est tout à fait pour moi !", "Je suis bien, à ce poste. Merci de me l'avoir confié.", "Je ne vois pas le temps passer, ici."],
+        "boude": ["Ce n'est pas mon travail préféré… mais je m'y mets.", "Bon. Il faut bien que quelqu'un le fasse !", "J'aurais préféré autre chose, mais ça ira."]
+      }
+    },
+    "POSTES": { "AIME": 6, "BOUDE": 3 },
+    "ACCORD": { "GAIN": 1, "MAX": 2 },
+    "ACCORDS": [
+      ["matinal", "matinal"], ["matinal", "travailleur"], ["couche_tard", "couche_tard"], ["couche_tard", "reveur"],
+      ["bavard", "bavard"], ["bavard", "taquin"], ["bavard", "curieux"], ["reserve", "reveur"], ["reserve", "soigneux"],
+      ["travailleur", "soigneux"], ["flaneur", "reveur"], ["flaneur", "gourmand"], ["casanier", "casanier"],
+      ["casanier", "gourmand"], ["curieux", "curieux"], ["gourmand", "gourmand"], ["taquin", "taquin"]
+    ],
+    "LISTE": {
+      "matinal": {
+        "nom": ["matinale", "matinal"], "icone": "🌅", "oppose": "couche_tard", "dit": "dehors avant tout le monde, au petit matin",
+        "HORAIRE": { "LEVER": -0.5, "SORTIE": -1, "SOUPER": -0.25, "VEILLEE": -0.5, "COUCHER": -0.75 },
+        "POSTE": { "champs": "aime", "cuisine": "boude" },
+        "SIGNE": { "etats": ["dehors", "flaner", "travail"], "heures": [[6, 7.5]] },
+        "PROPOS": { "meteo_brume": 2 },
+        "PHRASES": [
+          "Je suis dehors avant le coq, moi. C'est le meilleur moment de la journée !",
+          "À l'aube, l'île est toute à moi : la rosée, le silence…",
+          "Tôt levé{e}, tôt couché{e} : c'est ma devise.",
+          "Tu as vu le soleil se lever, ce matin ? Non ? Dommage !"
+        ]
+      },
+      "couche_tard": {
+        "nom": ["couche-tard", "couche-tard"], "icone": "🌙", "oppose": "matinal", "dit": "encore à table quand les autres sont rentrés",
+        "HORAIRE": { "LEVER": 0.5, "SORTIE": 0.5, "SOUPER": 0.5, "VEILLEE": 0.75, "COUCHER": 0.5 },
+        "SOIR": 2,
+        "POSTE": { "peche": "aime", "champs": "boude" },
+        "SIGNE": { "etats": ["repas"], "heures": [[20, 22]] },
+        "PROPOS": { "lune_*": 2 },
+        "PHRASES": [
+          "Le matin, ne me parle pas avant mon café…",
+          "Le soir, je suis bien plus réveillé{e} que le matin !",
+          "Je regarde les étoiles bien après que tout le monde dort.",
+          "Encore une petite veillée, et au lit. Enfin… peut-être."
+        ]
+      },
+      "bavard": {
+        "nom": ["bavarde", "bavard"], "icone": "💬", "oppose": "reserve", "dit": "toujours en train de causer avec quelqu'un",
+        "BUTS": { "visite": 1.5, "rdv": 1.6 },
+        "PAROLE": { "PART": 2 },
+        "SCENE": { "CAUSE": 1.6, "EMOJI": "😄" },
+        "POSTE": { "navette": "aime", "peche": "boude" },
+        "SIGNE": { "buts": ["visite", "rdv", "promenade", "banc"] },
+        "PROPOS": { "village_ami": 2, "village_voisin": 2, "voisin": 2, "lien_ami": 2, "visite_recue": 2, "visite_faite": 2 },
+        "PHRASES": [
+          "Tu sais la dernière ? Non ? Alors écoute bien…",
+          "Je parlerais des heures, moi. D'ailleurs, je parle des heures !",
+          "Ici, tout le monde se connaît. Un peu grâce à moi !",
+          "J'ai croisé tout le village ce matin, et j'ai causé avec chacun."
+        ],
+        "REPLIQUES": [
+          ["{prenom} ! Tu ne devineras jamais ce que j'ai vu ce matin…", "Raconte, raconte !"],
+          ["Attends, je ne t'ai pas tout dit !", "Toujours une histoire, toi !"],
+          ["Tu as cinq minutes ? Enfin… dix ?", "Pour toi, toujours."]
+        ]
+      },
+      "reserve": {
+        "nom": ["réservée", "réservé"], "icone": "🤫", "oppose": "bavard", "dit": "souvent seul{e}, un peu à l'écart",
+        "BUTS": { "visite": 0.6, "rdv": 0.5, "voir": 1.5, "eau": 1.3 },
+        "PAROLE": { "PART": 0.4, "BREF": true },
+        "SCENE": { "CAUSE": 0.6 },
+        "POSTE": { "peche": "aime", "navette": "boude" },
+        "SIGNE": { "buts": ["eau", "jardin", "betes", "ouvrage"] },
+        "PHRASES": [
+          "Je parle peu. Mais j'écoute beaucoup.",
+          "Le calme me va bien.",
+          "… Bonjour. Belle journée, oui.",
+          "Pas besoin de mots pour être bien ensemble."
+        ],
+        "REPLIQUES": [
+          ["Bonjour, {prenom}.", "Toujours aussi discret{e} !"],
+          ["…", "Toi, tu es dans tes pensées."],
+          ["Hm. Belle journée.", "Oui, très belle !"]
+        ]
+      },
+      "travailleur": {
+        "nom": ["travailleuse", "travailleur"], "icone": "💪", "oppose": "flaneur", "dit": "à son poste avant et après les autres",
+        "HORAIRE": { "SORTIE": -0.25 },
+        "FLANER": [-0.1, -0.15],
+        "TRAVAIL": { "DEBUT": -0.5, "FIN": 0.5, "PAUSE": -1 },
+        "POSTE": { "bois": "aime", "cueillette": "boude" },
+        "SIGNE": { "etats": ["travail"], "heures": [[7.5, 8], [16.5, 17]] },
+        "PHRASES": [
+          "Une journée sans ouvrage, c'est une journée perdue !",
+          "J'aime quand le travail est bien fait. Et fini avant l'heure !",
+          "Je me mets au travail avant les autres : j'aime prendre de l'avance."
+        ]
+      },
+      "flaneur": {
+        "nom": ["flâneuse", "flâneur"], "icone": "🍃", "oppose": "travailleur", "dit": "à flâner sur un banc ou sur la place",
+        "HORAIRE": { "SORTIE": 0.25 },
+        "FLANER": [0.2, 0.2],
+        "TRAVAIL": { "PAUSE": 1 },
+        "BUTS": { "banc": 1.6, "promenade": 1.5 },
+        "POSTE": { "cueillette": "aime", "pierre": "boude" },
+        "SIGNE": { "etats": ["flaner"] },
+        "PHRASES": [
+          "Rien ne presse : l'île ne va pas s'envoler.",
+          "Un banc, un rayon de soleil… que demander de plus ?",
+          "Je prends le temps de regarder. Le travail attendra un peu."
+        ]
+      },
+      "casanier": {
+        "nom": ["casanière", "casanier"], "icone": "🏠", "oppose": "curieux", "dit": "chez soi en pleine journée",
+        "HORAIRE": { "VEILLEE": -0.25 },
+        "CHEZ_LUI": 0.3,
+        "BUTS": { "voir": 0.4, "port": 0, "promenade": 0.6 },
+        "POSTE": { "cuisine": "aime", "navette": "boude" },
+        "SIGNE": { "etats": ["rentrer"], "heures": [[8, 18]] },
+        "PROPOS": { "foyer": 2, "voisin": 2, "ferme_maison": 1.5 },
+        "PHRASES": [
+          "On n'est jamais si bien que chez soi.",
+          "Ma maison, c'est mon petit monde. J'y suis bien.",
+          "Sortir ? Oui… mais pas trop loin de ma porte."
+        ]
+      },
+      "curieux": {
+        "nom": ["curieuse", "curieux"], "icone": "🔍", "oppose": "casanier", "dit": "à regarder partout : le jardin, les bêtes, ce qu'on bâtit",
+        "BUTS": { "voir": 2.2, "port": 3 },
+        "POSTE": { "navette": "aime", "cuisine": "boude" },
+        "SIGNE": { "buts": ["jardin", "betes", "ouvrage", "port"] },
+        "PROPOS": { "ferme_maison": 2, "port_bac": 3, "village_nouveau": 3 },
+        "PHRASES": [
+          "Qu'est-ce que tu bâtis, là ? Raconte-moi tout !",
+          "Je suis allé{e} voir ce qu'il y a derrière les arbres.",
+          "Le bac amène toujours des nouvelles. J'adore ça !",
+          "Je veux tout voir de l'île : chaque coin, chaque bête."
+        ],
+        "REPLIQUES": [
+          ["{prenom}, tu as vu ce qu'on bâtit près du puits ?", "Pas encore ! Montre-moi."],
+          ["Qu'est-ce que tu fais de beau, {prenom} ?", "Rien de bien neuf, curieux{e} !"]
+        ]
+      },
+      "gourmand": {
+        "nom": ["gourmande", "gourmand"], "icone": "🍰", "dit": "à table avant les autres",
+        "HORAIRE": { "MIDI": -0.5, "REPRISE": 0.25 },
+        "POSTE": { "cuisine": "aime", "fauchage": "boude" },
+        "SIGNE": { "etats": ["repas"], "heures": [[11.5, 12]] },
+        "PROPOS": { "gout_connu": 3, "ferme_cultures": 2, "ferme_poules": 2, "cadeau_merci": 2 },
+        "PHRASES": [
+          "Je rêve d'un bon plat : {plat}, rien que d'y penser…",
+          "Tu sens ? Quelqu'un cuisine quelque part. Miam !",
+          "Le meilleur moment de la journée ? Le repas, bien sûr !",
+          "Si tu fais {plat}, garde-m'en une part !"
+        ],
+        "REPLIQUES": [
+          ["Ça sent bon chez toi, {prenom}. Tu cuisines quoi ?", "Viens goûter, si tu veux !"],
+          ["Tu as déjà mangé ? Moi, j'ai encore faim.", "Toi, alors !"]
+        ]
+      },
+      "reveur": {
+        "nom": ["rêveuse", "rêveur"], "icone": "☁️", "dit": "le nez dans les nuages",
+        "FLANER": [0.1, 0.15],
+        "BUTS": { "voir": 1.4 },
+        "POSTE": { "verger": "aime", "pierre": "boude" },
+        "PROPOS": { "lune_*": 3, "meteo_*": 2, "mois": 2 },
+        "PHRASES": [
+          "Tu crois que les nuages ont des noms ?",
+          "Parfois, je regarde la mer et j'oublie l'heure.",
+          "La nuit, la lune a l'air de veiller sur l'île."
+        ]
+      },
+      "soigneux": {
+        "nom": ["soigneuse", "soigneux"], "icone": "🧹", "dit": "attentif à tout ce qui l'entoure",
+        "POSTE": { "betes": "aime", "bois": "boude" },
+        "PROPOS": { "ferme_cultures": 2, "ferme_maison": 2, "ferme_verger": 2 },
+        "PHRASES": [
+          "Chaque chose à sa place, et l'île est plus belle.",
+          "J'ai rangé mes outils trois fois ce matin. Bien rangés !",
+          "Un travail soigné, ça se voit de loin."
+        ]
+      },
+      "taquin": {
+        "nom": ["taquine", "taquin"], "icone": "😜", "dit": "toujours une blague en réserve",
+        "SCENE": { "CAUSE": 1.2, "EMOJI": "😜" },
+        "POSTE": { "fauchage": "aime", "verger": "boude" },
+        "PROPOS": { "village_ami": 2, "village_collegue": 2 },
+        "PHRASES": [
+          "Attention, une abeille ! … Mais non, je te taquine.",
+          "Les autres disent que je suis taquin{e}. Moi ? Jamais !",
+          "Tu cours toujours partout ! Tu vas finir par t'envoler."
+        ],
+        "REPLIQUES": [
+          ["Tiens, {prenom} ! Tu t'es coiffé{e} avec un râteau ?", "Très drôle…"],
+          ["Je t'ai vu{e} bâiller au travail !", "Même pas vrai !"],
+          ["{prenom}, tu as un brin d'herbe dans les cheveux. Ha, non !", "Toi alors !"]
+        ]
+      }
+    }
+  },
+  "//PORT": [
+    "Le port (fiche I1a) : avec l'abri, le seul bâtiment de l'île au début d'une partie. Un quai de planches sur",
+    "la mer, une cale de pierre à côté de lui, une halle ouverte (un toit sur quatre poteaux, un comptoir, une",
+    "balance) au bord de l'eau, au bout de l'île, relié à la sortie de la ferme par un chemin. Le monde de la",
+    "partie le reçoit dans son cadre (cadre.PORT : le",
+    "niveau du port), et le plan le place (js/engine/monde-gen.js, elementsDuMonde, après tous les autres lieux :",
+    "ils ne bougent pas) ; le bâti se fait avec les hameaux (js/engine/monde-hameaux.js, planPort).",
+    "NOM : son nom (le panneau, la carte du monde, la boussole). NIVEAU_DEPART : le niveau d'une partie neuve",
+    "(state.port.niveau ; les suivants se paient : NIVEAUX, fiche I1c).",
+    "PLAN : l'emplacement. Une case de terre (plage, prairie, lande) au bord de la mer, d'où un quai de QUAI",
+    "cases (celui du niveau 5) avance droit vers le sud ou vers l'est, sur LARGEUR cases de large, l'eau libre",
+    "sur EAU cases de chaque côté au-delà des deux premières cases et deux cases plus loin que son bout ; la terre",
+    "derrière pour la halle (HALLE : largeur, profondeur, en cases) et ses abords. Entre FERME et LOIN cases de la",
+    "ferme (à vol d'oiseau, depuis son bord : l'aller reste court ; sans côte dans cette fenêtre, au-delà), HAMEAU d'un hameau, LIEUX des autres lieux (coins de pêche, grottes, lieux du récit, secrets). On",
+    "y va à pied depuis la sortie de la ferme sans passer la montagne (le chemin la contourne) et pour PRIX_MAX",
+    "au plus (la somme des prix des pas, PLAN_MONDE.CHEMINS.COUTS) ; parmi ces cases (une sur PAS de chaque",
+    "côté), parmi les ESSAIS côtes les plus proches dont le chemin se trouve, celle au chemin le plus court. Si aucune côte",
+    "ne convient (trop découpée, trop de lieux), l'eau libre de côté puis la distance aux lieux se relâchent.",
+    "NIVEAUX : du niveau 1 au niveau 5, la longueur du quai et ce que le niveau ajoute (le niveau 1 : le quai",
+    "court, la halle, sa cale, son panneau et ses deux lanternes ; ensuite des caisses, des tonneaux, le mât à",
+    "fanion, un quai plus long) ; fiche I1c : commandes (combien le bac en apporte à chaque passage) et prix (ce que",
+    "coûte d'y passer : des pièces, payées au comptoir, et des matériaux apportés sur place, au chantier du port :",
+    "on les y porte, en une ou plusieurs fois, puis on paie ; le niveau 1 est celui du départ, sans prix). Chaque",
+    "niveau ouvre aussi un rang du catalogue d'import (IMPORT.RANGS) et accueille plus de villageois",
+    "(VILLAGE.ARRIVEE.PLAFOND).",
+    "SORTES : les dessins du port (scripts/carte/port.py), rangés à la suite de ceux des hameaux dans leur",
+    "planche (assets/hameaux.png : HAMEAUX.SORTES puis celles-ci ; à n'allonger qu'à la fin), même forme que",
+    "HAMEAUX.SORTES ; le quai et la cale sont du genre « ponton » (sur l'eau, sous ce qui marche dessus).",
+    "BLOQUE : celles qui ferment leur case à la marche (le quai et la cale s'ouvrent).",
+    "LANTERNE : la lumière des lanternes, le soir (js/carte/ferme/hameaux.js) : une flaque au sol, la lueur de",
+    "la vitre (rayon, aplati, teinte, alpha, dx et dy px depuis le pied), comme le réverbère de la ferme.",
+    "Le commerce (fiche I1b, js/engine/port.js ; la fenêtre : js/ui/port.js) : au comptoir de la halle, on vend",
+    "tout ce qui se vendait à la calèche, au même prix, et on achète les semences débloquées, à leur cours",
+    "(js/engine/market.js) ; la calèche ne commerce plus. PORTEE : à combien de cases au plus d'une case du comptoir",
+    "le personnage commerce (toute la halle). HEURES : l'heure d'ouverture et celle de fermeture du comptoir (de 6 h,",
+    "le réveil, à 21 h). ICONE : celle du port (la fenêtre, le menu, les messages). ELEMENT : ce que l'écran d'un",
+    "niveau dit du commerce qu'il ouvre (à la place de NIVEAUX.ELEMENTS.marche, la calèche).",
+    "Le bac (fiche I1c, js/engine/bac.js ; la scène : js/carte/ferme/bac.js) : il accoste tous les BAC.PERIODE jours",
+    "(les jours multiples de PERIODE), de BAC.HEURES[0] à BAC.HEURES[1] h, le long du bout du quai ; sa venue se",
+    "déduit du jour (rien n'est simulé pas à pas) : la page, la nuit ou un appel du moteur rattrapent les passages",
+    "manqués, RATTRAPAGE au plus (les plus récents ; les imports attendus arrivent au premier). Il emporte tout ce",
+    "qui a été vendu au port depuis son dernier départ : la scène le montre en caisses sur le quai (une caisse par",
+    "CAISSE volumes vendus, CAISSES_MAX au plus), qui partent avec lui ; il n'y a ni quota ni entrepôt. ARRIVEE_S :",
+    "les secondes de son arrivée et de son départ, dans la scène (il glisse depuis le large). C'est lui qui apporte",
+    "les imports, les commandes et les nouveaux villageois (VILLAGE.ARRIVEE).",
+    "COMMANDES : à chaque passage, NIVEAUX[niveau].commandes demandes tirées de la graine et du jour parmi ce que le",
+    "joueur sait produire (les cultures qu'il a récoltées, les plats qu'il a préparés, les œufs, la laine et le lait",
+    "de ses bêtes) : un objet, une quantité (de quoi valoir VALEUR[niveau − 1] pièces, à ± ECART %, entre QUANTITE[0]",
+    "et QUANTITE[1]), une prime (de PRIME[0] à PRIME[1] %, par pas de 5). Valables jusqu'au passage suivant ; on",
+    "les honore au comptoir avec ce qu'on a porté (le portage, fiche I2) : le prix de vente, plus la prime, plus XP",
+    "points d'expérience. Manquée, elle s'efface sans rien coûter.",
+    "IMPORT : le catalogue de ce que le bac apporte. RANGS[k] : ce qu'ouvre le niveau k + 1 du port ; chaque article",
+    "a son prix (pour un lot de `lot` unités) : un objet (objet : des jeunes arbres, des plants de vigne, les",
+    "espèces de la serre, le sucre et les épices, les graines de fleurs rares), une bête (bete : elle va au",
+    "Poulailler ou à l'Étable ; sans place à sa livraison, son prix est rendu) ou un plan d'objet (plan : appris à sa",
+    "livraison). Ce que le niveau du joueur débloquait le reste (un jeune arbre : le Verger ; une culture : son",
+    "déblocage ; une bête : son bâtiment) : le catalogue ajoute la condition du port. Ces articles ne s'achètent plus",
+    "tout de suite au comptoir. Une commande d'import se paie d'avance et arrive au passage suivant du bac (elle va",
+    "droit à la ferme). Les plants sauvages rapportés de l'île (fiche I7e : inscrireSauvage) s'y inscrivent une fois",
+    "cultivés, au rang SAUVAGES.RANG, au prix de vente fois SAUVAGES.MARGE %, par lot de SAUVAGES.LOT."
+  ],
+  "PORT": {
+    "NOM": "Le port",
+    "ICONE": "⚓",
+    "NIVEAU_DEPART": 1,
+    "PORTEE": 3,
+    "HEURES": [6, 21],
+    "ELEMENT": { "nom": "Le port", "icone": "⚓", "note": "au comptoir de la halle, au bout du chemin : vends tes récoltes, achète des graines" },
+    "PLAN": { "QUAI": 12, "LARGEUR": 2, "EAU": 3, "HALLE": [6, 4], "FERME": 80, "LOIN": 100, "HAMEAU": 26, "LIEUX": 12, "PRIX_MAX": 2400, "PAS": 2, "ESSAIS": 8 },
+    "NIVEAUX": [
+      { "quai": 8, "ajoute": ["halle", "comptoir", "balance", "cale", "panneau", "lanternes"], "commandes": 2 },
+      { "quai": 9, "ajoute": ["caisses"], "commandes": 3,
+        "prix": { "pieces": 1800, "planche": 24, "pierre": 16 } },
+      { "quai": 10, "ajoute": ["tonneaux", "mat"], "commandes": 3,
+        "prix": { "pieces": 5000, "planche": 40, "pierre": 30, "lingot_fer": 6 } },
+      { "quai": 11, "ajoute": ["caisses_terre"], "commandes": 4,
+        "prix": { "pieces": 11000, "planche": 60, "pierre": 40, "lingot_fer": 12 } },
+      { "quai": 12, "ajoute": ["tonneaux_terre"], "commandes": 5,
+        "prix": { "pieces": 24000, "planche": 80, "pierre": 60, "lingot_fer": 20, "lingot_cuivre": 10 } }
+    ],
+    "BAC": { "PERIODE": 3, "HEURES": [9, 17], "RATTRAPAGE": 3, "CAISSE": 12, "CAISSES_MAX": 4, "ARRIVEE_S": 7 },
+    "COMMANDES": { "VALEUR": [50, 90, 150, 230, 340], "ECART": 30, "QUANTITE": [2, 40], "PRIME": [25, 60], "XP": 15 },
+    "IMPORT": {
+      "RANGS": [
+        [
+          { "objet": "jeune_pommier", "prix": 50 }, { "objet": "jeune_poirier", "prix": 50 }, { "objet": "jeune_cerisier", "prix": 60 },
+          { "objet": "jeune_abricotier", "prix": 55 }, { "objet": "jeune_pecher", "prix": 55 }, { "objet": "plant_vigne", "prix": 30, "lot": 4 }
+        ],
+        [
+          { "objet": "cacao", "prix": 40, "lot": 2 }, { "objet": "vanille", "prix": 70, "lot": 2 }, { "objet": "cafe", "prix": 30, "lot": 2 },
+          { "objet": "sucre", "prix": 24, "lot": 10 }, { "objet": "epices", "prix": 34, "lot": 10 }
+        ],
+        [
+          { "bete": "poule", "prix": 60 }, { "bete": "mouton", "prix": 160 }, { "bete": "vache", "prix": 260 }
+        ],
+        [
+          { "plan": "banc_rondins", "prix": 300 }, { "plan": "table_rondins", "prix": 300 }, { "plan": "chaise_peinte", "prix": 320 },
+          { "plan": "jarre_coquillages", "prix": 360 }, { "plan": "lanterne_papier", "prix": 380 }, { "plan": "bassin", "prix": 520 },
+          { "plan": "banc_pierre", "prix": 420 }, { "plan": "jardiniere_pierre", "prix": 420 }, { "plan": "pergola", "prix": 600 }
+        ],
+        [
+          { "objet": "graine_lavande", "prix": 40, "lot": 5 }, { "objet": "graine_coquelicot", "prix": 30, "lot": 5 },
+          { "objet": "graine_pavot", "prix": 30, "lot": 5 }, { "objet": "graine_myosotis", "prix": 30, "lot": 5 },
+          { "objet": "graine_lupin", "prix": 35, "lot": 5 }
+        ]
+      ],
+      "SAUVAGES": { "RANG": 5, "MARGE": 300, "LOT": 3 }
+    },
+    "SORTES": [
+      { "nom": "quai", "genre": "ponton", "variantes": 12 },
+      { "nom": "cale_port", "genre": "ponton", "variantes": 2 },
+      { "nom": "poteau_halle", "genre": "objet", "variantes": 1 },
+      { "nom": "comptoir", "genre": "meuble", "variantes": 1, "largeur": 3 },
+      { "nom": "balance", "genre": "objet", "variantes": 1 },
+      { "nom": "caisses", "genre": "objet", "variantes": 2 },
+      { "nom": "tonneaux", "genre": "objet", "variantes": 2 },
+      { "nom": "mat_fanion", "genre": "objet", "variantes": 1 },
+      { "nom": "panneau_port", "genre": "objet", "variantes": 1 },
+      { "nom": "lanterne_port", "genre": "objet", "variantes": 3 },
+      { "nom": "bac_port", "genre": "objet", "variantes": 2 },
+      { "nom": "passerelle_port", "genre": "ponton", "variantes": 2 },
+      { "nom": "caisses_bac", "genre": "objet", "variantes": 3 }
+    ],
+    "BLOQUE": ["poteau_halle", "comptoir", "balance", "caisses", "tonneaux", "mat_fanion", "panneau_port", "lanterne_port"],
+    "LANTERNE": {
+      "sol": { "rayon": 46, "aplati": 0.7, "teinte": 16761968, "alpha": 0.9, "dx": 0, "dy": -4 },
+      "vitre": { "rayon": 11, "teinte": 16769704, "alpha": 0.95, "dx": 0, "dy": -27 }
+    }
+  },
+  "//VOCATIONS": [
+    "Les vocations de l'île (fiches I8a et I8b ; le socle : js/engine/vocations.js). Une vocation n'est pas un choix dans un",
+    "menu : c'est un score entier, calculé chaque fois de l'état de la partie, qui sort de ce que le joueur bâtit ; deux",
+    "vocations montent ensemble. Chaque entrée (son id : « village », puis « production » avec I8b) a son nom, son icône,",
+    "ses PALIERS (le score à atteindre, ce que le palier débloque : des clés « sorte:quoi » que le jeu lit avec",
+    "debloque(state, clé)) et ses causes et réglages, lus par son fichier de calcul (js/engine/vocation-<id>.js, qui",
+    "l'enregistre : enregistrerVocation). Un palier atteint ne se perd pas (state.vocations.paliers, noté la nuit). Une",
+    "troisième vocation : une entrée ici et un fichier de calcul, sans toucher au socle.",
+    "village (fiche I8a, js/engine/vocation-village.js) : la convivialité. CAUSES : le bonheur moyen des villageois",
+    "(au-dessus de BASE, un point par PAR), les liens « ami » et « proche » entre eux (POINTS par paire), les fêtes tenues,",
+    "les projets du village finis, les repas partagés avec des villageois, le décor de la place (DECOR : les blocs à",
+    "RAYON cases au plus du centre de la place, le panneau du village s'il est posé, sinon le premier de CENTRES, sinon",
+    "la table commune ; chaque sorte ses points, SORTES, un préfixe finit par « _ ») ; chacune plafonnée (MAX), pour",
+    "qu'aucune ne suffise seule. Ce que débloquent les PALIERS : « plan:<recette> » (un meuble de jardin qui se",
+    "fabrique désormais à l'Atelier, comme si son plan était trouvé), « projet:<sorte> » (un projet du village),",
+    "« fete:seconde » (une seconde fête par mois de lune), « arrivee:lien » (un nouveau venu a déjà un lien avec un",
+    "villageois : un ami, un parent ; ARRIVEE_LIEN), « enseigne:couleurs » (des couleurs d'enseigne pour les commerces,",
+    "ENSEIGNES ; lues par les commerces d'I5a). Rien qui produise plus.",
+    "FETES (js/engine/fetes-village.js) : la fête du village, que le joueur fixe au calendrier (PAR_MOIS par mois de",
+    "lune, une de plus avec « fete:seconde » ; d'ici à JOURS_MAX jours, pas aujourd'hui) en fournissant les plats (un",
+    "plat de l'inventaire par PLATS.PAR villageois, PLATS.MIN au moins ; repris s'il l'annule) ; la veillée de pleine",
+    "lune (le premier jour de pleine lune du mois, d'elle-même, sans plats ; deux villageois au moins) ; la fête de",
+    "l'ouverture d'un commerce (I5a la fixera : le lendemain de l'ouverture). De DEBUT à FIN h (la veillée : de",
+    "VEILLEE[0] à VEILLEE[1] h), les villageois viennent sur la place : attablés aux tables du dehors, assis sur les",
+    "bancs, debout en petits groupes ; ils causent (VILLAGE.SOCIAL.REPLIQUES.fete), même sous la pluie. La nuit, chacun",
+    "y était : l'affinité de chaque paire monte (VILLAGE.LIENS.GAINS.FETE), son bonheur vise BONHEUR de plus (et un",
+    "point par sorte de plat, VARIETE au plus). ANNONCE : les jours d'avance où elle s'annonce le matin. LUMIERES : les",
+    "lampions du soir (la scène, js/carte/ferme/fete.js).",
+    "PROJETS (js/engine/projets-village.js) : les projets du village, un à la fois, dans l'ordre que le joueur choisit",
+    "parmi ceux qui sont ouverts (sans « palier », ou débloqués : « projet:<sorte> »). Chacun demande des matériaux",
+    "(besoin, apportés de l'inventaire) et des journées de villageois (JOURNEES) : le joueur en envoie au chantier ; ils",
+    "y travaillent à la place de leur tâche (le tableau le montre), aux heures de travail, autour du bâtiment posé (bloc :",
+    "le joueur reçoit son chantier à poser) ou sur la place (sans bloc). Une journée compte quand tout est là. Fini, le",
+    "bâtiment prend son dessin achevé, ou le décor (donne) entre dans l'inventaire."
+  ],
+  "VOCATIONS": {
+    "village": {
+      "nom": "Un village convivial",
+      "icone": "🎉",
+      "texte": "Des fêtes, des projets faits ensemble, des repas partagés et une jolie place rendent le village convivial.",
+      "PALIERS": [
+        { "score": 20, "nom": "Des voisins qui se saluent", "icone": "👋", "debloque": ["plan:banc_pierre", "plan:lanterne_papier", "projet:kiosque"] },
+        { "score": 50, "nom": "Un village en fête", "icone": "🎉", "debloque": ["fete:seconde", "plan:table_rondins", "plan:banc_rondins", "projet:fontaine"] },
+        { "score": 90, "nom": "Un village accueillant", "icone": "🤝", "debloque": ["arrivee:lien", "plan:pergola", "plan:jardiniere_pierre", "projet:four"] },
+        { "score": 140, "nom": "Un village où il fait bon vivre", "icone": "🌟", "debloque": ["enseigne:couleurs", "plan:chaise_peinte", "plan:bassin", "plan:jarre_coquillages"] }
+      ],
+      "CAUSES": {
+        "bonheur": { "nom": "Le bonheur des villageois", "icone": "😊", "BASE": 40, "PAR": 2, "MAX": 25 },
+        "ami": { "nom": "Des amis entre eux", "icone": "🤝", "POINTS": 2, "MAX": 30 },
+        "proche": { "nom": "Des proches", "icone": "💞", "POINTS": 4, "MAX": 30 },
+        "fete": { "nom": "Les fêtes tenues", "icone": "🎉", "POINTS": 6, "MAX": 60 },
+        "projet": { "nom": "Les projets finis", "icone": "🏗️", "POINTS": 10, "MAX": 60 },
+        "repas": { "nom": "Les repas partagés", "icone": "🍽️", "POINTS": 2, "MAX": 20 },
+        "decor": { "nom": "Le décor de la place", "icone": "🌷", "POINTS": 1, "MAX": 25 }
+      },
+      "DECOR": {
+        "RAYON": 7,
+        "CENTRES": ["panneau_village", "puits"],
+        "SORTES": {
+          "banc_": 1, "chaise_": 1, "table_jardin": 1, "table_rondins": 1, "lanterne": 2, "lanterne_papier": 2, "candelabre": 2,
+          "bac_": 1, "massif_": 1, "rosier_": 1, "guirlande_": 1, "pergola": 2, "jardiniere_pierre": 1, "jarre_coquillages": 1,
+          "bassin": 2, "fontaine_": 3, "ornement_": 2, "lavoir": 4, "kiosque": 4, "four_commun": 4
+        }
+      },
+      "ARRIVEE_LIEN": { "PARENT": 0.3, "AMI": 50, "PROCHE": 80 },
+      "ENSEIGNES": [
+        { "id": "or", "nom": "lettres dorées", "texte": "#e2b04a" },
+        { "id": "lune", "nom": "lettres de lune", "texte": "#cfd8ff" }
+      ],
+      "FETES": {
+        "PAR_MOIS": 1,
+        "JOURS_MAX": 40,
+        "DEBUT": 17,
+        "FIN": 21,
+        "VEILLEE": [19.75, 21],
+        "VEILLEE_MIN": 2,
+        "PLATS": { "PAR": 2, "MIN": 2 },
+        "BONHEUR": 6,
+        "VARIETE": 3,
+        "ANNONCE": 3,
+        "NOMS": {
+          "mois": ["🎉", "La fête du village"],
+          "pleine_lune": ["🌕", "La veillée de pleine lune"],
+          "ouverture": ["🎊", "La fête de l'ouverture"]
+        },
+        "LUMIERES": { "teinte": 16757350, "alpha": 1, "rayon": 60 }
+      },
+      "PROJETS": {
+        "ORDRE": ["place", "jardin", "lavoir", "kiosque", "fontaine", "four"],
+        "SORTES": {
+          "place": {
+            "nom": "Aménager la place", "icone": "🪑", "journees": 2,
+            "texte": "Des bancs, des bacs de fleurs, une table et une lanterne, pour se retrouver le soir sur la place.",
+            "besoin": { "bois": 20, "pierre": 15, "fibre": 10 },
+            "donne": { "banc_jardin": 2, "bac_rond": 2, "table_jardin": 1, "chaise_jardin": 4, "lanterne": 1 }
+          },
+          "jardin": {
+            "nom": "Un jardin partagé", "icone": "🌷", "journees": 2,
+            "texte": "Une pergola, des jardinières et un banc de rondins, que tout le village soigne ensemble.",
+            "besoin": { "bois": 15, "pierre": 10, "fibre": 15 },
+            "donne": { "pergola": 1, "bac_long": 2, "jardiniere_pierre": 1, "banc_rondins": 1 }
+          },
+          "lavoir": {
+            "nom": "Le lavoir", "icone": "🧺", "journees": 4, "bloc": "lavoir",
+            "texte": "Un bassin de pierre sous un toit de bois, où l'on se retrouve pour laver et bavarder.",
+            "besoin": { "pierre": 30, "planche": 12, "bois": 10 }
+          },
+          "kiosque": {
+            "nom": "Le kiosque", "icone": "🎶", "journees": 3, "bloc": "kiosque", "palier": "projet:kiosque",
+            "texte": "Un kiosque de bois sur une estrade de pierre, au cœur de la place : on y danse les soirs de fête.",
+            "besoin": { "planche": 24, "pierre": 12, "lingot_fer": 2 }
+          },
+          "fontaine": {
+            "nom": "La fontaine du village", "icone": "⛲", "journees": 4, "bloc": "fontaine_village", "palier": "projet:fontaine",
+            "texte": "Une grande fontaine à quatre goulots, où l'on vient puiser et causer.",
+            "besoin": { "pierre": 40, "lingot_cuivre": 2, "planche": 4 }
+          },
+          "four": {
+            "nom": "Le four commun", "icone": "🔥", "journees": 5, "bloc": "four_commun", "palier": "projet:four",
+            "texte": "Un four à pain de pierre sous son auvent, que le village allume pour les fêtes.",
+            "besoin": { "pierre": 36, "bois": 20, "planche": 8 }
+          }
+        },
+        "TRAVAIL": { "geste": "hache", "emoji": "🔨" }
+      }
+    },
+    "production": {
+      "nom": "La ferme productive", "icone": "🏭",
+      "PALIERS": [
+        { "score": 120, "debloque": ["contrats_gros"] },
+        { "score": 300, "debloque": ["machines_grandes"] },
+        { "score": 600, "debloque": ["import_plein_champ"] },
+        { "score": 1000, "debloque": ["robot_second"] }
+      ],
+      "CAUSES": {
+        "export": { "nom": "La valeur exportée ce mois de lune", "PIECES": 25 },
+        "machines": { "nom": "Les machines en état de marche", "POINTS": 15 },
+        "energie": { "nom": "L'énergie produite ce mois de lune", "WH": 4000 },
+        "contrats": { "nom": "Les contrats d'export honorés", "POINTS": 40 }
+      },
+      "TEXTES": {
+        "contrats_gros": "des contrats d'export plus gros",
+        "machines_grandes": "des machines plus grandes : le réservoir des chaînes double",
+        "import_plein_champ": "les cultures de plein champ en vrac, au catalogue d'import",
+        "robot_second": "un second robot : la tournée du robot va deux fois plus vite"
+      }
+    }
+  },
+  "//PRODUCTION": [
+    "La ferme productive (fiche I8b ; js/engine/contrats.js, js/engine/production.js, js/engine/vocation-production.js ;",
+    "la fenêtre : l'onglet Contrats du port, js/ui/port.js). Les chiffres qui dépendent des prix sont à refaire après la",
+    "fiche I4.",
+    "CONTRATS : les contrats d'export. À partir du port de niveau NIVEAU, chaque passage du bac en propose",
+    "PROPOSES[niveau − 1], tirés de la graine et du jour (le même bac pour tous), parmi OBJETS que le joueur sait déjà",
+    "produire (ce qu'il a récolté, préparé, transformé, ses bêtes) : un objet, une quantité (de quoi valoir",
+    "VALEUR[niveau − 1] pièces au prix de vente, à ± ECART %, arrondie à ARRONDI, entre QUANTITE[0] et QUANTITE[1] ;",
+    "GROS % de plus quand la vocation productive l'a débloqué), une prime (PRIME[0] à PRIME[1] %, par pas de 5). Un",
+    "contrat proposé s'accepte au comptoir jusqu'au passage suivant ; MAX acceptés à la fois. Accepté, il court sur",
+    "PASSAGES passages du bac (celui qui l'a apporté compris) : on y livre au comptoir, en autant de fois qu'on veut, ce",
+    "qu'on a porté (le portage) ou ce que la tournée des villageois emporte ; chaque livraison est payée au prix de vente",
+    "(le bac l'emporte avec ses caisses) ; complet, la prime est versée, avec XP points d'expérience. Le bac de son",
+    "dernier passage reparti sans qu'il soit complet, il s'efface sans pénalité (ce qui est livré est payé).",
+    "COURANT : le tableau des villageois compte l'énergie que consomment les machines qu'un villageois conduit (ce qu'il",
+    "y verse) dans son coût, une pièce par WH_PAR_PIECE Wh.",
+    "La tournée du port en volume : depuis la fiche I2b, c'est la charrette du village qui la fait (CHARRETTE) ; le quai",
+    "de chargement en est le point de départ (on y charge plus vite) et la gare de la voie du wagonnet.",
+    "QUAI : le quai de chargement (un bloc de l'Atelier, deux cases, dehors sur la ferme ; l'image :",
+    "scripts/batiments/quai_chargement.py) se fabrique à partir du port de niveau NIVEAU.",
+    "MACHINES, ROBOT, IMPORT : ce que débloquent les paliers de la vocation (VOCATIONS.production) : le réservoir d'une",
+    "chaîne tient RESERVOIR % de CHAINES.RESERVOIR ; la tournée du robot prend 100 / VITESSE de son temps ; les",
+    "semences des cultures de plein champ (blé, tournesol, riz, houblon) s'importent par LOT, au prix de vente fois",
+    "MARGE %, au rang RANG du catalogue."
+  ],
+  "PRODUCTION": {
+    "CONTRATS": {
+      "NIVEAU": 2, "PASSAGES": 3, "PROPOSES": [0, 1, 2, 2, 3], "MAX": 2,
+      "VALEUR": [0, 400, 800, 1400, 2200], "ECART": 20, "ARRONDI": 10, "QUANTITE": [20, 300], "PRIME": [30, 50], "GROS": 150, "XP": 60,
+      "OBJETS": ["pain", "fromage_frais", "bocal_legumes", "confiture_fraises", "jus_fruits", "compote", "biere_artisanale", "huile",
+        "farine", "lait", "oeuf", "laine"]
+    },
+    "COURANT": { "WH_PAR_PIECE": 250 },
+    "QUAI": { "NIVEAU": 2 },
+    "MACHINES": { "RESERVOIR": 200 },
+    "ROBOT": { "VITESSE": 200 },
+    "IMPORT": { "RANG": 2, "LOT": 50, "MARGE": 150 }
+  },
+  "//CHARRETTE": [
+    "La charrette du village (fiche I2b ; le moteur : js/engine/charrette.js ; la scène : js/carte/ferme/charrette-village.js ;",
+    "la fenêtre : l'onglet « La charrette du village » du port, js/ui/port.js ; les dessins : scripts/carte/charrette_village.py).",
+    "Une seule charrette, au village : elle naît au premier villageois mis à la tournée du port (TACHES.LISTE.navette), aux",
+    "paliers 1 des deux branches. Les villageois de la tournée en sont les charretiers (D17) : un seul la mène à la fois,",
+    "voyage par voyage ; au retour, elle passe au suivant de la tournée qui travaille aujourd'hui (ni au repos, ni à",
+    "l'accueil, ni au chantier du village). Le relais l'empêche de s'arrêter ; il ne la rend pas plus rapide.",
+    "JOUR : sa journée (de 7 h à 17 h) ; elle enchaîne des voyages entiers : charger (CHARGE h au coffre, QUAI h au quai de",
+    "chargement), l'aller, décharger et vendre au comptoir (VENTE h, à l'heure d'arrivée, le port ouvert), le retour. Un",
+    "voyage ne part que s'il revient avant la fin de JOUR. Le charretier mange au port : son repas compte comme les autres.",
+    "MARCHE : le pas d'un personnage à pied sur un chemin, en cases par heure de jeu (58 px/s doublés, 30 s l'heure) : la",
+    "vitesse × 1. La route va du coffre (ou du quai) au comptoir par le plus court, au pas de la vitesse sur les chemins et",
+    "sur la ferme, à HORS_CHEMIN % ailleurs (un chemin coupé) ; le wagonnet sur la voie complète, au pas de son palier.",
+    "CAPACITES, PRIX_CAPACITE : les paliers de la capacité (en volumes par voyage, VILLAGE.PORTAGE.VOLUMES ; le prix en",
+    "pièces, le premier offert) ; VITESSES, PRIX_VITESSE : ceux de la vitesse (en fois MARCHE). Les deux branches sont",
+    "libres : un palier de l'une ne demande aucun palier de l'autre ; on monte chaque branche dans l'ordre. CHEVAL : le",
+    "palier de vitesse qui amène le cheval de trait (par le bac, au passage suivant ; il prend une place à l'Écurie, à",
+    "côté de celui du joueur : CHEVAL.PLACES ; sans Écurie ou sans place, le palier est refusé) ; il mange RATION pailles",
+    "par nuit, du coffre, après le cheval du joueur (le tableau la compte dans le coût du charretier). Tant qu'il n'est pas",
+    "arrivé, la charrette garde le pas d'avant (SANS_CHEVAL, le palier). WAGONNET : le palier du wagonnet, qui demande la",
+    "voie complète ; la voie coupée, la charrette prend le chemin, au palier d'avant.",
+    "RAILS : les rails (un bloc de l'Atelier : 1 lingot de fer, 2 planches, 1 pierre pour 8 cases ; le forgeron les fait",
+    "aussi, à la commande). La voie est complète quand des rails voisins vont de la gare (une case de rails contre le quai",
+    "de chargement, à défaut contre le bord de la ferme) jusqu'au bord des abords du port. ABORDS : à cette distance du",
+    "comptoir (en cases), la route est au pas du chemin (les quais du port)."
+  ],
+  "CHARRETTE": {
+    "JOUR": [7, 17],
+    "CHARGE": 0.25,
+    "QUAI": 0.1,
+    "VENTE": 0.25,
+    "MARCHE": 217.5,
+    "HORS_CHEMIN": 50,
+    "ABORDS": 6,
+    "CAPACITES": [20, 40, 80, 160, 320],
+    "PRIX_CAPACITE": [0, 300, 1000, 2500, 6000],
+    "VITESSES": [0.75, 1, 1.4, 2, 3],
+    "PRIX_VITESSE": [0, 400, 1500, 3000, 5000],
+    "CHEVAL": { "PALIER": 3, "RATION": 2, "SANS_CHEVAL": 2 },
+    "WAGONNET": 5,
+    "RAILS": { "BLOC": "rails" },
+    "NOMS_CAPACITE": ["la caisse nue, ridelles basses", "des ridelles plus hautes", "les rehausses à claire-voie", "les rehausses et une bâche", "la longue charrette à quatre roues"],
+    "NOMS_VITESSE": ["tirée à bras, à petit pas", "roues cerclées de fer, moyeux graissés", "le cheval de trait, au pas", "le cheval ferré, au trot", "le wagonnet sur la voie, au halage"]
+  }
+}

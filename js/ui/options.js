@@ -3,7 +3,7 @@ import { godMode, setEcranFerme, state, testMode } from './store.js';
 import { boussoleMontree, montrerBoussole } from '../engine/monde-vu.js';
 import { persistState } from './storage.js';
 import { privacySectionHtml, tel } from './consent.js';
-import { copyFromTextarea, exportSaveText, importSaveText, telechargerSauvegarde } from './storage.js';
+import { copyFromTextarea, exportSaveText, importSaveText, sauvegardeAvantIle, telechargerAvantIle, telechargerSauvegarde } from './storage.js';
 import { morph, refresh } from './render.js';
 import { openAboutModal } from './aide.js';
 import { notify } from './toasts.js';
@@ -126,6 +126,13 @@ export function openOptionsModal() {
           </div>
           <p class="muted">Le fichier .json se joint tel quel à un message, et se réimporte ci-dessous.</p>
         </div>
+        ${sauvegardeAvantIle() ? `<div class="stack">
+          <strong>La partie d'avant l'île</strong>
+          <p class="muted">Ta partie telle qu'elle était avant de passer sur l'île, gardée sur cet appareil, au cas où.</p>
+          <div class="row">
+            <button class="btn" type="button" data-action="download-avant-ile">⬇️ Télécharger la partie d'avant (.json)</button>
+          </div>
+        </div>` : ''}
         <div class="stack">
           <strong>Importer une sauvegarde</strong>
           <textarea id="import-area" rows="4" placeholder="Coller le texte exporté ici"></textarea>
@@ -219,6 +226,9 @@ registerActions({
   'do-import': () => {
     const area = document.getElementById('import-area');
     importee(importSaveText(area.value), 'Texte invalide, import annulé.');
+  },
+  'download-avant-ile': () => {
+    notify(telechargerAvantIle() ? 'Partie d\'avant l\'île téléchargée.' : 'Le téléchargement a échoué.');
   },
   'download-export': () => {
     notify(telechargerSauvegarde() ? 'Sauvegarde téléchargée.' : 'Le téléchargement a échoué : utilise « Copier ».');

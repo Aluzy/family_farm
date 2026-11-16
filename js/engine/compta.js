@@ -15,9 +15,19 @@ export function posteCompta(libelle) {
     .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40) || 'autre';
 }
 
+// I0b : les comptes de la simulation (scripts/simulate.mjs) suivent chaque écriture, sans la borne de
+// COMPTA_MAX lignes : suivreComptes(fn) → fn(state, montant, libelle, n) ; renvoie de quoi arrêter de
+// suivre. Rien n'entre dans la sauvegarde ; sans suivi, rien ne se passe.
+const suivis = new Set();
+export function suivreComptes(fn) {
+  suivis.add(fn);
+  return () => suivis.delete(fn);
+}
+
 export function noteCompta(state, montant, libelle, n = 1) {
   if (!montant) return;
   noter('pieces', { montant, poste: posteCompta(libelle) });
+  for (const fn of suivis) fn(state, montant, libelle, n);
   if (!Array.isArray(state.compta)) state.compta = [];
   const last = state.compta[state.compta.length - 1];
   if (last && last.jour === state.day && last.libelle === libelle && Math.sign(last.montant) === Math.sign(montant)) {

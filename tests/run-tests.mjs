@@ -25,9 +25,12 @@ import { fileURLToPath } from 'node:url';
 const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE = join(ICI, '..');
 
-// Suites, dans l'ordre d'affichage.
+// Suites, dans l'ordre d'affichage. Les tests du moteur rangés à part, tests/engine/village-*.test.mjs (ceux de l'île à
+// bâtir, docs/ile.md), forment leur propre suite, jouée en dernier.
+const MOTEUR = readdirSync(join(ICI, 'engine')).filter((f) => f.endsWith('.test.mjs')).sort();
+const DU_VILLAGE = (f) => f.startsWith('village-');
 const SUITES = [
-  { nom: 'moteur', titre: 'tests du moteur', fichiers: readdirSync(join(ICI, 'engine')).filter((f) => f.endsWith('.test.mjs')).sort().map((f) => join(ICI, 'engine', f)) },
+  { nom: 'moteur', titre: 'tests du moteur', fichiers: MOTEUR.filter((f) => !DU_VILLAGE(f)).map((f) => join(ICI, 'engine', f)) },
   { nom: 'données', titre: 'tests des données', fichiers: [join(ICI, 'test-data.mjs')] },
   { nom: 'suivi', titre: 'tests du suivi de session', fichiers: [join(ICI, 'test-telemetry.mjs')] },
   { nom: 'rapport', titre: 'tests du rapport quotidien', fichiers: [join(ICI, 'test-report.mjs')] },
@@ -36,6 +39,7 @@ const SUITES = [
   { nom: 'synchro', titre: 'tests de la synchro en ligne', fichiers: [join(ICI, 'test-synchro.mjs')] },
   { nom: 'console', titre: 'tests de la console d\'administration', fichiers: [join(ICI, 'test-admin.mjs')] },
   { nom: 'boutique', titre: 'tests de la boutique (gemmes, Stripe)', fichiers: [join(ICI, 'test-boutique.mjs')] },
+  { nom: 'village', titre: 'tests de l\'île à bâtir', fichiers: MOTEUR.filter(DU_VILLAGE).map((f) => join(ICI, 'engine', f)) },
 ];
 
 const args = process.argv.slice(2);
@@ -63,7 +67,7 @@ if (motifs.some((m) => !m)) {
 const nomCourt = (f) => basename(f).replace(/\.test\.mjs$|\.mjs$/, '').replace(/^test-/, '');
 const choisis = SUITES.map((s) => ({
   ...s,
-  fichiers: s.fichiers.filter((f) => (filtres.length ? filtres.some((m) => nomCourt(f).includes(m)) : tous || s.nom === 'moteur')),
+  fichiers: s.fichiers.filter((f) => (filtres.length ? filtres.some((m) => nomCourt(f).includes(m)) : tous || s.nom === 'moteur' || s.nom === 'village')),
 })).filter((s) => s.fichiers.length);
 if (!choisis.length) {
   console.error(`Aucun fichier de tests ne correspond à : ${filtres.join(', ')}.`);

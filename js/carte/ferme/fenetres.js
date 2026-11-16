@@ -103,9 +103,19 @@
       const m = this.ctx.lastModel || {};
       const dort = !!m.dort && (!this.family || this.family.info().every((f) => f.lit));
       const but = nuit > BLOCS_CARTE.lanterne.allume && !dort ? Math.min(1, nuit / 0.4) : 0;
-      const k0 = this.fenK || 0, pas = L.vitesse * dt;
-      const k = this.fenK = global.CarteKit.reduit() ? but : k0 < but ? Math.min(but, k0 + pas) : Math.max(but, k0 - pas);
-      if (k <= 0) return;
+      const k0 = this.fenK || 0, pas = L.vitesse * dt, reduit = global.CarteKit.reduit();
+      const kFoyer = this.fenK = reduit ? but : k0 < but ? Math.min(but, k0 + pas) : Math.max(but, k0 - pas);
+      // (fiche I3b : la maison d'un villageois a sa lumière à elle, allumée tant qu'il y est éveillé, le soir :
+      // villageois.js villageoisLumiere ; chaque toit garde la sienne, t.fenK)
+      const allume = nuit > BLOCS_CARTE.lanterne.allume ? Math.min(1, nuit / 0.4) : 0;
+      const kDe = (t) => {
+        const vg = this.villageoisLumiere ? this.villageoisLumiere(t) : null;
+        if (vg === null) return kFoyer;
+        const b = vg ? allume : 0, a = t.fenK || 0;
+        return (t.fenK = reduit ? b : a < b ? Math.min(b, a + pas) : Math.max(b, a - pas));
+      };
+      const ks = maisons.map(kDe);
+      if (!ks.some((x) => x > 0)) return;
       const B = this.blocks, cols = this.grid.cols, Hh = BLOCS_CARTE.hauts, dy = BLOCS_CARTE.etage.dy;
       const mur = (c) => { const e = B.get(c); return !!e && e.img.texture.key === Hh.key; };
       // à l'étage (le personnage y est monté) : le plancher de l'étage cache le bas
@@ -122,7 +132,9 @@
         return base !== undefined && !((n - base) & 4);
       };
       let arbres = null;
-      for (const t of maisons) {
+      for (let it = 0; it < maisons.length; it++) {
+        const t = maisons[it], k = ks[it];
+        if (k <= 0) continue;
         // (le dedans ne se voit que quand le toit s'efface)
         const ouvert = k * (1 - t.img.alpha);
         const etage = haut && t.niveau >= 1;

@@ -1,5 +1,11 @@
 # Le grand monde (projet)
 
+> **Depuis la bascule (version 2.0.0, fiche I9h), le jeu est « l'île à bâtir »** ([`ile.md`](ile.md), qui fait foi) :
+> les hameaux, leurs habitants, la calèche et sa tournée, le récit et ses lieux qui parlent sont retirés du jeu (ils
+> restent sur la branche `archive/jeu-avant-ile`). Le grand monde reste (biomes, brouillard, récolte, pêche, faune,
+> grottes) ; le port et quelques bâtisses muettes y sont bâtis. Ce que ce document dit des hameaux et de la calèche
+> est l'histoire du projet.
+
 Une seule carte, 20 fois la ferme générée, faite de biomes, cachée au départ et découverte en
 marchant. Elle remplace toutes les autres cartes du jeu.
 

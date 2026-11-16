@@ -23,7 +23,9 @@ const TEMOINS = lire('./temoins.json');
 const ANCIENNES = lire('./anciennes-parties.json');
 const EPOQUES = ['v50', 'v51', 'v52', 'v54', 'v57'];
 const copie = (x) => structuredClone(x);
-const migre = (s) => migrate({ v: s.version, t: 0, s: copie(s) });
+// (la partie mise au format du jeu, sans passer sur l'île : ce qu'elle garde de son époque ; `ile` : comme le jeu l'ouvre,
+// passée sur l'île, fiche I7f : tests/engine/village-migration.test.mjs)
+const migre = (s, ile = false) => migrate({ v: s.version, t: 0, s: copie(s) }, STATE_VERSION, { ile });
 
 // Le décalage d'une case de la ferme seule (une partie d'avant le format 52) vers le monde.
 function versLeMonde(avant) {
@@ -105,7 +107,7 @@ function gardee(nom, avant, m) {
   }
   if (avant.caleche) assertEqual(m.caleche, avant.caleche, `${nom} : la calèche`);
   // rien ne bouge à une deuxième migration
-  assertEqual(migrate({ v: m.version, t: 0, s: copie(m) }), m, `${nom} : une seule fois`);
+  assertEqual(migre(m), m, `${nom} : une seule fois`);
 }
 
 // Quelques nuits : la partie continue (rien ne plante, rien ne disparaît).
@@ -138,13 +140,13 @@ for (const k of EPOQUES) {
   test(`les témoins : la partie du format ${k.slice(1)} migre sans rien perdre, puis joue quatre nuits`, () => {
     const avant = TEMOINS[k].s, m = migre(avant);
     gardee(k, avant, m);
-    joue(k, m);
+    joue(k, migre(avant, true));
   });
 }
 
 test('les témoins : les parties d\'avant la ferme générée (format 46) déménagent, puis jouent quatre nuits', () => {
   for (const nom of ['avancee', 'debut']) {
-    const avant = ANCIENNES[nom], m = migre(avant);
+    const avant = ANCIENNES[nom], m = migre(avant, true);
     assertEqual(m.version, STATE_VERSION, nom);
     // (une Presse construite : son prix rendu par la migration 66 → 67)
     const presse = avant.stations && avant.stations.presse && avant.stations.presse.construit ? PRESSE_RENDU : 0;
@@ -217,6 +219,13 @@ test('une sauvegarde abîmée : reparerPartie ne change rien à une partie saine
   const r = reparerPartie(s);
   assertEqual([r.pieces, typeof r.monde.vu, r.famille.membres.length, Array.isArray(r.caleche)], [neuve.pieces, 'string', DATA.FAMILLE.MEMBRES.length, false]);
   assertEqual(r.monde.pris, TEMOINS.v57.s.monde.pris, 'le reste du monde est gardé');
+  // (I9h : l'inventaire n'est pas une forme : un objet mangé jusqu'au dernier ne revient pas à l'ouverture ; un objet
+  // illisible s'en va)
+  const vide = migre(TEMOINS.v57.s);
+  for (const k of Object.keys(DATA.DEPART.ETAT_INITIAL.INVENTAIRE)) delete vide.inventaire[k];
+  vide.inventaire.bois = 'x';
+  const relue = migrate(JSON.parse(JSON.stringify({ v: vide.version, t: 0, s: vide })));
+  assertEqual([...Object.keys(DATA.DEPART.ETAT_INITIAL.INVENTAIRE), 'bois'].map((k) => countItem(relue, k)), [0, 0, 0, 0, 0], 'les conserves, les graines et les patates du départ ne reviennent pas');
   // n'importe quoi à la place de la sauvegarde : une partie de départ, pas une exception
   for (const brut of [null, 42, 'texte', [], { s: 'x' }, { v: 57, s: { version: 'cinquante' } }]) {
     const p = migrate(brut);

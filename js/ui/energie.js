@@ -90,7 +90,9 @@ export function eatButton(item, texte = '') {
 
 registerActions({
   'eat': (target) => {
-    const r = applyResult(executer('manger', { objet: target.dataset.item || null }));
+    // (I9b : en ligne, son personnage hors de la ferme : il ne mange que ce que contient son sac, js/ui/en-ligne.js)
+    const dehors = typeof window !== 'undefined' && !!(window.FermeEnLigne && window.FermeEnLigne.dehors);
+    const r = applyResult(executer('manger', { objet: target.dataset.item || null, ...(dehors ? { dehors: true } : {}) }));
     // fiche 10 : manger plusieurs fois de suite additionne l'énergie dans une seule notification
     if (r && r.ok) notify(null, { cumul: { cle: 'manger', quantites: { gain: r.gain }, texte: (t) => `⚡ +${formatEnergyGain(t.gain)} énergie` } });
   },

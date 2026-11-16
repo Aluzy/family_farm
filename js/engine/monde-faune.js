@@ -62,7 +62,7 @@ export function casePermise(ctx, e, i, marche, nomSol) {
   if (!e.biomes.includes(BIOMES[b])) return false;
   if (e.relief && ctx.lire.relief(i) < e.relief) return false;
   if (e.lieu === 'terre') {
-    if (!marche(i) || ctx.reserves[i] || ctx.chemins[i]) return false;
+    if (!marche(i) || ctx.reserves[i] || (ctx.cheminsNature || ctx.chemins)[i]) return false;
   } else if (e.lieu === 'eau') {
     // (le marais : son eau basse ; ailleurs, l'eau du plan)
     // (ni un ponton, où l'on marche)

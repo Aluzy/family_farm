@@ -46,6 +46,7 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
     'carotte', 'patate', 'tomate', 'courgette', 'aubergine',
     'poivron', 'oignon', 'ail', 'epinard', 'fraise',
     'ble', 'tournesol', 'riz', 'houblon', 'cacao', 'vanille', 'cafe', 'vigne',
+    'ail_ours', 'salicorne',   // (les plants sauvages de l'île, fiche I7e : le jeu d'avant ne les montre pas)
   ]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].stades), [4, 6, 5, 5, 6]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].litres), [2, 3, 3, 4, 4]);

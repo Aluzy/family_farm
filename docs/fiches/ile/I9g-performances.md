@@ -1,0 +1,146 @@
+# Fiche I9g — Les performances
+
+## Objectif
+
+Vérifier, mesures à l'appui, que l'île à bâtir tourne aussi bien que le jeu d'aujourd'hui sur un
+téléphone, avec un village complet toujours à l'écran, et corriger ce qui ne tient pas.
+
+## Contexte
+
+- Les lots 3, 5, 6 et 8 ont mis sur la ferme ce qui était loin : jusqu'à une quinzaine de
+  villageois, des commerces, des fêtes ; le lot 2, des chemins sur toute l'île.
+- Les mesures et leurs méthodes : `docs/perf.md`, `docs/chantier-allegement.md`,
+  `docs/taches-fluidite.json`, `js/ui/mesures.js`, `scripts/mesure-touches.mjs`,
+  `tests/engine/perf-ferme.test.mjs`, `cadence.test.mjs`, `ordonnanceur.test.mjs`.
+- Le socle : l'ordonnanceur de la scène (fiche 33), les layers (fiche 26), le sol peint dans un
+  Worker (fiche 29), les objets et le sol au GPU (fiches 34 et 35).
+- Ce que I7e a retiré (hameaux, habitants, calèche : calculs et atlas en moins).
+
+## À faire
+
+1. **Le protocole** : trois parties de référence (début, village de 8, village de 15 avec commerces
+   et fête), trois appareils (bureau, téléphone de milieu de gamme, téléphone modeste, émulés ou
+   réels), les mêmes parcours filmés. Les garder dans le dépôt des tests pour les refaire.
+2. **Les mesures**, comparées au jeu d'avant (la branche d'archive) : temps d'une image (médiane et
+   pire centième), mémoire, temps de chargement, poids téléchargé, durée d'une nuit, taille de la
+   sauvegarde, durée de la migration d'une grosse partie.
+3. **Les bornes** : pas plus lent que le jeu d'avant sur les deux premières parties ; sur la
+   troisième, 30 images par seconde tenues sur le téléphone modeste. Sinon, corriger.
+4. **Les pistes** si ça ne tient pas : les villageois loin du centre de la vue animés une image sur
+   deux ; les trajets calculés hors du fil d'affichage ; les bulles et enseignes regroupées en un
+   layer ; les commerces fermés la nuit sans calcul ; les chemins de l'île dessinés avec le sol.
+5. **La sauvegarde** : si elle a trop grossi, compacter (les journaux de 7 jours, les affinités,
+   les chemins).
+6. **Un test de garde** : une borne de temps sur la nuit d'un village de 15 et sur la taille de la
+   sauvegarde, dans `perf-ferme.test.mjs`.
+
+## Revu par I9a2 (l'horloge commune)
+
+- **Le pas du monde sur un téléphone de référence** : chaque joueur d'une île en ligne joue un pas toutes les 5 s (deux,
+  avec la partie confirmée qui suit de deux pas en arrière), ≈ 6 ms de jour sur un ordinateur pour l'île avancée, 15 à
+  20 ms à minuit. À mesurer sur les trois appareils, avec un village de 15.
+- **Le rattrapage** : au-delà de 60 pas de retard (5 minutes : un onglet resté caché), le joueur redemande la partie
+  entière (`VILLAGE.EN_LIGNE.RETARD_PAS`) ; en deçà, il rejoue les pas d'un coup (≈ 0,4 s pour 60 pas sur un
+  ordinateur). Mesurer ce gel sur un téléphone ; s'il se voit, abaisser le seuil ou étaler le rattrapage sur
+  quelques images.
+- **Le serveur** : une alarme toutes les 10 minutes joue d'un coup les pas dus sans geste (jusqu'à 120 : ≈ 1 s de
+  calcul sur l'île avancée) ; à suivre dans les journaux de Cloudflare (le temps de calcul par requête).
+
+## Revu par I9b (les changements de l'île)
+
+- **Ce qui pèse sur le réseau, ce sont les positions** (E-4), pas les gestes : à quatre joueurs dans la même région,
+  362 Ko/min diffusés (90 Ko/min par joueur), dont 346 de positions ; un geste dehors pèse ≈ 155 octets (14 Ko/min à
+  quatre qui récoltent). L'intérêt par région (I9b) ramène quatre joueurs dispersés à 50 Ko/min ; ensemble, il ne
+  change rien : réduire la cadence (5 par seconde) ou la taille d'une position serait le levier suivant.
+- **Le sol tiré en direct** : au serveur, pour un bloc posé dehors, 0,43 s la première fois (le contexte), puis 14 à
+  33 ms par région (12 gardées) ; chez un joueur, la même chose sur le fil principal quand un autre pose un bloc dans
+  une région que sa page n'a pas encore (≈ 0,5 s, une fois) : à mesurer dans un vrai navigateur, et à passer au
+  Worker du sol si cela se voit.
+- **La mesure** : `node scripts/cout-ile.mjs` (les octets par minute à 2 et 4 joueurs, le contrôle d'un geste, une
+  île très exploitée).
+
+## Revu par I9c (le port et la caisse)
+
+- **Un geste du port pèse ≈ 210 octets diffusés** (dont ≈ 44 pour son bilan) et coûte au serveur 0,1 à 0,3 ms : le
+  commerce ne pèse rien à côté des positions.
+- **La mise en ligne d'une île** calcule le plan de sa graine pour le lieu du port (≈ 0,7 s, une fois) : à ajouter au
+  coût de la création (I9f).
+- **Le contrôle de la case** d'un geste du port lit la dernière position relayée (`dernieresPos`) : si l'intérêt par
+  région change la façon dont les positions sont gardées, le garder.
+
+## Revu par I9d (les villageois en ligne)
+
+- **Le pas de jour se joue en lot** (`pasDuMonde` → `enLot`, `js/engine/blocs.js` ; `memoEnLot` pour la boîte, l'étal,
+  les locaux des commerces) : ce qui parcourt les blocs posés n'est calculé qu'une fois par pas. Le même résultat (la
+  même empreinte sur 720 pas), et un pas de jour de 5,8 → 1,8 ms à cinq villageois, 15,6 → 3,7 ms à dix, 27 → 6,2 ms
+  à quinze (`node scripts/cout-villageois.mjs`). Le solo n'en profite pas encore (`tick` n'est pas en lot) : à essayer ici.
+- **Ce qui reste cher dans un pas** : `journeeDuVillage` refait ses signatures à chaque villageois
+  (`signatureTaches`, `signatureGardeManger`, `commercesSignature`) ; minuit (`runNight`) coûte 16 à 34 ms à cinq ou dix
+  villageois, 79 ms (au plus 131) à quinze.
+
+## Revu par I9e (les rôles en ligne)
+
+- **Le contrôle des rôles est presque gratuit** (≈ 0,5 µs par commande), sauf un `bloc.reprendre` sur une île : il
+  relève les pièces closes pour savoir si la case tient la maison d'un villageois (≈ 0,3 à 0,6 ms de cinq à quinze
+  maisons, au serveur et chez le joueur qui joue le geste). À garder en mémoire par pas (`memoEnLot`) si un tracé de
+  murs repris en masse le fait sentir.
+- **Le bilan d'un geste du village** ajoute ≈ 60 octets à l'événement diffusé (l'ordre d'une tâche).
+
+## Revu par I9f (la mise en ligne, la migration des mondes)
+
+- **La mise à jour d'un monde à son premier réveil** par un Worker d'une autre version (`MondeRegistre.mettreAJour`) : le
+  format, le journal d'après l'instantané rejoué, la partie d'avant gardée ; pour une ferme d'avant, le passage sur l'île,
+  le lieu du port tiré du plan de la graine et le tronçon posé : ≈ 0,9 s une fois (`node scripts/cout-mise-en-ligne.mjs`,
+  la partie récente avancée de 45 nuits). À suivre dans les journaux de Cloudflare au premier déploiement (le temps de
+  calcul de la requête qui réveille le monde), avec celui du réveil à froid (≈ 0,3 s).
+- **La mise en ligne d'une île** : 3 à 5 ms quand la partie solo a déjà le lieu de son port (le cas d'une page), ≈ 0,8 s
+  sinon. La copie de l'île du joueur automatique pèse 54 Ko au jour 41, 83 Ko au jour 81, 121 Ko au jour 161 (huit
+  villageois) ; une sauvegarde autant (14 gardées : jusqu'à 1,7 Mo) ; une restauration 2 à 4 ms. Le plafond (256 Ko)
+  laisse la place à un village de quinze.
+- **La copie remise à jour** envoie la partie entière à chaque joueur connecté (comme une restauration) : à mesurer sur un
+  téléphone avec une île de 15 villageois (le temps de refaire la partie locale et la scène).
+
+## Hors périmètre
+
+- Toute règle de jeu ; de nouveaux dessins.
+
+## Critères d'acceptation
+
+- Le tableau des mesures avant/après est dans `docs/perf.md` ; les bornes sont tenues, ou chaque
+  écart restant est expliqué avec ce qu'il faudrait pour le lever.
+
+## Vérifications et livraison
+
+Celles du README du chantier. Joindre le tableau des mesures et les parcours filmés.
+
+## Fait (I9g)
+
+Le détail : `docs/ile.md` (« Les performances ») ; les tableaux avant/après : `docs/perf.md` (« L'île à bâtir : un village
+de quinze »).
+
+- **Le protocole, dans le dépôt** : `scripts/cout-performances.mjs` (le moteur et le serveur ; les trois parties de
+  référence : le village de 5, de 9 et de 15 ; `--racine` pour mesurer une autre copie du dépôt, la base, sur les mêmes
+  parties ; l'empreinte de chaque état final) et `scripts/mesure-scene-ile.mjs` (la scène d'une île de 15 dans Chromium,
+  le processeur ralenti ×1, ×4, ×6 : le bureau, le téléphone moyen, le modeste). Les parcours filmés ne sont pas faits
+  (pas d'appareil ici).
+- **Minuit** d'un village de 15 : 64 ms (au plus 68 ; 131 relevé par I9d) → 6 ms ; en solo 65 → 7 ms. Le pas de nuit 1,9 →
+  0,35 ms ; le pas de jour 5,8 → 3,2 ms ; une alarme de 120 pas 775 → 388 ms ; le `tick` solo 7,7 → 1,3 ms (p99 58 →
+  8) ; le contrôle d'un `bloc.reprendre` sur une île 0,95 → 0,11 ms (pas besoin d'un cache par pas : les maisons
+  relevées d'un coup suffisent).
+- **Comment** : le lot d'I9d couvre aussi le `tick`, le pas de la ferme et la nuit (`advanceNight`, `runNight`) ; un lot
+  dans un lot de la même partie garde le premier ; les pièces closes reconnues sans refaire le texte JSON des blocs ;
+  `maisonsMarquees` relève les pièces une fois pour toutes les boîtes ; le quai, le nombre de blocs et de sols, les cases
+  devant un comptoir gardés le temps d'un pas.
+- **Rien du jeu ne change** : les mêmes états octet pour octet (les empreintes de `cout-performances.mjs` ; le CSV et le
+  graphique de `simulate.mjs`, `--village`, la sortie de `--vocations`, comparés par `cmp` à la base 9a646ed) ;
+  `tests/engine/village-lots.test.mjs` le verrouille (avec et sans les calculs gardés, `reglerLots({ sans })` : la même
+  partie, en ligne, en solo, au joueur automatique ; `reglerLots({ verifier })` : aucun calcul gardé ne change pendant son
+  lot). Pas de nouveau format de sauvegarde.
+- **Le test de garde** (`tests/engine/perf-ferme.test.mjs`) : minuit d'un village de 15 sous 30 ms (le moteur d'avant :
+  37 ms au mieux sur cette île) ; sa partie sous le plafond d'un monde.
+- **La sauvegarde** n'a pas eu à être compactée : une île de 15 pèse 143 Ko en ligne (le plafond : 256 Ko).
+- **Ce qui reste** : la scène, ralentie six fois dans le rendu logiciel de Chromium, ne tient pas 30 images par seconde
+  (13, avant comme après) ; la borne est à mesurer sur le téléphone de référence (« Mesurer 30 s »), et les pistes de la
+  scène (les villageois loin de la vue une image sur deux, les bulles en un layer) à suivre si elle ne tient pas. La
+  comparaison avec la branche d'archive (le jeu d'avant) n'est pas refaite : le jeu solo, réglage éteint, est le même octet
+  pour octet et son tick plus rapide.

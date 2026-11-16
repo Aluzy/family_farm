@@ -79,7 +79,12 @@
      frigo.agrandir   { }
      boite.deposer    { objet, quantite }       la boîte à nourriture du foyer ; boite.reprendre
      boite.reprendre  { objet, quantite }
-     manger           { objet?, sac? }          manger sur le pouce (sac : ce qui est dans le sac)
+     manger           { objet?, sac?, dehors? } manger sur le pouce (sac : ce qui est dans le sac ; dehors, I9b : le
+                                                personnage est hors de la ferme, il ne mange que ce que contient son sac)
+     sac.poser        { objet }                 I9b : mettre un sac à provisions (de l'inventaire) ; sac.retirer : l'ôter
+     sac.retirer      { }
+     sac.remplir      { objet, quantite, source? } y mettre des aliments (de l'inventaire, ou « frigo ») ; sac.reprendre
+     sac.reprendre    { objet, quantite }       (dans un monde de l'île, le sac est celui de l'acteur : temps-monde.js)
    Les outils de la ferme (E-9, sans inverse ; sans positions de chute : ce qui tombe va droit à
    l'inventaire, comme dans un monde en ligne, qui ne ramasse pas) :
      outil.couper     { arbre, fort? }          un coup de hache (un arbre, un buisson : « col,rang » de son pied)
@@ -89,6 +94,11 @@
      outil.faucherAutour { touffes }            le coup fort de la faux : les touffes autour (au plus 60)
      outil.pecher     { eau, coin? }            un lancer (etang, mare ; lac, riviere, mer : le grand monde)
      verger.cueillir  { arbre }                 cueillir les fruits d'un arbre du verger (son id)
+   Les changements de l'île (I9b : une île partagée ; sans inverse, ce qui est pris revient seul, au jour dit) :
+     monde.recolter   { piece, geste?, fort?, variante?, depuis? } couper, casser, faucher, cueillir ou ramasser la
+                                                pièce « sorte:x,y » du grand monde (monde-recolte.js) ; ce qu'elle
+                                                lâche va au coffre commun ; pêcher dehors : outil.pecher (lac,
+                                                riviere, mer) ; bâtir dehors : bloc.poser, bloc.reprendre…
    La progression de la ferme (E-10, M.5 : commune à tous ses joueurs ; sans inverse) :
      tech.acheter     { noeud }                 un nœud de l'arbre des technologies
      atelier.fabriquer { recette }              une recette de l'Atelier (un bloc, un outil, un meuble…)
@@ -111,6 +121,64 @@
      nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
      nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
                                                 (le monde en ligne la joue, quand tous sont couchés)
+     temps.sommeil    { oui }                   I9a2 : un monde de l'île, tous les joueurs connectés couchés (ou
+                                                plus) : la nuit y défile dix fois plus vite (js/engine/temps-monde.js ;
+                                                le monde seul la joue, comme nuit.partagee)
+   I9a2 : dans un monde de l'île (l'horloge vivante), executerCommande(state, c, { acteur }) joue la commande avec
+   l'énergie de son acteur (state.energies, posée dans state.energie le temps de la commande : temps-monde.js).
+   Le commerce au port (l'île à bâtir, fiche I1b ; js/engine/port.js, sans inverse : une vente, un achat ne se
+   défont pas) — `case` : celle du personnage, à PORT.PORTEE cases du comptoir :
+     port.vendre      { objet, quantite, case } vendre au comptoir (au prix de vente : market.js)
+     port.acheter     { objet, quantite, case } acheter une semence (à son cours, qui monte)
+   Le bac, les commandes, l'import et les niveaux (fiche I1c ; js/engine/bac.js, sans inverse) :
+     port.honorer     { commande, case }        honorer une commande du bac avec ce qu'on a porté
+     port.importer    { article, quantite, case } commander au catalogue (« objet:jeune_pommier »…), payé d'avance
+     port.contrat     { contrat, case }         accepter un contrat d'export proposé (fiche I8b)
+     port.livrer      { contrat, case }         livrer à un contrat accepté ce qu'on a porté de son objet (fiche I8b)
+     port.apporter    { case }                  apporter au chantier du port les matériaux portés du niveau suivant
+     port.agrandir    { case }                  payer le niveau suivant (ses matériaux apportés)
+   Les tâches des villageois (l'île à bâtir, fiche I3c ; js/engine/taches.js, sans inverse) :
+     villageois.attribuer { id, tache }        confier une tâche (TACHES.LISTE) au villageois `id` ; « aucune » : plus de tâche
+     villageois.outil     { id, outil }        lui donner son outil (hache, pioche, faux, canne) ; « reprendre » : le reprendre
+     villageois.vendre    { id, objets }       la navette : ce qu'il porte au port (les objets marqués « à vendre »)
+   La charrette du village (l'île à bâtir, fiche I2b ; js/engine/charrette.js, sans inverse ; les rails se posent et se
+   reprennent par bloc.poser, bloc.reprendre, comme les autres blocs) :
+     charrette.palier     { branche }          acheter le palier suivant de sa capacité (« capacite ») ou de sa vitesse
+                                                (« vitesse »), payé en pièces ; le palier du cheval : il vient par le bac
+   Les liens entre villageois (l'île à bâtir, fiche I6b ; js/engine/liens.js, sans inverse) :
+     villageois.foyer     { a, b, maison? }     proposer à deux proches de vivre ensemble (la maison : sa boîte aux lettres)
+     villageois.enfant    { foyer }             proposer à un foyer d'accueillir un enfant (il viendra par le prochain bac)
+   L'amitié avec les villageois (fiche I9d, en ligne ; js/engine/villageois-amitie.js, sans inverse ; dans un monde de
+   l'île, avec l'amitié de l'acteur : temps-monde.js) :
+     villageois.parler    { id, n?, activite?, but? } lui parler (sa bulle ; n : le rang de l'appui, activite : ce que la
+                                                carte le voit faire, but : celui de sa sortie)
+     villageois.offrir    { id, objet }         lui offrir un cadeau (un par jour)
+     villageois.accueillir { id }               le nouveau venu a frappé à sa porte : il est chez lui
+   L'étal du joueur (l'île à bâtir, fiche I4 ; js/engine/bourse.js, l'inverse l'un de l'autre) :
+     etal.mettre      { objet, quantite }       mettre en vente à l'étal (de l'inventaire, puis du réfrigérateur)
+     etal.reprendre   { objet, quantite }       reprendre de l'étal (à l'inventaire)
+   Le garde-manger commun et la cuisine du village (l'île à bâtir, fiche I3e ; js/engine/garde-manger.js, sans
+   inverse : la même commande, oui à faux, reprend ce qu'elle a donné) :
+     village.commun   { oui, sorte? }           rendre la boîte à nourriture (« boite ») ou le réfrigérateur (« frigo ») commun au village, ou non
+     village.reserve  { jours }                 les jours de repas du village que le travail y dépose au plus (0 : rien)
+     village.cuisine  { case, oui }             la cuisinière ou le four de la case : de la cuisine du village, ou non
+   Les commerces d'artisans (l'île à bâtir, fiche I5a ; js/engine/artisans.js, sans inverse) :
+     commerce.ouvrir    { id, sorte }                   le villageois `id` ouvre le commerce `sorte` (forge…) : la décision du joueur
+     commerce.acheter   { commerce, objet, quantite }   acheter au comptoir du commerce (au prix de vente : à l'artisan)
+     commerce.commander { commerce, recette, facon? }   lui commander une pièce, payée d'avance ou à façon (la matière du joueur)
+     commerce.lettres   { commerce, lettres? }          les lettres de son enseigne (une couleur débloquée ; sans : d'origine)
+     commerce.rejoindre { id, commerce }                I5b : le villageois `id` rejoint le commerce en second (la décision du joueur)
+     commerce.suggerer  { id, sorte }                   I9e, en ligne : un invité très ami du villageois suggère au
+                                                        propriétaire de l'île qu'il ouvre ce commerce (rien ne change : le
+                                                        journal du monde et l'avis au propriétaire ; artisans.js)
+   Les noms et la chronique (l'île à bâtir, fiche I7g ; I9e : des commandes, pour qu'en ligne ils soient ceux du monde ;
+   js/engine/noms.js, chronique.js, sans inverse) :
+     nom.donner        { quoi, texte, id? }      nommer l'île, le village (quoi : ile, village), une maison (id : la case de sa
+                                                boîte aux lettres) ou un commerce (id : le sien) ; une maison sans texte perd
+                                                son nom
+     chronique.epingler { n, oui }              épingler (ou détacher) la ligne `n` de la chronique
+     chronique.noter   { n, texte? }            écrire sa note sur la ligne `n` (sans texte : l'effacer) ; dans un monde de
+                                                l'île, la ligne porte le compte de qui l'a épinglée ou annotée (par)
 */
 
 import { objectifsARevoir } from './campaign.js';
@@ -130,20 +198,36 @@ import { pickUp } from './ramassage.js';
 import { recolterBac, semerBac } from './bacs.js';
 import { cueillirMassif } from './massifs.js';
 import { remplirTonnelet } from './tonnelets.js';
+import { mettreALEtal, reprendreDeLEtal } from './bourse.js';
+import { acheterAuCommerce, choisirLettres, commanderAuCommerce, ouvrirCommerce, rejoindreCommerce, suggererCommerce } from './artisans.js';
+import { epinglerLigne, noterLigne, renommerEtNoter } from './chronique.js';
+import { nomsDe } from './noms.js';
 import { engraisser, jeterAuCompost } from './compost.js';
 import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, stopCurrent } from './kitchen.js';
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
 import { deposerBoite, reprendreBoite } from './repas.js';
 import { eatSnack } from './family.js';
+import { poserSac, remplirSac, reprendreSac, retirerSac } from './equipement.js';
 import { castLine, chopTree, mineRock, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass } from './outils.js';
 import { sortirBotte, verserFibres } from './botteleuse.js';
 import { verserChaine } from './chaines.js';
 import { verserGrain } from './distributeur.js';
 import { craft, ramasser } from './atelier.js';
 import { harvestTree } from './orchard.js';
+import { recolterPieceMonde } from './monde-recolte.js';
 import { buyTech } from './techtree.js';
 import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
+import { avecActeur, poserSommeil } from './temps-monde.js';
+import { acheterAuPort, dechargerAuPort, vendreAuPort } from './port.js';
+import { agrandirPort, apporterAuChantier, commanderImport, honorerCommande } from './bac.js';
+import { accepterContrat, livrerContrat } from './contrats.js';
+import { chargerPortage, choisirVehicule, dechargerPortage } from './portage.js';
+import { attribuer, donnerOutil, marquerAVendre, reprendreOutil } from './taches.js';
+import { acheterPalier } from './charrette.js';
+import { accueillirEnfant, formerFoyer } from './liens.js';
+import { accueillirAuVillage, offrirVillageois, parlerAuVillageois } from './villageois-amitie.js';
+import { designerCuisine, designerGardeManger, reglerReserve } from './garde-manger.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -178,6 +262,9 @@ const CONTROLES = {
   coord: (v) => typeof v === 'string' && /^\d{1,6},\d{1,6}$/.test(v),
   coords: (v) => Array.isArray(v) && v.length > 0 && v.length <= 60 && v.every((x) => typeof x === 'string' && /^\d{1,6},\d{1,6}$/.test(x)),
   eau: (v) => typeof v === 'string' && /^[a-z]{1,20}$/.test(v),
+  // (I9b : une pièce du grand monde, « sorte:x,y » ; le geste qu'on y fait)
+  piece: (v) => typeof v === 'string' && /^[a-z_]{1,30}:\d{1,6},\d{1,6}$/.test(v),
+  geste: (v) => v === 'couper' || v === 'casser' || v === 'faucher' || v === 'cueillir' || v === 'ramasser',
   noeud: (v) => typeof v === 'string' && !!DATA.ARBRE.noeuds[v],
   recetteAtelier: (v) => typeof v === 'string' && !!DATA.ATELIER.RECETTES[v],
   station: (v) => typeof v === 'string' && !!DATA.STATIONS[v],
@@ -185,6 +272,16 @@ const CONTROLES = {
   mode: (v) => typeof v === 'string' && /^[a-z_]{1,20}$/.test(v),
   fleur: (v) => typeof v === 'string' && !!(DATA.BACS && DATA.BACS.FLEURS[v]),
   quantite: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e6,   // (0 : le moteur dit pourquoi)
+  // (I9d : ce que fait un villageois, le but de sa sortie : un mot)
+  mot: (v) => typeof v === 'string' && /^[a-z_]{1,24}$/.test(v),
+  // (I3c : une tâche des villageois, ou « aucune » ; un outil de travail, ou « reprendre » ; des objets à vendre)
+  tache: (v) => typeof v === 'string' && (v === 'aucune' || !!((DATA.TACHES && DATA.TACHES.LISTE) || {})[v]),
+  outil: (v) => v === 'reprendre' || v === 'hache' || v === 'pioche' || v === 'faux' || v === 'canne',
+  objets: (v) => Array.isArray(v) && v.length <= 40 && v.every((x) => typeof x === 'string' && !!DATA.OBJETS[x]),
+  // (I9e : ce qu'on nomme ; un texte libre, peut-être vide, borné : le moteur le nettoie ; le rang d'une ligne)
+  nomme: (v) => v === 'ile' || v === 'village' || v === 'maison' || v === 'commerce',
+  ecrit: (v) => typeof v === 'string' && v.length <= 400,
+  rang: (v) => Number.isInteger(v) && v >= 0 && v <= 1e9,
   // les papiers peints (js/engine/papiers.js) : un motif, ou « aucun » ; le niveau 0 (en bas) ou 1 (l'étage) ;
   // des murs et leur motif (l'annulation : { [case du mur]: motif | aucun }, 400 au plus)
   motif: (v) => v === AUCUN || (typeof v === 'string' && !!(DATA.PAPIERS_PEINTS || {})[v]),
@@ -507,9 +604,19 @@ export const COMMANDES = {
   'boite.deposer': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => deposerBoite(state, objet, quantite) },
   'boite.reprendre': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => reprendreBoite(state, objet, quantite) },
   'manger': {
-    args: { objet: 'objet?', sac: 'drapeau?' },
-    executer: (state, { objet = null, sac = false }) => eatSnack(state, objet, { duSac: sac }),
+    args: { objet: 'objet?', sac: 'drapeau?', dehors: 'drapeau?' },
+    // (I9b : dehors, le personnage du joueur est hors de la ferme : il ne mange que ce qu'il y a dans son sac ; le monde
+    // ne sait pas où il est, la page le dit)
+    executer: (state, { objet = null, sac = false, dehors = false }) => eatSnack(state, objet, { duSac: sac || dehors }),
   },
+  // (I9b : le sac à provisions de chacun, dans un monde de l'île : temps-monde.js sacDe ; ailleurs, celui de la partie)
+  'sac.poser': { args: { objet: 'objet' }, executer: (state, { objet }) => poserSac(state, objet) },
+  'sac.retirer': { args: {}, executer: (state) => retirerSac(state) },
+  'sac.remplir': {
+    args: { objet: 'objet', quantite: 'quantite', source: 'texte?' },
+    executer: (state, { objet, quantite, source = 'inventaire' }) => remplirSac(state, objet, Math.max(1, Math.floor(quantite)), source === 'frigo' ? 'frigo' : 'inventaire'),
+  },
+  'sac.reprendre': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => reprendreSac(state, objet, Math.max(1, Math.floor(quantite))) },
   'outil.couper': { args: { arbre: 'coord', fort: 'drapeau?' }, executer: (state, { arbre, fort = false }) => chopTree(state, arbre, null, fort) },
   'outil.casser': { args: { rocher: 'coord', fort: 'drapeau?' }, executer: (state, { rocher, fort = false }) => mineRock(state, rocher, null, fort) },
   'outil.caillou': { args: { rocher: 'coord' }, executer: (state, { rocher }) => ramasserCaillou(state, rocher) },
@@ -517,6 +624,11 @@ export const COMMANDES = {
   'outil.faucherAutour': { args: { touffes: 'coords' }, executer: (state, { touffes }) => scytheAround(state, touffes, null) },
   'outil.pecher': { args: { eau: 'eau', coin: 'texte?' }, executer: (state, { eau, coin = null }) => castLine(state, eau, coin) },
   'verger.cueillir': { args: { arbre: 'texte' }, executer: (state, { arbre }) => harvestTree(state, arbre) },
+  // (I9b : une pièce du grand monde, sur une île partagée : son geste, ce qu'elle lâche au coffre commun)
+  'monde.recolter': {
+    args: { piece: 'piece', geste: 'geste?', fort: 'drapeau?', variante: 'case?', depuis: 'case?' },
+    executer: (state, { piece, geste, fort = false, variante, depuis }) => recolterPieceMonde(state, piece, { geste, fort, variante, depuis }),
+  },
   'tech.acheter': { args: { noeud: 'noeud' }, executer: (state, { noeud }) => buyTech(state, noeud) },
   'atelier.fabriquer': { args: { recette: 'recetteAtelier' }, executer: (state, { recette }) => craft(state, recette) },
   'atelier.construire': { args: { station: 'station' }, executer: (state, { station }) => buildStation(state, station) },
@@ -545,6 +657,159 @@ export const COMMANDES = {
     args: {},
     executer: (state) => nuitPartagee(state),
   },
+  'temps.sommeil': {
+    args: { oui: 'drapeau' },
+    executer: (state, { oui }) => poserSommeil(state, oui),
+  },
+  'port.vendre': {
+    args: { objet: 'objet', quantite: 'quantite', case: 'case' },
+    executer: (state, { objet, quantite, case: c }) => vendreAuPort(state, objet, Math.max(1, Math.floor(quantite)), c),
+  },
+  'port.acheter': {
+    args: { objet: 'objet', quantite: 'quantite', case: 'case' },
+    executer: (state, { objet, quantite, case: c }) => acheterAuPort(state, objet, Math.max(1, Math.floor(quantite)), c),
+  },
+  'port.honorer': {
+    args: { commande: 'texte', case: 'case' },
+    executer: (state, { commande, case: c }) => honorerCommande(state, commande, c),
+  },
+  'port.importer': {
+    args: { article: 'texte', quantite: 'quantite', case: 'case' },
+    executer: (state, { article, quantite, case: c }) => commanderImport(state, article, Math.max(1, Math.floor(quantite)), c),
+  },
+  // (fiche I8b : les contrats d'export)
+  'port.contrat': {
+    args: { contrat: 'texte', case: 'case' },
+    executer: (state, { contrat, case: c }) => accepterContrat(state, contrat, c),
+  },
+  'port.livrer': {
+    args: { contrat: 'texte', case: 'case' },
+    executer: (state, { contrat, case: c }) => livrerContrat(state, contrat, c),
+  },
+  'port.apporter': {
+    args: { case: 'case' },
+    executer: (state, { case: c }) => apporterAuChantier(state, c),
+  },
+  'port.agrandir': {
+    args: { case: 'case' },
+    executer: (state, { case: c }) => agrandirPort(state, c),
+  },
+  // (fiche I2, le portage : on charge et l'on reprend sur la ferme, on décharge sous la halle : tout se vend)
+  'port.decharger': {
+    args: { case: 'case' },
+    executer: (state, { case: c }) => dechargerAuPort(state, c),
+  },
+  'portage.charger': {
+    args: { objet: 'objet', quantite: 'quantite', case: 'case' },
+    executer: (state, { objet, quantite, case: c }) => chargerPortage(state, objet, Math.max(1, Math.floor(quantite)), c),
+  },
+  'portage.reprendre': {
+    args: { objet: 'objet?', case: 'case' },
+    executer: (state, { objet = null, case: c }) => dechargerPortage(state, objet, Infinity, c),
+  },
+  'portage.vehicule': {
+    args: { vehicule: 'texte', case: 'case' },
+    executer: (state, { vehicule, case: c }) => choisirVehicule(state, vehicule, c),
+  },
+  'villageois.attribuer': {
+    args: { id: 'texte', tache: 'tache' },
+    executer: (state, { id, tache }) => attribuer(state, id, tache === 'aucune' ? null : tache),
+  },
+  'villageois.outil': {
+    args: { id: 'texte', outil: 'outil' },
+    executer: (state, { id, outil }) => (outil === 'reprendre' ? reprendreOutil(state, id) : donnerOutil(state, id, outil)),
+  },
+  'villageois.vendre': {
+    args: { id: 'texte', objets: 'objets' },
+    executer: (state, { id, objets }) => marquerAVendre(state, id, objets),
+  },
+  // (fiche I2b : la charrette du village, un palier de l'une de ses deux branches)
+  'charrette.palier': {
+    args: { branche: 'mot' },
+    executer: (state, { branche }) => acheterPalier(state, branche),
+  },
+  // (I9d : parler, offrir, l'accueil d'un nouveau venu ; en ligne, avec l'amitié de l'acteur)
+  'villageois.parler': {
+    args: { id: 'texte', n: 'quantite?', activite: 'mot?', but: 'mot?' },
+    executer: (state, { id, n = 0, activite = null, but = null }) => parlerAuVillageois(state, id, { n, activite, but }),
+  },
+  'villageois.offrir': {
+    args: { id: 'texte', objet: 'objet' },
+    executer: (state, { id, objet }) => offrirVillageois(state, id, objet),
+  },
+  'villageois.accueillir': {
+    args: { id: 'texte' },
+    executer: (state, { id }) => accueillirAuVillage(state, id),
+  },
+  'villageois.foyer': {
+    args: { a: 'texte', b: 'texte', maison: 'case?' },
+    executer: (state, { a, b, maison = null }) => formerFoyer(state, a, b, maison),
+  },
+  'villageois.enfant': {
+    args: { foyer: 'texte' },
+    executer: (state, { foyer }) => accueillirEnfant(state, foyer),
+  },
+  'village.commun': {
+    args: { oui: 'drapeau', sorte: 'texte?' },
+    executer: (state, { oui, sorte = null }) => designerGardeManger(state, oui, sorte === 'boite' || sorte === 'frigo' ? sorte : null),
+  },
+  'village.reserve': {
+    args: { jours: 'quantite' },
+    executer: (state, { jours }) => reglerReserve(state, jours),
+  },
+  'village.cuisine': {
+    args: { case: 'case', oui: 'drapeau' },
+    executer: (state, { case: c, oui }) => designerCuisine(state, c, oui),
+  },
+  'etal.mettre': {
+    args: { objet: 'objet', quantite: 'quantite' },
+    executer: (state, { objet, quantite }) => mettreALEtal(state, objet, quantite),
+  },
+  'etal.reprendre': {
+    args: { objet: 'objet', quantite: 'quantite' },
+    executer: (state, { objet, quantite }) => reprendreDeLEtal(state, objet, quantite),
+  },
+  'commerce.ouvrir': {
+    args: { id: 'texte', sorte: 'texte' },
+    executer: (state, { id, sorte }) => ouvrirCommerce(state, id, sorte),
+  },
+  'commerce.acheter': {
+    args: { commerce: 'texte', objet: 'objet', quantite: 'quantite' },
+    executer: (state, { commerce, objet, quantite }) => acheterAuCommerce(state, commerce, objet, quantite),
+  },
+  'commerce.commander': {
+    args: { commerce: 'texte', recette: 'texte', facon: 'drapeau?' },
+    executer: (state, { commerce, recette, facon = false }) => commanderAuCommerce(state, commerce, recette, { facon }),
+  },
+  'commerce.lettres': {
+    args: { commerce: 'texte', lettres: 'texte?' },
+    executer: (state, { commerce, lettres = null }) => choisirLettres(state, commerce, lettres),
+  },
+  'commerce.rejoindre': {
+    args: { id: 'texte', commerce: 'texte' },
+    executer: (state, { id, commerce }) => rejoindreCommerce(state, id, commerce),
+  },
+  // (I9e : la suggestion d'un invité ; les noms et la chronique)
+  'commerce.suggerer': {
+    args: { id: 'texte', sorte: 'texte' },
+    executer: (state, { id, sorte }) => suggererCommerce(state, id, sorte),
+  },
+  'nom.donner': {
+    args: { quoi: 'nomme', texte: 'ecrit', id: 'texte?' },
+    executer: (state, { quoi, texte, id = null }) => {
+      nomsDe(state);
+      const r = renommerEtNoter(state, quoi, texte, quoi === 'maison' || quoi === 'commerce' ? id : null);
+      return r.ok ? { ...r, quoi } : { ok: false, error: r.error };
+    },
+  },
+  'chronique.epingler': {
+    args: { n: 'rang', oui: 'drapeau' },
+    executer: (state, { n, oui }) => { const r = epinglerLigne(state, n, oui); return r.ok ? r : { ok: false, error: r.error }; },
+  },
+  'chronique.noter': {
+    args: { n: 'rang', texte: 'ecrit?' },
+    executer: (state, { n, texte = '' }) => { const r = noterLigne(state, n, texte); return r.ok ? r : { ok: false, error: r.error }; },
+  },
 };
 
 // La commande `c` est-elle bien formée ? null si oui, sinon la raison.
@@ -563,13 +828,14 @@ export function commandeInvalide(c) {
   return null;
 }
 
-// Joue la commande sur la partie (voir l'en-tête). Une commande mal formée ne touche à rien.
-export function executerCommande(state, c) {
+// Joue la commande sur la partie (voir l'en-tête). Une commande mal formée ne touche à rien. `o.acteur` (I9a2) :
+// le compte qui la joue, dans un monde de l'île (son énergie : avecActeur) ; ailleurs, sans effet.
+export function executerCommande(state, c, o = {}) {
   const err = commandeInvalide(c);
   const id = c && typeof c === 'object' ? c.id : undefined;
   if (err) return { ...fail(err), id };
   const args = Object.fromEntries(Object.entries(c.args).filter(([, v]) => v !== undefined && v !== null));
-  const r = COMMANDES[c.type].executer(state, args);
+  const r = o && o.acteur ? avecActeur(state, o.acteur, () => COMMANDES[c.type].executer(state, args)) : COMMANDES[c.type].executer(state, args);
   if (r.ok) objectifsARevoir(state);   // (piste 5 : les objectifs du chapitre revus au pas suivant)
   return r.ok ? { ...r, id, inverses: r.inverses || [] } : { ...r, id };
 }

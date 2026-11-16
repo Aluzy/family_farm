@@ -4,15 +4,14 @@
    ========================================================================== */
 
 import {
-  actionCost, botBuy, botDay, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill,
-  botRaiseFunds, botRecipeValue, botScythe, botSell, botSheep, botSnack, botStepInfo, botWheatKept,
-  chapterReached, countItem, cutGrass, DATA, hasHoe, hasTool, millPending, NIGHT_STEPS,
-  openStation, sheepCount, simulateFromCopy, simulateGame, simulatePlay,
-  soilCount, testBatir, testFillBatteries, testGoToChapter, testSetLevel, testWoolReady,
+  actionCost, atelierConstruit, botBuy, botDay, botFabriquer, commencerObjectifs, createNewGame, materiauxFournis,
+  posteSimulation, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill, botRecipeValue, botScythe, botSheep,
+  botSnack, botStepInfo, botWheatKept, countItem, cutGrass, DATA, hasHoe, hasTool, millPending, openStation,
+  sheepCount, simulateFromCopy, simulateGame, simulatePlay, soilCount, testBatir, testFillBatteries, testSetLevel,
+  testWoolReady,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atChapter, fillCows, fillSheep, growZone, partie, pature, reach, setInv,
-  test, vieFaite,
+  assert, assertEqual, atChapter, fillCows, fillSheep, growZone, partie, pature, reach, setInv, test,
 } from './aide.mjs';
 
 /* --- Lot 10 : simulation d'un joueur automatique --- */
@@ -47,7 +46,7 @@ test('Lot 10 : une partie simulée est reproductible (même graine, même courbe
   assertEqual(a.map((r) => r.nuit), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   for (const r of a) {
     assert(r.bonheur >= 0 && r.bonheur <= 100 && !('autonomie' in r), 'bonheur entre 0 et 100, plus d\'autonomie');
-    assert(r.energie >= 0 && r.energie <= DATA.PERSONNAGE.MAX, 'énergie du personnage entre 0 et le maximum');
+    assert(r.energie >= 0 && r.energie <= r.energieMax, 'énergie du personnage entre 0 et son maximum (qui grandit avec les niveaux)');
     assert(r.bonheur >= 0 && r.bonheur <= DATA.BONHEUR.MAX);
     assert(r.pieces >= 0 && r.conserves >= 0 && r.niveau >= 1);
   }
@@ -63,24 +62,6 @@ test('Lot 10 : la simulation ne lit ni l\'horloge ni Math.random', () => {
   } finally {
     Math.random = random;
     Date.now = now;
-  }
-});
-
-test('Lot 10 : chaque nuit, la journée du joueur dure son temps d\'éveil', () => {
-  for (const id of ['applique', 'minimal']) {
-    const s = partie(1);
-    const strat = DATA.SIMULATION.STRATEGIES[id];
-    // on mesure l'éveil juste avant Dormir : botDay l'a rempli, sleep() le remet à zéro.
-    // La mesure est une étape de nuit ajoutée en tête : elle passe avant la remise à zéro.
-    const eveil = [];
-    NIGHT_STEPS.unshift((state) => { eveil.push(state.awakeMs); });
-    try {
-      botDay(s, strat, {});
-    } finally {
-      NIGHT_STEPS.shift();
-    }
-    assertEqual(eveil[0], strat.eveilS * 1000, `${id} : ${eveil[0]} ms d'éveil au lieu de ${strat.eveilS} s`);
-    assertEqual([s.day, s.awakeMs], [2, 0]);
   }
 });
 
@@ -130,34 +111,6 @@ test('Lot 10 : le joueur automatique fauche et bottelle la paille de ses moutons
   testWoolReady(s);
   botSheep(s);
   assertEqual([countItem(s, 'laine'), sheepCount(s)], [2, 2]);
-});
-
-test('Lot 10 : au chapitre du troupeau, le joueur automatique nourrit ses moutons et finit par tondre 10 laines', () => {
-  const s = partie(3);
-  simulatePlay(s, 'applique', 22);
-  testGoToChapter(s, 5);
-  vieFaite(s); // (la nouvelle vision : le repas partagé, hors du joueur automatique)
-  // version 1.6 : les améliorations coûtent plus cher (100 à 2 200 pièces) ;
-  // version 1.7 : le Champ attend que le Moulin soit construit. Le chapitre se
-  // termine vers la 28ᵉ nuit (22ᵉ avant ces deux versions).
-  const rows = simulatePlay(s, 'applique', 30);
-  assertEqual(rows.length, 30);
-  assertEqual(s.stations.moulin.construit, true, 'il a construit le Moulin');
-  assert(sheepCount(s) >= 3, `il a acheté ses moutons : ${sheepCount(s)}`);
-  assert(s.campagne.compteurs.laines >= 10, `laines tondues : ${s.campagne.compteurs.laines}`);
-  assert(chapterReached(s) >= 6, `le chapitre du troupeau est terminé : chapitre ${chapterReached(s)}`);
-  assertEqual(rows.filter((r) => r.couverture <= 0).length, 0, 'la famille mange tous les soirs');
-});
-
-test('Lot 10 : le joueur vend ce qui périt demain, jamais la réserve', () => {
-  const s = partie(1);
-  s.inventaire = { carotte: [{ qty: 100, nightsLeft: 1, origin: 'produit' }], patate: [{ qty: 10, nightsLeft: 1, origin: 'produit' }] };
-  s.famille.reserve = { patate: 6 };
-  const piecesAvant = s.pieces;
-  botSell(s);
-  assertEqual(countItem(s, 'carotte'), 0, 'les carottes qui périraient sont vendues');
-  assertEqual(countItem(s, 'patate'), 6, 'la réserve de semences reste');
-  assert(s.pieces > piecesAvant, 'la vente rapporte des pièces');
 });
 
 test('fiche 7c : le joueur fabrique sa houe (plus de Marché), sans toucher à ses pièces', () => {
@@ -224,18 +177,6 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   assertEqual(cultures(u).every((c) => c !== null && !botIsFieldCrop(c)), true, 'six parcelles de légumes');
 });
 
-test('Lot 10 : le joueur ne vend des conserves que pour payer un achat, et pas sous le stock gardé', () => {
-  const s = partie(1);
-  s.pieces = 0;
-  s.inventaire.conserve = [{ qty: DATA.SIMULATION.CONSERVES_GARDEES, nightsLeft: null, origin: 'acheté' }];
-  botRaiseFunds(s, 30);
-  assertEqual(countItem(s, 'conserve'), DATA.SIMULATION.CONSERVES_GARDEES, 'sous le stock gardé, on ne vend pas');
-  s.inventaire.conserve = [{ qty: DATA.SIMULATION.CONSERVES_GARDEES + 100, nightsLeft: null, origin: 'acheté' }];
-  botRaiseFunds(s, 30);
-  assertEqual(s.pieces, 30, 'juste ce qu\'il faut');
-  assertEqual(countItem(s, 'conserve'), DATA.SIMULATION.CONSERVES_GARDEES + 100 - 10);
-});
-
 test('Lot 10 : à court d\'énergie, le joueur mange un en-cas, jamais la réserve de semences', () => {
   const s = partie(1);
   s.energie = 0;
@@ -256,10 +197,29 @@ test('Lot 10 : plante, arrose et récolte : les premières carottes arrivent', (
   assert(s.campagne.compteurs.eauMl > 0, 'la pompe a tourné');
 });
 
-test('Lot 10 : dépannage : une unité de nourriture achetée chaque soir fait monter son prix', () => {
-  const opts = { depannage: { item: 'carotte', dernier: null } };
-  const rows = simulateGame('applique', 5, 1, opts);
-  assert(rows.every((r) => r.depannage && typeof r.depannage.prix === 'number'), 'le prix de la prochaine unité est relevé chaque nuit');
-  const prix = rows.map((r) => r.depannage.prix);
-  assert(prix[4] >= prix[0], 'le prix ne baisse pas quand on achète chaque nuit');
+/* --- I0b : le joueur automatique remis d'aplomb (la partie d'aujourd'hui) --- */
+
+test('I0b : une recette de l\'Atelier : la planche se fabrique, les bruts qui manquent sont fournis et comptés', () => {
+  const s = createNewGame(1, { nom: 'Simulation' });
+  commencerObjectifs(s);
+  s.inventaire = {};
+  assert(botFabriquer(s, 'boite_nourriture'), 'la boîte est fabriquée');
+  const A = DATA.ATELIER;
+  assertEqual([countItem(s, 'boite_nourriture'), countItem(s, 'planche'), atelierConstruit(s)], [1, 0, true]);
+  assertEqual(materiauxFournis(s), { bois: A.CONSTRUCTION.bois + A.RECETTES.boite_nourriture.entrees.planche * A.RECETTES.planche.entrees.bois, pierre: A.CONSTRUCTION.pierre });
+  assertEqual(botFabriquer(s, 'nid_poule'), false, 'le blé d\'un nid ne se fournit pas');
+});
+
+test('I0b : les comptes de la simulation, par nuit et par poste, tombent juste', () => {
+  const s = createNewGame(1, { nom: 'Simulation' });
+  commencerObjectifs(s);
+  const avant = s.pieces;
+  const rows = simulatePlay(s, 'applique', 12);
+  const somme = (o) => Object.values(o).reduce((t, v) => t + v, 0);
+  assertEqual(rows.reduce((t, r) => t + somme(r.gains) - somme(r.depenses), 0), s.pieces - avant, 'gains − dépenses = pièces gagnées');
+  assert(rows.some((r) => r.gains.vente_cultures > 0) && rows.some((r) => r.depenses.graines > 0), 'des ventes de cultures, des graines achetées');
+  assertEqual(
+    ['Vente : Carotte', 'Vente : Pain', 'Vente : Œuf', 'Achat : Graines de carotte', 'Achat : Blé', 'Technologie : x', 'Amélioration : Pompe', 'Poulailler agrandi', 'Calèche : Miel'].map(posteSimulation),
+    ['vente_cultures', 'vente_plats', 'vente_produits', 'graines', 'graines', 'technologies', 'appareils', 'batiments', 'achats_hameaux'],
+  );
 });

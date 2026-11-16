@@ -154,15 +154,6 @@
         "cotier"
       ]
     },
-    "ECRITS": {
-      "odile": "champetre",
-      "basile": "forestier",
-      "theo": "cotier",
-      "garance": "fleuri",
-      "achille": "champetre",
-      "lise": "fleuri",
-      "fernand": "cotier"
-    },
     "ADMIRE_PAROLES": [
       "Oh, quel joli coin {adj} ! J'adore.",
       "Ce coin {adj}, c'est tout à fait mon goût !",

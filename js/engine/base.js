@@ -17,7 +17,7 @@ export function mulberry32(seed) {
   };
 }
 
-export const STATE_VERSION = 86;
+export const STATE_VERSION = 109;
 // Version du générateur de la ferme et du grand monde (ferme-generee.js, monde-gen.js, monde-sol.js,
 // monde-hameaux.js… et leurs réglages de data/monde.json, data/terrain.json), notée dans chaque partie
 // (state.carte.generateur, à côté de sa graine). Une même graine ne refait le même monde qu'avec le même
@@ -46,8 +46,10 @@ export const STATE_VERSION = 86;
 // sol) ; la migration 85 → 86 garde les parties du 8.
 export const GENERATEUR_VERSION = 9;
 // Version du jeu, affichée dans les Options (À propos) : la dernière version notée dans le
-// code et les données (« version 1.22 » : les objectifs « objet »).
-export const GAME_VERSION = '1.22.0';
+// code et les données (« version 1.22 » : les objectifs « objet » ; 2.0.0 : la bascule sur l'île à bâtir,
+// fiche I9h, docs/ile.md). Les mondes en ligne la prennent du serveur (worker/src/monde.mjs) : un monde se
+// met à jour à sa première ouverture par un serveur d'une autre version.
+export const GAME_VERSION = '2.0.0';
 export const EPS = 1e-9; // tolérance de calcul flottant (pas une valeur d'équilibrage)
 
 // `part` sur `total`, en % entier arrondi vers le bas et plafonné à 100 ; 0 sans total.

@@ -14,7 +14,7 @@ import { itemsText } from './common.js';
 import { energyDetailsHtml } from './energie.js';
 import { familyNameHtml } from './depart.js';
 import { mainCharacter } from '../engine/depart.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
 import { tel } from './consent.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
@@ -598,6 +598,8 @@ export function renderFamille() {
 // Fiche 19 : l'option du compagnon (state.compagnon.aide).
 document.addEventListener('change', (e) => {
   if (!e.target || e.target.id !== 'compagnon-toggle') return;
+  // (I9f : en ligne, la famille de la partie est celle du propriétaire du monde : elle ne change pas, js/ui/en-ligne.js)
+  if (enLigne) { e.target.checked = !e.target.checked; notify('🌐 En ligne, la famille, ses habits et ses animaux ne changent pas : on les change dans sa partie solo.'); return; }
   laisserAider(state, e.target.checked);
   persistState();
   refresh();
