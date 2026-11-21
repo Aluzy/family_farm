@@ -23,6 +23,7 @@
     "plans.json",
     "naturaliste.json",
     "meteo.json",
-    "village.json"
+    "village.json",
+    "ile.json"
   ]
 }

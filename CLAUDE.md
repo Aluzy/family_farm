@@ -51,3 +51,6 @@ pure. Avant de livrer un dessin, vérifier chaque point :
 - Les données (data/*.json) se recompilent avec `node scripts/build-data.mjs` (js/data.generated.js) ; les
   atlas avec `python3 scripts/carte/atlas.py` quand une image de meuble change.
 - Avant une PR : `node tests/all.mjs` doit finir sur « Tout est vert ».
+- Le chantier de la nouvelle carte (l'île de 300 × 300, branche `ile-300`) : `docs/ile-300.md` fait foi pour la carte.
+  Son code neuf passe ESLint et Prettier (`npm run lint`, `npm run format`) ; un fichier qui rejoint la vérification
+  s'ajoute à la liste `NOUVEAUX` d'`eslint.config.js` et à `.prettierignore`.

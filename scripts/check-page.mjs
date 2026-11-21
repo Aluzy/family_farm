@@ -15,6 +15,9 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { ROOT } from './lib/engine-source.mjs';
 
 const errors = [];
+// Les modules d'un chantier, écrits et testés, que la page n'importe pas encore : la carte de l'île de 300 × 300
+// (docs/ile-300.md), branchée à l'étape 7 ; elle quitte alors cette liste.
+const EN_CHANTIER = ['js/engine/ile.js'];
 const html = readFileSync(join(ROOT, 'jeu.html'), 'utf8');
 
 /* 1. les fichiers de la page */
@@ -69,9 +72,10 @@ if (entry) {
       }
     }
   }
-  /* 3. aucun module oublié */
+  /* 3. aucun module oublié (sauf ceux d'un chantier pas encore branché sur la page) */
   for (const dir of ['js/engine', 'js/ui']) {
     for (const f of readdirSync(join(ROOT, dir))) {
+      if (EN_CHANTIER.includes(`${dir}/${f}`)) continue;
       if (f.endsWith('.js') && !seen.has(join(ROOT, dir, f))) errors.push(`${dir}/${f} : module jamais importé`);
     }
   }

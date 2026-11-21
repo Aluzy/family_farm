@@ -10,9 +10,15 @@
     "test": "node tests/all.mjs",
     "test:moteur": "node tests/run-tests.mjs",
     "smoke": "node tests/smoke.mjs",
+    "lint": "eslint && prettier --check .",
+    "format": "prettier --write .",
     "build": "node scripts/build-data.mjs && node scripts/build-encyclopedie.mjs && node scripts/build-site.mjs"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "@eslint/js": "10.0.1",
+    "esbuild": "0.28.2",
+    "eslint": "10.15.0",
+    "globals": "17.14.0",
+    "prettier": "3.10.1"
   }
 }
