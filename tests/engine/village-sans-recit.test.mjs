@@ -21,10 +21,11 @@ import { assert, assertEqual, test } from './aide.mjs';
 const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE = join(ICI, '..', '..');
 
-// Les modules retirés à la bascule.
+// Les modules retirés à la bascule. (engine/ile.js, le récit de l'île, retiré lui aussi : le nom sert de nouveau à la
+// carte de l'île de 300 × 300, docs/ile-300.md ; de même la clé ILE des données.)
 const RETIRES = [
   'engine/recit.js', 'engine/recit-aiguillage.js', 'engine/recit-ancien.js', 'engine/recit-muet.js', 'engine/fil-lune.js',
-  'engine/secrets.js', 'engine/ile.js', 'engine/bienvenue.js', 'engine/usure.js', 'engine/habitants.js', 'engine/caleche.js',
+  'engine/secrets.js', 'engine/bienvenue.js', 'engine/usure.js', 'engine/habitants.js', 'engine/caleche.js',
   'engine/caleche-tournee.js', 'engine/projets.js', 'engine/fetes.js',
   'ui/caleche.js', 'ui/habitants.js', 'ui/bienvenue.js', 'ui/carnet.js', 'ui/scene.js', 'ui/fetes.js', 'ui/village.js',
   'carte/ferme/caleche.js', 'carte/ferme/malle.js', 'carte/ferme/visite.js', 'carte/ferme/rencontre.js',
@@ -57,7 +58,7 @@ test('les modules du récit, des hameaux et de la calèche sont retirés, et rie
 });
 
 test('les données n\'ont plus le récit, le courrier, les hameaux d\'avant ni la calèche', () => {
-  for (const k of ['RECIT', 'ILE', 'SECRETS', 'COURRIER', 'CALECHE', 'BIENVENUE', 'PROJETS', 'FETES']) assertEqual(DATA[k], undefined, k);
+  for (const k of ['RECIT', 'SECRETS', 'COURRIER', 'CALECHE', 'BIENVENUE', 'PROJETS', 'FETES']) assertEqual(DATA[k], undefined, k);
   for (const o of ['enveloppe_maurice', 'cloche_maurice', 'pierre_lune']) assertEqual(DATA.OBJETS[o], undefined, o);
   assertEqual(DATA.AMITIE.ECRITS, undefined, 'les goûts des personnages écrits');
   assertEqual(DATA.STYLES.ECRITS, undefined, 'les styles des personnages écrits');

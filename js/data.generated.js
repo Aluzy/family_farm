@@ -9913,6 +9913,176 @@ export const RAW_DATA = {
       "le wagonnet sur la voie, au halage"
     ]
   },
+  "ILE": {
+    "TAILLE": 300,
+    "BORD_MER": 12,
+    "REGION": 32,
+    "APPARITION": { "x": 150, "y": 150, "rayon": 6 },
+    "BIOMES": ["mer", "plage", "prairie", "foret", "lande", "lac", "riviere"],
+    "SOLS": {
+      "mer": { "eau_profonde": { "eau": true } },
+      "plage": { "sable": {}, "galets": {} },
+      "prairie": { "herbe": {} },
+      "foret": { "feuilles": {}, "aiguilles": {}, "mousse": {}, "clairiere": {} },
+      "lande": { "lande": {}, "terre": {} },
+      "lac": { "eau_basse": { "eau": true }, "eau": { "eau": true } },
+      "riviere": { "courant": { "eau": true } }
+    },
+    "ESPECES": {
+      "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor"],
+      "CLASSEMENT": {
+        "decor": ["souche", "tronc_couche", "pierre", "bois_flotte"],
+        "champignon": ["champignons", "champignons_lumineux", "champignon_blanc", "champignon_jaune", "champignon_bleu"],
+        "fleur": ["fleurs", "fleur_rouge", "fleur_mauve"],
+        "fruitier": ["chataignier"]
+      },
+      "CULTURES_DEJA_SAUVAGES": { "ail_ours": "ail_ours_sauvage", "salicorne": "salicorne_sauvage", "tournesol": "tournesol_sauvage" },
+      "CONDITIONS": { "berge": { "rayon": 2 }, "lisiere": { "rayon": 3 } },
+      "PLACEMENTS": {
+        "partout": {
+          "prairie": {
+            "herbe": {
+              "arbre_pre": 0.004,
+              "buisson_pre": 0.004,
+              "fleurs": 0.03,
+              "touffe_pre": 0.05,
+              "coquelicot": 0.006,
+              "pavot_californie": 0.002,
+              "tournesol_sauvage": 0.002,
+              "lupin": 0.002,
+              "myosotis": 0.002,
+              "fleur_rouge": 0.012,
+              "fleur_mauve": 0.012,
+              "pierre": 0.002,
+              "champignon_blanc": 0.001
+            }
+          },
+          "foret": {
+            "feuilles": {
+              "feuillu": 0.34,
+              "bouleau": 0.03,
+              "sapin": 0.03,
+              "chataignier": 0.006,
+              "ronces": 0.012,
+              "souche": 0.006,
+              "tronc_couche": 0.004,
+              "fougere": 0.07,
+              "champignons": 0.015,
+              "touffe_foret": 0.04,
+              "champignons_lumineux": 0.004,
+              "champignon_blanc": 0.012,
+              "champignon_jaune": 0.01,
+              "champignon_bleu": 0.01,
+              "ail_ours_sauvage": 0.004
+            },
+            "aiguilles": {
+              "sapin": 0.36,
+              "feuillu": 0.03,
+              "souche": 0.008,
+              "tronc_couche": 0.003,
+              "fougere": 0.03,
+              "champignons": 0.03,
+              "touffe_foret": 0.02,
+              "champignons_lumineux": 0.005,
+              "champignon_blanc": 0.012,
+              "champignon_jaune": 0.01,
+              "champignon_bleu": 0.01
+            },
+            "mousse": {
+              "feuillu": 0.22,
+              "bouleau": 0.08,
+              "sapin": 0.04,
+              "chataignier": 0.004,
+              "souche": 0.008,
+              "tronc_couche": 0.006,
+              "ronces": 0.008,
+              "fougere": 0.16,
+              "champignons": 0.04,
+              "champignons_lumineux": 0.006,
+              "champignon_blanc": 0.012,
+              "champignon_jaune": 0.01,
+              "champignon_bleu": 0.01,
+              "ail_ours_sauvage": 0.006
+            },
+            "clairiere": {
+              "touffe_foret": 0.1,
+              "fougere": 0.05,
+              "ronces": 0.01,
+              "bouleau": 0.01,
+              "myosotis": 0.012,
+              "lupin": 0.006,
+              "champignon_blanc": 0.004,
+              "fleur_rouge": 0.004,
+              "fleur_mauve": 0.004
+            }
+          },
+          "lande": {
+            "lande": {
+              "ajonc": 0.022,
+              "genet": 0.012,
+              "pin_tordu": 0.006,
+              "sapin_nain": 0.01,
+              "rhododendron": 0.008,
+              "bruyere": 0.18,
+              "herbe_seche": 0.05,
+              "touffe_mont": 0.04,
+              "lavande": 0.012,
+              "pavot_californie": 0.004,
+              "lupin": 0.004,
+              "fleur_mauve": 0.002,
+              "pierre": 0.006
+            },
+            "terre": { "herbe_seche": 0.05, "bruyere": 0.03, "ajonc": 0.004, "pavot_californie": 0.006, "pierre": 0.01 }
+          },
+          "plage": {
+            "sable": { "oyat": 0.12, "chardon": 0.025, "bois_flotte": 0.02, "salicorne_sauvage": 0.004 },
+            "galets": { "bois_flotte": 0.015, "oyat": 0.01 }
+          },
+          "lac": { "eau_basse": { "nenuphar": 0.12, "roseaux": 0.06, "massette": 0.05 } }
+        },
+        "berge": {
+          "prairie": { "herbe": { "saule": 0.012, "roseaux": 0.15, "massette": 0.03, "jonc": 0.14, "myosotis": 0.02 } },
+          "foret": { "mousse": { "saule": 0.01, "jonc": 0.06, "myosotis": 0.01 } }
+        },
+        "lisiere": { "foret": { "clairiere": { "rhododendron": 0.006, "sapin_nain": 0.004 } } }
+      },
+      "PAR_FAMILLE": {
+        "arbre": { "groupe": [1, 1], "min": 30, "loinDuDepart": 0 },
+        "fruitier": {
+          "groupe": [1, 3],
+          "min": 6,
+          "loinDuDepart": 20,
+          "placement": { "lisiere": { "prairie": { "herbe": 0.0006 }, "foret": { "clairiere": 0.0006 } } }
+        },
+        "buisson": { "groupe": [1, 1], "min": 20, "loinDuDepart": 0 },
+        "fleur": { "groupe": [1, 1], "min": 20, "loinDuDepart": 0 },
+        "culture": { "groupe": [3, 6], "min": 8, "loinDuDepart": 15, "placement": { "partout": { "prairie": { "herbe": 0.0004 } } } },
+        "herbe": { "groupe": [1, 1], "min": 20, "loinDuDepart": 0 },
+        "champignon": { "groupe": [1, 1], "min": 10, "loinDuDepart": 0 },
+        "decor": { "groupe": [1, 1], "min": 0, "loinDuDepart": 0 }
+      },
+      "EXCEPTIONS": {
+        "fraise_sauvage": { "placement": { "partout": { "foret": { "clairiere": 0.002 } } } },
+        "riz_sauvage": { "placement": { "berge": { "prairie": { "herbe": 0.004 } } } },
+        "houblon_sauvage": { "placement": { "lisiere": { "foret": { "clairiere": 0.002 }, "prairie": { "herbe": 0.0006 } } } },
+        "vigne_sauvage": { "placement": { "lisiere": { "lande": { "lande": 0.001 }, "foret": { "clairiere": 0.001 } } } },
+        "cacao_sauvage": { "placement": { "partout": { "foret": { "mousse": 0.0006 } } }, "min": 4, "loinDuDepart": 80 },
+        "vanille_sauvage": { "placement": { "partout": { "foret": { "mousse": 0.0006 } } }, "min": 4, "loinDuDepart": 80 },
+        "cafe_sauvage": { "placement": { "partout": { "foret": { "mousse": 0.0006 } } }, "min": 4, "loinDuDepart": 80 },
+        "ail_ours_sauvage": { "groupe": [3, 8] },
+        "salicorne_sauvage": { "groupe": [3, 8] },
+        "chataignier": { "min": 10 },
+        "pin_tordu": { "min": 15 },
+        "sapin_nain": { "min": 15 },
+        "saule": { "min": 12 },
+        "champignons_lumineux": { "min": 6, "loinDuDepart": 40 }
+      },
+      "RECOLTES": {
+        "culture": { "geste": "cueillir", "fin": [1, 2], "chance": 30 },
+        "fruitier": { "geste": "cueillir", "fin": [2, 4], "chance": 10 }
+      }
+    }
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,
