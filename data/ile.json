@@ -6,7 +6,8 @@
     "  comble pas. REGION : le côté des morceaux que la scène peint d'avance et ne repeint que s'ils changent.",
     "APPARITION : le point où le joueur apparaît en début de partie (x, y : une case) et le rayon de prairie dégagée",
     "  autour de lui.",
-    "BIOMES : les sept biomes, dans l'ordre de leur numéro (le marais, la falaise, la montagne et le sommet ont disparu).",
+    "BIOMES : les six biomes, dans l'ordre de leur numéro (le marais, la falaise, la montagne, le sommet et la rivière",
+    "  ont disparu : C7, C13).",
     "SOLS : les sols de chaque biome, dans l'ordre de leur numéro (un sol n'appartient qu'à un biome) ; « eau » : une",
     "  case d'eau (elle ne se laboure pas, ne se traverse pas à pied).",
     "ESPECES : le catalogue des espèces (docs/ile-300.md, « Le catalogue des espèces »), voir //ESPECES."
@@ -16,15 +17,14 @@
     "BORD_MER": 12,
     "REGION": 32,
     "APPARITION": { "x": 150, "y": 150, "rayon": 6 },
-    "BIOMES": ["mer", "plage", "prairie", "foret", "lande", "lac", "riviere"],
+    "BIOMES": ["mer", "plage", "prairie", "foret", "lande", "lac"],
     "SOLS": {
       "mer": { "eau_profonde": { "eau": true } },
       "plage": { "sable": {}, "galets": {} },
       "prairie": { "herbe": {} },
       "foret": { "feuilles": {}, "aiguilles": {}, "mousse": {}, "clairiere": {} },
       "lande": { "lande": {}, "terre": {} },
-      "lac": { "eau_basse": { "eau": true }, "eau": { "eau": true } },
-      "riviere": { "courant": { "eau": true } }
+      "lac": { "eau_basse": { "eau": true }, "eau": { "eau": true } }
     },
     "//FORME": [
       "La forme de l'île (js/engine/ile.js, formeIle). Les distances sont en cases. MARGE : des cases de mer en plus de",
@@ -71,7 +71,7 @@
     "//HUMIDITE": [
       "L'humidité (humidite), de 0 (sec) à 1 (humide) : un bruit (echelle, octaves), et les bas plus humides que les",
       "  hauts (BAS : la part de la hauteur) ; puis étirée de 0 à 1 sur chaque île (chacune a ses terres sèches et ses",
-      "  terres humides). Les rivières et les lacs l'augmenteront autour d'eux (étape 4)."
+      "  terres humides). Les lacs l'augmenteront autour d'eux (étape 4)."
     ],
     "HUMIDITE": { "echelle": 80, "octaves": 3, "BAS": 0.35 },
     "//ESPECES": [
@@ -84,7 +84,7 @@
       "  ne compte pas dans la règle « toutes les espèces ».",
       "CULTURES_DEJA_SAUVAGES : une culture qui a déjà sa plante sauvage (son dessin et sa récolte) ; les autres",
       "  prennent la forme <culture>_sauvage, avec le dessin de la culture (crops.png, tous ses stades : C12).",
-      "CONDITIONS : berge (à au plus « rayon » cases d'une eau douce : un lac, une rivière), lisiere (à au plus",
+      "CONDITIONS : berge (à au plus « rayon » cases d'un lac), lisiere (à au plus",
       "  « rayon » cases d'un autre biome que le sien).",
       "PLACEMENTS : pour chaque condition (« partout » : aucune), biome → sol → { espèce : densité } (la part des cases",
       "  de ce sol qui portent l'espèce, avant les bosquets et les quotas). Les plantes du marais et de la montagne",

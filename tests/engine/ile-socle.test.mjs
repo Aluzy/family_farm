@@ -1,6 +1,6 @@
 /* ==========================================================================
    Tests du moteur : le socle de l'île de 300 × 300 (js/engine/ile.js, sections 1 à 3 ; docs/ile-300.md,
-   étape 2). Les constantes (la taille, les sept biomes, les sols) ; le hasard (le même tirage pour la même
+   étape 2). Les constantes (la taille, les six biomes, les sols) ; le hasard (le même tirage pour la même
    graine, un tirage par étape, le bruit continu et borné, assez rapide pour les 90 000 cases) ; le catalogue
    des espèces (chaque culture, fleur, fruitier et plante sauvage du jeu a sa fiche et sa place, le même
    catalogue sort des mêmes données, chaque fiche a son dessin, les numéros d'une sauvegarde se retrouvent).
@@ -50,9 +50,10 @@ test("l'île : 300 × 300 cases, une bande de mer, un point d'apparition au cent
   assert.equal(ILE.TAILLE % ILE.REGION === 0 || ILE.REGION > 0, true);
 });
 
-test("les biomes : les sept de l'île, sans le marais, la falaise, la montagne ni le sommet", () => {
-  assert.deepEqual([...BIOMES], ['mer', 'plage', 'prairie', 'foret', 'lande', 'lac', 'riviere']);
-  for (const retire of ['marais', 'falaise', 'montagne', 'sommet']) assert.equal(retire in BIOME, false, retire);
+test("les biomes : les six de l'île, sans le marais, la falaise, la montagne, le sommet ni la rivière", () => {
+  assert.deepEqual([...BIOMES], ['mer', 'plage', 'prairie', 'foret', 'lande', 'lac']);
+  for (const retire of ['marais', 'falaise', 'montagne', 'sommet', 'riviere'])
+    assert.equal(retire in BIOME, false, retire);
   BIOMES.forEach((nom, i) => assert.equal(BIOME[nom], i));
 });
 
@@ -68,7 +69,7 @@ test("les sols : chacun d'un seul biome, chaque biome a les siens, l'eau marqué
       SOLS.some((s) => s.biome === biome),
       `${biome} n'a pas de sol`,
     );
-  for (const biome of ['mer', 'lac', 'riviere']) {
+  for (const biome of ['mer', 'lac']) {
     assert.ok(
       SOLS.filter((s) => s.biome === biome).every((s) => s.eau),
       `${biome} : un sol qui n'est pas de l'eau`,

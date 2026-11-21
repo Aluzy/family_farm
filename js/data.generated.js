@@ -9918,15 +9918,14 @@ export const RAW_DATA = {
     "BORD_MER": 12,
     "REGION": 32,
     "APPARITION": { "x": 150, "y": 150, "rayon": 6 },
-    "BIOMES": ["mer", "plage", "prairie", "foret", "lande", "lac", "riviere"],
+    "BIOMES": ["mer", "plage", "prairie", "foret", "lande", "lac"],
     "SOLS": {
       "mer": { "eau_profonde": { "eau": true } },
       "plage": { "sable": {}, "galets": {} },
       "prairie": { "herbe": {} },
       "foret": { "feuilles": {}, "aiguilles": {}, "mousse": {}, "clairiere": {} },
       "lande": { "lande": {}, "terre": {} },
-      "lac": { "eau_basse": { "eau": true }, "eau": { "eau": true } },
-      "riviere": { "courant": { "eau": true } }
+      "lac": { "eau_basse": { "eau": true }, "eau": { "eau": true } }
     },
     "FORME": {
       "MARGE": 4,
