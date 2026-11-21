@@ -1,28 +1,31 @@
 // L'aperçu de l'île de 300 × 300 (js/engine/ile.js, docs/ile-300.md) : une image PNG par graine, pour relire la
 // génération. Trois vues côte à côte : le relief (la mer plus sombre au large, la terre du vert des bas au brun des
 // hauts, les lacs, ombrée par une lumière en haut à gauche), l'humidité (du sable sec au bleu-vert humide) et les
-// sols (une couleur par sol, ombrée comme le relief ; à partir de l'étape « biomes »). Le point
+// sols (une couleur par sol, ombrée comme le relief ; à partir de l'étape « biomes »), puis ce qui pousse (à partir
+// de l'étape « vegetation » : un point par pied, d'une couleur par famille, sur les sols pâlis). Le point
 // d'apparition est marqué d'une croix rouge, la bande de mer protégée d'un liseré. L'image ne va pas dans le dépôt.
 //
 // Usage, depuis la racine du dépôt (après npm run build:data) :
-//   node scripts/ile/apercu.mjs <graine> [<graine>…] [--etape forme|relief|humidite] [--dossier d] [--zoom 2]
+//   node scripts/ile/apercu.mjs <graine> [<graine>…] [--etape e] [--dossier d] [--zoom 2] [--especes]
+// (--especes : le nombre de pieds de chaque espèce, par famille, et celles sous leur minimum)
 // (une image <dossier>/ile-<graine>.png par graine ; le dossier par défaut : apercus-ile/, ignoré par git). Le PNG est
 // écrit sans dépendance (zlib de Node).
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { deflateSync } from 'node:zlib';
-import { ETAPES, genererChantier, ILE, SOLS } from '../../js/engine/ile.js';
+import { catalogue, compterEspeces, ETAPES, genererChantier, ILE, SOLS } from '../../js/engine/ile.js';
 
 /* ---------- les arguments ---------- */
 
 function lireArguments(argv) {
-  const options = { graines: [], etape: ETAPES[ETAPES.length - 1], dossier: 'apercus-ile', zoom: 2 };
+  const options = { graines: [], etape: ETAPES[ETAPES.length - 1], dossier: 'apercus-ile', zoom: 2, especes: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--etape') options.etape = argv[++i];
     else if (a === '--dossier') options.dossier = argv[++i];
     else if (a === '--zoom') options.zoom = Number(argv[++i]);
+    else if (a === '--especes') options.especes = true;
     else options.graines.push(a);
   }
   if (!options.graines.length) {
@@ -152,11 +155,34 @@ function couleurSol(ch, x, y) {
   return ch.terre[i] && !ch.lac[i] ? c.map((v) => v * ombrage(ch, x, y)) : c;
 }
 
+// Une couleur par famille du catalogue (ce qui pousse) ; les gisements et les cristaux en bleu.
+const COULEUR_DE_FAMILLE = {
+  arbre: [20, 60, 30],
+  fruitier: [200, 40, 40],
+  buisson: [70, 110, 40],
+  fleur: [240, 120, 200],
+  culture: [250, 170, 30],
+  herbe: [110, 150, 70],
+  champignon: [230, 230, 210],
+  decor: [120, 90, 60],
+  roche: [110, 110, 120],
+};
+const CAT = catalogue();
+
+function couleurPousse(ch, x, y) {
+  const i = y * ch.n + x;
+  const fond = couleurSol(ch, x, y).map((v) => v * 0.55 + 255 * 0.45);
+  if (!ch.objet?.[i]) return fond;
+  const f = CAT.fiches[ch.objet[i] - 1];
+  if (f.id.startsWith('gisement') || f.id.startsWith('cristaux')) return [40, 40, 200];
+  return COULEUR_DE_FAMILLE[f.famille];
+}
+
 /* ---------- l'image ---------- */
 
 function apercu(ch, zoom) {
   const n = ch.n;
-  const vues = [couleurRelief, couleurHumidite, couleurSol];
+  const vues = [couleurRelief, couleurHumidite, couleurSol, couleurPousse];
   const ecart = 8;
   const largeur = vues.length * n * zoom + (vues.length - 1) * ecart;
   const hauteur = n * zoom;
@@ -190,7 +216,21 @@ function apercu(ch, zoom) {
 function bilan(ch, duree) {
   let terre = 0;
   for (const v of ch.terre) terre += v;
-  return `${duree.toFixed(0)} ms, terre ${((100 * terre) / (ch.n * ch.n)).toFixed(0)} %`;
+  const lacs = ch.lacs ? `, ${ch.lacs.length} lacs` : '';
+  const pieds = ch.objet ? `, ${ch.objet.reduce((s, o) => s + (o ? 1 : 0), 0)} pieds` : '';
+  return `${duree.toFixed(0)} ms, terre ${((100 * terre) / (ch.n * ch.n)).toFixed(0)} %${lacs}${pieds}`;
+}
+
+// Le nombre de pieds de chaque espèce, par famille ; celles sous leur minimum d'abord.
+function especes(ch) {
+  const compte = compterEspeces(ch.objet, CAT);
+  const sous = CAT.fiches.filter((f) => compte[f.numero] < f.min);
+  const lignes = [`  sous leur minimum : ${sous.length ? sous.map((f) => f.id).join(', ') : 'aucune'}`];
+  for (const famille of new Set(CAT.fiches.map((f) => f.famille))) {
+    const liste = CAT.fiches.filter((f) => f.famille === famille).map((f) => `${f.id} ${compte[f.numero]}`);
+    lignes.push(`  ${famille} : ${liste.join(', ')}`);
+  }
+  return lignes.join('\n');
 }
 
 const options = lireArguments(process.argv.slice(2));
@@ -202,4 +242,5 @@ for (const graine of options.graines) {
   const fichier = join(options.dossier, `ile-${graine}.png`);
   writeFileSync(fichier, apercu(ch, options.zoom));
   console.log(`${fichier} : ${bilan(ch, duree)}`);
+  if (options.especes && ch.objet) console.log(especes(ch));
 }

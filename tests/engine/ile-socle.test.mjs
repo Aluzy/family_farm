@@ -228,6 +228,7 @@ test('le catalogue : les places voulues (C7, C12 ; docs/ile-300.md, « Les biome
 
 test('le catalogue : chaque fiche a son dessin dans les planches', () => {
   const vegetation = lireJSON('assets/vegetation.json');
+  const roches = lireJSON('assets/roches.json');
   const verger = taillePNG('assets/verger.png');
   // verger.png : des images de 80 × 80 ; un emplacement libre, un jeune arbre, puis quatre par espèce
   const imagesDuVerger = Math.floor(verger.l / 80) * Math.floor(verger.h / 80);
@@ -235,6 +236,8 @@ test('le catalogue : chaque fiche a son dessin dans les planches', () => {
     const d = f.dessin;
     if (d.planche === 'vegetation') {
       assert.equal(vegetation[d.sorte]?.length > 0, true, `${f.id} : pas d'image dans assets/vegetation.json`);
+    } else if (d.planche === 'roches') {
+      assert.equal(roches[d.sorte]?.length > 0, true, `${f.id} : pas d'image dans assets/roches.json`);
     } else if (d.planche === 'crops') {
       assert.ok(Number.isInteger(d.r) && d.c.length > 0, `${f.id} : pas d'image dans crops.png`);
     } else if (d.planche === 'verger') {

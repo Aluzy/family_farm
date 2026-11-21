@@ -159,7 +159,8 @@ refuse('récolte du monde : une falaise reste du décor', (d) => { d.RECOLTE.SOR
 
 refuse('arbre : clé d\'effet que le moteur ne lit pas', (d) => { d.ARBRE.noeuds.cu_outils.effet.vitesseRecolte = 120; }, '« vitesseRecolte » : aucun code du moteur');
 test('chaque clé d\'effet de EFFETS_TECHNO est lue dans js/', () => {
-  const src = readdirSync('js/engine').map((f) => readFileSync(`js/engine/${f}`, 'utf8')).join('\n');
+  // (les sous-dossiers compris : js/engine/ile/, docs/ile-300.md)
+  const src = readdirSync('js/engine', { recursive: true }).filter((f) => f.endsWith('.js')).map((f) => readFileSync(`js/engine/${f}`, 'utf8')).join('\n');
   const lue = (cle) => new RegExp(`(tech(Effects|Pct|Sum|Flag)\\(state, '${cle}'|withBonus\\([^)]*'${cle}'|e\\.${cle}\\b|tech\\('${cle}'\\))`).test(src);
   eq(EFFETS_TECHNO.filter((cle) => !lue(cle)), []);
 });

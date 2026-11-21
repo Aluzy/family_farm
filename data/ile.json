@@ -127,6 +127,25 @@
       "  (echelle). HAUTEUR_MAX : une case plus haute n'est jamais une plage."
     ],
     "PLAGES": { "LARGEUR": [0, 5], "echelle": 35, "HAUTEUR_MAX": 0.15 },
+    "//POUSSE": [
+      "Ce qui pousse sur l'île (vegetation, roches, quotasEspeces), d'après le catalogue (ESPECES). Chaque case tire au",
+      "  plus une espèce, d'après les densités de son biome, de son sol et de ses conditions ; les cases sont tirées dans",
+      "  un ordre mêlé (pas de sens privilégié). Une espèce qui bloque (un arbre, un buisson, un rocher) prend toutes",
+      "  les cases de son empreinte (bloque, monde.json) et en garde « ecart » autour d'elle, sans autre bloc.",
+      "TOUFFES : les petites plantes (herbes, fleurs, champignons) vont par taches : leur densité multipliée de min à",
+      "  max par un bruit de « pas » cases. BOSQUET : les pieds d'un bosquet (le groupe d'une espèce) poussent à au",
+      "  plus « rayon » cases du premier. JEUNES : la part des cultures et des fruitiers sauvages qui ne sont pas",
+      "  encore mûrs (un stade tiré au hasard ; les autres au dernier). QUOTAS : pour une espèce sous son minimum, le",
+      "  nombre d'essais pour planter un bosquet de plus. DEPART : ce qu'on ramasse en arrivant, posé entre",
+      "  « distance » cases du point d'apparition (le reste de la prairie du départ est dégagé)."
+    ],
+    "POUSSE": {
+      "TOUFFES": { "pas": 9, "min": 0.3, "max": 1.8 },
+      "BOSQUET": { "rayon": 2 },
+      "JEUNES": 0.25,
+      "QUOTAS": { "essais": 5000 },
+      "DEPART": { "pierres": 3, "bois_flotte": 3, "distance": [2, 7] }
+    },
     "//ESPECES": [
       "Le catalogue n'est pas écrit ici : js/engine/ile.js le construit depuis les données du jeu (les plantes sauvages",
       "de monde.json VEGETATION.SORTES, les cultures de crops.json CULTURES, les fleurs de meubles.json BACS.FLEURS, les",
@@ -134,11 +153,14 @@
       "FAMILLES : l'ordre des familles. Une plante sauvage prend la famille de son genre (arbre → arbre, buisson →",
       "  buisson, haute et basse → herbe), sauf celles de CLASSEMENT ; une fleur des bacs (MASSIFS.DESSIN) est une",
       "  « fleur » ; une culture est une « culture », un arbre du verger un « fruitier ». Le « décor » est posé mais",
-      "  ne compte pas dans la règle « toutes les espèces ».",
+      "  ne compte pas dans la règle « toutes les espèces », ni les roches.",
+      "ROCHES : les rochers, les pierres, les gisements et les cristaux de monde.json ROCHES.SORTES qui vont sur l'île",
+      "  (famille « roche » ; ce qu'ils donnent : RECOLTE). Ceux de la montagne, de la neige et de la mer n'y vont pas.",
       "CULTURES_DEJA_SAUVAGES : une culture qui a déjà sa plante sauvage (son dessin et sa récolte) ; les autres",
       "  prennent la forme <culture>_sauvage, avec le dessin de la culture (crops.png, tous ses stades : C12).",
-      "CONDITIONS : berge (à au plus « rayon » cases d'un lac), lisiere (à au plus",
-      "  « rayon » cases d'un autre biome que le sien).",
+      "CONDITIONS : berge (à au plus « rayon » cases d'un lac), lisiere (à au plus « rayon » cases d'un autre",
+      "  biome que le sien), haut (à « hauteur » ou plus : les hauts de l'île, où vont les minerais de l'ancienne",
+      "  montagne).",
       "PLACEMENTS : pour chaque condition (« partout » : aucune), biome → sol → { espèce : densité } (la part des cases",
       "  de ce sol qui portent l'espèce, avant les bosquets et les quotas). Les plantes du marais et de la montagne",
       "  sont replacées ici (docs/ile-300.md, « Les biomes et les espèces »).",
@@ -152,7 +174,11 @@
       "  arbre) en plus. Cueillie, la plante reste et repart de son premier stade."
     ],
     "ESPECES": {
-      "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor"],
+      "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor", "roche"],
+      "ROCHES": [
+        "rocher", "bloc", "rocher_moussu", "galets", "pierres", "pierres_moussues", "coquillages", "etoile_mer", "algues",
+        "gisement_fer", "gisement_cuivre", "gisement_or", "gisement_platine", "cristaux_quartz", "cristaux_amethyste"
+      ],
       "CLASSEMENT": {
         "decor": ["souche", "tronc_couche", "pierre", "bois_flotte"],
         "champignon": ["champignons", "champignons_lumineux", "champignon_blanc", "champignon_jaune", "champignon_bleu"],
@@ -166,7 +192,8 @@
       },
       "CONDITIONS": {
         "berge": { "rayon": 2 },
-        "lisiere": { "rayon": 3 }
+        "lisiere": { "rayon": 3 },
+        "haut": { "hauteur": 0.62 }
       },
       "PLACEMENTS": {
         "partout": {
@@ -174,7 +201,8 @@
             "herbe": {
               "arbre_pre": 0.004, "buisson_pre": 0.004, "fleurs": 0.03, "touffe_pre": 0.05, "coquelicot": 0.006,
               "pavot_californie": 0.002, "tournesol_sauvage": 0.002, "lupin": 0.002, "myosotis": 0.002,
-              "fleur_rouge": 0.012, "fleur_mauve": 0.012, "pierre": 0.002, "champignon_blanc": 0.001
+              "fleur_rouge": 0.012, "fleur_mauve": 0.012, "pierre": 0.002, "champignon_blanc": 0.001,
+              "rocher": 0.002, "pierres": 0.006, "gisement_fer": 0.0005
             }
           },
           "foret": {
@@ -182,18 +210,21 @@
               "feuillu": 0.34, "bouleau": 0.03, "sapin": 0.03, "chataignier": 0.006, "ronces": 0.012, "souche": 0.006,
               "tronc_couche": 0.004, "fougere": 0.07, "champignons": 0.015, "touffe_foret": 0.04,
               "champignons_lumineux": 0.004, "champignon_blanc": 0.012, "champignon_jaune": 0.01,
-              "champignon_bleu": 0.01, "ail_ours_sauvage": 0.004
+              "champignon_bleu": 0.01, "ail_ours_sauvage": 0.004,
+              "rocher_moussu": 0.03, "pierres_moussues": 0.03, "gisement_fer": 0.0015, "gisement_cuivre": 0.001
             },
             "aiguilles": {
               "sapin": 0.36, "feuillu": 0.03, "souche": 0.008, "tronc_couche": 0.003, "fougere": 0.03,
               "champignons": 0.03, "touffe_foret": 0.02, "champignons_lumineux": 0.005, "champignon_blanc": 0.012,
-              "champignon_jaune": 0.01, "champignon_bleu": 0.01
+              "champignon_jaune": 0.01, "champignon_bleu": 0.01,
+              "rocher_moussu": 0.02, "rocher": 0.01, "pierres_moussues": 0.025, "gisement_fer": 0.0015,
+              "gisement_cuivre": 0.001
             },
             "mousse": {
               "feuillu": 0.22, "bouleau": 0.08, "sapin": 0.04, "chataignier": 0.004, "souche": 0.008,
               "tronc_couche": 0.006, "ronces": 0.008, "fougere": 0.16, "champignons": 0.04,
               "champignons_lumineux": 0.006, "champignon_blanc": 0.012, "champignon_jaune": 0.01,
-              "champignon_bleu": 0.01, "ail_ours_sauvage": 0.006
+              "champignon_bleu": 0.01, "ail_ours_sauvage": 0.006, "rocher_moussu": 0.045, "pierres_moussues": 0.05
             },
             "clairiere": {
               "touffe_foret": 0.1, "fougere": 0.05, "ronces": 0.01, "bouleau": 0.01, "myosotis": 0.012, "lupin": 0.006,
@@ -204,13 +235,20 @@
             "lande": {
               "ajonc": 0.022, "genet": 0.012, "pin_tordu": 0.006, "sapin_nain": 0.01, "rhododendron": 0.008,
               "bruyere": 0.18, "herbe_seche": 0.05, "touffe_mont": 0.04, "lavande": 0.012, "pavot_californie": 0.004,
-              "lupin": 0.004, "fleur_mauve": 0.002, "pierre": 0.006
+              "lupin": 0.004, "fleur_mauve": 0.002, "pierre": 0.006,
+              "rocher": 0.006, "bloc": 0.002, "pierres": 0.02, "gisement_fer": 0.002, "gisement_cuivre": 0.0015
             },
-            "terre": { "herbe_seche": 0.05, "bruyere": 0.03, "ajonc": 0.004, "pavot_californie": 0.006, "pierre": 0.01 }
+            "terre": {
+              "herbe_seche": 0.05, "bruyere": 0.03, "ajonc": 0.004, "pavot_californie": 0.006, "pierre": 0.01,
+              "rocher": 0.01, "bloc": 0.004, "pierres": 0.06, "galets": 0.02, "gisement_fer": 0.003, "gisement_cuivre": 0.002
+            }
           },
           "plage": {
-            "sable": { "oyat": 0.12, "chardon": 0.025, "bois_flotte": 0.02, "salicorne_sauvage": 0.004 },
-            "galets": { "bois_flotte": 0.015, "oyat": 0.01 }
+            "sable": {
+              "oyat": 0.12, "chardon": 0.025, "bois_flotte": 0.02, "salicorne_sauvage": 0.004,
+              "rocher": 0.002, "galets": 0.01, "coquillages": 0.05, "etoile_mer": 0.012, "algues": 0.04
+            },
+            "galets": { "bois_flotte": 0.015, "oyat": 0.01, "rocher": 0.012, "galets": 0.16, "coquillages": 0.02, "algues": 0.03 }
           },
           "lac": {
             "eau_basse": { "nenuphar": 0.12, "roseaux": 0.06, "massette": 0.05 }
@@ -222,6 +260,20 @@
         },
         "lisiere": {
           "foret": { "clairiere": { "rhododendron": 0.006, "sapin_nain": 0.004 } }
+        },
+        "haut": {
+          "lande": {
+            "lande": {
+              "bloc": 0.008, "gisement_or": 0.0015, "gisement_platine": 0.0012, "cristaux_quartz": 0.003,
+              "cristaux_amethyste": 0.0015
+            },
+            "terre": {
+              "bloc": 0.01, "gisement_or": 0.002, "gisement_platine": 0.0015, "cristaux_quartz": 0.004,
+              "cristaux_amethyste": 0.002
+            }
+          },
+          "foret": { "aiguilles": { "cristaux_quartz": 0.002, "gisement_or": 0.0008 } },
+          "prairie": { "herbe": { "rocher": 0.004, "cristaux_quartz": 0.001 } }
         }
       },
       "PAR_FAMILLE": {
@@ -238,7 +290,8 @@
         },
         "herbe": { "groupe": [1, 1], "min": 20, "loinDuDepart": 0 },
         "champignon": { "groupe": [1, 1], "min": 10, "loinDuDepart": 0 },
-        "decor": { "groupe": [1, 1], "min": 0, "loinDuDepart": 0 }
+        "decor": { "groupe": [1, 1], "min": 0, "loinDuDepart": 0 },
+        "roche": { "groupe": [1, 1], "min": 0, "loinDuDepart": 0 }
       },
       "EXCEPTIONS": {
         "fraise_sauvage": { "placement": { "partout": { "foret": { "clairiere": 0.002 } } } },
@@ -254,7 +307,13 @@
         "pin_tordu": { "min": 15 },
         "sapin_nain": { "min": 15 },
         "saule": { "min": 12 },
-        "champignons_lumineux": { "min": 6, "loinDuDepart": 40 }
+        "champignons_lumineux": { "min": 6, "loinDuDepart": 40 },
+        "gisement_fer": { "min": 12 },
+        "gisement_cuivre": { "min": 10 },
+        "gisement_or": { "min": 6, "loinDuDepart": 60 },
+        "gisement_platine": { "min": 5, "loinDuDepart": 60 },
+        "cristaux_quartz": { "min": 6 },
+        "cristaux_amethyste": { "min": 5, "loinDuDepart": 60 }
       },
       "RECOLTES": {
         "culture": { "geste": "cueillir", "fin": [1, 2], "chance": 30 },

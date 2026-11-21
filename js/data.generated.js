@@ -9965,8 +9965,32 @@ export const RAW_DATA = {
       }
     },
     "PLAGES": { "LARGEUR": [0, 5], "echelle": 35, "HAUTEUR_MAX": 0.15 },
+    "POUSSE": {
+      "TOUFFES": { "pas": 9, "min": 0.3, "max": 1.8 },
+      "BOSQUET": { "rayon": 2 },
+      "JEUNES": 0.25,
+      "QUOTAS": { "essais": 5000 },
+      "DEPART": { "pierres": 3, "bois_flotte": 3, "distance": [2, 7] }
+    },
     "ESPECES": {
-      "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor"],
+      "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor", "roche"],
+      "ROCHES": [
+        "rocher",
+        "bloc",
+        "rocher_moussu",
+        "galets",
+        "pierres",
+        "pierres_moussues",
+        "coquillages",
+        "etoile_mer",
+        "algues",
+        "gisement_fer",
+        "gisement_cuivre",
+        "gisement_or",
+        "gisement_platine",
+        "cristaux_quartz",
+        "cristaux_amethyste"
+      ],
       "CLASSEMENT": {
         "decor": ["souche", "tronc_couche", "pierre", "bois_flotte"],
         "champignon": ["champignons", "champignons_lumineux", "champignon_blanc", "champignon_jaune", "champignon_bleu"],
@@ -9974,7 +9998,7 @@ export const RAW_DATA = {
         "fruitier": ["chataignier"]
       },
       "CULTURES_DEJA_SAUVAGES": { "ail_ours": "ail_ours_sauvage", "salicorne": "salicorne_sauvage", "tournesol": "tournesol_sauvage" },
-      "CONDITIONS": { "berge": { "rayon": 2 }, "lisiere": { "rayon": 3 } },
+      "CONDITIONS": { "berge": { "rayon": 2 }, "lisiere": { "rayon": 3 }, "haut": { "hauteur": 0.62 } },
       "PLACEMENTS": {
         "partout": {
           "prairie": {
@@ -9991,7 +10015,10 @@ export const RAW_DATA = {
               "fleur_rouge": 0.012,
               "fleur_mauve": 0.012,
               "pierre": 0.002,
-              "champignon_blanc": 0.001
+              "champignon_blanc": 0.001,
+              "rocher": 0.002,
+              "pierres": 0.006,
+              "gisement_fer": 0.0005
             }
           },
           "foret": {
@@ -10010,7 +10037,11 @@ export const RAW_DATA = {
               "champignon_blanc": 0.012,
               "champignon_jaune": 0.01,
               "champignon_bleu": 0.01,
-              "ail_ours_sauvage": 0.004
+              "ail_ours_sauvage": 0.004,
+              "rocher_moussu": 0.03,
+              "pierres_moussues": 0.03,
+              "gisement_fer": 0.0015,
+              "gisement_cuivre": 0.001
             },
             "aiguilles": {
               "sapin": 0.36,
@@ -10023,7 +10054,12 @@ export const RAW_DATA = {
               "champignons_lumineux": 0.005,
               "champignon_blanc": 0.012,
               "champignon_jaune": 0.01,
-              "champignon_bleu": 0.01
+              "champignon_bleu": 0.01,
+              "rocher_moussu": 0.02,
+              "rocher": 0.01,
+              "pierres_moussues": 0.025,
+              "gisement_fer": 0.0015,
+              "gisement_cuivre": 0.001
             },
             "mousse": {
               "feuillu": 0.22,
@@ -10039,7 +10075,9 @@ export const RAW_DATA = {
               "champignon_blanc": 0.012,
               "champignon_jaune": 0.01,
               "champignon_bleu": 0.01,
-              "ail_ours_sauvage": 0.006
+              "ail_ours_sauvage": 0.006,
+              "rocher_moussu": 0.045,
+              "pierres_moussues": 0.05
             },
             "clairiere": {
               "touffe_foret": 0.1,
@@ -10067,13 +10105,40 @@ export const RAW_DATA = {
               "pavot_californie": 0.004,
               "lupin": 0.004,
               "fleur_mauve": 0.002,
-              "pierre": 0.006
+              "pierre": 0.006,
+              "rocher": 0.006,
+              "bloc": 0.002,
+              "pierres": 0.02,
+              "gisement_fer": 0.002,
+              "gisement_cuivre": 0.0015
             },
-            "terre": { "herbe_seche": 0.05, "bruyere": 0.03, "ajonc": 0.004, "pavot_californie": 0.006, "pierre": 0.01 }
+            "terre": {
+              "herbe_seche": 0.05,
+              "bruyere": 0.03,
+              "ajonc": 0.004,
+              "pavot_californie": 0.006,
+              "pierre": 0.01,
+              "rocher": 0.01,
+              "bloc": 0.004,
+              "pierres": 0.06,
+              "galets": 0.02,
+              "gisement_fer": 0.003,
+              "gisement_cuivre": 0.002
+            }
           },
           "plage": {
-            "sable": { "oyat": 0.12, "chardon": 0.025, "bois_flotte": 0.02, "salicorne_sauvage": 0.004 },
-            "galets": { "bois_flotte": 0.015, "oyat": 0.01 }
+            "sable": {
+              "oyat": 0.12,
+              "chardon": 0.025,
+              "bois_flotte": 0.02,
+              "salicorne_sauvage": 0.004,
+              "rocher": 0.002,
+              "galets": 0.01,
+              "coquillages": 0.05,
+              "etoile_mer": 0.012,
+              "algues": 0.04
+            },
+            "galets": { "bois_flotte": 0.015, "oyat": 0.01, "rocher": 0.012, "galets": 0.16, "coquillages": 0.02, "algues": 0.03 }
           },
           "lac": { "eau_basse": { "nenuphar": 0.12, "roseaux": 0.06, "massette": 0.05 } }
         },
@@ -10081,7 +10146,15 @@ export const RAW_DATA = {
           "prairie": { "herbe": { "saule": 0.012, "roseaux": 0.15, "massette": 0.03, "jonc": 0.14, "myosotis": 0.02 } },
           "foret": { "mousse": { "saule": 0.01, "jonc": 0.06, "myosotis": 0.01 } }
         },
-        "lisiere": { "foret": { "clairiere": { "rhododendron": 0.006, "sapin_nain": 0.004 } } }
+        "lisiere": { "foret": { "clairiere": { "rhododendron": 0.006, "sapin_nain": 0.004 } } },
+        "haut": {
+          "lande": {
+            "lande": { "bloc": 0.008, "gisement_or": 0.0015, "gisement_platine": 0.0012, "cristaux_quartz": 0.003, "cristaux_amethyste": 0.0015 },
+            "terre": { "bloc": 0.01, "gisement_or": 0.002, "gisement_platine": 0.0015, "cristaux_quartz": 0.004, "cristaux_amethyste": 0.002 }
+          },
+          "foret": { "aiguilles": { "cristaux_quartz": 0.002, "gisement_or": 0.0008 } },
+          "prairie": { "herbe": { "rocher": 0.004, "cristaux_quartz": 0.001 } }
+        }
       },
       "PAR_FAMILLE": {
         "arbre": { "groupe": [1, 1], "min": 30, "loinDuDepart": 0 },
@@ -10096,7 +10169,8 @@ export const RAW_DATA = {
         "culture": { "groupe": [3, 6], "min": 8, "loinDuDepart": 15, "placement": { "partout": { "prairie": { "herbe": 0.0004 } } } },
         "herbe": { "groupe": [1, 1], "min": 20, "loinDuDepart": 0 },
         "champignon": { "groupe": [1, 1], "min": 10, "loinDuDepart": 0 },
-        "decor": { "groupe": [1, 1], "min": 0, "loinDuDepart": 0 }
+        "decor": { "groupe": [1, 1], "min": 0, "loinDuDepart": 0 },
+        "roche": { "groupe": [1, 1], "min": 0, "loinDuDepart": 0 }
       },
       "EXCEPTIONS": {
         "fraise_sauvage": { "placement": { "partout": { "foret": { "clairiere": 0.002 } } } },
@@ -10112,7 +10186,13 @@ export const RAW_DATA = {
         "pin_tordu": { "min": 15 },
         "sapin_nain": { "min": 15 },
         "saule": { "min": 12 },
-        "champignons_lumineux": { "min": 6, "loinDuDepart": 40 }
+        "champignons_lumineux": { "min": 6, "loinDuDepart": 40 },
+        "gisement_fer": { "min": 12 },
+        "gisement_cuivre": { "min": 10 },
+        "gisement_or": { "min": 6, "loinDuDepart": 60 },
+        "gisement_platine": { "min": 5, "loinDuDepart": 60 },
+        "cristaux_quartz": { "min": 6 },
+        "cristaux_amethyste": { "min": 5, "loinDuDepart": 60 }
       },
       "RECOLTES": {
         "culture": { "geste": "cueillir", "fin": [1, 2], "chance": 30 },
