@@ -16,7 +16,7 @@
     "TAILLE": 300,
     "BORD_MER": 12,
     "REGION": 32,
-    "APPARITION": { "x": 150, "y": 150, "rayon": 6 },
+    "APPARITION": { "x": 150, "y": 150, "rayon": 6, "fondu": 6, "prairie": 18 },
     "BIOMES": ["mer", "plage", "prairie", "foret", "lande", "lac"],
     "SOLS": {
       "mer": { "eau_profonde": { "eau": true } },
@@ -73,7 +73,55 @@
       "  hauts (BAS : la part de la hauteur) ; puis étirée de 0 à 1 sur chaque île (chacune a ses terres sèches et ses",
       "  terres humides). Les lacs l'augmenteront autour d'eux (étape 4)."
     ],
-    "HUMIDITE": { "echelle": 80, "octaves": 3, "BAS": 0.35 },
+    "HUMIDITE": { "echelle": 70, "octaves": 3, "BAS": 0.12 },
+    "//LACS": [
+      "Les lacs (lacs), la seule eau douce de l'île (C13). NOMBRE : combien, tiré entre les deux bornes. AIRE : la",
+      "  surface de chacun (cases), tirée entre les deux bornes. Un lac naît au fond d'un creux du relief (les cases",
+      "  les plus basses, un peu de bruit pour varier) et monte jusqu'à couvrir son aire : il prend la forme du creux,",
+      "  sa surface est plate. COTE_MIN : la distance au rivage (cases) en deçà de laquelle un lac ne vient pas (il ne",
+      "  touche jamais la mer). FOND_COTE_MIN : le fond d'un lac est au moins à cette distance du rivage (les lacs sont à",
+      "  l'intérieur). COMPACITE : en s'étendant, un lac préfère les cases proches de son fond (de combien de hauteur",
+      "  par case d'éloignement) : il reste rond au lieu de filer le long d'une vallée. LOIN_DEPART : la distance au point d'apparition en deçà de laquelle il ne vient pas.",
+      "  ECART : la distance entre deux lacs (entre leurs fonds), au moins. BERGE : autour d'un lac, l'humidité monte",
+      "  (humidite : de combien au bord, portee : sur combien de cases elle retombe de moitié)."
+    ],
+    "LACS": {
+      "NOMBRE": [3, 6],
+      "AIRE": [80, 450],
+      "COTE_MIN": 14,
+      "FOND_COTE_MIN": 28,
+      "COMPACITE": 0.004,
+      "LOIN_DEPART": 28,
+      "ECART": 50,
+      "BERGE": { "humidite": 0.3, "portee": 8 }
+    },
+    "//REPARTITION": [
+      "Les biomes de la terre (biomes). Chaque case reçoit une note : son humidité, moins HAUTEUR fois sa hauteur, plus",
+      "  un bruit (BRUIT : echelle, force) qui rend les lisières irrégulières. Les cases les plus sèches (la part lande)",
+      "  sont la lande, les plus humides (la part foret) la forêt, le reste la prairie : chaque île a les trois, dans",
+      "  ces parts. SOLS : dans chaque biome, la part de ses cases qui prend chaque sol (les plus hautes pour les",
+      "  aiguilles, les plus humides pour la mousse) ; les clairières, la terre nue de la lande et les galets de la",
+      "  plage sont des taches de bruit (echelle, seuil : la part de bruit au-dessus de laquelle la tache commence)."
+    ],
+    "REPARTITION": {
+      "lande": 0.2,
+      "foret": 0.4,
+      "HAUTEUR": 0.1,
+      "BRUIT": { "echelle": 22, "force": 0.18 },
+      "SOLS": {
+        "aiguilles": 0.25,
+        "mousse": 0.2,
+        "clairiere": { "echelle": 16, "seuil": 0.7 },
+        "terre": { "echelle": 12, "seuil": 0.66 },
+        "galets": { "echelle": 26, "seuil": 0.68 }
+      }
+    },
+    "//PLAGES": [
+      "Les plages (plages) : la terre basse du rivage. LARGEUR : sa largeur (cases depuis la mer), qui varie le long",
+      "  de la côte entre les deux bornes (0 : l'herbe ou la forêt descendent jusqu'à l'eau), selon un bruit",
+      "  (echelle). HAUTEUR_MAX : une case plus haute n'est jamais une plage."
+    ],
+    "PLAGES": { "LARGEUR": [0, 5], "echelle": 35, "HAUTEUR_MAX": 0.15 },
     "//ESPECES": [
       "Le catalogue n'est pas écrit ici : js/engine/ile.js le construit depuis les données du jeu (les plantes sauvages",
       "de monde.json VEGETATION.SORTES, les cultures de crops.json CULTURES, les fleurs de meubles.json BACS.FLEURS, les",

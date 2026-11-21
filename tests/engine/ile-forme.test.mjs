@@ -52,6 +52,7 @@ test('la même graine refait la même île ; deux graines, deux îles', () => {
 
 test("genererChantier : chaque étape s'arrête où on le demande ; une étape inconnue est refusée", () => {
   assert.deepEqual([...ETAPES.slice(0, 3)], ['forme', 'relief', 'humidite']);
+  assert.equal(new Set(ETAPES).size, ETAPES.length);
   const forme = genererChantier('ile-1', 'forme');
   assert.ok(forme.terre && forme.cote);
   assert.equal(forme.hauteur, undefined);
@@ -170,9 +171,9 @@ test("l'humidité : de 0 à 1, la mer à 1, des terres sèches et des terres hum
 });
 
 test("le temps : la forme, le relief et l'humidité d'une île en moins de 250 ms", () => {
-  genererChantier('chauffe');
+  genererChantier('chauffe', 'humidite');
   const debut = performance.now();
-  genererChantier('chrono');
+  genererChantier('chrono', 'humidite');
   const duree = performance.now() - debut;
   // seuil large (les machines de l'intégration continue sont lentes) ; sur un ordinateur, une cinquantaine de ms
   assert.ok(duree < 250, `${duree.toFixed(0)} ms`);

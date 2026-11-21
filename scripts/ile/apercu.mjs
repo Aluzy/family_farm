@@ -1,6 +1,7 @@
 // L'aperçu de l'île de 300 × 300 (js/engine/ile.js, docs/ile-300.md) : une image PNG par graine, pour relire la
-// génération. Deux vues côte à côte : le relief (la mer plus sombre au large, la terre du vert des bas au brun des
-// hauts, ombrée par une lumière en haut à gauche) et l'humidité (du sable sec au bleu-vert humide). Le point
+// génération. Trois vues côte à côte : le relief (la mer plus sombre au large, la terre du vert des bas au brun des
+// hauts, les lacs, ombrée par une lumière en haut à gauche), l'humidité (du sable sec au bleu-vert humide) et les
+// sols (une couleur par sol, ombrée comme le relief ; à partir de l'étape « biomes »). Le point
 // d'apparition est marqué d'une croix rouge, la bande de mer protégée d'un liseré. L'image ne va pas dans le dépôt.
 //
 // Usage, depuis la racine du dépôt (après npm run build:data) :
@@ -11,7 +12,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { deflateSync } from 'node:zlib';
-import { ETAPES, genererChantier, ILE } from '../../js/engine/ile.js';
+import { ETAPES, genererChantier, ILE, SOLS } from '../../js/engine/ile.js';
 
 /* ---------- les arguments ---------- */
 
@@ -114,6 +115,7 @@ function ombrage(ch, x, y) {
 function couleurRelief(ch, x, y) {
   const i = y * ch.n + x;
   if (!ch.terre[i]) return rampe(MER, Math.min(1, -ch.cote[i] / 14));
+  if (ch.lac?.[i]) return [70, 140, 190];
   if (!ch.hauteur) return [120, 160, 80];
   return rampe(TERRE, ch.hauteur[i]).map((v) => v * ombrage(ch, x, y));
 }
@@ -125,11 +127,36 @@ function couleurHumidite(ch, x, y) {
   return rampe(HUMIDE, ch.humidite[i]);
 }
 
+// Une couleur par sol (data/ile.json SOLS), proche de celle du jeu.
+const COULEUR_DU_SOL = {
+  eau_profonde: [28, 70, 120],
+  sable: [226, 206, 150],
+  galets: [168, 160, 150],
+  herbe: [126, 178, 86],
+  feuilles: [58, 112, 52],
+  aiguilles: [36, 84, 62],
+  mousse: [74, 134, 70],
+  clairiere: [150, 186, 98],
+  lande: [150, 120, 130],
+  terre: [150, 122, 90],
+  eau_basse: [96, 170, 200],
+  eau: [54, 120, 180],
+};
+
+function couleurSol(ch, x, y) {
+  const i = y * ch.n + x;
+  if (!ch.sol) return [200, 200, 200];
+  const nom = SOLS[ch.sol[i]].nom;
+  if (nom === 'eau_profonde') return rampe(MER, Math.min(1, -ch.cote[i] / 14));
+  const c = COULEUR_DU_SOL[nom] ?? [255, 0, 255];
+  return ch.terre[i] && !ch.lac[i] ? c.map((v) => v * ombrage(ch, x, y)) : c;
+}
+
 /* ---------- l'image ---------- */
 
 function apercu(ch, zoom) {
   const n = ch.n;
-  const vues = [couleurRelief, couleurHumidite];
+  const vues = [couleurRelief, couleurHumidite, couleurSol];
   const ecart = 8;
   const largeur = vues.length * n * zoom + (vues.length - 1) * ecart;
   const hauteur = n * zoom;

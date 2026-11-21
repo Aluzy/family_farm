@@ -9917,7 +9917,7 @@ export const RAW_DATA = {
     "TAILLE": 300,
     "BORD_MER": 12,
     "REGION": 32,
-    "APPARITION": { "x": 150, "y": 150, "rayon": 6 },
+    "APPARITION": { "x": 150, "y": 150, "rayon": 6, "fondu": 6, "prairie": 18 },
     "BIOMES": ["mer", "plage", "prairie", "foret", "lande", "lac"],
     "SOLS": {
       "mer": { "eau_profonde": { "eau": true } },
@@ -9939,7 +9939,31 @@ export const RAW_DATA = {
       "LISSAGE": 2
     },
     "RELIEF": { "PENTE": 45, "COLLINES": { "echelle": 70, "octaves": 5 }, "PLAINES": 0.12, "RIVAGES": [0.25, 1.75], "LISSAGE": 6, "PENTE_MAX": 0.05 },
-    "HUMIDITE": { "echelle": 80, "octaves": 3, "BAS": 0.35 },
+    "HUMIDITE": { "echelle": 70, "octaves": 3, "BAS": 0.12 },
+    "LACS": {
+      "NOMBRE": [3, 6],
+      "AIRE": [80, 450],
+      "COTE_MIN": 14,
+      "FOND_COTE_MIN": 28,
+      "COMPACITE": 0.004,
+      "LOIN_DEPART": 28,
+      "ECART": 50,
+      "BERGE": { "humidite": 0.3, "portee": 8 }
+    },
+    "REPARTITION": {
+      "lande": 0.2,
+      "foret": 0.4,
+      "HAUTEUR": 0.1,
+      "BRUIT": { "echelle": 22, "force": 0.18 },
+      "SOLS": {
+        "aiguilles": 0.25,
+        "mousse": 0.2,
+        "clairiere": { "echelle": 16, "seuil": 0.7 },
+        "terre": { "echelle": 12, "seuil": 0.66 },
+        "galets": { "echelle": 26, "seuil": 0.68 }
+      }
+    },
+    "PLAGES": { "LARGEUR": [0, 5], "echelle": 35, "HAUTEUR_MAX": 0.15 },
     "ESPECES": {
       "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor"],
       "CLASSEMENT": {

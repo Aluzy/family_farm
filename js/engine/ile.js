@@ -502,7 +502,12 @@ export function verifierCatalogue(cat, data = DATA) {
  * @property {Uint8Array} terre         1 : la terre, 0 : la mer (formeIle)
  * @property {Float32Array} cote        la distance au rivage (cases) : positive sur la terre, négative en mer (formeIle)
  * @property {Float32Array} hauteur     de 0 au rivage à 1 au plus haut ; 0 en mer (relief)
- * @property {Float32Array} humidite    de 0 (sec) à 1 (humide) ; 1 en mer (humidite)
+ * @property {Float32Array} humidite    de 0 (sec) à 1 (humide) ; 1 en mer (humidite, puis lacs)
+ * @property {Uint8Array} lac           1 : une case de lac (lacs ; sa hauteur est celle de l'eau, plate)
+ * @property {{ x: number, y: number, aire: number }[]} lacs   le fond et l'aire de chaque lac (lacs)
+ * @property {Uint8Array} biome         le numéro du biome de chaque case (BIOME ; biomes, plages, pointApparition)
+ * @property {Uint8Array} sol           le numéro du sol de chaque case (SOL ; biomes, plages, pointApparition)
+ * @property {{ x: number, y: number, rayon: number }} apparition   la prairie plate du départ (pointApparition)
  */
 
 // Les quatre voisines d'une case (dx, dy).
@@ -820,9 +825,338 @@ function humidite(ch) {
   ch.humidite = u;
 }
 
+// Une file de priorité (un tas binaire) de cases, la plus basse d'abord.
+class FileDesPlusBasses {
+  constructor(taille) {
+    this.cases = new Int32Array(taille);
+    this.cles = new Float32Array(taille);
+    this.longueur = 0;
+  }
+
+  ajouter(i, cle) {
+    let k = this.longueur++;
+    while (k > 0) {
+      const parent = (k - 1) >> 1;
+      if (this.cles[parent] <= cle) break;
+      this.cases[k] = this.cases[parent];
+      this.cles[k] = this.cles[parent];
+      k = parent;
+    }
+    this.cases[k] = i;
+    this.cles[k] = cle;
+  }
+
+  retirer() {
+    const sortie = this.cases[0];
+    const dernier = --this.longueur;
+    const i = this.cases[dernier];
+    const cle = this.cles[dernier];
+    let k = 0;
+    for (;;) {
+      let enfant = 2 * k + 1;
+      if (enfant >= dernier) break;
+      if (enfant + 1 < dernier && this.cles[enfant + 1] < this.cles[enfant]) enfant++;
+      if (this.cles[enfant] >= cle) break;
+      this.cases[k] = this.cases[enfant];
+      this.cles[k] = this.cles[enfant];
+      k = enfant;
+    }
+    this.cases[k] = i;
+    this.cles[k] = cle;
+    return sortie;
+  }
+}
+
+// Le lac qui naît au fond `fond` : il s'étend toujours vers la case libre la plus basse qui le touche (un peu moins
+// basse si elle est plus près du fond : COMPACITE), jusqu'à `aire` cases ; il prend la forme du creux. Les cases
+// interdites ne sont jamais prises.
+function etendreLeLac(ch, fond, aire, interdit) {
+  const n = ch.n;
+  const pris = new Uint8Array(n * n);
+  const file = new FileDesPlusBasses(n * n);
+  const cases = [];
+  const fx = fond % n;
+  const fy = (fond - fx) / n;
+  const cle = (j) => {
+    const x = j % n;
+    return ch.hauteur[j] + REGLAGES.LACS.COMPACITE * Math.hypot(x - fx, (j - x) / n - fy);
+  };
+  file.ajouter(fond, cle(fond));
+  pris[fond] = 1;
+  while (file.longueur && cases.length < aire) {
+    const i = file.retirer();
+    cases.push(i);
+    const x = i % n;
+    for (const j of [x > 0 ? i - 1 : -1, x < n - 1 ? i + 1 : -1, i - n, i + n]) {
+      if (j < 0 || j >= n * n || pris[j] || interdit(j)) continue;
+      pris[j] = 1;
+      file.ajouter(j, cle(j));
+    }
+  }
+  return cases;
+}
+
+// Le niveau de l'eau d'un lac : la plus basse des cases de terre qui le bordent (l'eau n'est jamais plus haute que
+// sa rive). Les cases du lac plus hautes sont creusées, les plus basses remplies : la surface est plate.
+function niveauDuLac(ch, cases, lac) {
+  const n = ch.n;
+  let niveau = Infinity;
+  for (const i of cases) {
+    const x = i % n;
+    for (const j of [x > 0 ? i - 1 : -1, x < n - 1 ? i + 1 : -1, i - n, i + n]) {
+      if (j >= 0 && j < n * n && !lac[j] && ch.terre[j]) niveau = Math.min(niveau, ch.hauteur[j]);
+    }
+  }
+  return niveau;
+}
+
+// Les fonds possibles d'un lac, du plus bas au plus haut : une case sur trois, loin du rivage et du point d'apparition ;
+// un peu de bruit dans la note, pour varier les vallées. Un lac parti d'une pente descend de lui-même au fond.
+function fondsPossibles(ch, L) {
+  const n = ch.n;
+  const { x: ax, y: ay } = REGLAGES.APPARITION;
+  const g = hacher(`${ch.graine}/lacs`);
+  const fonds = [];
+  for (let y = 0; y < n; y += 3) {
+    for (let x = 0; x < n; x += 3) {
+      const i = y * n + x;
+      if (ch.cote[i] < L.FOND_COTE_MIN || Math.hypot(x - ax, y - ay) < L.LOIN_DEPART + 4) continue;
+      fonds.push({ i, x, y, note: ch.hauteur[i] + 0.25 * bruit2D(x / 30, y / 30, g) });
+    }
+  }
+  return fonds.sort((a, b) => a.note - b.note);
+}
+
+// Marque autour d'un lac une marge où un autre lac ne vient pas (les lacs ne se touchent pas).
+function marquerLaMarge(proche, cases, n, marge) {
+  for (const i of cases) {
+    const x = i % n;
+    const y = (i - x) / n;
+    for (let dy = -marge; dy <= marge; dy++) {
+      for (let dx = -marge; dx <= marge; dx++) {
+        const vx = x + dx;
+        const vy = y + dy;
+        if (vx >= 0 && vy >= 0 && vx < n && vy < n) proche[vy * n + vx] = 1;
+      }
+    }
+  }
+}
+
+/**
+ * Les lacs : quelques creux du relief remplis d'eau douce, loin de la mer et du point d'apparition. Chaque lac
+ * s'étend du fond de sa vallée jusqu'à son aire ; sa surface est plate, jamais plus haute que sa rive ; le limiteur
+ * de pente adoucit ensuite ses bords. L'humidité monte autour d'eux.
+ * @param {Chantier} ch
+ */
+function lacs(ch) {
+  const L = REGLAGES.LACS;
+  const n = ch.n;
+  const { x: ax, y: ay } = REGLAGES.APPARITION;
+  const alea = prng(ch.graine, 'lacs');
+  const voulus = entre(alea, L.NOMBRE[0], L.NOMBRE[1]);
+  const lac = new Uint8Array(n * n);
+  const proche = new Uint8Array(n * n);
+  const interdit = (j) => {
+    const x = j % n;
+    const y = (j - x) / n;
+    return proche[j] === 1 || ch.cote[j] < L.COTE_MIN || Math.hypot(x - ax, y - ay) < L.LOIN_DEPART;
+  };
+  const fonds = fondsPossibles(ch, L);
+  const poses = [];
+  // un tour avec l'écart voulu ; s'il manque des lacs, d'autres tours, l'écart réduit chaque fois de moitié
+  for (const ecart of [L.ECART, L.ECART / 2, L.ECART / 4]) {
+    for (const f of fonds) {
+      if (poses.length >= voulus) break;
+      if (interdit(f.i) || poses.some((p) => Math.hypot(p.x - f.x, p.y - f.y) < ecart)) continue;
+      const cases = etendreLeLac(ch, f.i, entre(alea, L.AIRE[0], L.AIRE[1]), interdit);
+      if (cases.length < L.AIRE[0] / 2) continue;
+      for (const i of cases) lac[i] = 1;
+      const niveau = niveauDuLac(ch, cases, lac);
+      for (const i of cases) ch.hauteur[i] = niveau;
+      marquerLaMarge(proche, cases, n, 3);
+      poses.push({ x: f.x, y: f.y, aire: cases.length });
+    }
+  }
+  limiterLaPente(ch.hauteur, n, REGLAGES.RELIEF.PENTE_MAX * 0.95);
+  ch.lac = lac;
+  ch.lacs = poses;
+  // l'humidité monte autour des lacs
+  const versLac = distanceAux(lac, n);
+  for (let i = 0; i < n * n; i++) {
+    if (!ch.terre[i] || lac[i]) continue;
+    ch.humidite[i] = Math.min(1, ch.humidite[i] + L.BERGE.humidite * 0.5 ** (versLac[i] / L.BERGE.portee));
+  }
+}
+
+// Le seuil sous lequel tombe la part `part` des valeurs (0,2 : les 20 % les plus bas).
+function seuilDeLaPart(valeurs, part) {
+  if (!valeurs.length) return Infinity;
+  const triees = Float32Array.from(valeurs).sort();
+  return triees[Math.min(triees.length - 1, Math.max(0, Math.floor(part * triees.length)))];
+}
+
+// Les cases de terre (hors lacs) d'un biome.
+function casesDuBiome(ch, biome) {
+  const cases = [];
+  for (let i = 0; i < ch.n * ch.n; i++) if (ch.biome[i] === biome) cases.push(i);
+  return cases;
+}
+
+// Une tache de bruit : vraie là où le bruit (echelle) passe le seuil.
+function tache(ch, i, reglage, etape) {
+  const x = i % ch.n;
+  const y = (i - x) / ch.n;
+  return bruit2D(x / reglage.echelle, y / reglage.echelle, hacher(`${ch.graine}/${etape}`)) > reglage.seuil;
+}
+
+// Les sols de la forêt : les aiguilles en haut, la mousse dans les plus humides, les clairières en taches, les
+// feuilles ailleurs.
+function solsDeLaForet(ch, S) {
+  const foret = casesDuBiome(ch, BIOME.foret);
+  const hautes = seuilDeLaPart(
+    foret.map((i) => ch.hauteur[i]),
+    1 - S.aiguilles,
+  );
+  const humides = seuilDeLaPart(
+    foret.map((i) => ch.humidite[i]),
+    1 - S.mousse,
+  );
+  for (const i of foret) {
+    if (tache(ch, i, S.clairiere, 'clairieres')) ch.sol[i] = SOL.clairiere;
+    else if (ch.hauteur[i] >= hautes) ch.sol[i] = SOL.aiguilles;
+    else if (ch.humidite[i] >= humides) ch.sol[i] = SOL.mousse;
+    else ch.sol[i] = SOL.feuilles;
+  }
+}
+
+/**
+ * Les biomes et les sols : la mer, les lacs, puis la terre partagée entre la lande (le plus sec), la forêt (le plus
+ * humide) et la prairie, dans les parts de REPARTITION ; puis les sols de chaque biome.
+ * @param {Chantier} ch
+ */
+function biomes(ch) {
+  const R = REGLAGES.REPARTITION;
+  const n = ch.n;
+  const g = hacher(`${ch.graine}/biomes`);
+  ch.biome = new Uint8Array(n * n).fill(BIOME.mer);
+  ch.sol = new Uint8Array(n * n).fill(SOL.eau_profonde);
+  const terre = [];
+  const notes = new Float32Array(n * n);
+  for (let i = 0; i < n * n; i++) {
+    if (!ch.terre[i]) continue;
+    if (ch.lac[i]) {
+      ch.biome[i] = BIOME.lac;
+      continue;
+    }
+    const x = i % n;
+    const y = (i - x) / n;
+    const bruit = (bruit2D(x / R.BRUIT.echelle, y / R.BRUIT.echelle, g) - 0.5) * 2 * R.BRUIT.force;
+    notes[i] = ch.humidite[i] - R.HAUTEUR * ch.hauteur[i] + bruit;
+    terre.push(i);
+  }
+  const sec = seuilDeLaPart(
+    terre.map((i) => notes[i]),
+    R.lande,
+  );
+  const humide = seuilDeLaPart(
+    terre.map((i) => notes[i]),
+    1 - R.foret,
+  );
+  for (const i of terre) {
+    if (notes[i] < sec) ch.biome[i] = BIOME.lande;
+    else if (notes[i] >= humide) ch.biome[i] = BIOME.foret;
+    else ch.biome[i] = BIOME.prairie;
+  }
+  // les sols
+  for (let i = 0; i < n * n; i++) {
+    if (ch.biome[i] === BIOME.prairie) ch.sol[i] = SOL.herbe;
+    else if (ch.biome[i] === BIOME.lande) ch.sol[i] = tache(ch, i, R.SOLS.terre, 'terre') ? SOL.terre : SOL.lande;
+    else if (ch.biome[i] === BIOME.lac) ch.sol[i] = auBordDuLac(ch, i) ? SOL.eau_basse : SOL.eau;
+  }
+  solsDeLaForet(ch, R.SOLS);
+}
+
+// Une case de lac qui touche la terre (ses huit voisines) : l'eau basse du bord.
+function auBordDuLac(ch, i) {
+  const n = ch.n;
+  for (const d of [-n - 1, -n, -n + 1, -1, 1, n - 1, n, n + 1]) if (!ch.lac[i + d]) return true;
+  return false;
+}
+
+/**
+ * Les plages : la terre basse du rivage, d'une largeur qui varie le long de la côte (par endroits, aucune) ; du sable,
+ * et des galets en taches.
+ * @param {Chantier} ch
+ */
+function plages(ch) {
+  const P = REGLAGES.PLAGES;
+  const n = ch.n;
+  const g = hacher(`${ch.graine}/plages`);
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const i = y * n + x;
+      if (!ch.terre[i] || ch.lac[i] || ch.hauteur[i] > P.HAUTEUR_MAX) continue;
+      const largeur = P.LARGEUR[0] + (P.LARGEUR[1] - P.LARGEUR[0]) * bruit2D(x / P.echelle, y / P.echelle, g);
+      if (ch.cote[i] > largeur) continue;
+      ch.biome[i] = BIOME.plage;
+      ch.sol[i] = tache(ch, i, REGLAGES.REPARTITION.SOLS.galets, 'galets') ? SOL.galets : SOL.sable;
+    }
+  }
+}
+
+/**
+ * Le point d'apparition : une prairie plate dans un rayon autour du centre, où le joueur apparaît en début de partie ;
+ * au-delà, sur « fondu » cases, le relief retrouve le sien (puis le limiteur de pente le garde doux).
+ * @param {Chantier} ch
+ */
+function pointApparition(ch) {
+  const A = REGLAGES.APPARITION;
+  const n = ch.n;
+  const loin = A.rayon + A.fondu;
+  let somme = 0;
+  let compte = 0;
+  for (let y = A.y - A.rayon; y <= A.y + A.rayon; y++) {
+    for (let x = A.x - A.rayon; x <= A.x + A.rayon; x++) {
+      if (Math.hypot(x - A.x, y - A.y) > A.rayon) continue;
+      somme += ch.hauteur[y * n + x];
+      compte++;
+    }
+  }
+  const plat = somme / compte;
+  for (let y = A.y - loin; y <= A.y + loin; y++) {
+    for (let x = A.x - loin; x <= A.x + loin; x++) {
+      const i = y * n + x;
+      const d = Math.hypot(x - A.x, y - A.y);
+      if (d > loin) continue;
+      const t = Math.min(1, Math.max(0, (d - A.rayon) / A.fondu));
+      const garde = t * t * (3 - 2 * t);
+      ch.hauteur[i] = plat * (1 - garde) + ch.hauteur[i] * garde;
+      if (d <= A.rayon) {
+        ch.biome[i] = BIOME.prairie;
+        ch.sol[i] = SOL.herbe;
+      }
+    }
+  }
+  // la prairie autour du départ, au bord irrégulier : la lande et la forêt y deviennent de l'herbe
+  const g = hacher(`${ch.graine}/apparition`);
+  for (let y = A.y - 2 * A.prairie; y <= A.y + 2 * A.prairie; y++) {
+    for (let x = A.x - 2 * A.prairie; x <= A.x + 2 * A.prairie; x++) {
+      const i = y * n + x;
+      const bord = A.prairie * (0.6 + 0.8 * bruit2D(x / 9, y / 9, g));
+      const enPrairie = ch.biome[i] === BIOME.lande || ch.biome[i] === BIOME.foret;
+      if (enPrairie && Math.hypot(x - A.x, y - A.y) <= bord) {
+        ch.biome[i] = BIOME.prairie;
+        ch.sol[i] = SOL.herbe;
+      }
+    }
+  }
+  limiterLaPente(ch.hauteur, n, REGLAGES.RELIEF.PENTE_MAX * 0.95);
+  ch.apparition = { x: A.x, y: A.y, rayon: A.rayon };
+}
+
 /** Les étapes de la génération, dans l'ordre (docs/ile-300.md, « Le code »). */
-export const ETAPES = Object.freeze(['forme', 'relief', 'humidite']);
-const FAIRE = { forme: formeIle, relief, humidite };
+export const ETAPES = Object.freeze(['forme', 'relief', 'humidite', 'lacs', 'biomes', 'plages', 'pointApparition']);
+const FAIRE = { forme: formeIle, relief, humidite, lacs, biomes, plages, pointApparition };
 
 /**
  * Le chantier d'une graine, mené jusqu'à une étape (comprise) : pour les tests, l'aperçu, et creerIle.
