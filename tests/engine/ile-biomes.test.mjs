@@ -73,10 +73,35 @@ test('les lacs : leur nombre, une eau plate, loin de la mer et du départ, sans 
         assert.ok(ch.cote[i] >= R.LACS.COTE_MIN, `${g} : un lac trop près de la mer`);
         assert.ok(distance(i, ax, ay) >= R.LACS.LOIN_DEPART, `${g} : un lac trop près du départ`);
         // la rive n'est jamais plus basse que l'eau
-        for (const j of voisines(i)) if (!ch.lac[j]) assert.ok(ch.hauteur[j] >= niveau, `${g} : une rive sous l'eau`);
+        const rives = voisines(i).filter((j) => !ch.lac[j]);
+        assert.ok(
+          rives.every((j) => ch.hauteur[j] >= niveau),
+          `${g} : une rive sous l'eau`,
+        );
       }
     }
   }
+});
+
+// La compacité d'un groupe de cases : 4π × aire / périmètre² (le périmètre compté en côtés de case). Un disque dessiné
+// en cases vaut environ 0,785 ; un lac en croissant ou en coin, coupé droit par une zone interdite, moins de 0,25.
+function compacite(cases, masque) {
+  let perimetre = 0;
+  for (const i of cases) for (const j of voisines(i)) if (!masque[j]) perimetre++;
+  return (4 * Math.PI * cases.length) / perimetre ** 2;
+}
+
+test('les lacs : une forme naturelle, ronde ou allongée, jamais en coin ni en croissant', () => {
+  const origines = new Set();
+  for (const [g, ch] of ILES) {
+    for (const lac of groupes(ch.lac)) {
+      const c = compacite(lac, ch.lac);
+      assert.ok(c >= 0.3, `${g} : un lac de ${lac.length} cases à la forme trop découpée (compacité ${c.toFixed(2)})`);
+    }
+    for (const l of ch.lacs) origines.add(l.origine);
+  }
+  // les deux méthodes servent : des creux naturels et des lacs dessinés
+  assert.deepEqual([...origines].sort(), ['creux', 'dessin']);
 });
 
 test("les lacs : l'eau basse au bord ; l'humidité monte sur leurs rives", () => {

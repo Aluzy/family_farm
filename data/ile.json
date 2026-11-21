@@ -75,27 +75,32 @@
     ],
     "HUMIDITE": { "echelle": 70, "octaves": 3, "BAS": 0.12 },
     "//LACS": [
-      "Les lacs (lacs), la seule eau douce de l'île (C13). NOMBRE : combien, tiré entre les deux bornes. AIRE : la",
-      "  surface de chacun (cases), tirée entre les deux bornes. Un lac naît au fond d'un creux du relief (les cases",
-      "  les plus basses, un peu de bruit pour varier) et monte jusqu'à couvrir son aire : il prend la forme du creux,",
-      "  sa surface est plate. COTE_MIN : la distance au rivage (cases) en deçà de laquelle un lac ne vient pas (il ne",
-      "  touche jamais la mer). FOND_COTE_MIN : le fond d'un lac est au moins à cette distance du rivage (les lacs sont à",
-      "  l'intérieur). COMPACITE : en s'étendant, un lac préfère les cases proches de son fond (de combien de hauteur",
-      "  par case d'éloignement) : il reste rond au lieu de filer le long d'une vallée. LOIN_DEPART : la distance au point d'apparition en deçà de laquelle il ne vient pas.",
-      "  ECART : la distance entre deux lacs (entre leurs fonds), au moins. BERGE : autour d'un lac, l'humidité monte",
+      "Les lacs (lacs), la seule eau douce de l'île (C13), en deux temps. D'abord les creux naturels du relief : le",
+      "  remplissage des creux (Priority-Flood) trouve où l'eau de pluie resterait ; un creux plus profond que",
+      "  CREUX.profondeur, de la bonne aire et à la bonne place devient un lac, son bord suit les courbes du relief.",
+      "  Puis, s'il en manque, des lacs dessinés au fond des vallées : une ellipse (allongée jusqu'à FORME.allongement,",
+      "  tournée au hasard) dont le bord est déformé par un bruit (FORME.deformation : de combien, en part du rayon ;",
+      "  FORME.echelle : la taille des ondulations, en part du rayon). Un lac dessiné est posé entier ou pas du tout :",
+      "  s'il touche une case interdite, il rétrécit ou va ailleurs (jamais coupé droit).",
+      "NOMBRE : combien, tiré entre les deux bornes. AIRE : la surface de chacun (cases). COTE_MIN : la distance au",
+      "  rivage (cases) en deçà de laquelle un lac ne vient pas. FOND_COTE_MIN : le centre d'un lac dessiné est au moins",
+      "  à cette distance du rivage. LOIN_DEPART : la distance au point d'apparition en deçà de laquelle il ne vient pas.",
+      "  ECART : la distance entre deux lacs (entre leurs centres), au moins. BERGE : autour d'un lac, l'humidité monte",
       "  (humidite : de combien au bord, portee : sur combien de cases elle retombe de moitié)."
     ],
     "LACS": {
       "NOMBRE": [3, 6],
       "AIRE": [80, 450],
       "COTE_MIN": 14,
-      "FOND_COTE_MIN": 28,
-      "COMPACITE": 0.004,
+      "FOND_COTE_MIN": 30,
       "LOIN_DEPART": 28,
       "ECART": 50,
+      "CREUX": { "profondeur": 0.01 },
+      "FORME": { "allongement": 0.6, "deformation": 0.35, "echelle": 0.9 },
       "BERGE": { "humidite": 0.3, "portee": 8 }
     },
-    "//REPARTITION": [
+    
+"//REPARTITION": [
       "Les biomes de la terre (biomes). Chaque case reçoit une note : son humidité, moins HAUTEUR fois sa hauteur, plus",
       "  un bruit (BRUIT : echelle, force) qui rend les lisières irrégulières. Les cases les plus sèches (la part lande)",
       "  sont la lande, les plus humides (la part foret) la forêt, le reste la prairie : chaque île a les trois, dans",

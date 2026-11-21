@@ -9944,10 +9944,11 @@ export const RAW_DATA = {
       "NOMBRE": [3, 6],
       "AIRE": [80, 450],
       "COTE_MIN": 14,
-      "FOND_COTE_MIN": 28,
-      "COMPACITE": 0.004,
+      "FOND_COTE_MIN": 30,
       "LOIN_DEPART": 28,
       "ECART": 50,
+      "CREUX": { "profondeur": 0.01 },
+      "FORME": { "allongement": 0.6, "deformation": 0.35, "echelle": 0.9 },
       "BERGE": { "humidite": 0.3, "portee": 8 }
     },
     "REPARTITION": {

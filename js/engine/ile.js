@@ -504,7 +504,8 @@ export function verifierCatalogue(cat, data = DATA) {
  * @property {Float32Array} hauteur     de 0 au rivage à 1 au plus haut ; 0 en mer (relief)
  * @property {Float32Array} humidite    de 0 (sec) à 1 (humide) ; 1 en mer (humidite, puis lacs)
  * @property {Uint8Array} lac           1 : une case de lac (lacs ; sa hauteur est celle de l'eau, plate)
- * @property {{ x: number, y: number, aire: number }[]} lacs   le fond et l'aire de chaque lac (lacs)
+ * @property {{ x: number, y: number, aire: number, origine: string }[]} lacs   le centre, l'aire et l'origine
+ *           (creux, dessin) de chaque lac (lacs)
  * @property {Uint8Array} biome         le numéro du biome de chaque case (BIOME ; biomes, plages, pointApparition)
  * @property {Uint8Array} sol           le numéro du sol de chaque case (SOL ; biomes, plages, pointApparition)
  * @property {{ x: number, y: number, rayon: number }} apparition   la prairie plate du départ (pointApparition)
@@ -867,51 +868,122 @@ class FileDesPlusBasses {
   }
 }
 
-// Le lac qui naît au fond `fond` : il s'étend toujours vers la case libre la plus basse qui le touche (un peu moins
-// basse si elle est plus près du fond : COMPACITE), jusqu'à `aire` cases ; il prend la forme du creux. Les cases
-// interdites ne sont jamais prises.
-function etendreLeLac(ch, fond, aire, interdit) {
+// Les quatre voisines d'une case, ou -1 hors de la carte.
+function voisinesDe(i, n) {
+  const x = i % n;
+  return [x > 0 ? i - 1 : -1, x < n - 1 ? i + 1 : -1, i >= n ? i - n : -1, i < n * n - n ? i + n : -1];
+}
+
+// Le remplissage des creux (Priority-Flood, Barnes et al. 2014) : la hauteur qu'aurait l'eau de pluie si elle
+// remplissait chaque creux jusqu'à son point de débordement. L'eau part de la mer et monte vers l'intérieur, toujours
+// par la case la plus basse.
+function remplirLesCreux(ch) {
   const n = ch.n;
-  const pris = new Uint8Array(n * n);
+  const plein = new Float32Array(n * n);
+  const vue = new Uint8Array(n * n);
   const file = new FileDesPlusBasses(n * n);
-  const cases = [];
-  const fx = fond % n;
-  const fy = (fond - fx) / n;
-  const cle = (j) => {
-    const x = j % n;
-    return ch.hauteur[j] + REGLAGES.LACS.COMPACITE * Math.hypot(x - fx, (j - x) / n - fy);
-  };
-  file.ajouter(fond, cle(fond));
-  pris[fond] = 1;
-  while (file.longueur && cases.length < aire) {
+  for (let i = 0; i < n * n; i++) {
+    if (ch.terre[i]) continue;
+    vue[i] = 1;
+    file.ajouter(i, 0);
+  }
+  while (file.longueur) {
     const i = file.retirer();
-    cases.push(i);
-    const x = i % n;
-    for (const j of [x > 0 ? i - 1 : -1, x < n - 1 ? i + 1 : -1, i - n, i + n]) {
-      if (j < 0 || j >= n * n || pris[j] || interdit(j)) continue;
-      pris[j] = 1;
-      file.ajouter(j, cle(j));
+    for (const j of voisinesDe(i, n)) {
+      if (j < 0 || vue[j]) continue;
+      vue[j] = 1;
+      plein[j] = Math.max(ch.hauteur[j], plein[i]);
+      file.ajouter(j, plein[j]);
     }
   }
+  return plein;
+}
+
+// Les groupes de cases d'un masque reliées par leurs côtés.
+function groupesDe(masque, n) {
+  const vue = new Uint8Array(n * n);
+  const groupes = [];
+  for (let d = 0; d < n * n; d++) {
+    if (!masque[d] || vue[d]) continue;
+    const groupe = [d];
+    vue[d] = 1;
+    for (let k = 0; k < groupe.length; k++) {
+      for (const j of voisinesDe(groupe[k], n)) {
+        if (j >= 0 && masque[j] && !vue[j]) {
+          vue[j] = 1;
+          groupe.push(j);
+        }
+      }
+    }
+    groupes.push(groupe);
+  }
+  return groupes;
+}
+
+// Les creux naturels du relief assez profonds pour garder l'eau : leurs cases (l'eau y sera mise au niveau de la rive
+// la plus basse, jamais plus haut).
+function creuxNaturels(ch, L) {
+  const n = ch.n;
+  const plein = remplirLesCreux(ch);
+  const masque = new Uint8Array(n * n);
+  for (let i = 0; i < n * n; i++) if (ch.terre[i] && plein[i] - ch.hauteur[i] > L.CREUX.profondeur) masque[i] = 1;
+  return groupesDe(masque, n).map((cases) => ({ cases }));
+}
+
+// La distance déformée d'une case au centre d'un lac dessiné (sous le rayon : dans le lac).
+function distanceDeformee(x, y, c, f) {
+  const px = x - c.x + f.deformation * (fbm(x / f.echelle, y / f.echelle, f.g, 3) - 0.5) * 2;
+  const py = y - c.y + f.deformation * (fbm(x / f.echelle, y / f.echelle, f.g ^ 0x5bd1e995, 3) - 0.5) * 2;
+  const u = (px * f.cos + py * f.sin) / f.long;
+  const v = (py * f.cos - px * f.sin) * f.long;
+  return Math.hypot(u, v);
+}
+
+// La forme d'un lac dessiné : une ellipse (tournée, étirée) dont le bord est déformé par un bruit ; les cases dont la
+// distance déformée au centre est sous le rayon, d'un seul tenant avec le centre, sans île au milieu.
+function formeDuLac(ch, c, rayon, alea, F) {
+  const n = ch.n;
+  const angle = alea() * Math.PI;
+  const f = {
+    long: 1 + F.allongement * alea(),
+    cos: Math.cos(angle),
+    sin: Math.sin(angle),
+    g: hacher(`${ch.graine}/lac/${c.x}/${c.y}`),
+    echelle: rayon * F.echelle,
+    deformation: rayon * F.deformation,
+  };
+  const boite = Math.ceil(rayon * (f.long + F.deformation) + 2);
+  const masque = new Uint8Array(n * n);
+  for (let y = Math.max(1, c.y - boite); y <= Math.min(n - 2, c.y + boite); y++) {
+    for (let x = Math.max(1, c.x - boite); x <= Math.min(n - 2, c.x + boite); x++) {
+      if (distanceDeformee(x, y, c, f) < rayon) masque[y * n + x] = 1;
+    }
+  }
+  if (!masque[c.y * n + c.x]) return null;
+  // le morceau qui porte le centre, puis ses trous comblés (pas d'île dans un lac : tout reste à portée de pied)
+  const lac = relieesA(masque, n, [c.y * n + c.x]);
+  const dehors = relieesA(
+    lac.map((v) => 1 - v),
+    n,
+    [0],
+  );
+  const cases = [];
+  for (let i = 0; i < n * n; i++) if (!dehors[i]) cases.push(i);
   return cases;
 }
 
 // Le niveau de l'eau d'un lac : la plus basse des cases de terre qui le bordent (l'eau n'est jamais plus haute que
 // sa rive). Les cases du lac plus hautes sont creusées, les plus basses remplies : la surface est plate.
 function niveauDuLac(ch, cases, lac) {
-  const n = ch.n;
   let niveau = Infinity;
   for (const i of cases) {
-    const x = i % n;
-    for (const j of [x > 0 ? i - 1 : -1, x < n - 1 ? i + 1 : -1, i - n, i + n]) {
-      if (j >= 0 && j < n * n && !lac[j] && ch.terre[j]) niveau = Math.min(niveau, ch.hauteur[j]);
-    }
+    for (const j of voisinesDe(i, ch.n)) if (j >= 0 && !lac[j] && ch.terre[j]) niveau = Math.min(niveau, ch.hauteur[j]);
   }
   return niveau;
 }
 
-// Les fonds possibles d'un lac, du plus bas au plus haut : une case sur trois, loin du rivage et du point d'apparition ;
-// un peu de bruit dans la note, pour varier les vallées. Un lac parti d'une pente descend de lui-même au fond.
+// Les fonds possibles d'un lac dessiné, du plus bas au plus haut : une case sur trois, loin du rivage et du point
+// d'apparition ; un peu de bruit dans la note, pour varier les vallées.
 function fondsPossibles(ch, L) {
   const n = ch.n;
   const { x: ax, y: ay } = REGLAGES.APPARITION;
@@ -942,10 +1014,35 @@ function marquerLaMarge(proche, cases, n, marge) {
   }
 }
 
+// Le centre (moyen) d'un groupe de cases.
+function centreDe(cases, n) {
+  let sx = 0;
+  let sy = 0;
+  for (const i of cases) {
+    sx += i % n;
+    sy += Math.floor(i / n);
+  }
+  return { x: Math.round(sx / cases.length), y: Math.round(sy / cases.length) };
+}
+
+// Le lac dessiné qui tient au fond `f` : son aire tirée, rétrécie jusqu'à trois fois s'il touche une case interdite ;
+// null s'il ne tient pas (il ne sera jamais coupé).
+function lacDessine(ch, f, L, alea, permis) {
+  let rayon = Math.sqrt(entre(alea, L.AIRE[0], L.AIRE[1]) / Math.PI);
+  for (let essai = 0; essai < 4; essai++, rayon *= 0.8) {
+    const cases = formeDuLac(ch, f, rayon, alea, L.FORME);
+    const bonneTaille = cases && cases.length >= L.AIRE[0] / 2 && cases.length <= L.AIRE[1];
+    if (bonneTaille && permis(cases)) return cases;
+  }
+  return null;
+}
+
 /**
- * Les lacs : quelques creux du relief remplis d'eau douce, loin de la mer et du point d'apparition. Chaque lac
- * s'étend du fond de sa vallée jusqu'à son aire ; sa surface est plate, jamais plus haute que sa rive ; le limiteur
- * de pente adoucit ensuite ses bords. L'humidité monte autour d'eux.
+ * Les lacs, la seule eau douce de l'île (C13), en deux temps. D'abord les creux naturels du relief (le remplissage
+ * des creux) qui ont la bonne taille et la bonne place : leur bord suit les courbes du relief. Puis, s'il en manque,
+ * des lacs dessinés : une ellipse au bord déformé par un bruit, posée au fond d'une vallée, entière (si elle touche
+ * une case interdite, elle rétrécit ou va ailleurs : un lac n'est jamais coupé droit). L'eau est plate, au niveau de
+ * la rive la plus basse ; le limiteur de pente adoucit les berges. L'humidité monte autour.
  * @param {Chantier} ch
  */
 function lacs(ch) {
@@ -961,20 +1058,33 @@ function lacs(ch) {
     const y = (j - x) / n;
     return proche[j] === 1 || ch.cote[j] < L.COTE_MIN || Math.hypot(x - ax, y - ay) < L.LOIN_DEPART;
   };
-  const fonds = fondsPossibles(ch, L);
+  const permis = (cases) => cases.every((i) => !interdit(i));
   const poses = [];
-  // un tour avec l'écart voulu ; s'il manque des lacs, d'autres tours, l'écart réduit chaque fois de moitié
+  const poser = (cases, origine) => {
+    for (const i of cases) lac[i] = 1;
+    const eau = niveauDuLac(ch, cases, lac);
+    for (const i of cases) ch.hauteur[i] = eau;
+    marquerLaMarge(proche, cases, n, 3);
+    poses.push({ ...centreDe(cases, n), aire: cases.length, origine });
+  };
+  const assezLoin = (c, ecart) => poses.every((p) => Math.hypot(p.x - c.x, p.y - c.y) >= ecart);
+
+  // 1. les creux naturels, les plus grands d'abord
+  const creux = creuxNaturels(ch, L).sort((a, b) => b.cases.length - a.cases.length);
+  for (const c of creux) {
+    if (poses.length >= voulus) break;
+    const bonneTaille = c.cases.length >= L.AIRE[0] && c.cases.length <= L.AIRE[1];
+    if (bonneTaille && permis(c.cases) && assezLoin(centreDe(c.cases, n), L.ECART)) poser(c.cases, 'creux');
+  }
+
+  // 2. les lacs dessinés, au fond des vallées ; un tour avec l'écart voulu, puis d'autres, l'écart réduit de moitié
+  const fonds = fondsPossibles(ch, L);
   for (const ecart of [L.ECART, L.ECART / 2, L.ECART / 4]) {
     for (const f of fonds) {
       if (poses.length >= voulus) break;
-      if (interdit(f.i) || poses.some((p) => Math.hypot(p.x - f.x, p.y - f.y) < ecart)) continue;
-      const cases = etendreLeLac(ch, f.i, entre(alea, L.AIRE[0], L.AIRE[1]), interdit);
-      if (cases.length < L.AIRE[0] / 2) continue;
-      for (const i of cases) lac[i] = 1;
-      const niveau = niveauDuLac(ch, cases, lac);
-      for (const i of cases) ch.hauteur[i] = niveau;
-      marquerLaMarge(proche, cases, n, 3);
-      poses.push({ x: f.x, y: f.y, aire: cases.length });
+      if (interdit(f.i) || !assezLoin(f, ecart)) continue;
+      const cases = lacDessine(ch, f, L, alea, permis);
+      if (cases) poser(cases, 'dessin');
     }
   }
   limiterLaPente(ch.hauteur, n, REGLAGES.RELIEF.PENTE_MAX * 0.95);
