@@ -3,7 +3,7 @@
    changées depuis la dernière fois (pendant le jeu : une écriture courte, sous 2 ms) ; et l'île relue.
    Une partie de l'île de 300 × 300 (js/engine/ile.js, docs/ile-300.md).
 
-   Le format : un objet JSON. Chaque tableau de l'île (le sol, la hauteur, les objets, leur état) est codé par
+   Le format : un objet JSON. Chaque tableau de l'île (le sol, les objets, leur état) est codé par
    plages (une valeur et combien de fois elle se répète : la mer, les sols, les cases vides se répètent beaucoup),
    puis en base 64 ; les objets (16 bits) en deux plans d'octets. La table des numéros du catalogue est gardée
    (une espèce ajoutée par une mise à jour ne décale rien : renumerotation). Synchrone, sans dépendance : la page
@@ -12,7 +12,7 @@
 
 import { catalogue, renumerotation, tableDesNumeros } from './catalogue.js';
 import { ILE, REGLAGES } from './reglages.js';
-import { deduireDesObjets, REGIONS } from './vie.js';
+import { deduireBloque, REGIONS } from './vie.js';
 
 const FORMAT = 'ile-300';
 const VERSION = REGLAGES.VIE.SAUVEGARDE;
@@ -74,15 +74,15 @@ export function decoder(texte, longueur) {
   return octets;
 }
 
-// Les quatre tableaux de l'île (ou d'un morceau), codés.
-function coderTableaux({ sol, hauteur, objet, etat }) {
+// Les tableaux de l'île (ou d'un morceau), codés.
+function coderTableaux({ sol, objet, etat }) {
   const bas = new Uint8Array(objet.length);
   const haut = new Uint8Array(objet.length);
   for (let i = 0; i < objet.length; i++) {
     bas[i] = objet[i] & 0xff;
     haut[i] = objet[i] >> 8;
   }
-  return { sol: coder(sol), hauteur: coder(hauteur), objetBas: coder(bas), objetHaut: coder(haut), etat: coder(etat) };
+  return { sol: coder(sol), objetBas: coder(bas), objetHaut: coder(haut), etat: coder(etat) };
 }
 
 function decoderTableaux(s, longueur) {
@@ -92,7 +92,6 @@ function decoderTableaux(s, longueur) {
   for (let i = 0; i < longueur; i++) objet[i] = bas[i] | (haut[i] << 8);
   return {
     sol: decoder(s.sol, longueur),
-    hauteur: decoder(s.hauteur, longueur),
     objet,
     etat: decoder(s.etat, longueur),
   };
@@ -114,6 +113,7 @@ export function versSauvegarde(ile, cat = catalogue()) {
     taille: ile.n,
     apparition: { ...ile.apparition },
     table: tableDesNumeros(cat),
+    croissance: [...ile.croissance],
     repousse: ile.repousse.map((r) => [r.i, r.numero, r.jour]),
     ...coderTableaux(ile),
   };
@@ -138,13 +138,14 @@ export function depuisSauvegarde(s, cat = catalogue()) {
     n: N,
     apparition: { ...s.apparition },
     ...t,
+    croissance: new Map(s.croissance.filter(([i]) => t.objet[i])),
     repousse: s.repousse
       .map(([i, numero, jour]) => ({ i, numero: nouveau[numero] ?? 0, jour }))
       .filter((r) => r.numero),
     modifiees: new Set(),
     aSauver: new Set(),
   };
-  deduireDesObjets(ile, cat);
+  deduireBloque(ile, cat);
   return ile;
 }
 
@@ -161,7 +162,7 @@ function casesDeLaRegion(r) {
 
 /**
  * Les régions changées depuis la dernière sauvegarde, prêtes à écrire (pendant le jeu) ; puis elles sont vidées.
- * Avec la repousse (toute : elle est courte) et la table des numéros.
+ * Avec la croissance et la repousse (toutes deux : elles sont courtes) et la table des numéros.
  * @param {import('./vie.js').Ile} ile
  * @returns {{ format: string, version: number, table: string[], repousse: number[][], regions: object[] }}
  */
@@ -172,7 +173,6 @@ export function versSauvegardeRegions(ile, cat = catalogue()) {
       const cases = casesDeLaRegion(r);
       const morceau = {
         sol: Uint8Array.from(cases, (i) => ile.sol[i]),
-        hauteur: Uint8Array.from(cases, (i) => ile.hauteur[i]),
         objet: Uint16Array.from(cases, (i) => ile.objet[i]),
         etat: Uint8Array.from(cases, (i) => ile.etat[i]),
       };
@@ -183,6 +183,7 @@ export function versSauvegardeRegions(ile, cat = catalogue()) {
     format: FORMAT,
     version: VERSION,
     table: tableDesNumeros(cat),
+    croissance: [...ile.croissance],
     repousse: ile.repousse.map((x) => [x.i, x.numero, x.jour]),
     regions,
   };
@@ -199,6 +200,7 @@ export function fusionnerRegions(entiere, partielles) {
   if (!partielles.length) return entiere;
   const t = decoderTableaux(entiere, N * N);
   let repousse = entiere.repousse;
+  let croissance = entiere.croissance;
   const versEntiere = new Map(entiere.table.map((id, k) => [id, k]));
   const table = [...entiere.table];
   for (const p of partielles) {
@@ -216,14 +218,14 @@ export function fusionnerRegions(entiere, partielles) {
       const m = decoderTableaux(region, cases.length);
       cases.forEach((i, k) => {
         t.sol[i] = m.sol[k];
-        t.hauteur[i] = m.hauteur[k];
         t.objet[i] = numero[m.objet[k]] ?? 0;
         t.etat[i] = m.etat[k];
       });
     }
     repousse = p.repousse.map(([i, n, jour]) => [i, numero[n] ?? 0, jour]);
+    croissance = p.croissance;
   }
-  return { ...entiere, table, repousse, ...coderTableaux(t) };
+  return { ...entiere, table, croissance, repousse, ...coderTableaux(t) };
 }
 
 /** Le nombre de régions (pour les tests). */

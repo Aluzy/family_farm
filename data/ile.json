@@ -147,18 +147,15 @@
       "DEPART": { "pierres": 3, "bois_flotte": 3, "distance": [2, 7] }
     },
     "//VIE": [
-      "L'île en jeu (docs/ile-300.md, étape 6 : js/engine/ile/vie.js, sauvegarde.js). HAUTEUR : la hauteur d'une case",
-      "  est gardée en entier, de 0 (le rivage) à HAUTEUR (le plus haut de l'île à sa création). MARCHE : de combien un",
-      "  coup de pelle monte ou descend une case ; le joueur ne crée jamais de falaise : entre deux cases de terre",
-      "  voisines, l'écart reste au plus RELIEF.PENTE_MAX × HAUTEUR. NUITS_PAR_STADE : les nuits qu'il faut à une plante",
-      "  pour passer au stade suivant, par famille (les autres : 1). REPOUSSE : les nuits avant qu'une plante coupée ou",
-      "  ramassée repousse à sa place, quand sa récolte n'en dit rien ([au moins, au plus]).",
+      "L'île en jeu (docs/ile-300.md, étape 6 : js/engine/ile/vie.js, sauvegarde.js). La carte est plate en jeu : le",
+      "  relief ne sert qu'à la génération (les lacs, les plages, la lande, les minerais des hauts).",
+      "REPOUSSE : les nuits avant qu'une plante coupée ou ramassée repousse à sa place, quand sa récolte n'en dit rien",
+      "  ([au moins, au plus]). Une culture sauvage récoltée ne repousse pas ; un fruitier sauvage cueilli garde sa",
+      "  taille et refait ses fruits au rythme du verger (crops.json VERGER : NUITS_STADE pour grandir, PERIODE pour",
+      "  les fruits) ; la vigne sauvage revient à son stade de vivace.",
       "SAUVEGARDE : la version du format (une île sauvée dans un autre format est refusée)."
     ],
     "VIE": {
-      "HAUTEUR": 200,
-      "MARCHE": 5,
-      "NUITS_PAR_STADE": { "fruitier": 5 },
       "REPOUSSE": [5, 8],
       "SAUVEGARDE": 1
     },
@@ -187,7 +184,8 @@
       "EXCEPTIONS : par espèce (son id), ce qui remplace le défaut de sa famille (les mêmes clés).",
       "RECOLTES : ce que donne une culture sauvage ou un fruitier sauvage (les plantes sauvages ont la leur, monde.json",
       "  RECOLTE). fin : combien de produits (ou de fruits) ; chance : la chance sur cent d'une graine (ou d'un jeune",
-      "  arbre) en plus. Cueillie, la plante reste et repart de son premier stade."
+      "  arbre) en plus. Une culture sauvage récoltée s'en va et ne repousse pas (la vigne, une vivace, revient à son",
+      "  stade de vivace) ; un fruitier cueilli revient au stade « arbre » et refait ses fruits (VIE)."
     ],
     "ESPECES": {
       "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor", "roche"],

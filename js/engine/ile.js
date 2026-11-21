@@ -12,7 +12,7 @@
      lacs.js       les lacs (creux naturels, lacs dessinés) ;
      biomes.js     les biomes et les sols, les plages, la prairie du départ ;
      pousse.js     la végétation, les roches, les quotas d'espèces.
-     vie.js        l'île en jeu : sa lecture, ses modifications (le sol, la hauteur, les plantes, la récolte), ses
+     vie.js        l'île en jeu (plate) : sa lecture, ses modifications (le sol, les plantes, la récolte), ses
                    nuits (la pousse, la repousse), les régions à repeindre ;
      sauvegarde.js l'île entière ou ses régions changées, et l'île relue ;
      controle.js   les règles qu'une île ne respecte pas (verifierIle).
@@ -35,7 +35,6 @@ export { catalogue, construireCatalogue, renumerotation, tableDesNumeros, verifi
 export { compterEspeces } from './ile/pousse.js';
 export {
   auLarge,
-  changerHauteur,
   changerSol,
   estEau,
   ficheA,
@@ -61,8 +60,8 @@ export {
 export { verifierIle } from './ile/controle.js';
 
 /**
- * Le chantier de la génération : ce que les étapes se passent, dans l'ordre d'ETAPES. Seuls le sol, la hauteur, les
- * objets et leur état resteront dans l'île ; le reste ne sert qu'à générer.
+ * Le chantier de la génération : ce que les étapes se passent, dans l'ordre d'ETAPES. Seuls le sol, les objets et leur
+ * état restent dans l'île (plate en jeu) ; le reste, le relief compris, ne sert qu'à générer.
  * @typedef {object} Chantier
  * @property {string} graine
  * @property {number} n                 le côté de l'île (cases)

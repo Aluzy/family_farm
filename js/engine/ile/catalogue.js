@@ -87,9 +87,11 @@ function grouperPar(paires) {
 }
 
 // Ce que donne une culture sauvage ou un fruitier sauvage (RECOLTES) : le produit, et une graine (ou un jeune arbre)
-// par chance. Cueillie, la plante reste et repart de son premier stade.
-function recolteCueillie(reglage, produit, enPlus, objets) {
-  const recolte = { geste: reglage.geste, fin: { [produit]: [...reglage.fin] }, repousse: 'stades' };
+// par chance. `apres` : ce que devient la plante cueillie : { repousse: 'jamais' } (elle s'en va et ne revient pas :
+// une culture sauvage), ou { repousse: 'stade', stade } (elle reste et revient à ce stade : un fruitier, sans ses
+// fruits ; la vigne, une vivace).
+function recolteCueillie(reglage, produit, enPlus, objets, apres) {
+  const recolte = { geste: reglage.geste, fin: { [produit]: [...reglage.fin] }, ...apres };
   if (enPlus && enPlus !== produit && objets[enPlus]) recolte.chance = { [enPlus]: reglage.chance };
   return recolte;
 }
@@ -102,13 +104,16 @@ function familleDeSorte(sorte, classement, fleurs, cultures) {
   return sorte.genre === 'arbre' || sorte.genre === 'buisson' ? sorte.genre : 'herbe';
 }
 
-// La fiche d'une plante sauvage du monde (monde.json VEGETATION.SORTES).
+// La fiche d'une plante sauvage du monde (monde.json VEGETATION.SORTES). Une culture sauvage (l'ail des ours, la
+// salicorne) ne repousse pas une fois récoltée.
 function ficheDeSorte(sorte, liens, data) {
   const fleurs = liens.fleurs.get(sorte.nom) ?? [];
   const cultures = liens.cultures.get(sorte.nom) ?? [];
+  const famille = familleDeSorte(sorte, liens.classement, fleurs, cultures);
+  const recolte = data.RECOLTE.SORTES[sorte.nom] ?? null;
   return {
     id: sorte.nom,
-    famille: familleDeSorte(sorte, liens.classement, fleurs, cultures),
+    famille,
     genre: sorte.genre,
     bloque: Array.isArray(sorte.bloque) && sorte.bloque.length > 0,
     empreinte: (sorte.bloque ?? []).map(([dx, dy]) => [dx, dy]),
@@ -118,7 +123,7 @@ function ficheDeSorte(sorte, liens, data) {
     fleurs,
     stades: 1,
     dessin: { planche: 'vegetation', sorte: sorte.nom, variantes: sorte.variantes ?? 1 },
-    recolte: data.RECOLTE.SORTES[sorte.nom] ?? null,
+    recolte: recolte && famille === 'culture' ? { ...recolte, repousse: 'jamais' } : recolte,
   };
 }
 
@@ -142,6 +147,7 @@ function ficheDeCulture(cle, culture, data) {
       culture.produit ?? cle,
       culture.graines?.item,
       data.OBJETS,
+      culture.vivace ? { repousse: 'stade', stade: culture.vivace.stade } : { repousse: 'jamais' },
     ),
   };
 }
@@ -160,7 +166,11 @@ function ficheDeFruitier(cle, arbre, data) {
     fleurs: [],
     stades: data.VERGER.STADES.length,
     dessin: { planche: 'verger', dessin: arbre.dessin },
-    recolte: recolteCueillie(data.ILE.ESPECES.RECOLTES.fruitier, arbre.fruit, `jeune_${cle}`, data.OBJETS),
+    // cueilli, il garde sa taille : il revient au stade « arbre » (sans fruits), ses fruits repoussent (vie.js)
+    recolte: recolteCueillie(data.ILE.ESPECES.RECOLTES.fruitier, arbre.fruit, `jeune_${cle}`, data.OBJETS, {
+      repousse: 'stade',
+      stade: data.VERGER.STADES.length - 2,
+    }),
   };
 }
 

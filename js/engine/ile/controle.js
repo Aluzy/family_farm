@@ -6,12 +6,11 @@
    ========================================================================== */
 
 import { catalogue } from './catalogue.js';
-import { groupesDe, voisinesDe } from './grille.js';
-import { ILE, REGLAGES, SOL, SOL_EAU, SOLS } from './reglages.js';
+import { groupesDe } from './grille.js';
+import { ILE, SOL, SOL_EAU, SOLS } from './reglages.js';
 import { auLarge } from './vie.js';
 
 const N = ILE.TAILLE;
-const PENTE = Math.floor(REGLAGES.RELIEF.PENTE_MAX * REGLAGES.VIE.HAUTEUR);
 
 // La mer du large : de l'eau profonde, sans rien dessus.
 function erreursDuLarge(ile) {
@@ -50,26 +49,18 @@ function erreursDesObjets(ile, cat) {
   return erreurs.slice(0, 20);
 }
 
-// La terre d'un seul tenant, et pas de falaise entre deux cases de terre voisines.
+// La terre d'un seul tenant.
 function erreursDeLaTerre(ile) {
-  const erreurs = [];
   const terre = new Uint8Array(N * N);
   for (let i = 0; i < N * N; i++) terre[i] = SOL_EAU[ile.sol[i]] ? 0 : 1;
   const morceaux = groupesDe(terre, N).length;
-  if (morceaux !== 1) erreurs.push(`la terre est en ${morceaux} morceaux`);
-  for (let i = 0; i < N * N && erreurs.length < 5; i++) {
-    if (!terre[i]) continue;
-    for (const j of voisinesDe(i, N)) {
-      if (j > i && terre[j] && Math.abs(ile.hauteur[i] - ile.hauteur[j]) > PENTE) erreurs.push(`une falaise en ${i}`);
-    }
-  }
-  return erreurs;
+  return morceaux === 1 ? [] : [`la terre est en ${morceaux} morceaux`];
 }
 
 // Les listes de la nuit : la croissance ne porte que des plantes qui poussent encore ; la repousse, des espèces.
 function erreursDesListes(ile, cat) {
   const erreurs = [];
-  for (const i of ile.croissance) {
+  for (const i of ile.croissance.keys()) {
     const f = ile.objet[i] ? cat.fiches[ile.objet[i] - 1] : null;
     if (!f || ile.etat[i] >= f.stades - 1) erreurs.push(`la croissance porte une case qui ne pousse pas (${i})`);
   }
@@ -79,12 +70,12 @@ function erreursDesListes(ile, cat) {
 
 /**
  * Les règles que l'île ne respecte pas : la taille, la mer du large, ce qui pousse et les empreintes, la terre d'un
- * seul tenant sans falaise, les listes de la nuit, le point d'apparition sur la terre. Vide : tout va bien.
+ * seul tenant, les listes de la nuit, le point d'apparition sur la terre. Vide : tout va bien.
  * @param {import('./vie.js').Ile} ile
  * @returns {string[]}
  */
 export function verifierIle(ile, cat = catalogue()) {
-  const tailles = ['sol', 'hauteur', 'objet', 'etat', 'bloque'].filter((k) => ile[k]?.length !== N * N);
+  const tailles = ['sol', 'objet', 'etat', 'bloque'].filter((k) => ile[k]?.length !== N * N);
   if (ile.n !== N || tailles.length) return [`les tableaux n'ont pas la taille de l'île : ${tailles.join(', ')}`];
   const { x, y } = ile.apparition;
   const depart = SOL_EAU[ile.sol[y * N + x]] ? ['le point d’apparition est dans l’eau'] : [];

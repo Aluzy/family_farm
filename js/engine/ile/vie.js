@@ -1,11 +1,11 @@
 /* ==========================================================================
    L'île en jeu (docs/ile-300.md, étape 6) : l'île née d'un chantier, sa lecture, ses modifications par le
-   joueur (le sol, la hauteur, les plantes et les roches, la récolte), et ses nuits (la pousse, la repousse).
+   joueur (le sol, les plantes et les roches, la récolte), et ses nuits (la pousse, la repousse). La carte est
+   plate en jeu : le relief du chantier ne sert qu'à la génération, il ne passe pas dans l'île.
    Une partie de l'île de 300 × 300 (js/engine/ile.js, docs/ile-300.md).
 
    Les règles des modifications : la mer du large (la bande de BORD_MER cases) ne se touche pas ; la terre
-   reste d'un seul tenant (on ne coupe pas l'île en deux, on ne pose pas de terre au milieu de l'eau) ; le
-   joueur ne crée pas de falaise (entre deux cases de terre voisines, l'écart de hauteur reste doux). Une
+   reste d'un seul tenant (on ne coupe pas l'île en deux, on ne pose pas de terre au milieu de l'eau). Une
    modification refusée renvoie { ok: false, raison } et ne change rien.
 
    Les performances : les lectures n'allouent rien ; une modification ne touche que ses cases (le contrôle
@@ -14,6 +14,7 @@
    repeint qu'elle (regionsModifiees), la sauvegarde n'écrit qu'elle (sauvegarde.js).
    ========================================================================== */
 
+import { DATA } from '../catalog.js';
 import { catalogue } from './catalogue.js';
 import { voisinesDe } from './grille.js';
 import { entre, prng } from './hasard.js';
@@ -26,11 +27,11 @@ import { ILE, REGLAGES, SOL_EAU, SOLS } from './reglages.js';
  * @property {number} n                     le côté (cases)
  * @property {{ x: number, y: number, rayon: number }} apparition   le point d'apparition et sa prairie plate
  * @property {Uint8Array} sol               le numéro du sol de chaque case (SOLS ; le biome s'en déduit : SOL_BIOME)
- * @property {Uint8Array} hauteur           la hauteur de chaque case, de 0 (le rivage) à VIE.HAUTEUR (le plus haut)
  * @property {Uint16Array} objet            le numéro (catalogue) de ce qui a son pied sur la case, 0 : rien
  * @property {Uint8Array} etat              le stade de ce pied (0 : le premier)
  * @property {Uint8Array} bloque            1 : une case prise par l'empreinte d'un bloc (déduit des objets)
- * @property {Set<number>} croissance       les cases dont la plante n'a pas fini de pousser
+ * @property {Map<number, number>} croissance   les cases dont la plante n'a pas fini de pousser → le jour où elle passe
+ *                                          au stade suivant
  * @property {{ i: number, numero: number, jour: number }[]} repousse   les plantes à remettre, et quel jour
  * @property {Set<number>} modifiees        les régions changées depuis que la scène les a lues
  * @property {Set<number>} aSauver          les régions changées depuis la dernière sauvegarde
@@ -39,46 +40,53 @@ import { ILE, REGLAGES, SOL_EAU, SOLS } from './reglages.js';
 const V = REGLAGES.VIE;
 const N = ILE.TAILLE;
 const PAR_COTE = Math.ceil(N / ILE.REGION);
-const PENTE = Math.floor(REGLAGES.RELIEF.PENTE_MAX * V.HAUTEUR);
 
 /* ---------- l'île née d'un chantier ---------- */
 
-// Les cases prises par les empreintes des blocs, et les plantes qui n'ont pas fini de pousser.
-export function deduireDesObjets(ile, cat = catalogue()) {
+// Les cases prises par les empreintes des blocs.
+export function deduireBloque(ile, cat = catalogue()) {
   ile.bloque = new Uint8Array(ile.n * ile.n);
-  ile.croissance = new Set();
   for (let i = 0; i < ile.n * ile.n; i++) {
     const o = ile.objet[i];
-    if (!o) continue;
-    const f = cat.fiches[o - 1];
-    if (f.bloque) for (const j of empreinte(f, i, ile.n)) ile.bloque[j] = 1;
-    if (ile.etat[i] < f.stades - 1) ile.croissance.add(i);
+    if (o && cat.fiches[o - 1].bloque) for (const j of empreinte(cat.fiches[o - 1], i, ile.n)) ile.bloque[j] = 1;
   }
 }
 
+// Les nuits qu'il faut à une plante pour passer du stade `etat` au suivant : un fruitier grandit au rythme du verger
+// (VERGER.NUITS_STADE) et refait ses fruits en VERGER.PERIODE nuits ; le reste, une nuit par stade.
+function nuitsPourGrandir(f, etat) {
+  if (f.famille !== 'fruitier') return 1;
+  return etat >= f.stades - 2 ? DATA.VERGER.PERIODE : DATA.VERGER.NUITS_STADE;
+}
+
+// La plante de la case i pousse : elle passera au stade suivant après ses nuits (à compter du jour `jour`).
+function fairePousser(ile, i, f, jour) {
+  if (ile.etat[i] < f.stades - 1) ile.croissance.set(i, jour + nuitsPourGrandir(f, ile.etat[i]));
+  else ile.croissance.delete(i);
+}
+
 /**
- * L'île en jeu, faite d'un chantier mené jusqu'au bout (genererChantier) : la hauteur gardée en entier, ce qu'on
- * déduit des objets, ni région à repeindre ni à sauver.
+ * L'île en jeu, faite d'un chantier mené jusqu'au bout (genererChantier) : le sol, les objets et leur stade, ce
+ * qu'on en déduit ; ni région à repeindre ni à sauver. Le relief, la terre, l'humidité du chantier n'y passent pas.
  * @param {object} ch   le chantier
  * @returns {Ile}
  */
 export function ileDuChantier(ch) {
-  const n = ch.n;
-  const hauteur = new Uint8Array(n * n);
-  for (let i = 0; i < n * n; i++) hauteur[i] = Math.round(ch.hauteur[i] * V.HAUTEUR);
   const ile = {
     graine: ch.graine,
-    n,
+    n: ch.n,
     apparition: { ...ch.apparition },
     sol: ch.sol,
-    hauteur,
     objet: ch.objet,
     etat: ch.etat,
+    croissance: new Map(),
     repousse: [],
     modifiees: new Set(),
     aSauver: new Set(),
   };
-  deduireDesObjets(ile);
+  deduireBloque(ile);
+  const cat = catalogue();
+  for (let i = 0; i < ile.n * ile.n; i++) if (ile.objet[i]) fairePousser(ile, i, cat.fiches[ile.objet[i] - 1], 0);
   return ile;
 }
 
@@ -165,8 +173,7 @@ function laTerreResteUnie(ile, i) {
 /**
  * Change le sol d'une case (labourer, creuser un canal, combler l'eau, semer de l'herbe…). La mer du large ne se
  * touche pas ; une case occupée ne change pas de sol (sauf l'eau qu'on comble : ses plantes d'eau s'en vont) ; de
- * l'eau qu'on comble devient de la terre à la hauteur de sa rive la plus basse, et doit toucher la terre ; une case
- * de terre qui devient de l'eau ne doit pas couper l'île en deux.
+ * l'eau qu'on comble doit toucher la terre ; une case de terre qui devient de l'eau ne doit pas couper l'île en deux.
  * @param {Ile} ile
  * @param {number} i
  * @param {number} sol   un numéro de SOLS
@@ -182,34 +189,9 @@ export function changerSol(ile, i, sol) {
     const rives = voisinesDe(i, ile.n).filter((j) => j >= 0 && !estEau(ile, j));
     if (!rives.length) return refus('la terre doit toucher la terre');
     if (ile.objet[i]) retirerObjet(ile, i);
-    ile.hauteur[i] = Math.min(...rives.map((j) => ile.hauteur[j]));
   }
   if (!deEau && versEau && !laTerreResteUnie(ile, i)) return refus('l’île serait coupée en deux');
   ile.sol[i] = sol;
-  marquer(ile, i);
-  return OK;
-}
-
-/**
- * Monte (sens 1) ou descend (sens -1) une case de terre d'une marche (VIE.MARCHE). Le joueur ne crée pas de falaise :
- * l'écart avec chaque voisine de terre reste au plus RELIEF.PENTE_MAX × VIE.HAUTEUR.
- * @param {Ile} ile
- * @param {number} i
- * @param {1 | -1} sens
- * @returns {{ ok: boolean, raison?: string }}
- */
-export function changerHauteur(ile, i, sens) {
-  if (auLarge(i)) return refus('la mer du large ne se touche pas');
-  if (estEau(ile, i)) return refus('on ne creuse pas l’eau : il faut d’abord la combler');
-  if (ile.objet[i] || ile.bloque[i]) return refus('la case est occupée');
-  const h = Math.min(255, Math.max(0, ile.hauteur[i] + sens * V.MARCHE));
-  if (h === ile.hauteur[i]) return refus(sens > 0 ? 'on ne monte pas plus haut' : 'on ne descend pas plus bas');
-  for (const j of voisinesDe(i, ile.n)) {
-    if (j >= 0 && !estEau(ile, j) && Math.abs(h - ile.hauteur[j]) > PENTE) {
-      return refus('trop raide : adoucis d’abord autour');
-    }
-  }
-  ile.hauteur[i] = h;
   marquer(ile, i);
   return OK;
 }
@@ -221,9 +203,10 @@ export function changerHauteur(ile, i, sens) {
  * @param {number} i
  * @param {number} numero   un numéro du catalogue
  * @param {number} [stade]  0 par défaut (une jeune pousse)
+ * @param {number} [jour]   le jour où elle est posée (elle pousse à partir de là)
  * @returns {{ ok: boolean, raison?: string }}
  */
-export function poserObjet(ile, i, numero, stade = 0, cat = catalogue()) {
+export function poserObjet(ile, i, numero, stade = 0, jour = 0, cat = catalogue()) {
   const f = cat.fiches[numero - 1];
   if (!f) return refus('cette espèce n’existe pas');
   if (stade < 0 || stade >= f.stades) return refus('ce stade n’existe pas');
@@ -238,7 +221,7 @@ export function poserObjet(ile, i, numero, stade = 0, cat = catalogue()) {
   ile.objet[i] = numero;
   ile.etat[i] = stade;
   if (f.bloque) for (const j of cases) ile.bloque[j] = 1;
-  if (stade < f.stades - 1) ile.croissance.add(i);
+  fairePousser(ile, i, f, jour);
   ile.repousse = ile.repousse.filter((r) => r.i !== i);
   for (const j of cases) marquer(ile, j);
   return OK;
@@ -265,10 +248,12 @@ export function retirerObjet(ile, i, cat = catalogue()) {
 }
 
 /**
- * Récolte ce qui a son pied sur la case, le jour `jour` : une culture ou un fruitier sauvage (mûr) se cueille et
- * repart de son premier stade ; le reste (un arbre coupé, une roche cassée, des fleurs ramassées) s'en va et repousse
- * à sa place après quelques nuits (le « retour » de sa récolte, sinon VIE.REPOUSSE). Ce qu'on en tire (les objets du
- * jeu) se calcule ailleurs, d'après la récolte renvoyée.
+ * Récolte ce qui a son pied sur la case, le jour `jour` :
+ * - une culture sauvage (mûre) s'en va et ne repousse pas ; la vigne, une vivace, revient à son stade de vivace ;
+ * - un fruitier sauvage (en fruits) garde sa taille : il revient au stade « arbre » et refait ses fruits ;
+ * - le reste (un arbre coupé, une roche cassée, des fleurs ramassées) s'en va et repousse à sa place après quelques
+ *   nuits (le « retour » de sa récolte, sinon VIE.REPOUSSE).
+ * Ce qu'on en tire (les objets du jeu) se calcule ailleurs, d'après la récolte renvoyée.
  * @param {Ile} ile
  * @param {number} i
  * @param {number} jour
@@ -277,25 +262,33 @@ export function retirerObjet(ile, i, cat = catalogue()) {
 export function recolter(ile, i, jour, cat = catalogue()) {
   const f = ficheA(ile, i, cat);
   if (!f) return refus('il n’y a rien ici');
-  if (!f.recolte) return refus('rien à en tirer');
-  if (f.recolte.repousse === 'stades') {
-    if (ile.etat[i] < f.stades - 1) return refus('pas encore mûr');
-    ile.etat[i] = 0;
-    ile.croissance.add(i);
+  const r = f.recolte;
+  if (!r) return refus('rien à en tirer');
+  const cueillie = r.repousse === 'stade' || r.repousse === 'jamais';
+  if (cueillie && ile.etat[i] < f.stades - 1) return refus('pas encore mûr');
+  if (r.repousse === 'stade') {
+    ile.etat[i] = r.stade;
+    fairePousser(ile, i, f, jour);
     marquer(ile, i);
-    return { ok: true, fiche: f, recolte: f.recolte };
+    return { ok: true, fiche: f, recolte: r };
   }
   retirerObjet(ile, i, cat);
-  const [a, b] = f.recolte.retour ?? V.REPOUSSE;
-  ile.repousse.push({ i, numero: f.numero, jour: jour + entre(prng(`${ile.graine}/${i}/${jour}`, 'repousse'), a, b) });
-  return { ok: true, fiche: f, recolte: f.recolte };
+  if (r.repousse !== 'jamais') {
+    const [a, b] = r.retour ?? V.REPOUSSE;
+    ile.repousse.push({
+      i,
+      numero: f.numero,
+      jour: jour + entre(prng(`${ile.graine}/${i}/${jour}`, 'repousse'), a, b),
+    });
+  }
+  return { ok: true, fiche: f, recolte: r };
 }
 
 /* ---------- la nuit ---------- */
 
 /**
- * La nuit du jour `jour` : les plantes qui poussent passent au stade suivant (toutes les NUITS_PAR_STADE nuits de leur
- * famille) ; celles dont la repousse est due reviennent à leur place, si elle est encore libre (sinon elles ne
+ * La nuit du jour `jour` : les plantes qui poussent passent au stade suivant (un fruitier au rythme du verger ; ses
+ * fruits reviennent en VERGER.PERIODE nuits) ; celles dont la repousse est due reviennent à leur place, si elle est encore libre (sinon elles ne
  * reviennent pas : le joueur y a bâti, planté, creusé).
  * Ne parcourt que ces listes.
  * @param {Ile} ile
@@ -304,18 +297,17 @@ export function recolter(ile, i, jour, cat = catalogue()) {
  */
 export function nuit(ile, jour, cat = catalogue()) {
   let pousses = 0;
-  for (const i of [...ile.croissance]) {
+  for (const [i, quand] of [...ile.croissance]) {
     const f = ficheA(ile, i, cat);
     if (!f || ile.etat[i] >= f.stades - 1) {
       ile.croissance.delete(i);
       continue;
     }
-    const nuits = V.NUITS_PAR_STADE[f.famille] ?? 1;
-    if ((jour + i) % nuits !== 0) continue;
+    if (quand > jour) continue;
     ile.etat[i]++;
     pousses++;
     marquer(ile, i);
-    if (ile.etat[i] >= f.stades - 1) ile.croissance.delete(i);
+    fairePousser(ile, i, f, jour);
   }
   let repousses = 0;
   const attendent = [];
@@ -327,7 +319,7 @@ export function nuit(ile, jour, cat = catalogue()) {
     const f = cat.fiches[r.numero - 1];
     const stade = f.stades > 1 ? 0 : f.stades - 1;
     // la place a été prise (bâtie, plantée, changée en eau) : la plante ne revient pas
-    if (poserObjet(ile, r.i, r.numero, stade, cat).ok) repousses++;
+    if (poserObjet(ile, r.i, r.numero, stade, jour, cat).ok) repousses++;
   }
   ile.repousse = attendent;
   return { pousses, repousses };
