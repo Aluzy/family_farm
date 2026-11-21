@@ -142,14 +142,26 @@ function ficheDeCulture(cle, culture, data) {
     fleurs: [],
     stades: culture.stades,
     dessin: { planche: 'crops', r, c: [...c], l, h },
-    recolte: recolteCueillie(
-      data.ILE.ESPECES.RECOLTES.culture,
-      culture.produit ?? cle,
-      culture.graines?.item,
-      data.OBJETS,
-      culture.vivace ? { repousse: 'stade', stade: culture.vivace.stade } : { repousse: 'jamais' },
-    ),
+    recolte: recolteDeCulture(culture, cle, data),
   };
+}
+
+// Ce que donne une culture sauvage : à la main, son produit (une culture s'en va et ne repousse pas ; une vivace
+// revient à son stade de vivace) ; à la faux, si elle en a une (CULTURES[…].faux : le tournesol), autre chose.
+function recolteDeCulture(culture, cle, data) {
+  const apres = culture.vivace ? { repousse: 'stade', stade: culture.vivace.stade } : { repousse: 'jamais' };
+  const recolte = recolteCueillie(
+    data.ILE.ESPECES.RECOLTES.culture,
+    culture.produit ?? cle,
+    culture.graines?.item,
+    data.OBJETS,
+    apres,
+  );
+  if (culture.faux) {
+    const fin = Object.fromEntries(Object.entries(culture.faux).map(([objet, n]) => [objet, [...n]]));
+    recolte.faux = { geste: 'faucher', fin };
+  }
+  return recolte;
 }
 
 // La forme sauvage d'un fruitier du verger : le dessin du verger, ses stades.
@@ -247,7 +259,9 @@ export function construireCatalogue(data = DATA) {
     cultures: grouperPar(Object.entries(E.CULTURES_DEJA_SAUVAGES)),
   };
   const brutes = [
-    ...data.VEGETATION.SORTES.map((sorte) => ficheDeSorte(sorte, liens, data)),
+    ...data.VEGETATION.SORTES.filter((sorte) => !E.EXCLUES.includes(sorte.nom)).map((sorte) =>
+      ficheDeSorte(sorte, liens, data),
+    ),
     ...Object.entries(data.CULTURES)
       .filter(([cle]) => !E.CULTURES_DEJA_SAUVAGES[cle])
       .map(([cle, culture]) => ficheDeCulture(cle, culture, data)),
@@ -312,7 +326,12 @@ function erreursDeCouverture(cat, data) {
     if (!cat.parId.has(`${cle}_sauvage`)) erreurs.push(`le fruitier « ${cle} » n'a pas de forme sauvage`);
   }
   for (const sorte of data.VEGETATION.SORTES) {
+    if (data.ILE.ESPECES.EXCLUES.includes(sorte.nom)) continue;
     if (!cat.parId.has(sorte.nom)) erreurs.push(`la plante sauvage « ${sorte.nom} » n'a pas de fiche`);
+  }
+  for (const nom of data.ILE.ESPECES.EXCLUES) {
+    if (!data.VEGETATION.SORTES.some((s) => s.nom === nom))
+      erreurs.push(`EXCLUES : « ${nom} » n'est pas une plante sauvage`);
   }
   return erreurs;
 }
@@ -334,7 +353,7 @@ function erreursDePlacement(f, p, conditions) {
 function erreursDeRecolte(f, objets) {
   const r = f.recolte;
   if (!r) return [];
-  const blocs = [r.fin, r.coup, r.chance, r.aussi?.fin, r.aussi?.chance];
+  const blocs = [r.fin, r.coup, r.chance, r.aussi?.fin, r.aussi?.chance, r.faux?.fin];
   return blocs
     .flatMap((bloc) => Object.keys(bloc ?? {}))
     .filter((objet) => !objets[objet])

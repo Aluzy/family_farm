@@ -651,7 +651,7 @@ const CULTURE_MONTE = 0;
   // Les bacs à fleurs (js/engine/bacs.js, dessinBac ; scripts/carte/bacs.py) : une planche, une image de
   // cellule[0] × cellule[1] par état (le bac rond et le carré : `largeur` px à gauche), découpée en images
   // « meuble_<nom> » (js/farm-stage.js, chargerTard), dessinées comme un meuble (et repeintes de même).
-  const BAC_ETATS = ['vide', 'semis', ...['coquelicot', 'pavot', 'tournesol', 'myosotis', 'lavande', 'lupin'].flatMap((f) => [f + '_1', f + '_2', f])];
+  const BAC_ETATS = ['vide', 'semis', ...['coquelicot', 'pavot', 'myosotis', 'lavande', 'lupin'].flatMap((f) => [f + '_1', f + '_2', f])];
   const BACS = { key: 'bacs', file: 'bacs.png', cellule: [32, 24], largeur: { rond: 16, carre: 16, long: 32 },
     noms: ['rond', 'carre', 'long'].flatMap((forme) => BAC_ETATS.map((e) => ['bac_' + forme + '_' + e, forme])) };
 

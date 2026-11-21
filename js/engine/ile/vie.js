@@ -248,7 +248,8 @@ export function retirerObjet(ile, i, cat = catalogue()) {
 }
 
 /**
- * Récolte ce qui a son pied sur la case, le jour `jour` :
+ * Récolte ce qui a son pied sur la case, le jour `jour`, à la main ou à la faux (`outil` : une culture qui a une
+ * récolte à la faux, le tournesol, y donne autre chose : sa fleur plutôt que ses graines) :
  * - une culture sauvage (mûre) s'en va et ne repousse pas ; la vigne, une vivace, revient à son stade de vivace ;
  * - un fruitier sauvage (en fruits) garde sa taille : il revient au stade « arbre » et refait ses fruits ;
  * - le reste (un arbre coupé, une roche cassée, des fleurs ramassées) s'en va et repousse à sa place après quelques
@@ -257,13 +258,14 @@ export function retirerObjet(ile, i, cat = catalogue()) {
  * @param {Ile} ile
  * @param {number} i
  * @param {number} jour
+ * @param {'main' | 'faux'} [outil]
  * @returns {{ ok: boolean, raison?: string, fiche?: object, recolte?: object }}
  */
-export function recolter(ile, i, jour, cat = catalogue()) {
+export function recolter(ile, i, jour, outil = 'main', cat = catalogue()) {
   const f = ficheA(ile, i, cat);
   if (!f) return refus('il n’y a rien ici');
-  const r = f.recolte;
-  if (!r) return refus('rien à en tirer');
+  if (!f.recolte) return refus('rien à en tirer');
+  const r = outil === 'faux' && f.recolte.faux ? { ...f.recolte, ...f.recolte.faux } : f.recolte;
   const cueillie = r.repousse === 'stade' || r.repousse === 'jamais';
   if (cueillie && ile.etat[i] < f.stades - 1) return refus('pas encore mûr');
   if (r.repousse === 'stade') {

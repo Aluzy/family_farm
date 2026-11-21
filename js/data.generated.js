@@ -2760,7 +2760,6 @@ export const RAW_DATA = {
       "gland": { "nom": "Gland", "objet": "gland", "dehors": true, "semis": "arbre" },
       "massif_coquelicot": { "nom": "Coquelicots", "objet": "graine_coquelicot", "dehors": true, "massif": "coquelicot" },
       "massif_pavot": { "nom": "Pavots de Californie", "objet": "graine_pavot", "dehors": true, "massif": "pavot" },
-      "massif_tournesol": { "nom": "Tournesols", "objet": "graine_tournesol", "dehors": true, "massif": "tournesol" },
       "massif_myosotis": { "nom": "Myosotis", "objet": "graine_myosotis", "dehors": true, "massif": "myosotis" },
       "massif_lavande": { "nom": "Lavande", "objet": "graine_lavande", "dehors": true, "massif": "lavande" },
       "massif_lupin": { "nom": "Lupins", "objet": "graine_lupin", "dehors": true, "massif": "lupin" },
@@ -4214,6 +4213,7 @@ export const RAW_DATA = {
       "litres": 2,
       "rendement": 9,
       "produit": "graine_tournesol",
+      "faux": { "fleur_tournesol": [1, 2] },
       "graines": { "item": "graine_tournesol", "mode": "plant" },
       "sprite": { "r": 11, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
@@ -5319,7 +5319,6 @@ export const RAW_DATA = {
     "FLEURS": {
       "coquelicot": { "nom": "Coquelicots", "graine": "graine_coquelicot", "fleur": "fleur_coquelicot" },
       "pavot": { "nom": "Pavots de Californie", "graine": "graine_pavot", "fleur": "fleur_pavot" },
-      "tournesol": { "nom": "Tournesols", "graine": "graine_tournesol", "fleur": "fleur_tournesol" },
       "myosotis": { "nom": "Myosotis", "graine": "graine_myosotis", "fleur": "fleur_myosotis" },
       "lavande": { "nom": "Lavande", "graine": "graine_lavande", "fleur": "fleur_lavande" },
       "lupin": { "nom": "Lupins", "graine": "graine_lupin", "fleur": "fleur_lupin" }
@@ -5329,14 +5328,7 @@ export const RAW_DATA = {
     "NUITS": 3,
     "CUEILLETTE": [2, 3],
     "GRAINE": 25,
-    "DESSIN": {
-      "coquelicot": "coquelicot",
-      "pavot": "pavot_californie",
-      "tournesol": "tournesol_sauvage",
-      "myosotis": "myosotis",
-      "lavande": "lavande",
-      "lupin": "lupin"
-    }
+    "DESSIN": { "coquelicot": "coquelicot", "pavot": "pavot_californie", "myosotis": "myosotis", "lavande": "lavande", "lupin": "lupin" }
   },
   "DEHORS": { "bac_carre": { "nom": "Bac carré", "prix": 60 } },
   "MEUBLES": {
@@ -9998,7 +9990,8 @@ export const RAW_DATA = {
         "fleur": ["fleurs", "fleur_rouge", "fleur_mauve"],
         "fruitier": ["chataignier"]
       },
-      "CULTURES_DEJA_SAUVAGES": { "ail_ours": "ail_ours_sauvage", "salicorne": "salicorne_sauvage", "tournesol": "tournesol_sauvage" },
+      "CULTURES_DEJA_SAUVAGES": { "ail_ours": "ail_ours_sauvage", "salicorne": "salicorne_sauvage" },
+      "EXCLUES": ["tournesol_sauvage"],
       "CONDITIONS": { "berge": { "rayon": 2 }, "lisiere": { "rayon": 3 }, "haut": { "hauteur": 0.62 } },
       "PLACEMENTS": {
         "partout": {
@@ -10010,7 +10003,6 @@ export const RAW_DATA = {
               "touffe_pre": 0.05,
               "coquelicot": 0.006,
               "pavot_californie": 0.002,
-              "tournesol_sauvage": 0.002,
               "lupin": 0.002,
               "myosotis": 0.002,
               "fleur_rouge": 0.012,

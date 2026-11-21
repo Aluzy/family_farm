@@ -293,3 +293,21 @@ test("les numéros d'une sauvegarde : retrouvés par leur nom, même après un a
   assert.equal(n[3], cat.parId.get('feuillu').numero);
   assert.equal(n[4], cat.parId.get('cacao_sauvage').numero);
 });
+
+test('un seul tournesol dans le jeu : la culture (C16) ; à l’état sauvage, son dessin de crops.png', () => {
+  assert.equal(DATA.BACS.FLEURS.tournesol, undefined, 'plus de tournesol dans les bacs');
+  assert.equal(DATA.MASSIFS.DESSIN.tournesol, undefined, 'ni dans les massifs');
+  assert.equal(DATA.ATELIER.BLOCS.massif_tournesol, undefined);
+  const tournesols = catalogue().fiches.filter((f) => f.id.includes('tournesol'));
+  assert.deepEqual(
+    tournesols.map((f) => f.id),
+    ['tournesol_sauvage'],
+  );
+  const [f] = tournesols;
+  assert.deepEqual([f.famille, f.source.table, f.dessin.planche], ['culture', 'CULTURES', 'crops']);
+  assert.deepEqual(f.dessin.r, DATA.CULTURES.tournesol.sprite.r);
+  // à la main, ses graines ; à la faux, sa fleur (le colorant jaune s'en fait toujours)
+  assert.deepEqual(Object.keys(f.recolte.fin), ['graine_tournesol']);
+  assert.deepEqual(Object.keys(f.recolte.faux.fin), ['fleur_tournesol']);
+  assert.equal(DATA.RECETTES.colorant_jaune.ingredients[0].item, 'fleur_tournesol');
+});

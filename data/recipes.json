@@ -337,7 +337,6 @@
       "gland": { "nom": "Gland", "objet": "gland", "dehors": true, "semis": "arbre" },
       "massif_coquelicot": { "nom": "Coquelicots", "objet": "graine_coquelicot", "dehors": true, "massif": "coquelicot" },
       "massif_pavot": { "nom": "Pavots de Californie", "objet": "graine_pavot", "dehors": true, "massif": "pavot" },
-      "massif_tournesol": { "nom": "Tournesols", "objet": "graine_tournesol", "dehors": true, "massif": "tournesol" },
       "massif_myosotis": { "nom": "Myosotis", "objet": "graine_myosotis", "dehors": true, "massif": "myosotis" },
       "massif_lavande": { "nom": "Lavande", "objet": "graine_lavande", "dehors": true, "massif": "lavande" },
       "massif_lupin": { "nom": "Lupins", "objet": "graine_lupin", "dehors": true, "massif": "lupin" },

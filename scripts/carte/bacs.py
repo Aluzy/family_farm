@@ -35,7 +35,8 @@ P = B.POUDRES
 BANDEAU = [(112, 96, 66), (150, 130, 93), (188, 163, 123)]
 CERCLAGE = [(62, 68, 81), (98, 106, 119), (146, 154, 165)]
 FORMES = ['rond', 'carre', 'long']
-FLEURS = ['coquelicot', 'pavot', 'tournesol', 'myosotis', 'lavande', 'lupin']
+# (le tournesol n'est plus une fleur des bacs : le seul tournesol du jeu est la culture, docs/ile-300.md C16)
+FLEURS = ['coquelicot', 'pavot', 'myosotis', 'lavande', 'lupin']
 COULEUR = {'coquelicot': 'rouge', 'pavot': 'orange', 'tournesol': 'jaune', 'myosotis': 'bleu', 'lavande': 'violet', 'lupin': 'violet'}
 ETATS = ['vide', 'semis'] + [e for f in FLEURS for e in (f + '_1', f + '_2', f)]
 NOMS = [f'bac_{forme}_{e}' for forme in FORMES for e in ETATS]

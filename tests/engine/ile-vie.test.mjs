@@ -177,6 +177,20 @@ test('une culture sauvage récoltée (mûre) s’en va et ne repousse pas', () =
   assert.deepEqual(verifierIle(ile), []);
 });
 
+test('le tournesol sauvage : à la main ses graines, à la faux sa fleur ; il ne repousse pas', () => {
+  const ile = copie();
+  const a = unPiedMur(ile, 'tournesol_sauvage');
+  const main = recolter(ile, a, 1);
+  assert.deepEqual(Object.keys(main.recolte.fin), ['graine_tournesol']);
+  const b = unPiedMur(ile, 'tournesol_sauvage');
+  const faux = recolter(ile, b, 1, 'faux');
+  assert.deepEqual(Object.keys(faux.recolte.fin), ['fleur_tournesol']);
+  assert.deepEqual([ile.objet[a], ile.objet[b], ile.repousse.length], [0, 0, 0]);
+  // à la faux, une plante sans récolte à la faux donne la sienne
+  const ble = unPiedMur(ile, 'ble_sauvage');
+  assert.deepEqual(Object.keys(recolter(ile, ble, 1, 'faux').recolte.fin), ['ble']);
+});
+
 test('la vigne sauvage, une vivace, revient à son stade de vivace', () => {
   const ile = copie();
   const f = fiche('vigne_sauvage');

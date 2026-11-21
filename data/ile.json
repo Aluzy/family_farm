@@ -171,6 +171,8 @@
       "  (famille « roche » ; ce qu'ils donnent : RECOLTE). Ceux de la montagne, de la neige et de la mer n'y vont pas.",
       "CULTURES_DEJA_SAUVAGES : une culture qui a déjà sa plante sauvage (son dessin et sa récolte) ; les autres",
       "  prennent la forme <culture>_sauvage, avec le dessin de la culture (crops.png, tous ses stades : C12).",
+      "EXCLUES : les plantes sauvages de monde.json qui ne vont pas sur l'île : le tournesol sauvage des fleurs (le seul",
+      "  tournesol du jeu est la culture, C16 : son tournesol_sauvage prend le dessin de crops.png).",
       "CONDITIONS : berge (à au plus « rayon » cases d'un lac), lisiere (à au plus « rayon » cases d'un autre",
       "  biome que le sien), haut (à « hauteur » ou plus : les hauts de l'île, où vont les minerais de l'ancienne",
       "  montagne).",
@@ -201,9 +203,9 @@
       },
       "CULTURES_DEJA_SAUVAGES": {
         "ail_ours": "ail_ours_sauvage",
-        "salicorne": "salicorne_sauvage",
-        "tournesol": "tournesol_sauvage"
+        "salicorne": "salicorne_sauvage"
       },
+      "EXCLUES": ["tournesol_sauvage"],
       "CONDITIONS": {
         "berge": { "rayon": 2 },
         "lisiere": { "rayon": 3 },
@@ -214,7 +216,7 @@
           "prairie": {
             "herbe": {
               "arbre_pre": 0.004, "buisson_pre": 0.004, "fleurs": 0.03, "touffe_pre": 0.05, "coquelicot": 0.006,
-              "pavot_californie": 0.002, "tournesol_sauvage": 0.002, "lupin": 0.002, "myosotis": 0.002,
+              "pavot_californie": 0.002, "lupin": 0.002, "myosotis": 0.002,
               "fleur_rouge": 0.012, "fleur_mauve": 0.012, "pierre": 0.002, "champignon_blanc": 0.001,
               "rocher": 0.002, "pierres": 0.006, "gisement_fer": 0.0005
             }

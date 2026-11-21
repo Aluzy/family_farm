@@ -106,7 +106,6 @@
     "FLEURS": {
       "coquelicot": { "nom": "Coquelicots", "graine": "graine_coquelicot", "fleur": "fleur_coquelicot" },
       "pavot": { "nom": "Pavots de Californie", "graine": "graine_pavot", "fleur": "fleur_pavot" },
-      "tournesol": { "nom": "Tournesols", "graine": "graine_tournesol", "fleur": "fleur_tournesol" },
       "myosotis": { "nom": "Myosotis", "graine": "graine_myosotis", "fleur": "fleur_myosotis" },
       "lavande": { "nom": "Lavande", "graine": "graine_lavande", "fleur": "fleur_lavande" },
       "lupin": { "nom": "Lupins", "graine": "graine_lupin", "fleur": "fleur_lupin" }
@@ -121,7 +120,7 @@
   ],
   "MASSIFS": {
     "NUITS": 3, "CUEILLETTE": [2, 3], "GRAINE": 25,
-    "DESSIN": { "coquelicot": "coquelicot", "pavot": "pavot_californie", "tournesol": "tournesol_sauvage", "myosotis": "myosotis", "lavande": "lavande", "lupin": "lupin" }
+    "DESSIN": { "coquelicot": "coquelicot", "pavot": "pavot_californie", "myosotis": "myosotis", "lavande": "lavande", "lupin": "lupin" }
   },
   "//DEHORS": [
     "Pour le dehors de la ferme générée (fabriqué à l'Atelier ; avant, au Marché) : il arrive dans",
