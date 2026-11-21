@@ -35,7 +35,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Installer esbuild (versions de package-lock.json)
+      - name: Installer esbuild, ESLint et Prettier (versions de package-lock.json)
         run: npm ci --no-audit --no-fund
       - name: Données du jeu (vérifiées, et à jour)
         run: node scripts/build-data.mjs --check
@@ -51,6 +51,9 @@ jobs:
         run: node scripts/check-actions.mjs
       - name: Modules et fichiers de la page
         run: node scripts/check-page.mjs
+      # ESLint et Prettier, sur le code neuf de l'île de 300 × 300 seulement (docs/ile-300.md)
+      - name: Style du code neuf (ESLint, Prettier)
+        run: npm run lint
       - name: Construire le site
         run: node scripts/build-site.mjs
       - name: Préparer la mise en ligne

@@ -4,7 +4,8 @@
 //      à la moindre erreur, on s'arrête là (les tests liraient des données fausses) ;
 //   2. les suites de tests (node tests/run-tests.mjs --tous : moteur, données, suivi, rapport…, et en dernier
 //      celle de l'île à bâtir, tests/engine/village-*.test.mjs) ;
-//   3. les vérifications de la page (actions de l'interface, modules chargés).
+//   3. les vérifications de la page (actions de l'interface, modules chargés), puis le style du code neuf
+//      (ESLint et Prettier : npm run lint ; docs/ile-300.md).
 // Les étapes 2 et 3 tournent toutes, même après un échec, puis le bilan dit lesquelles ont échoué.
 //
 // Usage : node tests/all.mjs   (ou npm test)
@@ -24,6 +25,9 @@ const VERIFICATIONS = [
   ['Tests (moteur, données, suivi, rapport)', 'tests/run-tests.mjs', '--tous'],
   ['Actions de l\'interface', 'scripts/check-actions.mjs'],
   ['Modules et fichiers de la page', 'scripts/check-page.mjs'],
+  // le code neuf de l'île de 300 × 300 (docs/ile-300.md) : les listes de eslint.config.js et de .prettierignore
+  ['Style du code neuf (ESLint)', 'node_modules/eslint/bin/eslint.js'],
+  ['Style du code neuf (Prettier)', 'node_modules/prettier/bin/prettier.cjs', '--check', '.'],
 ];
 
 const bilan = [];
