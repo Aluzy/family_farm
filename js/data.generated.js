@@ -9928,6 +9928,19 @@ export const RAW_DATA = {
       "lac": { "eau_basse": { "eau": true }, "eau": { "eau": true } },
       "riviere": { "courant": { "eau": true } }
     },
+    "FORME": {
+      "MARGE": 4,
+      "CARRE": 0.15,
+      "DEFORMATION": { "echelle": 70, "force": 32 },
+      "DECOUPE": { "echelle": 45, "force": 0.42, "octaves": 5 },
+      "BOSSE": { "rayon": 45, "force": 0.35 },
+      "TAILLE": [0.8, 0.95],
+      "ALLONGEMENT": 0.25,
+      "FONDU": 16,
+      "LISSAGE": 2
+    },
+    "RELIEF": { "PENTE": 45, "COLLINES": { "echelle": 70, "octaves": 5 }, "PLAINES": 0.12, "RIVAGES": [0.25, 1.75], "LISSAGE": 6, "PENTE_MAX": 0.05 },
+    "HUMIDITE": { "echelle": 80, "octaves": 3, "BAS": 0.35 },
     "ESPECES": {
       "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor"],
       "CLASSEMENT": {

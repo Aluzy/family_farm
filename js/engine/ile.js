@@ -490,3 +490,350 @@ export function verifierCatalogue(cat, data = DATA) {
     ...erreursDeNoms(cat, data),
   ];
 }
+
+/* ---------- 4. la génération ---------- */
+
+/**
+ * Le chantier de la génération : ce que les étapes se passent, dans l'ordre d'ETAPES. Seuls le sol, la hauteur, les
+ * objets et leur état resteront dans l'île ; le reste ne sert qu'à générer.
+ * @typedef {object} Chantier
+ * @property {string} graine
+ * @property {number} n                 le côté de l'île (cases)
+ * @property {Uint8Array} terre         1 : la terre, 0 : la mer (formeIle)
+ * @property {Float32Array} cote        la distance au rivage (cases) : positive sur la terre, négative en mer (formeIle)
+ * @property {Float32Array} hauteur     de 0 au rivage à 1 au plus haut ; 0 en mer (relief)
+ * @property {Float32Array} humidite    de 0 (sec) à 1 (humide) ; 1 en mer (humidite)
+ */
+
+// Les quatre voisines d'une case (dx, dy).
+const VOISINES_4 = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
+// Les cases de `masque` (valeur 1) reliées à `depart` par leurs côtés ; renvoie un masque des cases atteintes.
+function relieesA(masque, n, departs) {
+  const atteintes = new Uint8Array(n * n);
+  const file = new Int32Array(n * n);
+  let fin = 0;
+  for (const i of departs) {
+    if (masque[i] && !atteintes[i]) {
+      atteintes[i] = 1;
+      file[fin++] = i;
+    }
+  }
+  for (let debut = 0; debut < fin; debut++) {
+    const i = file[debut];
+    const x = i % n;
+    const y = (i - x) / n;
+    for (const [dx, dy] of VOISINES_4) {
+      const vx = x + dx;
+      const vy = y + dy;
+      if (vx < 0 || vy < 0 || vx >= n || vy >= n) continue;
+      const j = vy * n + vx;
+      if (masque[j] && !atteintes[j]) {
+        atteintes[j] = 1;
+        file[fin++] = j;
+      }
+    }
+  }
+  return atteintes;
+}
+
+// La distance (cases, à peu près euclidienne : le chanfrein 3-4) de chaque case à la plus proche des cases sources
+// (source[i] = 1). Deux passes, sans file.
+function distanceAux(source, n) {
+  const LOIN = 1e9;
+  const d = new Float32Array(n * n);
+  for (let i = 0; i < n * n; i++) d[i] = source[i] ? 0 : LOIN;
+  const passer = (x, y, vx, vy, cout) => {
+    if (vx < 0 || vy < 0 || vx >= n || vy >= n) return;
+    const v = d[vy * n + vx] + cout;
+    if (v < d[y * n + x]) d[y * n + x] = v;
+  };
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      passer(x, y, x - 1, y, 3);
+      passer(x, y, x - 1, y - 1, 4);
+      passer(x, y, x, y - 1, 3);
+      passer(x, y, x + 1, y - 1, 4);
+    }
+  }
+  for (let y = n - 1; y >= 0; y--) {
+    for (let x = n - 1; x >= 0; x--) {
+      passer(x, y, x + 1, y, 3);
+      passer(x, y, x + 1, y + 1, 4);
+      passer(x, y, x, y + 1, 3);
+      passer(x, y, x - 1, y + 1, 4);
+    }
+  }
+  for (let i = 0; i < n * n; i++) d[i] /= 3;
+  return d;
+}
+
+// Le nombre de cases de terre parmi les huit voisines de i.
+function voisinesDeTerre(terre, n, i) {
+  return (
+    terre[i - n - 1] +
+    terre[i - n] +
+    terre[i - n + 1] +
+    terre[i - 1] +
+    terre[i + 1] +
+    terre[i + n - 1] +
+    terre[i + n] +
+    terre[i + n + 1]
+  );
+}
+
+// Une passe de lissage de la côte : une case prend l'avis de la majorité de ses huit voisines (5 sur 8, sinon elle
+// garde le sien). Ôte les pointes et les trous d'une case.
+function lisserCote(terre, n) {
+  const avant = terre.slice();
+  for (let y = 1; y < n - 1; y++) {
+    for (let x = 1; x < n - 1; x++) {
+      const i = y * n + x;
+      const voisines = voisinesDeTerre(avant, n, i);
+      if (voisines >= 5) terre[i] = 1;
+      else if (voisines <= 3) terre[i] = 0;
+    }
+  }
+}
+
+// La masse de terre d'une case (positive : la terre) : la distance au centre, déformée et dentelée, plus la bosse.
+function masseDeLaCase(x, y, ctx) {
+  const { F, rayon, centre, g } = ctx;
+  const dx = (fbm(x / F.DEFORMATION.echelle, y / F.DEFORMATION.echelle, g.dx, 3) - 0.5) * 2 * F.DEFORMATION.force;
+  const dy = (fbm(x / F.DEFORMATION.echelle, y / F.DEFORMATION.echelle, g.dy, 3) - 0.5) * 2 * F.DEFORMATION.force;
+  // tournée puis étirée (l'île est plus longue dans une direction)
+  const px = x + dx - centre.x;
+  const py = y + dy - centre.y;
+  const ux = (px * ctx.cos + py * ctx.sin) / (rayon * ctx.long);
+  const uy = (py * ctx.cos - px * ctx.sin) / (rayon / ctx.long);
+  const distance = Math.hypot(ux, uy) * (1 - F.CARRE) + Math.max(Math.abs(ux), Math.abs(uy)) * F.CARRE;
+  const decoupe = (fbm(x / F.DECOUPE.echelle, y / F.DECOUPE.echelle, g.decoupe, F.DECOUPE.octaves) - 0.5) * 2;
+  const r2 = ((x - centre.x) ** 2 + (y - centre.y) ** 2) / F.BOSSE.rayon ** 2;
+  // le fondu : sur les FONDU dernières cases avant la marge, la masse descend (la côte n'est jamais coupée droit)
+  const versBord = Math.min(x, y, ctx.n - 1 - x, ctx.n - 1 - y) - ctx.bord;
+  const fondu = versBord < F.FONDU ? ((F.FONDU - versBord) / F.FONDU) ** 2 : 0;
+  return 1 - distance + decoupe * F.DECOUPE.force + F.BOSSE.force * Math.exp(-r2) - fondu;
+}
+
+/**
+ * La forme de l'île : la terre et la mer, puis la distance au rivage. La bande de BORD_MER + MARGE cases est toujours
+ * de la mer ; la terre est d'un seul tenant et porte le centre ; la mer touche le bord partout.
+ * @param {Chantier} ch
+ */
+function formeIle(ch) {
+  const F = REGLAGES.FORME;
+  const n = ch.n;
+  const bord = REGLAGES.BORD_MER + F.MARGE;
+  const centre = { x: REGLAGES.APPARITION.x, y: REGLAGES.APPARITION.y };
+  const alea = prng(ch.graine, 'forme');
+  const angle = alea() * Math.PI;
+  const ctx = {
+    F,
+    n,
+    bord,
+    rayon: (n / 2 - bord) * (F.TAILLE[0] + (F.TAILLE[1] - F.TAILLE[0]) * alea()),
+    long: 1 + F.ALLONGEMENT * alea(),
+    cos: Math.cos(angle),
+    sin: Math.sin(angle),
+    centre,
+    g: {
+      dx: hacher(`${ch.graine}/forme/dx`),
+      dy: hacher(`${ch.graine}/forme/dy`),
+      decoupe: hacher(`${ch.graine}/forme`),
+    },
+  };
+  let terre = new Uint8Array(n * n);
+  for (let y = bord; y < n - bord; y++) {
+    for (let x = bord; x < n - bord; x++) terre[y * n + x] = masseDeLaCase(x, y, ctx) > 0 ? 1 : 0;
+  }
+  for (let p = 0; p < F.LISSAGE; p++) lisserCote(terre, n);
+  // la bande de mer, de nouveau (le lissage ne la touche pas, mais une règle se garde au plus près)
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) if (x < bord || y < bord || x >= n - bord || y >= n - bord) terre[y * n + x] = 0;
+  }
+  const iCentre = centre.y * n + centre.x;
+  if (!terre[iCentre])
+    throw new Error(`île « ${ch.graine} » : le centre n'est pas sur la terre (FORME.BOSSE trop faible)`);
+  // la terre d'un seul tenant qui porte le centre
+  terre = relieesA(terre, n, [iCentre]);
+  // la mer qui touche le bord ; une mer enclavée devient de la terre
+  const mer = new Uint8Array(n * n);
+  for (let i = 0; i < n * n; i++) mer[i] = terre[i] ? 0 : 1;
+  const merOuverte = relieesA(mer, n, [0]);
+  for (let i = 0; i < n * n; i++) terre[i] = merOuverte[i] ? 0 : 1;
+  ch.terre = terre;
+  // la distance au rivage : positive sur la terre (à la mer la plus proche), négative en mer (à la terre)
+  const versMer = distanceAux(merOuverte, n);
+  const versTerre = distanceAux(terre, n);
+  ch.cote = new Float32Array(n * n);
+  for (let i = 0; i < n * n; i++) ch.cote[i] = terre[i] ? versMer[i] : -versTerre[i];
+}
+
+// La moyenne des 3 × 3 cases autour de i (la mer compte pour 0 : le rivage reste bas).
+function moyenneAutour(valeurs, terre, n, i) {
+  let somme = 0;
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const j = i + dy * n + dx;
+      if (terre[j]) somme += valeurs[j];
+    }
+  }
+  return somme / 9;
+}
+
+// Une passe de flou sur la terre seule.
+function flouterTerre(valeurs, terre, n) {
+  const avant = valeurs.slice();
+  for (let y = 1; y < n - 1; y++) {
+    for (let x = 1; x < n - 1; x++) {
+      const i = y * n + x;
+      if (terre[i]) valeurs[i] = moyenneAutour(avant, terre, n, i);
+    }
+  }
+}
+
+// La part de terre dans le carré de (2r + 1) cases autour de chaque case (une image intégrale : le même coût quel
+// que soit r). Lisse, sans les arêtes d'une distance : elle sert à éloigner le relief du rivage.
+function partDeTerreAutour(terre, n, r) {
+  const integrale = new Float64Array((n + 1) * (n + 1));
+  for (let y = 0; y < n; y++) {
+    let ligne = 0;
+    for (let x = 0; x < n; x++) {
+      ligne += terre[y * n + x];
+      integrale[(y + 1) * (n + 1) + x + 1] = integrale[y * (n + 1) + x + 1] + ligne;
+    }
+  }
+  const part = new Float32Array(n * n);
+  for (let y = 0; y < n; y++) {
+    const y0 = Math.max(0, y - r);
+    const y1 = Math.min(n, y + r + 1);
+    for (let x = 0; x < n; x++) {
+      const x0 = Math.max(0, x - r);
+      const x1 = Math.min(n, x + r + 1);
+      const somme =
+        integrale[y1 * (n + 1) + x1] -
+        integrale[y0 * (n + 1) + x1] -
+        integrale[y1 * (n + 1) + x0] +
+        integrale[y0 * (n + 1) + x0];
+      part[y * n + x] = somme / ((2 * r + 1) * (2 * r + 1));
+    }
+  }
+  return part;
+}
+
+// Le limiteur de pente : abaisse ce qui est trop raide pour qu'entre deux cases voisines, l'écart ne dépasse jamais
+// `pente` (√2 × pente en diagonale), mer comprise (pas de falaise au rivage). Seuls les sommets et les bords trop
+// vifs baissent ; une pente douce ne bouge pas. Deux passes, comme une distance (h[i] ≤ h[j] + pente × d(i, j)).
+function limiterLaPente(h, n, pente) {
+  const diagonale = pente * Math.SQRT2;
+  const abaisser = (i, vx, vy, cout) => {
+    if (vx < 0 || vy < 0 || vx >= n || vy >= n) return;
+    const v = h[vy * n + vx] + cout;
+    if (v < h[i]) h[i] = v;
+  };
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const i = y * n + x;
+      abaisser(i, x - 1, y, pente);
+      abaisser(i, x - 1, y - 1, diagonale);
+      abaisser(i, x, y - 1, pente);
+      abaisser(i, x + 1, y - 1, diagonale);
+    }
+  }
+  for (let y = n - 1; y >= 0; y--) {
+    for (let x = n - 1; x >= 0; x--) {
+      const i = y * n + x;
+      abaisser(i, x + 1, y, pente);
+      abaisser(i, x + 1, y + 1, diagonale);
+      abaisser(i, x, y + 1, pente);
+      abaisser(i, x - 1, y + 1, diagonale);
+    }
+  }
+}
+
+/**
+ * Le relief doux : de 0 au rivage à 1 au plus haut ; des collines et des vallées, sans falaise.
+ * @param {Chantier} ch
+ */
+function relief(ch) {
+  const R = REGLAGES.RELIEF;
+  const n = ch.n;
+  const g = hacher(`${ch.graine}/relief`);
+  const gRivage = hacher(`${ch.graine}/relief/rivage`);
+  const etroit = partDeTerreAutour(ch.terre, n, Math.round(R.PENTE * R.RIVAGES[0]));
+  const large = partDeTerreAutour(ch.terre, n, Math.round(R.PENTE * R.RIVAGES[1]));
+  const h = new Float32Array(n * n);
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const i = y * n + x;
+      if (!ch.terre[i]) continue;
+      // loin de la mer : la part de terre autour (0,5 au rivage, 1 loin dedans), d'un rayon qui varie le long de la côte
+      const m = bruit2D(x / 40, y / 40, gRivage);
+      const dedans = Math.min(1, Math.max(0, ((1 - m) * etroit[i] + m * large[i] - 0.5) * 2));
+      const rivage = dedans * dedans * (3 - 2 * dedans) * Math.min(1, ch.cote[i] / 3);
+      const collines = fbm(x / R.COLLINES.echelle, y / R.COLLINES.echelle, g, R.COLLINES.octaves);
+      h[i] = rivage * (R.PLAINES + (1 - R.PLAINES) * collines);
+    }
+  }
+  for (let p = 0; p < R.LISSAGE; p++) flouterTerre(h, ch.terre, n);
+  let max = 0;
+  for (let i = 0; i < n * n; i++) if (h[i] > max) max = h[i];
+  for (let i = 0; i < n * n; i++) h[i] = ch.terre[i] ? h[i] / max : 0;
+  limiterLaPente(h, n, R.PENTE_MAX * 0.95);
+  ch.hauteur = h;
+}
+
+/**
+ * L'humidité : un bruit, et les bas plus humides que les hauts ; la mer à 1.
+ * @param {Chantier} ch
+ */
+function humidite(ch) {
+  const H = REGLAGES.HUMIDITE;
+  const n = ch.n;
+  const g = hacher(`${ch.graine}/humidite`);
+  const u = new Float32Array(n * n);
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const i = y * n + x;
+      if (!ch.terre[i]) {
+        u[i] = 1;
+        continue;
+      }
+      const bruit = fbm(x / H.echelle, y / H.echelle, g, H.octaves);
+      u[i] = (1 - H.BAS) * bruit + H.BAS * (1 - ch.hauteur[i]);
+    }
+  }
+  // étirée sur toute l'échelle : chaque île a ses terres sèches et ses terres humides (la lande, la forêt)
+  let min = Infinity;
+  let max = -Infinity;
+  for (let i = 0; i < n * n; i++) {
+    if (!ch.terre[i]) continue;
+    min = Math.min(min, u[i]);
+    max = Math.max(max, u[i]);
+  }
+  for (let i = 0; i < n * n; i++) if (ch.terre[i]) u[i] = (u[i] - min) / (max - min);
+  ch.humidite = u;
+}
+
+/** Les étapes de la génération, dans l'ordre (docs/ile-300.md, « Le code »). */
+export const ETAPES = Object.freeze(['forme', 'relief', 'humidite']);
+const FAIRE = { forme: formeIle, relief, humidite };
+
+/**
+ * Le chantier d'une graine, mené jusqu'à une étape (comprise) : pour les tests, l'aperçu, et creerIle.
+ * @param {string | number} graine
+ * @param {string} [jusqua]   une étape d'ETAPES (par défaut la dernière)
+ * @returns {Chantier}
+ */
+export function genererChantier(graine, jusqua = ETAPES[ETAPES.length - 1]) {
+  const fin = ETAPES.indexOf(jusqua);
+  if (fin < 0) throw new Error(`étape inconnue : « ${jusqua} » (${ETAPES.join(', ')})`);
+  const ch = { graine: String(graine), n: REGLAGES.TAILLE };
+  for (const etape of ETAPES.slice(0, fin + 1)) FAIRE[etape](ch);
+  return ch;
+}

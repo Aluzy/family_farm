@@ -26,6 +26,54 @@
       "lac": { "eau_basse": { "eau": true }, "eau": { "eau": true } },
       "riviere": { "courant": { "eau": true } }
     },
+    "//FORME": [
+      "La forme de l'île (js/engine/ile.js, formeIle). Les distances sont en cases. MARGE : des cases de mer en plus de",
+      "  BORD_MER où la terre ne vient jamais (la côte ne touche pas la bande de mer). CARRE : la part du carré dans la",
+      "  distance au centre (0 : une île ronde ; plus : elle remplit mieux les coins). DEFORMATION : le bruit qui",
+      "  déplace chaque case avant de mesurer sa distance (des caps et des baies) : echelle (la taille des formes),",
+      "  force (le déplacement le plus grand). DECOUPE : le bruit ajouté à la masse (la côte dentelée) : echelle, force",
+      "  (en part du rayon), octaves. BOSSE : une masse en plus au centre (rayon, force) : le point d'apparition est",
+      "  toujours sur la terre. TAILLE : le rayon de l'île, en part de la place qu'elle a (tiré entre les deux bornes).",
+      "  ALLONGEMENT : l'île est étirée dans une direction tirée au hasard (0 : ronde ; 0,25 : un quart plus longue",
+      "  que large, au plus). FONDU : sur ces dernières cases avant la marge, la masse baisse jusqu'à la mer (la côte",
+      "  garde sa forme au lieu d'être coupée droit). LISSAGE : les passes qui ôtent les pointes et les trous d'une case.",
+      "Puis on ne garde que la terre d'un seul tenant qui porte le centre, et la mer qui touche le bord (une mer",
+      "  enclavée devient de la terre ; les lacs viennent plus tard, du relief)."
+    ],
+    "FORME": {
+      "MARGE": 4,
+      "CARRE": 0.15,
+      "DEFORMATION": { "echelle": 70, "force": 32 },
+      "DECOUPE": { "echelle": 45, "force": 0.42, "octaves": 5 },
+      "BOSSE": { "rayon": 45, "force": 0.35 },
+      "TAILLE": [0.8, 0.95],
+      "ALLONGEMENT": 0.25,
+      "FONDU": 16,
+      "LISSAGE": 2
+    },
+    "//RELIEF": [
+      "Le relief doux (relief) : la hauteur, de 0 au rivage à 1 au plus haut, sans falaise. Les collines et les vallées",
+      "  (COLLINES : echelle, octaves) font la hauteur ; près de la mer, elle descend (« loin de la mer » se mesure par",
+      "  la part de terre dans un carré autour de la case, lisse, sans arêtes). PENTE : le rayon de ce carré (cases).",
+      "  RIVAGES : ce rayon varie le long de la côte, entre ces deux parts de PENTE (des plaines côtières larges ici,",
+      "  étroites là). PLAINES : la hauteur la plus basse d'une vallée loin de la mer (en part de la plus haute).",
+      "  LISSAGE : les passes de flou qui adoucissent les pentes. PENTE_MAX : l'écart de hauteur le plus grand entre",
+      "  deux cases voisines, mer comprise ; le limiteur de pente abaisse ce qui le dépasse (les tests le contrôlent)."
+    ],
+    "RELIEF": {
+      "PENTE": 45,
+      "COLLINES": { "echelle": 70, "octaves": 5 },
+      "PLAINES": 0.12,
+      "RIVAGES": [0.25, 1.75],
+      "LISSAGE": 6,
+      "PENTE_MAX": 0.05
+    },
+    "//HUMIDITE": [
+      "L'humidité (humidite), de 0 (sec) à 1 (humide) : un bruit (echelle, octaves), et les bas plus humides que les",
+      "  hauts (BAS : la part de la hauteur) ; puis étirée de 0 à 1 sur chaque île (chacune a ses terres sèches et ses",
+      "  terres humides). Les rivières et les lacs l'augmenteront autour d'eux (étape 4)."
+    ],
+    "HUMIDITE": { "echelle": 80, "octaves": 3, "BAS": 0.35 },
     "//ESPECES": [
       "Le catalogue n'est pas écrit ici : js/engine/ile.js le construit depuis les données du jeu (les plantes sauvages",
       "de monde.json VEGETATION.SORTES, les cultures de crops.json CULTURES, les fleurs de meubles.json BACS.FLEURS, les",
