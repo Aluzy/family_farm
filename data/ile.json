@@ -146,6 +146,22 @@
       "QUOTAS": { "essais": 5000 },
       "DEPART": { "pierres": 3, "bois_flotte": 3, "distance": [2, 7] }
     },
+    "//VIE": [
+      "L'île en jeu (docs/ile-300.md, étape 6 : js/engine/ile/vie.js, sauvegarde.js). HAUTEUR : la hauteur d'une case",
+      "  est gardée en entier, de 0 (le rivage) à HAUTEUR (le plus haut de l'île à sa création). MARCHE : de combien un",
+      "  coup de pelle monte ou descend une case ; le joueur ne crée jamais de falaise : entre deux cases de terre",
+      "  voisines, l'écart reste au plus RELIEF.PENTE_MAX × HAUTEUR. NUITS_PAR_STADE : les nuits qu'il faut à une plante",
+      "  pour passer au stade suivant, par famille (les autres : 1). REPOUSSE : les nuits avant qu'une plante coupée ou",
+      "  ramassée repousse à sa place, quand sa récolte n'en dit rien ([au moins, au plus]).",
+      "SAUVEGARDE : la version du format (une île sauvée dans un autre format est refusée)."
+    ],
+    "VIE": {
+      "HAUTEUR": 200,
+      "MARCHE": 5,
+      "NUITS_PAR_STADE": { "fruitier": 5 },
+      "REPOUSSE": [5, 8],
+      "SAUVEGARDE": 1
+    },
     "//ESPECES": [
       "Le catalogue n'est pas écrit ici : js/engine/ile.js le construit depuis les données du jeu (les plantes sauvages",
       "de monde.json VEGETATION.SORTES, les cultures de crops.json CULTURES, les fleurs de meubles.json BACS.FLEURS, les",

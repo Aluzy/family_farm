@@ -12,8 +12,11 @@
      lacs.js       les lacs (creux naturels, lacs dessinés) ;
      biomes.js     les biomes et les sols, les plages, la prairie du départ ;
      pousse.js     la végétation, les roches, les quotas d'espèces.
-   Ici : l'ordre des étapes (ETAPES) et genererChantier. Viendront la lecture, la modification, la vie de
-   l'île, la sauvegarde, la scène et le contrôle (les étapes suivantes du chantier).
+     vie.js        l'île en jeu : sa lecture, ses modifications (le sol, la hauteur, les plantes, la récolte), ses
+                   nuits (la pousse, la repousse), les régions à repeindre ;
+     sauvegarde.js l'île entière ou ses régions changées, et l'île relue ;
+     controle.js   les règles qu'une île ne respecte pas (verifierIle).
+   Ici : l'ordre des étapes (ETAPES), genererChantier et creerIle. Viendra la scène (l'étape 7 du chantier).
 
    Les performances (60 images par seconde, docs/ile-300.md) : rien ici ne tourne à chaque image ; les
    fonctions appelées dans les boucles sur les cases (bruit2D, fbm, les tables du catalogue) n'allouent rien.
@@ -24,11 +27,38 @@ import { formeIle, humidite, relief } from './ile/forme.js';
 import { lacs } from './ile/lacs.js';
 import { quotasEspeces, roches, vegetation } from './ile/pousse.js';
 import { REGLAGES } from './ile/reglages.js';
+import { ileDuChantier } from './ile/vie.js';
 
 export { BIOME, BIOMES, GENRES, ILE, SOL, SOL_BIOME, SOL_EAU, SOLS } from './ile/reglages.js';
 export { bruit2D, entre, fbm, hacher, prng } from './ile/hasard.js';
 export { catalogue, construireCatalogue, renumerotation, tableDesNumeros, verifierCatalogue } from './ile/catalogue.js';
 export { compterEspeces } from './ile/pousse.js';
+export {
+  auLarge,
+  changerHauteur,
+  changerSol,
+  estEau,
+  ficheA,
+  indice,
+  labourable,
+  marchable,
+  nuit,
+  poserObjet,
+  recolter,
+  regionDe,
+  REGIONS,
+  regionsModifiees,
+  retirerObjet,
+} from './ile/vie.js';
+export {
+  coder,
+  decoder,
+  depuisSauvegarde,
+  fusionnerRegions,
+  versSauvegarde,
+  versSauvegardeRegions,
+} from './ile/sauvegarde.js';
+export { verifierIle } from './ile/controle.js';
 
 /**
  * Le chantier de la génération : ce que les étapes se passent, dans l'ordre d'ETAPES. Seuls le sol, la hauteur, les
@@ -90,4 +120,14 @@ export function genererChantier(graine, jusqua = ETAPES[ETAPES.length - 1]) {
   const ch = { graine: String(graine), n: REGLAGES.TAILLE };
   for (const etape of ETAPES.slice(0, fin + 1)) FAIRE[etape](ch);
   return ch;
+}
+
+/**
+ * L'île d'une graine, prête à jouer : générée jusqu'au bout, puis faite île (docs/ile-300.md, étape 6). Une fois en
+ * début de partie ; ensuite, l'île se sauve et se relit (versSauvegarde, depuisSauvegarde).
+ * @param {string | number} graine
+ * @returns {import('./ile/vie.js').Ile}
+ */
+export function creerIle(graine) {
+  return ileDuChantier(genererChantier(graine));
 }

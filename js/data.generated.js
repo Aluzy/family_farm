@@ -9972,6 +9972,7 @@ export const RAW_DATA = {
       "QUOTAS": { "essais": 5000 },
       "DEPART": { "pierres": 3, "bois_flotte": 3, "distance": [2, 7] }
     },
+    "VIE": { "HAUTEUR": 200, "MARCHE": 5, "NUITS_PAR_STADE": { "fruitier": 5 }, "REPOUSSE": [5, 8], "SAUVEGARDE": 1 },
     "ESPECES": {
       "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor", "roche"],
       "ROCHES": [

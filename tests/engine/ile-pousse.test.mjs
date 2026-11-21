@@ -20,6 +20,18 @@ const A = ILE.APPARITION;
 const fiche = (numero) => CAT.fiches[numero - 1];
 const auDepart = (i) => Math.hypot((i % N) - A.x, Math.floor(i / N) - A.y);
 
+// Les cases autour de i (sans elle), à au plus r cases en carré, et leur distance en carré.
+function autour(i, r) {
+  const x = i % N;
+  const y = (i - x) / N;
+  const cases = [];
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++)
+      if (dx || dy) cases.push([(y + dy) * N + x + dx, Math.max(Math.abs(dx), Math.abs(dy))]);
+  }
+  return cases;
+}
+
 test('chaque espèce a au moins son minimum de pieds sur chaque île (C4)', () => {
   for (const [g, ch] of ILES) {
     const compte = compterEspeces(ch.objet, CAT);
@@ -76,15 +88,10 @@ test('les blocs : leur empreinte sur la terre ferme, libre, et leur écart sans 
     // deux blocs ne sont jamais à moins de l'écart du plus petit des deux (en cases, en carré)
     const parCase = new Map(blocs.map((i) => [i, fiche(ch.objet[i])]));
     for (const i of blocs) {
-      const x = i % N;
-      const y = (i - x) / N;
-      for (let dy = -3; dy <= 3; dy++) {
-        for (let dx = -3; dx <= 3; dx++) {
-          const j = (y + dy) * N + x + dx;
-          if (j === i || !parCase.has(j)) continue;
-          const ecart = Math.min(parCase.get(i).ecart, parCase.get(j).ecart);
-          assert.ok(Math.max(Math.abs(dx), Math.abs(dy)) > ecart, `${g} : deux blocs trop proches`);
-        }
+      for (const [j, d] of autour(i, 3)) {
+        if (!parCase.has(j)) continue;
+        const ecart = Math.min(parCase.get(i).ecart, parCase.get(j).ecart);
+        assert.ok(d > ecart, `${g} : deux blocs trop proches`);
       }
     }
   }
@@ -93,15 +100,18 @@ test('les blocs : leur empreinte sur la terre ferme, libre, et leur écart sans 
 test("le départ : dégagé, sauf les pierres et le bois qu'on y ramasse en arrivant", () => {
   const D = DATA.ILE.POUSSE.DEPART;
   for (const [g, ch] of ILES) {
-    const autour = { pierres: 0, bois_flotte: 0 };
+    const ramasse = { pierres: 0, bois_flotte: 0 };
     for (let i = 0; i < N * N; i++) {
       const o = ch.objet[i];
       if (!o || auDepart(i) > D.distance[1] + 1) continue;
       const id = fiche(o).id;
-      if (id in autour && auDepart(i) >= D.distance[0] - 1) autour[id]++;
+      if (id in ramasse && auDepart(i) >= D.distance[0] - 1) ramasse[id]++;
       else assert.ok(auDepart(i) > A.rayon + 1, `${g} : ${id} sur la prairie du départ`);
     }
-    assert.ok(autour.pierres >= D.pierres && autour.bois_flotte >= D.bois_flotte, `${g} : ${JSON.stringify(autour)}`);
+    assert.ok(
+      ramasse.pierres >= D.pierres && ramasse.bois_flotte >= D.bois_flotte,
+      `${g} : ${JSON.stringify(ramasse)}`,
+    );
     assert.equal(ch.objet[A.y * N + A.x], 0);
   }
 });
