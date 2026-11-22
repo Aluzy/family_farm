@@ -156,6 +156,8 @@
           // (un meuble de la maison : son propre dessin, assets/meuble_<dessin>.png)
           if (b.meuble) { if (this.syncMeuble(b)) changed = true; continue; }
           let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case), pleine: b.pleine, mur: b.mur, niveau: b.niveau }, at, cols);
+          // (la tente de l'île, docs/ile-300.md C18 : son dessin, tente.png, celui du bivouac d'avant)
+          if (b.sorte === 'tente' && this.textures.exists('tente')) { key = 'tente'; f = '__BASE'; }
           // (le mobilier de jardin tourné : son image dans ce sens, BLOCS_CARTE.sens ; en miroir vers la gauche)
           const S = BLOCS_CARTE.sens && BLOCS_CARTE.sens[b.sorte], miroir = !!(S && S.miroir[b.sens || 0]);
           if (S) f = S.images[b.sens || 0];
