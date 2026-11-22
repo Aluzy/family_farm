@@ -13,6 +13,7 @@ import { SORTES_ROCHES } from './monde-roches.js';
 import { noterObjectif } from './objectifs-compte.js';
 import { estPartieIle, ileDeLaPartie } from './ile/jeu.js';
 import { reglesDeLIle } from './ile/recoltes.js';
+import { catalogue } from './ile/catalogue.js';
 import { recolter as recolterIle } from './ile/vie.js';
 
 /* ---------- couper, casser, cueillir et ramasser dans le grand monde (docs/grand-monde.md : fiche 6a) ---------- */
@@ -133,6 +134,17 @@ function ecrire(state, id, v) {
   version++;
 }
 
+// La pièce `o` (lireIdMonde) est-elle sur l'île de la partie, sur sa case, prête au geste ?
+let FICHES = null;
+function surLIle(state, o, geste) {
+  const ile = ileDeLaPartie(state);
+  if (!ile || o.X < 0 || o.Y < 0 || o.X >= ile.n || o.Y >= ile.n) return false;
+  if (!FICHES) { FICHES = []; for (const f of catalogue().fiches) FICHES[f.numero] = f; }
+  const i = o.Y * ile.n + o.X, f = FICHES[ile.objet[i]];
+  if (!f || (f.id !== o.def.nom && f.dessin.sorte !== o.def.nom)) return false;
+  return !(geste === 'cueillir' && f.dessin.planche === 'verger' && ile.etat[i] !== f.stades - 1);
+}
+
 // La pièce `id` prise (ou cueillie : v.cueilli ; fauchée : v.faux) sur l'île de la partie : sa case suit la récolte
 // (js/engine/ile/vie.js recolter : elle s'en va et repousse, ou revient à un stade).
 function recolterSurLIle(state, id, v) {
@@ -231,6 +243,8 @@ function butinFinal(state, id, regle) {
 function preparer(state, id, geste, depuis, n = 1) {
   const o = lireIdMonde(id);
   if (!o || !o.regle) return { refus: fail('Il n\'y a rien à prendre ici.') };
+  // (l'île de 300 × 300 : la pièce doit y être encore, et un fruitier porter ses fruits pour être cueilli)
+  if (estPartieIle(state) && !surLIle(state, o, geste)) return { refus: fail('Il n\'y a plus rien ici : ça repoussera.') };
   const regle = regleGeste(o.regle, geste);
   if (!regle) return { refus: fail(refusGeste(o.regle.geste)) };
   o.regle = regle;

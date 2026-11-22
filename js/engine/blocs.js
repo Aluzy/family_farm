@@ -26,7 +26,8 @@ import { chainesReprise } from './chaines.js';
 import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
-import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';import { degagerIle } from './ile/jeu.js';
+import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';
+import { degagerIle } from './ile/jeu.js';
 
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */

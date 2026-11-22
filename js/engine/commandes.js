@@ -42,7 +42,7 @@
    récolte, une nuit dormie ne se défont pas ; l'énergie dépensée non plus) :
      potager.planter  { parcelle, culture }    semer une parcelle (son identifiant), à la main
      potager.arroser  { parcelle }
-     potager.recolter { parcelle, direct? }     (direct : à l'inventaire, sans attendre le personnage)
+     potager.recolter { parcelle, direct?, faux? } (direct : à l'inventaire, sans attendre le personnage ; faux : fauchée)
      potager.labourer { case }                 labourer une case d'herbe (ou reboucher une parcelle vide)
      potager.toutPlanter  { lieu, culture }    « Planter partout », « Arroser tout », « Récolter tout »
      potager.toutArroser  { lieu }
@@ -539,8 +539,8 @@ export const COMMANDES = {
     executer: (state, { parcelle }) => water(state, parcelle),
   },
   'potager.recolter': {
-    args: { parcelle: 'texte', direct: 'drapeau?' },
-    executer: (state, { parcelle, direct = false }) => harvest(state, parcelle, false, direct),
+    args: { parcelle: 'texte', direct: 'drapeau?', faux: 'drapeau?' },
+    executer: (state, { parcelle, direct = false, faux = false }) => harvest(state, parcelle, false, direct, { faux }),
   },
   'potager.labourer': {
     args: { case: 'case' },

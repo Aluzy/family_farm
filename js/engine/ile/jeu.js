@@ -44,6 +44,9 @@ export function ileDeLaPartie(state) {
   return ile;
 }
 
+// La version de chaque île vivante déjà écrite dans sa partie.
+const gardees = new WeakMap();
+
 /**
  * Écrit l'île vivante dans la partie (state.ile : la sauvegarde entière). À faire avant d'écrire la partie.
  * @param {object} state
@@ -51,6 +54,10 @@ export function ileDeLaPartie(state) {
 export function garderIle(state) {
   const ile = ileDeLaPartie(state);
   if (!ile) return;
+  // (rien de changé depuis la dernière fois : la sauvegarde de la partie est à jour ; l'écrire coûte ≈ 3 ms, 4 fois
+  // plus sur un téléphone)
+  if (gardees.get(ile) === (ile.version ?? 0) && state.ile && state.ile.format === 'ile-300') return;
+  gardees.set(ile, ile.version ?? 0);
   const s = versSauvegarde(ile);
   vivantes.delete(state.ile);
   state.ile = s;

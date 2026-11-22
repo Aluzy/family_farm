@@ -140,10 +140,10 @@ if (opt('mesure', null)) {
   }
   const fin = Date.now() + Number(opt('mesure', 8)) * 1000,
     fleches = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
-  let k = 0;
+  let pasN = 0;
   while (Date.now() < fin) {
     if (args.includes('--marche')) {
-      const f = fleches[k++ % 4];
+      const f = fleches[pasN++ % 4];
       await page.keyboard.down(f);
       await page.waitForTimeout(1500);
       await page.keyboard.up(f);
@@ -173,7 +173,7 @@ if (opt('mesure', null)) {
         return {
           objets: tous,
           dessines: vis,
-          zoom: +sc.cameras.main.zoom.toFixed(2),
+          zoom: Number(sc.cameras.main.zoom.toFixed(2)),
           parTexture: Object.entries(tex)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 12),
@@ -207,7 +207,7 @@ if (opt('mesure', null)) {
       console.log('  ' + v.toFixed(0).padStart(6) + ' ms  ' + k);
   }
   const m1 = await metriques(),
-    duree = (k) => +((m1[k] - m0[k]) * 1000).toFixed(0);
+    duree = (k) => Number(((m1[k] - m0[k]) * 1000).toFixed(0));
   console.log(
     'processeur (ms) : script',
     duree('ScriptDuration'),
@@ -221,7 +221,14 @@ if (opt('mesure', null)) {
   );
   console.log(
     'mesure',
-    JSON.stringify(m && { fps: +m.fps.toFixed(1), pire: +m.pire.toFixed(1), p95: +m.p95.toFixed(1), images: m.images }),
+    JSON.stringify(
+      m && {
+        fps: Number(m.fps.toFixed(1)),
+        pire: Number(m.pire.toFixed(1)),
+        p95: Number(m.p95.toFixed(1)),
+        images: m.images,
+      },
+    ),
   );
 }
 mkdirSync(dirname(SORTIE), { recursive: true });
