@@ -198,7 +198,7 @@ import { pickUp } from './ramassage.js';
 import { recolterBac, semerBac } from './bacs.js';
 import { cueillirMassif } from './massifs.js';
 import { remplirTonnelet } from './tonnelets.js';
-import { mettreALEtal, reprendreDeLEtal } from './bourse.js';
+import { acheterAuVillageois, changerStatut, mettreALEtal, reprendreDeLEtal } from './bourse.js';
 import { acheterAuCommerce, choisirLettres, commanderAuCommerce, ouvrirCommerce, rejoindreCommerce, suggererCommerce } from './artisans.js';
 import { epinglerLigne, noterLigne, renommerEtNoter } from './chronique.js';
 import { nomsDe } from './noms.js';
@@ -724,6 +724,15 @@ export const COMMANDES = {
   'villageois.outil': {
     args: { id: 'texte', outil: 'outil' },
     executer: (state, { id, outil }) => (outil === 'reprendre' ? reprendreOutil(state, id) : donnerOutil(state, id, outil)),
+  },
+  // (l'île, docs/economie.md E12 : employé du joueur ou à son compte ; acheter à son panier)
+  'villageois.statut': {
+    args: { id: 'texte', compte: 'drapeau?' },
+    executer: (state, { id, compte = false }) => changerStatut(state, id, compte),
+  },
+  'villageois.acheter': {
+    args: { id: 'texte', objet: 'objet', quantite: 'quantite' },
+    executer: (state, { id, objet, quantite }) => acheterAuVillageois(state, id, objet, quantite),
   },
   'villageois.vendre': {
     args: { id: 'texte', objets: 'objets' },

@@ -48,6 +48,8 @@ export const GESTES = {
 export const GAME_ACTIONS = {
   'place-monter': 'Monter la place du village',
   'village-don': 'Donner au village',
+  'villageois-statut': 'Changer le statut d\'un villageois',
+  'villageois-acheter': 'Acheter au panier d\'un villageois',
   'plant': 'Planter',
   'water': 'Arroser',
   'water-all': 'Arroser',

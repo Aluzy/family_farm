@@ -15,7 +15,7 @@ import { cleDiversite, tirerApparence } from './apparence.js';
 import { ajouterAmitie, amitieDe, goutsTires } from './amitie.js';
 import { validApparence } from './family.js';
 import { bonheurDesLiens, foyerDe, poserAffinite } from './liens.js';
-import { mangerSesProvisions, mangerSonPanier, partDue, plaisirDuJour, prendrePart } from './bourse.js';
+import { mangerSesProvisions, mangerSonPanier, partDue, plaisirDuJour, prendrePart, ventesEntreVillageois } from './bourse.js';
 import { bonheurDesTraits, traitsTires } from './traits.js';
 import { chroniqueArrivee } from './chronique.js';
 import { bonheurDeLaFete } from './fetes-village.js';
@@ -493,9 +493,12 @@ export function villageoisNuit(state) {
       const J = Array.isArray(v.journal) ? v.journal[v.journal.length - 1] : null;
       if (J && J.jour === jour && J.produit) dus.push({ v, net: partDue(J).net, J });
     }
-    const r = payerLesSalaires(state, dus);
-    for (const { v, net, J } of dus) if (!v.impaye) J.salaire = salaireDe(net);
-    return { arrive, repas, sansLit, part: 0, salaires: r.paye, impayes: r.impayes };
+    // (à son compte, E12 : tout son produit lui revient, dans son panier ; pas de salaire)
+    for (const { v, J } of dus) if (v.compte) J.part = prendrePart(state, v, J, 100);
+    const r = payerLesSalaires(state, dus.filter((d) => !d.v.compte));
+    for (const { v, net, J } of dus) if (!v.compte && !v.impaye) J.salaire = salaireDe(net);
+    const ventes = ventesEntreVillageois(state, jour);
+    return { arrive, repas, sansLit, part: 0, salaires: r.paye, impayes: r.impayes, ventes };
   }
   for (const v of V) {
     const J = Array.isArray(v.journal) ? v.journal[v.journal.length - 1] : null;

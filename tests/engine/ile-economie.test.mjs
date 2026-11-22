@@ -22,6 +22,8 @@ import { etalPort } from '../../js/engine/port.js';
 import { tirerContrats } from '../../js/engine/contrats.js';
 import { encaisserVente } from '../../js/engine/market.js';
 import { tacheManque } from '../../js/engine/taches.js';
+import { acheterAuVillageois, changerStatut, prendrePart, ventesEntreVillageois } from '../../js/engine/bourse.js';
+import { addItem } from '../../js/engine/inventory.js';
 
 function partie() {
   const s = createNewGame(9);
@@ -102,4 +104,27 @@ test('le salaire : 30 % de ce qu’il a rapporté, arrondi au-dessus ; sans de q
   s.pieces = 30;
   payerLesSalaires(s, []);
   assert.equal(v.impaye, undefined, 'il reprend');
+});
+
+test('à son compte : son produit lui revient, le joueur et les autres villageois lui achètent, chaque vente est un revenu', () => {
+  const s = partie();
+  const w = { id: 'w', prenom: 'Paul', bourse: 0 },
+    a = { id: 'a', prenom: 'Zoé', bourse: 100, gouts: { pomme: 'adore' } };
+  s.villageois = [w, a];
+  assert.ok(changerStatut(s, 'w', true).ok);
+  addItem(s, 'pomme', 10);
+  const J = { jour: s.day, produit: { pomme: 10 }, utilise: {} };
+  assert.ok(prendrePart(s, w, J, 100) > 0);
+  assert.equal(w.panier.pomme, 10, 'tout son produit');
+  s.pieces = 100;
+  const r = acheterAuVillageois(s, 'w', 'pomme', 2);
+  assert.ok(r.ok, r.error);
+  assert.equal(w.bourse, r.prix);
+  assert.equal(economie(s).revenus.villageois.w, r.prix);
+  assert.equal(acheterAuVillageois(s, 'a', 'pomme', 1).ok, false, 'Zoé est employée : elle ne vend rien');
+  // (la nuit, Zoé lui achète ce qu'elle adore)
+  const avant = w.bourse;
+  assert.equal(ventesEntreVillageois(s), 1);
+  assert.deepEqual([w.panier.pomme, w.bourse > avant, a.bourse < 100], [7, true, true]);
+  assert.equal(ventesEntreVillageois(s), 0, 'un achat par jour');
 });

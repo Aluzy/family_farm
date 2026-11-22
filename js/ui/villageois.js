@@ -37,6 +37,8 @@ import { goutTache, nomTrait, noterIndice, observerTraits, traitDef, traitsPourF
 import { maisonNomHtml } from './chronique-html.js';
 import { commerceFicheHtml, watchCommerces } from './commerce.js';
 import { executer } from './commandes.js';
+import { estPartieIle } from '../engine/ile/jeu.js';
+import { valeurIle } from '../engine/bourse.js';
 import { gestePermis, mondeActuel } from './en-ligne.js';
 
 /* ---------- les villageois, côté page (le chantier « l'île à bâtir », fiche I3a) ----------
@@ -302,6 +304,23 @@ const produitTexte = (p) => Object.entries(p || {}).filter(([, n]) => n > 0).map
 const ETATS_TACHE = { travail: '🔨 au travail', attend: '⏳ attend', repos: '😴 au repos', libre: '— sans tâche', chantier: '🏗️ au chantier du village' };
 const ilElle = (v) => (v.genre === 'm' ? 'il' : 'elle');
 
+// (l'île, docs/economie.md E11 et E12) : employé du joueur (payé SALAIRE % de ce qu'il rapporte) ou à son compte (ce
+// qu'il produit est à lui : son panier, où le joueur peut acheter).
+function statutHtml(v) {
+  if (!estPartieIle(state) || v.enfant) return '';
+  const e = escapeHtml(v.id), S = DATA.ILE.ECONOMIE.SALAIRE;
+  const statut = v.compte
+    ? `🏷️ À son compte <button type="button" class="btn small" data-action="villageois-statut" data-id="${e}" data-compte="">L'employer</button>`
+    : `🤝 Employé (${S} % de ce qu'${ilElle(v)} rapporte, payé la nuit) <button type="button" class="btn small" data-action="villageois-statut" data-id="${e}" data-compte="1">À son compte</button>`;
+  const panier = v.compte
+    ? Object.entries(v.panier || {})
+        .filter(([o, n]) => n > 0 && DATA.OBJETS[o] && valeurIle(o) > 0)
+        .map(([o, n]) => `<button type="button" class="btn small" data-action="villageois-acheter" data-id="${e}" data-objet="${o}">${icone(o)} ${escapeHtml(DATA.OBJETS[o].nom)} ×${n} · ${valeurIle(o)} 💰</button>`)
+        .join(' ')
+    : '';
+  return `<dt>💼 Statut</dt><dd>${statut}</dd>${v.compte ? `<dt>🧺 Il vend</dt><dd>${panier || '<span class="muted">rien pour l\'instant</span>'}</dd>` : ''}`;
+}
+
 // Ce que dit la fiche de sa tâche : la tâche, où il en est aujourd'hui, ce qui lui manque, son outil.
 function tacheHtml(id) {
   const q = quiFaitQuoi(state).find((x) => x.id === id);
@@ -332,7 +351,7 @@ function tacheHtml(id) {
     : tachePermise ? `<button type="button" class="btn small" data-action="villageois-taches" data-id="${e}" id="villageois-tache">Tâche</button>`
     : '<span class="muted villageois-droit" id="villageois-tache-droit">🔒 Le propriétaire de l\'île attribue les tâches.</span>';
   return `<dt>🧺 Tâche</dt><dd>${etat} ${bouton}</dd>
-      <dt>🧰 Outil</dt><dd>${outil}${donner ? ` <span class="villageois-outils">${donner}</span>` : ''}</dd>${vendre}${charrette}`;
+      <dt>🧰 Outil</dt><dd>${outil}${donner ? ` <span class="villageois-outils">${donner}</span>` : ''}</dd>${vendre}${charrette}${statutHtml(v)}`;
 }
 
 // La liste des tâches pour le villageois `id` : celles qu'il peut faire, ce qui manque aux autres.
@@ -523,6 +542,14 @@ registerActions({
     apres(enLigne ? executer('villageois.outil', { id, outil: 'reprendre' }) : reprendreOutil(state, id), id, `${d.ICONE} Tu as repris ${d.ARTICLE === 'un' ? 'le' : 'la'} ${d.NOM.toLowerCase()} de ${v.prenom}.`);
   },
   'villageois-vendre': (target) => ouvrirAVendre(target.dataset.id),
+  'villageois-statut': (target) => {
+    const id = target.dataset.id;
+    apres(executer('villageois.statut', { id, compte: !!target.dataset.compte }), id, '');
+  },
+  'villageois-acheter': (target) => {
+    const id = target.dataset.id;
+    apres(executer('villageois.acheter', { id, objet: target.dataset.objet, quantite: 1 }), id, '');
+  },
   'villageois-vendre-ok': (target) => {
     const id = target.dataset.id, f = document.getElementById('villageois-vendre-form');
     const objets = f ? [...f.querySelectorAll('input[name="vendre"]:checked')].map((i) => i.value) : [];
