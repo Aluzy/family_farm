@@ -378,6 +378,33 @@
       if (g.fleurs) g.fleurs.setVisible(v);
     },
 
+    // L'île de 300 × 300 (docs/ile-300.md) : l'herbe haute née d'une graine d'herbe (modèle.touffesSemees : [« x,y »,
+    // variante]) ; une touffe nouvelle prend sa place parmi les autres (son morceau, sa teinte : celle de sa voisine).
+    syncTouffesSemees(list) {
+      if (!this.grassAll || !list || !list.length) return;
+      const cle = list.length + ':' + list[list.length - 1][0];
+      if (cle === this.touffesSemeesCle) return;
+      this.touffesSemeesCle = cle;
+      const deja = new Set(this.grassAll.map((g) => g.id)), raw = this.mapRaw;
+      const rows = Math.floor(this.textures.get(TALL_GRASS.key).frameTotal / TALL_GRASS.frames) || 1;
+      for (const [id, v] of list) {
+        if (deja.has(id)) continue;
+        const [x, y] = id.split(',').map(Number), base = (Math.max(0, Number(v) | 0) % rows) * TALL_GRASS.frames;
+        const voisine = this.grassAll.find((h) => Math.abs(h.x - x) < 64 && Math.abs(h.y - y) < 64);
+        const g = { id, img: null, fleurs: null, x, y, base, fleurie: false, tint: voisine ? voisine.tint : 0xffffff, cell: Math.floor(y / T - 0.01) * raw.width + Math.floor(x / T), t: -1, dir: 1, inside: false };
+        this.grassAll.push(g);
+        const k = Math.floor(x / HERBE_MORCEAU) + ',' + Math.floor(y / HERBE_MORCEAU);
+        if (!this.grassChunks.has(k)) this.grassChunks.set(k, { list: [], on: false });
+        const ch = this.grassChunks.get(k);
+        ch.list.push(g);
+        if (ch.on) {
+          g.img = this.add.image(g.x, g.y, TALL_GRASS.key, g.base).setOrigin(0.5, 1).setDepth(g.y).setTint(g.tint);
+          this.showGrass(g);
+        }
+      }
+      this.tallGrass = this.grassAll.filter((g) => g.img);
+    },
+
     // Les touffes fauchées (modèle.fauchees : leurs identifiants « x,y »). Une touffe qui
     // repousse paraît en fondu.
     syncCutGrass(ids) {

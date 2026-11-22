@@ -40,15 +40,41 @@ let planches = null;
  * Les deux planches de plus de l'île : { cultures, fruitiers }, chacune { sortes: [{ nom, genre, variantes }],
  * table: { nom: [[x, y, l, h, px, py]…] }, code: Map(numéro de fiche → rang de sa sorte) }.
  */
-// La planche des graines plantées : la graine au sol (le gland), puis la pousse (pousse_arbre) de assets/ramassables.png
-// (16 × 16 par image ; js/carte/ferme/config.js RAMASSABLES.frames).
+// La planche des graines plantées et des pousses : assets/graines_ile.png (scripts/carte/graines_ile.py), 16 × 16 par
+// image, dans cet ordre (le même que js/carte/nature.js GRAINES_ILE).
+const IMAGES_SEMIS = [
+  'graine_ile_bouleau',
+  'graine_ile_saule',
+  'graine_ile_arbre_pre',
+  'graine_ile_chataignier',
+  'graine_ile_fleurs',
+  'graine_ile_coquelicot',
+  'graine_ile_pavot_californie',
+  'graine_ile_myosotis',
+  'graine_ile_lavande',
+  'graine_ile_lupin',
+  'graine_ile_fleur_rouge',
+  'graine_ile_fleur_mauve',
+  'graine_ile_pommier_sauvage',
+  'graine_ile_poirier_sauvage',
+  'graine_ile_cerisier_sauvage',
+  'graine_ile_abricotier_sauvage',
+  'graine_ile_pecher_sauvage',
+  'graine_buisson',
+  'graine_herbe',
+  'spores_champignon',
+  'pousse_plante',
+  'pomme_de_pin',
+  'gland',
+  'pousse_pin',
+  'pousse_arbre',
+];
 export const SEMIS = {
-  sortes: [
-    { nom: 'graine_plantee', genre: 'basse', variantes: 1 },
-    { nom: 'pousse', genre: 'basse', variantes: 1 },
-  ],
-  table: { graine_plantee: [[6 * 16, 0, 16, 16, 8, 15]], pousse: [[8 * 16, 0, 16, 16, 8, 15]] },
+  sortes: IMAGES_SEMIS.map((nom) => ({ nom, genre: 'basse', variantes: 1 })),
+  table: Object.fromEntries(IMAGES_SEMIS.map((nom, k) => [nom, [[k * 16, 0, 16, 16, 8, 15]]])),
 };
+const IMAGE_SEMIS = Object.fromEntries(IMAGES_SEMIS.map((nom, k) => [nom, k]));
+const CONIFERES = new Set(['sapin', 'pin_tordu', 'sapin_nain']);
 
 export function planchesDeLIle(cat = catalogue()) {
   if (planches) return planches;
@@ -185,21 +211,26 @@ function finRegion(ctx, r, t0) {
       listes[cle][basse ? 1 : 0].push(code, px, py, v);
     }
   }
-  // les graines plantées et les pousses (graines.js) : une culture, ses premières images ; un fruitier, son jeune arbre ;
-  // le reste, une graine au sol puis une pousse (SEMIS : assets/ramassables.png)
+  // les graines plantées (le dessin de la graine), puis les pousses (graines.js) : celle d'un conifère, d'un autre arbre,
+  // le jeune arbre d'un fruitier, la pousse d'une autre plante (l'herbe haute comprise)
   for (const [i, s] of ile.semis) {
     const X = i % N,
       Y = (i - X) / N;
     if (X < cx0 || X >= cx0 + cl || Y < cy0 || Y >= cy0 + ch) continue;
-    const f = fiches[s.numero];
-    if (!f) continue;
-    const px = X * T + 8,
+    const f = s.numero ? fiches[s.numero] : null,
+      px = X * T + 8,
       py = Y * T + 13;
-    if (f.dessin.planche === 'crops')
-      listes.cultures[0].push(P.cultures.code.get(s.numero), px, py, Math.min(s.stade, f.stades - 1));
-    else if (f.dessin.planche === 'verger' && s.stade === 1)
+    if (s.stade === 1 && f && f.dessin.planche === 'verger') {
       listes.fruitiers[0].push(P.fruitiers.code.get(s.numero), px, py, 0);
-    else listes.semis[1].push(s.stade, px, py + 1, 0);
+      continue;
+    }
+    const image =
+      s.stade === 0
+        ? IMAGE_SEMIS[s.objet]
+        : f && f.famille === 'arbre'
+          ? IMAGE_SEMIS[CONIFERES.has(f.id) ? 'pousse_pin' : 'pousse_arbre']
+          : IMAGE_SEMIS.pousse_plante;
+    if (image !== undefined) listes.semis[1].push(image, px, py + 1, 0);
   }
   const sortie = (c) => ({ images: Int32Array.from(listes[c][0]), basses: Int32Array.from(listes[c][1]) });
   return {

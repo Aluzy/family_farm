@@ -27,10 +27,10 @@ import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
 import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';
-import { degagerIle } from './ile/jeu.js';import { refusPoseIle } from './ile/village.js';
-import { ileDeLaPartie } from './ile/jeu.js';
+import { degagerIle, estPartieIle, ileDeLaPartie } from './ile/jeu.js';
+import { refusPoseIle } from './ile/village.js';
 import { planterGraine as planterGraineIle, refusSemis } from './ile/vie.js';
-import { numeroDe } from './ile/graines.js';
+import { graineDeLIle, planteSemee } from './ile/graines.js';
 
 
 
@@ -982,12 +982,12 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
   if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.ornement ? `Plus de ${s.nom.toLowerCase()} : achète-en un avec des gemmes (💎, avec le jeu en ligne).` : s.cheminee || s.fontaine || s.enseigne || s.boite_lettres || s.boutique ? `Plus de ${s.nom.toLowerCase()} : achète-en une avec des gemmes (💎, avec le jeu en ligne).` : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en un dans un hameau (l'ébéniste de Bois-Joli, les tapis des Genêts).` : s.grimpant || s.guirlande ? `Plus de ${s.nom.toLowerCase()} : achète-en avec des gemmes (💎, avec le jeu en ligne).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : s.massif ? `Plus de ${DATA.OBJETS[s.objet].nom.toLowerCase()} : on en trouve en cueillant les fleurs sauvages du grand monde.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
-  // (l'île : une graine se plante, elle ne se bâtit pas : js/engine/ile/graines.js)
-  if (s.ileGraine) {
+  // (l'île : une graine se plante dans l'île, elle ne se bâtit pas, le gland et la pomme de pin compris ;
+  // js/engine/ile/graines.js)
+  if (graineIle(state, s)) {
     const ile = ileDeLaPartie(state);
-    if (!ile) return { ok: false, raison: 'Les graines se plantent sur l\'île.' };
     if (blocAt(state, tile) || solAt(state, tile) || allPlots(state).some((p) => p.case === tile)) return { ok: false, raison: 'La place est prise.' };
-    const r = refusSemis(ile, tile, numeroDe(s.ileGraine));
+    const r = refusSemis(ile, tile);
     return r ? { ok: false, raison: `${s.nom} : ${r}.` } : { ok: true };
   }
   // (l'île : une seule place, un seul port, au bord de la mer : js/engine/ile/village.js)
@@ -1131,7 +1131,7 @@ export function deplacerStatus(state, de, vers) {
 // voisines qui déborde sur ce qui est bâti est foulée (fauchée, sans paille : foulerAutour).
 export function poserBloc(state, sorte, tile, sens = 0, variante = null) {
   // (l'île : une graine plantée, pas un bloc posé ; js/engine/ile/graines.js)
-  if (sorteDe(sorte) && sorteDe(sorte).ileGraine) return planterLaGraine(state, sorte, tile);
+  if (graineIle(state, sorteDe(sorte))) return planterLaGraine(state, sorte, tile);
   const tourne = tourneBloc(sorte);
   const r = poser(state, sorte, tile, tourne ? sens : 0);
   if (r.ok) {
@@ -1147,12 +1147,15 @@ export function poserBloc(state, sorte, tile, sens = 0, variante = null) {
   return r;
 }
 
+// Une graine de l'île (son bloc) : une des siennes, ou le gland, la pomme de pin d'avant plantés sur l'île.
+const graineIle = (state, s) => !!s && (!!s.ileGraine || (!!s.semis && estPartieIle(state) && graineDeLIle(s.objet)));
+
 // Planter la graine `sorte` en `tile` (l'île) : la graine quitte l'inventaire, l'île la fait pousser.
 function planterLaGraine(state, sorte, tile) {
   const st = poseStatus(state, sorte, tile);
   if (!st.ok) return fail(st.raison);
-  const s = sorteDe(sorte);
-  const r = planterGraineIle(ileDeLaPartie(state), tile, numeroDe(s.ileGraine), state.day);
+  const s = sorteDe(sorte), ile = ileDeLaPartie(state);
+  const r = planterGraineIle(ile, tile, planteSemee(ile, tile, s.objet, state.day), s.objet, state.day);
   if (!r.ok) return fail(r.raison);
   takeItem(state, s.objet, 1);
   noter('pose', { sorte });

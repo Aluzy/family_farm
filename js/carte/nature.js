@@ -93,6 +93,10 @@
   // peut pas aller est poussé vers le plus proche où l'on peut (`cherche` px au plus). En
   // tombant, le morceau rebondit (`saut` px, `sautMs` ms). Les images : assets/ramassables.png
   // (`images` : la case de chaque objet).
+  // Les graines de l'île (docs/ile-300.md) : au sol et plantées, puis leurs pousses (assets/graines_ile.png,
+  // scripts/carte/graines_ile.py : 16 × 16 par image, dans cet ordre).
+  const GRAINES_ILE = { key: 'graines_ile', file: 'graines_ile.png', frame: { frameWidth: 16, frameHeight: 16 },
+    frames: { graine_ile_bouleau: 0, graine_ile_saule: 1, graine_ile_arbre_pre: 2, graine_ile_chataignier: 3, graine_ile_fleurs: 4, graine_ile_coquelicot: 5, graine_ile_pavot_californie: 6, graine_ile_myosotis: 7, graine_ile_lavande: 8, graine_ile_lupin: 9, graine_ile_fleur_rouge: 10, graine_ile_fleur_mauve: 11, graine_ile_pommier_sauvage: 12, graine_ile_poirier_sauvage: 13, graine_ile_cerisier_sauvage: 14, graine_ile_abricotier_sauvage: 15, graine_ile_pecher_sauvage: 16, graine_buisson: 17, graine_herbe: 18, spores_champignon: 19, pousse_plante: 20, pomme_de_pin: 21, gland: 22, pousse_pin: 23, pousse_arbre: 24 } };
   const MORCEAUX = {
     prise: 9, pied: 13, bas: 7, cime: [24, 36, 48], eclats: 15, cherche: 32, saut: 10, sautMs: 380,
     images: { bois: 1, pierre: 0, fibre: 2, paille: 4, pomme_de_pin: 5, gland: 6, botte: 9,
@@ -130,5 +134,5 @@
     return { coup, fin };
   }
 
-  Object.assign(K, { NATURE, PECHE, MORCEAUX, herbes, fondu, pointsMorceaux });
+  Object.assign(K, { NATURE, PECHE, MORCEAUX, GRAINES_ILE, herbes, fondu, pointsMorceaux });
 })(window);

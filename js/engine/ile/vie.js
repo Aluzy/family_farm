@@ -82,6 +82,7 @@ export function ileDuChantier(ch) {
     croissance: new Map(),
     repousse: [],
     semis: new Map(),
+    touffesSemees: new Map(),
     modifiees: new Set(),
     aSauver: new Set(),
   };
@@ -306,38 +307,35 @@ export function recolter(ile, i, jour, outil = 'main', cat = catalogue()) {
 /* ---------- les graines plantées (js/engine/ile/graines.js) ---------- */
 
 /**
- * La graine de la plante `numero` peut-elle se planter en `i` ? null, ou la raison. Pas sur le sable, ni sur l'eau (le
- * nénuphar : seulement sur l'eau) ; une case libre (ni objet, ni autre graine).
+ * Une graine peut-elle se planter en `i` ? null, ou la raison : ni sur l'eau, ni sur le sable ; une case libre (ni
+ * objet, ni autre graine).
  * @param {Ile} ile
  * @param {number} i
- * @param {number} numero
  */
-export function refusSemis(ile, i, numero, cat = catalogue()) {
-  const f = cat.fiches[numero - 1];
-  if (!f) return 'cette plante n’existe pas';
+export function refusSemis(ile, i) {
   if (!(i >= 0 && i < ile.n * ile.n) || auLarge(i)) return 'hors de l’île';
-  const sol = SOLS[ile.sol[i]].nom,
-    dansLEau = estEau(ile, i);
-  if (DATA.ILE.GRAINES.EAU.includes(f.id)) {
-    if (!dansLEau) return 'elle ne se plante que dans l’eau';
-  } else if (dansLEau) return 'pas sur l’eau';
-  if (sol === 'sable') return 'pas sur le sable';
+  if (estEau(ile, i)) return 'pas sur l’eau';
+  if (SOLS[ile.sol[i]].nom === 'sable') return 'pas sur le sable';
   if (ile.objet[i] || ile.bloque[i] || ile.semis.has(i)) return 'la place est prise';
   return null;
 }
 
 /**
- * Planter la graine de la plante `numero` en `i`, le jour `jour` : une graine plantée, qui sera une pousse puis la plante
- * (nuit). → { ok } ou { ok: false, raison }.
+ * Planter en `i`, le jour `jour`, la graine d'où sortira `plante` (l'id d'une fiche, ou « herbe_haute ») : une graine
+ * plantée, qui sera une pousse puis la plante (nuit). `objet` : la graine (son dessin, tant qu'elle est en terre).
+ * → { ok } ou { ok: false, raison }.
  * @param {Ile} ile
  * @param {number} i
- * @param {number} numero
+ * @param {string} plante
+ * @param {string} objet
  * @param {number} jour
  */
-export function planterGraine(ile, i, numero, jour, cat = catalogue()) {
-  const r = refusSemis(ile, i, numero, cat);
+export function planterGraine(ile, i, plante, objet, jour, cat = catalogue()) {
+  const r = refusSemis(ile, i);
   if (r) return refus(r);
-  ile.semis.set(i, { numero, stade: 0, jour: jour + DATA.ILE.GRAINES.NUITS[0] });
+  const f = cat.parId.get(plante);
+  if (!f && plante !== 'herbe_haute') return refus('cette plante n’existe pas');
+  ile.semis.set(i, { numero: f ? f.numero : 0, objet, stade: 0, jour: jour + DATA.ILE.GRAINES.NUITS[0] });
   marquer(ile, i);
   return OK;
 }
@@ -348,6 +346,19 @@ export function retirerSemis(ile, i) {
   ile.semis.delete(i);
   marquer(ile, i);
   return true;
+}
+
+// L'herbe haute née d'une graine d'herbe : deux touffes sur la case (les mêmes places en quinconce que les autres,
+// js/engine/ile/herbes.js), gardées par l'île (ile.touffesSemees : « x,y » → variante).
+function semerTouffes(ile, i) {
+  const x = i % ile.n,
+    y = (i - x) / ile.n;
+  for (let j = 0; j < 2; j++) {
+    const px = x * 16 + ((2 * y + j) % 2 ? 12 : 4),
+      py = y * 16 + 6 + 8 * j;
+    ile.touffesSemees.set(`${px},${py}`, (x + y + j) % 3);
+  }
+  marquer(ile, i);
 }
 
 // Le stade où une plante née d'une graine arrive : une culture mûre, un fruitier au stade « arbre » (ses fruits viendront),
@@ -401,8 +412,14 @@ export function nuit(ile, jour, cat = catalogue(), o = {}) {
     }
     ile.semis.delete(i);
     marquer(ile, i);
+    if (o.occupee && o.occupee(i)) continue;
+    if (!s.numero) {
+      semerTouffes(ile, i);
+      semis++;
+      continue;
+    }
     const f = cat.fiches[s.numero - 1];
-    if (f && !(o.occupee && o.occupee(i)) && poserObjet(ile, i, s.numero, stadeFinal(f), jour, cat).ok) semis++;
+    if (f && poserObjet(ile, i, s.numero, stadeFinal(f), jour, cat).ok) semis++;
   }
   return { pousses, repousses, semis };
 }

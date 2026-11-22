@@ -40,20 +40,38 @@ if (args.includes('--labour')) {
       if (!r.ok) console.log('labour', r.error);
     }
 }
-// (--graines : deux graines plantées à droite du point d'apparition, l'une encore graine, l'autre déjà pousse)
+// (--graines : des graines plantées à droite du point d'apparition (graine, puis pousse) et d'autres tombées au sol)
 if (args.includes('--graines')) {
-  const { ileDeLaPartie } = await import('../../js/engine/ile/jeu.js');
-  for (const [dx, g] of [
-    [2, 'graine_ile_bouleau'],
-    [3, 'graine_ile_coquelicot'],
-    [-2, 'graine_ile_carotte_sauvage'],
-  ]) {
+  const J = await import('../../js/engine/ile/jeu.js');
+  const { sorteAPlanter } = await import('../../js/engine/plantation.js');
+  const { lacher } = await import('../../js/engine/outils.js');
+  const ile = J.ileDeLaPartie(s),
+    ici = s.monde.ici,
+    W = ile.n;
+  const plantees = [
+    ['gland', 2, 0],
+    ['graine_ile_lavande', 3, 0],
+    ['spores_champignon', 4, 1],
+    ['graine_herbe', 5, 1],
+    ['pomme_de_pin', 6, 1],
+  ];
+  for (const [g, dx, stade] of plantees) {
     E.addItem(s, g, 1);
-    console.log('graine', g, JSON.stringify(E.poserBloc(s, g, s.monde.ici + dx)));
+    const r = E.poserBloc(s, sorteAPlanter(g), ici + dx - W);
+    if (r.ok) ile.semis.get(ici + dx - W).stade = stade;
+    else console.log('graine', g, r.error);
   }
-  ileDeLaPartie(s).semis.get(s.monde.ici + 3).stade = 1;
-  ileDeLaPartie(s).semis.get(s.monde.ici - 2).stade = 1;
-  (await import('../../js/engine/ile/jeu.js')).garderIle(s);
+  const x0 = (ici % W) * 16,
+    y0 = Math.floor(ici / W) * 16 + 30;
+  [
+    'graine_ile_bouleau',
+    'graine_ile_pecher_sauvage',
+    'graine_buisson',
+    'graine_herbe',
+    'spores_champignon',
+    'graine_ile_lupin',
+  ].forEach((g, k) => lacher(s, g, 1, 0, { carte: 'ferme', coup: [{ x: x0 + 20 + k * 14, y: y0 }] }));
+  J.garderIle(s);
 }
 s.awakeMs = 3 * 3600 * 1000 * (E.DATA.TEMPS.SECONDES_PAR_HEURE / 3600);
 const SAUVEGARDE = JSON.stringify({ v: s.version, t: Date.now(), s });

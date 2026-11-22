@@ -179,21 +179,40 @@
     ],
     "HERBES": { "ECHELLE": 7, "SEUIL": 0.66, "COEUR": 0.08, "DENSITE": [0.9, 0.3], "ZONE": 0.7, "FLEURS": 0.2, "DEPART": 8 },
     "//GRAINES": [
-      "Une graine pour chaque plante de l'île (js/engine/ile/graines.js ; docs/ile-300.md) : l'objet graine_ile_<plante>,",
-      "et son bloc du même nom (l'onglet Graines du mode Construire), qui la plante. CHANCE : la chance (en %) d'en avoir une",
-      "à chaque coupe, ramassage ou cueillette de la plante. NUITS : les nuits de la graine plantée à la pousse, puis de la",
-      "pousse à la plante. EXCLUES : ce qui n'est pas une plante (le décor). EAU : ce qui ne se plante que dans l'eau. AVANT : les graines d'arbre d'avant, que",
-      "l'île ne donne plus (les siennes les remplacent).",
-      "ICONES : l'icône de la graine, par famille. NOMS : le nom de chaque graine."
+      "Les graines de l'île (js/engine/ile/graines.js ; docs/ile-300.md). CHANCE : la chance (en %) qu'une coupe, un",
+      "ramassage, une cueillette ou un coup de faux donne la graine de la plante (au sol, comme le bois). NUITS : les nuits",
+      "de la graine plantée à la pousse, puis de la pousse à la plante. Ce que donne chaque plante :",
+      "- ARBRES : un arbre qui donne une graine d'avant (le feuillu, le gland ; les conifères, la pomme de pin) ;",
+      "- PROPRES : les familles dont chaque plante a sa graine à elle (graine_ile_<plante> ; NOMS) ;",
+      "- FAMILLES : une graine pour toute la famille (OBJETS) ; semée, elle donne une espèce de la famille au hasard,",
+      "  `choix` : parmi celles du biome de la case (« biome »), de son sol (« sol »), ou toutes (« tous ») ; sans espèce",
+      "  qui y pousse, n'importe laquelle. `herbeHaute` : l'herbe haute (que la faux fauche) en est une aussi ;",
+      "- les cultures sauvages : leur graine du potager (CULTURES : graines.item ou la culture elle-même) ;",
+      "- GROUPES : ce que donne une graine d'avant plantée sur l'île (la pomme de pin : un conifère du biome).",
+      "EXCLUES : ce qui n'est pas une plante (le décor). Une graine ne se plante ni sur l'eau ni sur le sable."
     ],
     "GRAINES": {
-      "CHANCE": 30,
+      "CHANCE": 50,
       "NUITS": [2, 3],
       "EXCLUES": ["souche", "tronc_couche", "bois_flotte", "pierre"],
-      "EAU": ["nenuphar"],
-      "AVANT": ["gland", "pomme_de_pin"],
-      "ICONES": { "arbre": "🌰", "buisson": "🌰", "herbe": "🌾", "champignon": "🍄‍🟫", "fleur": "🌼", "fruitier": "🫘", "culture": "🌱" },
-      "NOMS": {"feuillu": "Graine de feuillu", "bouleau": "Graine de bouleau", "sapin": "Pomme de sapin", "saule": "Graine de saule", "pin_tordu": "Pomme de pin tordu", "sapin_nain": "Graine de sapin nain", "arbre_pre": "Graine d'arbre des prés", "buisson_pre": "Graine de buisson", "ronces": "Graine de ronces", "ajonc": "Graine d'ajonc", "genet": "Graine de genêt", "rhododendron": "Graine de rhododendron", "roseaux": "Graine de roseau", "massette": "Graine de massette", "fougere": "Spores de fougère", "champignons": "Spores de champignon", "touffe_foret": "Graine d'herbe des bois", "bruyere": "Graine de bruyère", "herbe_seche": "Graine d'herbe sèche", "jonc": "Graine de jonc", "nenuphar": "Graine de nénuphar", "oyat": "Graine d'oyat", "chardon": "Graine de chardon", "touffe_mont": "Graine d'herbe de montagne", "fleurs": "Graine de fleurs des champs", "touffe_pre": "Graine d'herbe des prés", "coquelicot": "Graine de coquelicot", "pavot_californie": "Graine de pavot de Californie", "myosotis": "Graine de myosotis", "lavande": "Graine de lavande", "lupin": "Graine de lupin", "chataignier": "Châtaigne à planter", "champignons_lumineux": "Spores de champignon lumineux", "fleur_rouge": "Graine de fleur rouge", "fleur_mauve": "Graine de fleur mauve", "champignon_blanc": "Spores de champignon blanc", "champignon_jaune": "Spores de champignon jaune", "champignon_bleu": "Spores de champignon bleu", "ail_ours_sauvage": "Graine d'ail des ours", "salicorne_sauvage": "Graine de salicorne", "carotte_sauvage": "Graine de carotte sauvage", "patate_sauvage": "Plant de patate sauvage", "tomate_sauvage": "Graine de tomate sauvage", "courgette_sauvage": "Graine de courgette sauvage", "aubergine_sauvage": "Graine d'aubergine sauvage", "poivron_sauvage": "Graine de poivron sauvage", "oignon_sauvage": "Graine d'oignon sauvage", "ail_sauvage": "Gousse d'ail sauvage", "epinard_sauvage": "Graine d'épinard sauvage", "fraise_sauvage": "Graine de fraisier sauvage", "ble_sauvage": "Grain de blé sauvage", "tournesol_sauvage": "Graine de tournesol sauvage", "riz_sauvage": "Grain de riz sauvage", "houblon_sauvage": "Graine de houblon sauvage", "cacao_sauvage": "Fève de cacaoyer sauvage", "vanille_sauvage": "Bouture de vanillier sauvage", "cafe_sauvage": "Graine de caféier sauvage", "vigne_sauvage": "Pépin de vigne sauvage", "pommier_sauvage": "Pépin de pommier sauvage", "poirier_sauvage": "Pépin de poirier sauvage", "cerisier_sauvage": "Noyau de cerisier sauvage", "abricotier_sauvage": "Noyau d'abricotier sauvage", "pecher_sauvage": "Noyau de pêcher sauvage"}
+      "ARBRES": { "feuillu": "gland", "sapin": "pomme_de_pin", "pin_tordu": "pomme_de_pin", "sapin_nain": "pomme_de_pin" },
+      "GROUPES": {
+        "gland": { "plantes": ["feuillu"], "choix": "tous" },
+        "pomme_de_pin": { "plantes": ["sapin", "pin_tordu", "sapin_nain"], "choix": "biome" }
+      },
+      "PROPRES": ["arbre", "fleur", "fruitier"],
+      "FAMILLES": {
+        "buisson": { "objet": "graine_buisson", "choix": "biome" },
+        "herbe": { "objet": "graine_herbe", "choix": "sol", "herbeHaute": true },
+        "champignon": { "objet": "spores_champignon", "choix": "tous" }
+      },
+      "OBJETS": {
+        "graine_buisson": { "nom": "Graine de buisson", "icone": "🫐" },
+        "graine_herbe": { "nom": "Graine d'herbe", "icone": "🌾" },
+        "spores_champignon": { "nom": "Spores de champignon", "icone": "🍄‍🟫" }
+      },
+      "ICONES": { "arbre": "🌰", "fleur": "🌼", "fruitier": "🫘" },
+      "NOMS": {"bouleau": "Graine de bouleau", "saule": "Graine de saule", "arbre_pre": "Graine d'arbre des prés", "chataignier": "Châtaigne à planter", "fleurs": "Graine de fleurs des champs", "coquelicot": "Graine de coquelicot", "pavot_californie": "Graine de pavot de Californie", "myosotis": "Graine de myosotis", "lavande": "Graine de lavande", "lupin": "Graine de lupin", "fleur_rouge": "Graine de fleur rouge", "fleur_mauve": "Graine de fleur mauve", "pommier_sauvage": "Pépin de pommier sauvage", "poirier_sauvage": "Pépin de poirier sauvage", "cerisier_sauvage": "Noyau de cerisier sauvage", "abricotier_sauvage": "Noyau d'abricotier sauvage", "pecher_sauvage": "Noyau de pêcher sauvage"}
     },
     "//VILLAGE": [
       "Le village de l'île (js/engine/ile/village.js ; docs/ile-300.md, étapes E à H). PLACE : le bloc qui fait la place",
