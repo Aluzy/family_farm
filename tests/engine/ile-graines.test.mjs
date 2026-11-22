@@ -124,3 +124,15 @@ test('une roche cassée revient, mais pas sous une construction (elle attend qu�
   nuit(ile, 11 + f.recolte.retour[1]);
   assert.equal(ile.objet[i], f.numero, 'la construction partie, elle revient');
 });
+
+test('les spores : pas de pousse, le champignon est là la nuit suivante', () => {
+  const s = partie(),
+    ile = ileDeLaPartie(s),
+    t = s.monde.ici + 2;
+  addItem(s, 'spores_champignon', 1);
+  assert.ok(poserBloc(s, sorteAPlanter('spores_champignon'), t).ok);
+  assert.equal(ile.semis.get(t).jour, s.day + 1);
+  nuit(ile, s.day + 1);
+  assert.equal(ile.semis.has(t), false);
+  assert.equal(cat.fiches[ile.objet[t] - 1].famille, 'champignon');
+});

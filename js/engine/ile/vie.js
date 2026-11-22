@@ -149,6 +149,8 @@ function marquer(ile, i) {
   const r = regionDe(i);
   ile.modifiees.add(r);
   ile.aSauver.add(r);
+  // (les cases touchées : la scène ne refait qu'elles quand le sol n'a pas changé, js/ui/ile-sol.js)
+  (ile.casesTouchees || (ile.casesTouchees = new Set())).add(i);
 }
 
 // Si la case i devenait de l'eau, la terre resterait-elle d'un seul tenant ? Ses voisines de terre doivent rester
@@ -196,6 +198,7 @@ export function changerSol(ile, i, sol) {
   }
   if (!deEau && versEau && !laTerreResteUnie(ile, i)) return refus('l’île serait coupée en deux');
   ile.sol[i] = sol;
+  (ile.solsTouches || (ile.solsTouches = new Set())).add(i); // (la scène refait le sol de ces cases)
   ile.solVersion = (ile.solVersion ?? 0) + 1; // (l'herbe haute en dépend : herbes.js)
   marquer(ile, i);
   return OK;
@@ -335,7 +338,14 @@ export function planterGraine(ile, i, plante, objet, jour, cat = catalogue()) {
   if (r) return refus(r);
   const f = cat.parId.get(plante);
   if (!f && plante !== 'herbe_haute') return refus('cette plante n’existe pas');
-  ile.semis.set(i, { numero: f ? f.numero : 0, objet, stade: 0, jour: jour + DATA.ILE.GRAINES.NUITS[0] });
+  // (une famille sans pousse, les champignons : la plante directement, au bout de SANS_POUSSE nuits)
+  const direct = f && DATA.ILE.GRAINES.SANS_POUSSE[f.famille];
+  ile.semis.set(i, {
+    numero: f ? f.numero : 0,
+    objet,
+    stade: direct ? 1 : 0,
+    jour: jour + (direct || DATA.ILE.GRAINES.NUITS[0]),
+  });
   marquer(ile, i);
   return OK;
 }

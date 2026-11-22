@@ -181,7 +181,8 @@
     "//GRAINES": [
       "Les graines de l'île (js/engine/ile/graines.js ; docs/ile-300.md). CHANCE : la chance (en %) qu'une coupe, un",
       "ramassage, une cueillette ou un coup de faux donne la graine de la plante (au sol, comme le bois). NUITS : les nuits",
-      "de la graine plantée à la pousse, puis de la pousse à la plante. Ce que donne chaque plante :",
+      "de la graine plantée à la pousse, puis de la pousse à la plante ; SANS_POUSSE : les familles qui n'ont pas de pousse",
+      "(les champignons : là au bout de tant de nuits, la nuit suivante). Ce que donne chaque plante :",
       "- ARBRES : un arbre qui donne une graine d'avant (le feuillu, le gland ; les conifères, la pomme de pin) ;",
       "- PROPRES : les familles dont chaque plante a sa graine à elle (graine_ile_<plante> ; NOMS) ;",
       "- FAMILLES : une graine pour toute la famille (OBJETS) ; semée, elle donne une espèce de la famille au hasard,",
@@ -194,6 +195,7 @@
     "GRAINES": {
       "CHANCE": 50,
       "NUITS": [2, 3],
+      "SANS_POUSSE": { "champignon": 1 },
       "EXCLUES": ["souche", "tronc_couche", "bois_flotte", "pierre"],
       "ARBRES": { "feuillu": "gland", "sapin": "pomme_de_pin", "pin_tordu": "pomme_de_pin", "sapin_nain": "pomme_de_pin" },
       "GROUPES": {

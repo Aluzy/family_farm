@@ -199,11 +199,12 @@ if (opt('mesure', null)) {
     await cdpm.send('Profiler.start');
   }
   const fin = Date.now() + Number(opt('mesure', 8)) * 1000,
-    fleches = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
+    // (--vers ArrowRight : toujours la même flèche, pour aller vers l'eau par exemple)
+    fleches = opt('vers', null) ? [opt('vers')] : ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
   let pasN = 0;
   while (Date.now() < fin) {
     if (args.includes('--marche')) {
-      const f = fleches[pasN++ % 4];
+      const f = fleches[pasN++ % fleches.length];
       await page.keyboard.down(f);
       await page.waitForTimeout(1500);
       await page.keyboard.up(f);
@@ -305,6 +306,60 @@ if (opt('eval', null))
       }
     }, opt('eval')),
   );
+// (--action <code> : un geste joué dans la page, profilé ; `sc` : la scène de la ferme, `ici` : la case du personnage ;
+// le temps des images pendant 3 s après lui, et les fonctions qui ont pris le plus de temps)
+if (opt('action', null)) {
+  const cdpa = await ctx.newCDPSession(page);
+  await cdpa.send('Profiler.enable');
+  await cdpa.send('Profiler.setSamplingInterval', { interval: 200 });
+  await page.evaluate(() => window.mesureImages && window.mesureImages());
+  await cdpa.send('Profiler.start');
+  console.log(
+    'action',
+    await page.evaluate((c) => {
+      const g = window.CarteJeu.game(),
+        sc = g.scene.getScenes(true)[0],
+        ici = window.FarmStage.persoCase();
+      try {
+        return JSON.stringify(new Function('sc', 'ici', 'return (' + c + ')')(sc, ici));
+      } catch (e) {
+        return String(e);
+      }
+    }, opt('action')),
+  );
+  await page.waitForTimeout(Number(opt('duree', 3000)));
+  const { profile } = await cdpa.send('Profiler.stop');
+  const m = await page.evaluate(() => window.mesureImages && window.mesureImages());
+  console.log(
+    'après l’action',
+    JSON.stringify(m && { fps: Number(m.fps.toFixed(1)), pire: Number(m.pire.toFixed(1)), images: m.images }),
+  );
+  const N = new Map(profile.nodes.map((nd) => [nd.id, nd])),
+    par = new Map();
+  for (const nd of profile.nodes) for (const c of nd.children || []) par.set(c, nd.id);
+  const dt = (profile.endTime - profile.startTime) / 1000 / profile.samples.length,
+    incl = {};
+  for (const id of profile.samples) {
+    const vu = new Set();
+    for (let q = id; q !== undefined; q = par.get(q)) {
+      const f = N.get(q).callFrame,
+        k =
+          (f.functionName || '(anonyme)') +
+          ' ' +
+          (f.url || '').split('/').slice(-2).join('/') +
+          ':' +
+          (f.lineNumber + 1);
+      if (!vu.has(k)) {
+        incl[k] = (incl[k] || 0) + dt;
+        vu.add(k);
+      }
+    }
+  }
+  for (const [k, v] of Object.entries(incl)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 40))
+    if (!/\(root\)|\(program\)|\(idle\)/.test(k)) console.log('  ' + v.toFixed(0).padStart(6) + ' ms  ' + k);
+}
 mkdirSync(dirname(SORTIE), { recursive: true });
 await page.screenshot({ path: SORTIE });
 console.log(

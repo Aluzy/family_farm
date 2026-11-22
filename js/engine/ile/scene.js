@@ -9,6 +9,7 @@
    (assets/verger.png) par deux planches de plus, découpées ici (planchesDeLIle), une image par stade.
    ========================================================================== */
 
+import { DATA } from '../catalog.js';
 import { hache, teinteHerbe } from '../ferme-generee.js';
 import { BIOME, bruitDuMonde } from '../monde-gen.js';
 import { CODES_SOLS, SOLS_MONDE, solDeRegion } from '../monde-sol.js';
@@ -225,7 +226,7 @@ function finRegion(ctx, r, t0) {
       continue;
     }
     const image =
-      s.stade === 0
+      s.stade === 0 || (f && DATA.ILE.GRAINES.SANS_POUSSE[f.famille])
         ? IMAGE_SEMIS[s.objet]
         : f && f.famille === 'arbre'
           ? IMAGE_SEMIS[CONIFERES.has(f.id) ? 'pousse_pin' : 'pousse_arbre']

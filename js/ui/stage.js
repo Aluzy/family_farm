@@ -1211,8 +1211,11 @@ function semables() {
 
 let labourablesCache = { key: null, tiles: null };
 function labourables() {
-  const key = state.potager.parcelles.map((p) => p.case).join() + '|' + brokenRocks(state).join(';') + '|' + fellenTrees(state).join(';');
-  if (labourablesCache.key !== key) labourablesCache = { key, tiles: hoeableTiles(state) };
+  // (l'île de 300 × 300 : les cases autour du personnage seulement, revues quand il a changé de carré de 8 cases)
+  const ile = estPartieIle(state), ici = ile && window.FarmStage && FarmStage.persoCase ? FarmStage.persoCase() : -1;
+  const W = ile ? farmTerrain(state).LARGEUR : 0, centre = ici >= 0 ? (Math.floor(ici / W / 8) * 8 + 4) * W + Math.floor((ici % W) / 8) * 8 + 4 : null;
+  const key = state.potager.parcelles.map((p) => p.case).join() + '|' + brokenRocks(state).join(';') + '|' + fellenTrees(state).join(';') + '|' + centre + '|' + (ile ? ileDeLaPartie(state).version : 0);
+  if (labourablesCache.key !== key) labourablesCache = { key, tiles: hoeableTiles(state, centre !== null ? { centre, rayon: 28 } : null) };
   return labourablesCache.tiles;
 }
 

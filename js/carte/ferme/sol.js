@@ -137,8 +137,21 @@
       // est dessinée (sinon, elle le sera à jour en approchant de la vue)
       if (this.ctx.monde && !this.mondeAbonne) {
         this.mondeAbonne = true;
-        this.ctx.monde.quandRegion((cle) => {
+        this.ctx.monde.quandRegion((cle, info) => {
           const r = this.regions && this.regions.get(cle);
+          // (l'île de 300 × 300 : des cases dont le sol n'a pas changé, docs/ile-300.md : ces cases et leurs voisines
+          // repeintes (les petites plantes y sont peintes), les blocs de végétation qui les portent refaits ; rien d'autre)
+          if (info && info.cases) {
+            if (!r || !r.tex) return;
+            const W = this.grid.cols, cells = new Set();
+            for (const i of info.cases) {
+              const c = i % W, y = (i / W) | 0;
+              for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (c + dx >= r.c0 && c + dx < r.c1 && y + dy >= r.r0 && y + dy < r.r1) cells.add((y + dy) * W + c + dx);
+            }
+            if (cells.size) this.paintRegion(r, null, [...cells].sort((a, b) => a - b));
+            this.vegetationCases(r, info.cases);
+            return;
+          }
           if (r && r.tex) { this.paintRegion(r, null, this.regionParts(r).monde); this.eauMondeRegion(r); this.eauMondeCle = null; if (r.vegBlocs) this.dropVegetation(r); this.vegetationRegion(r); this.fauneRegion(r); }
           // (le flanc des falaises lit les cases voisines : ceux des régions d'à côté, refaits)
           if (r) {

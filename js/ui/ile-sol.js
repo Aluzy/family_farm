@@ -110,11 +110,57 @@ function client(ile, graine, taille) {
     }, 0);
   };
   // l'île a changé : les régions faites qu'elle touche sont refaites tout de suite (la scène les repeint)
+  // (une région faite dont seules des cases ont changé, pas leur sol : ses listes refaites d'après l'île, ses couches de sol
+  // gardées ; la scène ne repeint que ces cases, sol.js quandRegion)
+  const changees = (cle, cases) => {
+    const a = regions.get(cle);
+    const r = ctx.finRegion(a, Date.now());
+    regions.set(cle, r);
+    for (const f of abonnes) f(cle, { cases });
+  };
+  // l'île a changé : les régions faites qu'elle touche sont refaites tout de suite (la scène les repeint) ; quand seules
+  // des plantes ont changé (un geste, une graine qui pousse), seulement leurs cases (docs/ile-300.md : un geste refaisait
+  // toute une région de 64 × 64 cases, son sol, toutes ses plantes : jusqu'à une seconde sur téléphone)
   const suivre = () => {
     if ((ile.version ?? 0) === version) return;
     version = ile.version ?? 0;
-    for (const cle of regionsDeLaScene(regionsModifiees(ile), taille)) {
+    const cases = ile.casesTouchees ? [...ile.casesTouchees] : [],
+      sols = ile.solsTouches ? new Set(ile.solsTouches) : new Set();
+    if (ile.casesTouchees) ile.casesTouchees.clear();
+    if (ile.solsTouches) ile.solsTouches.clear();
+    const cleDe = (X, Y) => Math.floor(X / taille) + ',' + Math.floor(Y / taille);
+    // les cases de chaque région de la scène (une case du bord d'une région est aussi peinte par sa voisine)
+    const parRegion = new Map(),
+      solParRegion = new Set();
+    for (const i of cases) {
+      const X = i % N,
+        Y = (i - X) / N;
+      for (const [dx, dy] of [
+        [0, 0],
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ]) {
+        const k = cleDe(Math.max(0, Math.min(N - 1, X + dx)), Math.max(0, Math.min(N - 1, Y + dy)));
+        if (!parRegion.has(k)) parRegion.set(k, new Set());
+        parRegion.get(k).add(i);
+        if (sols.has(i)) solParRegion.add(k);
+      }
+    }
+    // (les régions de l'île modifiées : seulement pour un changement sans ses cases, une partie chargée par exemple)
+    const deLIle = regionsDeLaScene(regionsModifiees(ile), taille);
+    const touchees = cases.length ? new Set(parRegion.keys()) : new Set(deLIle);
+    for (const cle of touchees) {
       if (!regions.has(cle)) continue;
+      if (parRegion.has(cle) && !solParRegion.has(cle)) {
+        changees(cle, [...parRegion.get(cle)]);
+        continue;
+      }
       const [rx, ry] = cle.split(',').map(Number);
       recu(regionDeLIle(ctx, rx, ry));
     }
