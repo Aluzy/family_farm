@@ -40,6 +40,16 @@ let planches = null;
  * Les deux planches de plus de l'île : { cultures, fruitiers }, chacune { sortes: [{ nom, genre, variantes }],
  * table: { nom: [[x, y, l, h, px, py]…] }, code: Map(numéro de fiche → rang de sa sorte) }.
  */
+// La planche des graines plantées : la graine au sol (le gland), puis la pousse (pousse_arbre) de assets/ramassables.png
+// (16 × 16 par image ; js/carte/ferme/config.js RAMASSABLES.frames).
+export const SEMIS = {
+  sortes: [
+    { nom: 'graine_plantee', genre: 'basse', variantes: 1 },
+    { nom: 'pousse', genre: 'basse', variantes: 1 },
+  ],
+  table: { graine_plantee: [[6 * 16, 0, 16, 16, 8, 15]], pousse: [[8 * 16, 0, 16, 16, 8, 15]] },
+};
+
 export function planchesDeLIle(cat = catalogue()) {
   if (planches) return planches;
   const faire = (planche, cadre) => {
@@ -137,7 +147,7 @@ function finRegion(ctx, r, t0) {
       marche[y * cl + x] = marchable(ile, i) ? 1 : 0;
     }
   }
-  const listes = { vegetation: [[], []], roches: [[], []], cultures: [[], []], fruitiers: [[], []] };
+  const listes = { vegetation: [[], []], roches: [[], []], cultures: [[], []], fruitiers: [[], []], semis: [[], []] };
   // (les objets de la région et de son bord : le bord se peint aussi ; les images, celles de la région seule)
   for (let Y = y0; Y < y0 + h; Y++) {
     for (let X = x0; X < x0 + l; X++) {
@@ -175,6 +185,22 @@ function finRegion(ctx, r, t0) {
       listes[cle][basse ? 1 : 0].push(code, px, py, v);
     }
   }
+  // les graines plantées et les pousses (graines.js) : une culture, ses premières images ; un fruitier, son jeune arbre ;
+  // le reste, une graine au sol puis une pousse (SEMIS : assets/ramassables.png)
+  for (const [i, s] of ile.semis) {
+    const X = i % N,
+      Y = (i - X) / N;
+    if (X < cx0 || X >= cx0 + cl || Y < cy0 || Y >= cy0 + ch) continue;
+    const f = fiches[s.numero];
+    if (!f) continue;
+    const px = X * T + 8,
+      py = Y * T + 13;
+    if (f.dessin.planche === 'crops')
+      listes.cultures[0].push(P.cultures.code.get(s.numero), px, py, Math.min(s.stade, f.stades - 1));
+    else if (f.dessin.planche === 'verger' && s.stade === 1)
+      listes.fruitiers[0].push(P.fruitiers.code.get(s.numero), px, py, 0);
+    else listes.semis[1].push(s.stade, px, py + 1, 0);
+  }
   const sortie = (c) => ({ images: Int32Array.from(listes[c][0]), basses: Int32Array.from(listes[c][1]) });
   return {
     ...r,
@@ -184,6 +210,7 @@ function finRegion(ctx, r, t0) {
     roches: sortie('roches'),
     cultures: sortie('cultures'),
     fruitiers: sortie('fruitiers'),
+    semis: sortie('semis'),
     lieux: VIDE(),
     hameau: VIDE(),
     faune: new Int32Array(0),

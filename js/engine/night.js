@@ -6,7 +6,7 @@ import { expiringSoon, penalite, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
 import { feedFamily, newNightStats } from './family.js';
 import { jaugeFamille } from './repas.js';
-import { growDue, readyCrops } from './crops.js';
+import { allPlots, growDue, readyCrops } from './crops.js';
 import { amitieDe } from './amitie.js';
 import { invitationsNuit } from './invitations.js';
 import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
@@ -29,7 +29,7 @@ import { affinerTonnelets } from './tonnelets.js';
 import { composter } from './compost.js';
 import { pousserBacs } from './bacs.js';
 import { pousserMassifs } from './massifs.js';
-import { enLot, nuitCouchee, nuitSansCouchage } from './blocs.js';
+import { casesBaties, enLot, nuitCouchee, nuitSansCouchage } from './blocs.js';
 import { distribuerGrain } from './distributeur.js';
 import { chainesDeLaJournee } from './chaines.js';
 import { horlogeVivante } from './temps-monde.js';
@@ -385,7 +385,11 @@ function nuitEnLot(state) {
   // une île partagée (l'horloge vivante) l'a, au même pas chez tous (sa nuit vient dans les pas : temps-monde.js)
   if (!state.mondePartage || horlogeVivante(state)) repousseMonde(state);
   // l'île de 300 × 300 : ses plantes poussent, ce qui a été pris repousse (js/engine/ile/vie.js nuit)
-  if (estPartieIle(state)) nuitIle(ileDeLaPartie(state), state.day);
+  if (estPartieIle(state)) {
+    // (une roche cassée ne revient pas sous une construction ; une plante née d'une graine non plus)
+    const baties = casesBaties(state), plots = new Set(allPlots(state).map((p) => p.case));
+    nuitIle(ileDeLaPartie(state), state.day, undefined, { occupee: (i) => baties.has(i) || plots.has(i) });
+  }
   composter(state); // ce qui a périmé cette nuit va au bac à compost (compost.js ; après la péremption)
   remplirRuches(state); // les abeilles remplissent les ruches
   affinerTonnelets(state); // la tomme s'affine, le moût fermente (tonnelets.js)

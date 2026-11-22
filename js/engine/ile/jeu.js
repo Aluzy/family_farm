@@ -13,7 +13,7 @@
 import { DATA } from '../catalog.js';
 import { ILE } from './reglages.js';
 import { depuisSauvegarde, versSauvegarde } from './sauvegarde.js';
-import { auLarge, estEau, indice, retirerObjet } from './vie.js';
+import { auLarge, estEau, indice, retirerObjet, retirerSemis } from './vie.js';
 import { herbesParCase, touffesDeLIle, touffesVisibles } from './herbes.js';
 
 const P = () => DATA.ILE.PARTIE;
@@ -125,7 +125,9 @@ export function terrainDeLIle(state) {
  */
 export function degagerIle(state, t) {
   const ile = ileDeLaPartie(state);
-  if (!ile || !Number.isInteger(t) || t < 0 || t >= ile.n * ile.n || !ile.objet[t] || ile.bloque[t]) return;
+  if (!ile || !Number.isInteger(t) || t < 0 || t >= ile.n * ile.n) return;
+  retirerSemis(ile, t); // (une graine plantée, une pousse)
+  if (!ile.objet[t] || ile.bloque[t]) return;
   retirerObjet(ile, t);
 }
 

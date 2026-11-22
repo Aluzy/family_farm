@@ -40,6 +40,21 @@ if (args.includes('--labour')) {
       if (!r.ok) console.log('labour', r.error);
     }
 }
+// (--graines : deux graines plantées à droite du point d'apparition, l'une encore graine, l'autre déjà pousse)
+if (args.includes('--graines')) {
+  const { ileDeLaPartie } = await import('../../js/engine/ile/jeu.js');
+  for (const [dx, g] of [
+    [2, 'graine_ile_bouleau'],
+    [3, 'graine_ile_coquelicot'],
+    [-2, 'graine_ile_carotte_sauvage'],
+  ]) {
+    E.addItem(s, g, 1);
+    console.log('graine', g, JSON.stringify(E.poserBloc(s, g, s.monde.ici + dx)));
+  }
+  ileDeLaPartie(s).semis.get(s.monde.ici + 3).stade = 1;
+  ileDeLaPartie(s).semis.get(s.monde.ici - 2).stade = 1;
+  (await import('../../js/engine/ile/jeu.js')).garderIle(s);
+}
 s.awakeMs = 3 * 3600 * 1000 * (E.DATA.TEMPS.SECONDES_PAR_HEURE / 3600);
 const SAUVEGARDE = JSON.stringify({ v: s.version, t: Date.now(), s });
 // (--foret : le personnage repart du cœur de la forêt la plus dense, le carré de 16 × 16 qui a le plus d'objets)

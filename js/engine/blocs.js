@@ -28,6 +28,9 @@ import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
 import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';
 import { degagerIle } from './ile/jeu.js';import { refusPoseIle } from './ile/village.js';
+import { ileDeLaPartie } from './ile/jeu.js';
+import { planterGraine as planterGraineIle, refusSemis } from './ile/vie.js';
+import { numeroDe } from './ile/graines.js';
 
 
 
@@ -979,6 +982,14 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
   if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.ornement ? `Plus de ${s.nom.toLowerCase()} : achète-en un avec des gemmes (💎, avec le jeu en ligne).` : s.cheminee || s.fontaine || s.enseigne || s.boite_lettres || s.boutique ? `Plus de ${s.nom.toLowerCase()} : achète-en une avec des gemmes (💎, avec le jeu en ligne).` : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en un dans un hameau (l'ébéniste de Bois-Joli, les tapis des Genêts).` : s.grimpant || s.guirlande ? `Plus de ${s.nom.toLowerCase()} : achète-en avec des gemmes (💎, avec le jeu en ligne).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : s.massif ? `Plus de ${DATA.OBJETS[s.objet].nom.toLowerCase()} : on en trouve en cueillant les fleurs sauvages du grand monde.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
+  // (l'île : une graine se plante, elle ne se bâtit pas : js/engine/ile/graines.js)
+  if (s.ileGraine) {
+    const ile = ileDeLaPartie(state);
+    if (!ile) return { ok: false, raison: 'Les graines se plantent sur l\'île.' };
+    if (blocAt(state, tile) || solAt(state, tile) || allPlots(state).some((p) => p.case === tile)) return { ok: false, raison: 'La place est prise.' };
+    const r = refusSemis(ile, tile, numeroDe(s.ileGraine));
+    return r ? { ok: false, raison: `${s.nom} : ${r}.` } : { ok: true };
+  }
   // (l'île : une seule place, un seul port, au bord de la mer : js/engine/ile/village.js)
   const refusIle = refusPoseIle(state, sorte, empriseMeuble(state, sorte, tile, sens) || [tile]);
   if (refusIle) return { ok: false, raison: refusIle };
@@ -1119,6 +1130,8 @@ export function deplacerStatus(state, de, vers) {
 // Pose `sorte` sur `tile` (un meuble qui tourne : dans le sens `sens`) ; l'herbe haute des cases
 // voisines qui déborde sur ce qui est bâti est foulée (fauchée, sans paille : foulerAutour).
 export function poserBloc(state, sorte, tile, sens = 0, variante = null) {
+  // (l'île : une graine plantée, pas un bloc posé ; js/engine/ile/graines.js)
+  if (sorteDe(sorte) && sorteDe(sorte).ileGraine) return planterLaGraine(state, sorte, tile);
   const tourne = tourneBloc(sorte);
   const r = poser(state, sorte, tile, tourne ? sens : 0);
   if (r.ok) {
@@ -1132,6 +1145,18 @@ export function poserBloc(state, sorte, tile, sens = 0, variante = null) {
     noter('pose', { sorte });
   }
   return r;
+}
+
+// Planter la graine `sorte` en `tile` (l'île) : la graine quitte l'inventaire, l'île la fait pousser.
+function planterLaGraine(state, sorte, tile) {
+  const st = poseStatus(state, sorte, tile);
+  if (!st.ok) return fail(st.raison);
+  const s = sorteDe(sorte);
+  const r = planterGraineIle(ileDeLaPartie(state), tile, numeroDe(s.ileGraine), state.day);
+  if (!r.ok) return fail(r.raison);
+  takeItem(state, s.objet, 1);
+  noter('pose', { sorte });
+  return { ok: true, sorte, case: tile, plantee: true };
 }
 
 function poser(state, sorte, tile, sens = 0) {

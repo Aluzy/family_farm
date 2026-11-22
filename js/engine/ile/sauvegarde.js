@@ -115,6 +115,7 @@ export function versSauvegarde(ile, cat = catalogue()) {
     table: tableDesNumeros(cat),
     croissance: [...ile.croissance],
     repousse: ile.repousse.map((r) => [r.i, r.numero, r.jour]),
+    semis: [...ile.semis].map(([i, s]) => [i, s.numero, s.stade, s.jour]),
     ...coderTableaux(ile),
   };
 }
@@ -142,6 +143,12 @@ export function depuisSauvegarde(s, cat = catalogue()) {
     repousse: s.repousse
       .map(([i, numero, jour]) => ({ i, numero: nouveau[numero] ?? 0, jour }))
       .filter((r) => r.numero),
+    // (les graines plantées : absentes d'une sauvegarde d'avant les graines)
+    semis: new Map(
+      (s.semis || [])
+        .map(([i, numero, stade, jour]) => [i, { numero: nouveau[numero] ?? 0, stade, jour }])
+        .filter(([, x]) => x.numero),
+    ),
     modifiees: new Set(),
     aSauver: new Set(),
   };
@@ -185,6 +192,7 @@ export function versSauvegardeRegions(ile, cat = catalogue()) {
     table: tableDesNumeros(cat),
     croissance: [...ile.croissance],
     repousse: ile.repousse.map((x) => [x.i, x.numero, x.jour]),
+    semis: [...ile.semis].map(([i, s]) => [i, s.numero, s.stade, s.jour]),
     regions,
   };
 }
@@ -201,6 +209,7 @@ export function fusionnerRegions(entiere, partielles) {
   const t = decoderTableaux(entiere, N * N);
   let repousse = entiere.repousse;
   let croissance = entiere.croissance;
+  let semis = entiere.semis || [];
   const versEntiere = new Map(entiere.table.map((id, k) => [id, k]));
   const table = [...entiere.table];
   for (const p of partielles) {
@@ -224,8 +233,9 @@ export function fusionnerRegions(entiere, partielles) {
     }
     repousse = p.repousse.map(([i, n, jour]) => [i, numero[n] ?? 0, jour]);
     croissance = p.croissance;
+    semis = (p.semis || []).map(([i, n, stade, jour]) => [i, numero[n] ?? 0, stade, jour]);
   }
-  return { ...entiere, table, croissance, repousse, ...coderTableaux(t) };
+  return { ...entiere, table, croissance, repousse, semis, ...coderTableaux(t) };
 }
 
 /** Le nombre de régions (pour les tests). */

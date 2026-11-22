@@ -22,7 +22,16 @@ export function buildCatalog(raw) {
   registerDishItems(data);
   // (le chantier « l'île à bâtir », fiche I4 : les prix de l'île, déduits des recettes ; le jeu d'avant garde les siens)
   data.PRIX_ILE = prixDeLIle(data);
+  for (const f of COMPLEMENTS) f(data);
   return data;
+}
+
+// Ce que des modules ajoutent au catalogue (les graines de l'île : js/engine/ile/graines.js) : appliqué à DATA quand
+// le module s'inscrit, et à chaque catalogue refait (buildCatalog).
+const COMPLEMENTS = [];
+export function completerCatalogue(f) {
+  COMPLEMENTS.push(f);
+  f(DATA);
 }
 
 export const DATA = buildCatalog(RAW_DATA);
