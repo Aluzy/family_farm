@@ -17,9 +17,6 @@ import { auLarge, estEau, indice } from './vie.js';
 
 const P = () => DATA.ILE.PARTIE;
 
-/** Une partie neuve se joue-t-elle sur l'île de 300 × 300 (ILE.PARTIE.ACTIVE) ? */
-export const ileActive = () => P().ACTIVE === true;
-
 /**
  * La partie se joue-t-elle sur l'île de 300 × 300 (sa sauvegarde porte une île) ?
  * @param {object} state
@@ -97,7 +94,12 @@ export function terrainDeLIle(state) {
     LIGNES: Array.from({ length: n }, (_, y) => rangee(ile, y)),
     ROCHERS: {},
     ARBRES: {},
-    ZONES: {},
+    // (les repères des anciennes zones de culture, que lisent le joueur automatique et les outils d'essai pour bâtir
+    // « près des cultures » : à côté du point d'apparition)
+    ZONES: {
+      1: { X: ILE.APPARITION.x + 3, Y: ILE.APPARITION.y - 2, COLONNES: 5 },
+      2: { X: ILE.APPARITION.x - 12, Y: ILE.APPARITION.y + 4, COLONNES: 8 },
+    },
     FERME: { X: 0, Y: 0, LARGEUR: n, HAUTEUR: n },
     ILE: true,
   };
@@ -108,8 +110,7 @@ export function terrainDeLIle(state) {
 /* ---------- une partie neuve sur l'île (C18) ---------- */
 
 /**
- * Installe l'île de la graine `graine` dans une partie neuve (js/engine/depart.js createNewGame, quand ILE.PARTIE
- * est allumé) : l'île (state.ile), la graine de la carte, le personnage au point d'apparition (state.monde.ici), rien de
+ * Installe l'île de la graine `graine` dans une partie neuve (js/engine/depart.js createNewGame) : l'île (state.ile), la graine de la carte, le personnage au point d'apparition (state.monde.ici), rien de
  * bâti ni de labouré, et ce qu'on a en plus en arrivant (PARTIE.INVENTAIRE : la tente). Le jeu en ligne est fermé
  * sur l'île (C19).
  * @param {object} state

@@ -176,10 +176,10 @@ test('données : chaque culture connaît sa découpe sur la carte', () => {
 
 /* ---------- version 1.12 (v2, lot 8) : le départ d'une nouvelle partie ---------- */
 
-test('une nouvelle partie : sur sa terre sauvage, 1 500 pièces, 40 conserves, rien de bâti', () => {
+test('une nouvelle partie : sur l\'île (docs/ile-300.md), 1 500 pièces, 40 conserves, une tente, rien de bâti', () => {
   const s = createNewGame(1);
   assertEqual(farmSeed(s), graineDemenagement(s), 'sa ferme : celle de sa graine');
-  assertEqual([s.pieces, inventoryCounts(s), s.potager.parcelles, s.potager.houe, blocsPoses(s)], [1500, { conserve: 40 }, [], false, {}]);
+  assertEqual([s.pieces, inventoryCounts(s), s.potager.parcelles, s.potager.houe, blocsPoses(s)], [1500, { conserve: 40, tente: 1 }, [], false, {}]);
   assertEqual([houseRepaired(s), farmOpen(s), tankCapacity(s), s.unlockedTabs.includes('comptoir')], [false, false, 0, false]);
   assertEqual(['panneau', 'batterie', 'pompe', 'reservoir'].map((t) => isOwned(starterOf(s, t))), [false, false, false, false]);
   assertEqual([s.panneaux[0].allume, s.pompe.allume, s.batteries[0].allume], [false, false, false]);

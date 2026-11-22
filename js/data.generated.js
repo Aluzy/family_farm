@@ -3551,6 +3551,7 @@ export const RAW_DATA = {
         "nom": "Maison",
         "icone": "🏠",
         "blocs": [
+          "tente",
           "paillasse",
           "boite_nourriture",
           "boite_aux_lettres",
@@ -9966,7 +9967,7 @@ export const RAW_DATA = {
       "DEPART": { "pierres": 3, "bois_flotte": 3, "distance": [2, 7] }
     },
     "VIE": { "REPOUSSE": [5, 8], "SAUVEGARDE": 1 },
-    "PARTIE": { "ACTIVE": false, "INVENTAIRE": { "tente": 1 }, "TENTE": { "places": 4 } },
+    "PARTIE": { "INVENTAIRE": { "tente": 1 }, "TENTE": { "places": 4 } },
     "ESPECES": {
       "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor", "roche"],
       "ROCHES": [

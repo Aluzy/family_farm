@@ -160,14 +160,12 @@
       "SAUVEGARDE": 1
     },
     "//PARTIE": [
-      "La partie sur l'île (docs/ile-300.md, étape 7 : js/engine/ile/jeu.js). ACTIVE : une partie neuve se joue sur l'île",
-      "  de 300 × 300 (éteint pendant le chantier : le jeu d'avant tourne encore ; allumé à l'étape 7e). L'île devient la",
-      "  ferme (C17) : une seule grille, où l'on bâtit, laboure et plante partout. On y arrive sans rien de bâti (C18) :",
+      "La partie sur l'île (docs/ile-300.md, étape 7 : js/engine/ile/jeu.js) : toute partie neuve se joue sur l'île de",
+      "  300 × 300. L'île devient la ferme (C17) : une seule grille, où l'on bâtit, laboure et plante partout. On y arrive sans rien de bâti (C18) :",
       "  INVENTAIRE, ce qu'on a en plus en arrivant (une tente, qu'on pose au sol pour dormir) ; TENTE.places : combien de",
       "  la famille dorment sous une tente posée. Le jeu en ligne est fermé sur l'île (C19)."
     ],
     "PARTIE": {
-      "ACTIVE": false,
       "INVENTAIRE": { "tente": 1 },
       "TENTE": { "places": 4 }
     },

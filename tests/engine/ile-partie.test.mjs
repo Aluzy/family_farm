@@ -1,14 +1,14 @@
 /* ==========================================================================
    Tests du moteur : la partie sur l'île de 300 × 300 (js/engine/ile/jeu.js ; docs/ile-300.md, étape 7a).
-   Avec ILE.PARTIE allumé le temps du test : une partie neuve s'installe sur l'île (C17 : l'île devient la
+   Une partie neuve s'installe sur l'île (C17 : l'île devient la
    ferme ; C18 : rien de bâti, une tente à poser ; C19 : pas de jeu en ligne) ; le terrain de la ferme vient
    de l'île et suit ses changements ; l'île se garde dans la partie et s'y relit ; la tente posée fait dormir
-   la famille. Éteint, une partie neuve reste celle d'avant.
+   la famille.
    Lancer seul : node --test tests/engine/ile-partie.test.mjs (ou node tests/run-tests.mjs ile-partie).
    ========================================================================== */
 
 import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
+import { test } from 'node:test';
 import { DATA } from '../../js/engine/catalog.js';
 import { couchages, nuitCouchee, poserBloc } from '../../js/engine/blocs.js';
 import { createNewGame } from '../../js/engine/depart.js';
@@ -19,24 +19,7 @@ import { enLigneOuvert, estPartieIle, garderIle, ileDeLaPartie, terrainDeLIle } 
 
 const N = ILE.TAILLE;
 const DEPART = indice(ILE.APPARITION.x, ILE.APPARITION.y);
-let avant;
-before(() => {
-  avant = DATA.ILE.PARTIE.ACTIVE;
-  DATA.ILE.PARTIE.ACTIVE = true;
-});
-after(() => {
-  DATA.ILE.PARTIE.ACTIVE = avant;
-});
-
 const lettre = (T, t) => T.LIGNES[Math.floor(t / T.LARGEUR)][t % T.LARGEUR];
-
-test('éteint (par défaut), une partie neuve reste celle d’avant', () => {
-  DATA.ILE.PARTIE.ACTIVE = false;
-  const s = createNewGame(7);
-  DATA.ILE.PARTIE.ACTIVE = true;
-  assert.equal(estPartieIle(s), false);
-  assert.equal(avant, false, 'ILE.PARTIE.ACTIVE reste éteint pendant le chantier (allumé à l’étape 7e)');
-});
 
 test('une partie neuve sur l’île : l’île, le personnage au point d’apparition, rien de bâti, une tente, pas en ligne', () => {
   const s = createNewGame(7);
