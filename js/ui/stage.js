@@ -91,6 +91,8 @@ import { allerAuPuits, puiserFromStage } from './cruche.js';
 import { surbrillanceDidacticiel } from './didacticiel.js';
 import { surbrillanceObjectifs } from './objectifs.js';
 import { surbrillanceIle } from './didacticiel-ile.js';
+import { solDeLIle } from './ile-sol.js';
+import { estPartieIle, ileDeLaPartie } from '../engine/ile/jeu.js';
 import { etapeDidacticiel, horsDeLaFerme } from '../engine/didacticiel.js';
 import { alerteFaim, alerteSortie, coiffeCarte, vitessePied } from '../engine/equipement.js';
 import { plantationModele } from './plantation.js';
@@ -1121,6 +1123,8 @@ function stageParcelle(id) {
 // Le sol du grand monde pour la carte (js/ui/monde-sol.js), et les cases que ce qui y est pris rend
 // à la marche (casesOuvertesMonde, d'après la partie en cours).
 function mondeDeLaCarte() {
+  // (l'île de 300 × 300, docs/ile-300.md : son sol d'après l'île vivante de la partie)
+  if (estPartieIle(state)) return solDeLIle(ileDeLaPartie(state), state.carte.graine, MONDE.REGION);
   const sol = solDuMonde(farmTerrain(state));
   // (fiche I2 : les ponts de planches posés s'ouvrent aussi ; le moteur lit ce sol pour bâtir dehors, dehors.js)
   if (sol) sol.ouvertes = () => (ouvertesAvecPonts());

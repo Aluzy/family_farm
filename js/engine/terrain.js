@@ -3,7 +3,7 @@ import { genererFerme } from './ferme-generee.js';
 import { casesDeRegion, genererMonde, regionDeCase, regionsDuRect } from './monde.js';
 import { niveauPort } from './port.js';
 import { fermeVierge } from './village.js';
-import { estPartieIle, terrainDeLIle } from './ile/jeu.js';
+import { carteDeLIle, estPartieIle, terrainDeLIle } from './ile/jeu.js';
 
 /* ---------- le terrain de la ferme ---------- */
 
@@ -120,7 +120,7 @@ export function farmSeed(state) {
 // tuiles : la scène y met ceux de la carte de Tiled), ou null : la scène charge la carte de Tiled.
 export function farmMap(state) {
   // (l'île de 300 × 300 n'a pas de carte au format de Tiled : la scène la peint d'après l'île, étape 7b)
-  if (estPartieIle(state)) return null;
+  if (estPartieIle(state)) return carteDeLIle(state);
   const g = farmSeed(state);
   return g === null ? null : genererMonde(g, niveauPort(state), fermeVierge(state)).carte;
 }

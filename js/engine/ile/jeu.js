@@ -136,4 +136,70 @@ export function installerIle(state, graine, ajouter, creer) {
  * Le jeu en ligne est-il ouvert à cette partie ? Pas sur l'île (C19).
  * @param {object} state
  */
+/**
+ * La carte de la scène pour l'île (le format de Tiled qu'elle attend) : vide, de la taille de l'île ; tout son sol
+ * vient de ctx.monde (js/ui/ile-sol.js), ses constructions de la partie.
+ * @param {object} state
+ */
+export function carteDeLIle(state) {
+  if (!estPartieIle(state)) return null;
+  const n = ILE.TAILLE,
+    vide = () => new Array(n * n).fill(0);
+  const couche = (id, name) => ({
+    id,
+    name,
+    type: 'tilelayer',
+    width: n,
+    height: n,
+    x: 0,
+    y: 0,
+    opacity: 1,
+    visible: true,
+    data: vide(),
+  });
+  const groupe = (id, name) => ({
+    id,
+    name,
+    type: 'objectgroup',
+    draworder: 'topdown',
+    x: 0,
+    y: 0,
+    opacity: 1,
+    visible: true,
+    objects: [],
+  });
+  const noms = [
+    'ground',
+    'contour_herbe',
+    'plantes_pierres',
+    'layer_tree_4',
+    'layer_tree_3',
+    'layer_tree_2',
+    'layer_tree_1',
+    'layer_tree_0',
+  ];
+  return {
+    type: 'map',
+    orientation: 'orthogonal',
+    renderorder: 'right-down',
+    infinite: false,
+    width: n,
+    height: n,
+    tilewidth: 16,
+    tileheight: 16,
+    nextlayerid: noms.length + 4,
+    nextobjectid: 1,
+    graine: state.carte.graine,
+    layers: [
+      ...noms.map((nm, k) => couche(k + 1, nm)),
+      groupe(noms.length + 1, 'batiment'),
+      groupe(noms.length + 2, 'herbe_haute'),
+      groupe(noms.length + 3, 'passages'),
+    ],
+    tilesets: [],
+    regionsPleines: [],
+    ile: true,
+  };
+}
+
 export const enLigneOuvert = (state) => !estPartieIle(state);

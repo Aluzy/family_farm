@@ -67,6 +67,10 @@
     // les hameaux bâtis (fiche 7a, js/engine/monde-hameaux.js : leurs murs, leurs meubles, leurs
     // clôtures, leurs objets ; scripts/carte/hameaux.py) ; leurs toits : hameaux.js
     { cle: 'hameaux', json: 'hameaux_cases', donnees: 'hameau', sortes: 'hameauSortes' },
+    // l'île de 300 × 300 (docs/ile-300.md) : ses cultures sauvages (crops.png) et ses fruitiers (verger.png), une image
+    // par stade, découpées d'après la table que donne ctx.monde (js/engine/ile/scene.js planchesDeLIle)
+    { cle: 'ile_cultures', table: 'culturesTable', donnees: 'cultures', sortes: 'cultures', ile: true },
+    { cle: 'ile_fruitiers', table: 'fruitiersTable', donnees: 'fruitiers', sortes: 'fruitiers', ile: true },
   ];
   // (PRES et LOIN : 96 et 384 px, ou 32 et 192 en qualité « économie » : CarteKit.reglages, fiche 9a)
   const BLOC = 16, MASQUE = 4, ECUME = 240;
@@ -84,7 +88,8 @@
       if (!M || !M.sortes) return null;
       const planches = [];
       for (const P of PLANCHES) {
-        const table = this.cache.json.get(P.json);
+        if (P.ile && !M.ile300) continue;
+        const table = P.table ? M[P.table] : this.cache.json.get(P.json);
         if (!table || !this.has(P.cle) || !M[P.sortes]) return null;
         const tex = this.textures.get(P.cle), src = tex.getSourceImage();
         let d = null;

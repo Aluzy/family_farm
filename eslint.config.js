@@ -16,6 +16,7 @@ const NOUVEAUX = [
   'eslint.config.js',
   'js/engine/ile.js',
   'js/engine/ile/**/*.js',
+  'js/ui/ile-sol.js',
   'scripts/ile/**/*.mjs',
   'tests/engine/ile*.test.mjs',
 ];

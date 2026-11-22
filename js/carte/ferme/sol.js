@@ -139,7 +139,7 @@
         this.mondeAbonne = true;
         this.ctx.monde.quandRegion((cle) => {
           const r = this.regions && this.regions.get(cle);
-          if (r && r.tex) { this.paintRegion(r, null, this.regionParts(r).monde); this.eauMondeRegion(r); this.eauMondeCle = null; this.vegetationRegion(r); this.fauneRegion(r); }
+          if (r && r.tex) { this.paintRegion(r, null, this.regionParts(r).monde); this.eauMondeRegion(r); this.eauMondeCle = null; if (r.vegBlocs) this.dropVegetation(r); this.vegetationRegion(r); this.fauneRegion(r); }
           // (le flanc des falaises lit les cases voisines : ceux des régions d'à côté, refaits)
           if (r) {
             for (const v of this.regions.values()) {

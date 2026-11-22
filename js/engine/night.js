@@ -21,6 +21,8 @@ import { noteTutorialSleep } from './alerts.js';
 import { collectLeftovers } from './ramassage.js';
 import { regrowGrass, respawnBushes, respawnRocks, respawnTrees } from './outils.js';
 import { repousseMonde } from './monde-recolte.js';
+import { estPartieIle, ileDeLaPartie } from './ile/jeu.js';
+import { nuit as nuitIle } from './ile/vie.js';
 import { majDidacticielIle } from './didacticiel-ile.js';
 import { remplirRuches } from './ruches.js';
 import { affinerTonnelets } from './tonnelets.js';
@@ -382,6 +384,8 @@ function nuitEnLot(state) {
   // ce qui a été pris dans le grand monde aussi (monde-recolte.js) ; E-8 : pas dans un monde partagé (la ferme seule) ; I9b :
   // une île partagée (l'horloge vivante) l'a, au même pas chez tous (sa nuit vient dans les pas : temps-monde.js)
   if (!state.mondePartage || horlogeVivante(state)) repousseMonde(state);
+  // l'île de 300 × 300 : ses plantes poussent, ce qui a été pris repousse (js/engine/ile/vie.js nuit)
+  if (estPartieIle(state)) nuitIle(ileDeLaPartie(state), state.day);
   composter(state); // ce qui a périmé cette nuit va au bac à compost (compost.js ; après la péremption)
   remplirRuches(state); // les abeilles remplissent les ruches
   affinerTonnelets(state); // la tomme s'affine, le moût fermente (tonnelets.js)

@@ -111,8 +111,8 @@ const profond = (m) => tuile((RS * NS + SOLS_MONDE.CHEMINS + 1) * 16 + m);
 // l'herbe, puis ceux de la planche (2 + leur rang dans SOLS_MONDE.sols).
 const EAU = 0, HERBE = 1;
 const SOL = Object.fromEntries(SOLS_MONDE.sols.map((n, k) => [n, 2 + k]));
-// (le code de chaque sol par son nom, l'herbe comprise : les tables de la végétation)
-const CODES_SOLS = Object.assign({ herbe: HERBE }, SOL);
+// (le code de chaque sol par son nom, l'herbe comprise : les tables de la végétation ; l'eau : 0)
+export const CODES_SOLS = Object.assign({ herbe: HERBE }, SOL);
 
 // Les biomes où l'on ne marche pas : la mer, les lacs, les rivières (sauf à gué), les falaises,
 // les sommets.
@@ -434,7 +434,7 @@ export function solDeRegion(ctx, rx, ry) {
     const wy = Math.min(H - 1, Math.max(0, gy0 - RD + y));
     for (let x = 0; x < bw; x++) {
       const wx = Math.min(W - 1, Math.max(0, gx0 - RD + x)), i = wy * W + wx;
-      brut[y * bw + x] = solDe(ctx, biomeDe(ctx, i), i, wx, wy);
+      brut[y * bw + x] = ctx.solCase ? ctx.solCase(i) : solDe(ctx, biomeDe(ctx, i), i, wx, wy);
     }
   }
   const gSol = new Uint8Array(gw * gh);
@@ -443,7 +443,7 @@ export function solDeRegion(ctx, rx, ry) {
     for (let x = 0; x < gw; x++) {
       const wx = Math.min(W - 1, Math.max(0, gx0 + x));
       let v = brut[(y + RD) * bw + x + RD];
-      if (v !== EAU && v !== SOL.falaise && v !== SOL.neige) {
+      if (!ctx.solCase && v !== EAU && v !== SOL.falaise && v !== SOL.neige) {
         const dx = Math.round((ctx.derive(wx, wy) - 0.5) * 2 * S.DERIVE), dy = Math.round((ctx.derive2(wx, wy) - 0.5) * 2 * S.DERIVE);
         // (bornée au monde, comme la case elle-même)
         const ux = Math.min(W - 1, Math.max(0, wx + dx)) - wx, uy = Math.min(H - 1, Math.max(0, wy + dy)) - wy;
@@ -616,6 +616,8 @@ export function solDeRegion(ctx, rx, ry) {
       }
     }
   }
+  // (l'île de 300 × 300, docs/ile-300.md : le reste vient d'elle, js/engine/ile/scene.js)
+  if (ctx.finRegion) return ctx.finRegion({ cle: rx + ',' + ry, x0, y0, l, h, couches, cx0, cy0, cl, ch: chh }, t0);
   // la région elle-même : ses biomes, où l'on marche
   const biome = new Uint8Array(cl * chh), marche = new Uint8Array(cl * chh);
   for (let y = 0; y < chh; y++) {

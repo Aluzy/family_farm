@@ -11,6 +11,9 @@ import { bonusMinerai, force, hasTool, hitsNeeded, lacher, refusMinerai, toolDef
 import { SORTES as SORTES_VEG } from './monde-vegetation.js';
 import { SORTES_ROCHES } from './monde-roches.js';
 import { noterObjectif } from './objectifs-compte.js';
+import { estPartieIle, ileDeLaPartie } from './ile/jeu.js';
+import { reglesDeLIle } from './ile/recoltes.js';
+import { recolter as recolterIle } from './ile/vie.js';
 
 /* ---------- couper, casser, cueillir et ramasser dans le grand monde (docs/grand-monde.md : fiche 6a) ---------- */
 
@@ -47,6 +50,8 @@ const PAR_NOM = new Map();
 for (const [cle, liste] of [['vegetation', SORTES_VEG], ['roches', SORTES_ROCHES]]) {
   liste.forEach((def, code) => PAR_NOM.set(def.nom, { def, cle, code, regle: RECOLTE.SORTES[def.nom] || null }));
 }
+// (l'île de 300 × 300 : ses cultures sauvages et ses fruitiers, js/engine/ile/recoltes.js)
+for (const [nom, e] of Object.entries(reglesDeLIle())) PAR_NOM.set(nom, { def: e.def, cle: 'ile', code: -1, regle: e.regle });
 
 // L'outil de chaque geste, et l'action dont il prend l'énergie et l'XP (stamina.js, levels.js).
 const GESTES = {
@@ -122,8 +127,18 @@ function prisDe(state) {
 let version = 0;     // chaque écriture dans state.monde.pris (les cases ouvertes à se refaire)
 function ecrire(state, id, v) {
   const P = prisDe(state);
+  // (l'île de 300 × 300 : une pièce prise ou cueillie l'est dans l'île même, qui la fait repousser ; rien n'en reste ici)
+  if (v && typeof v === 'object' && estPartieIle(state)) { recolterSurLIle(state, id, v); v = undefined; }
   if (v === undefined) delete P[id]; else P[id] = v;
   version++;
+}
+
+// La pièce `id` prise (ou cueillie : v.cueilli ; fauchée : v.faux) sur l'île de la partie : sa case suit la récolte
+// (js/engine/ile/vie.js recolter : elle s'en va et repousse, ou revient à un stade).
+function recolterSurLIle(state, id, v) {
+  const o = lireIdMonde(id), ile = ileDeLaPartie(state);
+  if (!o || !ile) return;
+  recolterIle(ile, o.Y * ile.n + o.X, state.day, v.faux ? 'faux' : 'main');
 }
 
 // L'état de la pièce `id` : rien (undefined), un nombre de coups, { retour } ou { retour, cueilli }.
@@ -308,7 +323,7 @@ export function faucherMonde(state, id, ou, depuis) {
   const { o, G, refus } = preparer(state, id, 'faucher', depuis);
   if (refus) return refus;
   const items = butinFinal(state, id, o.regle);
-  ecrire(state, id, { retour: retourDe(state, id, o.regle) });
+  ecrire(state, id, { retour: retourDe(state, id, o.regle), faux: true });
   const morceaux = poser(state, items, {}, ou);
   finir(state, o, G);
   return { ok: true, items, morceaux };
