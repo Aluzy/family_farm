@@ -263,7 +263,8 @@
         if (this.chargement && attente-- > 0) { this.time.delayedCall(50, teindre); return; }
         this.tintTallGrass();
         this.grassTeinte = true;
-        this.grassKey = '';
+        // (la vue immobile ne repasserait pas par syncTallGrass : cullDecor la refait au prochain pas)
+        this.grassKey = this.cullKey = '';
       };
       if (this.ready && !this.chargement) teindre(); else this.time.delayedCall(30, teindre);
     },

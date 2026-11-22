@@ -1765,7 +1765,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "conserve",
      "terme": "Boîte de conserve",
-     "description": "Aliment non périssable présent dès le début de la partie (40 boîtes), qui laisse le temps de lancer les premières cultures avant que la boîte à nourriture ne soit vide. Ne peut pas être racheté une fois épuisé. À ne pas confondre avec le bocal de légumes.",
+     "description": "Aliment non périssable. Une partie sur l'île n'en donne plus au départ : tout ce qui se mange se trouve dans la nature, les cultures sauvages et les fruitiers. Ne peut pas être racheté. À ne pas confondre avec le bocal de légumes.",
      "liens": [
       "apport_journalier",
       "potager",

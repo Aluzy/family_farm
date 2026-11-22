@@ -23,6 +23,7 @@ import {
   ileDeLaPartie,
   terrainDeLIle,
 } from '../../js/engine/ile/jeu.js';
+import { scytheGrass } from '../../js/engine/outils.js';
 
 const N = ILE.TAILLE;
 const DEPART = indice(ILE.APPARITION.x, ILE.APPARITION.y);
@@ -101,4 +102,20 @@ test('la tente posée au sol fait dormir la famille (C18)', () => {
   assert.equal(countItem(s, 'tente'), 0);
   assert.equal(couchages(s).length, DATA.ILE.PARTIE.TENTE.places);
   assert.equal(nuitCouchee(s), true);
+});
+
+test('l’herbe haute pousse sur l’île : des touffes sur l’herbe, la faux les fauche (de la fibre)', () => {
+  const s = createNewGame(3);
+  const T = farmTerrain(s),
+    cases = Object.keys(T.HERBES).map(Number);
+  assert.ok(cases.length > 1000, `des cases d'herbe haute (${cases.length})`);
+  const ile = ileDeLaPartie(s);
+  assert.ok(
+    cases.every((c) => !ile.bloque[c]),
+    'jamais sous un arbre ou une roche',
+  );
+  s.outils = { faux: true };
+  const r = scytheGrass(s, T.HERBES[cases[0]][0]);
+  assert.ok(r.ok, r.error);
+  assert.equal(scytheGrass(s, T.HERBES[cases[0]][0]).ok, false, 'déjà fauchée');
 });

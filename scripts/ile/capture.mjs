@@ -14,10 +14,14 @@ const opt = (n, d) => {
   const i = args.indexOf(`--${n}`);
   return i >= 0 ? args[i + 1] : d;
 };
+// (--site : le site construit, _site/ de scripts/build-site.mjs, celui qui est publié)
+const RACINE = args.includes('--site') ? join(ROOT, '_site') : ROOT;
 const SORTIE = opt('sortie', 'apercus-ile/scene.png'),
   ATTENTE = Number(opt('attente', 8000));
 const s = E.createNewGame(Number(opt('graine', 1)), { nom: 'Essai' });
 if (E.finishSetup) E.finishSetup(s);
+// (--objectifs : la partie commencée comme par l'écran de départ, js/engine/objectifs.js commencerObjectifs)
+if (args.includes('--objectifs')) (await import('../../js/engine/objectifs.js')).commencerObjectifs(s);
 // (--tente : la tente posée deux cases à droite du point d'apparition)
 if (args.includes('--tente')) console.log('tente', JSON.stringify(E.poserBloc(s, 'tente', s.monde.ici + 3)));
 // (--village : le panneau du village posé trois cases à gauche du point d'apparition)
@@ -29,6 +33,11 @@ s.awakeMs = 3 * 3600 * 1000 * (E.DATA.TEMPS.SECONDES_PAR_HEURE / 3600);
 const SAUVEGARDE = JSON.stringify({ v: s.version, t: Date.now(), s });
 // (--foret : le personnage repart du cœur de la forêt la plus dense, le carré de 16 × 16 qui a le plus d'objets)
 let POSITION = null;
+// (--position x,y : une place gardée, en cases, une case dans l'eau par exemple)
+if (opt('position', null)) {
+  const [px, py] = opt('position').split(',').map(Number);
+  POSITION = JSON.stringify({ graine: E.farmSeed(s), x: px * 16 + 8, y: py * 16 + 14 });
+}
 if (args.includes('--foret')) {
   const { ileDeLaPartie } = await import('../../js/engine/ile/jeu.js');
   const ile = ileDeLaPartie(s),
@@ -77,8 +86,8 @@ const TYPES = {
   '.ogg': 'audio/ogg',
 };
 const serveur = createServer((rq, res) => {
-  let f = normalize(join(ROOT, decodeURIComponent(new URL(rq.url, 'http://x').pathname)));
-  if (f !== ROOT && !f.startsWith(ROOT + sep)) {
+  let f = normalize(join(RACINE, decodeURIComponent(new URL(rq.url, 'http://x').pathname)));
+  if (f !== RACINE && !f.startsWith(RACINE + sep)) {
     res.writeHead(403).end();
     return;
   }
@@ -95,15 +104,17 @@ const BASE = `http://127.0.0.1:${serveur.address().port}`;
 const nav = await playwright.chromium.launch();
 const [VL, VH] = String(opt('ecran', '412x860')).split('x').map(Number);
 const ctx = await nav.newContext({ viewport: { width: VL, height: VH }, isMobile: VL < 800, hasTouch: VL < 800 });
-await ctx.addInitScript(
-  ([v, pos]) => {
-    localStorage.setItem('ferme-save', v);
-    if (pos) localStorage.setItem('ferme-position', pos);
-    else localStorage.removeItem('ferme-position');
-    sessionStorage.setItem('ferme-titre-vu', '1');
-  },
-  [SAUVEGARDE, POSITION],
-);
+// (--vierge : un navigateur neuf, sans partie : l'écran d'accueil, comme un nouveau joueur)
+if (!args.includes('--vierge'))
+  await ctx.addInitScript(
+    ([v, pos]) => {
+      localStorage.setItem('ferme-save', v);
+      if (pos) localStorage.setItem('ferme-position', pos);
+      else localStorage.removeItem('ferme-position');
+      sessionStorage.setItem('ferme-titre-vu', '1');
+    },
+    [SAUVEGARDE, POSITION],
+  );
 const page = await ctx.newPage();
 await page.route(
   (u) => !u.href.startsWith(BASE),
@@ -119,7 +130,7 @@ if (Number(opt('processeur', 1)) > 1) {
   const cdp = await ctx.newCDPSession(page);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: Number(opt('processeur', 1)) });
 }
-await page.goto(`${BASE}/jeu.html?fps=1`, { waitUntil: 'load' });
+await page.goto(`${BASE}/${opt('page', 'jeu.html?fps=1')}`, { waitUntil: 'load' });
 await page.waitForTimeout(ATTENTE);
 // (--clic <sélecteur> : un bouton touché avant la capture, la carte du monde par exemple)
 if (opt('clic', null)) {
@@ -236,6 +247,20 @@ if (opt('mesure', null)) {
     ),
   );
 }
+// (--eval <code> : une expression évaluée dans la page, sa valeur affichée ; `sc` : la scène de la ferme)
+if (opt('eval', null))
+  console.log(
+    'eval',
+    await page.evaluate((c) => {
+      const g = window.CarteJeu && window.CarteJeu.game(),
+        sc = g && g.scene.getScenes(true)[0];
+      try {
+        return JSON.stringify(new Function('sc', 'return (' + c + ')')(sc));
+      } catch (e) {
+        return String(e);
+      }
+    }, opt('eval')),
+  );
 mkdirSync(dirname(SORTIE), { recursive: true });
 await page.screenshot({ path: SORTIE });
 console.log(

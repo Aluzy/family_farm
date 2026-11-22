@@ -17,7 +17,22 @@
     // À la création de la scène : là où il était quand on a quitté la partie ou rechargé la page (makeRetour).
     makeArrivee() {
       this.makeRetour();
+      this.arriveeIle();
       this.positionLue = true;
+    },
+
+    // L'île de 300 × 300 (docs/ile-300.md) : rien de gardé, ou une place gardée qui n'est pas de la terre où l'on
+    // marche (une partie d'avant, une autre île, un lac) : il apparaît au point d'apparition, la vue sur lui.
+    arriveeIle() {
+      const B = this.ctx.bridge, D = B && B.ileDepart ? B.ileDepart() : null;
+      if (!D || !this.fermier || !this.fermier.arrive) return;
+      // (sa place gardée, posée par makeRetour : de la terre de l'île où l'on marche, il y reste)
+      const p = this.fermierPose && this.fermier.pos ? this.fermier.pos() : null;
+      const W = this.grid.cols, t = p ? Math.floor((p.y - 1) / T) * W + Math.floor(p.x / T) : -1;
+      if (p && D.marchable(t)) return;
+      this.retourAttendu = null;
+      const at = this.fermier.arrive(D.x, D.y, null, true);
+      if (at) this.setCentre(at.x, at.y);
     },
 
     // La partie reprise, la page rechargée : il réapparaît là où il était (la position notée par stepPosition,
@@ -33,7 +48,7 @@
         at = this.fermier.arrive(p.x, p.y, null, true);
         if (at) this.retourAttendu = { t: global.performance.now() };
       }
-      if (at) this.setCentre(at.x, at.y);
+      if (at) { this.setCentre(at.x, at.y); this.fermierPose = true; }
     },
 
     // La région où il a été posé à la reprise est-elle faite ? Alors, sa case libre (sinon la plus proche :

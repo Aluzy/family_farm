@@ -1,9 +1,10 @@
 import { DATA } from './catalog.js';
-import { addItem } from './inventory.js';
+import { addItem, countItem } from './inventory.js';
 import { caseDepart, ramassables } from './atelier.js';
 import { caseBatissable, poserBloc } from './blocs.js';
 import { farmTerrain } from './terrain.js';
 import { montrerLieu } from './monde-vu.js';
+import { estPartieIle } from './ile/jeu.js';
 
 /* ---------- l'abri de départ d'une nouvelle partie (la refonte du didacticiel, lot 1) ----------
    Une nouvelle partie sur la ferme générée commence avec un abri déjà bâti, près de l'endroit où le
@@ -66,14 +67,36 @@ export function placeAbriDepart(state) {
 }
 
 // Bâtit l'abri de départ (une fois : state.abriDepart garde son plan). → { ok, plan } ou { ok: false }.
-export function batirAbriDepart(state) {
+// Ce que demande l'abri d'un plan : { objet: n }.
+function besoinsDuPlan(plan) {
+  const B = {}, ajoute = (sorte, k) => { const ob = DATA.ATELIER.BLOCS[sorte].objet; B[ob] = (B[ob] || 0) + k; };
+  ajoute(A().MATIERE, plan.murs.length); ajoute('porte', 1); ajoute(A().SOL, plan.sols.length); ajoute('paillasse', plan.paillasses.length);
+  return B;
+}
+
+// Ce que demanderait l'abri, à sa place (le joueur automatique de l'île le fabrique d'abord) : { objet: n }, ou null.
+export function besoinsAbri(state) {
+  const lieu = placeAbriDepart(state);
+  if (!lieu) return null;
+  const n = Math.max(1, (state.famille && state.famille.membres.length) || 1);
+  return besoinsDuPlan(planAbriDepart(farmTerrain(state).LARGEUR, lieu.c, lieu.r, n));
+}
+
+// `o.paye` : le joueur automatique le bâtit sur l'île avec ce qu'il a fabriqué (besoinsAbri), rien n'est donné.
+export function batirAbriDepart(state, o = {}) {
+  // (l'île de 300 × 300, docs/ile-300.md C18 : rien de bâti au départ ; le joueur a sa tente, à poser où il veut)
+  if (estPartieIle(state) && !o.paye) return { ok: false, ile: true };
   if (state.abriDepart) return { ok: true, plan: state.abriDepart };
   const T = farmTerrain(state), W = T.LARGEUR, n = Math.max(1, (state.famille && state.famille.membres.length) || 1);
-  const o = placeAbriDepart(state);
-  if (!o) return { ok: false };
-  const plan = planAbriDepart(W, o.c, o.r, n);
+  const lieu = placeAbriDepart(state);
+  if (!lieu) return { ok: false };
+  const plan = planAbriDepart(W, lieu.c, lieu.r, n);
+  if (o.paye) {
+    const B = besoinsDuPlan(plan);
+    if (Object.entries(B).some(([k, v]) => countItem(state, k) < v)) return { ok: false, besoin: B };
+  }
   const poser = (sorte, t) => {
-    addItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
+    if (!o.paye) addItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
     const r = poserBloc(state, sorte, t);
     if (!r.ok) throw new Error(`abri de départ : ${sorte} en ${t} : ${r.error}`);
   };
@@ -81,7 +104,7 @@ export function batirAbriDepart(state) {
   poser('porte', plan.porte);
   for (const t of plan.sols) poser(A().SOL, t);
   for (const t of plan.paillasses) poser('paillasse', t);
-  state.abriDepart = { c: o.c, r: o.r, ...plan };
+  state.abriDepart = { c: lieu.c, r: lieu.r, ...plan };
   // (hors du brouillard du départ, fiche 14b : on le voit en arrivant)
   montrerLieu(state, plan.porte - 2 * W, 6);
   return { ok: true, plan: state.abriDepart };
