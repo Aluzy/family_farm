@@ -15,6 +15,7 @@ import { noter } from './journal.js';
 import { chevalMonte, vitesseCheval } from './cheval.js';
 import { bumpCounter } from './campaign.js';
 import { noterObjectif } from './objectifs-compte.js';
+import { estPartieIle } from './ile/jeu.js';
 
 /* ---------- les outils : houe, pioche, hache, faux, canne à pêche ---------- */
 
@@ -584,7 +585,8 @@ function touffeSurBati(state, id, baties) {
 // région que le joueur n'a pas vue ne bouge pas.
 export function regrowGrass(state) {
   const h = state.outils && state.outils.herbes;
-  if (!h) return [];
+  // (l'île de 300 × 300 : ce qui est coupé ne repousse pas tout seul, docs/ile-300.md)
+  if (!h || estPartieIle(state)) return [];
   const out = [], baties = casesBaties(state), T = farmTerrain(state);
   for (const id of Object.keys(h)) {
     if (!(Number(h[id] && h[id].retour) <= state.day)) continue;

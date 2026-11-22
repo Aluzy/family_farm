@@ -404,7 +404,11 @@
       // carte n'ont rien pour elles
       if (this.ctx.monde && raw) {
         const parts = this.regionParts(r);
-        this.paintMonde(ctx, r, only ? only.filter((i) => !parts.dansFerme(i)) : parts.monde, P);
+        const monde = only ? only.filter((i) => !parts.dansFerme(i)) : parts.monde;
+        this.paintMonde(ctx, r, monde, P);
+        // (l'île de 300 × 300, docs/ile-300.md : toute l'île est la ferme, dessinée comme le monde ; la terre labourée
+        // et ses bordures sur l'herbe voisine y sont peintes ici, comme sur la carte de la ferme d'avant)
+        if (this.ctx.monde.ile300 && monde.length) this.drawZoneDirt(ctx, raw, monde);
         cells = only ? only.filter((i) => parts.dansFerme(i)) : parts.ferme;
       }
       if (raw && P && cells.length) {

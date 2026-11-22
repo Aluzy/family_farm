@@ -255,8 +255,9 @@ export function retirerObjet(ile, i, cat = catalogue()) {
  * récolte à la faux, le tournesol, y donne autre chose : sa fleur plutôt que ses graines) :
  * - une culture sauvage (mûre) s'en va et ne repousse pas ; la vigne, une vivace, revient à son stade de vivace ;
  * - un fruitier sauvage (en fruits) garde sa taille : il revient au stade « arbre » et refait ses fruits ;
- * - le reste (un arbre coupé, une roche cassée, des fleurs ramassées) s'en va et repousse à sa place après quelques
- *   nuits (le « retour » de sa récolte, sinon VIE.REPOUSSE).
+ * - une plante coupée ou ramassée (un arbre, un buisson, des fleurs) s'en va et ne repousse pas toute seule ;
+ * - une roche cassée s'en va et revient à sa place après quelques nuits (le « retour » de sa récolte, sinon
+ *   VIE.REPOUSSE).
  * Ce qu'on en tire (les objets du jeu) se calcule ailleurs, d'après la récolte renvoyée.
  * @param {Ile} ile
  * @param {number} i
@@ -278,7 +279,8 @@ export function recolter(ile, i, jour, outil = 'main', cat = catalogue()) {
     return { ok: true, fiche: f, recolte: r };
   }
   retirerObjet(ile, i, cat);
-  if (r.repousse !== 'jamais') {
+  // (une plante coupée ne repousse pas toute seule : seule une roche cassée revient, docs/ile-300.md)
+  if (r.repousse !== 'jamais' && f.famille === 'roche') {
     const [a, b] = r.retour ?? V.REPOUSSE;
     ile.repousse.push({
       i,
