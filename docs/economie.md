@@ -45,24 +45,19 @@ Chaque villageois a l'un de deux statuts, choisi sur sa fiche.
 - C'est la tâche d'aujourd'hui : il travaille à son poste, ce qu'il produit va au coffre du joueur.
 - **Il est payé en pièces par le joueur, chaque jour travaillé** (un jour de repos n'est pas payé). Le
   salaire remplace la part en nature d'aujourd'hui (PART : des objets gardés dans son panier).
-- **Le salaire, tel que je comprends ta règle** : il est fixé d'avance, d'après ce que le villageois
-  rapporte **au minimum** par jour à son poste (la valeur, au prix de l'île, de sa plus petite journée de
-  production). Le salaire du jour = 30 % de ce minimum. Exemple : un poste qui rapporte au moins
-  100 pièces par jour → 30 pièces par jour, fixes, même un jour où il rapporte 150.
-- **[À trancher]** Est-ce bien cela ? Autres lectures possibles :
-  - (b) 30 % de ce qu'il a vraiment rapporté ce jour-là (variable chaque jour) ;
-  - (c) 30 % de ce qu'il a rapporté, plus un fixe de 30 pièces les jours où il a rapporté 100 ou plus.
-- **[À trancher]** Si le joueur n'a pas de quoi payer le salaire du jour : le villageois travaille quand
-  même et la dette attend (contre la règle sans dette), ou il ne travaille pas le lendemain (proposition),
-  ou il quitte l'emploi au bout de N jours impayés.
+- **Le salaire (validé)** : 30 % de ce qu'il a rapporté ce jour-là (la valeur, au prix de l'île, de ce qu'il a
+  produit, moins ce qu'il a pris au coffre pour le faire), arrondi à l'entier supérieur, payé la nuit. Un jour
+  à 100 pièces → 30 pièces ; un jour à 150 → 45.
+- **Impayé (validé)** : si le joueur n'a pas de quoi payer, le villageois n'est pas payé et ne travaille pas
+  le lendemain (pas de dette) ; il reprend dès que le joueur peut payer.
 
 ### À son compte (E12)
 
 - C'est le commerce d'artisan d'aujourd'hui (fiche I5a : un local, l'établi, le comptoir, l'enseigne). Il
   achète ses matières au joueur (les pièces vont au joueur, taxées), fabrique, et vend au joueur, aux autres
   villageois, puis exporte son surplus au port. Chacune de ses ventes est taxée.
-- **[À trancher]** Seulement les métiers d'artisan d'aujourd'hui (filage, forge, menuiserie…), ou aussi un
-  villageois qui cueille, pêche ou cultive pour lui-même et vend sa récolte ?
+- **(validé)** Il peut aussi récolter pour lui-même : cueillir, pêcher, couper, cultiver ; sa récolte va dans
+  sa réserve (pas au coffre du joueur), il la vend au joueur, aux villageois, puis exporte le reste au port.
 - **E13.** Les villageois achètent entre eux et au joueur (l'étal d'aujourd'hui, à réactiver sur l'île) :
   ce qu'ils aiment, ce dont ils ont besoin (BESOINS), de leur bourse.
 
@@ -75,8 +70,8 @@ Chaque villageois a l'un de deux statuts, choisi sur sa fiche.
   village) et, je propose, des matériaux (fournis par le joueur au chantier, comme la place).
 - **E16. Les dons** : le joueur verse des pièces de sa bourse à celle du village (au panneau du village, et
   à la mairie une fois bâtie), pour avancer un niveau ou un projet. Un don n'est pas taxé et ne se reprend pas.
-- **[À trancher] E17.** Qui choisit le projet en cours : le joueur (un seul projet à la fois, la bourse du
-  village l'achète dès qu'elle a la somme), ou le village tout seul, dans un ordre fixe ?
+- **E17 (validé).** Le joueur choisit le projet en cours, un seul à la fois ; la bourse du village le paie dès
+  qu'elle a la somme.
 
 ### Proposition de projets (prix et effets à valider)
 
