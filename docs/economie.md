@@ -1,7 +1,6 @@
 # L'économie de l'île — règles à valider
 
-Statut : **proposition, rien n'est codé**. Ce document fixe les règles avant le chantier ; les points marqués
-**[À trancher]** attendent une réponse. Il complète docs/ile-300.md (C1 à C19) et s'appuie sur ce qui existe
+Statut : **règles validées, rien n'est codé**. Ce document fixe les règles avant le chantier. Il complète docs/ile-300.md (C1 à C19) et s'appuie sur ce qui existe
 déjà : les tâches des villageois (js/engine/taches.js), leur part (js/engine/bourse.js), les commerces
 d'artisans (js/engine/artisans.js), l'étal, le port (js/engine/port.js).
 
@@ -22,7 +21,7 @@ d'artisans (js/engine/artisans.js), l'étal, le port (js/engine/port.js).
   matériaux viennent de l'île (la nature, l'Atelier, les commerces des villageois).
 - **E5.** Le joueur y exporte ce qu'il a porté au comptoir (comme aujourd'hui). Un villageois y exporte
   aussi son surplus (E12), au passage du bac.
-- **[À trancher] E6.** Les contrats d'export du port (fiche I8b) restent-ils ?
+- **E6 (validé).** Les contrats d'export du port (fiche I8b) sont retirés de l'île.
 
 ## 3. La taxe du village
 
@@ -31,10 +30,11 @@ d'artisans (js/engine/artisans.js), l'étal, le port (js/engine/port.js).
   21 → 2).
 - **E8.** Est un revenu : une vente au port, une vente à un villageois ou au joueur, un salaire reçu. N'est
   pas un revenu : un don, une pièce trouvée, un remboursement.
-- **E9.** La taxe est prise à chaque vente, sur le montant de la vente (pas une fois par jour).
-  **[À trancher]** ou bien une fois par nuit, sur le total du jour (l'arrondi pèse moins).
+- **E9 (validé).** La taxe est prise une fois par nuit, sur le total des revenus du jour de chacun :
+  ⌈total × taux⌉ (un jour sans revenu ne paie rien).
 - **E10.** Le taux se règle au **panneau de contrôle**, un meuble posé dans la mairie à sa construction.
-  Avant la mairie, il reste à 5 %. **[À trancher]** ses bornes (proposition : de 0 à 30 %, par pas de 1 %).
+  Avant la mairie, il reste à 5 %. Ses bornes (validé) : de 0 à 30 %,
+  par pas de 1 %.
 
 ## 4. Les villageois : employé ou à son compte
 
@@ -66,14 +66,14 @@ Chaque villageois a l'un de deux statuts, choisi sur sa fiche.
 - **E14. La place** : sa construction reste payée par le joueur, en matériaux (comme aujourd'hui). Ses
   niveaux suivants (NIVEAUX : 600, 2 000, 5 000, 12 000 pièces) sont payés par la bourse du village.
 - **E15. Les projets de développement** : la mairie, l'école, des lieux de divertissement, un restaurant
-  communautaire, le développement du port, des logements. Chacun a un prix en pièces (payé par la bourse du
-  village) et, je propose, des matériaux (fournis par le joueur au chantier, comme la place).
+  communautaire, le développement du port, des logements. Chacun a un prix en pièces, payé par la bourse
+  du village seule, sans matériaux (validé).
 - **E16. Les dons** : le joueur verse des pièces de sa bourse à celle du village (au panneau du village, et
   à la mairie une fois bâtie), pour avancer un niveau ou un projet. Un don n'est pas taxé et ne se reprend pas.
 - **E17 (validé).** Le joueur choisit le projet en cours, un seul à la fois ; la bourse du village le paie dès
   qu'elle a la somme.
 
-### Proposition de projets (prix et effets à valider)
+### Les projets (prix et effets validés)
 
 | Projet | Prérequis | Prix (village) | Effet proposé |
 | --- | --- | --- | --- |
@@ -84,13 +84,13 @@ Chaque villageois a l'un de deux statuts, choisi sur sa fiche.
 | Lieu de divertissement | mairie | 2 000 | l'amitié monte plus vite, les villageois sortent le soir |
 | Développer le port | port | 1 000, puis ×2 par niveau | de meilleurs prix à l'export, plus de contrats |
 
-**[À trancher]** Ces effets et ces prix sont des propositions de ma part : à garder, changer ou remplacer.
 
 ## 6. Ce qui change dans le code (pour plus tard)
 
 - Une bourse du village dans l'état de la partie (sauvegardée), son journal (taxes, dons, dépenses).
-- Une fonction unique « encaisser(qui, montant) » par laquelle passe chaque revenu, qui prélève la taxe.
-- Le port sans achat sur l'île ; l'étal réactivé sur l'île.
+- Une fonction unique « encaisser(qui, montant) » par laquelle passe chaque revenu ; la taxe, prélevée la
+  nuit sur le total du jour.
+- Le port sans achat ni contrats sur l'île ; l'étal réactivé sur l'île.
 - La fiche du villageois : employé ou à son compte ; le salaire calculé et payé la nuit.
 - La mairie et son panneau de contrôle ; la fenêtre des projets ; les niveaux de la place payés par le village.
 - Les tests : la taxe arrondie, aucune bourse négative, un don, un niveau payé par le village.
