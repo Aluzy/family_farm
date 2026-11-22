@@ -2710,6 +2710,7 @@ export const RAW_DATA = {
       "portail": { "nom": "Portail", "objet": "portail", "bloque": true, "cloture": true, "portail": true },
       "portail_ouvert": { "nom": "Portail ouvert", "objet": "portail", "cloture": true, "portail": true, "ouvert": true },
       "lanterne": { "nom": "Lanterne scintillante", "objet": "lanterne", "bloque": true, "lumiere": true },
+      "tente": { "nom": "Tente", "objet": "tente", "bloque": true, "tente": true },
       "candelabre": { "nom": "Réverbère", "objet": "candelabre", "bloque": true, "lumiere": true },
       "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four", "dessin": "four", "largeur": 2 },
       "cuisiniere": { "nom": "Cuisinière", "objet": "cuisiniere", "dedans": true, "bloque": true, "station": "cuisine" },
@@ -9965,6 +9966,7 @@ export const RAW_DATA = {
       "DEPART": { "pierres": 3, "bois_flotte": 3, "distance": [2, 7] }
     },
     "VIE": { "REPOUSSE": [5, 8], "SAUVEGARDE": 1 },
+    "PARTIE": { "ACTIVE": false, "INVENTAIRE": { "tente": 1 }, "TENTE": { "places": 4 } },
     "ESPECES": {
       "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor", "roche"],
       "ROCHES": [

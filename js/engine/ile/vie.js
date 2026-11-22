@@ -140,8 +140,10 @@ function empreinte(f, i, n = N) {
   return f.empreinte.map(([dx, dy]) => (y + dy) * n + x + dx);
 }
 
-// Marque la région d'une case : à repeindre, à sauver.
+// Marque la région d'une case : à repeindre, à sauver ; l'île change de version (le terrain de la ferme qu'on en
+// tire se refait : js/engine/ile/jeu.js).
 function marquer(ile, i) {
+  ile.version = (ile.version ?? 0) + 1;
   const r = regionDe(i);
   ile.modifiees.add(r);
   ile.aSauver.add(r);

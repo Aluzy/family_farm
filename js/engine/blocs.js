@@ -776,7 +776,7 @@ export function dansPiece(state, tile) {
 // d'autre ne change de lit. Un lit choisi qui n'est plus un couchage (repris, sa pièce ouverte)
 // ne compte plus : l'ordre des pièces revient.
 export function couchages(state) {
-  let l = piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
+  let l = piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state), couchagesDesTentes(state));
   // (fiche I3a : les lits d'une maison marquée d'une boîte aux lettres, celle d'un villageois, passent après les
   // autres ; la famille n'y dort que s'il ne lui reste pas d'autre lit)
   const reserves = new Set(maisonsMarquees(state).flatMap((m) => m.piece.paillasses));
@@ -784,6 +784,14 @@ export function couchages(state) {
   const k = l.indexOf(state.litPrincipal);
   if (k > 0) [l[0], l[k]] = [l[k], l[0]];
   return l;
+}
+
+// Les couchages des tentes posées (l'île de 300 × 300, docs/ile-300.md C18 : on arrive avec une tente, qu'on pose au
+// sol pour dormir) : la case de chaque tente, autant de fois qu'elle a de places (ILE.PARTIE.TENTE.places).
+function couchagesDesTentes(state) {
+  const B = blocsPoses(state);
+  const places = (DATA.ILE && DATA.ILE.PARTIE && DATA.ILE.PARTIE.TENTE.places) || 0;
+  return Object.keys(B).map(Number).filter((t) => sorteDe(B[t]) && sorteDe(B[t]).tente).flatMap((t) => Array(places).fill(t));
 }
 
 /* ---------- la maison d'un villageois (le chantier « l'île à bâtir », fiche I3a) ----------

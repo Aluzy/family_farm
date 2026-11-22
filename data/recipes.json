@@ -312,6 +312,7 @@
       "portail": { "nom": "Portail", "objet": "portail", "bloque": true, "cloture": true, "portail": true },
       "portail_ouvert": { "nom": "Portail ouvert", "objet": "portail", "cloture": true, "portail": true, "ouvert": true },
       "lanterne": { "nom": "Lanterne scintillante", "objet": "lanterne", "bloque": true, "lumiere": true },
+      "tente": { "nom": "Tente", "objet": "tente", "bloque": true, "tente": true },
       "candelabre": { "nom": "Réverbère", "objet": "candelabre", "bloque": true, "lumiere": true },
       "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four", "dessin": "four", "largeur": 2 },
       "cuisiniere": { "nom": "Cuisinière", "objet": "cuisiniere", "dedans": true, "bloque": true, "station": "cuisine" },

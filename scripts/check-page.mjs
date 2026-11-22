@@ -15,9 +15,9 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { ROOT } from './lib/engine-source.mjs';
 
 const errors = [];
-// Les modules d'un chantier, écrits et testés, que la page n'importe pas encore : la carte de l'île de 300 × 300
-// (docs/ile-300.md), branchée à l'étape 7 ; elle quitte alors cette liste.
-const EN_CHANTIER = ['js/engine/ile.js'];
+// Les modules d'un chantier, écrits et testés, que la page n'importe pas encore (aucun pour l'instant : l'île de
+// 300 × 300, docs/ile-300.md, est importée depuis l'étape 7a).
+const EN_CHANTIER = [];
 const html = readFileSync(join(ROOT, 'jeu.html'), 'utf8');
 
 /* 1. les fichiers de la page */
