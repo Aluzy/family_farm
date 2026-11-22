@@ -14,8 +14,15 @@ import { couchages, nuitCouchee, poserBloc } from '../../js/engine/blocs.js';
 import { createNewGame } from '../../js/engine/depart.js';
 import { countItem } from '../../js/engine/inventory.js';
 import { farmTerrain } from '../../js/engine/terrain.js';
-import { ILE, indice, recolter, SOL, verifierIle } from '../../js/engine/ile.js';
-import { enLigneOuvert, estPartieIle, garderIle, ileDeLaPartie, terrainDeLIle } from '../../js/engine/ile/jeu.js';
+import { auLarge, ILE, indice, recolter, SOL, verifierIle } from '../../js/engine/ile.js';
+import {
+  degagerIle,
+  enLigneOuvert,
+  estPartieIle,
+  garderIle,
+  ileDeLaPartie,
+  terrainDeLIle,
+} from '../../js/engine/ile/jeu.js';
 
 const N = ILE.TAILLE;
 const DEPART = indice(ILE.APPARITION.x, ILE.APPARITION.y);
@@ -35,7 +42,7 @@ test('une partie neuve sur l’île : l’île, le personnage au point d’appar
   assert.notDeepEqual(ileDeLaPartie(createNewGame(8)).objet, ileDeLaPartie(s).objet);
 });
 
-test('le terrain de la ferme est l’île entière (C17) : sa terre libre, ses cases prises, son eau', () => {
+test('le terrain de la ferme est l’île entière (C17) : sa terre libre (ce qui pousse sans bloquer compris), ses cases prises, son eau', () => {
   const s = createNewGame(7);
   const T = farmTerrain(s);
   assert.equal(T, terrainDeLIle(s));
@@ -44,25 +51,34 @@ test('le terrain de la ferme est l’île entière (C17) : sa terre libre, ses c
   const ile = ileDeLaPartie(s);
   for (let t = 0; t < N * N; t++) {
     const eau = ile.sol[t] === SOL.eau_profonde || ile.sol[t] === SOL.eau || ile.sol[t] === SOL.eau_basse;
-    const attendu = eau ? '.' : ile.objet[t] || ile.bloque[t] ? 'o' : '#';
+    const attendu = eau ? '.' : ile.bloque[t] ? 'o' : '#';
     if (lettre(T, t) !== attendu && !(attendu === '#' && lettre(T, t) === '.')) assert.fail(`case ${t}`);
   }
   assert.equal(lettre(T, DEPART), '#');
   assert.equal(farmTerrain(s), T, 'gardé tant que l’île ne change pas');
 });
 
-test('le terrain suit l’île : une plante cueillie libère sa case', () => {
+test('le terrain suit l’île : un arbre coupé libère sa case', () => {
   const s = createNewGame(7);
   const ile = ileDeLaPartie(s);
-  const ble = [...ile.objet.keys()].find((t) => ile.objet[t] && ile.etat[t] === 6 && lettre(farmTerrain(s), t) === 'o');
-  assert.ok(ble !== undefined);
+  const arbre = [...ile.objet.keys()].find((t) => ile.objet[t] && ile.bloque[t] && lettre(farmTerrain(s), t) === 'o');
+  assert.ok(arbre !== undefined);
   const T0 = farmTerrain(s);
-  const r = recolter(ile, ble, 1);
-  if (r.ok && !ile.objet[ble]) {
-    const T1 = farmTerrain(s);
-    assert.notEqual(T1, T0);
-    assert.equal(lettre(T1, ble), '#');
-  }
+  assert.ok(recolter(ile, arbre, 1).ok);
+  const T1 = farmTerrain(s);
+  assert.notEqual(T1, T0);
+  assert.equal(lettre(T1, arbre), '#');
+});
+
+test('bâtir ou labourer dégage ce qui pousse sans bloquer', () => {
+  const s = createNewGame(7);
+  const ile = ileDeLaPartie(s);
+  const fleur = [...ile.objet.keys()].find((t) => ile.objet[t] && !ile.bloque[t] && !auLarge(t));
+  degagerIle(s, fleur);
+  assert.equal(ile.objet[fleur], 0);
+  const arbre = [...ile.objet.keys()].find((t) => ile.objet[t] && ile.bloque[t]);
+  degagerIle(s, arbre);
+  assert.notEqual(ile.objet[arbre], 0, 'un arbre reste : il se coupe');
 });
 
 test('l’île se garde dans la partie et s’y relit (JSON compris)', () => {

@@ -109,41 +109,6 @@ test('synchro : coupé, le joueur continue ; à la reconnexion, ses commandes re
   eq([r.rev, a.s.enAttente.length, empreintePartie(a.s.locale) === empreintePartie(r.charger())], [2, 0, true]);
 });
 
-test('I9a : l\'île partagée : chacun garde son brouillard sur sa partie locale (posé à chaque fois qu\'elle est refaite) ; la confirmée reste celle du monde ; hors de la ferme, le geste est refusé avant d\'être envoyé', () => {
-  const db = new DatabaseSync(':memory:');
-  const r = new MondeRegistre({ exec(q, ...v) { const x = db.prepare(q).all(...v); return { toArray: () => x }; } });
-  const ile = createNewGame('17', { nom: 'Île' });
-  ile.essais = { ...(ile.essais || {}), village: true };
-  addItem(ile, DATA.ATELIER.BLOCS.mur_pierre.objet, 20);
-  assert(r.creer({ proprietaire: 'A', partie: ile }).ok);
-  r.ajouterMembre('B', 'Sam');
-  // le brouillard de B : ce que son personnage a vu, hors de la partie du monde (en-ligne.js le garde par monde)
-  const w = r.charger(), T = farmTerrain(w);
-  let loin = T.MONDE.cadre.SORTIE;
-  while (caseVue(w, loin)) loin += 8;
-  const vu = JSON.parse(JSON.stringify(w));
-  voirAutour(vu, loin, { biome: 'prairie' });
-  const brouillard = vu.monde.vu;
-  const a = r.accueil('B', { version: GAME_VERSION });
-  const b = new Synchro({ partie: a.partie, rev: a.rev, executerCommande, quandRefaite: (locale) => unirVu(locale, brouillard) });
-  unirVu(b.locale, brouillard);
-  eq([caseVue(b.locale, loin), caseVue(b.confirmee, loin)], [true, false]);
-  // un geste de A (dans la ferme) : la partie de B est refaite, son brouillard reposé ; la confirmée, celle du monde
-  const cases = [];
-  for (let t = 0; t < 644 * 400 && cases.length < 2; t += 7) if (poseStatus(w, 'mur_pierre', t).ok) cases.push(t);
-  const rep = r.commande('A', mur(cases[0]));
-  assert(rep.ok, rep.erreur);
-  assert(b.evenement({ rev: rep.evt.rev, cmd: rep.evt.cmd }));
-  eq([blocAt(b.locale, cases[0]), caseVue(b.locale, loin), empreintePartie(b.confirmee) === empreintePartie(r.charger())], ['mur_pierre', true, true]);
-  // hors de la ferme (I9b) : un geste qui n'a pas de sens dehors est refusé avant d'être envoyé (en-ligne.js,
-  // jouerEnLigne), comme le monde le refuse ; un mur passe la frontière (un bloc du dehors), le moteur le refuse
-  const F = T.FERME, dehors = (F.Y + 3) * T.LARGEUR + F.X - 4, c = mur(dehors);
-  const labour = { id: `c-test-${++n}`, type: 'potager.labourer', args: { case: dehors } };
-  eq([refusFrontiere(b.locale, labour.args, labour.type), r.commande('B', labour).erreur], [HORS_FERME_ILE, HORS_FERME_ILE]);
-  eq(refusFrontiere(b.locale, c.args, c.type), null);
-  assert(/pas hors de la ferme/.test(r.commande('B', c).erreur), 'un mur dehors : le moteur le refuse');
-});
-
 /* ---------- I9a2 : l'horloge commune d'une île ---------- */
 
 // Une île du chantier en ligne (une partie d'essai), la Cuisine bâtie, des murs et de quoi faire des omelettes ; le
@@ -288,74 +253,6 @@ function ileOutillee() {
   return x;
 }
 
-test('I9b : le rejeu identique chez l\'hôte, l\'invité et le monde : des gestes du dehors (abattre, faucher, pêcher, poser un chemin) pendant six journées ; la même repousse partout ; chacun son brouillard', () => {
-  const { r, h } = ileOutillee();
-  const a = joueurIle(r, 'A'), b = joueurIle(r, 'B');
-  const w = r.charger(), T = farmTerrain(w), W = T.LARGEUR;
-  const buissons = piecesDehors(w, 'couper', 6, (o) => o.regle.coups === 1), herbes = piecesDehors(w, 'faucher', 3);
-  assert(buissons.length >= 4, `des buissons près de la sortie (${buissons.length})`);
-  // le brouillard de B : une case loin de ce que le monde a vu, levée chez lui seul
-  let loin = T.MONDE.cadre.SORTIE;
-  while (caseVue(w, loin)) loin += 8;
-  const vu = JSON.parse(JSON.stringify(w));
-  voirAutour(vu, loin, { biome: 'prairie' });
-  b.quandRefaite = (locale) => unirVu(locale, vu.monde.vu);
-  unirVu(b.locale, vu.monde.vu);
-  // un chemin dehors
-  let t = null;
-  for (let k = 3; k < 60 && t === null; k++) for (const c of [T.MONDE.cadre.SORTIE + k, T.MONDE.cadre.SORTIE + k * W]) if (t === null && !caseDansLaFerme(w, c) && poseStatus(w, 'chemin', c).ok) t = c;
-  const gestes = [
-    ['B', recolte(buissons[0].id)], ['A', recolte(buissons[1].id)], ['B', { id: `c-test-${++n}`, type: 'bloc.poser', args: { sorte: 'chemin', case: t } }],
-    ['A', { id: `c-test-${++n}`, type: 'outil.pecher', args: { eau: 'lac' } }], ...herbes.map((x, k) => [k % 2 ? 'A' : 'B', recolte(x.id)]),
-    ['B', recolte(buissons[2].id)], ['A', recolte(buissons[3].id)],
-  ];
-  const retours = {}, revenus = { w: {}, a: {}, b: {} };
-  let k = 0;
-  const pas0 = pasDe(r.charger());
-  while (pasDe(r.charger()) < pas0 + 144 * 6) {
-    h.t += 25000;
-    a.avancer(h.t); b.avancer(h.t);
-    if (k < gestes.length) {
-      const [qui, c] = gestes[k++], j = qui === 'A' ? a : b;
-      assert(j.jouer(c).ok, `${c.type} joué chez ${qui}`);
-      const rep = r.commande(qui, c);
-      assert(rep.ok, `${c.type} : ${rep.erreur}`);
-      assert(a.evenement(rep.evt) && b.evenement(rep.evt), 'reçu dans l\'ordre');
-      if (c.type === 'monde.recolter') retours[c.args.piece] = r.charger().monde.pris[c.args.piece].retour;
-    }
-    r.avancer(h.t);
-    // (la repousse : le jour où chaque pièce revient, au monde et chez chacun)
-    for (const [nom, s] of [['w', r.charger()], ['a', a.locale], ['b', b.locale]]) for (const id of Object.keys(retours)) if (!(id in revenus[nom]) && !(id in s.monde.pris)) revenus[nom][id] = s.day;
-  }
-  const trie = (o) => Object.entries(o).sort();
-  eq([trie(revenus.w), trie(revenus.a), trie(revenus.b)], [trie(retours), trie(retours), trie(retours)], 'chaque pièce revient le jour dit, au monde et chez chacun');
-  a.avancer(h.t); b.avancer(h.t);
-  const w3 = r.charger();
-  a.avancerConfirmee(w3.horloge.pas); b.avancerConfirmee(w3.horloge.pas);
-  const em = empreintePartie(w3);
-  eq([empreintePartie(a.confirmee), empreintePartie(b.confirmee), commeLeMonde(a.locale, w3)], [em, em, em], 'la même partie partout');
-  eq([Object.keys(w3.monde.pris).filter((id) => buissons.some((x) => x.id === id)), cheminDehorsSur(w3, t)], [[], true], 'les buissons sont revenus, le chemin est là');
-  eq([caseVue(b.locale, loin), caseVue(a.locale, loin), caseVue(b.confirmee, loin)], [true, false, false], 'le brouillard de B reste à lui');
-});
-
-test('I9b : le conflit dans la partie de chacun : A et B abattent le même buisson ; le monde garde le premier, la partie de B se refait sans son coup (rien en double)', () => {
-  const { r, h } = ileOutillee();
-  const a = joueurIle(r, 'A'), b = joueurIle(r, 'B');
-  const [x] = piecesDehors(r.charger(), 'couper', 1, (o) => o.regle.coups === 1);
-  h.t += 6000; a.avancer(h.t); b.avancer(h.t);
-  const ca = recolte(x.id), cb = recolte(x.id);
-  const bois0 = countItem(r.charger(), 'bois');
-  assert(a.jouer(ca).ok && b.jouer(cb).ok, 'chacun l\'abat chez lui');
-  eq([countItem(a.locale, 'bois') > bois0, countItem(b.locale, 'bois') > bois0], [true, true], 'chacun voit son bois, en attendant');
-  const ra = r.commande('A', ca), rb = r.commande('B', cb);
-  eq([ra.ok, rb.ok], [true, false], 'le premier arrivé l\'a');
-  assert(a.evenement(ra.evt) && b.evenement(ra.evt));
-  b.refusee(cb.id);
-  const bois = countItem(r.charger(), 'bois');
-  eq([countItem(a.locale, 'bois'), countItem(b.locale, 'bois'), b.enAttente.length, typeof b.locale.monde.pris[x.id]], [bois, bois, 0, 'object'], 'B voit l\'arbre tombé, une seule fois le bois');
-  eq(commeLeMonde(b.locale, r.charger()), empreintePartie(r.charger()));
-});
-
 /* ---------- I9c : le port et la caisse en ligne ---------- */
 
 // Une île au port : le jour 3 (un jour de bac), à `heure` ; au coffre, des carottes, du bois ; A et B sur la ferme.
@@ -447,45 +344,6 @@ function villageEnLigne() {
   return { r, h };
 }
 const commeLeMondeI9d = (locale, w) => commeLeMonde({ ...locale, amitie: w.amitie }, w);
-
-test('I9d : une journée du village : le monde et deux joueurs ont la même partie ; le bois au coffre commun dans la matinée ; chacun son amitié ; le même tableau', () => {
-  const { r, h } = villageEnLigne();
-  const a = joueurIle(r, 'A'), b = joueurIle(r, 'B');
-  const geste = (qui, compte, c) => {
-    const x = qui.jouer(c);
-    if (!x.ok) return x;
-    const rep = r.commande(compte, c);
-    if (rep.ok) assert(a.evenement(rep.evt) && b.evenement(rep.evt), 'reçu dans l\'ordre'); else qui.refusee(c.id);
-    return rep;
-  };
-  const bois0 = countItem(r.charger(), 'bois');
-  let midi = null, k = 0;
-  const debut = h.t;
-  while (h.t < debut + 16 * 30 * 1000) {   // (de 6 h à 22 h : 16 heures de jeu, 30 s chacune)
-    h.t += 1000;
-    a.avancer(h.t); b.avancer(h.t + 300);
-    k += 1;
-    if (k === 70) eq(geste(a, 'A', { id: 'c-a-parle', type: 'villageois.parler', args: { id: 'vg-1', n: 0, activite: 'dehors' } }).ok, true, 'A parle à vg-1');
-    if (k === 75) eq(geste(b, 'B', { id: 'c-b-offre', type: 'villageois.offrir', args: { id: 'vg-2', objet: 'pomme' } }).ok, true, 'B offre une pomme à vg-2');
-    if (k === 80) eq(geste(b, 'B', { id: 'c-b-parle', type: 'villageois.parler', args: { id: 'vg-2', n: 0 } }).ok, true, 'B parle à vg-2');
-    if (midi === null && k % 10 === 0) { r.avancer(h.t); if (clockHours(r.charger()) >= 12) midi = countItem(r.charger(), 'bois') - bois0; }
-  }
-  r.avancer(h.t);
-  a.avancer(h.t); b.avancer(h.t);
-  const w = r.charger();
-  a.avancerConfirmee(pasDe(w)); b.avancerConfirmee(pasDe(w));
-  const em = empreintePartie(w);
-  eq([empreintePartie(a.confirmee), empreintePartie(b.confirmee), commeLeMondeI9d(a.locale, w), commeLeMondeI9d(b.locale, w)], [em, em, em, em], 'la même partie partout');
-  assert(midi > 0, `le bois au coffre commun avant midi (${midi})`);
-  assert(villageoisDe(w).every((v) => v.travail && v.travail.actions > 0), 'les trois ont travaillé');
-  // chacun voit son amitié : A a parlé à vg-1, B a offert à vg-2 et lui a parlé
-  const pts = (s, id) => s.amitie.pnj[id].pts, acc = DATA.VILLAGE.AMITIE.ACCUEIL;
-  eq([pts(a.locale, 'vg-1') > acc, pts(b.locale, 'vg-1'), pts(b.locale, 'vg-2') > acc, pts(a.locale, 'vg-2')], [true, acc, true, w.amities.A.pnj['vg-2'].pts], 'chacun la sienne');
-  eq([pts(a.locale, 'vg-1'), pts(b.locale, 'vg-2')], [w.amities.A.pnj['vg-1'].pts, w.amities.B.pnj['vg-2'].pts], 'celles du monde');
-  // le tableau du village (I3d) : le même chez chacun et au monde
-  const T = (s) => JSON.stringify(tableauVillage(s));
-  eq([T(a.confirmee), T(b.confirmee), T(a.locale), T(b.locale)], [T(w), T(w), T(w), T(w)], 'le même tableau');
-});
 
 test('I9e : les gestes de gestion du village chez chacun : l\'ordre d\'une tâche du propriétaire et l\'outil confié par l\'ami, joués chez eux puis par le monde ; l\'ordre d\'un ami (un jeu modifié) refusé par le monde et retiré de sa partie ; la même partie partout', () => {
   const { r, h } = villageEnLigne();

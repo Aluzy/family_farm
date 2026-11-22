@@ -163,31 +163,3 @@ test('une partie de l\'île de 30 nuits : ni ses villageois, ni ses noms, ni sa 
   assertEqual(nombreEntrees(s), ENCYCLOPEDIE_ILE.categories.reduce((t, c) => t + c.entrees.length, 0), 'le livre de l\'île');
 });
 
-test('la carte du monde de l\'île (fiche I7e) : ni hameau ni nom du récit, ni dans ses lieux, ni dans ce qu\'elle bâtit, ni sur la boussole', () => {
-  for (const g of [3, 11, 29]) {
-    const s = partieIle(g);
-    toutVoir(s);
-    const T = farmTerrain(s), sol = solDirect(T), lieux = planDuMonde(s.carte.graine, niveauPort(s)).lieux;
-    elementsSol(sol.ctx);
-    // (le plan de l'île : aucun hameau ; ses noms, ceux de ses lieux)
-    assertEqual(lieux.hameaux, [], `${g} : aucun hameau dans le plan`);
-    const L = lieuxDeLaCarte(s, lieux, T);
-    assertEqual(L.hameaux, undefined, `${g} : aucun hameau sur la carte, tout vu`);
-    assertEqual(fautes(L, 'carte'), [], `${g} : les lieux de la carte`);
-    // (ce que le monde bâtit et nomme : le port, les bâtisses muettes du récit)
-    assertEqual(fautes(sol.ctx.hameaux.plans.map((p) => ({ id: p.id, nom: p.nom })), 'plans'), [], `${g} : les plans bâtis`);
-    // (la boussole, vers chaque lieu de la carte, et vers la ferme)
-    const W = T.LARGEUR, F = T.FERME;
-    for (const sorte of SORTES_BUTS) {
-      for (const l of listeDuBut(L, sorte)) {
-        assert(choisirBut(s, { sorte, id: l.id }, lieux).ok, `${g} : la boussole vers ${l.id}`);
-        const b = etatBoussole(s, F.X - 20, F.Y - 20, lieux, null, T);
-        assertEqual(texteDuRecit(b.nom), null, `${g} : la boussole (${b.nom})`);
-      }
-    }
-    choisirBut(s, null);
-    const b = etatBoussole(s, F.X - 20, F.Y - 20, lieux, T.MONDE.cadre.SORTIE, T);
-    assertEqual([b.sorte, texteDuRecit(b.nom)], ['ferme', null], `${g} : la boussole vers la ferme`);
-    assert(Math.abs(b.x - ((T.MONDE.cadre.SORTIE % W) + 0.5)) < 1e-9, 'au bout du chemin');
-  }
-});

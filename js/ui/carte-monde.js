@@ -8,6 +8,9 @@ import {
 import { setupPending } from '../engine/depart.js';
 import { state } from './store.js';
 import { solDuMonde } from './monde-sol.js';
+import { solDeLIle } from './ile-sol.js';
+import { ileDeLaPartie } from '../engine/ile/jeu.js';
+import { MONDE } from '../engine/monde.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -51,7 +54,7 @@ export function carteMondeVu() {
 
 // Ouvre la carte du monde (rien sans grand monde, ou pendant la mise en place de la partie).
 export function openCarteMonde() {
-  const T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : null;
+  const T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : T.ILE ? solDeLIle(ileDeLaPartie(state), state.carte.graine, MONDE.REGION) : null;
   if (!T.FERME || !sol || setupPending(state)) { notify('La carte du monde n\'est pas encore là.', { kind: 'info' }); return; }
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
@@ -89,7 +92,7 @@ function ouvrir(T, sol) {
   // l'image du monde : gardée par le sol du monde (js/ui/monde-sol.js), sinon demandée (le Worker la fait ;
   // elle arrive dans quelques dixièmes de seconde) ; la ferme y est repeinte à chaque ouverture (ce qui y a
   // été bâti depuis)
-  if (base && base.graine !== (T.MONDE.cle || T.MONDE.graine)) base = null;
+  if (base && base.graine !== cleDuMonde(T)) base = null;
   const img = sol.carte((c) => { if (C && C.sol === sol) { faireBase(c); C.sale = true; } });
   if (img) faireBase(img);
   // le doigt, la souris, la molette
@@ -126,15 +129,22 @@ function faireBase(img) {
   const g = cv.getContext('2d'), data = new ImageData(new Uint8ClampedArray(img.px), img.l, img.h);
   peintFerme(T, data.data, img.l);
   g.putImageData(data, 0, 0);
-  base = { graine: T.MONDE.cle || T.MONDE.graine, cv };
+  base = { graine: cleDuMonde(T), cv };
 }
 
 // La ferme, case par case : son herbe (en deux tons, comme les prés), son eau et ses chemins (les coins
 // de ses cases : T.MONDE.ferme.sommets), ses arbres et ses rochers (T.ARBRES, T.ROCHERS), ce que le joueur
 // y a bâti (les blocs), ses parcelles.
+// (l'image d'une partie sur l'île, docs/ile-300.md : celle de l'île ; la ferme n'y est que ce qui est labouré, bâti)
+const cleDuMonde = (T) => (T.MONDE ? T.MONDE.cle || T.MONDE.graine : 'ile:' + state.carte.graine);
 function peintFerme(T, px, W) {
-  const F = T.FERME, fv = F.LARGEUR + 1, S = T.MONDE.ferme.sommets;
   const met = (i, c) => { const o = i * 4; px[o] = c[0]; px[o + 1] = c[1]; px[o + 2] = c[2]; px[o + 3] = 255; };
+  if (T.ILE) {
+    for (const p of state.potager.parcelles || []) if (Number.isInteger(p.case)) met(p.case, [139, 90, 43]);
+    for (const c of Object.keys(blocsPoses(state))) met(Number(c), [110, 72, 40]);
+    return;
+  }
+  const F = T.FERME, fv = F.LARGEUR + 1, S = T.MONDE.ferme.sommets;
   const herbe = [[136, 174, 70], [124, 164, 62]], eau = [74, 158, 214], chemin = [201, 164, 106], arbre = [[52, 96, 40], [40, 80, 32]], roche = [140, 132, 122];
   for (let y = 0; y < F.HAUTEUR; y++) {
     for (let x = 0; x < F.LARGEUR; x++) {

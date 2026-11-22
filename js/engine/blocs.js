@@ -26,7 +26,8 @@ import { chainesReprise } from './chaines.js';
 import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
-import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';
+import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';import { degagerIle } from './ile/jeu.js';
+
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -1122,6 +1123,7 @@ export function poserBloc(state, sorte, tile, sens = 0, variante = null) {
     setVariante(state, tile, sorte, variante);
     if (varianteBloc(state, tile)) r.variante = varianteBloc(state, tile);
     foulerAutour(state, tile);
+    degagerIle(state, tile);   // (l'île : ce qui y poussait sans bloquer s'en va)
     noter('pose', { sorte });
   }
   return r;

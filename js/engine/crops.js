@@ -12,7 +12,8 @@ import { absoluteHours, dayHour } from './clock.js';
 import { aCruche, eauCruche, puiserCruche } from './cruche.js';
 import { casesDuTerrain, farmTerrain, tileCount } from './terrain.js';
 import { serrePlaces } from './blocs.js';
-import { recolteSauvage } from './sauvages.js';
+import { recolteSauvage } from './sauvages.js';import { degagerIle } from './ile/jeu.js';
+
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -367,6 +368,7 @@ export function hoe(state, tile) {
   spendEnergy(state, 'labourer');
   gainActionXp(state, 'labourer');
   bumpCounter(state, 'labours', 1); // FLU-42 : chapitre 1
+  degagerIle(state, tile);   // (l'île : ce qui y poussait sans bloquer s'en va)
   return { ok: true, action: 'labourer', plot };
 }
 

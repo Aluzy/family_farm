@@ -217,7 +217,7 @@ test('un import se paie d\'avance et arrive au passage suivant du bac (à la fer
   const plan = DATA.PORT.IMPORT.RANGS[3][0].plan;
   assert(commanderImport(s, `plan:${plan}`, 3, ou).quantite === 1, 'un plan : une fois');
   assert(!commanderImport(s, `plan:${plan}`, 1, ou).ok, 'déjà commandé');
-  assert(testBatir(s, 'poulailler').ok, 'le Poulailler');
+  { const tb = testBatir(s, 'poulailler'); assert(tb.ok, 'le Poulailler : ' + tb.error); }
   s.poulailler.poules = 0;
   assert(commanderImport(s, 'bete:poule', 1, ou).ok, 'une poule');
   s.poulailler.construit = false;

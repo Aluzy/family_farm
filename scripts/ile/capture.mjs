@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Une capture de la scène d'une partie neuve sur l'île (docs/ile-300.md, étape 7b) : la page servie en local, dans
 // Chromium (Playwright), à l'écran d'un téléphone ; les erreurs de la page affichées.
-// Usage : node scripts/ile/capture.mjs [--graine 1] [--sortie apercus-ile/scene.png] [--attente 8000] [--ecran 412x860]
+// Usage : node scripts/ile/capture.mjs [--graine 1] [--sortie apercus-ile/scene.png] [--attente 8000] [--ecran 412x860] [--clic <sélecteur>] [--touche m]
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -85,6 +85,15 @@ page.on('console', (m) => {
 });
 await page.goto(`${BASE}/jeu.html`, { waitUntil: 'load' });
 await page.waitForTimeout(ATTENTE);
+// (--clic <sélecteur> : un bouton touché avant la capture, la carte du monde par exemple)
+if (opt('clic', null)) {
+  await page.click(opt('clic')).catch((e) => erreurs.push('clic : ' + e.message));
+  await page.waitForTimeout(2500);
+}
+if (opt('touche', null)) {
+  await page.keyboard.press(opt('touche'));
+  await page.waitForTimeout(2500);
+}
 mkdirSync(dirname(SORTIE), { recursive: true });
 await page.screenshot({ path: SORTIE });
 console.log(

@@ -15,12 +15,57 @@ import { ESPECES_FAUNE, FAUNE } from '../engine/monde-faune.js';
 import { HAMEAUX, SORTES_HAMEAUX } from '../engine/monde-hameaux.js';
 import { DATA } from '../engine/catalog.js';
 import { ILE, regionsModifiees } from '../engine/ile.js';
-import { BIOMES as BIOMES_ILE, SOL_BIOME } from '../engine/ile/reglages.js';
+import { BIOMES as BIOMES_ILE, SOL_BIOME, SOLS } from '../engine/ile/reglages.js';
 import { reglesDeLIle } from '../engine/ile/recoltes.js';
 import { contexteIle, planchesDeLIle, regionDeLIle, regionsDeLaScene } from '../engine/ile/scene.js';
 
 const N = ILE.TAILLE;
 let courant = null;
+
+// les couleurs des sols de l'île, dans l'ordre de SOLS (la couleur moyenne de leurs tuiles)
+const COULEURS_SOLS = {
+  eau_profonde: [36, 97, 170],
+  sable: [223, 193, 136],
+  galets: [176, 166, 150],
+  herbe: [132, 169, 60],
+  feuilles: [104, 120, 52],
+  aiguilles: [120, 98, 60],
+  mousse: [76, 120, 50],
+  clairiere: [140, 176, 70],
+  lande: [160, 160, 72],
+  terre: [150, 118, 78],
+  eau_basse: [98, 186, 214],
+  eau: [79, 172, 211],
+};
+const SOLS_RVB = SOLS.map((s) => COULEURS_SOLS[s.nom] || [106, 129, 87]);
+const cartes = new WeakMap();
+function imageDeLIle(ile, fiches) {
+  const g = cartes.get(ile);
+  if (g && g.version === (ile.version ?? 0)) return g.image;
+  const px = new Uint8ClampedArray(N * N * 4);
+  for (let i = 0; i < N * N; i++) {
+    let [r, v, b] = SOLS_RVB[ile.sol[i]];
+    const f = ile.objet[i] ? fiches[ile.objet[i]] : null;
+    if (f && f.genre === 'arbre') {
+      r *= 0.55;
+      v *= 0.7;
+      b *= 0.55;
+    } else if (f && f.genre === 'bloc') {
+      r = v = b = 138;
+    } else if (f && f.genre === 'buisson') {
+      r *= 0.75;
+      v *= 0.85;
+      b *= 0.75;
+    }
+    px[i * 4] = r;
+    px[i * 4 + 1] = v;
+    px[i * 4 + 2] = b;
+    px[i * 4 + 3] = 255;
+  }
+  const image = { l: N, h: N, px, ms: 0 };
+  cartes.set(ile, { version: ile.version ?? 0, image });
+  return image;
+}
 
 /**
  * Le sol de l'île `ile` (vivante : celle de la partie) pour la scène.
@@ -132,7 +177,9 @@ function client(ile, graine, taille) {
       abonnes.push(f);
     },
     apercu: () => ({ apercu, couleurs }),
-    carte: () => null,
+    // la carte du monde (js/ui/carte-monde.js) : une image de l'île, un point par case (la couleur de son sol, plus
+    // sombre sous un arbre, grise sous une roche), refaite quand l'île a changé
+    carte: () => imageDeLIle(ile, ctx.fiches),
     marchable(t) {
       if (!(t >= 0 && t < N * N)) return false;
       const reg = sol.region(Math.floor((t % N) / taille), Math.floor(t / N / taille));

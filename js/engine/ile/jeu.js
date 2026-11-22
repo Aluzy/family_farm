@@ -13,7 +13,7 @@
 import { DATA } from '../catalog.js';
 import { ILE } from './reglages.js';
 import { depuisSauvegarde, versSauvegarde } from './sauvegarde.js';
-import { auLarge, estEau, indice } from './vie.js';
+import { auLarge, estEau, indice, retirerObjet } from './vie.js';
 
 const P = () => DATA.ILE.PARTIE;
 
@@ -69,7 +69,7 @@ function rangee(ile, y) {
   for (let x = 0; x < ile.n; x++) {
     const i = indice(x, y);
     if (estEau(ile, i) || auLarge(i)) ligne += '.';
-    else if (ile.objet[i] || ile.bloque[i]) ligne += 'o';
+    else if (ile.bloque[i]) ligne += 'o';
     else ligne += '#';
   }
   return ligne;
@@ -105,6 +105,18 @@ export function terrainDeLIle(state) {
   };
   terrains.set(ile, { version: ile.version ?? 0, terrain });
   return terrain;
+}
+
+/**
+ * Ce qui pousse sans bloquer (une fleur, une herbe, une culture sauvage) s'en va de la case `t` quand le joueur y
+ * bâtit ou y laboure (js/engine/blocs.js poserBloc, js/engine/crops.js hoe) ; rien sur une partie d'avant l'île.
+ * @param {object} state
+ * @param {number} t
+ */
+export function degagerIle(state, t) {
+  const ile = ileDeLaPartie(state);
+  if (!ile || !Number.isInteger(t) || t < 0 || t >= ile.n * ile.n || !ile.objet[t] || ile.bloque[t]) return;
+  retirerObjet(ile, t);
 }
 
 /* ---------- une partie neuve sur l'île (C18) ---------- */
