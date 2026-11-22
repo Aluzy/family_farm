@@ -4,8 +4,8 @@
    - l'écran de départ : « Seul » (un adulte tiré de la graine, sans compagnon), le nom de l'île proposé et borné ;
    - la terre vierge : pas de chemin intérieur (ni coins, ni tuiles de chemin dans le sol de la ferme) ; le seul
      chemin part de la porte de l'abri et va, d'un seul tenant, à la sortie de la ferme ; l'abri tel quel ;
-   - le premier jour sans visite : la visite de bienvenue et la scène d'arrivée n'ont pas lieu, le plat est dans la
-     boîte à nourriture de l'abri ;
+   - le premier jour sans visite : la visite de bienvenue et la scène d'arrivée n'ont pas lieu, ni abri ni rien de bâti
+     sur l'île (docs/ile-300.md C18), le plat dans le sac ;
    - le didacticiel : ses étapes passent d'elles-mêmes ; chacune se passe, le tout aussi ;
    - une partie seule et une partie à six, jouées par le joueur automatique : elles passent le didacticiel jusqu'au
      premier villageois et à sa tâche ;
@@ -18,6 +18,7 @@ import {
   etapeIle, familleSeule, farmMap, farmTerrain, fermeVierge, finishSetup, majDidacticielIle, mangeurs, migrate,
   nomIle, nomIlePropose, nommerIle, passerDidacticielIle, passerEtapeIle, simulatePlay, solsPoses, villageoisDe,
 } from '../../js/engine/index.js';
+import { countItem } from '../../js/engine/inventory.js';
 import { blocGid } from '../../js/engine/planche.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
@@ -74,16 +75,16 @@ test('le nom de l\'île : proposé d\'après la graine, modifiable, borné comme
 
 /* ---------- le premier jour sans visite ---------- */
 
-test('le premier jour sans visite : pas de visite ni de scène d\'arrivée, le plat attend dans l\'abri', () => {
+test('le premier jour sans visite : pas de visite ni de scène d\'arrivée ; ni abri ni rien de bâti (C18), le plat dans le sac', () => {
   const s = departGarde();
   assertEqual(s.bienvenue.etat, 'faite', 'la visite n\'a pas lieu');
   // (fiche I7c : la scène d'arrivée n'a plus à être notée dite ; le récit est retiré à la bascule, I9h)
   assertEqual(s.recit.dites, {}, 'rien n\'est noté au récit');
   const plat = DATA.VILLAGE.DEPART.PLAT;
-  assertEqual(boiteCounts(s), { [plat]: 1 }, 'le plat dans la boîte à nourriture');
-  const boite = Object.entries(s.blocs).find(([, k]) => k === 'boite_nourriture');
-  assert(boite && s.abriDepart.sols.includes(Number(boite[0])), 'la boîte est dans l\'abri');
-  assert(boite[0] !== String(s.abriDepart.porte - farmTerrain(s).LARGEUR), 'pas sur le passage');
+  assertEqual(s.abriDepart || null, null, 'pas d\'abri de départ (docs/ile-300.md C18)');
+  assertEqual(Object.keys(s.blocs || {}).length, 0, 'rien de bâti');
+  assertEqual(countItem(s, plat), 1, 'le plat dans le sac');
+  assertEqual(countItem(s, 'tente'), 1, 'la tente, à poser');
 });
 
 /* ---------- le didacticiel ---------- */

@@ -74,6 +74,7 @@ import { sourceRepas } from './repas.js';
 import { estPartieIle, ileDeLaPartie } from './ile/jeu.js';
 import { BIOMES, SOL_BIOME } from './ile/reglages.js';
 import { casePlace, casePort } from './ile/village.js';
+import { batirAbriDepart, besoinsAbri } from './abri-depart.js';
 
 /* ==========================================================================
    Lot 10 : simulation d'un joueur automatique (conception, sections 8.10 et
@@ -173,6 +174,11 @@ function botOutil(state, id) {
 // la rive la plus proche ; fabriqués dès qu'il le peut. → rien.
 function botIle(state) {
   if (!estPartieIle(state)) return;
+  // (rien de bâti au départ, C18 : il bâtit son abri, comme l'abri de départ d'avant, avec ce qu'il fabrique)
+  if (!state.abriDepart) {
+    const B = besoinsAbri(state);
+    if (B && Object.entries(B).every(([o, n]) => countItem(state, o) >= n || botFabriquer(state, o, n - countItem(state, o)))) batirAbriDepart(state, { paye: true });
+  }
   const VI = DATA.ILE.VILLAGE, ici = state.monde && Number.isInteger(state.monde.ici) ? state.monde.ici : 0;
   const poserPres = (sorte, rayon) => {
     if (!botFabriquer(state, sorte, Math.max(0, 1 - countItem(state, sorte)))) return;

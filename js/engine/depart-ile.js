@@ -127,7 +127,9 @@ function platDansLAbri(state) {
   const plat = DATA.VILLAGE.DEPART.PLAT;
   state.bienvenue = { etat: 'faite', qui: null, plat, remis: null, jour: state.day };
   const a = state.abriDepart;
-  if (!a || !Array.isArray(a.sols) || !plat) return plat;
+  if (!plat) return plat;
+  // (sans abri, l'île de 300 × 300 : le plat dans le sac)
+  if (!a || !Array.isArray(a.sols)) { addItem(state, plat, 1); return plat; }
   const W = farmTerrain(state).LARGEUR, P = DATA.DIDACTICIEL.ABRI;
   const bas = a.sols.filter((t) => Math.floor(t / W) === a.r + P.PROFONDEUR).sort((x, y) => x - y);
   const place = [...bas].reverse().find((t) => t !== a.porte - W && !blocAt(state, t));
