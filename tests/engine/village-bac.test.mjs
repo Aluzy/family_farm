@@ -165,90 +165,28 @@ test('une commande honorée paie le prix de vente, la prime et l\'XP ; manquée,
 
 /* ---------- le catalogue d'import ---------- */
 
-test('le catalogue : un rang par niveau du port ; ce que le joueur débloquait le reste ; plus en vente tout de suite', () => {
+// (l'île : le port ne vend rien, ni au comptoir ni en import ; docs/economie.md E4)
+test('l\'île : le port ne vend rien, pas d\'import ni de graine au comptoir', () => {
   const { s, ou } = auPort('catalogue');
-  const cat = catalogueImport(s);
-  const pommier = cat.find((a) => a.cle === 'objet:jeune_pommier'), cacao = cat.find((a) => a.cle === 'objet:cacao');
-  assertEqual(pommier.rang, 1);
-  assert(/Verger/.test(pommier.refus), 'le Verger d\'abord');
-  assert(/niveau 2/.test(cacao.refus), 'le rang 2 : le port de niveau 2');
-  s.progression.niveau = 40;
-  s.verger.ouvert = true;
-  const arbre = catalogueImport(s).find((a) => a.cle === 'objet:jeune_pommier');
-  assert(!arbre.refus || /Verger/.test(arbre.refus), arbre.refus);
-  assertEqual(enVenteAuPort(s, 'jeune_pommier'), false, 'un jeune arbre ne s\'achète plus au comptoir');
-  assertEqual(enVenteAuPort(s, 'plant_vigne'), false, 'un plant de vigne non plus');
-  assert(!etalPort(s).some((o) => o.item === 'cacao'), 'ni le cacao');
-  assert(enVenteAuPort(s, 'graine_carotte'), 'les graines du potager, si');
-  const r = acheterAuPort(s, 'jeune_pommier', 1, ou);
-  assert(!r.ok && /bac/.test(r.error), r.error);
-});
-
-test('un import se paie d\'avance et arrive au passage suivant du bac (à la ferme)', () => {
-  const { s, ou } = auPort('import', 2, 10);
   s.progression.niveau = 40;
   s.pieces = 1000;
-  s.campagne.compteurs.cultures = ['carotte'];
-  const vigne = articleDe('objet:plant_vigne');
-  assertEqual(catalogueImport(s).find((a) => a.cle === vigne.cle).refus, null, 'le plant de vigne : ouvert');
-  const r = commanderImport(s, vigne.cle, 2, ou);
-  assert(r.ok, r.error);
-  assertEqual(r.cout, 2 * vigne.prix, 'payé d\'avance');
-  assertEqual(s.pieces, 1000 - r.cout);
-  assertEqual(r.arrive, B.PERIODE, 'le passage suivant');
-  assertEqual(importsAttendus(s), [{ cle: vigne.cle, nom: DATA.OBJETS.plant_vigne.nom, icone: DATA.OBJETS.plant_vigne.icone, quantite: 2 * vigne.lot, arrive: B.PERIODE }]);
-  assertEqual(countItem(s, 'plant_vigne'), 0, 'pas encore là');
-  aller(s, B.PERIODE, B.HEURES[0] - 1);
-  avancerBac(s);
-  assertEqual(countItem(s, 'plant_vigne'), 0, 'le bac n\'a pas encore accosté');
-  aller(s, B.PERIODE, B.HEURES[0]);
-  avancerBac(s);
-  assertEqual(countItem(s, 'plant_vigne'), 2 * vigne.lot, 'livré à son arrivée');
-  assertEqual(importsAttendus(s), []);
-  const avis = prendreAvisBac(s).pop();
-  assertEqual(avis.livres, [{ cle: vigne.cle, quantite: 2, raison: null }], 'l\'avis de la livraison');
-  // commandé un jour de bac après son arrivée : le passage d'après
-  assertEqual(commanderImport(s, vigne.cle, 1, ou).arrive, 2 * B.PERIODE);
-  // (la commande du moteur)
-  assert(executerCommande(s, { id: 'i', type: 'port.importer', args: { article: vigne.cle, quantite: 1, case: ou } }).ok, 'port.importer');
-  // un plan : appris à la livraison ; une bête sans place : son prix rendu
-  s.port.niveau = 4;
-  s.pieces = 2000;
-  const plan = DATA.PORT.IMPORT.RANGS[3][0].plan;
-  assert(commanderImport(s, `plan:${plan}`, 3, ou).quantite === 1, 'un plan : une fois');
-  assert(!commanderImport(s, `plan:${plan}`, 1, ou).ok, 'déjà commandé');
-  { const tb = testBatir(s, 'poulailler'); assert(tb.ok, 'le Poulailler : ' + tb.error); }
-  s.poulailler.poules = 0;
-  assert(commanderImport(s, 'bete:poule', 1, ou).ok, 'une poule');
-  s.poulailler.construit = false;
-  const avant = s.pieces;
-  aller(s, 2 * B.PERIODE, B.HEURES[0]);
-  avancerBac(s);
-  assert(planConnu(s, plan), 'le plan appris');
-  assertEqual(s.pieces, avant + articleDe('bete:poule').prix, 'la poule sans poulailler : son prix rendu');
+  assertEqual(catalogueImport(s), [], 'pas de catalogue');
+  assertEqual(enVenteAuPort(s, 'graine_carotte'), false, 'pas de graines');
+  assertEqual(etalPort(s), []);
+  assert(/ne vend rien/.test(commanderImport(s, 'objet:plant_vigne', 1, ou).error), 'pas d\'import');
+  assert(/ne vend rien/.test(acheterAuPort(s, 'graine_carotte', 1, ou).error), 'pas d\'achat');
+  assertEqual(s.pieces, 1000, 'rien payé');
 });
-
-test('les plants sauvages (fiche I7e) s\'inscrivent au catalogue', () => {
-  const { s } = auPort('sauvage');
-  assert(inscrireSauvage(s, 'baies'), 'inscrit');
-  assert(!inscrireSauvage(s, 'baies'), 'une fois');
-  const a = catalogueImport(s).find((x) => x.cle === 'sauvage:baies');
-  assert(a && a.rang === DATA.PORT.IMPORT.SAUVAGES.RANG, 'au rang des sauvages');
-});
-
-/* ---------- le rattrapage ---------- */
 
 test('une absence rattrape les passages manqués, RATTRAPAGE au plus ; la nuit fait passer le bac du jour', () => {
   const { s, ou } = auPort('absence', 2, 10);
   s.progression.niveau = 40;
   s.pieces = 500;
   s.campagne.compteurs.cultures = ['carotte', 'tomate'];
-  assert(commanderImport(s, 'objet:plant_vigne', 1, ou).ok);
   aller(s, 2 + 10 * B.PERIODE, 8);
   const r = avancerBac(s);
   assertEqual(r.arrivees.length, B.RATTRAPAGE, 'RATTRAPAGE passages au plus');
   assertEqual(r.arrivees[r.arrivees.length - 1], 10 * B.PERIODE, 'les plus récents');
-  assertEqual(countItem(s, 'plant_vigne'), DATA.PORT.IMPORT.RANGS[0].find((a) => a.objet === 'plant_vigne').lot, 'l\'import livré au premier');
   assertEqual(prendreAvisBac(s).length, B.RATTRAPAGE);
   assert(s.port.commandes.every((c) => c.jour === 10 * B.PERIODE), 'seules les commandes du dernier');
   assertEqual(avancerBac(s).arrivees, [], 'rien deux fois');
@@ -301,7 +239,6 @@ test('les niveaux : les matériaux apportés au chantier, les pièces payées ; 
   assert(contenuPort(2).quai > quai, 'le quai s\'allonge');
   assert(plafondVillageois(s) > plafond, 'plus de villageois accueillis');
   assertEqual(tirerCommandes({ ...s, campagne: { compteurs: { cultures: ['carotte', 'tomate', 'patate', 'oignon'] } } }, 99).length, DATA.PORT.NIVEAUX[1].commandes, 'plus de commandes par passage');
-  assert(!/niveau 2/.test(catalogueImport(s).find((x) => x.cle === 'objet:cacao').refus || ''), 'le rang 2 ouvert');
   assertEqual(prochainNiveau(s).niveau, 3);
   s.port.niveau = DATA.PORT.NIVEAUX.length;
   assertEqual(prochainNiveau(s), null, 'le dernier niveau');
@@ -314,7 +251,7 @@ test('la sauvegarde : v89 → v90 ; le port gardé, un port abîmé réparé, un
   const { s, ou } = auPort('sauvegarde', 2, 10);
   s.progression.niveau = 40;
   s.pieces = 300;
-  assert(commanderImport(s, 'objet:plant_vigne', 1, ou).ok);
+  s.port.imports = [{ cle: 'objet:plant_vigne', quantite: 1, jour: 2, prix: 10 }];
   s.port.vendu = { carotte: 7 };
   s.port.chantier = { planche: 3 };
   const m = migrate({ ...copie(s), version: 89 });

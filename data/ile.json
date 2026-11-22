@@ -216,6 +216,15 @@
       "ICONES": { "arbre": "🌰", "fleur": "🌼", "fruitier": "🫘" },
       "NOMS": {"bouleau": "Graine de bouleau", "saule": "Graine de saule", "arbre_pre": "Graine d'arbre des prés", "chataignier": "Châtaigne à planter", "fleurs": "Graine de fleurs des champs", "coquelicot": "Graine de coquelicot", "pavot_californie": "Graine de pavot de Californie", "myosotis": "Graine de myosotis", "lavande": "Graine de lavande", "lupin": "Graine de lupin", "fleur_rouge": "Graine de fleur rouge", "fleur_mauve": "Graine de fleur mauve", "pommier_sauvage": "Pépin de pommier sauvage", "poirier_sauvage": "Pépin de poirier sauvage", "cerisier_sauvage": "Noyau de cerisier sauvage", "abricotier_sauvage": "Noyau d'abricotier sauvage", "pecher_sauvage": "Noyau de pêcher sauvage"}
     },
+    "//ECONOMIE": [
+      "L'économie de l'île (docs/economie.md ; js/engine/ile/economie.js) : la bourse du village, à part de celle du",
+      "joueur et des villageois. TAUX : la taxe de départ, en %, prise la nuit sur le total des revenus du jour de chacun",
+      "(arrondie à l'entier supérieur) ; TAUX_MIN, TAUX_MAX : ses bornes au panneau de contrôle de la mairie ; JOURNAL :",
+      "les lignes gardées du journal de la bourse ; DONS : les montants proposés pour un don. SALAIRE : le salaire d'un",
+      "villageois employé, en % de ce qu'il a rapporté ce jour-là (arrondi à l'entier supérieur), payé la nuit par le joueur ;",
+      "s'il ne peut pas payer, le villageois ne travaille pas le lendemain (v.impaye), et reprend dès qu'il le peut."
+    ],
+    "ECONOMIE": { "SALAIRE": 30, "TAUX": 5, "TAUX_MIN": 0, "TAUX_MAX": 30, "JOURNAL": 30, "DONS": [10, 50, 100, 500] },
     "//VILLAGE": [
       "Le village de l'île (js/engine/ile/village.js ; docs/ile-300.md, étapes E à H). PLACE : le bloc qui fait la place",
       "du village (un seul) ; PORT : le bloc du comptoir du port (un seul, au bord de la mer). NIVEAUX : la place, niveau",

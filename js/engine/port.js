@@ -44,7 +44,8 @@ import { farmSeed, farmTerrain } from './terrain.js';
 import { planDuMonde } from './monde.js';
 import { dispositionPort } from './monde-gen.js';
 import { chargeDe, materiauDuChantier, vendreCharge, vendreToutLaCharge } from './portage.js';
-import { objetImporte } from './bac.js';import { estPartieIle } from './ile/jeu.js';
+import { objetImporte } from './bac.js';
+import { estPartieIle } from './ile/jeu.js';
 import { casePort, refusPortIle } from './ile/village.js';
 
 
@@ -181,6 +182,7 @@ export function portOuvert(state, ou = null, o = {}) {
 export function enVenteAuPort(state, item) {
   const def = DATA.OBJETS[item];
   if (!def || !isBuyable(item) || objetImporte(item)) return false;
+  if (estPartieIle(state)) return false; // (l'île : le port achète, il ne vend rien : docs/economie.md E4)
   if (def.arbre) return isUnlocked(state, 'verger');
   return !Object.keys(DATA.CULTURES).some((c) => seedItem(c) === item && !isUnlocked(state, c));
 }
@@ -230,6 +232,7 @@ export function dechargerAuPort(state, ou = null, o = {}) {
 export function acheterAuPort(state, item, qty = 1, ou = null, o = {}) {
   const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
+  if (estPartieIle(state)) return fail("Le port de l'île ne vend rien : il achète ses productions."); // (E4)
   const ici = portOuvert(state, ou, o);
   if (!ici.ok) return fail(ici.raison);
   if (objetImporte(item)) return fail(`${def.nom} vient par le bac : commande-le au port (l'onglet Import), il arrive au passage suivant.`);

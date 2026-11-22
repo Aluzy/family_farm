@@ -217,7 +217,8 @@ test('I0b : les comptes de la simulation, par nuit et par poste, tombent juste',
   const rows = simulatePlay(s, 'applique', 12);
   const somme = (o) => Object.values(o).reduce((t, v) => t + v, 0);
   assertEqual(rows.reduce((t, r) => t + somme(r.gains) - somme(r.depenses), 0), s.pieces - avant, 'gains − dépenses = pièces gagnées');
-  assert(rows.some((r) => r.gains.vente_cultures > 0) && rows.some((r) => r.depenses.graines > 0), 'des ventes de cultures, des graines achetées');
+  // (l'île : les graines viennent de la nature, le port ne vend rien ; docs/economie.md E4 ; les ventes : village-commerce)
+  assert(!rows.some((r) => r.depenses.graines > 0), 'pas de graines achetées');
   assertEqual(
     ['Vente : Carotte', 'Vente : Pain', 'Vente : Œuf', 'Achat : Graines de carotte', 'Achat : Blé', 'Technologie : x', 'Amélioration : Pompe', 'Poulailler agrandi', 'Calèche : Miel'].map(posteSimulation),
     ['vente_cultures', 'vente_plats', 'vente_produits', 'graines', 'graines', 'technologies', 'appareils', 'batiments', 'achats_hameaux'],

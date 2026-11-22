@@ -8,6 +8,7 @@ import { plancheAvecChargement } from './apparence.js';
 import { openModal } from './modal.js';
 import { registerActions } from './actions.js';
 import { state } from './store.js';
+import { estPartieIle } from '../engine/ile/jeu.js';
 import { tel } from './consent.js';
 
 /* ---------- le tableau des villageois, côté page (le chantier « l'île à bâtir », fiche I3d) ----------
@@ -104,8 +105,8 @@ function tableauHtml(T) {
     </div>
     ${commercesHtml(T)}
     ${gardeMangerHtml(T)}
-    <p class="muted tableau-aide">Le coût : ce qu'il a mangé à la boîte, sa part (${DATA.VILLAGE.PART} % de ce qu'il produit, gardée sur sa récolte et
-      vendue pour lui au bac) et ce que son travail a pris au coffre (les légumes d'un plat, la graine ressemée) ; le produit : ce que
+    <p class="muted tableau-aide">Le coût : ce qu'il a mangé à la boîte, ${estPartieIle(state) ? `son salaire (${DATA.ILE.ECONOMIE.SALAIRE} % de ce qu'il a rapporté, payé en pièces la nuit)` : `sa part (${DATA.VILLAGE.PART} % de ce qu'il produit, gardée sur sa récolte et
+      vendue pour lui au bac)`} et ce que son travail a pris au coffre (les légumes d'un plat, la graine ressemée) ; le produit : ce que
       son travail a rapporté. Le solde est un repère pour choisir qui fait quoi${t.ventes ? ` ; la tournée du port a vendu pour ${pieces(t.ventes)} ce que la ferme avait déjà` : ''}. Un appui sur un prénom : ses sept jours.</p>
     <button type="button" class="btn primary" data-action="close-modal" id="tableau-close">Fermer</button>`;
 }
@@ -173,7 +174,7 @@ function jourHtml(j) {
     : def ? `${def.icone} ${escapeHtml(def.nom)} · ${j.actions} / ${j.sur} action${j.sur > 1 ? 's' : ''}` : '<span class="muted">sans tâche</span>';
   const mange = Object.keys(j.mange).length ? `${objetsLong(j.mange)} · ${pieces(j.repas)}` : 'rien';
   const pris = Object.keys(j.utilise).length ? `<li>🧺 Pris au coffre : ${objetsLong(j.utilise)} · ${pieces(j.matieres)}</li>` : '';
-  const part = j.part ? `<li>👛 Sa part : ${pieces(j.part)}</li>` : '';
+  const part = j.part ? `<li>👛 ${estPartieIle(state) ? 'Son salaire' : 'Sa part'} : ${pieces(j.part)}</li>` : '';
   // (fiche I8b : le courant des machines qu'il conduit)
   const ration = j.cheval ? `<li>🐴 La ration du cheval : ${formatNumber(j.cheval)} pailles (dans ce qui est pris au coffre)</li>` : '';
   const courant = j.courant ? `<li>⚡ Le courant des machines : ${formatNumber(j.courant)} Wh · ${pieces(j.electricite)}</li>` : '';

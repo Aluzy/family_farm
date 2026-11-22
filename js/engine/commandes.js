@@ -198,7 +198,7 @@ import { pickUp } from './ramassage.js';
 import { recolterBac, semerBac } from './bacs.js';
 import { cueillirMassif } from './massifs.js';
 import { remplirTonnelet } from './tonnelets.js';
-import { mettreALEtal, reprendreDeLEtal } from './bourse.js';
+import { acheterAuVillageois, changerStatut, mettreALEtal, reprendreDeLEtal } from './bourse.js';
 import { acheterAuCommerce, choisirLettres, commanderAuCommerce, ouvrirCommerce, rejoindreCommerce, suggererCommerce } from './artisans.js';
 import { epinglerLigne, noterLigne, renommerEtNoter } from './chronique.js';
 import { nomsDe } from './noms.js';
@@ -229,6 +229,7 @@ import { accueillirEnfant, formerFoyer } from './liens.js';
 import { accueillirAuVillage, offrirVillageois, parlerAuVillageois } from './villageois-amitie.js';
 import { designerCuisine, designerGardeManger, reglerReserve } from './garde-manger.js';
 import { monterPlace } from './ile/village.js';
+import { donnerAuVillage } from './ile/economie.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -563,6 +564,8 @@ export const COMMANDES = {
   'bac.recolter': { args: { case: 'case' }, executer: (state, { case: c }) => recolterBac(state, c) },
   // (l'île : monter la place du village d'un niveau, en pièces ; docs/ile-300.md)
   'place.monter': { args: {}, executer: (state) => monterPlace(state) },
+  // (l'île : un don du joueur à la bourse du village ; docs/economie.md E16)
+  'village.don': { args: { quantite: 'quantite' }, executer: (state, { quantite }) => donnerAuVillage(state, quantite) },
   'massif.cueillir': { args: { case: 'case' }, executer: (state, { case: c }) => cueillirMassif(state, c) },
   'compost.jeter': { args: { case: 'case', objet: 'objet', quantite: 'quantite' }, executer: (state, { case: c, objet, quantite }) => jeterAuCompost(state, c, objet, quantite) },
   'potager.engrais': { args: { parcelle: 'texte' }, executer: (state, { parcelle }) => engraisser(state, parcelle) },
@@ -721,6 +724,15 @@ export const COMMANDES = {
   'villageois.outil': {
     args: { id: 'texte', outil: 'outil' },
     executer: (state, { id, outil }) => (outil === 'reprendre' ? reprendreOutil(state, id) : donnerOutil(state, id, outil)),
+  },
+  // (l'île, docs/economie.md E12 : employé du joueur ou à son compte ; acheter à son panier)
+  'villageois.statut': {
+    args: { id: 'texte', compte: 'drapeau?' },
+    executer: (state, { id, compte = false }) => changerStatut(state, id, compte),
+  },
+  'villageois.acheter': {
+    args: { id: 'texte', objet: 'objet', quantite: 'quantite' },
+    executer: (state, { id, objet, quantite }) => acheterAuVillageois(state, id, objet, quantite),
   },
   'villageois.vendre': {
     args: { id: 'texte', objets: 'objets' },

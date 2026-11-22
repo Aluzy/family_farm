@@ -1,5 +1,5 @@
 import { DATA, prixIle } from './catalog.js';
-import { fail } from './devices.js';
+import { canPay, fail, NO_COINS, pay } from './devices.js';
 import { earn } from './compta.js';
 import { clockHours, nightActive } from './clock.js';
 import { mulberry32 } from './base.js';
@@ -12,6 +12,7 @@ import { goutPour } from './amitie.js';
 import { villageoisDe, trouverVillageois } from './villageois.js';
 import { journeeDuVillage } from './villageois-journee.js';
 import { blocBloque, casesCouvertes, memoEnLot } from './blocs.js';import { estPartieIle } from './ile/jeu.js';
+import { noterRevenu } from './ile/economie.js';
 
 
 /* ---------- la part, la bourse et l'étal (le chantier « l'île à bâtir », fiche I4) ----------
@@ -82,21 +83,21 @@ function prendre(state, o, n) {
 
 // Ce que sa part vaudrait pour une journée (J : { produit, utilise }) : { net (sa valeur : le produit moins ce qu'il a
 // pris), du (la part de net) }.
-export function partDue(J) {
+export function partDue(J, pct = partPct()) {
   let brut = 0, pris = 0;
   for (const [o, n] of Object.entries(objet(J && J.produit) ? J.produit : {})) if (o !== 'pieces') brut += Math.max(0, entier(n)) * valeurIle(o);
   for (const [o, n] of Object.entries(objet(J && J.utilise) ? J.utilise : {})) if (o !== 'pieces') pris += Math.max(0, entier(n)) * valeurIle(o);
   const net = Math.max(0, brut - pris);
-  return { net, du: Math.floor((net * partPct()) / 100) };
+  return { net, du: Math.floor((net * pct) / 100) };
 }
 
 // La nuit (villageoisNuit) : le villageois `v` garde sa part de la journée `J` (son entrée du journal). → la valeur
 // prise (J.part), un entier.
-export function prendrePart(state, v, J) {
+export function prendrePart(state, v, J, pct = partPct()) {
   if (!v || !J) return 0;
   if (!objet(v.panier)) v.panier = {};
   const reste = Math.max(0, entier(v.reste));
-  const { du: part } = partDue(J);
+  const { du: part } = partDue(J, pct);
   let du = part + reste, prise = 0;
   const produit = objet(J.produit) ? J.produit : {};
   // (ce qui ne se mange pas d'abord : la laine, le bois, la fibre ; puis ce qui se mange ; pas les graines, il faut
@@ -120,6 +121,73 @@ export function prendrePart(state, v, J) {
   // (un reste plus petit qu'un objet attend le lendemain ; jamais plus que l'objet le plus cher de sa journée)
   v.reste = candidats.length ? Math.min(du, Math.max(...candidats.map(valeurIle))) : Math.min(du, reste);
   return prise;
+}
+
+/* ---------- à son compte (l'île, docs/economie.md E12) ----------
+   Un villageois à son compte (v.compte) travaille pour lui : ce que sa tâche produit (cueillir, pêcher, couper,
+   cultiver) lui revient tout entier la nuit, dans son panier (sa réserve : il en mange) ; il n'a pas de salaire. Il en
+   vend au joueur (sa fiche), aux autres villageois (la nuit, un achat par jour chacun), et le reste part au bac. */
+
+// Met le villageois `id` à son compte (true) ou employé du joueur (false).
+export function changerStatut(state, id, compte) {
+  const v = trouverVillageois(state, id);
+  if (!v) return fail('Villageois inconnu.');
+  if (v.enfant) return fail('Un enfant ne travaille pas.');
+  if (compte) v.compte = true;
+  else delete v.compte;
+  return { ok: true, compte: !!v.compte };
+}
+
+// Le joueur achète `n` unités de `o` au panier du villageois `id` à son compte, au prix de l'île.
+export function acheterAuVillageois(state, id, o, n = 1) {
+  const v = trouverVillageois(state, id);
+  if (!v || !v.compte) return fail('Il ne vend rien : il n\'est pas à son compte.');
+  const k = Math.floor(Number(n) || 0), u = valeurIle(o);
+  if (k < 1 || !objet(v.panier) || entier(v.panier[o]) < k) return fail('Il n\'en a pas autant.');
+  if (u <= 0) return fail('Cela ne se vend pas.');
+  const prix = k * u;
+  if (!canPay(state, prix)) return fail(NO_COINS);
+  pay(state, prix, `${v.prenom || 'Villageois'} : ${k} ${nom(o)}`);
+  v.panier[o] -= k;
+  if (v.panier[o] <= 0) delete v.panier[o];
+  addItem(state, o, k);
+  v.bourse = Math.max(0, entier(v.bourse)) + prix;
+  noterRevenu(state, v.id, prix);
+  return { ok: true, objet: o, quantite: k, prix };
+}
+
+// La nuit : chaque villageois achète au panier d'un autre, à son compte, ce qu'il préfère (ce qu'il adore, ce dont il a
+// besoin, ce qu'il aime ; le plus cher qu'il peut payer), s'il n'a rien acheté aujourd'hui. → le nombre d'achats.
+export function ventesEntreVillageois(state, jour = jourDe(state)) {
+  const V = [...villageoisDe(state)].sort((a, b) => (a.id < b.id ? -1 : 1));
+  const vendeurs = V.filter((x) => x.compte && objet(x.panier));
+  if (!vendeurs.length) return 0;
+  let n = 0;
+  for (const v of V) {
+    if (!acheteur(v) || (objet(v.achat) && v.achat.jour === jour)) continue;
+    let mieux = null;
+    for (const w of vendeurs) {
+      if (w === v) continue;
+      for (const [o, k] of Object.entries(w.panier)) {
+        if (!(k > 0) || !DATA.OBJETS[o]) continue;
+        const e = envieDe(v, o), p = valeurIle(o);
+        if (!e || p <= 0 || p > entier(v.bourse)) continue;
+        const c = { w, o, r: RANG[e], p };
+        if (!mieux || c.r > mieux.r || (c.r === mieux.r && c.p > mieux.p)) mieux = c;
+      }
+    }
+    if (!mieux) continue;
+    const { w, o, p } = mieux;
+    w.panier[o] -= 1;
+    if (w.panier[o] <= 0) delete w.panier[o];
+    v.bourse = entier(v.bourse) - p;
+    w.bourse = Math.max(0, entier(w.bourse)) + p;
+    noterRevenu(state, w.id, p);
+    v.achat = { jour, objet: o };
+    noterAchat(v, { jour, objet: o, prix: p, ou: 'villageois', vendeur: w.id });
+    n++;
+  }
+  return n;
 }
 
 // La valeur de son panier (ce qui attend le bac).
@@ -172,6 +240,7 @@ export function vendrePaniers(state, jour, vendu = null) {
     const pieces = valeurPanier(v);
     if (pieces > 0) {
       v.bourse = Math.max(0, entier(v.bourse)) + pieces;
+      noterRevenu(state, v.id, pieces);
       if (vendu) for (const [o, n] of Object.entries(v.panier)) if (n > 0) vendu[o] = (vendu[o] || 0) + n;
       v.vente = { jour, pieces };
       out.ventes[v.id] = pieces;
@@ -367,8 +436,7 @@ export function phraseEtal(state, id, o) {
 
 // Il achète `o` à l'étal. → { ok, objet, prix, envie } ou le refus.
 export function acheterALEtal(state, id, o) {
-  // (l'île de 300 × 300, docs/ile-300.md : l'argent ne vient que de l'export, par le port ; l'étal ne vend plus)
-  if (estPartieIle(state)) return fail('L\'étal ne vend plus : l\'argent vient de l\'export, par le port.');
+  // (l'île : les villageois achètent au joueur à l'étal, docs/economie.md E13 ; la vente est un revenu, taxé la nuit)
   const v = trouverVillageois(state, id);
   if (!v) return fail('Villageois inconnu.');
   const E = etalDe(state), jour = jourDe(state);
@@ -382,6 +450,7 @@ export function acheterALEtal(state, id, o) {
   if (E.objets[o] <= 0) delete E.objets[o];
   v.bourse = entier(v.bourse) - prix;
   earn(state, prix, `Étal : ${nom(o)}`);
+  noterRevenu(state, 'joueur', prix);
   v.achat = { jour, objet: o };
   noterAchat(v, { jour, objet: o, prix, ou: 'etal' });
   if (envie === 'besoin') { if (!objet(v.affaires)) v.affaires = {}; v.affaires[o] = (v.affaires[o] || 0) + 1; }

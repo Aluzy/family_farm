@@ -72,6 +72,9 @@ import { poserBloc, poseStatus } from './blocs.js';
 import { cuisineDuVillage, cuisinesDuVillage, deposerAuGardeManger, designerCuisine, designerGardeManger, gardeManger, gardeMangerCommun, menuDuVillage, utileAuGardeManger } from './garde-manger.js';
 import { sourceRepas } from './repas.js';
 import { estPartieIle, ileDeLaPartie } from './ile/jeu.js';
+import { catalogue } from './ile/catalogue.js';
+import { semenceDe } from './ile/graines.js';
+import { recolter as recolterIle } from './ile/vie.js';
 import { BIOMES, SOL_BIOME } from './ile/reglages.js';
 import { casePlace, casePort } from './ile/village.js';
 import { batirAbriDepart, besoinsAbri } from './abri-depart.js';
@@ -1200,8 +1203,28 @@ const sellItem = (state, item, qty) => {
   return vendreAuPort(state, item, qty, null, { sansPresence: true });
 };
 function botAcheter(state, item, qty) {
+  if (estPartieIle(state)) return botGraineIle(state, item, qty);
   if (!botAuComptoir(state)) return { ok: false };
   return acheterAuPort(state, item, qty, null, { sansPresence: true });
+}
+
+// L'île (docs/economie.md E4 : le port ne vend rien) : une graine se trouve dans la nature, en récoltant une plante qui
+// la donne (sa chance, GRAINES.CHANCE), de la plus proche à la plus loin ; quelques plantes au plus par graine.
+function botGraineIle(state, item, qty) {
+  const ile = ileDeLaPartie(state), cat = catalogue(), n = ile.n, ici = state.monde && Number.isInteger(state.monde.ici) ? state.monde.ici : 0;
+  const fiches = new Map(cat.fiches.filter((f) => semenceDe(f) === item).map((f) => [f.numero, f]));
+  if (!fiches.size) return { ok: false };
+  const cases = [];
+  for (let i = 0; i < n * n; i++) if (fiches.has(ile.objet[i])) cases.push(i);
+  const d = (i) => Math.abs((i % n) - (ici % n)) + Math.abs(Math.floor(i / n) - Math.floor(ici / n));
+  cases.sort((a, b) => d(a) - d(b));
+  let eu = 0;
+  for (const i of cases.slice(0, qty * 6)) {
+    if (eu >= qty) break;
+    if (!recolterIle(ile, i, state.day).ok) continue;
+    if (((Math.imul(i + state.day, 2654435761) >>> 0) % 100) < DATA.ILE.GRAINES.CHANCE) { addItem(state, item, 1); eu++; }
+  }
+  return eu > 0 ? { ok: true, bought: eu, cost: 0 } : { ok: false, error: 'Pas de graine trouvée.' };
 }
 
 /* -- I1b : la sortie au port --

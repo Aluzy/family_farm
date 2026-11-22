@@ -15,6 +15,7 @@
 import { DATA } from '../catalog.js';
 import { ileDeLaPartie, estPartieIle } from './jeu.js';
 import { BIOMES, SOL_BIOME } from './reglages.js';
+import { bourseVillage, payerParLeVillage } from './economie.js';
 
 const V = () => DATA.ILE.VILLAGE;
 
@@ -68,8 +69,12 @@ export function monterPlace(state) {
   if (casePlace(state) === null) return { ok: false, error: "Pose d'abord le panneau du village : c'est la place." };
   const p = prochainNiveauPlace(state);
   if (!p) return { ok: false, error: 'La place est à son plus haut niveau.' };
-  if ((state.coins || 0) < p.prix) return { ok: false, error: `Il faut ${p.prix} pièces (l'export, par le port).` };
-  state.coins -= p.prix;
+  // (la bourse du village paie : docs/economie.md E14)
+  if (!payerParLeVillage(state, p.prix, `Place niveau ${p.niveau}`))
+    return {
+      ok: false,
+      error: `La bourse du village n'a que ${bourseVillage(state)} pièces sur ${p.prix} (la taxe, les dons).`,
+    };
   if (!state.place || typeof state.place !== 'object') state.place = {};
   state.place.niveau = p.niveau;
   return { ok: true, niveau: p.niveau, prix: p.prix };
@@ -86,7 +91,7 @@ export function refusArriveeIle(state, jour, voirJour = true) {
   if (casePlace(state) === null) return 'Il faut une place du village : pose le panneau du village (Construire).';
   const A = adultes(state);
   if (A.length >= capacitePlace(state))
-    return `La place n'accueille que ${capacitePlace(state)} villageois à son niveau : monte-la de niveau (l'argent du port).`;
+    return `La place n'accueille que ${capacitePlace(state)} villageois à son niveau : monte-la de niveau (la bourse du village).`;
   if (voirJour) {
     const dernier = Math.max(0, ...(state.villageois || []).map((v) => Number(v.arrive) || 0));
     if (dernier && jour - dernier < V().ARRIVEE.PERIODE)

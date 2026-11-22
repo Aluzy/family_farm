@@ -19,6 +19,7 @@ import {
   refusPortIle,
   villageFonde,
 } from '../../js/engine/ile/village.js';
+import { economie } from '../../js/engine/ile/economie.js';
 import { arriveeRefus, caseArrivee } from '../../js/engine/villageois.js';
 import { portOuvert } from '../../js/engine/port.js';
 
@@ -49,12 +50,13 @@ test('la place pleine refuse ; un niveau de plus, payé en pièces, en accueille
   poser(s, VI.PLACE, s.monde.ici + 5);
   s.villageois = [{ id: 'vg-1', arrive: 1 }];
   assert.match(refusArriveeIle(s, 9), /n'accueille que/);
-  s.coins = VI.NIVEAUX[1].prix - 1;
+  // (la bourse du village paie, docs/economie.md E14)
+  economie(s).bourse = VI.NIVEAUX[1].prix - 1;
   assert.equal(monterPlace(s).ok, false);
-  s.coins = VI.NIVEAUX[1].prix + 10;
+  economie(s).bourse = VI.NIVEAUX[1].prix + 10;
   const r = monterPlace(s);
   assert.ok(r.ok);
-  assert.equal(s.coins, 10);
+  assert.equal(economie(s).bourse, 10);
   assert.equal(niveauPlace(s), 2);
   assert.equal(refusArriveeIle(s, 9), null);
   assert.match(refusArriveeIle(s, 2), /toutes les/, 'au plus un nouveau venu par période');

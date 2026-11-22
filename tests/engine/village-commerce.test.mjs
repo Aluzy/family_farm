@@ -55,27 +55,12 @@ test('vendre au port : le prix de vente de market.js, les Comptes disent « Port
   assert(vendreAuPort(s, 'laine', 2, ou).ok, 'la laine aussi : tout ce qui se vendait à la calèche');
 });
 
-test('acheter au port : le cours des semences de market.js, qui monte ; seulement les semences débloquées', () => {
+test('acheter au port : rien sur l\'île (docs/economie.md E4)', () => {
   const { s, ou } = auPort();
   s.pieces = 1000;
-  const p1 = buyPrice(s, 'graine_carotte');
-  const r = acheterAuPort(s, 'graine_carotte', 2, ou);
-  assert(r.ok, r.error);
-  assertEqual(r.bought, 2);
-  assert(r.cost >= 2 * p1, 'le cours monte');
-  assertEqual(s.compta[s.compta.length - 1].libelle, `Port : ${DATA.OBJETS.graine_carotte.nom}`);
-  // (une semence que le niveau n'a pas encore débloquée ; ce qui n'est pas une semence)
-  const tard = Object.keys(DATA.OBJETS).find((k) => isBuyable(k) && !enVenteAuPort(s, k));
-  assert(tard, 'une semence pas encore débloquée');
-  assertEqual(acheterAuPort(s, tard, 1, ou).ok, false, 'refusée');
-  assertEqual(acheterAuPort(s, 'carotte', 1, ou).ok, false, 'une carotte ne s\'achète pas');
-  assert(etalPort(s).every((o) => enVenteAuPort(s, o.item) && o.prix === buyPrice(s, o.item)), 'l\'étal : les semences en vente, à leur cours');
-  // (la même chose qu'acheter au cours de market.js : deux parties pareilles, le même coût)
-  const a = auPort().s, b = auPort().s;
-  a.pieces = b.pieces = 500;
-  const ra = acheterAuPort(a, 'graine_tomate', 5, comptoirDuPort(a).devant), rb = buyItem(b, 'graine_tomate', 5);
-  assertEqual(ra.cost, rb.cost, 'le même coût que buyItem');
-  assertEqual(a.marche, b.marche, 'les mêmes cours ensuite');
+  assertEqual(acheterAuPort(s, 'graine_carotte', 2, ou).ok, false);
+  assertEqual(etalPort(s), []);
+  assertEqual(s.pieces, 1000);
 });
 
 test('refus : loin du comptoir, hors des heures, avant le niveau du commerce', () => {
@@ -112,14 +97,14 @@ test('les commandes port.vendre et port.acheter', () => {
   assertEqual(v.id, 'v1');
   assertEqual(v.inverses.length, 0, 'sans inverse');
   const a = executerCommande(s, { id: 'a1', type: 'port.acheter', args: { objet: 'graine_carotte', quantite: 1, case: ou } });
-  assert(a.ok, a.error);
+  assertEqual(a.ok, false, 'l\'île : le port ne vend rien');
   assertEqual(executerCommande(s, { type: 'port.vendre', args: { objet: 'patate', quantite: 1 } }).ok, false, 'il faut la case');
 });
 
-test('le joueur automatique va au port : 25 nuits sans nuit sans repas, des ventes au port, des graines achetées', () => {
+test('le joueur automatique va au port : 25 nuits sans nuit sans repas, des ventes au port, ses graines trouvées dans la nature', () => {
   const rows = simulateGame('applique', 25);
   assertEqual(rows.filter((r) => r.couverture <= 0).length, 0, 'aucune nuit sans repas');
   const ventes = rows.filter((r) => (r.gains.vente_cultures || 0) + (r.gains.vente_produits || 0) + (r.gains.vente_autres || 0) > 0);
   assert(ventes.length >= 5, `des jours de vente (${ventes.length})`);
-  assert(rows.some((r) => (r.depenses.graines || 0) > 0), 'des graines achetées');
+  assert(!rows.some((r) => (r.depenses.graines || 0) > 0), 'pas de graines achetées (l\'île)');
 });
