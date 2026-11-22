@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Une capture de la scène d'une partie neuve sur l'île (docs/ile-300.md, étape 7b) : la page servie en local, dans
 // Chromium (Playwright), à l'écran d'un téléphone ; les erreurs de la page affichées.
-// Usage : node scripts/ile/capture.mjs [--graine 1] [--sortie apercus-ile/scene.png] [--attente 8000] [--ecran 412x860] [--clic <sélecteur>] [--touche m]
+// Usage : node scripts/ile/capture.mjs [--graine 1] [--sortie apercus-ile/scene.png] [--attente 8000] [--ecran 412x860] [--clic <sélecteur>] [--touche m] [--foret] [--mesure 8] [--marche] [--processeur 4] [--profil]
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -22,6 +22,26 @@ if (E.finishSetup) E.finishSetup(s);
 if (args.includes('--tente')) console.log('tente', JSON.stringify(E.poserBloc(s, 'tente', s.monde.ici + 3)));
 s.awakeMs = 3 * 3600 * 1000 * (E.DATA.TEMPS.SECONDES_PAR_HEURE / 3600);
 const SAUVEGARDE = JSON.stringify({ v: s.version, t: Date.now(), s });
+// (--foret : le personnage repart du cœur de la forêt la plus dense, le carré de 16 × 16 qui a le plus d'objets)
+let POSITION = null;
+if (args.includes('--foret')) {
+  const { ileDeLaPartie } = await import('../../js/engine/ile/jeu.js');
+  const ile = ileDeLaPartie(s),
+    n = ile.n;
+  let mieux = -1,
+    ou = 0;
+  for (let y = 8; y < n - 24; y += 8)
+    for (let x = 8; x < n - 24; x += 8) {
+      let c = 0;
+      for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) if (ile.objet[(y + j) * n + x + i]) c++;
+      if (c > mieux) {
+        mieux = c;
+        ou = (y + 8) * n + x + 8;
+      }
+    }
+  POSITION = JSON.stringify({ graine: E.farmSeed(s), x: (ou % n) * 16 + 8, y: Math.floor(ou / n) * 16 + 14 });
+  console.log('forêt', ou % n, Math.floor(ou / n), mieux, 'objets sur 256 cases');
+}
 
 if (!process.env.PLAYWRIGHT_BROWSERS_PATH && existsSync('/opt/pw-browsers'))
   process.env.PLAYWRIGHT_BROWSERS_PATH = '/opt/pw-browsers';
@@ -70,11 +90,15 @@ const BASE = `http://127.0.0.1:${serveur.address().port}`;
 const nav = await playwright.chromium.launch();
 const [VL, VH] = String(opt('ecran', '412x860')).split('x').map(Number);
 const ctx = await nav.newContext({ viewport: { width: VL, height: VH }, isMobile: VL < 800, hasTouch: VL < 800 });
-await ctx.addInitScript((v) => {
-  localStorage.setItem('ferme-save', v);
-  localStorage.removeItem('ferme-position');
-  sessionStorage.setItem('ferme-titre-vu', '1');
-}, SAUVEGARDE);
+await ctx.addInitScript(
+  ([v, pos]) => {
+    localStorage.setItem('ferme-save', v);
+    if (pos) localStorage.setItem('ferme-position', pos);
+    else localStorage.removeItem('ferme-position');
+    sessionStorage.setItem('ferme-titre-vu', '1');
+  },
+  [SAUVEGARDE, POSITION],
+);
 const page = await ctx.newPage();
 await page.route(
   (u) => !u.href.startsWith(BASE),
@@ -85,7 +109,12 @@ page.on('pageerror', (e) => erreurs.push(e.stack || e.message));
 page.on('console', (m) => {
   if (m.type() === 'error' || m.type() === 'warning') erreurs.push('[console] ' + m.text());
 });
-await page.goto(`${BASE}/jeu.html`, { waitUntil: 'load' });
+// (--processeur 4 : le processeur ralenti 4 fois, un téléphone de milieu de gamme)
+if (Number(opt('processeur', 1)) > 1) {
+  const cdp = await ctx.newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: Number(opt('processeur', 1)) });
+}
+await page.goto(`${BASE}/jeu.html?fps=1`, { waitUntil: 'load' });
 await page.waitForTimeout(ATTENTE);
 // (--clic <sélecteur> : un bouton touché avant la capture, la carte du monde par exemple)
 if (opt('clic', null)) {
@@ -95,6 +124,105 @@ if (opt('clic', null)) {
 if (opt('touche', null)) {
   await page.keyboard.press(opt('touche'));
   await page.waitForTimeout(2500);
+}
+// (--mesure 8 : le temps des images pendant 8 s ; --marche : le personnage marche, une flèche après l'autre)
+if (opt('mesure', null)) {
+  await page.evaluate(() => window.mesureImages && window.mesureImages());
+  const cdpm = await ctx.newCDPSession(page);
+  await cdpm.send('Performance.enable');
+  const metriques = async () =>
+    Object.fromEntries((await cdpm.send('Performance.getMetrics')).metrics.map((x) => [x.name, x.value]));
+  const m0 = await metriques();
+  if (args.includes('--profil')) {
+    await cdpm.send('Profiler.enable');
+    await cdpm.send('Profiler.setSamplingInterval', { interval: 200 });
+    await cdpm.send('Profiler.start');
+  }
+  const fin = Date.now() + Number(opt('mesure', 8)) * 1000,
+    fleches = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
+  let k = 0;
+  while (Date.now() < fin) {
+    if (args.includes('--marche')) {
+      const f = fleches[k++ % 4];
+      await page.keyboard.down(f);
+      await page.waitForTimeout(1500);
+      await page.keyboard.up(f);
+    } else await page.waitForTimeout(500);
+  }
+  const m = await page.evaluate(() => window.mesureImages && window.mesureImages());
+  console.log(
+    'scène',
+    JSON.stringify(
+      await page.evaluate(() => {
+        const g = window.CarteJeu && window.CarteJeu.game(),
+          sc = g && g.scene.getScenes(true)[0];
+        if (!sc) return null;
+        let vis = 0,
+          tous = 0;
+        const tex = {};
+        const voir = (o) => {
+          tous++;
+          if (o.visible && o.willRender && o.willRender(sc.cameras.main)) {
+            vis++;
+            const k = o.texture ? o.texture.key : o.type;
+            tex[k] = (tex[k] || 0) + 1;
+          }
+          if (o.list) o.list.forEach(voir);
+        };
+        sc.children.list.forEach(voir);
+        return {
+          objets: tous,
+          dessines: vis,
+          zoom: +sc.cameras.main.zoom.toFixed(2),
+          parTexture: Object.entries(tex)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 12),
+        };
+      }),
+    ),
+  );
+  if (args.includes('--profil')) {
+    // (--profil : les fonctions qui prennent le plus de temps, en propre ; le profil entier dans apercus-ile/profil.cpuprofile)
+    const { profile } = await cdpm.send('Profiler.stop');
+    const { writeFileSync } = await import('node:fs');
+    mkdirSync('apercus-ile', { recursive: true });
+    writeFileSync('apercus-ile/profil.cpuprofile', JSON.stringify(profile));
+    const parNoeud = new Map(profile.nodes.map((nd) => [nd.id, nd])),
+      compte = {};
+    const dt = (profile.endTime - profile.startTime) / 1000 / Math.max(1, profile.samples.length);
+    for (const id of profile.samples) {
+      const nd = parNoeud.get(id),
+        f = nd.callFrame,
+        k =
+          (f.functionName || '(anonyme)') +
+          ' ' +
+          (f.url || '').split('/').slice(-2).join('/') +
+          ':' +
+          (f.lineNumber + 1);
+      compte[k] = (compte[k] || 0) + dt;
+    }
+    for (const [k, v] of Object.entries(compte)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 25))
+      console.log('  ' + v.toFixed(0).padStart(6) + ' ms  ' + k);
+  }
+  const m1 = await metriques(),
+    duree = (k) => +((m1[k] - m0[k]) * 1000).toFixed(0);
+  console.log(
+    'processeur (ms) : script',
+    duree('ScriptDuration'),
+    'tâches',
+    duree('TaskDuration'),
+    'mise en page',
+    duree('LayoutDuration'),
+    'sur',
+    (m1.Timestamp - m0.Timestamp).toFixed(1),
+    's',
+  );
+  console.log(
+    'mesure',
+    JSON.stringify(m && { fps: +m.fps.toFixed(1), pire: +m.pire.toFixed(1), p95: +m.p95.toFixed(1), images: m.images }),
+  );
 }
 mkdirSync(dirname(SORTIE), { recursive: true });
 await page.screenshot({ path: SORTIE });
