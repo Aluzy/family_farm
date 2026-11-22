@@ -10023,6 +10023,7 @@ export const RAW_DATA = {
         "pecher_sauvage": "Noyau de pêcher sauvage"
       }
     },
+    "ECONOMIE": { "TAUX": 5, "TAUX_MIN": 0, "TAUX_MAX": 30, "JOURNAL": 30, "DONS": [10, 50, 100, 500] },
     "VILLAGE": {
       "PLACE": "panneau_village",
       "PORT": "comptoir_port",

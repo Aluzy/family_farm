@@ -47,6 +47,7 @@ export const GESTES = {
 // ou classée ici après avoir disparu du jeu, fait échouer la vérification.
 export const GAME_ACTIONS = {
   'place-monter': 'Monter la place du village',
+  'village-don': 'Donner au village',
   'plant': 'Planter',
   'water': 'Arroser',
   'water-all': 'Arroser',

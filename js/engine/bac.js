@@ -67,6 +67,7 @@ import { commercesAuBac } from './artisans.js';
 import { chroniqueVente, noterChronique } from './chronique.js';
 import { noterExport } from './production.js';
 import { debloque } from './vocations.js';
+import { estPartieIle } from './ile/jeu.js';
 
 const P = () => DATA.PORT;
 const B = () => DATA.PORT.BAC;
@@ -439,6 +440,7 @@ export function articleRefus(state, a) {
 // plants sauvages inscrits, fiche I7e).
 export function catalogueImport(state) {
   const out = [];
+  if (estPartieIle(state)) return out; // (l'île : rien ne s'achète au port, ni import, docs/economie.md E4)
   const R = DATA.PORT.IMPORT.RANGS;
   for (const r of R) {
     for (const a of r) {
@@ -482,6 +484,7 @@ export function passageSuivant(state) {
 // Le joueur (sur la case `ou`) commande `quantite` lots de l'article `cle`, payés d'avance ; ils arrivent au
 // passage suivant du bac. → { ok, article, quantite, cout, arrive } ou le refus.
 export function commanderImport(state, cle, quantite = 1, ou = null, o = {}) {
+  if (estPartieIle(state)) return fail("Le port de l'île ne vend rien : il achète ses productions.");
   const p = portDe(state);
   if (!p) return fail('Il n\'y a pas de port.');
   const a = articleDe(cle, state);

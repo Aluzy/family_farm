@@ -1,0 +1,83 @@
+/* ==========================================================================
+   Tests du moteur : l'économie de l'île (js/engine/ile/economie.js ; docs/economie.md). La bourse du village à part ;
+   la taxe prise la nuit sur le total des revenus du jour, arrondie à l'entier supérieur ; les dons ; le port qui
+   n'achète que ce que l'île produit, sans rien vendre ni contrats.
+   Lancer seul : node --test tests/engine/ile-economie.test.mjs
+   ========================================================================== */
+
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { createNewGame, DATA, finishSetup } from '../../js/engine/index.js';
+import {
+  donnerAuVillage,
+  economie,
+  noterRevenu,
+  reglerTaux,
+  taxeDe,
+  taxerLaNuit,
+} from '../../js/engine/ile/economie.js';
+import { etalPort } from '../../js/engine/port.js';
+import { tirerContrats } from '../../js/engine/contrats.js';
+import { encaisserVente } from '../../js/engine/market.js';
+
+function partie() {
+  const s = createNewGame(9);
+  finishSetup(s);
+  return s;
+}
+
+test('la taxe : 5 % arrondi à l’entier supérieur, rien sur un jour sans revenu', () => {
+  assert.equal(DATA.ILE.ECONOMIE.TAUX, 5);
+  assert.deepEqual(
+    [0, 1, 20, 21, 100].map((n) => taxeDe(n, 5)),
+    [0, 1, 1, 2, 5],
+  );
+  assert.equal(taxeDe(50, 0), 0);
+});
+
+test('la nuit, chacun paie la taxe de son total du jour à la bourse du village, sans passer sous zéro', () => {
+  const s = partie();
+  s.pieces = 200;
+  s.villageois = [
+    { id: 'v1', bourse: 3 },
+    { id: 'v2', bourse: 40 },
+  ];
+  noterRevenu(s, 'joueur', 15);
+  noterRevenu(s, 'joueur', 6); // 21 → 2
+  noterRevenu(s, 'v1', 200); // 10 dus, 3 en bourse
+  noterRevenu(s, 'v2', 30); // 2
+  const r = taxerLaNuit(s);
+  assert.deepEqual([r.joueur, r.villageois, r.total], [2, 5, 7]);
+  assert.deepEqual([s.pieces, s.villageois[0].bourse, s.villageois[1].bourse, economie(s).bourse], [198, 0, 38, 7]);
+  assert.equal(taxerLaNuit(s).total, 0, 'les revenus remis à zéro');
+});
+
+test('une vente au port est un revenu du jour', () => {
+  const s = partie();
+  const gain = encaisserVente(s, 'bois', 4);
+  assert.ok(gain > 0);
+  assert.equal(economie(s).revenus.joueur, gain);
+});
+
+test('un don : de la bourse du joueur à celle du village, jamais plus que ce qu’il a', () => {
+  const s = partie();
+  s.pieces = 30;
+  assert.equal(donnerAuVillage(s, 50).ok, false);
+  assert.equal(donnerAuVillage(s, 0).ok, false);
+  assert.ok(donnerAuVillage(s, 20).ok);
+  assert.deepEqual([s.pieces, economie(s).bourse, economie(s).dons], [10, 20, 20]);
+});
+
+test('le taux se règle de 0 à 30 %', () => {
+  const s = partie();
+  assert.equal(reglerTaux(s, 31).ok, false);
+  assert.ok(reglerTaux(s, 0).ok);
+  assert.ok(reglerTaux(s, 30).ok);
+  assert.equal(economie(s).taux, 30);
+});
+
+test('le port de l’île ne vend rien et ne propose pas de contrats', () => {
+  const s = partie();
+  assert.deepEqual(etalPort(s), []);
+  assert.deepEqual(tirerContrats(s, 3), []);
+});

@@ -12,6 +12,7 @@ import { goutPour } from './amitie.js';
 import { villageoisDe, trouverVillageois } from './villageois.js';
 import { journeeDuVillage } from './villageois-journee.js';
 import { blocBloque, casesCouvertes, memoEnLot } from './blocs.js';import { estPartieIle } from './ile/jeu.js';
+import { noterRevenu } from './ile/economie.js';
 
 
 /* ---------- la part, la bourse et l'étal (le chantier « l'île à bâtir », fiche I4) ----------
@@ -172,6 +173,7 @@ export function vendrePaniers(state, jour, vendu = null) {
     const pieces = valeurPanier(v);
     if (pieces > 0) {
       v.bourse = Math.max(0, entier(v.bourse)) + pieces;
+      noterRevenu(state, v.id, pieces);
       if (vendu) for (const [o, n] of Object.entries(v.panier)) if (n > 0) vendu[o] = (vendu[o] || 0) + n;
       v.vente = { jour, pieces };
       out.ventes[v.id] = pieces;
@@ -382,6 +384,7 @@ export function acheterALEtal(state, id, o) {
   if (E.objets[o] <= 0) delete E.objets[o];
   v.bourse = entier(v.bourse) - prix;
   earn(state, prix, `Étal : ${nom(o)}`);
+  noterRevenu(state, 'joueur', prix);
   v.achat = { jour, objet: o };
   noterAchat(v, { jour, objet: o, prix, ou: 'etal' });
   if (envie === 'besoin') { if (!objet(v.affaires)) v.affaires = {}; v.affaires[o] = (v.affaires[o] || 0) + 1; }

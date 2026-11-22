@@ -17,6 +17,7 @@ import { besoinDe, plaisirAchat } from './bourse.js';
 import { clockHours, nightActive } from './clock.js';
 import { ajouterMeuble, furnitureCount, furnitureMax, meubleRefus } from './meubles.js';
 import { niveauPort } from './port.js';
+import { noterRevenu } from './ile/economie.js';
 
 /* ---------- les commerces d'artisans (le chantier « l'île à bâtir », fiche I5a) ----------
 
@@ -669,6 +670,7 @@ function prendreMatieres(state, c, v, D, J) {
   if (D.cout > 0) {
     v.bourse = Math.max(0, entier(v.bourse) - D.cout);
     earn(state, D.cout, `${nomCommerce(state, c)} : ${Object.entries(D.depuisCoffre).map(([o, n]) => `${n} ${minuscule(nom(o))}`).join(', ')}`);
+    noterRevenu(state, 'joueur', D.cout);
     J.paye += D.cout;
   }
 }
@@ -834,6 +836,7 @@ export function acheterAuCommerce(state, id, o, n = 1) {
   if (c.stock[o] <= 0) delete c.stock[o];
   donnerAuJoueur(state, o, q);
   v.bourse = Math.max(0, entier(v.bourse)) + prix;
+  noterRevenu(state, v.id, prix);
   journalDuJour(c, jourDe(state)).ventes.joueur += prix;
   return { ok: true, objet: o, n: q, prix };
 }
@@ -867,6 +870,7 @@ export function commanderAuCommerce(state, id, recette, o = {}) {
   if (facon) for (const [x, n] of Object.entries(r.entrees)) takeItem(state, x, n);
   pay(state, prix, `${nomCommerce(state, c)} : ${facon ? 'façon' : 'commande'} (${minuscule(nom(r.sortie))})`);
   v.bourse = Math.max(0, entier(v.bourse)) + prix;
+  noterRevenu(state, v.id, prix);
   const J = journalDuJour(c, jourDe(state));
   if (facon) J.facon += prix; else J.ventes.joueur += prix;
   c.seq = Math.max(0, entier(c.seq)) + 1;
@@ -998,6 +1002,7 @@ export function acheterAuComptoir(state, vid, cid, o, teinte = null) {
   if (x) oterTeinte(c, o, teinte);
   v.bourse = entier(v.bourse) - prix;
   a.bourse = Math.max(0, entier(a.bourse)) + prix;
+  noterRevenu(state, a.id, prix);
   v.achatCommerce = { jour, objet: o, commerce: c.id };
   if (envie === 'besoin' && pour === 'outil') v.entretien = jour;
   rangerAchat(v, o, envie === 'besoin' ? pour : null);
@@ -1071,6 +1076,7 @@ export function commercesAuBac(state, jour, vendu = null) {
     }
     if (pieces > 0) {
       v.bourse = Math.max(0, entier(v.bourse)) + pieces;
+      noterRevenu(state, v.id, pieces);
       journalDuJour(c, jour).ventes.bac += pieces;
       out[c.id] = pieces;
     }

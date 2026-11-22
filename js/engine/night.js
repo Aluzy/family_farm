@@ -50,6 +50,7 @@ import { vocationsNuit } from './vocations.js';
 import './vocation-village.js';   // (la convivialité s'enregistre au socle des vocations)
 import { fetesVillageNuit } from './fetes-village.js';
 import { projetsVillageNuit } from './projets-village.js';
+import { taxerLaNuit } from './ile/economie.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
@@ -389,6 +390,7 @@ function nuitEnLot(state) {
     // (une roche cassée ne revient pas sous une construction ; une plante née d'une graine non plus)
     const baties = casesBaties(state), plots = new Set(allPlots(state).map((p) => p.case));
     nuitIle(ileDeLaPartie(state), state.day, undefined, { occupee: (i) => baties.has(i) || plots.has(i) });
+    taxerLaNuit(state); // (la taxe du village sur les revenus du jour : docs/economie.md E9)
   }
   composter(state); // ce qui a périmé cette nuit va au bac à compost (compost.js ; après la péremption)
   remplirRuches(state); // les abeilles remplissent les ruches

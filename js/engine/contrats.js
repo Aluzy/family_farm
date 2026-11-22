@@ -36,6 +36,7 @@ import { portageDe, volumeDe } from './portage.js';
 import { productionDe } from './production.js';
 import { debloque } from './vocations.js';
 import { chaines } from './chaines.js';
+import { estPartieIle } from './ile/jeu.js';
 
 const CC = () => DATA.PRODUCTION.CONTRATS;
 const periode = () => Math.max(1, Math.floor(Number(DATA.PORT.BAC.PERIODE) || 1));
@@ -73,7 +74,8 @@ export function valeurContrat(state, n) {
 export function tirerContrats(state, jour) {
   const C = CC(), n = niveauPort(state);
   const liste = objetsContrat(state);
-  const nombre = Math.min(contratsParPassage(n), liste.length);
+  // (l'île : pas de contrats d'export, docs/economie.md E6)
+  const nombre = estPartieIle(state) ? 0 : Math.min(contratsParPassage(n), liste.length);
   const rnd = mulberry32(hache(`${farmSeed(state) || 'ile'}:contrat:${jour}`));
   const out = [], pris = new Set(), valeur = valeurContrat(state, n), pas = Math.max(1, Number(C.ARRONDI) || 1);
   for (let k = 0; k < nombre; k++) {

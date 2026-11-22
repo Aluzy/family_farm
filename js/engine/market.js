@@ -8,6 +8,7 @@ import { refreshUnlocks } from './techtree.js';
 import { fillSilo } from './animals.js';
 import { gainActionXp } from './levels.js';
 import { isGraineComptoir } from './crops.js';
+import { noterRevenu } from './ile/economie.js';
 
 /* ---------- Lot 3 : Marché (fiche 7c : la calèche, caleche.js, en garde les prix et les cours) ---------- */
 
@@ -127,6 +128,7 @@ export function sellItem(state, item, qty, libelle = 'Vente') {
 export function encaisserVente(state, item, n, libelle = 'Vente') {
   const gain = n * sellPrice(item, state);
   earn(state, gain, `${libelle} : ${DATA.OBJETS[item].nom}`, n);
+  noterRevenu(state, 'joueur', gain); // (l'île : un revenu, taxé la nuit, docs/economie.md E8)
   gainActionXp(state, 'vendre', gain); // version 1.7 : 1 XP par pièce gagnée
   setMarketCoef(state, item, marketCoef(state, item) - DATA.MARCHE.PAS * n);
   refreshUnlocks(state);
