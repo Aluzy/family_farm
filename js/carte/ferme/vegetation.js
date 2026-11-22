@@ -71,6 +71,8 @@
     // par stade, découpées d'après la table que donne ctx.monde (js/engine/ile/scene.js planchesDeLIle)
     { cle: 'ile_cultures', table: 'culturesTable', donnees: 'cultures', sortes: 'cultures', ile: true },
     { cle: 'ile_fruitiers', table: 'fruitiersTable', donnees: 'fruitiers', sortes: 'fruitiers', ile: true },
+    // (les graines plantées et les pousses : js/engine/ile/scene.js SEMIS)
+    { cle: 'ile_semis', table: 'semisTable', donnees: 'semis', sortes: 'semisSortes', ile: true },
   ];
   // (PRES et LOIN : 96 et 384 px, ou 32 et 192 en qualité « économie » : CarteKit.reglages, fiche 9a)
   const BLOC = 16, MASQUE = 4, ECUME = 240;

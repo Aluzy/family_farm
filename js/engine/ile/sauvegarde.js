@@ -115,6 +115,8 @@ export function versSauvegarde(ile, cat = catalogue()) {
     table: tableDesNumeros(cat),
     croissance: [...ile.croissance],
     repousse: ile.repousse.map((r) => [r.i, r.numero, r.jour]),
+    semis: [...ile.semis].map(([i, s]) => [i, s.numero, s.stade, s.jour, s.objet]),
+    touffes: [...ile.touffesSemees],
     ...coderTableaux(ile),
   };
 }
@@ -142,6 +144,17 @@ export function depuisSauvegarde(s, cat = catalogue()) {
     repousse: s.repousse
       .map(([i, numero, jour]) => ({ i, numero: nouveau[numero] ?? 0, jour }))
       .filter((r) => r.numero),
+    // (les graines plantées : absentes d'une sauvegarde d'avant les graines)
+    semis: new Map(
+      (s.semis || [])
+        .map(([i, numero, stade, jour, objet]) => [
+          i,
+          { numero: numero ? (nouveau[numero] ?? -1) : 0, stade, jour, objet },
+        ])
+        .filter(([, x]) => x.numero >= 0),
+    ),
+    // (l'herbe haute née des graines d'herbe)
+    touffesSemees: new Map(s.touffes || []),
     modifiees: new Set(),
     aSauver: new Set(),
   };
@@ -185,6 +198,8 @@ export function versSauvegardeRegions(ile, cat = catalogue()) {
     table: tableDesNumeros(cat),
     croissance: [...ile.croissance],
     repousse: ile.repousse.map((x) => [x.i, x.numero, x.jour]),
+    semis: [...ile.semis].map(([i, s]) => [i, s.numero, s.stade, s.jour, s.objet]),
+    touffes: [...ile.touffesSemees],
     regions,
   };
 }
@@ -201,6 +216,8 @@ export function fusionnerRegions(entiere, partielles) {
   const t = decoderTableaux(entiere, N * N);
   let repousse = entiere.repousse;
   let croissance = entiere.croissance;
+  let semis = entiere.semis || [];
+  let touffes = entiere.touffes || [];
   const versEntiere = new Map(entiere.table.map((id, k) => [id, k]));
   const table = [...entiere.table];
   for (const p of partielles) {
@@ -224,8 +241,10 @@ export function fusionnerRegions(entiere, partielles) {
     }
     repousse = p.repousse.map(([i, n, jour]) => [i, numero[n] ?? 0, jour]);
     croissance = p.croissance;
+    semis = (p.semis || []).map(([i, n, stade, jour, objet]) => [i, n ? (numero[n] ?? 0) : 0, stade, jour, objet]);
+    touffes = p.touffes || [];
   }
-  return { ...entiere, table, croissance, repousse, ...coderTableaux(t) };
+  return { ...entiere, table, croissance, repousse, semis, touffes, ...coderTableaux(t) };
 }
 
 /** Le nombre de régions (pour les tests). */

@@ -105,3 +105,13 @@ export function herbesParCase(touffes, n) {
   }
   return H;
 }
+
+/**
+ * Toutes les touffes de l'île : celles du départ (touffesDeLIle) et celles nées des graines d'herbe (ile.touffesSemees).
+ * @param {object} ile
+ * @param {string} graine
+ */
+export function toutesLesTouffes(ile, graine) {
+  const semees = [...(ile.touffesSemees || [])].map(([id, v]) => [...id.split(',').map(Number), v]);
+  return semees.length ? [...touffesDeLIle(ile, graine), ...semees] : touffesDeLIle(ile, graine);
+}

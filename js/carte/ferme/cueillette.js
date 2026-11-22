@@ -71,7 +71,11 @@
 
     showPiece(m, saute) {
       // (la botte de la botteleuse : son image, et toute sa paille d'un coup)
-      const img = this.add.image(m.x, m.y, RAMASSABLES.key, M.images[m.image || m.item] || 0).setOrigin(0.5, 1).setDepth(m.y - 1);
+      // (une graine de l'île qui n'a pas d'image parmi les ramassables : la sienne, assets/graines_ile.png)
+      const GI = global.CarteKit.GRAINES_ILE, gi = GI && M.images[m.image || m.item] === undefined ? GI.frames[m.item] : undefined;
+      const img = gi !== undefined && this.has(GI.key)
+        ? this.add.image(m.x, m.y, GI.key, gi).setOrigin(0.5, 1).setDepth(m.y - 1)
+        : this.add.image(m.x, m.y, RAMASSABLES.key, M.images[m.image || m.item] || 0).setOrigin(0.5, 1).setDepth(m.y - 1);
       this.pieces.set(m.n, { n: m.n, item: m.item, x: m.x, y: m.y, img });
       if (saute && !reduit()) this.tweens.add({ targets: img, y: { from: m.y - M.saut, to: m.y }, duration: M.sautMs, ease: 'Bounce.easeOut' });
     },

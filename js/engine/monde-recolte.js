@@ -15,6 +15,7 @@ import { estPartieIle, ileDeLaPartie } from './ile/jeu.js';
 import { reglesDeLIle } from './ile/recoltes.js';
 import { catalogue } from './ile/catalogue.js';
 import { recolter as recolterIle } from './ile/vie.js';
+import { ficheDeLaPiece, semenceDe } from './ile/graines.js';
 
 /* ---------- couper, casser, cueillir et ramasser dans le grand monde (docs/grand-monde.md : fiche 6a) ---------- */
 
@@ -232,7 +233,14 @@ function butinFinal(state, id, regle) {
     const bonus = techSum(state, 'recolteBonus') + (regle.minerai ? bonusMinerai(state) : 0);
     out[item] = k === 0 && regle.geste !== 'cueillir' && regle.geste !== 'ramasser' ? withBonus(state, n, bonus) : n;
   });
-  for (const [item, pct] of Object.entries(regle.chance || {})) if (hache(`${id}:${item}:chance:${state.day}`) * 100 < pct) out[item] = (out[item] || 0) + 1;
+  // (l'île : la graine de la plante, une fois sur ILE.GRAINES.CHANCE ; le gland et la pomme de pin en sont, ils ne
+  // tombent plus en plus : js/engine/ile/graines.js)
+  const ile = estPartieIle(state), avant = ile ? Object.values(DATA.ILE.GRAINES.ARBRES) : [];
+  for (const [item, pct] of Object.entries(regle.chance || {})) if (!avant.includes(item) && hache(`${id}:${item}:chance:${state.day}`) * 100 < pct) out[item] = (out[item] || 0) + 1;
+  if (ile) {
+    const o = lireIdMonde(id), g = o && semenceDe(ficheDeLaPiece(o.def.nom));
+    if (g && hache(`${id}:graine:${state.day}`) * 100 < DATA.ILE.GRAINES.CHANCE) out[g] = (out[g] || 0) + 1;
+  }
   return out;
 }
 

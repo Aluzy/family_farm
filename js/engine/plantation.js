@@ -11,16 +11,17 @@ import { farmTerrain, tileCount } from './terrain.js';
    aller (casesAPlanter, autour du personnage), le joueur en touche une, confirme, et l'arbre y
    est planté (planterIci : comme un bloc posé, js/engine/blocs.js, qui ne reste pas un bloc). */
 
-// La sorte de bloc à planter pour l'objet `item` (une graine d'arbre, un jeune arbre, une graine de fleur), ou null.
+// La sorte de bloc à planter pour l'objet `item` (une graine d'arbre, un jeune arbre, une graine de fleur ; une graine
+// de l'île : js/engine/ile/graines.js), ou null.
 export function sorteAPlanter(item) {
   const B = DATA.ATELIER.BLOCS;
-  return Object.keys(B).find((s) => B[s].objet === item && (B[s].semis || B[s].arbre || B[s].massif)) || null;
+  return Object.keys(B).find((s) => B[s].objet === item && (B[s].semis || B[s].arbre || B[s].massif || B[s].ileGraine)) || null;
 }
 
 // Les sortes à planter (elles ne sont plus dans le menu Construire).
 export function sortesAPlanter() {
   const B = DATA.ATELIER.BLOCS;
-  return Object.keys(B).filter((s) => B[s].semis || B[s].arbre || B[s].massif);
+  return Object.keys(B).filter((s) => B[s].semis || B[s].arbre || B[s].massif || B[s].ileGraine);
 }
 
 // Les cases où planter `sorte`, à au plus `rayon` cases de `centre` (en ligne ou en colonne).

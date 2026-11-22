@@ -9,7 +9,7 @@ import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { techFlag, techSum } from './techtree.js';
 import { casesBaties } from './blocs.js';
-import { FERME_GENEREE } from './ferme-generee.js';
+import { FERME_GENEREE, hache as hacheGraine } from './ferme-generee.js';
 import { genererMonde } from './monde.js';
 import { noter } from './journal.js';
 import { chevalMonte, vitesseCheval } from './cheval.js';
@@ -515,6 +515,13 @@ export function cutGrass(state) {
 // Un coup de faux sur la touffe `id` : FAUX.FIBRE fibre au sol (aux points `ou.coup`, voir
 // lacher ; sans `ou`, dans l'inventaire), de l'énergie, de l'XP ; la touffe est fauchée. (La
 // botteleuse en fait de la paille : js/engine/botteleuse.js.)
+// L'île (docs/ile-300.md) : une touffe fauchée donne une graine d'herbe, une fois sur ILE.GRAINES.CHANCE (au sol avec la
+// fibre ; sans `ou`, dans l'inventaire). → ses morceaux, ou null.
+function graineDHerbe(state, id, ou) {
+  if (!estPartieIle(state) || hacheGraine(`${id}:graine:${state.day}`) * 100 >= DATA.ILE.GRAINES.CHANCE) return null;
+  return lacher(state, DATA.ILE.GRAINES.FAMILLES.herbe.objet, 1, 0, ou);
+}
+
 export function scytheGrass(state, id, ou) {
   const X = DATA.FAUX;
   if (!hasTool(state, 'faux')) return fail(`Il te faut une faux (à fabriquer à l'Atelier).`);
@@ -526,6 +533,8 @@ export function scytheGrass(state, id, ou) {
   o.herbes[id] = { retour: state.day + randomInt(state, X.RETOUR[0], X.RETOUR[1]) };
   const fibre = withBonus(state, X.FIBRE, techSum(state, 'recolteBonus'));
   const morceaux = lacher(state, 'fibre', fibre, 0, ou);
+  const g = graineDHerbe(state, id, ou);
+  if (g && morceaux) morceaux.coup.push(...g.coup);
   spendEnergy(state, 'faucher');
   gainActionXp(state, 'faucher');
   return { ok: true, fibre, morceaux };
@@ -553,6 +562,8 @@ export function scytheAround(state, ids, ou) {
     const pts = ou && ou.points && ou.points[id];
     const m = lacher(state, 'fibre', n, 0, pts ? { carte: ou.carte, coup: pts } : null);
     if (m) coup.push(...m.coup);
+    const g = graineDHerbe(state, id, pts ? { carte: ou.carte, coup: pts } : null);
+    if (g) coup.push(...g.coup);
     gainActionXp(state, 'faucher');
   }
   spendEnergy(state, 'faucher', E);

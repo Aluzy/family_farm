@@ -9981,6 +9981,47 @@ export const RAW_DATA = {
     "VIE": { "REPOUSSE": [5, 8], "SAUVEGARDE": 1 },
     "PARTIE": { "INVENTAIRE": { "tente": 1 }, "TENTE": { "places": 4 }, "EN_LIGNE": false },
     "HERBES": { "ECHELLE": 7, "SEUIL": 0.66, "COEUR": 0.08, "DENSITE": [0.9, 0.3], "ZONE": 0.7, "FLEURS": 0.2, "DEPART": 8 },
+    "GRAINES": {
+      "CHANCE": 50,
+      "NUITS": [2, 3],
+      "EXCLUES": ["souche", "tronc_couche", "bois_flotte", "pierre"],
+      "ARBRES": { "feuillu": "gland", "sapin": "pomme_de_pin", "pin_tordu": "pomme_de_pin", "sapin_nain": "pomme_de_pin" },
+      "GROUPES": {
+        "gland": { "plantes": ["feuillu"], "choix": "tous" },
+        "pomme_de_pin": { "plantes": ["sapin", "pin_tordu", "sapin_nain"], "choix": "biome" }
+      },
+      "PROPRES": ["arbre", "fleur", "fruitier"],
+      "FAMILLES": {
+        "buisson": { "objet": "graine_buisson", "choix": "biome" },
+        "herbe": { "objet": "graine_herbe", "choix": "sol", "herbeHaute": true },
+        "champignon": { "objet": "spores_champignon", "choix": "tous" }
+      },
+      "OBJETS": {
+        "graine_buisson": { "nom": "Graine de buisson", "icone": "🫐" },
+        "graine_herbe": { "nom": "Graine d'herbe", "icone": "🌾" },
+        "spores_champignon": { "nom": "Spores de champignon", "icone": "🍄‍🟫" }
+      },
+      "ICONES": { "arbre": "🌰", "fleur": "🌼", "fruitier": "🫘" },
+      "NOMS": {
+        "bouleau": "Graine de bouleau",
+        "saule": "Graine de saule",
+        "arbre_pre": "Graine d'arbre des prés",
+        "chataignier": "Châtaigne à planter",
+        "fleurs": "Graine de fleurs des champs",
+        "coquelicot": "Graine de coquelicot",
+        "pavot_californie": "Graine de pavot de Californie",
+        "myosotis": "Graine de myosotis",
+        "lavande": "Graine de lavande",
+        "lupin": "Graine de lupin",
+        "fleur_rouge": "Graine de fleur rouge",
+        "fleur_mauve": "Graine de fleur mauve",
+        "pommier_sauvage": "Pépin de pommier sauvage",
+        "poirier_sauvage": "Pépin de poirier sauvage",
+        "cerisier_sauvage": "Noyau de cerisier sauvage",
+        "abricotier_sauvage": "Noyau d'abricotier sauvage",
+        "pecher_sauvage": "Noyau de pêcher sauvage"
+      }
+    },
     "VILLAGE": {
       "PLACE": "panneau_village",
       "PORT": "comptoir_port",

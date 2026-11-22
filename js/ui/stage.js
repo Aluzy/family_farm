@@ -660,6 +660,8 @@ export function stageModel() {
     // (fiche I2, le portage : la brouette devant le personnage à pied, la charrette attelée au cheval en selle, quand
     // quelque chose est chargé ; js/carte/portage.js)
     portage: volumeCharge(state) > 0 ? { vehicule: vehiculePortage(state), charge: Object.keys(chargeDe(state)).length } : null,
+    // (l'île : l'herbe haute née des graines d'herbe, js/carte/ferme/decor.js syncTouffesSemees)
+    touffesSemees: estPartieIle(state) ? [...ileDeLaPartie(state).touffesSemees] : null,
     houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state) * cheminIci, galop: !!friandiseGalop(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? semables() : null, engraissables: engraisMode && !buildMode ? casesEngraissables(state) : null,   // (l'engrais pris en main, js/ui/compost.js) serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }

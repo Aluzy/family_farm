@@ -17,6 +17,7 @@ import { DATA } from '../engine/catalog.js';
 import { ILE, regionsModifiees } from '../engine/ile.js';
 import { BIOMES as BIOMES_ILE, SOL_BIOME, SOLS } from '../engine/ile/reglages.js';
 import { reglesDeLIle } from '../engine/ile/recoltes.js';
+import { SEMIS } from '../engine/ile/scene.js';
 import { contexteIle, planchesDeLIle, regionDeLIle, regionsDeLaScene } from '../engine/ile/scene.js';
 
 const N = ILE.TAILLE;
@@ -144,6 +145,8 @@ function client(ile, graine, taille) {
     culturesTable: P.cultures.table,
     fruitiers: P.fruitiers.sortes,
     fruitiersTable: P.fruitiers.table,
+    semisSortes: SEMIS.sortes,
+    semisTable: SEMIS.table,
     regles: { ...RECOLTE.SORTES, ...Object.fromEntries(Object.entries(reglesDeLIle()).map(([k, e]) => [k, e.regle])) },
     idObjet: idObjetMonde,
     ouvertes: null,

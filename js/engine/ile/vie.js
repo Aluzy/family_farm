@@ -81,6 +81,8 @@ export function ileDuChantier(ch) {
     etat: ch.etat,
     croissance: new Map(),
     repousse: [],
+    semis: new Map(),
+    touffesSemees: new Map(),
     modifiees: new Set(),
     aSauver: new Set(),
   };
@@ -302,7 +304,71 @@ export function recolter(ile, i, jour, outil = 'main', cat = catalogue()) {
  * @param {number} jour
  * @returns {{ pousses: number, repousses: number }}
  */
-export function nuit(ile, jour, cat = catalogue()) {
+/* ---------- les graines plantées (js/engine/ile/graines.js) ---------- */
+
+/**
+ * Une graine peut-elle se planter en `i` ? null, ou la raison : ni sur l'eau, ni sur le sable ; une case libre (ni
+ * objet, ni autre graine).
+ * @param {Ile} ile
+ * @param {number} i
+ */
+export function refusSemis(ile, i) {
+  if (!(i >= 0 && i < ile.n * ile.n) || auLarge(i)) return 'hors de l’île';
+  if (estEau(ile, i)) return 'pas sur l’eau';
+  if (SOLS[ile.sol[i]].nom === 'sable') return 'pas sur le sable';
+  if (ile.objet[i] || ile.bloque[i] || ile.semis.has(i)) return 'la place est prise';
+  return null;
+}
+
+/**
+ * Planter en `i`, le jour `jour`, la graine d'où sortira `plante` (l'id d'une fiche, ou « herbe_haute ») : une graine
+ * plantée, qui sera une pousse puis la plante (nuit). `objet` : la graine (son dessin, tant qu'elle est en terre).
+ * → { ok } ou { ok: false, raison }.
+ * @param {Ile} ile
+ * @param {number} i
+ * @param {string} plante
+ * @param {string} objet
+ * @param {number} jour
+ */
+export function planterGraine(ile, i, plante, objet, jour, cat = catalogue()) {
+  const r = refusSemis(ile, i);
+  if (r) return refus(r);
+  const f = cat.parId.get(plante);
+  if (!f && plante !== 'herbe_haute') return refus('cette plante n’existe pas');
+  ile.semis.set(i, { numero: f ? f.numero : 0, objet, stade: 0, jour: jour + DATA.ILE.GRAINES.NUITS[0] });
+  marquer(ile, i);
+  return OK;
+}
+
+/** Retire la graine plantée (ou la pousse) de la case `i` (on y bâtit, on y laboure). → vrai s'il y en avait une. */
+export function retirerSemis(ile, i) {
+  if (!ile.semis.has(i)) return false;
+  ile.semis.delete(i);
+  marquer(ile, i);
+  return true;
+}
+
+// L'herbe haute née d'une graine d'herbe : deux touffes sur la case (les mêmes places en quinconce que les autres,
+// js/engine/ile/herbes.js), gardées par l'île (ile.touffesSemees : « x,y » → variante).
+function semerTouffes(ile, i) {
+  const x = i % ile.n,
+    y = (i - x) / ile.n;
+  for (let j = 0; j < 2; j++) {
+    const px = x * 16 + ((2 * y + j) % 2 ? 12 : 4),
+      py = y * 16 + 6 + 8 * j;
+    ile.touffesSemees.set(`${px},${py}`, (x + y + j) % 3);
+  }
+  marquer(ile, i);
+}
+
+// Le stade où une plante née d'une graine arrive : une culture mûre, un fruitier au stade « arbre » (ses fruits viendront),
+// sinon son dernier stade.
+function stadeFinal(f) {
+  if (f.famille === 'fruitier' && f.recolte && Number.isInteger(f.recolte.stade)) return f.recolte.stade;
+  return f.stades - 1;
+}
+
+export function nuit(ile, jour, cat = catalogue(), o = {}) {
   let pousses = 0;
   for (const [i, quand] of [...ile.croissance]) {
     const f = ficheA(ile, i, cat);
@@ -325,11 +391,37 @@ export function nuit(ile, jour, cat = catalogue()) {
     }
     const f = cat.fiches[r.numero - 1];
     const stade = f.stades > 1 ? 0 : f.stades - 1;
-    // la place a été prise (bâtie, plantée, changée en eau) : la plante ne revient pas
+    // une construction dessus (o.occupee : ce que la partie y a posé) : la roche attend qu'elle s'en aille
+    if (o.occupee && o.occupee(r.i)) {
+      attendent.push(r);
+      continue;
+    }
+    // la place a été prise par l'île (une plante, de l'eau) : elle ne revient pas
     if (poserObjet(ile, r.i, r.numero, stade, jour, cat).ok) repousses++;
   }
   ile.repousse = attendent;
-  return { pousses, repousses };
+  // les graines plantées : la pousse, puis la plante (sa place prise depuis, bâtie : elle s'en va)
+  let semis = 0;
+  for (const [i, s] of [...ile.semis]) {
+    if (s.jour > jour) continue;
+    if (s.stade === 0) {
+      s.stade = 1;
+      s.jour = jour + DATA.ILE.GRAINES.NUITS[1];
+      marquer(ile, i);
+      continue;
+    }
+    ile.semis.delete(i);
+    marquer(ile, i);
+    if (o.occupee && o.occupee(i)) continue;
+    if (!s.numero) {
+      semerTouffes(ile, i);
+      semis++;
+      continue;
+    }
+    const f = cat.fiches[s.numero - 1];
+    if (f && poserObjet(ile, i, s.numero, stadeFinal(f), jour, cat).ok) semis++;
+  }
+  return { pousses, repousses, semis };
 }
 
 /* ---------- pour la scène ---------- */
