@@ -93,6 +93,16 @@ import { surbrillanceObjectifs } from './objectifs.js';
 import { surbrillanceIle } from './didacticiel-ile.js';
 import { solDeLIle } from './ile-sol.js';
 import { estPartieIle, ileDeLaPartie } from '../engine/ile/jeu.js';
+import { marchable as marchableIle } from '../engine/ile/vie.js';
+
+// L'île de 300 × 300 (docs/ile-300.md) : où le personnage apparaît (le point d'apparition, ses pieds en px de la
+// carte), et si une case est de la terre où l'on marche ; null sur une partie d'avant.
+function ileDepart() {
+  if (!estPartieIle(state)) return null;
+  const ile = ileDeLaPartie(state), t = state.monde && Number.isInteger(state.monde.ici) ? state.monde.ici : null;
+  if (!ile || t === null) return null;
+  return { x: (t % ile.n) * 16 + 8, y: Math.floor(t / ile.n) * 16 + 14, marchable: (c) => c >= 0 && c < ile.n * ile.n && marchableIle(ile, c) };
+}
 import { etapeDidacticiel, horsDeLaFerme } from '../engine/didacticiel.js';
 import { alerteFaim, alerteSortie, coiffeCarte, vitessePied } from '../engine/equipement.js';
 import { plantationModele } from './plantation.js';
@@ -1265,7 +1275,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, enLigneSurLaFerme({ act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, portComptoir: portComptoirDepuisCarte, compagnonTouche, villageois: villageoisDepuisCarte, positionGardee, positionNoter, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, chaineAide: ouvrirDiagnosticChaine, bacTouche, bacRecolter, galop: galopDepuisCarte, massifTouche, massifCueillir, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() }))) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
+      if (!FarmStage.mount(el, enLigneSurLaFerme({ act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, portComptoir: portComptoirDepuisCarte, compagnonTouche, villageois: villageoisDepuisCarte, positionGardee, positionNoter, ileDepart, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, chaineAide: ouvrirDiagnosticChaine, bacTouche, bacRecolter, galop: galopDepuisCarte, massifTouche, massifCueillir, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() }))) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
     } catch (err) {
       stageBroken = true;
       if (window.Chargement) window.Chargement.fini();
