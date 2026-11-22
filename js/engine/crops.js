@@ -181,8 +181,16 @@ export function soilLayoutOk(state, tile, labour) {
 // Version 1.15 : tuiles d'herbe que la houe peut labourer maintenant, pour le dessin (hors
 // plafond et énergie, qui se disent au moment du labour) : labourables, sans terre, et dont
 // les bordures se dessineraient.
-export function hoeableTiles(state) {
-  const cases = casesDuTerrain(farmTerrain(state), state);   // (la ferme et les régions vues)
+// `autour` : { centre, rayon } : seulement les cases à au plus `rayon` cases (en ligne, en colonne) de `centre` (l'île de
+// 300 × 300 : la carte autour du personnage, plutôt que ses 90 000 cases à chaque labour ; docs/ile-300.md).
+export function hoeableTiles(state, autour = null) {
+  const T = farmTerrain(state);
+  let cases = casesDuTerrain(T, state);   // (la ferme et les régions vues)
+  if (autour && Number.isInteger(autour.centre)) {
+    const W = T.LARGEUR, c0 = autour.centre % W, r0 = Math.floor(autour.centre / W), R = autour.rayon;
+    cases = [];
+    for (let r = Math.max(0, r0 - R); r <= Math.min(T.HAUTEUR - 1, r0 + R); r++) for (let c = Math.max(0, c0 - R); c <= Math.min(W - 1, c0 + R); c++) cases.push(r * W + c);
+  }
   const dirt = dirtTiles(state);
   const libres = freedRockTiles(state); // une fois pour toute la carte
   const serre = new Set(serrePlaces(state));   // (les cases de la Serre : à part, plus bas)

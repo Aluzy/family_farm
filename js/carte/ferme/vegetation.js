@@ -169,10 +169,19 @@
       if (r.vegBlocs || !this.vegetationPrete()) return;
       const M = this.ctx.monde, reg = M.region(r.rx, r.ry);
       if (!reg || !reg.vegetation) return;
+      r.vegReg = reg;
+      r.vegBlocs = [...this.blocsVegetation(r, reg, null).values()];
+      this.vegCle = null;
+    },
+
+    // Les blocs de végétation de la région `r` d'après sa région du monde `reg` : { « bx,by » : bloc } ; `seuls` (un Set de
+    // clés « bx,by ») : ceux-là seulement. Chaque bloc garde sa région du monde (b.reg : ses tableaux, que ses items lisent).
+    blocsVegetation(r, reg, seuls) {
       const blocs = new Map(), P = BLOC * T;
       const range = (j, k, x, y, basse) => {
         const cle = Math.floor(x / P) + ',' + Math.floor((y - 1) / P);
-        if (!blocs.has(cle)) blocs.set(cle, { x: Math.floor(x / P) * P, y: Math.floor((y - 1) / P) * P, items: [], objets: null });
+        if (seuls && !seuls.has(cle)) return;
+        if (!blocs.has(cle)) blocs.set(cle, { cle, reg, x: Math.floor(x / P) * P, y: Math.floor((y - 1) / P) * P, items: [], objets: null });
         blocs.get(cle).items.push(j, k, basse);
       };
       this.veg.planches.forEach((pl, j) => {
@@ -188,9 +197,52 @@
           if (pl.sortes[b[k]].penche && x >= r.x && x < r.x + r.w && y - 1 >= r.y && y - 1 < r.y + r.h) range(j, k, x, y, 1);
         }
       });
+      return blocs;
+    },
+
+    // L'île de 300 × 300 (docs/ile-300.md) : des cases de la région `r` ont changé (une plante coupée, ramassée, une
+    // graine qui pousse), pas leur sol : seuls les blocs de végétation qui les portent sont refaits (leurs images), pas
+    // toute la région (un geste coûtait jusqu'à une seconde sur téléphone).
+    vegetationCases(r, cases) {
+      if (!r.vegBlocs || !this.vegetationPrete()) return;
+      const M = this.ctx.monde, reg = M.region(r.rx, r.ry);
+      if (!reg) return;
+      const P = BLOC * T, W = this.grid.cols, cles = new Set();
+      for (const i of cases) {
+        const x = (i % W) * T + 8, y = Math.floor(i / W) * T;
+        // (un pied tiré au hasard dans sa case : sa rangée, et la voisine du bas pour un pied en bas de case)
+        for (const yy of [y + 1, y + T]) cles.add(Math.floor(x / P) + ',' + Math.floor((yy - 1) / P));
+      }
+      const neufs = this.blocsVegetation(r, reg, cles), garde = [];
+      for (const b of r.vegBlocs) {
+        if (!cles.has(b.cle || Math.floor(b.x / P) + ',' + Math.floor(b.y / P))) { garde.push(b); continue; }
+        const allume = !!b.objets;
+        if (allume) this.vegBlocOff(b);
+        const n = neufs.get(b.cle || Math.floor(b.x / P) + ',' + Math.floor(b.y / P));
+        if (n) { neufs.delete(n.cle); if (allume) this.vegBlocOn(n, reg); garde.push(n); }
+      }
+      // (un bloc qui n'existait pas : une plante née sur une case vide)
+      for (const n of neufs.values()) { garde.push(n); if (this.vegListe) this.vegBlocOn(n, reg); }
+      r.vegBlocs = garde;
       r.vegReg = reg;
-      r.vegBlocs = [...blocs.values()];
-      this.vegCle = null;
+      this.vegListesRefaites();
+    },
+
+    // Les listes des images de végétation (devant le personnage, les plantes qui penchent, l'écume), refaites.
+    vegListesRefaites() {
+      this.vegListe = [];
+      this.vegHerbes = [];
+      this.vegEcumes = [];
+      for (const r of this.shownRegions()) {
+        for (const b of r.vegBlocs || []) {
+          for (const o of b.objets || []) {
+            (o.herbe ? this.vegHerbes : this.vegListe).push(o.herbe || o);
+            if (o.ecume) this.vegEcumes.push(o.ecume);
+          }
+        }
+      }
+      this.sunDirty = true;
+      this.cullKey = '';
     },
 
     // La région s'en va : les images de ses blocs avec elle.
@@ -216,24 +268,10 @@
       for (const r of this.shownRegions()) {
         if (!r.vegBlocs) this.vegetationRegion(r);
         for (const b of r.vegBlocs || []) {
-          if (!b.objets && !loin(b, PRES)) { this.vegBlocOn(b, r.vegReg); change = true; } else if (b.objets && loin(b, LOIN)) { this.vegBlocOff(b); change = true; }
+          if (!b.objets && !loin(b, PRES)) { this.vegBlocOn(b, b.reg || r.vegReg); change = true; } else if (b.objets && loin(b, LOIN)) { this.vegBlocOff(b); change = true; }
         }
       }
-      if (change) {
-        this.vegListe = [];
-        this.vegHerbes = [];
-        this.vegEcumes = [];
-        for (const r of this.shownRegions()) {
-          for (const b of r.vegBlocs || []) {
-            for (const o of b.objets || []) {
-              (o.herbe ? this.vegHerbes : this.vegListe).push(o.herbe || o);
-              if (o.ecume) this.vegEcumes.push(o.ecume);
-            }
-          }
-        }
-        this.sunDirty = true;
-        this.cullKey = '';          // (les nouvelles images, hors de la vue : pas dessinées, decor.js cullDecor)
-      }
+      if (change) this.vegListesRefaites();   // (les nouvelles images, hors de la vue : pas dessinées, decor.js cullDecor)
     },
 
     vegBlocOn(b, reg) {

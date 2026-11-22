@@ -9984,6 +9984,7 @@ export const RAW_DATA = {
     "GRAINES": {
       "CHANCE": 50,
       "NUITS": [2, 3],
+      "SANS_POUSSE": { "champignon": 1 },
       "EXCLUES": ["souche", "tronc_couche", "bois_flotte", "pierre"],
       "ARBRES": { "feuillu": "gland", "sapin": "pomme_de_pin", "pin_tordu": "pomme_de_pin", "sapin_nain": "pomme_de_pin" },
       "GROUPES": {
