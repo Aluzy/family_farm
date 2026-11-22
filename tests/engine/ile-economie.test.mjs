@@ -73,8 +73,10 @@ test('un don : de la bourse du joueur à celle du village, jamais plus que ce qu
   assert.deepEqual([s.pieces, economie(s).bourse, economie(s).dons], [10, 20, 20]);
 });
 
-test('le taux se règle de 0 à 30 %', () => {
+test('le taux se règle de 0 à 30 %, à la mairie', () => {
   const s = partie();
+  assert.equal(reglerTaux(s, 10).ok, false, 'pas de mairie');
+  economie(s).faits = [{ sorte: 'mairie', jour: 1 }];
   assert.equal(reglerTaux(s, 31).ok, false);
   assert.ok(reglerTaux(s, 0).ok);
   assert.ok(reglerTaux(s, 30).ok);

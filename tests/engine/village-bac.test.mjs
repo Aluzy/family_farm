@@ -4,6 +4,8 @@
    Lancer seul : node tests/run-tests.mjs village-bac
    ========================================================================== */
 
+import { economie } from '../../js/engine/ile/economie.js';
+import { choisirProjet } from '../../js/engine/ile/projets.js';
 import {
   acheterAuPort, agrandirPort, apporterAuChantier, articleDe, avancerBac, awakeMsAtHour, bacAQuai, caissesAQuai,
   catalogueImport, chargerPortage, choisirVehicule, commanderImport, commandesDuBac, comptoirDuPort, contenuPort,
@@ -199,43 +201,24 @@ test('une absence rattrape les passages manqués, RATTRAPAGE au plus ; la nuit f
 
 /* ---------- les niveaux ---------- */
 
-test('les niveaux : les matériaux apportés au chantier, les pièces payées ; le quai s\'allonge, le catalogue, les commandes et les villageois suivent', () => {
+// (l'île : développer le port est un projet du village, payé en pièces par sa bourse, sans matériaux ; docs/economie.md,
+// tests/engine/ile-projets.test.mjs ; ici : ce que chaque niveau apporte)
+test('les niveaux : un projet du village sur l\'île, sans matériaux ; le quai s\'allonge, les commandes et les villageois suivent', () => {
   const { s, ou } = auPort('niveaux', 2, 10);
   const nx = prochainNiveau(s);
   assertEqual(nx.niveau, 2);
   const prix = DATA.PORT.NIVEAUX[1].prix;
   assertEqual(nx.pieces, prix.pieces);
-  assert(!agrandirPort(s, ou).ok, 'sans les matériaux : refusé');
-  assert(!apporterAuChantier(s, ou).ok, 'rien de porté');
-  // en deux fois : la moitié des planches, puis le reste
-  charger(s, { planche: 4 });
-  const a = apporterAuChantier(s, ou);
-  assert(a.ok, a.error);
-  assertEqual(a.apporte, { planche: 4 });
-  assertEqual(s.port.chantier.planche, 4);
-  const mats = Object.fromEntries(Object.entries(prix).filter(([k]) => k !== 'pieces'));
-  for (const [k, n] of Object.entries(mats)) {
-    let reste = n - (s.port.chantier[k] || 0);
-    while (reste > 0) {
-      s.portage.vehicule = 'mains';
-      setInv(s, { [k]: reste });
-      const c = chargerPortage(s, k, reste, null, { sansPresence: true });
-      assert(c.ok, c.error);
-      assert(apporterAuChantier(s, ou).ok, 'apporté');
-      reste = n - (s.port.chantier[k] || 0);
-    }
-  }
-  assert(prochainNiveau(s).pret, 'tout apporté');
-  s.pieces = prix.pieces - 1;
-  assert(!agrandirPort(s, ou).ok, 'pas assez de pièces');
+  assertEqual([nx.materiaux, nx.pret], [{}, true], 'sans matériaux');
   s.pieces = prix.pieces + 10;
+  assert(/projet du village/.test(agrandirPort(s, ou).error), 'pas au comptoir : à la place du village');
+  assert(/projet du village/.test(executerCommande(s, { id: 'a', type: 'port.agrandir', args: { case: ou } }).error));
   const plafond = plafondVillageois(s), quai = contenuPort(niveauPort(s)).quai;
-  const r = executerCommande(s, { id: 'a', type: 'port.agrandir', args: { case: ou } });
-  assert(r.ok, r.error);
-  assertEqual(r.niveau, 2);
-  assertEqual(s.pieces, 10, 'payé');
+  economie(s).bourse = prix.pieces;
+  assert(choisirProjet(s, 'port').ok);
+  assertEqual(s.pieces, prix.pieces + 10, 'le joueur ne paie rien');
+  assertEqual(economie(s).bourse, 0, 'la bourse du village paie');
   assertEqual(niveauPort(s), 2);
-  assertEqual(s.port.chantier, {}, 'le chantier vidé');
   assert(contenuPort(2).quai > quai, 'le quai s\'allonge');
   assert(plafondVillageois(s) > plafond, 'plus de villageois accueillis');
   assertEqual(tirerCommandes({ ...s, campagne: { compteurs: { cultures: ['carotte', 'tomate', 'patate', 'oignon'] } } }, 99).length, DATA.PORT.NIVEAUX[1].commandes, 'plus de commandes par passage');

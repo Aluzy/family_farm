@@ -29,6 +29,29 @@ if (args.includes('--village')) {
   E.addItem(s, 'panneau_village', 1);
   console.log('place', JSON.stringify(E.poserBloc(s, 'panneau_village', s.monde.ici - 3)));
 }
+// (--projets : une pièce close au-dessus du point d'apparition, ses murs en pierre, une porte ; dedans, les meubles clés
+// des projets du village : le tableau en liège et le tableau noir accrochés au mur du haut, le piano droit ; docs/economie.md)
+if (args.includes('--projets')) {
+  const W = E.farmTerrain(s).LARGEUR,
+    c0 = (s.monde.ici % W) - 4,
+    r0 = Math.floor(s.monde.ici / W) - 7;
+  const poser = (sorte, t, dessus = false) => {
+    E.addItem(s, (E.DATA.ATELIER.BLOCS[sorte] || {}).objet || sorte, 1);
+    const r = E.poserBloc(s, sorte, t);
+    if (!r.ok) console.log('projets', sorte, r.error || r.raison, dessus);
+  };
+  for (let x = c0; x < c0 + 9; x++) {
+    poser('mur_pierre', r0 * W + x);
+    poser(x === c0 + 4 ? 'porte' : 'mur_pierre', (r0 + 5) * W + x);
+  }
+  for (let y = r0 + 1; y < r0 + 5; y++) {
+    poser('mur_pierre', y * W + c0);
+    poser('mur_pierre', y * W + c0 + 8);
+  }
+  poser('tableau_liege', r0 * W + c0 + 2, true);
+  poser('tableau_ardoise', r0 * W + c0 + 5, true);
+  poser('piano_droit', (r0 + 2) * W + c0 + 3);
+}
 // (--labour : un carré de 3 × 3 cases labourées, deux cases au-dessus du point d'apparition)
 if (args.includes('--labour')) {
   s.potager.houe = true;

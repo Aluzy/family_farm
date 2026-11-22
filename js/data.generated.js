@@ -1813,6 +1813,9 @@ export const RAW_DATA = {
     "meuble_chevet": { "nom": "Table de chevet", "icone": "🗄️", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_canape": { "nom": "Canapé", "icone": "🛋️", "prix": 37, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_table_basse": { "nom": "Table basse", "icone": "☕", "prix": 15, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "tableau_liege": { "nom": "Tableau en liège", "icone": "📌", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "tableau_ardoise": { "nom": "Tableau noir", "icone": "🧑‍🏫", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "piano_droit": { "nom": "Piano droit", "icone": "🎹", "prix": 120, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_tableau_1": { "nom": "Tableau : la ferme", "icone": "🖼️", "prix": 11, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_tableau_2": { "nom": "Tableau : le bouquet", "icone": "💐", "prix": 13, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_tableau_3": { "nom": "Tableau : la mer", "icone": "🌊", "prix": 17, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -3313,6 +3316,33 @@ export const RAW_DATA = {
         "bloque": true,
         "largeur": 2,
         "tourne": true
+      },
+      "tableau_liege": {
+        "nom": "Tableau en liège",
+        "objet": "tableau_liege",
+        "meuble": "tableau_liege",
+        "sur": "mur",
+        "piece": "salon",
+        "village": true
+      },
+      "tableau_ardoise": {
+        "nom": "Tableau noir",
+        "objet": "tableau_ardoise",
+        "meuble": "tableau_ardoise",
+        "sur": "mur",
+        "piece": "salon",
+        "village": true
+      },
+      "piano_droit": {
+        "nom": "Piano droit",
+        "objet": "piano_droit",
+        "meuble": "piano_droit",
+        "dedans": true,
+        "bloque": true,
+        "largeur": 2,
+        "tourne": true,
+        "piece": "salon",
+        "village": true
       },
       "meuble_tableau_1": { "nom": "Tableau : la ferme", "objet": "meuble_tableau_1", "meuble": "tableau_1", "sur": "mur" },
       "meuble_tableau_2": { "nom": "Tableau : le bouquet", "objet": "meuble_tableau_2", "meuble": "tableau_2", "sur": "mur" },
@@ -10024,6 +10054,57 @@ export const RAW_DATA = {
       }
     },
     "ECONOMIE": { "SALAIRE": 30, "TAUX": 5, "TAUX_MIN": 0, "TAUX_MAX": 30, "JOURNAL": 30, "DONS": [10, 50, 100, 500] },
+    "PROJETS": {
+      "mairie": {
+        "nom": "Mairie",
+        "icone": "🏛️",
+        "prix": 1500,
+        "place": 2,
+        "cle": "tableau_liege",
+        "blocs": { "mur_pierre": 28, "mur_fenetre": 4, "porte": 1, "tableau_liege": 1 },
+        "effet": "Son tableau en liège règle la taxe ; elle ouvre les autres projets."
+      },
+      "logement": {
+        "nom": "Logement",
+        "icone": "🏠",
+        "prix": 400,
+        "place": 1,
+        "repetable": true,
+        "cle": "boite_aux_lettres",
+        "blocs": { "mur_bois": 22, "mur_fenetre": 2, "porte": 1, "paillasse": 1, "boite_aux_lettres": 1 },
+        "effet": "Une maison de plus pour un villageois qui arrive."
+      },
+      "restaurant": {
+        "nom": "Restaurant communautaire",
+        "icone": "🍲",
+        "prix": 2500,
+        "apres": "mairie",
+        "cle": "comptoir",
+        "blocs": { "mur_pierre": 32, "mur_fenetre": 4, "porte": 1, "comptoir": 1 },
+        "effet": "Les villageois y mangent : plus de repos faute de repas."
+      },
+      "ecole": {
+        "nom": "École",
+        "icone": "🏫",
+        "prix": 3000,
+        "apres": "mairie",
+        "cle": "tableau_ardoise",
+        "blocs": { "mur_pierre": 32, "mur_fenetre": 6, "porte": 1, "tableau_ardoise": 1 },
+        "envie": 2,
+        "effet": "Un villageois apprend un métier plus vite : l'envie d'artisan vient deux fois plus tôt."
+      },
+      "divertissement": {
+        "nom": "Lieu de divertissement",
+        "icone": "🎹",
+        "prix": 2000,
+        "apres": "mairie",
+        "cle": "piano_droit",
+        "blocs": { "mur_bois": 32, "mur_fenetre": 4, "porte": 1, "piano_droit": 1 },
+        "amitie": 1.5,
+        "effet": "L'amitié monte moitié plus vite au village."
+      },
+      "port": { "nom": "Développer le port", "icone": "⚓", "effet": "Le port monte d'un niveau : un quai plus long, plus de commandes du bac." }
+    },
     "VILLAGE": {
       "PLACE": "panneau_village",
       "PORT": "comptoir_port",
