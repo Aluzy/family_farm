@@ -194,6 +194,7 @@ export function changerSol(ile, i, sol) {
   }
   if (!deEau && versEau && !laTerreResteUnie(ile, i)) return refus('l’île serait coupée en deux');
   ile.sol[i] = sol;
+  ile.solVersion = (ile.solVersion ?? 0) + 1; // (l'herbe haute en dépend : herbes.js)
   marquer(ile, i);
   return OK;
 }

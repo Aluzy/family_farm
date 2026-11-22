@@ -247,6 +247,20 @@ if (opt('mesure', null)) {
     ),
   );
 }
+// (--eval <code> : une expression évaluée dans la page, sa valeur affichée ; `sc` : la scène de la ferme)
+if (opt('eval', null))
+  console.log(
+    'eval',
+    await page.evaluate((c) => {
+      const g = window.CarteJeu && window.CarteJeu.game(),
+        sc = g && g.scene.getScenes(true)[0];
+      try {
+        return JSON.stringify(new Function('sc', 'return (' + c + ')')(sc));
+      } catch (e) {
+        return String(e);
+      }
+    }, opt('eval')),
+  );
 mkdirSync(dirname(SORTIE), { recursive: true });
 await page.screenshot({ path: SORTIE });
 console.log(

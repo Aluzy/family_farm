@@ -14,6 +14,7 @@ import { DATA } from '../catalog.js';
 import { ILE } from './reglages.js';
 import { depuisSauvegarde, versSauvegarde } from './sauvegarde.js';
 import { auLarge, estEau, indice, retirerObjet } from './vie.js';
+import { herbesParCase, touffesDeLIle, touffesVisibles } from './herbes.js';
 
 const P = () => DATA.ILE.PARTIE;
 
@@ -101,6 +102,8 @@ export function terrainDeLIle(state) {
     LIGNES: Array.from({ length: n }, (_, y) => rangee(ile, y)),
     ROCHERS: {},
     ARBRES: {},
+    // (l'herbe haute, que la faux fauche : js/engine/ile/herbes.js ; une case où elle pousse se bâtit une fois fauchée)
+    HERBES: herbesParCase(touffesVisibles(ile, touffesDeLIle(ile, state.carte.graine)), n),
     // (les repères des anciennes zones de culture, que lisent le joueur automatique et les outils d'essai pour bâtir
     // « près des cultures » : à côté du point d'apparition)
     ZONES: {
@@ -162,6 +165,7 @@ export function installerIle(state, graine, ajouter, creer) {
  */
 export function carteDeLIle(state) {
   if (!estPartieIle(state)) return null;
+  const ile = ileDeLaPartie(state);
   const n = ILE.TAILLE,
     vide = () => new Array(n * n).fill(0);
   const couche = (id, name) => ({
@@ -212,7 +216,21 @@ export function carteDeLIle(state) {
     layers: [
       ...noms.map((nm, k) => couche(k + 1, nm)),
       groupe(noms.length + 1, 'batiment'),
-      groupe(noms.length + 2, 'herbe_haute'),
+      {
+        ...groupe(noms.length + 2, 'herbe_haute'),
+        objects: touffesVisibles(ile, touffesDeLIle(ile, state.carte.graine)).map(([x, y, v], k) => ({
+          id: 9000 + k,
+          name: '',
+          type: String(v),
+          x,
+          y,
+          width: 0,
+          height: 0,
+          rotation: 0,
+          visible: true,
+          point: true,
+        })),
+      },
       groupe(noms.length + 3, 'passages'),
     ],
     tilesets: [],

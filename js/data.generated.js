@@ -9,7 +9,7 @@ export const RAW_DATA = {
   "DEPART": {
     "PIECES": 1500,
     "PIECES_SAUVAGE": 300,
-    "INVENTAIRE": { "conserve": 40 },
+    "INVENTAIRE": {},
     "MAISON": 650,
     "ACHATS": { "panneau": 150, "batterie": 180, "pompe": 90, "reservoir": 50 },
     "NOM": "Martin",
@@ -9980,6 +9980,7 @@ export const RAW_DATA = {
     },
     "VIE": { "REPOUSSE": [5, 8], "SAUVEGARDE": 1 },
     "PARTIE": { "INVENTAIRE": { "tente": 1 }, "TENTE": { "places": 4 }, "EN_LIGNE": false },
+    "HERBES": { "ECHELLE": 7, "SEUIL": 0.66, "COEUR": 0.08, "DENSITE": [0.9, 0.3], "ZONE": 0.7, "FLEURS": 0.2, "DEPART": 8 },
     "VILLAGE": {
       "PLACE": "panneau_village",
       "PORT": "comptoir_port",

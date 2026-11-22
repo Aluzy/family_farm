@@ -170,6 +170,14 @@
       "TENTE": { "places": 4 },
       "EN_LIGNE": false
     },
+    "//HERBES": [
+      "L'herbe haute (js/engine/ile/herbes.js) : les touffes que la faux fauche. ECHELLE : la taille des zones (en cases,",
+      "le pas du bruit) ; SEUIL : au-dessus, de l'herbe haute (plus haut : moins de zones) ; COEUR : de combien au-dessus du",
+      "seuil la zone est à son plus dense ; DENSITE : la chance qu'une place (deux par case) ait sa touffe, au cœur puis au",
+      "bord ; ZONE : la chance qu'une touffe ait la teinte de sa zone ; FLEURS : la chance qu'elle soit fleurie ; DEPART : pas",
+      "d'herbe haute à moins de DEPART cases du point d'apparition (la tente s'y pose avant que le joueur ait une faux)."
+    ],
+    "HERBES": { "ECHELLE": 7, "SEUIL": 0.66, "COEUR": 0.08, "DENSITE": [0.9, 0.3], "ZONE": 0.7, "FLEURS": 0.2, "DEPART": 8 },
     "//VILLAGE": [
       "Le village de l'île (js/engine/ile/village.js ; docs/ile-300.md, étapes E à H). PLACE : le bloc qui fait la place",
       "du village (un seul) ; PORT : le bloc du comptoir du port (un seul, au bord de la mer). NIVEAUX : la place, niveau",
