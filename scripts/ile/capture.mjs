@@ -29,6 +29,17 @@ if (args.includes('--village')) {
   E.addItem(s, 'panneau_village', 1);
   console.log('place', JSON.stringify(E.poserBloc(s, 'panneau_village', s.monde.ici - 3)));
 }
+// (--labour : un carré de 3 × 3 cases labourées, deux cases au-dessus du point d'apparition)
+if (args.includes('--labour')) {
+  s.potager.houe = true;
+  const W = E.farmTerrain(s).LARGEUR;
+  for (let dy = -4; dy <= -2; dy++)
+    for (let dx = -1; dx <= 1; dx++) {
+      s.stamina = 100;
+      const r = E.hoe(s, s.monde.ici + dy * W + dx);
+      if (!r.ok) console.log('labour', r.error);
+    }
+}
 s.awakeMs = 3 * 3600 * 1000 * (E.DATA.TEMPS.SECONDES_PAR_HEURE / 3600);
 const SAUVEGARDE = JSON.stringify({ v: s.version, t: Date.now(), s });
 // (--foret : le personnage repart du cœur de la forêt la plus dense, le carré de 16 × 16 qui a le plus d'objets)

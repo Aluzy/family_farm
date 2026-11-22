@@ -3,7 +3,7 @@
    étape 6). L'île née de sa graine (la même que le chantier, plate, sous 1 Mo, sans faute) ; la lecture ;
    les règles des modifications (la mer du large, la terre d'un seul tenant, les places prises) ; la
    récolte (une culture sauvage ne repousse pas, un fruitier garde sa taille et refait ses fruits, la vigne
-   revient à son stade de vivace, un arbre coupé repousse), la pousse au fil des nuits ; les régions à
+   revient à son stade de vivace, une plante coupée ne repousse pas, une roche cassée revient), la pousse au fil des nuits ; les régions à
    repeindre ; la sauvegarde entière et par régions, aller et retour, même après l'ajout d'une espèce ; les
    temps.
    Lancer seul : node --test tests/engine/ile-vie.test.mjs (ou node tests/run-tests.mjs ile-vie).
@@ -229,22 +229,28 @@ test('un jeune fruitier grandit d’un stade toutes les VERGER.NUITS_STADE nuits
   assert.equal(ile.etat[libre], 1);
 });
 
-test('un arbre coupé repousse à sa place après son retour ; une place prise, il ne revient pas', () => {
+test('un arbre coupé ne repousse pas tout seul ; une roche cassée revient à sa place après son retour, pas sur une place prise', () => {
   const ile = copie();
   const feuillu = num('feuillu');
-  const [a, b] = fiche('feuillu').recolte.retour;
-  const arbres = [];
-  for (let j = 0; j < N * N && arbres.length < 2; j++) if (ile.objet[j] === feuillu) arbres.push(j);
-  for (const i of arbres) assert.equal(recolter(ile, i, 10).ok, true);
-  assert.equal(ile.objet[arbres[0]], 0);
+  let arbre = -1;
+  for (let j = 0; j < N * N && arbre < 0; j++) if (ile.objet[j] === feuillu) arbre = j;
+  assert.equal(recolter(ile, arbre, 10).ok, true);
+  assert.equal(ile.objet[arbre], 0);
+  assert.equal(ile.repousse.length, 0, 'une plante coupée ne repousse pas');
+  const cat = catalogue(),
+    roche = cat.fiches.find((f) => f.famille === 'roche' && f.recolte && f.recolte.retour);
+  const [a, b] = roche.recolte.retour;
+  const roches = [];
+  for (let j = 0; j < N * N && roches.length < 2; j++) if (ile.objet[j] === roche.numero) roches.push(j);
+  for (const i of roches) assert.equal(recolter(ile, i, 10).ok, true);
   assert.equal(ile.repousse.length, 2);
-  // sur la place du second, on pose une pierre
-  assert.equal(poserObjet(ile, arbres[1], num('pierres')).ok, true);
+  // sur la place de la seconde, on pose des fleurs
+  assert.equal(poserObjet(ile, roches[1], num('pierres')).ok, true);
   for (let jour = 10; jour < 10 + a; jour++) nuit(ile, jour);
-  assert.equal(ile.objet[arbres[0]], 0, 'trop tôt');
+  assert.equal(ile.objet[roches[0]], 0, 'trop tôt');
   for (let jour = 10 + a; jour <= 10 + b; jour++) nuit(ile, jour);
-  assert.equal(ile.objet[arbres[0]], feuillu);
-  assert.equal(ile.objet[arbres[1]], num('pierres'));
+  assert.equal(ile.objet[roches[0]], roche.numero);
+  assert.equal(ile.objet[roches[1]], num('pierres'));
   assert.equal(ile.repousse.length, 0);
   assert.deepEqual(verifierIle(ile), []);
 });

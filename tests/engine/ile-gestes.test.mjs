@@ -56,7 +56,7 @@ test("la hache abat un arbre : la case se libère, l'arbre repoussera", () => {
   assert.ok(r.ok, r.error);
   assert.equal(ile.objet[i], 0);
   assert.equal(ile.bloque[i], 0);
-  assert.ok(ile.repousse.some((e) => e[0] === i || e.case === i) || ile.repousse.length > 0);
+  assert.ok(!ile.repousse.some((e) => e.i === i), 'pas de repousse');
 });
 
 test('la pioche casse une roche', () => {
