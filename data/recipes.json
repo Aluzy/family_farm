@@ -189,6 +189,7 @@
       "quai_chargement": { "entrees": { "planche": 12, "pierre": 8, "lingot_fer": 2 }, "sortie": { "quai_chargement": 1 }, "village": true, "port": 2 },
       "enclume_foyer": { "entrees": { "pierre": 8, "lingot_fer": 3, "bois": 4 }, "sortie": { "enclume_foyer": 1 }, "village": true, "coefPrix": 150 },
       "comptoir": { "entrees": { "planche": 4, "clous": 4 }, "sortie": { "comptoir": 1 }, "village": true, "coefPrix": 145 },
+      "comptoir_port": { "entrees": { "planche": 6, "bois": 6, "pierre": 12 }, "sortie": { "comptoir_port": 1 } },
       "enseigne_forge": { "entrees": { "planche": 2, "charniere": 2, "clous": 2 }, "sortie": { "enseigne_forge": 1 }, "village": true, "coefPrix": 150 },
       "scie_long": { "entrees": { "planche": 6, "lame": 1, "clous": 2 }, "sortie": { "scie_long": 1 }, "village": true, "coefPrix": 150 },
       "four_boulanger": { "entrees": { "pierre": 10, "planche": 2, "bois": 4 }, "sortie": { "four_boulanger": 1 }, "village": true, "coefPrix": 150 },
@@ -283,6 +284,7 @@
       "four_boulanger": { "nom": "Four à bois et étal à pains", "objet": "four_boulanger", "dedans": true, "bloque": true, "dessin": "four_boulanger", "ouvert": "four_boulanger_feu_0", "largeur": 2, "commerce": "boulangerie", "village": true },
       "cave_affinage": { "nom": "Cave d'affinage", "objet": "cave_affinage", "dedans": true, "bloque": true, "dessin": "cave_affinage", "largeur": 2, "commerce": "fromagerie", "village": true },
       "comptoir": { "nom": "Comptoir", "objet": "comptoir", "dedans": true, "bloque": true, "dessin": "comptoir", "largeur": 2, "comptoir": true, "village": true },
+      "comptoir_port": { "nom": "Comptoir du port", "objet": "comptoir_port", "dehors": true, "bloque": true, "dessin": "comptoir", "largeur": 2, "port": true },
       "enseigne_forge": { "nom": "Enseigne du forgeron", "objet": "enseigne_forge", "dehors": true, "bloque": true, "dessin": "enseigne_forge", "largeur": 2, "enseigneCommerce": "forge", "texte": "#2b1a0e", "village": true },
       "enseigne_scierie": { "nom": "Enseigne du menuisier", "objet": "enseigne_scierie", "dehors": true, "bloque": true, "dessin": "enseigne_scierie", "largeur": 2, "enseigneCommerce": "scierie", "texte": "#2b1a0e", "village": true },
       "enseigne_boulangerie": { "nom": "Enseigne du boulanger", "objet": "enseigne_boulangerie", "dehors": true, "bloque": true, "dessin": "enseigne_boulangerie", "largeur": 2, "enseigneCommerce": "boulangerie", "texte": "#2b1a0e", "village": true },
@@ -492,7 +494,7 @@
       "jardin": { "nom": "Jardin", "icone": "🌷", "blocs": ["table_jardin", "chaise_jardin", "banc_jardin", "bac_carre", "bac_rond", "bac_long", "banc_rondins", "table_rondins", "chaise_peinte", "jarre_coquillages", "lanterne_papier", "bassin", "banc_pierre", "jardiniere_pierre", "pergola", "bac_fleurs", "bac_lavande", "bassin_nenuphars", "rosier_multicolore", "rosier_rouge", "rosier_blanc", "rosier_jaune", "guirlande_blanche", "guirlande_multicolore", "guirlande_etoiles", "guirlande_coeurs", "fontaine_pierre", "fontaine_marbre", "fontaine_grenouille", "fontaine_angelot", "ornement_cerisier_japon", "ornement_erable_rouge", "ornement_magnolia", "ornement_saule_pleureur", "panneau_village", "enseigne_bois", "boite_lettres_bois", "enseigne_email", "boite_lettres_email", "enseigne_fer", "boite_lettres_fer", "bonhomme_neige", "citrouille_halloween", "tas_citrouilles", "lavoir", "kiosque", "fontaine_village", "four_commun", "panier_oeufs", "oeuf_geant"] },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
       "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur", "reservoir", "pressoir", "centrifugeuse", "mixeur", "chaudron", "tonneau", "ensacheuse", "tonnelet", "quai_chargement"] },
-      "commerces": { "nom": "Commerces", "icone": "🏪", "blocs": ["enclume_foyer", "scie_long", "four_boulanger", "cave_affinage", "rouet_metier", "comptoir", "enseigne_forge", "enseigne_scierie", "enseigne_boulangerie", "enseigne_fromagerie", "enseigne_mercerie"] }
+      "commerces": { "nom": "Commerces", "icone": "🏪", "blocs": ["comptoir_port", "enclume_foyer", "scie_long", "four_boulanger", "cave_affinage", "rouet_metier", "comptoir", "enseigne_forge", "enseigne_scierie", "enseigne_boulangerie", "enseigne_fromagerie", "enseigne_mercerie"] }
     },
     "//SILO": [
       "Le Silo de la ferme générée (js/engine/blocs.js, etatSilo) : des blocs de silo (fabriqués à l'Atelier",

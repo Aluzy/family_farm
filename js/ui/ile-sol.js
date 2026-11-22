@@ -11,7 +11,7 @@ import { SORTES_ROCHES } from '../engine/monde-roches.js';
 import { SORTES } from '../engine/monde-vegetation.js';
 import { idObjetMonde, RECOLTE } from '../engine/monde-recolte.js';
 import { SORTES_LIEUX } from '../engine/monde-lieux.js';
-import { ESPECES_FAUNE, FAUNE } from '../engine/monde-faune.js';
+import { FAUNE } from '../engine/monde-faune.js';
 import { HAMEAUX, SORTES_HAMEAUX } from '../engine/monde-hameaux.js';
 import { DATA } from '../engine/catalog.js';
 import { ILE, regionsModifiees } from '../engine/ile.js';
@@ -150,12 +150,8 @@ function client(ile, graine, taille) {
     lieux: () => ({}),
     lieuxSortes: SORTES_LIEUX,
     coins: 0,
-    faune: {
-      especes: ESPECES_FAUNE.map((cle) => ({ cle, ...FAUNE.ESPECES[cle] })),
-      PRES: FAUNE.PRES,
-      LOIN: FAUNE.LOIN,
-      RAYON: FAUNE.RAYON,
-    },
+    // (pas d'animaux sauvages sur l'île, docs/ile-300.md : ceux de la ferme et la petite vie d'ambient-life.js seulement)
+    faune: { especes: [], PRES: FAUNE.PRES, LOIN: FAUNE.LOIN, RAYON: FAUNE.RAYON },
     hameaux: () => [],
     hameauSortes: SORTES_HAMEAUX,
     hameauxStyles: HAMEAUX.STYLES,

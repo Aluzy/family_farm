@@ -1613,6 +1613,7 @@ export const RAW_DATA = {
       "village": true
     },
     "etal": { "nom": "Étal", "icone": "🛒", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "comptoir_port": { "nom": "Comptoir du port", "icone": "⚓", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "panneau_village": {
       "nom": "Panneau du village",
       "icone": "🪧",
@@ -2336,6 +2337,7 @@ export const RAW_DATA = {
       },
       "enclume_foyer": { "entrees": { "pierre": 8, "lingot_fer": 3, "bois": 4 }, "sortie": { "enclume_foyer": 1 }, "village": true, "coefPrix": 150 },
       "comptoir": { "entrees": { "planche": 4, "clous": 4 }, "sortie": { "comptoir": 1 }, "village": true, "coefPrix": 145 },
+      "comptoir_port": { "entrees": { "planche": 6, "bois": 6, "pierre": 12 }, "sortie": { "comptoir_port": 1 } },
       "enseigne_forge": {
         "entrees": { "planche": 2, "charniere": 2, "clous": 2 },
         "sortie": { "enseigne_forge": 1 },
@@ -2610,6 +2612,15 @@ export const RAW_DATA = {
         "largeur": 2,
         "comptoir": true,
         "village": true
+      },
+      "comptoir_port": {
+        "nom": "Comptoir du port",
+        "objet": "comptoir_port",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "comptoir",
+        "largeur": 2,
+        "port": true
       },
       "enseigne_forge": {
         "nom": "Enseigne du forgeron",
@@ -3650,6 +3661,7 @@ export const RAW_DATA = {
         "nom": "Commerces",
         "icone": "🏪",
         "blocs": [
+          "comptoir_port",
           "enclume_foyer",
           "scie_long",
           "four_boulanger",
@@ -8903,13 +8915,13 @@ export const RAW_DATA = {
         { "id": "cruche", "icone": "💧", "ligne": "Fabrique le puits et la cruche, pose le puits." },
         { "id": "arroser", "icone": "💦", "ligne": "Remplis la cruche au puits, arrose." },
         { "id": "recolte", "icone": "🥕", "ligne": "Récolte ta première plante mûre." },
-        { "id": "charger", "icone": "🧺", "ligne": "Charge ta récolte : la fenêtre du port, onglet Porter." },
-        { "id": "port", "icone": "🧭", "ligne": "Suis le chemin jusqu'au port." },
-        { "id": "vendre", "icone": "⚓", "ligne": "Vends une récolte au comptoir, sous la halle." },
-        { "id": "graines", "icone": "🌾", "ligne": "Achète des graines au comptoir." },
+        { "id": "place", "icone": "🪧", "ligne": "Pose le panneau du village : la place, où arrivent les villageois." },
         { "id": "maison", "icone": "🏠", "ligne": "Bâtis une maison libre : un lit, une boîte aux lettres." },
-        { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, au passage du bac." },
-        { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." }
+        { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, sur la place." },
+        { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." },
+        { "id": "comptoir", "icone": "⚓", "ligne": "Construis le comptoir du port, au bord de la mer." },
+        { "id": "charger", "icone": "🧺", "ligne": "Charge ta récolte : la fenêtre du port, onglet Porter." },
+        { "id": "vendre", "icone": "💰", "ligne": "Vends au comptoir du port : le seul moyen de gagner de l'argent." }
       ]
     },
     "SANS_RECIT": {
@@ -9967,7 +9979,19 @@ export const RAW_DATA = {
       "DEPART": { "pierres": 3, "bois_flotte": 3, "distance": [2, 7] }
     },
     "VIE": { "REPOUSSE": [5, 8], "SAUVEGARDE": 1 },
-    "PARTIE": { "INVENTAIRE": { "tente": 1 }, "TENTE": { "places": 4 } },
+    "PARTIE": { "INVENTAIRE": { "tente": 1 }, "TENTE": { "places": 4 }, "EN_LIGNE": false },
+    "VILLAGE": {
+      "PLACE": "panneau_village",
+      "PORT": "comptoir_port",
+      "NIVEAUX": [
+        { "prix": 0, "villageois": 1 },
+        { "prix": 600, "villageois": 3 },
+        { "prix": 2000, "villageois": 6 },
+        { "prix": 5000, "villageois": 10 },
+        { "prix": 12000, "villageois": 15 }
+      ],
+      "ARRIVEE": { "PERIODE": 2, "HEURES": [9, 17] }
+    },
     "ESPECES": {
       "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor", "roche"],
       "ROCHES": [

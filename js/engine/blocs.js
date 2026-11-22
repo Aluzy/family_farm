@@ -27,7 +27,8 @@ import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
 import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';
-import { degagerIle } from './ile/jeu.js';
+import { degagerIle } from './ile/jeu.js';import { refusPoseIle } from './ile/village.js';
+
 
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
@@ -978,6 +979,9 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
   if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.ornement ? `Plus de ${s.nom.toLowerCase()} : achète-en un avec des gemmes (💎, avec le jeu en ligne).` : s.cheminee || s.fontaine || s.enseigne || s.boite_lettres || s.boutique ? `Plus de ${s.nom.toLowerCase()} : achète-en une avec des gemmes (💎, avec le jeu en ligne).` : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en un dans un hameau (l'ébéniste de Bois-Joli, les tapis des Genêts).` : s.grimpant || s.guirlande ? `Plus de ${s.nom.toLowerCase()} : achète-en avec des gemmes (💎, avec le jeu en ligne).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : s.massif ? `Plus de ${DATA.OBJETS[s.objet].nom.toLowerCase()} : on en trouve en cueillant les fleurs sauvages du grand monde.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
+  // (l'île : une seule place, un seul port, au bord de la mer : js/engine/ile/village.js)
+  const refusIle = refusPoseIle(state, sorte, empriseMeuble(state, sorte, tile, sens) || [tile]);
+  if (refusIle) return { ok: false, raison: refusIle };
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
   // l'Atelier pas encore construit : ses matériaux (DATA.ATELIER.CONSTRUCTION) dans l'inventaire

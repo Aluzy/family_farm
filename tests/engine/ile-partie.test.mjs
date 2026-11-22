@@ -36,7 +36,7 @@ test('une partie neuve sur l’île : l’île, le personnage au point d’appar
   assert.deepEqual(s.blocs, {});
   assert.deepEqual(s.potager.parcelles, []);
   assert.equal(countItem(s, 'tente'), DATA.ILE.PARTIE.INVENTAIRE.tente);
-  assert.equal(enLigneOuvert(s), false);
+  assert.equal(enLigneOuvert(), false, 'le jeu en ligne est suspendu (C19)');
   // la même graine, la même île
   assert.deepEqual(ileDeLaPartie(createNewGame(7)).objet, ileDeLaPartie(s).objet);
   assert.notDeepEqual(ileDeLaPartie(createNewGame(8)).objet, ileDeLaPartie(s).objet);

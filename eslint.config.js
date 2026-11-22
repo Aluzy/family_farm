@@ -17,6 +17,7 @@ const NOUVEAUX = [
   'js/engine/ile.js',
   'js/engine/ile/**/*.js',
   'js/ui/ile-sol.js',
+  'js/ui/place-ile.js',
   'scripts/ile/**/*.mjs',
   'tests/engine/ile*.test.mjs',
 ];

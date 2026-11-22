@@ -167,7 +167,26 @@
     ],
     "PARTIE": {
       "INVENTAIRE": { "tente": 1 },
-      "TENTE": { "places": 4 }
+      "TENTE": { "places": 4 },
+      "EN_LIGNE": false
+    },
+    "//VILLAGE": [
+      "Le village de l'île (js/engine/ile/village.js ; docs/ile-300.md, étapes E à H). PLACE : le bloc qui fait la place",
+      "du village (un seul) ; PORT : le bloc du comptoir du port (un seul, au bord de la mer). NIVEAUX : la place, niveau",
+      "par niveau : son prix (en pièces, pour y monter ; le premier : la pose) et combien de villageois elle accueille.",
+      "ARRIVEE : au plus un nouveau venu toutes les PERIODE journées, de HEURES[0] à HEURES[1] h, sur la place."
+    ],
+    "VILLAGE": {
+      "PLACE": "panneau_village",
+      "PORT": "comptoir_port",
+      "NIVEAUX": [
+        { "prix": 0, "villageois": 1 },
+        { "prix": 600, "villageois": 3 },
+        { "prix": 2000, "villageois": 6 },
+        { "prix": 5000, "villageois": 10 },
+        { "prix": 12000, "villageois": 15 }
+      ],
+      "ARRIVEE": { "PERIODE": 2, "HEURES": [9, 17] }
     },
     "//ESPECES": [
       "Le catalogue n'est pas écrit ici : js/engine/ile.js le construit depuis les données du jeu (les plantes sauvages",

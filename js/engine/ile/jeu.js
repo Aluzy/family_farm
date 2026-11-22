@@ -221,4 +221,5 @@ export function carteDeLIle(state) {
   };
 }
 
-export const enLigneOuvert = (state) => !estPartieIle(state);
+// Le jeu en ligne : suspendu tant que ILE.PARTIE.EN_LIGNE est faux (C19 ; son code est gardé, débranché).
+export const enLigneOuvert = () => !!(DATA.ILE.PARTIE && DATA.ILE.PARTIE.EN_LIGNE);

@@ -88,7 +88,7 @@ test('le premier jour sans visite : pas de visite ni de scène d\'arrivée, le p
 
 /* ---------- le didacticiel ---------- */
 
-test('le didacticiel : les étapes passent d\'elles-mêmes, chacune se passe, le tout aussi ; la boussole vers le port', () => {
+test('le didacticiel : les étapes passent d\'elles-mêmes, chacune se passe, le tout aussi', () => {
   const s = departGarde(), L = DATA.VILLAGE.DEPART.ETAPES;
   assertEqual(etapeIle(s).id, 'ramasser', 'la première étape');
   assertEqual(etapeIle(s).total, L.length);
@@ -96,14 +96,15 @@ test('le didacticiel : les étapes passent d\'elles-mêmes, chacune se passe, le
   addItem(s, 'pierre', 3); addItem(s, 'bois', 3);
   majDidacticielIle(s);
   assertEqual(etapeIle(s).id, 'atelier', 'ramassé : l\'Atelier');
-  // (passer : rien ne bloque)
-  for (let k = 0; etapeIle(s).id !== 'port'; k++) { assert(passerEtapeIle(s).ok); assert(k < L.length, 'jusqu\'au port'); }
-  assertEqual(butBoussole(s), { sorte: 'port', id: 'port' }, 'la boussole montre le port');
+  // (passer : rien ne bloque ; l'île de 300 × 300 : la place, la maison, le villageois, puis le comptoir du port)
+  for (let k = 0; etapeIle(s).id !== 'comptoir'; k++) { assert(passerEtapeIle(s).ok); assert(k < L.length, 'jusqu\'au comptoir'); }
   assert(s.didacticielIle.passees.includes('houe'), 'les étapes passées sont notées');
-  // (une étape déjà faite passe d'elle-même : la vente compte pour le chemin et la vente)
+  // (une étape déjà faite passe d'elle-même : une vente au port compte pour le chargement et la vente)
+  s.blocs = { ...(s.blocs || {}), 1234: DATA.ILE.VILLAGE.PORT };
   s.campagne.compteurs.ventesPort = 5;
   majDidacticielIle(s);
-  assertEqual(etapeIle(s).id, 'graines', 'au port et vendu : les graines');
+  assertEqual(didacticielIleActif(s), false, 'le comptoir posé, vendu : fini');
+  s.didacticielIle.fini = false; s.didacticielIle.etape = L.length - 1;
   assert(passerDidacticielIle(s).ok);
   assertEqual(didacticielIleActif(s), false, 'fini');
   assertEqual(etapeIle(s), null);
