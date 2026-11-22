@@ -100,7 +100,7 @@ export function bilanJour(J) {
     if (o === 'pieces') ventes += val;
   }
   produit.sort((a, b) => b.valeur - a.valeur || (a.objet < b.objet ? -1 : 1));
-  const part = Math.max(0, entier(J.part));
+  const part = Math.max(0, entier(J.part)) + Math.max(0, entier(J.salaire)); // (l'île : son salaire, docs/economie.md)
   const tache = tacheDef(J.tache) ? J.tache : null;
   // (fiche I8b : le courant que les machines qu'il conduit ont consommé : J.courant Wh, une pièce par
   // PRODUCTION.COURANT.WH_PAR_PIECE)

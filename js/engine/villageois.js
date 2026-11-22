@@ -15,13 +15,14 @@ import { cleDiversite, tirerApparence } from './apparence.js';
 import { ajouterAmitie, amitieDe, goutsTires } from './amitie.js';
 import { validApparence } from './family.js';
 import { bonheurDesLiens, foyerDe, poserAffinite } from './liens.js';
-import { mangerSesProvisions, mangerSonPanier, plaisirDuJour, prendrePart } from './bourse.js';
+import { mangerSesProvisions, mangerSonPanier, partDue, plaisirDuJour, prendrePart } from './bourse.js';
 import { bonheurDesTraits, traitsTires } from './traits.js';
 import { chroniqueArrivee } from './chronique.js';
 import { bonheurDeLaFete } from './fetes-village.js';
 import { lienArrivee } from './vocation-village.js';
 import { cuisineDuVillage, desservirLaTable, gardeMangerCommun, noterMange, servirLaTable } from './garde-manger.js';import { estPartieIle } from './ile/jeu.js';
 import { casePlace, heuresArrivee, refusArriveeIle } from './ile/village.js';
+import { payerLesSalaires, salaireDe } from './ile/economie.js';
 
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
@@ -485,6 +486,17 @@ export function villageoisNuit(state) {
   // (fiche I4, bourse.js : une fois que tous ont mangé, chacun garde sa part de ce qu'il a produit aujourd'hui, prise
   // sur le produit, jamais sur la caisse ; le tableau la compte dans son coût)
   let part = 0;
+  // (l'île, docs/economie.md E11 : l'employé est payé en pièces par le joueur, pas en nature ; avant la taxe de la nuit)
+  if (estPartieIle(state)) {
+    const dus = [];
+    for (const v of V) {
+      const J = Array.isArray(v.journal) ? v.journal[v.journal.length - 1] : null;
+      if (J && J.jour === jour && J.produit) dus.push({ v, net: partDue(J).net, J });
+    }
+    const r = payerLesSalaires(state, dus);
+    for (const { v, net, J } of dus) if (!v.impaye) J.salaire = salaireDe(net);
+    return { arrive, repas, sansLit, part: 0, salaires: r.paye, impayes: r.impayes };
+  }
   for (const v of V) {
     const J = Array.isArray(v.journal) ? v.journal[v.journal.length - 1] : null;
     if (!J || J.jour !== jour || !J.produit) continue;

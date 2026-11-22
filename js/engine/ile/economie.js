@@ -125,6 +125,42 @@ export function payerParLeVillage(state, prix, libelle) {
 }
 
 /**
+ * Le salaire d'un jour de travail (E11) : SALAIRE % de ce que le villageois a rapporté (net : son produit moins ce qu'il
+ * a pris au coffre, au prix de l'île), arrondi à l'entier supérieur.
+ * @param {number} net
+ */
+export const salaireDe = (net) => (net > 0 ? Math.ceil((net * E().SALAIRE) / 100) : 0);
+
+/**
+ * La nuit : le joueur paie le salaire du jour de chaque employé (`dus` : [{ v, net }]). Sans de quoi payer, rien n'est
+ * payé (pas de dette) et le villageois ne travaille pas le lendemain (v.impaye : le salaire manqué) ; il reprend dès que
+ * le joueur a de quoi. → { paye, impayes }.
+ * @param {object} state
+ * @param {{ v: object, net: number }[]} dus
+ */
+export function payerLesSalaires(state, dus) {
+  const out = { paye: 0, impayes: [] };
+  for (const { v, net } of dus) {
+    const s = salaireDe(net);
+    if (s <= 0) continue;
+    if (entier(state.pieces) < s) {
+      v.impaye = s;
+      out.impayes.push(v.id);
+      continue;
+    }
+    state.pieces = Math.round(state.pieces - s);
+    noteCompta(state, -s, `Salaire : ${v.prenom || v.id}`);
+    v.bourse = entier(v.bourse) + s;
+    noterRevenu(state, v.id, s);
+    out.paye += s;
+  }
+  // (un impayé d'avant : il reprend dès que le joueur a de quoi le payer)
+  for (const v of state.villageois || [])
+    if (v.impaye && !out.impayes.includes(v.id) && entier(state.pieces) >= v.impaye) delete v.impaye;
+  return out;
+}
+
+/**
  * Règle le taux de la taxe (E10 : au panneau de contrôle de la mairie ; de MIN à MAX %).
  * @param {object} state
  * @param {number} taux

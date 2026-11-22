@@ -220,9 +220,11 @@
       "L'économie de l'île (docs/economie.md ; js/engine/ile/economie.js) : la bourse du village, à part de celle du",
       "joueur et des villageois. TAUX : la taxe de départ, en %, prise la nuit sur le total des revenus du jour de chacun",
       "(arrondie à l'entier supérieur) ; TAUX_MIN, TAUX_MAX : ses bornes au panneau de contrôle de la mairie ; JOURNAL :",
-      "les lignes gardées du journal de la bourse ; DONS : les montants proposés pour un don."
+      "les lignes gardées du journal de la bourse ; DONS : les montants proposés pour un don. SALAIRE : le salaire d'un",
+      "villageois employé, en % de ce qu'il a rapporté ce jour-là (arrondi à l'entier supérieur), payé la nuit par le joueur ;",
+      "s'il ne peut pas payer, le villageois ne travaille pas le lendemain (v.impaye), et reprend dès qu'il le peut."
     ],
-    "ECONOMIE": { "TAUX": 5, "TAUX_MIN": 0, "TAUX_MAX": 30, "JOURNAL": 30, "DONS": [10, 50, 100, 500] },
+    "ECONOMIE": { "SALAIRE": 30, "TAUX": 5, "TAUX_MIN": 0, "TAUX_MAX": 30, "JOURNAL": 30, "DONS": [10, 50, 100, 500] },
     "//VILLAGE": [
       "Le village de l'île (js/engine/ile/village.js ; docs/ile-300.md, étapes E à H). PLACE : le bloc qui fait la place",
       "du village (un seul) ; PORT : le bloc du comptoir du port (un seul, au bord de la mer). NIVEAUX : la place, niveau",

@@ -393,6 +393,8 @@ export function tachesDuPoste(state, t) {
 export function tacheManque(state, v, id) {
   const def = tacheDef(id);
   if (!def) return 'Tâche inconnue.';
+  // (l'île : son salaire d'hier pas payé, il ne travaille pas ; docs/economie.md E11)
+  if (v && v.impaye) return `Pas payé hier : il reprend quand tu auras ${v.impaye} pièces pour son salaire.`;
   if (def.outil && (!v || v.outil !== def.outil)) {
     const d = toolDef(def.outil), une = d && d.ARTICLE === 'un' ? 'le' : 'la';
     return hasTool(state, def.outil)
@@ -422,7 +424,7 @@ export function tacheAttente(state, v) {
   // (fiche I8b : la tournée part aussi pour un contrat d'export accepté)
   const P = state.production && state.production.contrats, contrats = P && Array.isArray(P.acceptes) ? P.acceptes.length : 0;
   const vendre = v.tache === 'navette' ? aVendreDeLaTournee(state, v).length : (v.vendre || []).length;
-  const cle = `${v.tache}:${v.outil || ''}:${v.maison ?? ''}:${vendre}:${hasTool(state, tacheDef(v.tache).outil || 'houe') ? 1 : 0}:${contrats}:${signatureTaches(state)}`;
+  const cle = `${v.impaye || 0}:${v.tache}:${v.outil || ''}:${v.maison ?? ''}:${vendre}:${hasTool(state, tacheDef(v.tache).outil || 'houe') ? 1 : 0}:${contrats}:${signatureTaches(state)}`;
   const m = attenteMemo.get(v.id);
   if (m && m.cle === cle && m.s === state) return m.r;
   const r = tacheManque(state, v, v.tache);

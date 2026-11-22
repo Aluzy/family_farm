@@ -12,6 +12,8 @@ import {
   donnerAuVillage,
   economie,
   noterRevenu,
+  payerLesSalaires,
+  salaireDe,
   reglerTaux,
   taxeDe,
   taxerLaNuit,
@@ -19,6 +21,7 @@ import {
 import { etalPort } from '../../js/engine/port.js';
 import { tirerContrats } from '../../js/engine/contrats.js';
 import { encaisserVente } from '../../js/engine/market.js';
+import { tacheManque } from '../../js/engine/taches.js';
 
 function partie() {
   const s = createNewGame(9);
@@ -80,4 +83,23 @@ test('le port de l’île ne vend rien et ne propose pas de contrats', () => {
   const s = partie();
   assert.deepEqual(etalPort(s), []);
   assert.deepEqual(tirerContrats(s, 3), []);
+});
+
+test('le salaire : 30 % de ce qu’il a rapporté, arrondi au-dessus ; sans de quoi payer, il ne travaille pas le lendemain', () => {
+  const s = partie();
+  const v = { id: 'v1', prenom: 'Léa', bourse: 0 };
+  s.villageois = [v];
+  assert.deepEqual([salaireDe(0), salaireDe(100), salaireDe(150), salaireDe(7)], [0, 30, 45, 3]);
+  s.pieces = 100;
+  assert.equal(payerLesSalaires(s, [{ v, net: 150 }]).paye, 45);
+  assert.deepEqual([s.pieces, v.bourse, economie(s).revenus.villageois.v1], [55, 45, 45]);
+  s.pieces = 10;
+  assert.deepEqual(payerLesSalaires(s, [{ v, net: 100 }]).impayes, ['v1']);
+  assert.deepEqual([s.pieces, v.bourse, v.impaye], [10, 45, 30], 'rien payé, pas de dette');
+  assert.match(tacheManque(s, v, 'bois'), /Pas payé/);
+  payerLesSalaires(s, []);
+  assert.equal(v.impaye, 30, 'toujours pas de quoi');
+  s.pieces = 30;
+  payerLesSalaires(s, []);
+  assert.equal(v.impaye, undefined, 'il reprend');
 });
