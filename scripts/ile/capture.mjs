@@ -20,6 +20,11 @@ const s = E.createNewGame(Number(opt('graine', 1)), { nom: 'Essai' });
 if (E.finishSetup) E.finishSetup(s);
 // (--tente : la tente posée deux cases à droite du point d'apparition)
 if (args.includes('--tente')) console.log('tente', JSON.stringify(E.poserBloc(s, 'tente', s.monde.ici + 3)));
+// (--village : le panneau du village posé trois cases à gauche du point d'apparition)
+if (args.includes('--village')) {
+  E.addItem(s, 'panneau_village', 1);
+  console.log('place', JSON.stringify(E.poserBloc(s, 'panneau_village', s.monde.ici - 3)));
+}
 s.awakeMs = 3 * 3600 * 1000 * (E.DATA.TEMPS.SECONDES_PAR_HEURE / 3600);
 const SAUVEGARDE = JSON.stringify({ v: s.version, t: Date.now(), s });
 // (--foret : le personnage repart du cœur de la forêt la plus dense, le carré de 16 × 16 qui a le plus d'objets)
