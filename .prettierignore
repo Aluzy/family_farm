@@ -1,0 +1,11 @@
+# Prettier ne passe pour l'instant que sur le code neuf du chantier « l'île de 300 × 300 » (docs/ile-300.md) :
+# la même liste que NOUVEAUX dans eslint.config.js. Tout est ignoré, puis chaque fichier vérifié est remis.
+*
+!*/
+!eslint.config.js
+!js/engine/ile.js
+!js/engine/ile/**/*.js
+!js/ui/ile-sol.js
+!js/ui/place-ile.js
+!scripts/ile/**/*.mjs
+!tests/engine/ile*.test.mjs

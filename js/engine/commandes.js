@@ -42,7 +42,7 @@
    récolte, une nuit dormie ne se défont pas ; l'énergie dépensée non plus) :
      potager.planter  { parcelle, culture }    semer une parcelle (son identifiant), à la main
      potager.arroser  { parcelle }
-     potager.recolter { parcelle, direct? }     (direct : à l'inventaire, sans attendre le personnage)
+     potager.recolter { parcelle, direct?, faux? } (direct : à l'inventaire, sans attendre le personnage ; faux : fauchée)
      potager.labourer { case }                 labourer une case d'herbe (ou reboucher une parcelle vide)
      potager.toutPlanter  { lieu, culture }    « Planter partout », « Arroser tout », « Récolter tout »
      potager.toutArroser  { lieu }
@@ -228,6 +228,7 @@ import { acheterPalier } from './charrette.js';
 import { accueillirEnfant, formerFoyer } from './liens.js';
 import { accueillirAuVillage, offrirVillageois, parlerAuVillageois } from './villageois-amitie.js';
 import { designerCuisine, designerGardeManger, reglerReserve } from './garde-manger.js';
+import { monterPlace } from './ile/village.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -539,8 +540,8 @@ export const COMMANDES = {
     executer: (state, { parcelle }) => water(state, parcelle),
   },
   'potager.recolter': {
-    args: { parcelle: 'texte', direct: 'drapeau?' },
-    executer: (state, { parcelle, direct = false }) => harvest(state, parcelle, false, direct),
+    args: { parcelle: 'texte', direct: 'drapeau?', faux: 'drapeau?' },
+    executer: (state, { parcelle, direct = false, faux = false }) => harvest(state, parcelle, false, direct, { faux }),
   },
   'potager.labourer': {
     args: { case: 'case' },
@@ -560,6 +561,8 @@ export const COMMANDES = {
   },
   'bac.semer': { args: { case: 'case', fleur: 'fleur' }, executer: (state, { case: c, fleur }) => semerBac(state, c, fleur) },
   'bac.recolter': { args: { case: 'case' }, executer: (state, { case: c }) => recolterBac(state, c) },
+  // (l'île : monter la place du village d'un niveau, en pièces ; docs/ile-300.md)
+  'place.monter': { args: {}, executer: (state) => monterPlace(state) },
   'massif.cueillir': { args: { case: 'case' }, executer: (state, { case: c }) => cueillirMassif(state, c) },
   'compost.jeter': { args: { case: 'case', objet: 'objet', quantite: 'quantite' }, executer: (state, { case: c, objet, quantite }) => jeterAuCompost(state, c, objet, quantite) },
   'potager.engrais': { args: { parcelle: 'texte' }, executer: (state, { parcelle }) => engraisser(state, parcelle) },

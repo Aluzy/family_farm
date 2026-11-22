@@ -1,13 +1,16 @@
 import { DATA } from './catalog.js';
 import { GENERATEUR_VERSION, unlockTab } from './base.js';
 import { fail, farmOpen, isOwned, starterOf } from './devices.js';
-import { lotsFromCounts } from './inventory.js';
+import { addItem, lotsFromCounts } from './inventory.js';
 import { createInitialState } from './state.js';
 import { cleanFirstName, familyNumbers, findMember, makeMember, persoMax, validApparence, validFirstName } from './family.js';
 import { updateChapters } from './campaign.js';
 import { startPlots } from './crops.js';
 import { farmTerrain } from './terrain.js';
 import { couchages, majPoulailler } from './blocs.js';
+import { creerIle } from './ile.js';
+import { installerIle } from './ile/jeu.js';
+import { vuInitial } from './monde-vu.js';
 
 /* ---------- version 1.12 (v2, lot 8) : le départ d'une nouvelle partie ---------- */
 
@@ -37,6 +40,10 @@ export function createNewGame(seed = 1, famille = null) {
   state.famille.nom = D.NOM;
   state.famille.principal = state.famille.membres.find((m) => !m.enfant).id;
   state.famille.configuree = false;
+  // (l'île de 300 × 300, docs/ile-300.md étape 7 : toute partie neuve s'y installe)
+  installerIle(state, String(seed), addItem, creerIle);
+  // (le brouillard, fiche 14b : rien de vu, sauf le cercle de vue autour du point d'apparition)
+  state.monde.vu = vuInitial(farmTerrain(state), state.monde.ici);
   if (famille) {
     const r = setupFamily(state, famille);
     if (!r.ok) throw new Error(r.error);

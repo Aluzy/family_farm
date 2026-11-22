@@ -582,7 +582,7 @@ test('nouvelle partie sur une ferme générée : la graine, sans terre au dépar
   const s = createNewGame(5);
   assertEqual(s.potager.parcelles, []);
   assertEqual(setFarmSeed(s, 'neuve'), { ok: true, graine: 'neuve' });
-  assertEqual([farmTerrain(s).LARGEUR, s.potager.parcelles], [644, []]);
+  assertEqual([farmTerrain(s).LARGEUR, s.potager.parcelles], [300, []]);   // (l'île de 300 × 300, docs/ile-300.md)
 });
 
 test('ferme générée : chaque nuit, qui n\'a pas de paillasse dans une pièce close perd du bonheur', () => {

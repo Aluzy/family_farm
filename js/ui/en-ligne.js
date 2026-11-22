@@ -48,10 +48,12 @@ import { notify } from './toasts.js';
 import { sonMatin } from './son.js';
 import { refresh } from './render.js';
 import { registerActions } from './actions.js';
-import { brancherEnLigne } from './commandes.js';
+import { brancherEnLigne } from './commandes.js';import { enLigneOuvert } from '../engine/ile/jeu.js';
+
 
 // Le monde demandé par l'adresse (jeu.html?monde=…), ou null.
 export function mondeDemande() {
+  if (!enLigneOuvert()) return null;   // (suspendu : docs/ile-300.md C19)
   try {
     const m = new URLSearchParams(location.search).get('monde');
     return m && /^m-[A-Za-z0-9_-]{16,40}$/.test(m) ? m : null;

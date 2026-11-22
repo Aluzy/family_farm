@@ -125,8 +125,10 @@
     "//ble": [
       "Lot 4 (cultures de plein champ). produit : l'objet récolté quand il n'a pas",
       "le nom de la culture. Blé : 1 blé = 1 graine. Tournesol : la récolte donne",
-      "des graines, à replanter ou à presser (même ressource). Le blé ne se",
-      "plante qu'une fois le Silo construit."
+      "des graines, à replanter ou à presser (même ressource) ; coupé à la faux (faux :",
+      "{ objet : [au moins, au plus] }), il donne sa fleur (le colorant jaune). C'est le",
+      "seul tournesol du jeu (docs/ile-300.md, C16). Le blé ne se plante qu'une fois le",
+      "Silo construit."
     ],
     "ble": {
       "nom": "Blé",
@@ -149,6 +151,7 @@
       "litres": 2,
       "rendement": 9,
       "produit": "graine_tournesol",
+      "faux": { "fleur_tournesol": [1, 2] },
       "graines": { "item": "graine_tournesol", "mode": "plant" },
       "sprite": { "r": 11, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },

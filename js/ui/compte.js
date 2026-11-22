@@ -11,7 +11,8 @@ import { morph } from './render.js';
 import { notify } from './toasts.js';
 import { exportSaveJson } from './storage.js';
 import { enLigne, SAVE_KEY, state } from './store.js';
-import { nomDe, unirVu } from '../engine/index.js';
+import { nomDe, unirVu } from '../engine/index.js';import { enLigneOuvert } from '../engine/ile/jeu.js';
+
 
 const CLE = 'ferme-compte';
 
@@ -123,6 +124,8 @@ function poidsCopieKo() {
   try { const vu = (state.monde && state.monde.vu) || ''; return Math.max(1, Math.round((JSON.stringify(state).length - String(vu).length) / 1024)); } catch (e) { return null; }
 }
 function mondesHtml() {
+  // (le jeu en ligne est suspendu, docs/ile-300.md C19 : ILE.PARTIE.EN_LIGNE)
+  if (!enLigneOuvert()) return '<p class="muted">🌐 Le jeu en ligne est suspendu pour l\'instant.</p>';
   if (!mondesLus) { mondesLus = true; lireMondes(); }
   const ile = ileSolo();
   const enLigneIci = typeof location !== 'undefined' && /[?&]monde=/.test(location.search);

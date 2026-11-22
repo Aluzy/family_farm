@@ -68,6 +68,7 @@ import { rememberFocus } from './modal.js';
 import { jaugeClasse, plural } from './common.js';
 import { son } from './son.js';
 import { persistState } from './storage.js';
+import { renderPlaceIle } from './place-ile.js';
 
 /* ---------- Fenêtres de la carte ---------- */
 
@@ -270,6 +271,11 @@ export const STAGE_WINDOWS = {
   },
   // Énergie (un appui sur les panneaux solaires du toit) et Eau (sur la pompe du puits ou la
   // citerne) : leurs appareils, dès qu'ils sont achetés (les achats se font dans la Maison).
+  // (l'île : la place du village, un appui sur son panneau ; js/ui/place-ile.js)
+  place: {
+    nom: 'La place du village', icone: '🪧', ok: () => true, bois: true,
+    corps: () => renderPlaceIle(),
+  },
   energie: {
     nom: 'Énergie', icone: '⚡', ok: () => isOwned(starterOf(state, 'panneau')), bois: true,
     corps: () => renderEnergieFenetre(),

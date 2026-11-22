@@ -11,7 +11,8 @@ import { takeWheat, wheatTotal } from './animals.js';
 import { goutPour } from './amitie.js';
 import { villageoisDe, trouverVillageois } from './villageois.js';
 import { journeeDuVillage } from './villageois-journee.js';
-import { blocBloque, casesCouvertes, memoEnLot } from './blocs.js';
+import { blocBloque, casesCouvertes, memoEnLot } from './blocs.js';import { estPartieIle } from './ile/jeu.js';
+
 
 /* ---------- la part, la bourse et l'étal (le chantier « l'île à bâtir », fiche I4) ----------
 
@@ -366,6 +367,8 @@ export function phraseEtal(state, id, o) {
 
 // Il achète `o` à l'étal. → { ok, objet, prix, envie } ou le refus.
 export function acheterALEtal(state, id, o) {
+  // (l'île de 300 × 300, docs/ile-300.md : l'argent ne vient que de l'export, par le port ; l'étal ne vend plus)
+  if (estPartieIle(state)) return fail('L\'étal ne vend plus : l\'argent vient de l\'export, par le port.');
   const v = trouverVillageois(state, id);
   if (!v) return fail('Villageois inconnu.');
   const E = etalDe(state), jour = jourDe(state);

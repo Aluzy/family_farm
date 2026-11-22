@@ -6,6 +6,7 @@ import { setPendingAbsence, setSimulatedAt, simulatedAt, syncJobs } from './loop
 import { notify } from './toasts.js';
 import { mesurer } from './chrono.js';
 import { copieRetourGardee } from '../engine/migration-ile.js';
+import { garderIle } from '../engine/ile/jeu.js';
 
 /* ---------- stockage : localStorage, toujours entouré de try/catch ---------- */
 
@@ -148,6 +149,7 @@ export function persistState() {
 }
 function persister() {
   try {
+    garderIle(state); // (l'île vivante écrite dans la partie : js/engine/ile/jeu.js)
     const t0 = performance.now();
     const payload = JSON.stringify({ v: state.version, t: simulatedAt, s: state });
     safeStorageSet(SAVE_KEY, payload);
@@ -172,6 +174,7 @@ function decodeBase64(b64) {
 }
 
 export function exportSaveText() {
+  garderIle(state);
   const payload = JSON.stringify({ v: state.version, t: simulatedAt, s: state });
   return encodeBase64(payload);
 }

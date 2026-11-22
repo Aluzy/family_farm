@@ -107,17 +107,6 @@ test('le port ne déplace rien d\'autre dans le plan', () => {
   assertEqual([...avec.eaux], [...sans.eaux], 'ni les eaux');
 });
 
-test('le réglage allumé : la partie a son port, le même terrain', () => {
-  const s = createNewGame(42);
-  assertEqual(niveauPort(s), DATA.PORT.NIVEAU_DEPART, 'le niveau de départ');
-  const T = farmTerrain(s), T0 = genererMonde(s.carte.graine).terrain;
-  assertEqual(T.MONDE.cadre.PORT, 1, 'le cadre porte le port');
-  assert(T.LIGNES === T0.LIGNES && T.FERME === T0.FERME, 'la ferme et son terrain : les mêmes');
-  assert(T.MONDE.cle !== T0.MONDE.cle, 'deux mondes à part pour les sols gardés');
-  s.port = { niveau: 9 };
-  assertEqual(niveauPort(s), 5, 'au plus le niveau 5');
-});
-
 test('les niveaux : le quai s\'allonge, le niveau 1 n\'a que le quai court, la halle et le panneau', () => {
   const n1 = contenuPort(1), n5 = contenuPort(5);
   assertEqual(n1.quai, 8);

@@ -61,6 +61,8 @@
   const START = 2, RUNNING = 5, PAUSED = 6, SLEEPING = 7;
   // La cadence (fiche 25) : le plafond d'images par seconde (0 : l'écran), et à partir de combien d'images
   // par seconde de l'écran on plafonne à 60 ; le plafond de l'économie.
+  // (docs/ile-300.md : 100 images par seconde au moins sur ordinateur, 60 sur téléphone. Un ordinateur n'a pas de
+  // plafond : il suit son écran. Un téléphone à l'écran rapide est plafonné à 60, pour sa batterie ; l'économie, à 30.)
   const CADENCE = { RAPIDE: 100, PLAFOND: 60, ECONOMIE: 30, TOLERANCE: 0.1 };
   const auPas = [];           // fn(temps) appelées à chaque pas de la boucle de Phaser (surPas)
   const aLaVeille = [];       // fn() appelées quand la boucle de Phaser s'endort ou se réveille (surVeille)
@@ -100,6 +102,7 @@
     // (le limiteur corrigé, avant tout plafond : pasLimite)
     game.loop.stepLimitFPS = pasLimite;
     game.events.on('poststep', (t) => { for (const fn of auPas) fn(t); });
+    compteurImages();
     game.events.once('ready', () => { taille(); applique(); });
     if (global.ResizeObserver) jeu.observe = new global.ResizeObserver(taille);
     global.addEventListener('resize', taille);
@@ -164,6 +167,35 @@
     this.frame++;
   }
 
+  // Un téléphone (ou une tablette) : un écran tactile sans souris.
+  let tel = null;
+  const telephone = () => (tel === null ? (tel = !!(global.matchMedia && global.matchMedia('(pointer: coarse)').matches && !global.matchMedia('(any-pointer: fine)').matches)) : tel);
+
+  // Le compteur d'images (jeu.html?fps=1) : les images par seconde, le pire temps d'une image et le 95e centile sur
+  // la dernière demi-seconde ; window.mesureImages() rend les mêmes chiffres sur toute la durée depuis son dernier appel.
+  function compteurImages() {
+    if (!global.document || !/[?&]fps=1\b/.test(global.location ? global.location.search : '')) return;
+    const el = global.document.createElement('div');
+    el.style.cssText = 'position:fixed;left:4px;bottom:4px;z-index:99999;padding:2px 6px;font:12px monospace;color:#fff;background:rgba(0,0,0,.6);pointer-events:none;border-radius:4px';
+    global.document.body.appendChild(el);
+    let avant = 0, debut = 0, durees = [], tout = [];
+    const chiffres = (d, ms) => {
+      const s = d.slice().sort((a, b) => a - b);
+      return { fps: ms > 0 ? (d.length * 1000) / ms : 0, pire: s.length ? s[s.length - 1] : 0, p95: s.length ? s[Math.floor(s.length * 0.95)] : 0, images: d.length };
+    };
+    global.mesureImages = () => { const c = chiffres(tout, tout.reduce((a, b) => a + b, 0)); tout = []; return c; };
+    auPas.push((t) => {
+      if (avant) { const d = t - avant; durees.push(d); if (tout.length < 100000) tout.push(d); }
+      avant = t;
+      if (!debut) debut = t;
+      if (t - debut >= 500) {
+        const c = chiffres(durees, t - debut);
+        el.textContent = Math.round(c.fps) + ' i/s · pire ' + c.pire.toFixed(1) + ' ms · 95 % ' + c.p95.toFixed(1) + ' ms';
+        durees = []; debut = t;
+      }
+    });
+  }
+
   // La scène revoit le plafond à chaque image (la qualité peut changer dans les Options).
   function cadence() {
     if (!game || !game.loop) return;
@@ -171,7 +203,7 @@
     const eco = K.qualite && K.qualite() === 'economie';
     // (actualFps compte les images de l'écran, plafond ou non ; il lui faut une seconde pour se mesurer)
     const rapide = L.actualFps > CADENCE.RAPIDE;
-    const voulu = eco ? CADENCE.ECONOMIE : rapide ? CADENCE.PLAFOND : 0;
+    const voulu = eco ? CADENCE.ECONOMIE : rapide && telephone() ? CADENCE.PLAFOND : 0;
     if (L.fpsLimit !== voulu) L.setFPSLimit(voulu);
   }
 

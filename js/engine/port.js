@@ -44,7 +44,9 @@ import { farmSeed, farmTerrain } from './terrain.js';
 import { planDuMonde } from './monde.js';
 import { dispositionPort } from './monde-gen.js';
 import { chargeDe, materiauDuChantier, vendreCharge, vendreToutLaCharge } from './portage.js';
-import { objetImporte } from './bac.js';
+import { objetImporte } from './bac.js';import { estPartieIle } from './ile/jeu.js';
+import { casePort, refusPortIle } from './ile/village.js';
+
 
 export const PORT = DATA.PORT;
 export const NIVEAUX_PORT = PORT.NIVEAUX.length;
@@ -111,6 +113,14 @@ export function poserLieuDuPort(state) {
 // Le comptoir du port de la partie : { cases (ses trois cases, sous la halle), devant (la case où l'on se tient
 // pour commercer), W }, ou null.
 export function comptoirDuPort(state) {
+  // (l'île : le comptoir du port que le joueur a posé ; on se tient devant, sous lui)
+  if (estPartieIle(state)) {
+    const c = casePort(state), W = farmTerrain(state).LARGEUR;
+    if (c === null) return null;
+    const lg = (DATA.ATELIER.BLOCS[DATA.ILE.VILLAGE.PORT] || {}).largeur || 1, cases = [];
+    for (let k = 0; k < lg; k++) cases.push(c + k);
+    return { cases, devant: c + W, W };
+  }
   const l = lieuPort(state);
   if (!l) return null;
   const W = farmTerrain(state).LARGEUR, PP = PORT.PLAN, [HL, HH] = PP.HALLE;
@@ -156,6 +166,8 @@ export function ouEstLePort() {
 // Peut-on commercer au port, le personnage sur la case `ou` ? { ok, raison, dist }. `o.sansPresence` : sans
 // case (le joueur automatique) : seuls le chantier, le niveau et les heures comptent.
 export function portOuvert(state, ou = null, o = {}) {
+  // (l'île : le comptoir posé, le village fondé, docs/ile-300.md)
+  if (estPartieIle(state)) { const r = refusPortIle(state); if (r) return { ok: false, raison: r, dist: Infinity }; }
   if (!marcheOuvert(state)) return { ok: false, raison: marcheFerme(state), dist: Infinity };
   const dist = o.sansPresence ? 0 : distanceAuComptoir(state, ou);
   if (dist > PORT.PORTEE + EPS) return { ok: false, raison: `Tu n'es pas au port. ${ouEstLePort()}`, dist };

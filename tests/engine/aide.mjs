@@ -19,6 +19,9 @@ import {
 } from '../../js/engine/index.js';
 import { noterEncyclopedie, toutVoir } from '../../js/engine/index.js';
 import { ETAPES } from '../../js/engine/didacticiel.js';
+import { ileDeLaPartie as ileDeLaPartieAide } from '../../js/engine/ile/jeu.js';
+import { estEau as estEauAide } from '../../js/engine/ile/vie.js';
+import { refusPoseIle as refusPoseIleAide } from '../../js/engine/ile/village.js';
 
 // Le calendrier lunaire change la pousse, l'eau et les récoltes selon le jour. Les tests écrits
 // avant lui tournent lune neutre (un stade par nuit, rendements et eau de base) ; ceux de la
@@ -452,4 +455,24 @@ export function sansCompteurs68(c) {
   if (!c || !c.compteurs) return c;
   const { serie100, nuits100, tenue, tenueDerniere, tenueReussie, ...k } = c.compteurs;
   return { ...c, compteurs: k };
+}
+
+// L'île de 300 × 300 (docs/ile-300.md) : le village fondé, pour les essais du port : la place du village (le panneau)
+// près du point d'apparition, le comptoir du port sur la rive la plus proche, un villageois (sans maison) s'il n'y en a
+// pas. → la case du comptoir.
+export function fonderVillage(s) {
+  const VI = DATA.ILE.VILLAGE, ile = ileDeLaPartieAide(s), n = ile.n, ici = s.monde.ici;
+  if (!s.blocs) s.blocs = {};
+  if (!Object.values(s.blocs).includes(VI.PLACE)) s.blocs[ici + 4] = VI.PLACE;
+  let port = Object.keys(s.blocs).find((k) => s.blocs[k] === VI.PORT);
+  if (port === undefined) {
+    const d = (i) => Math.abs((i % n) - (ici % n)) + Math.abs(Math.floor(i / n) - Math.floor(ici / n));
+    let mieux = -1;
+    for (let i = n; i < n * n - n; i++) if (refusPoseIleAide(s, VI.PORT, [i, i + 1]) === null && s.blocs[i] === undefined && s.blocs[i + 1] === undefined && ile.objet[i] === 0 && ile.objet[i + 1] === 0 && !estEauAide(ile, i) && !estEauAide(ile, i + 1) && !estEauAide(ile, i + n) && (mieux < 0 || d(i) < d(mieux))) mieux = i;
+    s.blocs[mieux] = VI.PORT;
+    port = mieux;
+  }
+  if (!Array.isArray(s.villageois)) s.villageois = [];
+  if (!s.villageois.length) s.villageois.push({ id: 'vg-essai', prenom: 'Essai', genre: 'f', perso: 1, maison: null, lit: null, bourse: 0, bonheur: 50, faim: 0, arrive: 0, repos: false, accueil: null, sansMaison: null, avis: [], journal: [], traitsConnus: [], indices: {}, gouts: {}, traits: [] });
+  return Number(port);
 }

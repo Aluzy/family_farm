@@ -46,6 +46,7 @@ export const GESTES = {
 // ces tableaux au registre : une action ajoutée au jeu sans être classée ici,
 // ou classée ici après avoir disparu du jeu, fait échouer la vérification.
 export const GAME_ACTIONS = {
+  'place-monter': 'Monter la place du village',
   'plant': 'Planter',
   'water': 'Arroser',
   'water-all': 'Arroser',

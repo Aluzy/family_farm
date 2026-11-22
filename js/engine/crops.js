@@ -13,6 +13,9 @@ import { aCruche, eauCruche, puiserCruche } from './cruche.js';
 import { casesDuTerrain, farmTerrain, tileCount } from './terrain.js';
 import { serrePlaces } from './blocs.js';
 import { recolteSauvage } from './sauvages.js';
+import { degagerIle } from './ile/jeu.js';
+import { hasTool } from './outils.js';
+
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -367,6 +370,7 @@ export function hoe(state, tile) {
   spendEnergy(state, 'labourer');
   gainActionXp(state, 'labourer');
   bumpCounter(state, 'labours', 1); // FLU-42 : chapitre 1
+  degagerIle(state, tile);   // (l'île : ce qui y poussait sans bloquer s'en va)
   return { ok: true, action: 'labourer', plot };
 }
 
@@ -537,16 +541,19 @@ export function noteWateredPlots(state) {
 // Récolte : la parcelle est libérée. `auto` = true pour une automatisation
 // (gratuite) ; le clic du joueur coûte de l'énergie (version 1.8).
 // `direct` (E-5, en ligne) : la récolte va droit à l'inventaire commun, sans attendre le personnage.
-export function harvest(state, plotId, auto = false, direct = false) {
+export function harvest(state, plotId, auto = false, direct = false, o = {}) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
-  return harvestPlot(state, plot, auto, direct);
+  return harvestPlot(state, plot, auto, direct, o);
 }
 
 // harvest() sur la parcelle elle-même.
-export function harvestPlot(state, plot, auto = false, direct = false) {
+// o.faux : coupée à la faux (docs/ile-300.md C16 : le tournesol donne alors sa fleur, CULTURES.faux, et pas ses graines).
+export function harvestPlot(state, plot, auto = false, direct = false, o = {}) {
   if (!plot.culture) return fail('Rien à récolter ici.');
   if (!isMature(plot)) return fail('Pas encore mûre.');
+  const fauchee = !!(o.faux && DATA.CULTURES[plot.culture].faux);
+  if (fauchee && !hasTool(state, 'faux')) return fail('Il faut la faux (à fabriquer à l\'Atelier).');
   if (!auto && !canAfford(state, 'recolter')) return fail(TIRED); // version 1.8
   const culture = plot.culture;
   const def = DATA.CULTURES[culture];
@@ -554,11 +561,12 @@ export function harvestPlot(state, plot, auto = false, direct = false) {
   const gain = (item, qty) => {
     if (qty > 0) items[item] = (items[item] || 0) + qty;
   };
-  gain(cropProduct(culture), harvestYield(state, culture));
+  if (fauchee) for (const [item, [a, b]] of Object.entries(def.faux)) gain(item, randomInt(state, a, b));
+  else gain(cropProduct(culture), harvestYield(state, culture));
   noteCropHarvested(state, culture); // version 1.12 : chapitres 1 et 2
   // (l'île à bâtir, fiche I7e : un plant sauvage récolté la première fois s'inscrit au catalogue d'import du port)
   const sauvage = recolteSauvage(state, culture);
-  if (def.graines.mode === 'recolte') {
+  if (def.graines.mode === 'recolte' && !fauchee) {
     const bonus = techSum(state, 'grainesBonus'); // arbre v2 : Sélection des semences
     gain(def.graines.item, randomInt(state, def.graines.min + bonus, def.graines.max + bonus));
   }

@@ -27,6 +27,9 @@ import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
 import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';
+import { degagerIle } from './ile/jeu.js';import { refusPoseIle } from './ile/village.js';
+
+
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -776,7 +779,7 @@ export function dansPiece(state, tile) {
 // d'autre ne change de lit. Un lit choisi qui n'est plus un couchage (repris, sa pièce ouverte)
 // ne compte plus : l'ordre des pièces revient.
 export function couchages(state) {
-  let l = piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
+  let l = piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state), couchagesDesTentes(state));
   // (fiche I3a : les lits d'une maison marquée d'une boîte aux lettres, celle d'un villageois, passent après les
   // autres ; la famille n'y dort que s'il ne lui reste pas d'autre lit)
   const reserves = new Set(maisonsMarquees(state).flatMap((m) => m.piece.paillasses));
@@ -784,6 +787,14 @@ export function couchages(state) {
   const k = l.indexOf(state.litPrincipal);
   if (k > 0) [l[0], l[k]] = [l[k], l[0]];
   return l;
+}
+
+// Les couchages des tentes posées (l'île de 300 × 300, docs/ile-300.md C18 : on arrive avec une tente, qu'on pose au
+// sol pour dormir) : la case de chaque tente, autant de fois qu'elle a de places (ILE.PARTIE.TENTE.places).
+function couchagesDesTentes(state) {
+  const B = blocsPoses(state);
+  const places = (DATA.ILE && DATA.ILE.PARTIE && DATA.ILE.PARTIE.TENTE.places) || 0;
+  return Object.keys(B).map(Number).filter((t) => sorteDe(B[t]) && sorteDe(B[t]).tente).flatMap((t) => Array(places).fill(t));
 }
 
 /* ---------- la maison d'un villageois (le chantier « l'île à bâtir », fiche I3a) ----------
@@ -968,6 +979,9 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
   if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.ornement ? `Plus de ${s.nom.toLowerCase()} : achète-en un avec des gemmes (💎, avec le jeu en ligne).` : s.cheminee || s.fontaine || s.enseigne || s.boite_lettres || s.boutique ? `Plus de ${s.nom.toLowerCase()} : achète-en une avec des gemmes (💎, avec le jeu en ligne).` : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en un dans un hameau (l'ébéniste de Bois-Joli, les tapis des Genêts).` : s.grimpant || s.guirlande ? `Plus de ${s.nom.toLowerCase()} : achète-en avec des gemmes (💎, avec le jeu en ligne).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : s.massif ? `Plus de ${DATA.OBJETS[s.objet].nom.toLowerCase()} : on en trouve en cueillant les fleurs sauvages du grand monde.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
+  // (l'île : une seule place, un seul port, au bord de la mer : js/engine/ile/village.js)
+  const refusIle = refusPoseIle(state, sorte, empriseMeuble(state, sorte, tile, sens) || [tile]);
+  if (refusIle) return { ok: false, raison: refusIle };
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
   // l'Atelier pas encore construit : ses matériaux (DATA.ATELIER.CONSTRUCTION) dans l'inventaire
@@ -1114,6 +1128,7 @@ export function poserBloc(state, sorte, tile, sens = 0, variante = null) {
     setVariante(state, tile, sorte, variante);
     if (varianteBloc(state, tile)) r.variante = varianteBloc(state, tile);
     foulerAutour(state, tile);
+    degagerIle(state, tile);   // (l'île : ce qui y poussait sans bloquer s'en va)
     noter('pose', { sorte });
   }
   return r;

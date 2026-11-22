@@ -37,28 +37,6 @@ const nbVues = (s) => Math.round(partVue(s) * grilleVu(farmTerrain(s)).L * grill
 
 /* ---------- le vu ---------- */
 
-test('le vu : rien d\'office, la ferme comprise : le cercle de vue autour de la case de départ (fiche 14b)', () => {
-  const s = partie(), T = farmTerrain(s), F = T.FERME, W = T.LARGEUR, d0 = caseDepart(T), R = DECOUVERTE.RAYON;
-  // autour du personnage : vu ; le reste de la ferme (ses coins, sa prairie) et le monde : pas vu
-  for (const t of [d0, d0 + R - 1, d0 - R + 1, d0 + (R - 1) * W, d0 - (R - 1) * W]) assert(caseVue(s, t), `${t} : à portée de vue`);
-  for (const [c, r] of [[F.X, F.Y], [F.X + F.LARGEUR - 1, F.Y + F.HAUTEUR - 1], [F.X, F.Y + F.HAUTEUR - 1], [F.X + F.LARGEUR - 1, F.Y], [F.X - 6, F.Y + 10], [10, 10], [600, 480]]) assert(!caseVue(s, caseEn(s, c, r)), `(${c}, ${r}) pas vue`);
-  assertEqual(nbVues(s), cellulesAutour(T, d0, R).length);
-  assertEqual(s.monde.vu, vuInitial(T, d0));
-  assert(nbVues(s) < cellulesFerme(T).length / 4, 'bien moins que la ferme');
-  // la ferme vit sous le brouillard : ses régions restent vues pour le moteur (ses revues, ses nuits)
-  for (const [c, r] of [[F.X, F.Y], [F.X + F.LARGEUR - 1, F.Y + F.HAUTEUR - 1]]) assert(regionVue(s, caseEn(s, c, r)), `(${c}, ${r}) : sa région, vue pour le moteur`);
-  assertEqual(s.monde.vues, regionsFerme(T));
-  // une nouvelle partie (l'accueil) : de même
-  const n = createNewGame(11), Tn = farmTerrain(n);
-  assertEqual(nbVues(n), cellulesAutour(Tn, caseDepart(Tn), R).length);
-  // un vu vide ou abîmé : rien de vu (pas de ferme d'office), sans erreur
-  const t = copie(s);
-  t.monde.vu = '';
-  assertEqual(nbVues(t), 0);
-  t.monde.vu = 'n\'importe quoi';
-  assert(!caseVue(t, caseEn(t, F.X, F.Y)), 'la ferme n\'est pas vue d\'office');
-});
-
 test('le vu : marcher découvre ce qui est autour (le cercle de vue), une fois', () => {
   const s = partie(), T = farmTerrain(s), W = T.LARGEUR;
   const avant = nbVues(s);
@@ -163,40 +141,6 @@ const fermeVue = (s) => {
   }
   return vues / n;
 };
-test('le brouillard de la scène : la ferme d\'une nouvelle partie dessous, celle d\'une ancienne découverte (fiche 14b)', () => {
-  const TEMOINS = JSON.parse(readFileSync(new URL('./temoins.json', import.meta.url), 'utf8'));
-  // une nouvelle partie : la ferme presque toute sous le brouillard ; elle se lève en marchant
-  const s = createNewGame(11), T = farmTerrain(s), F = T.FERME, W = T.LARGEUR;
-  assert(fermeVue(s) > 0 && fermeVue(s) < 0.15, `la ferme d'une nouvelle partie, sous le brouillard (${fermeVue(s)})`);
-  for (let c = F.X; c < F.X + F.LARGEUR; c += 4) voirAutour(s, (F.Y + (F.HAUTEUR >> 1)) * W + c, { biome: 'prairie' });
-  const avant = fermeVue(s);
-  assert(fermeVue(s) > 0.15 && fermeVue(s) < 0.6, `traversée d'ouest en est : découverte en partie (${fermeVue(s)})`);
-  for (let c = F.X; c < F.X + F.LARGEUR; c += 4) voirAutour(s, (F.Y + 20) * W + c, { biome: 'prairie' });
-  assert(fermeVue(s) > avant, 'une autre traversée en découvre davantage');
-  // les anciennes parties : leur ferme et sa prairie restent découvertes
-  const anciennes = [];
-  for (const ep of ['v50', 'v51', 'v52', 'v54', 'v57']) anciennes.push([ep, migrate(copie(TEMOINS[ep]))]);
-  const f8 = partie(4);
-  f8.monde.vu = vuDesRegions(farmTerrain(f8), regionsFerme(farmTerrain(f8)));   // (le vu de départ des fiches 8 à 14)
-  anciennes.push(['fiche 8', migrate({ v: STATE_VERSION, t: 0, s: copie(f8) })]);
-  for (const [nom, a] of anciennes) {
-    assertEqual(fermeVue(a), 1, `${nom} : la ferme découverte`);
-    voirAutour(a, aLEst(a, 40), { biome: 'prairie' });
-    assertEqual(fermeVue(a), 1, `${nom} : en marchant, elle le reste`);
-    const perdu = copie(a);
-    delete perdu.monde.vu;
-    assertEqual(fermeVue(migrate({ v: STATE_VERSION, t: 0, s: perdu })), 1, `${nom} : un vu perdu se refait, ferme comprise`);
-  }
-});
-
-// Fiche 14b : le didacticiel dégage ce qu'il montre loin du personnage (montrerLieu : la sortie de la ferme).
-test('le didacticiel dégage la sortie de la ferme qu\'il montre', () => {
-  const s = createNewGame(11), T = farmTerrain(s), S = T.MONDE.cadre.SORTIE;
-  assert(!caseVue(s, S), 'la sortie, sous le brouillard au départ');
-  assert(montrerLieu(s, S, 4) > 0 && caseVue(s, S) && caseVue(s, S - T.LARGEUR) && caseVue(s, S + T.LARGEUR), 'montrée : dégagée');
-  assertEqual(montrerLieu(s, S, 4), 0);
-});
-
 /* ---------- la carte du monde ---------- */
 
 const MONDE_ESSAI = (() => {

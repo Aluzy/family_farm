@@ -25,6 +25,7 @@ import { butBoussole, choisirBut } from './monde-vu.js';
 import { distanceAuComptoir } from './port.js';
 import { chargeDe } from './portage.js';
 import { maisonsLibres, villageoisDe } from './villageois.js';
+import { casePlace, casePort } from './ile/village.js';
 
 const D = () => DATA.VILLAGE.DEPART;
 export const ETAPES_ILE = () => D().ETAPES.map((e) => e.id);
@@ -45,6 +46,9 @@ const BUTS = {
   port: (s) => (compteurs(s).ventesPort || 0) > 0 || distanceAuComptoir(s, s.monde && s.monde.ici) <= D().PORT,
   vendre: (s) => (compteurs(s).ventesPort || 0) > 0,
   graines: (s) => (compteurs(s).achatsPort || 0) > 0,
+  // (l'île de 300 × 300, docs/ile-300.md : la place du village, puis le comptoir du port qu'il bâtit)
+  place: (s) => casePlace(s) !== null,
+  comptoir: (s) => casePort(s) !== null,
   maison: (s) => maisonsLibres(s).length > 0 || loges(s).length > 0,
   villageois: (s) => loges(s).length > 0,
   tache: (s) => villageoisDe(s).some((v) => v && v.tache),

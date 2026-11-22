@@ -13,7 +13,7 @@ import {
   STATE_VERSION, testBatir, tirerCommandes, vendreAuPort,
 } from '../../js/engine/index.js';
 import { jourDeBac as jourDuVillageois } from '../../js/engine/villageois.js';
-import { assert, assertEqual, reach, setInv, test } from './aide.mjs';
+import { assert, assertEqual, fonderVillage, reach, setInv, test } from './aide.mjs';
 
 const B = DATA.PORT.BAC;
 const copie = (o) => JSON.parse(JSON.stringify(o));
@@ -22,7 +22,7 @@ const copie = (o) => JSON.parse(JSON.stringify(o));
 // la case devant le comptoir.
 function auPort(seed = 'bac', jour = 1, h = 10) {
   const s = reach(createNewGame(seed), 'marche');
-  portDuMonde(farmSeed(s));
+  fonderVillage(s);   // (l'île de 300 × 300 : le comptoir du port bâti, le village fondé)
   s.day = jour;
   s.awakeMs = awakeMsAtHour(h);
   return { s, ou: comptoirDuPort(s).devant };
@@ -217,7 +217,7 @@ test('un import se paie d\'avance et arrive au passage suivant du bac (à la fer
   const plan = DATA.PORT.IMPORT.RANGS[3][0].plan;
   assert(commanderImport(s, `plan:${plan}`, 3, ou).quantite === 1, 'un plan : une fois');
   assert(!commanderImport(s, `plan:${plan}`, 1, ou).ok, 'déjà commandé');
-  assert(testBatir(s, 'poulailler').ok, 'le Poulailler');
+  { const tb = testBatir(s, 'poulailler'); assert(tb.ok, 'le Poulailler : ' + tb.error); }
   s.poulailler.poules = 0;
   assert(commanderImport(s, 'bete:poule', 1, ou).ok, 'une poule');
   s.poulailler.construit = false;

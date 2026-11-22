@@ -126,7 +126,7 @@ test('les abeilles butinent les bacs en fleurs ; les graines viennent des fleurs
   poserBloc(s, 'ruche', t + 5 + 0);
   const f = fleursPourAbeilles(s);
   assert(f.includes(t) && f.includes(t + 1) && !f.includes(t + 3), 'les bacs en fleurs');
-  for (const [sorte, fleur] of Object.entries({ coquelicot: 'coquelicot', pavot_californie: 'pavot', tournesol_sauvage: 'tournesol', myosotis: 'myosotis', lavande: 'lavande', lupin: 'lupin' })) {
+  for (const [sorte, fleur] of Object.entries({ coquelicot: 'coquelicot', pavot_californie: 'pavot', myosotis: 'myosotis', lavande: 'lavande', lupin: 'lupin' })) {
     const g = DATA.BACS.FLEURS[fleur].graine;
     assertEqual(DATA.RECOLTE.SORTES[sorte].chance, { [g]: 25 }, sorte);
     assertEqual(DATA.OBJETS[g].categorie, 'graine', g);

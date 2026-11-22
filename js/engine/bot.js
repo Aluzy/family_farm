@@ -68,9 +68,12 @@ import { posteCompta, suivreComptes } from './compta.js';
 import { accepterContrat, contratsAcceptes, contratsDuPort, livrerContrat } from './contrats.js';
 import { quiEstLie } from './liens.js';
 import { scoreVocation } from './vocations.js';
-import { poserBloc } from './blocs.js';
+import { poserBloc, poseStatus } from './blocs.js';
 import { cuisineDuVillage, cuisinesDuVillage, deposerAuGardeManger, designerCuisine, designerGardeManger, gardeManger, gardeMangerCommun, menuDuVillage, utileAuGardeManger } from './garde-manger.js';
 import { sourceRepas } from './repas.js';
+import { estPartieIle, ileDeLaPartie } from './ile/jeu.js';
+import { BIOMES, SOL_BIOME } from './ile/reglages.js';
+import { casePlace, casePort } from './ile/village.js';
 
 /* ==========================================================================
    Lot 10 : simulation d'un joueur automatique (conception, sections 8.10 et
@@ -166,12 +169,47 @@ function botOutil(state, id) {
 // n'est libre et que le port en laisse venir un de plus (ses pièces maîtresses fabriquées à l'Atelier, les murs
 // posés d'un coup : testMaisonVillageois) ; puis à chacun la première tâche de TACHES que personne n'a et qui a
 // son poste, avec l'outil qu'elle demande (fabriqué à l'Atelier, puis donné).
+// L'île de 300 × 300 (docs/ile-300.md) : la place du village (le panneau) près de chez lui, puis le comptoir du port sur
+// la rive la plus proche ; fabriqués dès qu'il le peut. → rien.
+function botIle(state) {
+  if (!estPartieIle(state)) return;
+  const VI = DATA.ILE.VILLAGE, ici = state.monde && Number.isInteger(state.monde.ici) ? state.monde.ici : 0;
+  const poserPres = (sorte, rayon) => {
+    if (!botFabriquer(state, sorte, Math.max(0, 1 - countItem(state, sorte)))) return;
+    const W = farmTerrain(state).LARGEUR, x0 = ici % W, y0 = Math.floor(ici / W);
+    for (let r = 2; r <= rayon; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const x = x0 + dx, y = y0 + dy;
+          if (x < 0 || y < 0 || x >= W || y >= W) continue;
+          if (poseStatus(state, sorte, y * W + x).ok) { poserBloc(state, sorte, y * W + x); return; }
+        }
+      }
+    }
+  };
+  if (casePlace(state) === null) poserPres(VI.PLACE, 12);
+  if (casePort(state) === null && botFabriquer(state, VI.PORT, Math.max(0, 1 - countItem(state, VI.PORT)))) {
+    // (les cases de terre qui touchent la mer, de la plus proche à la plus loin)
+    const ile = ileDeLaPartie(state), n = ile.n, mer = (i) => BIOMES[SOL_BIOME[ile.sol[i]]] === 'mer';
+    const rives = [];
+    for (let i = n; i < n * n - n; i++) if (!mer(i) && (mer(i + n) || mer(i - n) || mer(i + 1) || mer(i - 1))) rives.push(i);
+    const d = (i) => Math.abs((i % n) - (ici % n)) + Math.abs(Math.floor(i / n) - Math.floor(ici / n));
+    rives.sort((a, b) => d(a) - d(b));
+    for (const i of rives.slice(0, 400)) {
+      for (const t of [i, i - 1]) if (poseStatus(state, VI.PORT, t).ok) { poserBloc(state, VI.PORT, t); return; }
+    }
+  }
+}
+
 export function botVillageois(state) {
   const S = DATA.SIMULATION.VILLAGEOIS;
+  botIle(state);
   if (!S) return;
   const V = villageoisDe(state);
   const palier = paliersSuivis(state) ? state.palier : Infinity;
-  if (palier >= S.MAISON_PALIER && !maisonsLibres(state).length && !V.some((v) => v.maison === null || v.maison === undefined)
+  // (l'île : la place posée, il bâtit la maison du premier villageois sans attendre son palier)
+  if ((palier >= S.MAISON_PALIER || (estPartieIle(state) && casePlace(state) !== null)) && !maisonsLibres(state).length && !V.some((v) => v.maison === null || v.maison === undefined)
     && (V.length === 0 || V.length < plafondVillageois(state))) {
     const objets = S.MAISON || {};
     let ok = true;

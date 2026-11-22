@@ -1613,6 +1613,7 @@ export const RAW_DATA = {
       "village": true
     },
     "etal": { "nom": "Étal", "icone": "🛒", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "comptoir_port": { "nom": "Comptoir du port", "icone": "⚓", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "panneau_village": {
       "nom": "Panneau du village",
       "icone": "🪧",
@@ -2336,6 +2337,7 @@ export const RAW_DATA = {
       },
       "enclume_foyer": { "entrees": { "pierre": 8, "lingot_fer": 3, "bois": 4 }, "sortie": { "enclume_foyer": 1 }, "village": true, "coefPrix": 150 },
       "comptoir": { "entrees": { "planche": 4, "clous": 4 }, "sortie": { "comptoir": 1 }, "village": true, "coefPrix": 145 },
+      "comptoir_port": { "entrees": { "planche": 6, "bois": 6, "pierre": 12 }, "sortie": { "comptoir_port": 1 } },
       "enseigne_forge": {
         "entrees": { "planche": 2, "charniere": 2, "clous": 2 },
         "sortie": { "enseigne_forge": 1 },
@@ -2611,6 +2613,15 @@ export const RAW_DATA = {
         "comptoir": true,
         "village": true
       },
+      "comptoir_port": {
+        "nom": "Comptoir du port",
+        "objet": "comptoir_port",
+        "dehors": true,
+        "bloque": true,
+        "dessin": "comptoir",
+        "largeur": 2,
+        "port": true
+      },
       "enseigne_forge": {
         "nom": "Enseigne du forgeron",
         "objet": "enseigne_forge",
@@ -2710,6 +2721,7 @@ export const RAW_DATA = {
       "portail": { "nom": "Portail", "objet": "portail", "bloque": true, "cloture": true, "portail": true },
       "portail_ouvert": { "nom": "Portail ouvert", "objet": "portail", "cloture": true, "portail": true, "ouvert": true },
       "lanterne": { "nom": "Lanterne scintillante", "objet": "lanterne", "bloque": true, "lumiere": true },
+      "tente": { "nom": "Tente", "objet": "tente", "bloque": true, "tente": true },
       "candelabre": { "nom": "Réverbère", "objet": "candelabre", "bloque": true, "lumiere": true },
       "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four", "dessin": "four", "largeur": 2 },
       "cuisiniere": { "nom": "Cuisinière", "objet": "cuisiniere", "dedans": true, "bloque": true, "station": "cuisine" },
@@ -2760,7 +2772,6 @@ export const RAW_DATA = {
       "gland": { "nom": "Gland", "objet": "gland", "dehors": true, "semis": "arbre" },
       "massif_coquelicot": { "nom": "Coquelicots", "objet": "graine_coquelicot", "dehors": true, "massif": "coquelicot" },
       "massif_pavot": { "nom": "Pavots de Californie", "objet": "graine_pavot", "dehors": true, "massif": "pavot" },
-      "massif_tournesol": { "nom": "Tournesols", "objet": "graine_tournesol", "dehors": true, "massif": "tournesol" },
       "massif_myosotis": { "nom": "Myosotis", "objet": "graine_myosotis", "dehors": true, "massif": "myosotis" },
       "massif_lavande": { "nom": "Lavande", "objet": "graine_lavande", "dehors": true, "massif": "lavande" },
       "massif_lupin": { "nom": "Lupins", "objet": "graine_lupin", "dehors": true, "massif": "lupin" },
@@ -3551,6 +3562,7 @@ export const RAW_DATA = {
         "nom": "Maison",
         "icone": "🏠",
         "blocs": [
+          "tente",
           "paillasse",
           "boite_nourriture",
           "boite_aux_lettres",
@@ -3649,6 +3661,7 @@ export const RAW_DATA = {
         "nom": "Commerces",
         "icone": "🏪",
         "blocs": [
+          "comptoir_port",
           "enclume_foyer",
           "scie_long",
           "four_boulanger",
@@ -4214,6 +4227,7 @@ export const RAW_DATA = {
       "litres": 2,
       "rendement": 9,
       "produit": "graine_tournesol",
+      "faux": { "fleur_tournesol": [1, 2] },
       "graines": { "item": "graine_tournesol", "mode": "plant" },
       "sprite": { "r": 11, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
@@ -5319,7 +5333,6 @@ export const RAW_DATA = {
     "FLEURS": {
       "coquelicot": { "nom": "Coquelicots", "graine": "graine_coquelicot", "fleur": "fleur_coquelicot" },
       "pavot": { "nom": "Pavots de Californie", "graine": "graine_pavot", "fleur": "fleur_pavot" },
-      "tournesol": { "nom": "Tournesols", "graine": "graine_tournesol", "fleur": "fleur_tournesol" },
       "myosotis": { "nom": "Myosotis", "graine": "graine_myosotis", "fleur": "fleur_myosotis" },
       "lavande": { "nom": "Lavande", "graine": "graine_lavande", "fleur": "fleur_lavande" },
       "lupin": { "nom": "Lupins", "graine": "graine_lupin", "fleur": "fleur_lupin" }
@@ -5329,14 +5342,7 @@ export const RAW_DATA = {
     "NUITS": 3,
     "CUEILLETTE": [2, 3],
     "GRAINE": 25,
-    "DESSIN": {
-      "coquelicot": "coquelicot",
-      "pavot": "pavot_californie",
-      "tournesol": "tournesol_sauvage",
-      "myosotis": "myosotis",
-      "lavande": "lavande",
-      "lupin": "lupin"
-    }
+    "DESSIN": { "coquelicot": "coquelicot", "pavot": "pavot_californie", "myosotis": "myosotis", "lavande": "lavande", "lupin": "lupin" }
   },
   "DEHORS": { "bac_carre": { "nom": "Bac carré", "prix": 60 } },
   "MEUBLES": {
@@ -8909,13 +8915,13 @@ export const RAW_DATA = {
         { "id": "cruche", "icone": "💧", "ligne": "Fabrique le puits et la cruche, pose le puits." },
         { "id": "arroser", "icone": "💦", "ligne": "Remplis la cruche au puits, arrose." },
         { "id": "recolte", "icone": "🥕", "ligne": "Récolte ta première plante mûre." },
-        { "id": "charger", "icone": "🧺", "ligne": "Charge ta récolte : la fenêtre du port, onglet Porter." },
-        { "id": "port", "icone": "🧭", "ligne": "Suis le chemin jusqu'au port." },
-        { "id": "vendre", "icone": "⚓", "ligne": "Vends une récolte au comptoir, sous la halle." },
-        { "id": "graines", "icone": "🌾", "ligne": "Achète des graines au comptoir." },
+        { "id": "place", "icone": "🪧", "ligne": "Pose le panneau du village : la place, où arrivent les villageois." },
         { "id": "maison", "icone": "🏠", "ligne": "Bâtis une maison libre : un lit, une boîte aux lettres." },
-        { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, au passage du bac." },
-        { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." }
+        { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, sur la place." },
+        { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." },
+        { "id": "comptoir", "icone": "⚓", "ligne": "Construis le comptoir du port, au bord de la mer." },
+        { "id": "charger", "icone": "🧺", "ligne": "Charge ta récolte : la fenêtre du port, onglet Porter." },
+        { "id": "vendre", "icone": "💰", "ligne": "Vends au comptoir du port : le seul moyen de gagner de l'argent." }
       ]
     },
     "SANS_RECIT": {
@@ -9912,6 +9918,307 @@ export const RAW_DATA = {
       "le cheval ferré, au trot",
       "le wagonnet sur la voie, au halage"
     ]
+  },
+  "ILE": {
+    "TAILLE": 300,
+    "BORD_MER": 12,
+    "REGION": 32,
+    "APPARITION": { "x": 150, "y": 150, "rayon": 6, "fondu": 6, "prairie": 18 },
+    "BIOMES": ["mer", "plage", "prairie", "foret", "lande", "lac"],
+    "SOLS": {
+      "mer": { "eau_profonde": { "eau": true } },
+      "plage": { "sable": {}, "galets": {} },
+      "prairie": { "herbe": {} },
+      "foret": { "feuilles": {}, "aiguilles": {}, "mousse": {}, "clairiere": {} },
+      "lande": { "lande": {}, "terre": {} },
+      "lac": { "eau_basse": { "eau": true }, "eau": { "eau": true } }
+    },
+    "FORME": {
+      "MARGE": 4,
+      "CARRE": 0.15,
+      "DEFORMATION": { "echelle": 70, "force": 32 },
+      "DECOUPE": { "echelle": 45, "force": 0.42, "octaves": 5 },
+      "BOSSE": { "rayon": 45, "force": 0.35 },
+      "TAILLE": [0.8, 0.95],
+      "ALLONGEMENT": 0.25,
+      "FONDU": 16,
+      "LISSAGE": 2
+    },
+    "RELIEF": { "PENTE": 45, "COLLINES": { "echelle": 70, "octaves": 5 }, "PLAINES": 0.12, "RIVAGES": [0.25, 1.75], "LISSAGE": 6, "PENTE_MAX": 0.05 },
+    "HUMIDITE": { "echelle": 70, "octaves": 3, "BAS": 0.12 },
+    "LACS": {
+      "NOMBRE": [3, 6],
+      "AIRE": [80, 450],
+      "COTE_MIN": 14,
+      "FOND_COTE_MIN": 30,
+      "LOIN_DEPART": 28,
+      "ECART": 50,
+      "CREUX": { "profondeur": 0.01 },
+      "FORME": { "allongement": 0.6, "deformation": 0.35, "echelle": 0.9 },
+      "BERGE": { "humidite": 0.3, "portee": 8 }
+    },
+    "REPARTITION": {
+      "lande": 0.2,
+      "foret": 0.4,
+      "HAUTEUR": 0.1,
+      "BRUIT": { "echelle": 22, "force": 0.18 },
+      "SOLS": {
+        "aiguilles": 0.25,
+        "mousse": 0.2,
+        "clairiere": { "echelle": 16, "seuil": 0.7 },
+        "terre": { "echelle": 12, "seuil": 0.66 },
+        "galets": { "echelle": 26, "seuil": 0.68 }
+      }
+    },
+    "PLAGES": { "LARGEUR": [0, 5], "echelle": 35, "HAUTEUR_MAX": 0.15 },
+    "POUSSE": {
+      "TOUFFES": { "pas": 9, "min": 0.3, "max": 1.8 },
+      "BOSQUET": { "rayon": 2 },
+      "JEUNES": 0.25,
+      "QUOTAS": { "essais": 5000 },
+      "DEPART": { "pierres": 3, "bois_flotte": 3, "distance": [2, 7] }
+    },
+    "VIE": { "REPOUSSE": [5, 8], "SAUVEGARDE": 1 },
+    "PARTIE": { "INVENTAIRE": { "tente": 1 }, "TENTE": { "places": 4 }, "EN_LIGNE": false },
+    "VILLAGE": {
+      "PLACE": "panneau_village",
+      "PORT": "comptoir_port",
+      "NIVEAUX": [
+        { "prix": 0, "villageois": 1 },
+        { "prix": 600, "villageois": 3 },
+        { "prix": 2000, "villageois": 6 },
+        { "prix": 5000, "villageois": 10 },
+        { "prix": 12000, "villageois": 15 }
+      ],
+      "ARRIVEE": { "PERIODE": 2, "HEURES": [9, 17] }
+    },
+    "ESPECES": {
+      "FAMILLES": ["arbre", "fruitier", "buisson", "fleur", "culture", "herbe", "champignon", "decor", "roche"],
+      "ROCHES": [
+        "rocher",
+        "bloc",
+        "rocher_moussu",
+        "galets",
+        "pierres",
+        "pierres_moussues",
+        "coquillages",
+        "etoile_mer",
+        "algues",
+        "gisement_fer",
+        "gisement_cuivre",
+        "gisement_or",
+        "gisement_platine",
+        "cristaux_quartz",
+        "cristaux_amethyste"
+      ],
+      "CLASSEMENT": {
+        "decor": ["souche", "tronc_couche", "pierre", "bois_flotte"],
+        "champignon": ["champignons", "champignons_lumineux", "champignon_blanc", "champignon_jaune", "champignon_bleu"],
+        "fleur": ["fleurs", "fleur_rouge", "fleur_mauve"],
+        "fruitier": ["chataignier"]
+      },
+      "CULTURES_DEJA_SAUVAGES": { "ail_ours": "ail_ours_sauvage", "salicorne": "salicorne_sauvage" },
+      "EXCLUES": ["tournesol_sauvage"],
+      "CONDITIONS": { "berge": { "rayon": 2 }, "lisiere": { "rayon": 3 }, "haut": { "hauteur": 0.62 } },
+      "PLACEMENTS": {
+        "partout": {
+          "prairie": {
+            "herbe": {
+              "arbre_pre": 0.004,
+              "buisson_pre": 0.004,
+              "fleurs": 0.03,
+              "touffe_pre": 0.05,
+              "coquelicot": 0.006,
+              "pavot_californie": 0.002,
+              "lupin": 0.002,
+              "myosotis": 0.002,
+              "fleur_rouge": 0.012,
+              "fleur_mauve": 0.012,
+              "pierre": 0.002,
+              "champignon_blanc": 0.001,
+              "rocher": 0.002,
+              "pierres": 0.006,
+              "gisement_fer": 0.0005
+            }
+          },
+          "foret": {
+            "feuilles": {
+              "feuillu": 0.34,
+              "bouleau": 0.03,
+              "sapin": 0.03,
+              "chataignier": 0.006,
+              "ronces": 0.012,
+              "souche": 0.006,
+              "tronc_couche": 0.004,
+              "fougere": 0.07,
+              "champignons": 0.015,
+              "touffe_foret": 0.04,
+              "champignons_lumineux": 0.004,
+              "champignon_blanc": 0.012,
+              "champignon_jaune": 0.01,
+              "champignon_bleu": 0.01,
+              "ail_ours_sauvage": 0.004,
+              "rocher_moussu": 0.03,
+              "pierres_moussues": 0.03,
+              "gisement_fer": 0.0015,
+              "gisement_cuivre": 0.001
+            },
+            "aiguilles": {
+              "sapin": 0.36,
+              "feuillu": 0.03,
+              "souche": 0.008,
+              "tronc_couche": 0.003,
+              "fougere": 0.03,
+              "champignons": 0.03,
+              "touffe_foret": 0.02,
+              "champignons_lumineux": 0.005,
+              "champignon_blanc": 0.012,
+              "champignon_jaune": 0.01,
+              "champignon_bleu": 0.01,
+              "rocher_moussu": 0.02,
+              "rocher": 0.01,
+              "pierres_moussues": 0.025,
+              "gisement_fer": 0.0015,
+              "gisement_cuivre": 0.001
+            },
+            "mousse": {
+              "feuillu": 0.22,
+              "bouleau": 0.08,
+              "sapin": 0.04,
+              "chataignier": 0.004,
+              "souche": 0.008,
+              "tronc_couche": 0.006,
+              "ronces": 0.008,
+              "fougere": 0.16,
+              "champignons": 0.04,
+              "champignons_lumineux": 0.006,
+              "champignon_blanc": 0.012,
+              "champignon_jaune": 0.01,
+              "champignon_bleu": 0.01,
+              "ail_ours_sauvage": 0.006,
+              "rocher_moussu": 0.045,
+              "pierres_moussues": 0.05
+            },
+            "clairiere": {
+              "touffe_foret": 0.1,
+              "fougere": 0.05,
+              "ronces": 0.01,
+              "bouleau": 0.01,
+              "myosotis": 0.012,
+              "lupin": 0.006,
+              "champignon_blanc": 0.004,
+              "fleur_rouge": 0.004,
+              "fleur_mauve": 0.004
+            }
+          },
+          "lande": {
+            "lande": {
+              "ajonc": 0.022,
+              "genet": 0.012,
+              "pin_tordu": 0.006,
+              "sapin_nain": 0.01,
+              "rhododendron": 0.008,
+              "bruyere": 0.18,
+              "herbe_seche": 0.05,
+              "touffe_mont": 0.04,
+              "lavande": 0.012,
+              "pavot_californie": 0.004,
+              "lupin": 0.004,
+              "fleur_mauve": 0.002,
+              "pierre": 0.006,
+              "rocher": 0.006,
+              "bloc": 0.002,
+              "pierres": 0.02,
+              "gisement_fer": 0.002,
+              "gisement_cuivre": 0.0015
+            },
+            "terre": {
+              "herbe_seche": 0.05,
+              "bruyere": 0.03,
+              "ajonc": 0.004,
+              "pavot_californie": 0.006,
+              "pierre": 0.01,
+              "rocher": 0.01,
+              "bloc": 0.004,
+              "pierres": 0.06,
+              "galets": 0.02,
+              "gisement_fer": 0.003,
+              "gisement_cuivre": 0.002
+            }
+          },
+          "plage": {
+            "sable": {
+              "oyat": 0.12,
+              "chardon": 0.025,
+              "bois_flotte": 0.02,
+              "salicorne_sauvage": 0.004,
+              "rocher": 0.002,
+              "galets": 0.01,
+              "coquillages": 0.05,
+              "etoile_mer": 0.012,
+              "algues": 0.04
+            },
+            "galets": { "bois_flotte": 0.015, "oyat": 0.01, "rocher": 0.012, "galets": 0.16, "coquillages": 0.02, "algues": 0.03 }
+          },
+          "lac": { "eau_basse": { "nenuphar": 0.12, "roseaux": 0.06, "massette": 0.05 } }
+        },
+        "berge": {
+          "prairie": { "herbe": { "saule": 0.012, "roseaux": 0.15, "massette": 0.03, "jonc": 0.14, "myosotis": 0.02 } },
+          "foret": { "mousse": { "saule": 0.01, "jonc": 0.06, "myosotis": 0.01 } }
+        },
+        "lisiere": { "foret": { "clairiere": { "rhododendron": 0.006, "sapin_nain": 0.004 } } },
+        "haut": {
+          "lande": {
+            "lande": { "bloc": 0.008, "gisement_or": 0.0015, "gisement_platine": 0.0012, "cristaux_quartz": 0.003, "cristaux_amethyste": 0.0015 },
+            "terre": { "bloc": 0.01, "gisement_or": 0.002, "gisement_platine": 0.0015, "cristaux_quartz": 0.004, "cristaux_amethyste": 0.002 }
+          },
+          "foret": { "aiguilles": { "cristaux_quartz": 0.002, "gisement_or": 0.0008 } },
+          "prairie": { "herbe": { "rocher": 0.004, "cristaux_quartz": 0.001 } }
+        }
+      },
+      "PAR_FAMILLE": {
+        "arbre": { "groupe": [1, 1], "min": 30, "loinDuDepart": 0 },
+        "fruitier": {
+          "groupe": [1, 3],
+          "min": 6,
+          "loinDuDepart": 20,
+          "placement": { "lisiere": { "prairie": { "herbe": 0.0006 }, "foret": { "clairiere": 0.0006 } } }
+        },
+        "buisson": { "groupe": [1, 1], "min": 20, "loinDuDepart": 0 },
+        "fleur": { "groupe": [1, 1], "min": 20, "loinDuDepart": 0 },
+        "culture": { "groupe": [3, 6], "min": 8, "loinDuDepart": 15, "placement": { "partout": { "prairie": { "herbe": 0.0004 } } } },
+        "herbe": { "groupe": [1, 1], "min": 20, "loinDuDepart": 0 },
+        "champignon": { "groupe": [1, 1], "min": 10, "loinDuDepart": 0 },
+        "decor": { "groupe": [1, 1], "min": 0, "loinDuDepart": 0 },
+        "roche": { "groupe": [1, 1], "min": 0, "loinDuDepart": 0 }
+      },
+      "EXCEPTIONS": {
+        "fraise_sauvage": { "placement": { "partout": { "foret": { "clairiere": 0.002 } } } },
+        "riz_sauvage": { "placement": { "berge": { "prairie": { "herbe": 0.004 } } } },
+        "houblon_sauvage": { "placement": { "lisiere": { "foret": { "clairiere": 0.002 }, "prairie": { "herbe": 0.0006 } } } },
+        "vigne_sauvage": { "placement": { "lisiere": { "lande": { "lande": 0.001 }, "foret": { "clairiere": 0.001 } } } },
+        "cacao_sauvage": { "placement": { "partout": { "foret": { "mousse": 0.0006 } } }, "min": 4, "loinDuDepart": 80 },
+        "vanille_sauvage": { "placement": { "partout": { "foret": { "mousse": 0.0006 } } }, "min": 4, "loinDuDepart": 80 },
+        "cafe_sauvage": { "placement": { "partout": { "foret": { "mousse": 0.0006 } } }, "min": 4, "loinDuDepart": 80 },
+        "ail_ours_sauvage": { "groupe": [3, 8] },
+        "salicorne_sauvage": { "groupe": [3, 8] },
+        "chataignier": { "min": 10 },
+        "pin_tordu": { "min": 15 },
+        "sapin_nain": { "min": 15 },
+        "saule": { "min": 12 },
+        "champignons_lumineux": { "min": 6, "loinDuDepart": 40 },
+        "gisement_fer": { "min": 12 },
+        "gisement_cuivre": { "min": 10 },
+        "gisement_or": { "min": 6, "loinDuDepart": 60 },
+        "gisement_platine": { "min": 5, "loinDuDepart": 60 },
+        "cristaux_quartz": { "min": 6 },
+        "cristaux_amethyste": { "min": 5, "loinDuDepart": 60 }
+      },
+      "RECOLTES": {
+        "culture": { "geste": "cueillir", "fin": [1, 2], "chance": 30 },
+        "fruitier": { "geste": "cueillir", "fin": [2, 4], "chance": 10 }
+      }
+    }
   },
   "CONSERVATION": {
     "carotte": 6,

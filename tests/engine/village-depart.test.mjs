@@ -72,47 +72,6 @@ test('le nom de l\'île : proposé d\'après la graine, modifiable, borné comme
 
 /* ---------- la terre vierge ---------- */
 
-test('la terre vierge : pas de chemin intérieur ; le seul chemin va de la porte de l\'abri à la sortie de la ferme', () => {
-  const s = departGarde();
-  assert(fermeVierge(s), 'une terre vierge');
-  const T = farmTerrain(s), F = T.FERME, W = T.LARGEUR, V = W + 1;
-  // (aucun coin de chemin peint sur la ferme)
-  let coins = 0;
-  for (let r = F.Y; r <= F.Y + F.HAUTEUR; r++) for (let c = F.X; c <= F.X + F.LARGEUR; c++) if (T.SOMMETS[r * V + c] === 1) coins++;
-  assertEqual(coins, 0, 'pas de coin de chemin');
-  // (le sol de la ferme : pas une tuile de chemin, rangées 4 à 12 de herbe_chemin)
-  const chemin = new Set();
-  for (let k = 4 * 16; k < 13 * 16; k++) chemin.add(blocGid('herbe_chemin', k));
-  const ground = farmMap(s).layers.find((l) => l.name === 'ground').data;
-  let tuiles = 0;
-  for (let r = F.Y; r < F.Y + F.HAUTEUR; r++) for (let c = F.X; c < F.X + F.LARGEUR; c++) if (chemin.has(ground[r * W + c] & 0x0fffffff)) tuiles++;
-  assertEqual(tuiles, 0, 'pas de tuile de chemin dans le sol');
-  // (le monde d'avant, éteint, a bien un chemin : la même graine, une partie d'avant)
-  const avant = copie(s);
-  delete avant.dehors.ferme;
-  let avantCoins = 0;
-  const Ta = farmTerrain(avant);
-  for (let i = 0; i < Ta.SOMMETS.length; i++) if (Ta.SOMMETS[i] === 1) avantCoins++;
-  assert(avantCoins > 100, 'une partie d\'avant garde son chemin peint');
-  // (les cases du chemin d'avant se labourent et se bâtissent maintenant : de l'herbe)
-  const lignesAvant = Ta.LIGNES, lignes = T.LIGNES;
-  let gagnees = 0;
-  for (let r = F.Y; r < F.Y + F.HAUTEUR; r++) for (let c = F.X; c < F.X + F.LARGEUR; c++) if (lignesAvant[r][c] === '.' && lignes[r][c] === '#') gagnees++;
-  assert(gagnees > 100, `l'herbe à la place du chemin (${gagnees} cases)`);
-  // (le chemin du joueur : des blocs de chemin, d'un seul tenant, de la case devant la porte à la sortie)
-  const sols = new Set(Object.entries(solsPoses(s)).filter(([, k]) => k === 'chemin').map(([t]) => Number(t)));
-  assert(sols.size > 50, `un chemin posé (${sols.size} cases)`);
-  const devant = s.abriDepart.porte + W, sortie = T.MONDE.cadre.SORTIE - 1;
-  assert(sols.has(devant), 'devant la porte de l\'abri');
-  for (const t of [sortie - W, sortie, sortie + W]) assert(sols.has(t), 'les trois rangées de la sortie');
-  const vus = new Set([devant]), pile = [devant];
-  while (pile.length) { const t = pile.pop(); for (const j of [t - 1, t + 1, t - W, t + W]) if (sols.has(j) && !vus.has(j)) { vus.add(j); pile.push(j); } }
-  assertEqual(vus.size, sols.size, 'd\'un seul tenant');
-  for (const t of sols) { const c = t % W, r = Math.floor(t / W); assert(c >= F.X && r >= F.Y && c < F.X + F.LARGEUR && r < F.Y + F.HAUTEUR, 'sur la ferme'); }
-  // (l'abri tel quel : ses murs, sa porte, ses paillasses)
-  assertEqual(s.abriDepart.paillasses.length, 1, 'une paillasse pour un seul');
-});
-
 /* ---------- le premier jour sans visite ---------- */
 
 test('le premier jour sans visite : pas de visite ni de scène d\'arrivée, le plat attend dans l\'abri', () => {
@@ -129,7 +88,7 @@ test('le premier jour sans visite : pas de visite ni de scène d\'arrivée, le p
 
 /* ---------- le didacticiel ---------- */
 
-test('le didacticiel : les étapes passent d\'elles-mêmes, chacune se passe, le tout aussi ; la boussole vers le port', () => {
+test('le didacticiel : les étapes passent d\'elles-mêmes, chacune se passe, le tout aussi', () => {
   const s = departGarde(), L = DATA.VILLAGE.DEPART.ETAPES;
   assertEqual(etapeIle(s).id, 'ramasser', 'la première étape');
   assertEqual(etapeIle(s).total, L.length);
@@ -137,14 +96,15 @@ test('le didacticiel : les étapes passent d\'elles-mêmes, chacune se passe, le
   addItem(s, 'pierre', 3); addItem(s, 'bois', 3);
   majDidacticielIle(s);
   assertEqual(etapeIle(s).id, 'atelier', 'ramassé : l\'Atelier');
-  // (passer : rien ne bloque)
-  for (let k = 0; etapeIle(s).id !== 'port'; k++) { assert(passerEtapeIle(s).ok); assert(k < L.length, 'jusqu\'au port'); }
-  assertEqual(butBoussole(s), { sorte: 'port', id: 'port' }, 'la boussole montre le port');
+  // (passer : rien ne bloque ; l'île de 300 × 300 : la place, la maison, le villageois, puis le comptoir du port)
+  for (let k = 0; etapeIle(s).id !== 'comptoir'; k++) { assert(passerEtapeIle(s).ok); assert(k < L.length, 'jusqu\'au comptoir'); }
   assert(s.didacticielIle.passees.includes('houe'), 'les étapes passées sont notées');
-  // (une étape déjà faite passe d'elle-même : la vente compte pour le chemin et la vente)
+  // (une étape déjà faite passe d'elle-même : une vente au port compte pour le chargement et la vente)
+  s.blocs = { ...(s.blocs || {}), 1234: DATA.ILE.VILLAGE.PORT };
   s.campagne.compteurs.ventesPort = 5;
   majDidacticielIle(s);
-  assertEqual(etapeIle(s).id, 'graines', 'au port et vendu : les graines');
+  assertEqual(didacticielIleActif(s), false, 'le comptoir posé, vendu : fini');
+  s.didacticielIle.fini = false; s.didacticielIle.etape = L.length - 1;
   assert(passerDidacticielIle(s).ok);
   assertEqual(didacticielIleActif(s), false, 'fini');
   assertEqual(etapeIle(s), null);
@@ -181,7 +141,6 @@ test('à six, joué par le joueur automatique : le didacticiel jusqu\'au premier
     enfants: [{ prenom: 'Zoé' }, { prenom: 'Tom' }, { prenom: 'Lou' }, { prenom: 'Max' }], animaux: [{ espece: 'chien', nom: 'Rex' }],
   });
   assertEqual(s.famille.membres.length, 6);
-  assertEqual(s.abriDepart.paillasses.length, 6, 'une paillasse chacun');
   const n = jusquauPremierVillageois(s);
   assert(n !== null, `fini (étape ${etapeIle(s) && etapeIle(s).id})`);
   assert(villageoisDe(s).some((v) => v.maison !== null && v.tache), 'un villageois logé, à sa tâche');

@@ -20,7 +20,9 @@ import { bonheurDesTraits, traitsTires } from './traits.js';
 import { chroniqueArrivee } from './chronique.js';
 import { bonheurDeLaFete } from './fetes-village.js';
 import { lienArrivee } from './vocation-village.js';
-import { cuisineDuVillage, desservirLaTable, gardeMangerCommun, noterMange, servirLaTable } from './garde-manger.js';
+import { cuisineDuVillage, desservirLaTable, gardeMangerCommun, noterMange, servirLaTable } from './garde-manger.js';import { estPartieIle } from './ile/jeu.js';
+import { casePlace, heuresArrivee, refusArriveeIle } from './ile/village.js';
+
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
 
@@ -191,6 +193,14 @@ export function reserveSuffit(state, bouches) {
 // pas regarder le jour (ce qu'il manque, hors du bac : la fiche de la maison).
 export function arriveeRefus(state, o = {}) {
   const V = villageoisDe(state), n = V.length, jour = jourDe(state);
+  // (l'île de 300 × 300, docs/ile-300.md : ils arrivent sur la place du village, qui fixe combien elle en accueille)
+  if (estPartieIle(state)) {
+    const r = refusArriveeIle(state, jour, o.jour !== false);
+    if (r) return r;
+    if (!maisonsLibres(state).length) return 'Il faut une maison libre : une pièce close avec un lit libre et une boîte aux lettres contre sa porte.';
+    if (n >= 1 && !reserveSuffit(state, n + 1)) return `Il faut de quoi nourrir une bouche de plus : la boîte à nourriture doit couvrir ${ARRIVEE.RESERVE_JOURS} jours de repas des villageois.`;
+    return null;
+  }
   if (o.jour !== false) {
     if (!jourDeBac(state, jour)) return `Le bac ne passe pas aujourd'hui (prochain passage : jour ${prochainBac(state)}).`;
     if (V.some((v) => v.arrive === jour)) return 'Un seul nouveau venu par passage du bac.';
@@ -210,7 +220,7 @@ export function arriveeRefus(state, o = {}) {
 export function arriveeDue(state) {
   if (nightActive(state)) return false;
   if (!state.famille || state.famille.configuree === false) return false;
-  const h = hourOfDay(state), [debut, fin] = DATA.PORT.BAC.HEURES;
+  const h = hourOfDay(state), [debut, fin] = estPartieIle(state) ? heuresArrivee() : DATA.PORT.BAC.HEURES;
   if (h < debut || h >= fin) return false;
   return arriveeRefus(state) === null;
 }
@@ -323,6 +333,7 @@ export function phraseArrivee(state, id) {
 // bout du chemin de la ferme (la malle de la calèche, terrain.MALLE), sinon le bord est de la ferme, à mi-hauteur.
 // `plan` : le plan du monde, ou ses lieux (js/ui/monde-sol.js, lieux()) ; null sans lui.
 export function caseArrivee(state, plan = null) {
+  if (estPartieIle(state)) return casePlace(state);   // (l'île : sur la place du village)
   const L = plan && objet(plan.lieux) ? plan.lieux : plan;
   const p = L && L.port;
   if (Number.isInteger(p)) return p;

@@ -8,7 +8,7 @@ import {
   distanceAuComptoir, enVenteAuPort, etalPort, executerCommande, farmSeed, isBuyable, lieuPort, marcheFerme,
   objectiveValue, portDuMonde, portOuvert, sellPrice, simulateGame, unlockLevel, vendreAuPort, chargerPortage,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, reach, setInv, test } from './aide.mjs';
+import { assert, assertEqual, reach, setInv, test, fonderVillage } from './aide.mjs';
 
 const P = DATA.PORT;
 
@@ -22,16 +22,15 @@ function setCharge(s, inv) {
 // l'élément « marche »), à 9 h, et la case devant le comptoir.
 function auPort(seed = 'commerce') {
   const s = reach(createNewGame(seed), 'marche');
-  portDuMonde(farmSeed(s));
+  fonderVillage(s);   // (l'île de 300 × 300 : le comptoir du port bâti, le village fondé)
   s.awakeMs = awakeMsAtHour(9);
   const c = comptoirDuPort(s);
   return { s, c, ou: c.devant };
 }
 
-test('le comptoir : trois cases sous la halle, la case devant à portée', () => {
+test('le comptoir du port bâti (l\'île) : ses cases, la case devant à portée', () => {
   const { s, c, ou } = auPort();
-  assert(lieuPort(s) && Number.isInteger(lieuPort(s).case), 'le lieu du port posé');
-  assertEqual(c.cases.length, 3, 'trois cases');
+  assertEqual(c.cases.length, DATA.ATELIER.BLOCS[DATA.ILE.VILLAGE.PORT].largeur, 'ses cases');
   assert(distanceAuComptoir(s, ou) <= P.PORTEE, 'devant le comptoir : à portée');
   assertEqual(portOuvert(s, ou).ok, true, 'ouvert');
 });
@@ -95,7 +94,7 @@ test('refus : loin du comptoir, hors des heures, avant le niveau du commerce', (
   s.awakeMs = awakeMsAtHour(P.HEURES[1] - 0.5);
   assert(vendreAuPort(s, 'carotte', 1, ou).ok, 'juste avant : vendu');
   const n = createNewGame('commerce');
-  portDuMonde(farmSeed(n));
+  fonderVillage(n);
   n.awakeMs = awakeMsAtHour(9);
   setCharge(n, { carotte: 1 });
   const nv = vendreAuPort(n, 'carotte', 1, comptoirDuPort(n).devant);

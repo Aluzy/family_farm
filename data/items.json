@@ -265,6 +265,7 @@
     "pont_planches": { "nom": "Pont de planches", "icone": "🌉", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "rails": { "nom": "Rails", "icone": "🛤️", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true, "village": true },
     "etal": { "nom": "Étal", "icone": "🛒", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
+    "comptoir_port": { "nom": "Comptoir du port", "icone": "⚓", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "panneau_village": { "nom": "Panneau du village", "icone": "🪧", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "quai_chargement": { "nom": "Quai de chargement", "icone": "🏗️", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false, "village": true },
     "//enclume_foyer": ["Les commerces d'artisans (le chantier « l'île à bâtir », fiche I5a ; data/village.json ARTISANS) : l'établi de la", "forge (l'enclume et son foyer), le comptoir d'un commerce, l'enseigne du forgeron ; et les pièces que la forge fait", "(les clous, les charnières, les lames d'outil), que l'Atelier fait aussi tant qu'aucune forge n'est ouverte."],

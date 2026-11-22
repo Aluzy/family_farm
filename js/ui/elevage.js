@@ -19,7 +19,7 @@ import { techAuto, techFlag } from '../engine/techtree.js';
 import { AUTO_TACHES, GROUPE_MIN, groupDiscount, isAutomated } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
-import { enLigne, state } from './store.js';
+import { enLigne, scytheMode, state } from './store.js';
 import { tel } from './consent.js';
 import { applyResult } from './game-actions.js';
 import { artIcon, artPx, coopArtRow } from './animations.js';
@@ -608,7 +608,7 @@ registerActions({
   },
   'harvest': (target) => {
     // (E-5 : en ligne, la récolte va droit au coffre commun, sans attendre le personnage)
-    const result = applyResult(executer('potager.recolter', { parcelle: target.dataset.id, ...(enLigne ? { direct: true } : {}) }));
+    const result = applyResult(executer('potager.recolter', { parcelle: target.dataset.id, ...(enLigne ? { direct: true } : {}), ...(scytheMode ? { faux: true } : {}) }));
     // version 1.18 : ce qui attend le personnage s'annonce par sa bulle, au ramassage
     // fiche 10 : récolter parcelle après parcelle cumule la récolte dans une seule notification
     if (result.ok && !result.aRamasser) notify(null, { cumul: { cle: 'recolte', quantites: result.items, texte: (t) => harvestToast({ items: t }) } });

@@ -3,6 +3,7 @@ import { genererFerme } from './ferme-generee.js';
 import { casesDeRegion, genererMonde, regionDeCase, regionsDuRect } from './monde.js';
 import { niveauPort } from './port.js';
 import { fermeVierge } from './village.js';
+import { carteDeLIle, estPartieIle, terrainDeLIle } from './ile/jeu.js';
 
 /* ---------- le terrain de la ferme ---------- */
 
@@ -25,7 +26,11 @@ import { fermeVierge } from './village.js';
 // Le chantier « l'île à bâtir » allumé (fiche I1a) : le monde de la partie a son port (niveauPort, port.js ;
 // monde.js genererMonde), le même terrain, son cadre et son plan avec lui. Une partie neuve du nouveau départ (fiche
 // I7b, village.js fermeVierge) : la même ferme sans son chemin peint.
+// L'île de 300 × 300 (docs/ile-300.md, étape 7a : C17) : une partie sur l'île a pour ferme l'île entière
+// (js/engine/ile/jeu.js terrainDeLIle).
 export function farmTerrain(state) {
+  const ile = terrainDeLIle(state);
+  if (ile) return ile;
   const g = farmSeed(state);
   if (g === null) return DATA.TERRAIN;
   return avantLeMonde(state) ? genererFerme(g).terrain : genererMonde(g, niveauPort(state), fermeVierge(state)).terrain;
@@ -114,6 +119,8 @@ export function farmSeed(state) {
 // La carte du monde de la partie, sa ferme générée au centre (au format de Tiled, sans jeux de
 // tuiles : la scène y met ceux de la carte de Tiled), ou null : la scène charge la carte de Tiled.
 export function farmMap(state) {
+  // (l'île de 300 × 300 n'a pas de carte au format de Tiled : la scène la peint d'après l'île, étape 7b)
+  if (estPartieIle(state)) return carteDeLIle(state);
   const g = farmSeed(state);
   return g === null ? null : genererMonde(g, niveauPort(state), fermeVierge(state)).carte;
 }

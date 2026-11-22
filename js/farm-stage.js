@@ -177,6 +177,8 @@
           L.image('hameaux', v('hameaux.png'));
           L.json('hameaux_cases', v('hameaux.json'));
           L.json('faune_cases', v('faune.json'));
+          // l'île de 300 × 300 : ses cultures sauvages et ses fruitiers (js/carte/ferme/vegetation.js)
+          if (this.ctx.monde.ile300) { L.image('ile_cultures', v('crops.png')); L.image('ile_fruitiers', v('verger.png')); }
         }
       }
 
