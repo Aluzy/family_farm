@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import { createNewGame, finishSetup, harvestPlot, inventoryCounts, maxStage } from '../../js/engine/index.js';
 import { catalogue } from '../../js/engine/ile.js';
 import { ileDeLaPartie } from '../../js/engine/ile/jeu.js';
-import { recolterMonde } from '../../js/engine/monde-recolte.js';
+import { etatObjetMonde, recolterMonde, repousseMonde } from '../../js/engine/monde-recolte.js';
 
 const fiches = [];
 for (const f of catalogue().fiches) fiches[f.numero] = f;
@@ -102,6 +102,37 @@ test('un fruitier en fruits se cueille : il garde sa taille (le stade « arbre �
   assert.ok(r.ok, r.error);
   assert.equal(ile.objet[i], f.numero);
   assert.equal(ile.etat[i], f.recolte.stade);
+});
+
+test('le roncier et le châtaignier cueillis restent en place ; leurs fruits reviennent', () => {
+  for (const nom of ['ronces', 'chataignier']) {
+    const s = partie(),
+      ile = ileDeLaPartie(s);
+    const i = trouver(ile, (f) => f.id === nom);
+    assert.ok(i >= 0, nom);
+    const id = idDe(ile, i, nom),
+      numero = ile.objet[i];
+    const r = recolterMonde(s, id, { geste: 'cueillir', variante: 0 });
+    assert.ok(r.ok, `${nom} : ${r.error}`);
+    assert.equal(ile.objet[i], numero, `${nom} reste là`);
+    assert.ok(etatObjetMonde(s, id).cueilli);
+    assert.equal(recolterMonde(s, id, { geste: 'cueillir', variante: 0 }).ok, false, 'déjà cueilli');
+    s.day = etatObjetMonde(s, id).retour;
+    s.monde.ici = null;
+    repousseMonde(s);
+    assert.equal(etatObjetMonde(s, id), undefined, 'les fruits sont revenus');
+    assert.ok(recolterMonde(s, id, { geste: 'cueillir', variante: 0 }).ok);
+  }
+  // cueilli, le châtaignier s'abat encore à la hache : là, il s'en va
+  const s = partie(),
+    ile = ileDeLaPartie(s),
+    i = trouver(ile, (f) => f.id === 'chataignier'),
+    id = idDe(ile, i, 'chataignier');
+  recolterMonde(s, id, { geste: 'cueillir', variante: 0 });
+  const r = jusquauBout(s, id, { geste: 'couper' });
+  assert.ok(r.ok, r.error);
+  assert.equal(ile.objet[i], 0);
+  assert.equal(etatObjetMonde(s, id), undefined);
 });
 
 test('le tournesol du potager : à la main ses graines, à la faux sa fleur', () => {
