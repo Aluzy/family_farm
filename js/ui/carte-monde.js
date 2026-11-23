@@ -10,6 +10,7 @@ import { state } from './store.js';
 import { solDuMonde } from './monde-sol.js';
 import { solDeLIle } from './ile-sol.js';
 import { ileDeLaPartie } from '../engine/ile/jeu.js';
+import { abriDeLIle } from './abri-ile.js';
 import { MONDE } from '../engine/monde.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
@@ -58,7 +59,7 @@ export function openCarteMonde() {
   if (!T.FERME || !sol || setupPending(state)) { notify('La carte du monde n\'est pas encore là.', { kind: 'info' }); return; }
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
-    <h2 id="carte-monde-titre"><span aria-hidden="true">🗺️</span> La carte du monde</h2>
+    <h2 id="carte-monde-titre"><span aria-hidden="true">🗺️</span> ${T.ILE ? 'La carte de l’île' : 'La carte du monde'}</h2>
     <div class="carte-monde-cadre">
       <canvas class="carte-monde-canevas" role="img" aria-label="La carte du monde : ce que tu en as vu"></canvas>
       <div class="carte-monde-reperes"></div>
@@ -271,7 +272,10 @@ function borne() {
 // le lieu choisi, le but de la boussole).
 function reperes() {
   const T = C.T, W = T.LARGEUR, F = T.FERME, b = butBoussole(state);
-  const liste = [{ sorte: 'ferme', id: 'ferme', nom: 'La ferme', x: F.X + F.LARGEUR / 2, y: F.Y + F.HAUTEUR / 2, nomme: C.z >= 2 }];
+  // (sur l'île : l'abri, là où l'on dort, js/ui/abri-ile.js, à la place de la ferme ; son nom toujours écrit)
+  const a = T.ILE ? abriDeLIle(state) : null;
+  const liste = T.ILE ? (a ? [{ sorte: 'abri', id: 'abri', nom: a.nom, icone: a.icone, x: (a.case % W) + 0.5, y: Math.floor(a.case / W) + 0.5, nomme: true }] : [])
+    : [{ sorte: 'ferme', id: 'ferme', nom: 'La ferme', x: F.X + F.LARGEUR / 2, y: F.Y + F.HAUTEUR / 2, nomme: C.z >= 2 }];
   const ajoute = (sorte, l, nomme) => liste.push({ sorte, id: l.id, nom: l.nom, x: (l.case % W) + 0.5, y: Math.floor(l.case / W) + 0.5, nomme });
   for (const l of C.lieux.peche) ajoute('peche', l, false);
   for (const l of C.lieux.port || []) ajoute('port', l, true);
@@ -291,10 +295,11 @@ function reperes() {
     const s = versEcran(r.x, r.y);
     if (s.x < -40 || s.y < -40 || s.x > C.w + 40 || s.y > C.h + 40) continue;
     const choisi = C.choix && C.choix.sorte === r.sorte && C.choix.id === r.id;
-    const but = (b && b.sorte === r.sorte && b.id === r.id) || (!b && r.sorte === 'ferme');
+    const but = (b && b.sorte === r.sorte && b.id === r.id) || (!b && (r.sorte === 'ferme' || r.sorte === 'abri'));
     const nom = r.nomme || choisi || (but && r.sorte !== 'ferme') || C.z >= 6;
     const el = repere(r.sorte + ':' + r.id, 'button', (x) => {
       x.type = 'button';
+      if (r.sorte === 'abri') return;   // (l'abri de l'île : on ne le choisit pas, la boussole y mène toujours)
       x.dataset.action = 'carte-monde-lieu'; x.dataset.sorte = r.sorte; x.dataset.id = r.id;
     });
     const contenu = `${r.sorte}|${choisi}|${but}|${nom}|${r.nom}`;
@@ -302,7 +307,7 @@ function reperes() {
       el.dataset.contenu = contenu;
       el.className = `carte-monde-repere ${r.sorte}${choisi ? ' choisi' : ''}${but ? ' but' : ''}`;
       el.setAttribute('aria-label', `${r.nom}${but ? ' (la boussole y mène)' : ''}`);
-      el.innerHTML = `<span class="carte-monde-icone" aria-hidden="true">${LIEUX_ICONES[r.sorte]}</span>${nom ? `<span class="carte-monde-nom">${escapeHtml(r.nom)}</span>` : ''}`;
+      el.innerHTML = `<span class="carte-monde-icone" aria-hidden="true">${r.icone || LIEUX_ICONES[r.sorte]}</span>${nom ? `<span class="carte-monde-nom">${escapeHtml(r.nom)}</span>` : ''}`;
     }
     place(el, s);
   }
@@ -327,7 +332,11 @@ function info() {
   const el = C.dlg.querySelector('.carte-monde-info');
   const loin = (x, y) => (p ? ` · à ${directionVers(p.x / 16, p.y / 16, x, y).distance} cases` : '');
   let html = '';
-  if (c) {
+  if (T.ILE) {
+    // (sur l'île : la boussole mène toujours à l'abri, js/ui/abri-ile.js ; pas de lieu à choisir)
+    const a = abriDeLIle(state);
+    html = a ? `<span>🧭 La boussole montre : <strong>${escapeHtml(a.nom)}</strong>${loin((a.case % W) + 0.5, Math.floor(a.case / W) + 0.5)}.</span>` : '';
+  } else if (c) {
     const r = trouve(c);
     if (!r) { C.choix = null; C.infoCle = null; return; }
     const quoi = c.sorte === 'ferme' ? 'Ta ferme' : c.sorte === 'port' ? 'Le port de l\'île : le bac y accoste' : 'Un coin de pêche : plus de touches, un poisson rare';
