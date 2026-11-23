@@ -45,7 +45,7 @@ import { encyclopedieBiome, encyclopedieFaune, openEncyclopedie } from './encycl
 import { villageoisDepuisCarte, villageoisHorloge, villageoisModele } from './villageois.js';
 import { caseDansLaFerme } from '../engine/frontiere.js';
 import { fractionDuPas, noterBrouillard, noterDehors } from './en-ligne.js';
-import { cuisineVillageAllumee } from '../engine/taches.js';
+import { cuisineVillageAllumee, travailPourLaCarte } from '../engine/taches.js';
 import { choisirBloc } from './garde-manger.js';
 import { dessinProjet } from '../engine/projets-village.js';
 import {
@@ -663,7 +663,7 @@ export function stageModel() {
     portage: volumeCharge(state) > 0 ? { vehicule: vehiculePortage(state), charge: Object.keys(chargeDe(state)).length } : null,
     // (l'île : l'herbe haute née des graines d'herbe, js/carte/ferme/decor.js syncTouffesSemees)
     touffesSemees: estPartieIle(state) ? [...ileDeLaPartie(state).touffesSemees] : null,
-    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state) * cheminIci, galop: !!friandiseGalop(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? semables() : null, engraissables: engraisMode && !buildMode ? casesEngraissables(state) : null,   // (l'engrais pris en main, js/ui/compost.js) serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state) * cheminIci, galop: !!friandiseGalop(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), parVillageois: parVillageois(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode && !engraisMode ? semables() : null, engraissables: engraisMode && !buildMode ? casesEngraissables(state) : null,   // (l'engrais pris en main, js/ui/compost.js) serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -882,6 +882,14 @@ function autoDone() {
   // (la pluie arrose, G-1 : pas le personnage)
   for (const c of arroseesParLaPluie(state)) out.push(`arroser:${c}`);
   for (const c of recolteesCompagnon(state)) out.push(`recolter:${c}`);   // (les légumes qu'on lui a demandé de ramasser)
+  return out;
+}
+
+// Les gestes des villageois aux champs aujourd'hui (« recolter:<case> »…, taches.js) : ni le personnage ne les refait
+// (js/fermier.js diff), ni la case ne change avant le geste du villageois (villageois-travail.js).
+function parVillageois() {
+  const T = travailPourLaCarte(state), out = [];
+  if (T) for (const t of Object.values(T)) for (const k of t.champs || []) out.push(k);
   return out;
 }
 

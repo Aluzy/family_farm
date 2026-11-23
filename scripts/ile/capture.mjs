@@ -75,6 +75,8 @@ if (args.includes('--labour')) {
       if (!r.ok) console.log('labour', r.error);
     }
 }
+// (--semences n : n graines de carotte dans l'inventaire)
+if (opt('semences', null)) E.addItem(s, E.DATA.CULTURES.carotte.graine || 'graine_carotte', Number(opt('semences')));
 // (--mures : avec --labour, des carottes mûres sur les neuf terres)
 if (args.includes('--mures')) {
   for (const q of s.potager.parcelles) {
@@ -85,6 +87,16 @@ if (args.includes('--mures')) {
     q.stade = E.maxStage(q);
   }
   console.log('mûres', s.potager.parcelles.map((q) => q.id + '@' + q.case).join(' '));
+}
+// (--champs : avec --labour --mures, une maison de villageois, un villageois aux champs, de l'eau ; l'heure de travail)
+if (args.includes('--champs')) {
+  const { boite } = await import('../../tests/engine/aide.mjs');
+  boite(s, { pain: 60 });
+  console.log('maison', JSON.stringify(E.testMaisonVillageois(s)));
+  const r = E.arriverVillageois(s, { direct: true });
+  console.log('villageois', r.ok, r.error || (r.villageois && r.villageois.id));
+  if (r.ok) console.log('tâche', JSON.stringify(E.attribuer(s, r.villageois.id, 'champs')));
+  s.eauMl = 400000;
 }
 // (--graines : des graines plantées à droite du point d'apparition (graine, puis pousse) et d'autres tombées au sol)
 if (args.includes('--graines')) {
@@ -362,19 +374,44 @@ if (opt('action', null)) {
   await cdpa.send('Profiler.setSamplingInterval', { interval: 200 });
   await page.evaluate(() => window.mesureImages && window.mesureImages());
   await cdpa.send('Profiler.start');
-  console.log(
-    'action',
-    await page.evaluate((c) => {
-      const g = window.CarteJeu.game(),
-        sc = g.scene.getScenes(true)[0],
-        ici = window.FarmStage.persoCase();
-      try {
-        return JSON.stringify(new Function('sc', 'ici', 'return (' + c + ')')(sc, ici));
-      } catch (e) {
-        return String(e);
+  const resultat = await page.evaluate((c) => {
+    const g = window.CarteJeu.game(),
+      sc = g.scene.getScenes(true)[0],
+      ici = window.FarmStage.persoCase();
+    try {
+      return JSON.stringify(new Function('sc', 'ici', 'return (' + c + ')')(sc, ici));
+    } catch (e) {
+      return String(e);
+    }
+  }, opt('action'));
+  console.log('action', resultat);
+  // (--glisse : l'action rend des points de l'écran [[x, y]…] ; le doigt s'y pose, glisse de l'un à l'autre, se lève)
+  if (args.includes('--glisse')) {
+    const pts = JSON.parse(resultat || '[]');
+    if (Array.isArray(pts) && pts.length && args.includes('--doigt')) {
+      // (--doigt : au doigt, des événements tactiles, comme sur un téléphone)
+      const cdpt = await ctx.newCDPSession(page);
+      const touche = (type, x, y) =>
+        cdpt.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+      await touche('touchStart', pts[0][0], pts[0][1]);
+      let [px, py] = pts[0];
+      for (const [x, y] of pts.slice(1)) {
+        for (let k = 1; k <= 8; k++) {
+          await touche('touchMove', px + ((x - px) * k) / 8, py + ((y - py) * k) / 8);
+          await page.waitForTimeout(16);
+        }
+        [px, py] = [x, y];
       }
-    }, opt('action')),
-  );
+      await page.waitForTimeout(100);
+      await touche('touchEnd', 0, 0);
+    } else if (Array.isArray(pts) && pts.length) {
+      await page.mouse.move(pts[0][0], pts[0][1]);
+      await page.mouse.down();
+      for (const [x, y] of pts.slice(1)) await page.mouse.move(x, y, { steps: 8 });
+      await page.waitForTimeout(100);
+      await page.mouse.up();
+    }
+  }
   if (opt('rafale')) {
     // --rafale n,ms : n images, une toutes les ms après l'action (<sortie>-1.png, -2.png…), pour voir un effet
     const [n, ms] = opt('rafale').split(',').map(Number);

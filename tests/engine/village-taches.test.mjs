@@ -17,7 +17,7 @@ import {
   countItem, createNewGame, DATA, donnerOutil, executerCommande, farmSeed, farmTerrain, fishLeft, harvestAll,
   isMature, journeeDuVillage, listeTaches, migrate, maxStage, paroleVillageois, portDuMonde, postesDe, quiFaitQuoi,
   reprendreOutil, runNight, STATE_VERSION, tacheAttente, tacheDef, tacheManque, tachesDuPoste, tachesNuit,
-  tachesPour, testBatir, testMaisonVillageois, tick, treeGone, villageoisDe, waterPlot,
+  tachesPour, testBatir, testMaisonVillageois, tick, travailPourLaCarte, treeGone, villageoisDe, waterPlot,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, boite, partie, test } from './aide.mjs';
 
@@ -127,6 +127,11 @@ test('les champs : récolter ce qui est mûr, arroser ce qui a soif, ressemer ; 
   assert(P.slice(3, 5).every((p) => p.arrose), 'il arrose ce qui a soif');
   assertEqual(cote(s), moi, 'rien pour le joueur');
   assert(r.actions >= 2, 'ses actions');
+  // (la carte : ce qu'il a fait à quelle parcelle, pour que le personnage ne le refasse pas et qu'il y fasse le geste)
+  const tr = travailPourLaCarte(s)[v.id];
+  assert(tr.champs.length >= 2 && tr.champsN === tr.champs.length, 'ses gestes aux champs');
+  for (const k of tr.champs) assert(/^(recolter|arroser|planter):\d+$/.test(k) && P.some((p) => p.case === Number(k.split(':')[1])), k);
+  assert(tr.champs.some((k) => k.startsWith('arroser:')), 'arroser');
   // (une parcelle déjà arrosée (l'asperseur, l'averse) : il ne l'arrose pas deux fois)
   const p5 = P[5];
   p5.culture = 'carotte'; p5.stade = 0;

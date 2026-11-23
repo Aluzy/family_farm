@@ -654,13 +654,14 @@ function uneAction(state, v, pres) {
         return commeLeJoueur(state, null, () => {
           const r = harvestPlot(state, p1, true, true);
           if (r.ok && !p1.culture) semis[p1.case] = culture;
-          return r;
+          return r.ok ? { ...r, champ: { type: 'recolter', case: p1.case } } : r;
         });
       }
+      // (champ : la parcelle et le geste, pour la scène : il y va et le fait, travailPourLaCarte)
       const p2 = laPlusProche(W, soif, pres);
-      if (p2) return commeLeJoueur(state, null, () => waterPlot(state, p2, true));
+      if (p2) return commeLeJoueur(state, null, () => { const r = waterPlot(state, p2, true); return r.ok ? { ...r, champ: { type: 'arroser', case: p2.case } } : r; });
       const p3 = laPlusProche(W, vides, pres);
-      if (p3) return commeLeJoueur(state, null, () => { const r = plantPlot(state, p3, semis[p3.case], true); if (r.ok) delete semis[p3.case]; return r; });
+      if (p3) return commeLeJoueur(state, null, () => { const r = plantPlot(state, p3, semis[p3.case], true); if (r.ok) delete semis[p3.case]; return r.ok ? { ...r, champ: { type: 'planter', case: p3.case } } : r; });
       return fail('Rien à faire aux champs.');
     }
     case 'betes': {
@@ -807,7 +808,16 @@ function noterAction(v, T, r) {
   for (const [k, n] of Object.entries(r.utilise || {})) if (n > 0) T.utilise[k] = (T.utilise[k] || 0) + n;
   // (fiche I8b : le courant que consomment les machines qu'il a servies, en Wh ; le tableau le compte dans son coût)
   if (r.courant > 0) T.courant = (Number(T.courant) || 0) + Math.round(r.courant);
+  // (les champs : ce qu'il a fait à quelle parcelle aujourd'hui, « recolter:<case> »… : la carte ne le fait pas refaire au
+  // personnage du joueur, et le villageois y fait le geste sous nos yeux ; les CHAMPS_GARDES derniers)
+  if (r.champ) {
+    if (!Array.isArray(T.champs)) T.champs = [];
+    T.champs.push(`${r.champ.type}:${r.champ.case}`);
+    T.champsN = (Number(T.champsN) || 0) + 1;
+    if (T.champs.length > CHAMPS_GARDES) T.champs.splice(0, T.champs.length - CHAMPS_GARDES);
+  }
 }
+const CHAMPS_GARDES = 60;
 
 // Il fait ses actions dues jusqu'à `dues` ; une action sans rien à faire se retente ESSAI h plus tard (sauf la
 // nuit, qui fait le reste d'un coup : `nuit`). → les actions faites.
@@ -991,7 +1001,7 @@ export function travailPourLaCarte(state) {
     const def = tacheDef(v.tache);
     if (!def) continue;
     const T = objet(v.travail) && v.travail.jour === jourDe(state) ? v.travail : null;
-    out[v.id] = { tache: v.tache, actions: T ? T.actions : 0, emoji: def.emoji || '', geste: def.geste || 'ramasse', outil: v.outil || null };
+    out[v.id] = { tache: v.tache, actions: T ? T.actions : 0, emoji: def.emoji || '', geste: def.geste || 'ramasse', outil: v.outil || null, champs: T && Array.isArray(T.champs) ? T.champs.slice() : [], champsN: T ? Number(T.champsN) || 0 : 0 };
   }
   return Object.keys(out).length ? out : null;
 }
