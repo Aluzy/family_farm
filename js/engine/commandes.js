@@ -229,7 +229,8 @@ import { accueillirEnfant, formerFoyer } from './liens.js';
 import { accueillirAuVillage, offrirVillageois, parlerAuVillageois } from './villageois-amitie.js';
 import { designerCuisine, designerGardeManger, reglerReserve } from './garde-manger.js';
 import { monterPlace } from './ile/village.js';
-import { donnerAuVillage } from './ile/economie.js';
+import { donnerAuVillage, reglerTaux } from './ile/economie.js';
+import { abandonnerProjet, avancerProjet, choisirProjet } from './ile/projets.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -565,7 +566,18 @@ export const COMMANDES = {
   // (l'île : monter la place du village d'un niveau, en pièces ; docs/ile-300.md)
   'place.monter': { args: {}, executer: (state) => monterPlace(state) },
   // (l'île : un don du joueur à la bourse du village ; docs/economie.md E16)
-  'village.don': { args: { quantite: 'quantite' }, executer: (state, { quantite }) => donnerAuVillage(state, quantite) },
+  'village.don': {
+    args: { quantite: 'quantite' },
+    executer: (state, { quantite }) => {
+      const r = donnerAuVillage(state, quantite);
+      if (r.ok) avancerProjet(state); // (le projet en cours, payé dès que la bourse a la somme)
+      return r;
+    },
+  },
+  // (l'île : les projets du village, le taux de la taxe au panneau de la mairie ; docs/economie.md E10, E15, E17)
+  'projet.choisir': { args: { sorte: 'texte' }, executer: (state, { sorte }) => choisirProjet(state, sorte) },
+  'projet.abandonner': { args: {}, executer: (state) => abandonnerProjet(state) },
+  'mairie.taux': { args: { quantite: 'quantite' }, executer: (state, { quantite }) => reglerTaux(state, quantite) },
   'massif.cueillir': { args: { case: 'case' }, executer: (state, { case: c }) => cueillirMassif(state, c) },
   'compost.jeter': { args: { case: 'case', objet: 'objet', quantite: 'quantite' }, executer: (state, { case: c, objet, quantite }) => jeterAuCompost(state, c, objet, quantite) },
   'potager.engrais': { args: { parcelle: 'texte' }, executer: (state, { parcelle }) => engraisser(state, parcelle) },

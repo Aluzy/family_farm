@@ -22,7 +22,7 @@ import { bonheurDeLaFete } from './fetes-village.js';
 import { lienArrivee } from './vocation-village.js';
 import { cuisineDuVillage, desservirLaTable, gardeMangerCommun, noterMange, servirLaTable } from './garde-manger.js';import { estPartieIle } from './ile/jeu.js';
 import { casePlace, heuresArrivee, refusArriveeIle } from './ile/village.js';
-import { payerLesSalaires, salaireDe } from './ile/economie.js';
+import { payerLesSalaires, projetBati, salaireDe } from './ile/economie.js';
 
 
 /* ---------- les villageois de l'île (le chantier « l'île à bâtir », fiche I3a) ----------
@@ -397,7 +397,8 @@ function nuitDe(state, v, jour, table = null) {
   v.bonheur = Math.max(0, Math.min(DATA.BONHEUR.MAX, Math.round(apres)));
   v.faim = faim;
   const reposDuJour = !!v.repos;   // (I3d : il s'est reposé aujourd'hui, la nuit d'avant l'avait dit)
-  v.repos = faim > 0 || sansLit;
+  // (l'île : le restaurant communautaire bâti, plus de repos faute de repas ; docs/economie.md E15)
+  v.repos = (faim > 0 && !projetBati(state, 'restaurant')) || sansLit;
   const J = { jour, mange: r.mange, energie: r.energie, besoin, lit: v.lit ?? null, bonheur: v.bonheur - Math.round(avant) };
   // (I4 : ce qu'il a mangé de ses provisions, payé de sa bourse : pas un coût pour la ferme)
   if (Object.keys(siens.mange).length) J.siens = siens.mange;

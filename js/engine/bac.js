@@ -554,7 +554,8 @@ export function prochainNiveau(state) {
   if (n >= N.length) return null;
   const def = N[n], prix = def.prix || {};
   const materiaux = {}, manque = {};
-  for (const [k, v] of Object.entries(prix)) if (k !== 'pieces' && v > 0) materiaux[k] = v;
+  // (l'île : développer le port est un projet du village, payé en pièces par sa bourse, sans matériaux ; docs/economie.md)
+  if (!estPartieIle(state)) for (const [k, v] of Object.entries(prix)) if (k !== 'pieces' && v > 0) materiaux[k] = v;
   for (const [k, v] of Object.entries(materiaux)) { const r = v - (p.chantier[k] || 0); if (r > 0) manque[k] = r; }
   const plafond = (DATA.VILLAGE.ARRIVEE.PLAFOND || {})[n + 1];
   return {
@@ -591,6 +592,7 @@ export function apporterAuChantier(state, ou = null, o = {}) {
 // Le joueur (sur la case `ou`) paie le niveau suivant, ses matériaux apportés : le port s'agrandit. → { ok, niveau }
 // ou le refus.
 export function agrandirPort(state, ou = null, o = {}) {
+  if (estPartieIle(state)) return fail('Développer le port est un projet du village : choisis-le à la place du village.');
   const p = portDe(state);
   if (!p) return fail('Il n\'y a pas de port.');
   const ici = portOuvert(state, ou, o);
@@ -603,6 +605,17 @@ export function agrandirPort(state, ou = null, o = {}) {
   p.niveau = nx.niveau;
   noterChronique(state, 'port', { niveau: p.niveau });   // (fiche I7g : le port agrandi, dans la chronique)
   return { ok: true, niveau: p.niveau };
+}
+
+// L'île : le projet « développer le port », payé par la bourse du village (js/engine/ile/projets.js) : le port monte d'un
+// niveau. → le niveau, ou null.
+export function monterPortParLeVillage(state) {
+  const p = portDe(state);
+  if (!p) return null;
+  p.niveau = Math.min(DATA.PORT.NIVEAUX.length, niveauPort(state) + 1);
+  p.chantier = {};
+  noterChronique(state, 'port', { niveau: p.niveau });
+  return p.niveau;
 }
 
 /* ---------- pour la page et la scène ---------- */

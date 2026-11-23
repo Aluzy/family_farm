@@ -123,6 +123,8 @@ export function sourcesOf(data, id) {
   for (const [rid, r] of Object.entries((A && A.RECETTES) || {})) if (id in (r.sortie || {})) out.push(`atelier ${rid}`);
   for (const [rid, r] of Object.entries((A && A.RAMASSAGE) || {})) if (r.objet === id) out.push(`ramassage ${rid}`);
   for (const [bid, b] of Object.entries((A && A.BLOCS) || {})) if (b.meuble && b.objet === id && data.MEUBLES && data.MEUBLES[b.meuble]) out.push(`meuble ${b.meuble} (un hameau)`);
+  // (l'île : les blocs que le village donne pour le bâtiment d'un projet, docs/economie.md E15)
+  for (const [pid, p] of Object.entries((data.ILE && data.ILE.PROJETS) || {})) if (p && p.blocs && Object.keys(p.blocs).some((b) => ((A && A.BLOCS && A.BLOCS[b]) || {}).objet === id)) out.push(`projet du village ${pid}`);
   if (data.DEHORS && data.DEHORS[id]) out.push('Marché (dehors)');
   if (data.RUCHE && id === data.RUCHE.OBJET) out.push('ruche (Marché)');
   for (const b of Object.values((A && A.BLOCS) || {})) if (b.frigo && b.objet === id && data.FRIGO) out.push('achat du Réfrigérateur');

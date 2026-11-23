@@ -31,6 +31,7 @@ import { degagerIle, estPartieIle, ileDeLaPartie } from './ile/jeu.js';
 import { refusPoseIle } from './ile/village.js';
 import { planterGraine as planterGraineIle, refusSemis } from './ile/vie.js';
 import { graineDeLIle, planteSemee } from './ile/graines.js';
+import { verifierProjet } from './ile/projets.js';
 
 
 
@@ -1130,6 +1131,12 @@ export function deplacerStatus(state, de, vers) {
 // Pose `sorte` sur `tile` (un meuble qui tourne : dans le sens `sens`) ; l'herbe haute des cases
 // voisines qui déborde sur ce qui est bâti est foulée (fauchée, sans paille : foulerAutour).
 export function poserBloc(state, sorte, tile, sens = 0, variante = null) {
+  const r = poserLeBloc(state, sorte, tile, sens, variante);
+  // (l'île : le bâtiment d'un projet du village est peut-être fini, js/engine/ile/projets.js)
+  if (r && r.ok && estPartieIle(state)) verifierProjet(state);
+  return r;
+}
+function poserLeBloc(state, sorte, tile, sens = 0, variante = null) {
   // (l'île : une graine plantée, pas un bloc posé ; js/engine/ile/graines.js)
   if (graineIle(state, sorteDe(sorte))) return planterLaGraine(state, sorte, tile);
   const tourne = tourneBloc(sorte);

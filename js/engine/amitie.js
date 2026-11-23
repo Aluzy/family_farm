@@ -4,6 +4,7 @@ import { fail } from './devices.js';
 import { hache } from './ferme-generee.js';
 import { countItem, takeItem } from './inventory.js';
 import { STYLES, styleInfo, stylePrefere } from './styles.js';
+import { projetBati } from './ile/economie.js';
 
 /* ---------- l'amitié (data/amitie.json) ----------
 
@@ -80,6 +81,8 @@ export function pointsAmitie(state, cle) {
 // Ajoute (ou retire) des points : la nouvelle valeur.
 export function ajouterAmitie(state, cle, points) {
   const p = fiche(state, cle);
+  // (l'île : le lieu de divertissement bâti, l'amitié monte plus vite ; docs/economie.md E15)
+  if (points > 0 && projetBati(state, 'divertissement')) points = Math.ceil(points * DATA.ILE.PROJETS.divertissement.amitie);
   p.pts = borne(pointsAmitie(state, cle) + points);
   return p.pts;
 }

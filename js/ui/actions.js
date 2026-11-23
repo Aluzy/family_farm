@@ -36,6 +36,7 @@ export const SOMMEIL_PERMISES = new Set([
 export const SOMMEIL_BLOQUEES = new Set([
   'place-monter', // (la place du village de l'île : monter son niveau, docs/ile-300.md)
   'village-don', // (un don à la bourse du village, docs/economie.md)
+  'projet-choisir', 'projet-abandonner', 'mairie-taux', // (l'île : les projets du village, la taxe à la mairie)
   'villageois-statut', 'villageois-acheter', // (l'île : employé ou à son compte ; acheter à son panier, docs/economie.md)
   'portail',
   'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',

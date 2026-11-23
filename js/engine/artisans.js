@@ -17,7 +17,7 @@ import { besoinDe, plaisirAchat } from './bourse.js';
 import { clockHours, nightActive } from './clock.js';
 import { ajouterMeuble, furnitureCount, furnitureMax, meubleRefus } from './meubles.js';
 import { niveauPort } from './port.js';
-import { noterRevenu } from './ile/economie.js';
+import { noterRevenu, projetBati } from './ile/economie.js';
 
 /* ---------- les commerces d'artisans (le chantier « l'île à bâtir », fiche I5a) ----------
 
@@ -382,7 +382,7 @@ function conditionPlafond(state) {
 export function conditionsCommerce(state, vid, sorte) {
   const v = trouverVillageois(state, vid), d = defCommerce(sorte);
   if (!v || !d) return null;
-  const J = Math.max(1, Math.floor(reglage('JOURS', 10))), fait = joursPratiques(v, d.tache);
+  const J = joursEnvie(state), fait = joursPratiques(v, d.tache);
   const envie = objet(v.envies) && Number.isInteger(v.envies[sorte]);
   const T = (DATA.TACHES && DATA.TACHES.LISTE && DATA.TACHES.LISTE[d.tache]) || {};
   const p = palierAmitie(state, vid), voulu = palierVoulu(), pts = Math.max(0, Math.ceil(seuilPalier(voulu) - pointsAmitie(state, vid)));
@@ -1084,13 +1084,19 @@ export function commercesAuBac(state, jour, vendu = null) {
   return out;
 }
 
+// Les jours de pratique avant l'envie d'un commerce (JOURS) ; l'île, l'école bâtie : deux fois moins (docs/economie.md E15).
+function joursEnvie(state) {
+  const J = Math.max(1, Math.floor(reglage('JOURS', 10)));
+  return projetBati(state, 'ecole') ? Math.max(1, Math.ceil(J / DATA.ILE.PROJETS.ecole.envie)) : J;
+}
+
 // La nuit (runNight, après les tâches, avant la nuit des villageois) : les jours de pratique de chacun, l'envie qui
 // naît, l'ancienneté de l'artisan, les recettes que l'amitié lui a apprises ; l'achat au comptoir qu'on n'a pas vu ; I5c :
 // une nuit de plus en cave (affinerCaves). → { envies: [{ id, sorte }], appris: [{ commerce, recettes }], achats, caves
 // (ce qui est sorti de cave) } ou null (rien).
 export function artisansNuit(state) {
   if (!Array.isArray(state.villageois)) return null;
-  const jour = jourDe(state), J = Math.max(1, Math.floor(reglage('JOURS', 10)));
+  const jour = jourDe(state), J = joursEnvie(state);
   const out = { envies: [], appris: [], achats: 0, caves: [] };
   // (l'achat au comptoir qu'on n'a pas vu : la page fermée)
   for (const [id, a] of achatsCommercesDuJour(state)) if (!a.fait && creneauComptoir(state, id) && acheterAuComptoir(state, id, a.commerce, a.objet, a.teinte || null).ok) out.achats++;

@@ -428,7 +428,7 @@ const CULTURE_MONTE = 0;
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
     // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable ; sur le bac à semis, la Serre ;
     // sur la meule, le Moulin ; sur la boîte à nourriture, ce qu'elle contient (le silo : silo.js, siloAt)
-    fenetres: { panneau_village: 'place', atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost', etal: 'etal', enclume_foyer: 'commerce', comptoir: 'commerce', enseigne_forge: 'commerce',
+    fenetres: { panneau_village: 'place', tableau_liege: 'place', atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost', etal: 'etal', enclume_foyer: 'commerce', comptoir: 'commerce', enseigne_forge: 'commerce',
       scie_long: 'commerce', four_boulanger: 'commerce', cave_affinage: 'commerce', enseigne_scierie: 'commerce', enseigne_boulangerie: 'commerce', enseigne_fromagerie: 'commerce',
       rouet_metier: 'commerce', enseigne_mercerie: 'commerce' },
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne (le silo :
@@ -570,6 +570,8 @@ const CULTURE_MONTE = 0;
     'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
     'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3', 'paillasse',
     'lit_double', 'refrigerateur',
+    // (les meubles clés des projets du village de l'île : scripts/batiments/projets.py)
+    'tableau_liege', 'tableau_ardoise', 'piano_droit',
     // (les cheminées de la boutique de gemmes : scripts/batiments/cheminees.py ; leur feu, BLOCS_CARTE.cheminee)
     'cheminee_pierre', 'cheminee_briques', 'cheminee_marbre',
     // (les fontaines de jardin : scripts/batiments/fontaines.py ; leur eau, BLOCS_CARTE.fontaine)
@@ -640,6 +642,8 @@ const CULTURE_MONTE = 0;
     'chalet_lit', 'chalet_chevet', 'chalet_tapis', 'cottage_lit', 'cottage_chevet', 'cottage_tapis',
     'mer_lit', 'mer_chevet', 'mer_tapis',
     'fee_lit', 'fee_chevet', 'fee_tapis',
+    // (le piano droit du lieu de divertissement de l'île : scripts/batiments/projets.py)
+    'piano_droit',
   ];
   // La couverture seule de chaque lit (meuble_<lit>_drap.png) : posée par-dessus le personnage
   // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.

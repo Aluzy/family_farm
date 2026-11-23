@@ -225,6 +225,44 @@
       "s'il ne peut pas payer, le villageois ne travaille pas le lendemain (v.impaye), et reprend dès qu'il le peut."
     ],
     "ECONOMIE": { "SALAIRE": 30, "TAUX": 5, "TAUX_MIN": 0, "TAUX_MAX": 30, "JOURNAL": 30, "DONS": [10, 50, 100, 500] },
+    "//PROJETS": [
+      "Les projets de développement du village (docs/economie.md E15, E17 ; js/engine/ile/projets.js). Le joueur en choisit",
+      "un à la fois ; la bourse du village le paie (prix, en pièces) dès qu'elle a la somme. port : le prochain niveau du",
+      "port (son prix : PORT.NIVEAUX). Un bâtiment : BLOCS, les blocs que le village donne au joueur (il les pose où il",
+      "veut, avec les siens en plus) ; fini quand ils sont tous posés et qu'une pièce close contient CLE (le logement : sa",
+      "boîte aux lettres contre une maison). place : le niveau de la place qu'il faut ; apres : le projet qu'il faut avant ;",
+      "repetable : il se refait (un logement de plus) ; effet : ce qu'il apporte (la fenêtre de la place le dit)."
+    ],
+    "PROJETS": {
+      "mairie": {
+        "nom": "Mairie", "icone": "🏛️", "prix": 1500, "place": 2, "cle": "tableau_liege",
+        "blocs": { "mur_pierre": 28, "mur_fenetre": 4, "porte": 1, "tableau_liege": 1 },
+        "effet": "Son tableau en liège règle la taxe ; elle ouvre les autres projets."
+      },
+      "logement": {
+        "nom": "Logement", "icone": "🏠", "prix": 400, "place": 1, "repetable": true, "cle": "boite_aux_lettres",
+        "blocs": { "mur_bois": 22, "mur_fenetre": 2, "porte": 1, "paillasse": 1, "boite_aux_lettres": 1 },
+        "effet": "Une maison de plus pour un villageois qui arrive."
+      },
+      "restaurant": {
+        "nom": "Restaurant communautaire", "icone": "🍲", "prix": 2500, "apres": "mairie", "cle": "comptoir",
+        "blocs": { "mur_pierre": 32, "mur_fenetre": 4, "porte": 1, "comptoir": 1 },
+        "effet": "Les villageois y mangent : plus de repos faute de repas."
+      },
+      "ecole": {
+        "nom": "École", "icone": "🏫", "prix": 3000, "apres": "mairie", "cle": "tableau_ardoise",
+        "blocs": { "mur_pierre": 32, "mur_fenetre": 6, "porte": 1, "tableau_ardoise": 1 },
+        "envie": 2,
+        "effet": "Un villageois apprend un métier plus vite : l'envie d'artisan vient deux fois plus tôt."
+      },
+      "divertissement": {
+        "nom": "Lieu de divertissement", "icone": "🎹", "prix": 2000, "apres": "mairie", "cle": "piano_droit",
+        "blocs": { "mur_bois": 32, "mur_fenetre": 4, "porte": 1, "piano_droit": 1 },
+        "amitie": 1.5,
+        "effet": "L'amitié monte moitié plus vite au village."
+      },
+      "port": { "nom": "Développer le port", "icone": "⚓", "effet": "Le port monte d'un niveau : un quai plus long, plus de commandes du bac." }
+    },
     "//VILLAGE": [
       "Le village de l'île (js/engine/ile/village.js ; docs/ile-300.md, étapes E à H). PLACE : le bloc qui fait la place",
       "du village (un seul) ; PORT : le bloc du comptoir du port (un seul, au bord de la mer). NIVEAUX : la place, niveau",

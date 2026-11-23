@@ -30,6 +30,18 @@ export function economie(state) {
   return e;
 }
 
+/**
+ * Le bâtiment du projet `sorte` est-il bâti (js/engine/ile/projets.js) ? Lu ici, sans le reste des projets : les effets
+ * des bâtiments (l'école, le lieu de divertissement, le restaurant) se lisent partout.
+ * @param {object} state
+ * @param {string} sorte
+ */
+export const projetBati = (state, sorte) =>
+  estPartieIle(state) &&
+  !!state.economie &&
+  Array.isArray(state.economie.faits) &&
+  state.economie.faits.some((f) => f.sorte === sorte);
+
 /** La bourse du village (des pièces). */
 export const bourseVillage = (state) => (estPartieIle(state) ? economie(state).bourse : 0);
 
@@ -166,6 +178,9 @@ export function payerLesSalaires(state, dus) {
  * @param {number} taux
  */
 export function reglerTaux(state, taux) {
+  // (le panneau de contrôle est dans la mairie : il faut l'avoir bâtie, js/engine/ile/projets.js)
+  if (!(economie(state).faits || []).some((f) => f.sorte === 'mairie'))
+    return { ok: false, error: 'Il faut la mairie : son panneau règle la taxe.' };
   const t = Math.round(Number(taux));
   if (!Number.isFinite(t) || t < E().TAUX_MIN || t > E().TAUX_MAX)
     return { ok: false, error: `Le taux va de ${E().TAUX_MIN} à ${E().TAUX_MAX} %.` };

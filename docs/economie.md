@@ -85,6 +85,17 @@ Chaque villageois a l'un de deux statuts, choisi sur sa fiche.
 | Développer le port | port | 1 000, puis ×2 par niveau | de meilleurs prix à l'export, plus de contrats |
 
 
+### Le chantier d'un bâtiment (validé)
+
+- Dès que la bourse du village a le prix du projet choisi, elle le paie et **le village donne au joueur les blocs** de
+  sa liste (par exemple pour la mairie : 28 murs en pierre, 4 fenêtres, 1 porte, le tableau en liège).
+- Le joueur les pose **où il veut, de la forme qu'il veut**, et peut ajouter ses propres blocs en plus.
+- Le bâtiment est **fini** quand tous les blocs donnés sont posés **et** qu'une pièce close contient son meuble clé.
+- Les meubles clés : la mairie, un **tableau en liège** avec des graphiques (accroché au mur ; il règle la taxe) ;
+  l'école, un **tableau noir en ardoise** ; le lieu de divertissement, un **piano droit** ; le restaurant, le
+  **comptoir** des commerces ; un logement, la **boîte aux lettres** contre la maison, comme aujourd'hui.
+- Développer le port : payé en pièces du village seules, sans matériaux ; le port monte d'un niveau tout de suite.
+
 ## 6. Ce qui change dans le code (pour plus tard)
 
 - Une bourse du village dans l'état de la partie (sauvegardée), son journal (taxes, dons, dépenses).
