@@ -189,7 +189,8 @@
       "  `choix` : parmi celles du biome de la case (« biome »), de son sol (« sol »), ou toutes (« tous ») ; sans espèce",
       "  qui y pousse, n'importe laquelle. `herbeHaute` : l'herbe haute (que la faux fauche) en est une aussi ;",
       "- les cultures sauvages : leur graine du potager (CULTURES : graines.item ou la culture elle-même) ;",
-      "- GROUPES : ce que donne une graine d'avant plantée sur l'île (la pomme de pin : un conifère du biome).",
+      "- GROUPES : ce que donne une graine d'avant plantée sur l'île (la pomme de pin : un conifère du biome) ; sols : sur ce sol,",
+      "  cette plante-là (le gland dans une clairière : l'arbre clair, ailleurs un feuillu).",
       "EXCLUES : ce qui n'est pas une plante (le décor). Une graine ne se plante ni sur l'eau ni sur le sable."
     ],
     "GRAINES": {
@@ -202,7 +203,7 @@
         "pin_clair": "pomme_de_pin"
       },
       "GROUPES": {
-        "gland": { "plantes": ["feuillu"], "choix": "tous" },
+        "gland": { "plantes": ["feuillu"], "choix": "tous", "sols": { "clairiere": "arbre_clair" } },
         "pomme_de_pin": { "plantes": ["sapin", "pin_tordu", "sapin_nain", "pin_clair"], "choix": "biome" }
       },
       "PROPRES": ["arbre", "fleur", "fruitier"],

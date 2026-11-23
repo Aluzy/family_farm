@@ -136,3 +136,12 @@ test('les spores : pas de pousse, le champignon est là la nuit suivante', () =>
   assert.equal(ile.semis.has(t), false);
   assert.equal(cat.fiches[ile.objet[t] - 1].famille, 'champignon');
 });
+
+test('le gland : un arbre clair dans une clairière, un feuillu ailleurs', () => {
+  const s = partie(),
+    ile = ileDeLaPartie(s);
+  const clairiere = [...ile.sol.keys()].find((i) => SOLS[ile.sol[i]].nom === 'clairiere');
+  const herbe = [...ile.sol.keys()].find((i) => SOLS[ile.sol[i]].nom === 'herbe');
+  assert.equal(planteSemee(ile, clairiere, 'gland', 3), 'arbre_clair');
+  assert.equal(planteSemee(ile, herbe, 'gland', 3), 'feuillu');
+});

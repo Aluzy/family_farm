@@ -53,13 +53,15 @@ export function semenceDe(f) {
 
 let plan = null;
 /**
- * Ce que donne chaque graine plantée sur l'île : { objet: { plantes: [id…], choix, herbeHaute } }.
+ * Ce que donne chaque graine plantée sur l'île : { objet: { plantes: [id…], choix, herbeHaute, sols } } (sols : sur ce
+ * sol, cette plante-là, avant le choix ; le gland dans une clairière : l'arbre clair).
  */
 export function aPlanter(cat = catalogue()) {
   if (plan) return plan;
   const g = G();
   plan = {};
-  for (const [objet, v] of Object.entries(g.GROUPES)) plan[objet] = { plantes: v.plantes, choix: v.choix };
+  for (const [objet, v] of Object.entries(g.GROUPES))
+    plan[objet] = { plantes: v.plantes, choix: v.choix, sols: v.sols || null };
   for (const f of plantes(cat)) {
     if (!g.ARBRES[f.id] && g.PROPRES.includes(f.famille)) plan[PREFIXE + f.id] = { plantes: [f.id], choix: 'tous' };
   }
@@ -88,6 +90,7 @@ export function planteSemee(ile, i, objet, jour, cat = catalogue()) {
   if (!p) return null;
   const sol = SOLS[ile.sol[i]].nom,
     biome = BIOMES[SOL_BIOME[ile.sol[i]]];
+  if (p.sols && p.sols[sol] && cat.parId.get(p.sols[sol])) return p.sols[sol];
   const biomeDe = (nom) => BIOMES[SOL_BIOME[SOLS.findIndex((s) => s.nom === nom)]];
   const ici = (id) => {
     const f = cat.parId.get(id);
