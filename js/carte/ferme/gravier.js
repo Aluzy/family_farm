@@ -96,6 +96,9 @@
       if (M && this.regionParts) {
         const c = i % W, y = (i / W) | 0, Fe = M.ferme;
         if (!(c >= Fe.X && y >= Fe.Y && c < Fe.X + Fe.LARGEUR && y < Fe.Y + Fe.HAUTEUR)) {
+          // (un chemin posé, sol.js cheminPoseMasque : plein, ou son bord)
+          const mp = this.cheminPoseMasque ? this.cheminPoseMasque(i) : 0;
+          if (mp) return mp === 15 ? 2 : 1;
           const R = reg || (K.REGION.tuiles ? M.region(Math.floor(c / K.REGION.tuiles), Math.floor(y / K.REGION.tuiles)) : null);
           if (!R) return 0;
           const x = c - R.x0, yy = y - R.y0;

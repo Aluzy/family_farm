@@ -28,6 +28,15 @@ if (args.includes('--outils')) {
   s.outils = { ...(s.outils || {}), hache: true, pioche: true, faux: true };
   s.stamina = 1000;
 }
+// (--chemin : un chemin de 6 cases, trois au-dessus du personnage, ses cases dans le journal)
+if (args.includes('--chemin')) {
+  const W = E.farmTerrain(s).LARGEUR;
+  for (let dx = -2; dx < 4; dx++) {
+    E.addItem(s, 'chemin', 1);
+    const r = E.poserBloc(s, 'chemin', s.monde.ici - 3 * W + dx);
+    console.log('chemin', s.monde.ici - 3 * W + dx, r.ok ? 'posé' : r.error || r.raison);
+  }
+}
 if (args.includes('--tente')) console.log('tente', JSON.stringify(E.poserBloc(s, 'tente', s.monde.ici + 3)));
 // (--village : le panneau du village posé trois cases à gauche du point d'apparition)
 if (args.includes('--village')) {

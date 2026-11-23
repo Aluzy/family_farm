@@ -433,6 +433,27 @@
       ctx.restore();
     },
 
+    // Les chemins posés (this.pathCells, syncPaths) sur le sol du grand monde, l'île : un coin est du chemin si une des
+    // quatre cases qui le touchent en est un ; la tuile du « chemin posé sur un autre sol » de la planche des sols
+    // (assets/sols_monde.png, js/engine/monde-sol.js cheminSur) d'après ses quatre coins. Le chemin déborde ainsi d'une
+    // demi-case sur ses voisines, son bord suivant la courbe, comme les chemins de l'île.
+    cheminPoseMasque(i) {
+      const W = this.grid.cols, P = this.pathCells;
+      if (!P || !P.size) return 0;
+      const c = i % W, y = (i / W) | 0;
+      const coin = (x, yy) => P.has((yy - 1) * W + x - 1) || P.has((yy - 1) * W + x) || P.has(yy * W + x - 1) || P.has(yy * W + x);
+      return (coin(c, y) ? 8 : 0) | (coin(c + 1, y) ? 4 : 0) | (coin(c, y + 1) ? 2 : 0) | (coin(c + 1, y + 1) ? 1 : 0);
+    },
+    peintCheminsPoses(ctx, cells, S, sols) {
+      const W = this.grid.cols, RS = 1 + S.BORDS + S.RIVES, NS = S.sols.length;
+      for (const i of cells) {
+        const m = this.cheminPoseMasque(i);
+        if (!m) continue;
+        const n = (RS * NS + (((i * 2654435761) >>> 24) % S.CHEMINS)) * 16 + m;
+        ctx.drawImage(sols, (n % S.colonnes) * T, ((n / S.colonnes) | 0) * T, T, T, (i % W) * T, ((i / W) | 0) * T, T, T);
+      }
+    },
+
     // Les cases d'une région, de la ferme d'un côté, du monde autour de l'autre (dans l'ordre de la
     // carte), et dansFerme(case) : faits une fois par région.
     regionParts(r) {
@@ -495,6 +516,8 @@
           }
         }
       }
+      // (les chemins posés : sur l'île, pas de tuiles de la carte d'avant, syncPaths ; ceux de la planche des sols)
+      if (sols && this.pathCells && this.pathCells.size) this.peintCheminsPoses(ctx, cells, S, sols);
       // le décor de ses chemins (gravier.js), puis ses petites plantes, sur le sol (vegetation.js) : toutes, ou
       // celles des cases repeintes
       this.peintGravier(ctx, cells, reg);

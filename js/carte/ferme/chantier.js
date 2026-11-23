@@ -1027,6 +1027,11 @@
       for (const c of avantCases) if (!cases.has(c)) changees.add(c);
       this.pathOver = tuiles;
       this.pathCells = cases;
+      // (sur l'île, le chemin posé déborde sur ses voisines, sol.js peintCheminsPoses : elles aussi sont repeintes)
+      if (this.ctx.monde && this.ctx.monde.ile300) {
+        const W = this.grid.cols;
+        for (const c of [...changees]) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) changees.add(c + dr * W + dc);
+      }
       if (changees.size && this.mapRaw) this.repaintCells(changees);
     },
 
