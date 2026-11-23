@@ -71,5 +71,35 @@
       });
       return this.fileA(cle);
     },
+
+    // Récolter la parcelle mûre `p` (un appui, farm-stage.js plotTap) par la file des gestes : elle scintille, le personnage y
+    // va dans l'ordre des appuis, et le jeu récolte au geste (bridge.recolter : droit dans l'inventaire, la bulle « +x »).
+    // false : pas de file ici (sans personnage, la faux en main, en ligne) : l'appui récolte tout de suite, comme avant.
+    recolterParcelle(p) {
+      const B = this.ctx.bridge;
+      if (!B.recolter || !this.fermier || !this.fermier.recolter || (this.ctx.lastModel && this.ctx.lastModel.faux)) return false;
+      const c = p.case, cle = 'recolte:' + c;
+      if (!Number.isInteger(c)) return false;
+      if (this.fileA(cle)) return true;
+      const mure = () => {
+        const m = this.ctx.lastModel;
+        const q = m && (m.plots || []).concat(m.serre || []).find((r) => r.case === c);
+        return !!q && !!q.mature && q.id === p.id;
+      };
+      const coup = () => {
+        const got = B.recolter(p.id);
+        if (!got) return false;
+        K.vibre('ramasse');
+        if (this.showGain && got.items) this.showGain(got.items);
+        return true;
+      };
+      this.geste({
+        cle, seul: true, action: 'recolter',
+        images: () => { const e = this.plots && this.plots.get(p.id); return e && e.crop ? [e.crop] : []; },
+        valide: mure, coup,
+        lance: (opts) => this.fermier.recolter(c, coup, opts),
+      });
+      return true;
+    },
   });
 })(window);

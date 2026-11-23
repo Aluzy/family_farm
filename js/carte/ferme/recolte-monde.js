@@ -504,10 +504,12 @@
       const prendre = () => {
         const got = this.mondeDemande(h, {});
         if (!got) { this.mondeOccupe.delete(h.id); return; }
-        this.mondeNote(h.id, h.regle.geste === 'cueillir');
+        // (une culture de l'île qui revient à un stade, regle.reste : elle reste là, l'île la redessine à son stade)
+        const reste = !!h.regle.reste;
+        if (!reste) this.mondeNote(h.id, h.regle.geste === 'cueillir');
         this.showGain(got.items);
         K.vibre('ramasse');
-        if (h.regle.geste === 'cueillir') {
+        if (h.regle.geste === 'cueillir' || reste) {
           this.mondeOccupe.delete(h.id);
           if (o) {
             this.mondeMontre(o, false);

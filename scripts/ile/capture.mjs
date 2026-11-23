@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Une capture de la scène d'une partie neuve sur l'île (docs/ile-300.md, étape 7b) : la page servie en local, dans
 // Chromium (Playwright), à l'écran d'un téléphone ; les erreurs de la page affichées.
-// Usage : node scripts/ile/capture.mjs [--graine 1] [--sortie apercus-ile/scene.png] [--attente 8000] [--ecran 412x860] [--clic <sélecteur>] [--touche m] [--foret] [--mesure 8] [--marche] [--processeur 4] [--profil] [--heure 20]
+// Usage : node scripts/ile/capture.mjs [--graine 1] [--sortie apercus-ile/scene.png] [--attente 8000] [--ecran 412x860] [--clic <sélecteur>] [--touche m] [--foret] [--mesure 8] [--marche] [--processeur 4] [--profil] [--heure 20] [--labour --mures]
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -74,6 +74,17 @@ if (args.includes('--labour')) {
       const r = E.hoe(s, s.monde.ici + dy * W + dx);
       if (!r.ok) console.log('labour', r.error);
     }
+}
+// (--mures : avec --labour, des carottes mûres sur les neuf terres)
+if (args.includes('--mures')) {
+  for (const q of s.potager.parcelles) {
+    E.addItem(s, E.DATA.CULTURES.carotte.graine || 'graine_carotte', 1);
+    s.stamina = 100;
+    const r = E.plant(s, q.id, 'carotte');
+    if (!r.ok) console.log('mûres', r.error);
+    q.stade = E.maxStage(q);
+  }
+  console.log('mûres', s.potager.parcelles.map((q) => q.id + '@' + q.case).join(' '));
 }
 // (--graines : des graines plantées à droite du point d'apparition (graine, puis pousse) et d'autres tombées au sol)
 if (args.includes('--graines')) {

@@ -932,6 +932,14 @@
       enchaine([walkTo(st.x, st.y, MARCHE_GESTE), coup(act('planter', { face: st.face, flip: st.flip, onHit: hit })), wait(rand(0.15, 0.4))], onHit, opts, st);
       return true;
     }
+    // Récolter la parcelle `c` (la file des gestes, js/carte/ferme/semis.js recolterParcelle) : il se place à côté, se
+    // penche et cueille ; le jeu récolte au geste (onHit). Le modèle qui change ensuite ne le fait pas rejouer.
+    function recolter(c, onHit, opts) {
+      const st = standFor(c);
+      const hit = () => { faits.add('recolter:' + c); if (onHit && onHit() === false) faits.delete('recolter:' + c); };
+      enchaine([walkTo(st.x, st.y, MARCHE_GESTE), coup(act('recolter', { face: st.face, flip: st.flip, onHit: hit })), wait(rand(0.15, 0.4))], onHit, opts, st);
+      return true;
+    }
     // Un geste (un coup d'outil, des fibres jetées) : une marche jusqu'en `spot`, le geste, un
     // souffle. Les gestes se suivent dans l'ordre où le joueur les a demandés (le dernier après
     // les autres), avant le reste (les tas à prendre). Ils marchent toujours (jamais de saut : sans
@@ -1295,6 +1303,7 @@
       gather,
       // Semer sur la terre `c` (la file des gestes, semis.js).
       semer,
+      recolter,
       // La botteleuse : jeter ses fibres dans l'entonnoir, depuis `spot`.
       jeter,
       // Le puits : y aller et remplir la cruche, depuis `spot` (fiche 17).

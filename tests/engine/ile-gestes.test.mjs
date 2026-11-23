@@ -176,3 +176,10 @@ test('le tournesol du potager : à la main ses graines, à la faux sa fleur', ()
   assert.equal(Object.keys(faux.items).length, 1);
   assert.ok((inventoryCounts(s).fleur_tournesol || 0) > avant);
 });
+
+test('les cultures sauvages : prises, elles quittent l’île ; la vigne revient à un stade et reste en place (regle.reste)', async () => {
+  const { reglesDeLIle } = await import('../../js/engine/ile/recoltes.js');
+  const R = reglesDeLIle();
+  assert.equal(R.vigne_sauvage.regle.reste, true);
+  assert.ok(!R.carotte_sauvage.regle.reste && !R.patate_sauvage.regle.reste);
+});

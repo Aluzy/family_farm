@@ -1343,7 +1343,7 @@
         const bulle = this.ctx.bridge.parcelle ? this.ctx.bridge.parcelle(p.id) : null;
         if (bulle) { this.showCaseTip(bulle, Math.floor(wx / T) * T + T / 2, Math.floor(wy / T) * T); return; }
         if (!p.culture) this.ctx.bridge.act('plant-open', { id: p.id });
-        else if (p.mature) this.ctx.bridge.act('harvest', { id: p.id });
+        else if (p.mature) { if (!this.recolterParcelle(p)) this.ctx.bridge.act('harvest', { id: p.id }); }   // (la file des gestes, semis.js)
         else this.ctx.bridge.act('water', { id: p.id });
       }
 
