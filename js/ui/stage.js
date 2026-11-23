@@ -93,6 +93,7 @@ import { surbrillanceObjectifs } from './objectifs.js';
 import { surbrillanceIle } from './didacticiel-ile.js';
 import { solDeLIle } from './ile-sol.js';
 import { estPartieIle, ileDeLaPartie } from '../engine/ile/jeu.js';
+import { abriDeLIle } from './abri-ile.js';
 import { marchable as marchableIle } from '../engine/ile/vie.js';
 
 // L'île de 300 × 300 (docs/ile-300.md) : où le personnage apparaît (le point d'apparition, ses pieds en px de la
@@ -1032,7 +1033,9 @@ function brouillardModele() {
 // La boussole pour la carte (js/carte/ferme/boussole.js) : le lieu choisi sur la carte du monde (s'il est
 // encore vu), la ferme (le bout de sa sortie), le rectangle de la ferme (en px) ; montree : les Options.
 function boussoleModele() {
-  const T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : null;
+  const T = farmTerrain(state);
+  if (T.ILE) return boussoleIle();
+  const sol = T.MONDE ? solDuMonde(T) : null;
   if (!T.FERME || !sol) return null;
   const W = T.LARGEUR, px = (c) => ({ x: (c % W) * 16 + 8, y: Math.floor(c / W) * 16 + 8 }), F = T.FERME;
   const b = butBoussole(state), lieux = sol.lieux();
@@ -1047,6 +1050,17 @@ function boussoleModele() {
     surFerme: { x0: F.X * 16, y0: F.Y * 16, x1: (F.X + F.LARGEUR) * 16, y1: (F.Y + F.HAUTEUR) * 16 },
     etabli: etabliBoussole(T, px),
   };
+}
+
+// Sur l'île de 300 × 300 (docs/ile-300.md) : la boussole montre l'abri (js/ui/abri-ile.js : là où l'on dort) dès
+// qu'on en est à plus de 6 cases (BO.pres, js/carte/ferme/boussole.js). Ni lieu à choisir, ni ferme : toute l'île
+// compte comme « la ferme ».
+function boussoleIle() {
+  const ile = ileDeLaPartie(state), a = abriDeLIle(state);
+  if (!ile) return null;
+  const n = ile.n;
+  const etabli = a ? { x: (a.case % n) * 16 + 8, y: Math.floor(a.case / n) * 16 + 8, nom: a.nom, icone: a.icone } : null;
+  return { montree: boussoleMontree(state), but: null, ferme: null, surFerme: { x0: 0, y0: 0, x1: n * 16, y1: n * 16 }, etabli };
 }
 
 // Sur la ferme, la boussole montre le foyer (la porte de la maison : foyerPorte, l'abri de départ compris) quand le

@@ -675,8 +675,11 @@ function encyclopedieBouton() {
 // Fiche 8 : la carte du monde (js/ui/carte-monde.js ; aussi la touche M et la boussole), avec la carte de
 // la ferme et son grand monde.
 function carteMondeBouton() {
-  if (!stageUsable() || !farmTerrain(state).MONDE) return '';
-  return '<button type="button" class="nav-btn" data-action="carte-monde-open" title="Carte du monde (touche M)" aria-label="Carte du monde" aria-keyshortcuts="M"><span class="nav-icon" aria-hidden="true">🧭</span><span class="nav-label">Carte du monde</span></button>';
+  const T = farmTerrain(state);
+  if (!stageUsable() || !(T.MONDE || T.ILE)) return '';
+  // (sur l'île de 300 × 300 : la carte de l'île, docs/ile-300.md)
+  const nom = T.ILE ? 'Carte de l\'île' : 'Carte du monde';
+  return `<button type="button" class="nav-btn" data-action="carte-monde-open" title="${nom} (touche M)" aria-label="${nom}" aria-keyshortcuts="M"><span class="nav-icon" aria-hidden="true">🧭</span><span class="nav-label">${nom}</span></button>`;
 }
 
 export function renderTabbar() {

@@ -3639,7 +3639,7 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
 }
 .carte-monde-icone .px { --pxs: 16px; }
-.carte-monde-repere.ferme .carte-monde-icone { width: 28px; height: 28px; }
+.carte-monde-repere.ferme .carte-monde-icone, .carte-monde-repere.abri .carte-monde-icone { width: 28px; height: 28px; }
 .carte-monde-repere.caleche { pointer-events: none; margin: -2px 0 0 14px; }
 .carte-monde-repere.caleche .carte-monde-icone { width: 20px; height: 20px; background: #d8c1e6; }
 .carte-monde-repere.but .carte-monde-icone { border-color: #c03a24; box-shadow: 0 0 0 2px #ffd36a, 0 2px 3px rgba(0, 0, 0, 0.35); }
