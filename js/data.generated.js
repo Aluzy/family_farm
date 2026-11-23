@@ -10036,7 +10036,7 @@ export const RAW_DATA = {
         "pin_clair": "pomme_de_pin"
       },
       "GROUPES": {
-        "gland": { "plantes": ["feuillu"], "choix": "tous" },
+        "gland": { "plantes": ["feuillu"], "choix": "tous", "sols": { "clairiere": "arbre_clair" } },
         "pomme_de_pin": { "plantes": ["sapin", "pin_tordu", "sapin_nain", "pin_clair"], "choix": "biome" }
       },
       "PROPRES": ["arbre", "fleur", "fruitier"],
