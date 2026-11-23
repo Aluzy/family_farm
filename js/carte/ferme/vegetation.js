@@ -318,7 +318,7 @@
     // éclatement (recolte-monde.js mondeOrpheline), qui la défait.
     vegBlocOff(b, garder) {
       for (const o of b.objets || []) {
-        if (garder && o.id && this.mondeOccupe && this.mondeOccupe.has(o.id) && o.img.active) { o.orpheline = true; continue; }
+        if (garder && o.id && this.mondeOccupe && this.mondeOccupe.has(o.id) && o.img.active && (o.tombe || o.brise)) { o.orpheline = true; continue; }
         if (o.id && this.mondeObjets.get(o.id) === o) this.mondeObjets.delete(o.id);
         // (une pièce qui tombe ou se brise : son geste finit sans elle)
         if (o.anim || o.tombe || o.brise) { this.tweens.killTweensOf(o.img); if (this.mondeOccupe) this.mondeOccupe.delete(o.id); }

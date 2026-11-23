@@ -39,8 +39,8 @@ fibre (3 bois, 2 pierres) : c'est le premier outil à faire.
 ### La file des gestes : chaque appui, un geste réel
 
 `js/carte/ferme/file.js`. Un appui sur une cible (une touffe à faucher, un arbre, un rocher, un
-caillou ou un objet à ramasser, une pièce du grand monde, l'entonnoir de la botteleuse ou du
-distributeur) n'est qu'une intention : le jeu ne compte rien tout de suite. Le personnage y va à
+caillou ou un objet à ramasser, une pièce du grand monde, une parcelle mûre à récolter, l'entonnoir de
+la botteleuse ou du distributeur) n'est qu'une intention : le jeu ne compte rien tout de suite. Le personnage y va à
 pied (jamais de saut : sans chemin, une bulle « Je ne peux pas aller jusque-là. »), dans l'ordre
 des appuis ; c'est quand il arrive et lève l'outil que le moteur joue l'action (l'énergie, la
 fibre, le bois, l'usure). Ainsi :
@@ -56,7 +56,10 @@ fibre, le bois, l'usure). Ainsi :
   par un habitant) est sauté : ni marche, ni geste dans le vide ;
 - **un geste oublié** (la manette : le joueur prend la main ; « Dormir » ; une autre carte) ne
   coûte rien : son reflet s'en va ;
-- le coup fort (appui maintenu sur le personnage) reste immédiat, hors de la file.
+- le coup fort (appui maintenu sur le personnage) reste immédiat, hors de la file ;
+- **une parcelle mûre** (23 novembre) : l'appui la met dans la file (`semis.js recolterParcelle`) ; au geste, la
+  récolte va droit dans l'inventaire (la bulle « +x »), sans tas à ramasser. La faux en main, « Récolter tout » et
+  le glissement récoltent encore tout de suite.
 
 Côté personnage (`js/fermier.js`) : `enchaine` met chaque geste (sa marche, son coup, un souffle)
 après ceux qui attendent ; `opts.valide()` dit au départ s'il a encore lieu d'être,

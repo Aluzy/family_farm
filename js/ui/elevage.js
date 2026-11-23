@@ -586,6 +586,18 @@ export function semerFromStage(c, culture, groupe) {
   return true;
 }
 
+// La carte : le personnage récolte la parcelle `id` à son geste (la file des gestes, js/carte/ferme/semis.js
+// recolterParcelle) : la récolte va droit dans l'inventaire (il est déjà sur place), la bulle « +x » la montre.
+// → le résultat, ou null (refusée : le message).
+export function recolterFromStage(id) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
+  const r = executer('potager.recolter', { parcelle: String(id), direct: true });
+  if (!r.ok) { notify(r.error, { son: 'erreur' }); return null; }
+  persistState();
+  refresh();
+  return r;
+}
+
 function harvestToast(result) {
   return `Récolte : ${itemsText(result.items, 'gain')}`;
 }

@@ -24,6 +24,8 @@ export function reglesDeLIle(cat = catalogue()) {
       p === 'verger'
         ? { geste: 'cueillir', variantes: [f.stades - 1], apres: r.stade, fin: r.fin, chance: r.chance, retour: [1, 1] }
         : { geste: 'ramasser', fin: r.fin, chance: r.chance, retour: [1, 1] };
+    // (une culture qui revient à un stade, la vigne : elle reste en place, la scène ne l'efface pas, recolte-monde.js)
+    if (p === 'crops' && r.repousse === 'stade') regle.reste = true;
     if (r.faux) regle.aussi = { geste: 'faucher', fin: r.faux.fin, retour: [1, 1] };
     regles[f.id] = { def: { nom: f.id, bloque: f.bloque ? f.empreinte : [] }, regle };
   }
