@@ -217,7 +217,7 @@
       for (const b of r.vegBlocs) {
         if (!cles.has(b.cle || Math.floor(b.x / P) + ',' + Math.floor(b.y / P))) { garde.push(b); continue; }
         const allume = !!b.objets;
-        if (allume) this.vegBlocOff(b);
+        if (allume) this.vegBlocOff(b, true);
         const n = neufs.get(b.cle || Math.floor(b.x / P) + ',' + Math.floor(b.y / P));
         if (n) { neufs.delete(n.cle); if (allume) this.vegBlocOn(n, reg); garde.push(n); }
       }
@@ -313,8 +313,12 @@
       }
     },
 
-    vegBlocOff(b) {
+    // `garder` (une case refaite, vegetationCases) : la pièce dont le geste est en cours (l'arbre abattu, le rocher brisé
+    // au dernier coup : le moteur l'a déjà retirée de l'île) garde son image jusqu'à la fin de sa chute ou de son
+    // éclatement (recolte-monde.js mondeOrpheline), qui la défait.
+    vegBlocOff(b, garder) {
       for (const o of b.objets || []) {
+        if (garder && o.id && this.mondeOccupe && this.mondeOccupe.has(o.id) && o.img.active) { o.orpheline = true; continue; }
         if (o.id && this.mondeObjets.get(o.id) === o) this.mondeObjets.delete(o.id);
         // (une pièce qui tombe ou se brise : son geste finit sans elle)
         if (o.anim || o.tombe || o.brise) { this.tweens.killTweensOf(o.img); if (this.mondeOccupe) this.mondeOccupe.delete(o.id); }

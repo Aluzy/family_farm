@@ -121,6 +121,14 @@ const CULTURE_MONTE = 0;
     sizes: [1, 2, 2, 2], burstSizes: [2, 2, 3, 3, 4],
     speed: [18, 46], lift: [45, 85], gravity: 280, fall: [2, 7], life: [650, 1100], fade: 300,
     breakMs: 260, backMs: 900,
+    // le nuage de poussière d'un rocher qui éclate (recolte-monde.js mondePoussiere) : `n` bouffées (une texture
+    // ronde et douce de `r` px de rayon, teintée d'un gris chaud tiré de `couleurs`) qui gonflent (`gonfle`, de leur
+    // taille) et montent (`monte` px) ; le nuage s'épaissit en `monteMs`, puis s'efface en `effaceMs` ; les pierres
+    // libérées apparaissent à `revele` (sa part de la durée) : quand il se dissipe.
+    poussiere: {
+      n: 14, r: 7, couleurs: [0xcfc6b4, 0xbdb3a0, 0xa89e8b, 0xddd5c5, 0x938a78], alpha: [0.55, 0.85],
+      gonfle: [1.6, 2.6], monte: [4, 12], ecart: 10, monteMs: 220, effaceMs: [520, 820], revele: 0.55,
+    },
   };
   // L'arrosage automatique : les asperseurs rotatifs (scripts/batiments/asperseur.py, 8 images,
   // une par direction du bras ; le pied en bas au milieu). Quand il tourne, un asperseur fait un

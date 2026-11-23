@@ -23,6 +23,11 @@ if (E.finishSetup) E.finishSetup(s);
 // (--objectifs : la partie commencée comme par l'écran de départ, js/engine/objectifs.js commencerObjectifs)
 if (args.includes('--objectifs')) (await import('../../js/engine/objectifs.js')).commencerObjectifs(s);
 // (--tente : la tente posée deux cases à droite du point d'apparition)
+// (--outils : la hache, la pioche et la faux, et de l'énergie, pour essayer les gestes avec --action)
+if (args.includes('--outils')) {
+  s.outils = { ...(s.outils || {}), hache: true, pioche: true, faux: true };
+  s.stamina = 1000;
+}
 if (args.includes('--tente')) console.log('tente', JSON.stringify(E.poserBloc(s, 'tente', s.monde.ici + 3)));
 // (--village : le panneau du village posé trois cases à gauche du point d'apparition)
 if (args.includes('--village')) {
@@ -350,7 +355,16 @@ if (opt('action', null)) {
       }
     }, opt('action')),
   );
-  await page.waitForTimeout(Number(opt('duree', 3000)));
+  if (opt('rafale')) {
+    // --rafale n,ms : n images, une toutes les ms après l'action (<sortie>-1.png, -2.png…), pour voir un effet
+    const [n, ms] = opt('rafale').split(',').map(Number);
+    for (let k = 1; k <= n; k++) {
+      await page.waitForTimeout(ms);
+      await page.screenshot({ path: SORTIE.replace(/\.png$/, `-${k}.png`) });
+    }
+  } else await page.waitForTimeout(Number(opt('duree', 3000)));
+  // (window.__journal : ce que l'action a noté, à lire après coup)
+  console.log('journal', await page.evaluate(() => JSON.stringify(window.__journal || null)));
   const { profile } = await cdpa.send('Profiler.stop');
   const m = await page.evaluate(() => window.mesureImages && window.mesureImages());
   console.log(

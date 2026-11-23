@@ -257,6 +257,16 @@
       return !!(o.img && o.img.active && o.img.visible) && !o.tombe && !o.brise && !o.anim && (!this.mondeObjets || this.mondeObjets.get(o.id) === o);
     },
 
+    // Sur l'île, le dernier coup retire la pièce de son bloc d'images (vegetation.js vegBlocOff, `garder`) : son image
+    // a tenu le temps de sa chute ou de son éclatement ; elle s'en va maintenant.
+    mondeOrpheline(o) {
+      if (!o.orpheline) return;
+      o.orpheline = false;
+      if (this.mondeObjets && this.mondeObjets.get(o.id) === o) this.mondeObjets.delete(o.id);
+      if (o.img && o.img.active) o.img.destroy();
+      if (o.ecume && o.ecume.img.active) o.ecume.img.destroy();
+    },
+
     // La pièce tremble d'un pixel sous le coup.
     mondeTremble(o) {
       if (!o.img || !o.img.active || reducedMotion() || o.tremble) return;
@@ -288,6 +298,7 @@
         o.anim = false;
         if (o.img && o.img.active) o.img.setVisible(false).setAngle(0).setAlpha(1).setScale(1).setPosition(o.fx, o.fy);
         this.mondeMontre(o, false);
+        this.mondeOrpheline(o);
         this.sunDirty = true;
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
       };
@@ -374,19 +385,54 @@
       // (son ombre s'en va tout de suite, pas à la fin de l'effondrement : soleil.js)
       if (o.img) o.img.sansOmbre = true;
       this.sunDirty = true;
-      this.revealPieces(b.fin);
       const fin = () => {
         this.mondeOccupe.delete(o.id);
         o.anim = false;
         if (o.img && o.img.active) o.img.setVisible(false).setScale(1).setAlpha(1).setPosition(o.fx, o.fy);
         this.mondeMontre(o, false);
+        this.mondeOrpheline(o);
         this.sunDirty = true;
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
       };
-      if (!anim || reducedMotion() || !o.img || !o.img.active) { fin(); return; }
+      if (!anim || reducedMotion() || !o.img || !o.img.active) { this.revealPieces(b.fin); fin(); return; }
       this.spawnShards({ box: { x0: o.x + 1, x1: o.x + o.w - 1, y0: o.y + 1, y1: o.fy } }, ROCKS.burst, true);
+      // (un nuage de poussière le cache ; les pierres qu'il libère apparaissent quand il se dissipe)
+      this.mondePoussiere(o, () => this.revealPieces(b.fin));
       o.anim = true;
       this.tweens.add({ targets: o.img, scaleY: 0.35, scaleX: 1.15, alpha: 0, duration: ROCKS.breakMs, ease: 'Quad.easeIn', onComplete: fin });
+    },
+
+    // Le nuage de poussière d'un rocher qui éclate (ROCKS.poussiere) : des bouffées autour de son pied gonflent, montent
+    // et s'effacent ; `revele` est appelé quand le nuage se dissipe.
+    mondePoussiere(o, revele) {
+      const P = ROCKS.poussiere, cle = 'rocher_poussiere';
+      if (!this.textures.exists(cle)) {
+        // (une bouffée ronde et douce : blanche, teintée à chaque bouffée)
+        const d = P.r * 2, tex = this.textures.createCanvas(cle, d, d), c = tex.getContext();
+        const g = c.createRadialGradient(P.r, P.r, 0, P.r, P.r, P.r);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(0.55, 'rgba(255,255,255,0.6)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        c.fillStyle = g;
+        c.fillRect(0, 0, d, d);
+        tex.refresh();
+      }
+      const entre = (a) => a[0] + Math.random() * (a[1] - a[0]);
+      const cx = o.fx, cy = o.fy - Math.min(8, (o.fy - o.y) / 2), larg = Math.max(P.ecart, (o.w / 2) | 0);
+      let plus = 0;
+      for (let k = 0; k < P.n; k++) {
+        const a = (k / P.n) * Math.PI * 2 + Math.random() * 0.6, rx = Math.cos(a) * larg * (0.3 + Math.random() * 0.7), ry = Math.sin(a) * larg * 0.45;
+        const img = this.add.image(cx + rx * 0.4, cy + ry * 0.4, cle).setDepth(o.fy + 2).setAlpha(0).setScale(0.5)
+          .setTint(P.couleurs[k % P.couleurs.length]);
+        const efface = entre(P.effaceMs), haut = entre(P.monte), s = entre(P.gonfle);
+        plus = Math.max(plus, efface);
+        this.tweens.add({ targets: img, alpha: entre(P.alpha), scale: s * 0.7, x: cx + rx, y: cy + ry - haut * 0.4, duration: P.monteMs, ease: 'Quad.easeOut' });
+        this.tweens.add({
+          targets: img, alpha: 0, scale: s, y: cy + ry - haut, delay: P.monteMs, duration: efface, ease: 'Sine.easeIn',
+          onComplete: () => img.destroy(),
+        });
+      }
+      this.time.delayedCall(P.monteMs + plus * P.revele, revele);
     },
 
     /* ---------- la faux, la main ---------- */
