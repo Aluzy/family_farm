@@ -197,10 +197,13 @@
       "NUITS": [2, 3],
       "SANS_POUSSE": { "champignon": 1 },
       "EXCLUES": ["souche", "tronc_couche", "bois_flotte", "pierre"],
-      "ARBRES": { "feuillu": "gland", "sapin": "pomme_de_pin", "pin_tordu": "pomme_de_pin", "sapin_nain": "pomme_de_pin" },
+      "ARBRES": {
+        "feuillu": "gland", "arbre_clair": "gland", "sapin": "pomme_de_pin", "pin_tordu": "pomme_de_pin", "sapin_nain": "pomme_de_pin",
+        "pin_clair": "pomme_de_pin"
+      },
       "GROUPES": {
         "gland": { "plantes": ["feuillu"], "choix": "tous" },
-        "pomme_de_pin": { "plantes": ["sapin", "pin_tordu", "sapin_nain"], "choix": "biome" }
+        "pomme_de_pin": { "plantes": ["sapin", "pin_tordu", "sapin_nain", "pin_clair"], "choix": "biome" }
       },
       "PROPRES": ["arbre", "fleur", "fruitier"],
       "FAMILLES": {
@@ -337,7 +340,7 @@
         "partout": {
           "prairie": {
             "herbe": {
-              "arbre_pre": 0.004, "buisson_pre": 0.004, "fleurs": 0.03, "touffe_pre": 0.05, "coquelicot": 0.006,
+              "arbre_pre": 0.004, "arbre_clair": 0.0015, "pin_clair": 0.0008, "buisson_pre": 0.0015, "fleurs": 0.03, "touffe_pre": 0.05, "coquelicot": 0.006,
               "pavot_californie": 0.002, "lupin": 0.002, "myosotis": 0.002,
               "fleur_rouge": 0.012, "fleur_mauve": 0.012, "pierre": 0.002, "champignon_blanc": 0.001,
               "rocher": 0.002, "pierres": 0.006, "gisement_fer": 0.0005
@@ -397,7 +400,9 @@
           "foret": { "mousse": { "saule": 0.01, "jonc": 0.06, "myosotis": 0.01 } }
         },
         "lisiere": {
-          "foret": { "clairiere": { "rhododendron": 0.006, "sapin_nain": 0.004 } }
+          "foret": {
+            "clairiere": { "rhododendron": 0.006, "sapin_nain": 0.004, "arbre_clair": 0.004, "pin_clair": 0.002, "buisson_pre": 0.003 }
+          }
         },
         "haut": {
           "lande": {
@@ -440,6 +445,9 @@
         "vanille_sauvage": { "placement": { "partout": { "foret": { "mousse": 0.0006 } } }, "min": 4, "loinDuDepart": 80 },
         "cafe_sauvage": { "placement": { "partout": { "foret": { "mousse": 0.0006 } } }, "min": 4, "loinDuDepart": 80 },
         "ail_ours_sauvage": { "groupe": [3, 8] },
+        "arbre_clair": { "groupe": [3, 8], "min": 30, "loinDuDepart": 6 },
+        "pin_clair": { "groupe": [3, 7], "min": 20, "loinDuDepart": 6 },
+        "buisson_pre": { "groupe": [2, 6], "min": 30, "loinDuDepart": 6 },
         "salicorne_sauvage": { "groupe": [3, 8] },
         "chataignier": { "min": 10 },
         "pin_tordu": { "min": 15 },

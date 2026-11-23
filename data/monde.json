@@ -226,7 +226,9 @@
       { "nom": "champignon_jaune", "genre": "basse", "variantes": 1 },
       { "nom": "champignon_bleu", "genre": "basse", "variantes": 1 },
       { "nom": "ail_ours_sauvage", "genre": "basse", "variantes": 2, "penche": true },
-      { "nom": "salicorne_sauvage", "genre": "basse", "variantes": 2, "penche": true }
+      { "nom": "salicorne_sauvage", "genre": "basse", "variantes": 2, "penche": true },
+      { "nom": "arbre_clair", "genre": "arbre", "variantes": 1, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "pin_clair", "genre": "arbre", "variantes": 1, "bloque": [[0, 0]], "ecart": 1 }
     ],
     "REMPLACE": [
       { "biome": "foret", "sols": ["feuilles", "mousse"], "de": "feuillu", "vers": "chataignier", "part": 0.0625 }
@@ -413,6 +415,8 @@
       "sapin_nain": { "geste": "couper", "coups": 2, "coup": { "bois": 1 }, "fin": { "bois": [1, 2] }, "chance": { "pomme_de_pin": 20 }, "retour": [6, 10] },
       "sapin_neige": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "chance": { "pomme_de_pin": 20 }, "retour": [6, 10] },
       "arbre_pre": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "chance": { "gland": 25 }, "retour": [5, 8] },
+      "arbre_clair": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "chance": { "gland": 25 }, "retour": [5, 8] },
+      "pin_clair": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "chance": { "pomme_de_pin": 30 }, "retour": [5, 8] },
       "buisson_pre": { "geste": "couper", "coups": 1, "fin": { "bois": [1, 2] }, "retour": [3, 5] },
       "ajonc": { "geste": "couper", "coups": 1, "fin": { "bois": [1, 1] }, "retour": [3, 5] },
       "genet": { "geste": "couper", "coups": 1, "fin": { "bois": [1, 1] }, "retour": [3, 5] },

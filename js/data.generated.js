@@ -6034,7 +6034,9 @@ export const RAW_DATA = {
       { "nom": "champignon_jaune", "genre": "basse", "variantes": 1 },
       { "nom": "champignon_bleu", "genre": "basse", "variantes": 1 },
       { "nom": "ail_ours_sauvage", "genre": "basse", "variantes": 2, "penche": true },
-      { "nom": "salicorne_sauvage", "genre": "basse", "variantes": 2, "penche": true }
+      { "nom": "salicorne_sauvage", "genre": "basse", "variantes": 2, "penche": true },
+      { "nom": "arbre_clair", "genre": "arbre", "variantes": 1, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "pin_clair", "genre": "arbre", "variantes": 1, "bloque": [[0, 0]], "ecart": 1 }
     ],
     "REMPLACE": [{ "biome": "foret", "sols": ["feuilles", "mousse"], "de": "feuillu", "vers": "chataignier", "part": 0.0625 }],
     "DENSITES": {
@@ -6275,6 +6277,15 @@ export const RAW_DATA = {
         "retour": [6, 10]
       },
       "arbre_pre": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "chance": { "gland": 25 }, "retour": [5, 8] },
+      "arbre_clair": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "chance": { "gland": 25 }, "retour": [5, 8] },
+      "pin_clair": {
+        "geste": "couper",
+        "coups": 3,
+        "coup": { "bois": 1 },
+        "fin": { "bois": [2, 3] },
+        "chance": { "pomme_de_pin": 30 },
+        "retour": [5, 8]
+      },
       "buisson_pre": { "geste": "couper", "coups": 1, "fin": { "bois": [1, 2] }, "retour": [3, 5] },
       "ajonc": { "geste": "couper", "coups": 1, "fin": { "bois": [1, 1] }, "retour": [3, 5] },
       "genet": { "geste": "couper", "coups": 1, "fin": { "bois": [1, 1] }, "retour": [3, 5] },
@@ -10016,10 +10027,17 @@ export const RAW_DATA = {
       "NUITS": [2, 3],
       "SANS_POUSSE": { "champignon": 1 },
       "EXCLUES": ["souche", "tronc_couche", "bois_flotte", "pierre"],
-      "ARBRES": { "feuillu": "gland", "sapin": "pomme_de_pin", "pin_tordu": "pomme_de_pin", "sapin_nain": "pomme_de_pin" },
+      "ARBRES": {
+        "feuillu": "gland",
+        "arbre_clair": "gland",
+        "sapin": "pomme_de_pin",
+        "pin_tordu": "pomme_de_pin",
+        "sapin_nain": "pomme_de_pin",
+        "pin_clair": "pomme_de_pin"
+      },
       "GROUPES": {
         "gland": { "plantes": ["feuillu"], "choix": "tous" },
-        "pomme_de_pin": { "plantes": ["sapin", "pin_tordu", "sapin_nain"], "choix": "biome" }
+        "pomme_de_pin": { "plantes": ["sapin", "pin_tordu", "sapin_nain", "pin_clair"], "choix": "biome" }
       },
       "PROPRES": ["arbre", "fleur", "fruitier"],
       "FAMILLES": {
@@ -10150,7 +10168,9 @@ export const RAW_DATA = {
           "prairie": {
             "herbe": {
               "arbre_pre": 0.004,
-              "buisson_pre": 0.004,
+              "arbre_clair": 0.0015,
+              "pin_clair": 0.0008,
+              "buisson_pre": 0.0015,
               "fleurs": 0.03,
               "touffe_pre": 0.05,
               "coquelicot": 0.006,
@@ -10291,7 +10311,9 @@ export const RAW_DATA = {
           "prairie": { "herbe": { "saule": 0.012, "roseaux": 0.15, "massette": 0.03, "jonc": 0.14, "myosotis": 0.02 } },
           "foret": { "mousse": { "saule": 0.01, "jonc": 0.06, "myosotis": 0.01 } }
         },
-        "lisiere": { "foret": { "clairiere": { "rhododendron": 0.006, "sapin_nain": 0.004 } } },
+        "lisiere": {
+          "foret": { "clairiere": { "rhododendron": 0.006, "sapin_nain": 0.004, "arbre_clair": 0.004, "pin_clair": 0.002, "buisson_pre": 0.003 } }
+        },
         "haut": {
           "lande": {
             "lande": { "bloc": 0.008, "gisement_or": 0.0015, "gisement_platine": 0.0012, "cristaux_quartz": 0.003, "cristaux_amethyste": 0.0015 },
@@ -10326,6 +10348,9 @@ export const RAW_DATA = {
         "vanille_sauvage": { "placement": { "partout": { "foret": { "mousse": 0.0006 } } }, "min": 4, "loinDuDepart": 80 },
         "cafe_sauvage": { "placement": { "partout": { "foret": { "mousse": 0.0006 } } }, "min": 4, "loinDuDepart": 80 },
         "ail_ours_sauvage": { "groupe": [3, 8] },
+        "arbre_clair": { "groupe": [3, 8], "min": 30, "loinDuDepart": 6 },
+        "pin_clair": { "groupe": [3, 7], "min": 20, "loinDuDepart": 6 },
+        "buisson_pre": { "groupe": [2, 6], "min": 30, "loinDuDepart": 6 },
         "salicorne_sauvage": { "groupe": [3, 8] },
         "chataignier": { "min": 10 },
         "pin_tordu": { "min": 15 },

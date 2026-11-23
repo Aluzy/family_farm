@@ -568,6 +568,19 @@ def buissons_ferme():
     return out
 
 
+def arbres_ferme():
+    """L'arbre clair et le pin de l'ancienne ferme (assets/arbre_clair.png, pin_clair_sp.png : sa 1re image, droite,
+    sans ses 4 px de marge), tels quels : sur l'île, ils poussent en bosquets dans la prairie et aux lisières
+    (data/ile.json PLACEMENTS)."""
+    arbre = Image.open(os.path.join(ASSETS, 'arbre_clair.png')).convert('RGBA').crop((0, 0, 48, 64))
+    pin = Image.open(os.path.join(ASSETS, 'pin_clair_sp.png')).convert('RGBA').crop((4, 0, 68, 64))
+    out = {}
+    for nom, im, cx in (('arbre_clair', arbre, 24), ('pin_clair', pin, 32)):
+        x0, y0, x1, y1 = im.getbbox()
+        out[nom] = [(im.crop((x0, y0, x1, y1)), cx - x0, 62 - y0 - 1)]
+    return out
+
+
 def ronces(graine, variante):
     """Un roncier : un tas de feuilles sombres d'où sortent des tiges en arceaux, rouge sombre,
     des mûres noires (ou des fleurs blanches)."""
@@ -1336,6 +1349,7 @@ def dessins():
         pre.append((t.image(), fx, fy))
     out['arbre_pre'] = pre
     out['buisson_pre'] = buissons_ferme()
+    out.update(arbres_ferme())
     une = lambda f, g0, n: [(lambda t: (t[0].image(), t[1], t[2]))(f(g0 + k * 17, k)) for k in range(n)]  # noqa: E731
     out['ronces'] = une(ronces, 800, 3)
     out['souche'] = une(souche, 820, 3)
