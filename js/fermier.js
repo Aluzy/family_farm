@@ -47,6 +47,7 @@
   const SPEED = K.VITESSES.fermier;   // px de carte par seconde
   // (l'image du pas : CarteKit.imageMarche, d'après les px parcourus ; les pieds suivent la distance)
   const BREATH_S = 0.8;          // debout : secondes par souffle
+  const HOLD_VILLAGEOIS_MS = 25000;   // …celle qui attend le geste d'un villageois aux champs, pas plus que ça
   const HOLD_MS = 9000;          // une case n'est jamais retenue plus longtemps…
   const HOLD_PREVU_MS = 90000;   // …sauf s'il y va faire le geste (la cruche à remplir au puits d'abord)
   const MAX_VISITS = 4;          // cases d'un même geste où il va lui-même ; les autres suivent en cascade
@@ -567,8 +568,15 @@
       const found = {};
       // ce qu'a fait le robot ou un asperseur : pas un geste du personnage
       const auto = new Set(next.parAuto || []);
+      // ce qu'a fait un villageois aux champs : pas un geste du personnage ; la case garde son ancien dessin jusqu'au
+      // geste du villageois (js/carte/ferme/villageois-travail.js : relacher)
+      const parVillageois = new Set(next.parVillageois || []);
       const add = (type, c, view) => {
         if (auto.has(`${type}:${c}`)) return;
+        if (parVillageois.has(`${type}:${c}`)) {
+          if (!reduced() && !holds.has(c)) holds.set(c, { view: view || NONE, t0: performance.now(), serre: serreCases.has(c), villageois: true });
+          return;
+        }
         if (faits.delete(`${type}:${c}`)) return;
         (found[type] = found[type] || []).push(c);
         if (!holds.has(c)) holds.set(c, { view: view || NONE, t0: performance.now(), serre: serreCases.has(c) });
@@ -1201,7 +1209,7 @@
         for (const j of job ? [job, ...jobs] : jobs) for (const c of j.cases || []) prevues.add(c);
         for (const [c, h] of holds) {
           const age = now - h.t0;
-          if (h.prevu ? !prevues.has(c) || age > HOLD_PREVU_MS : age > HOLD_MS) { holds.delete(c); changed = true; }
+          if (h.villageois ? age > HOLD_VILLAGEOIS_MS : h.prevu ? !prevues.has(c) || age > HOLD_PREVU_MS : age > HOLD_MS) { holds.delete(c); changed = true; }
         }
         if (changed && o.resync) o.resync();
       }
@@ -1304,6 +1312,9 @@
       // Semer sur la terre `c` (la file des gestes, semis.js).
       semer,
       recolter,
+      // (un villageois aux champs a fait son geste sur la case c : elle montre son nouveau dessin)
+      relacher: (c) => release(c),
+      retenue: (c) => !!(holds.get(c) && holds.get(c).villageois),
       // La botteleuse : jeter ses fibres dans l'entonnoir, depuis `spot`.
       jeter,
       // Le puits : y aller et remplir la cruche, depuis `spot` (fiche 17).
