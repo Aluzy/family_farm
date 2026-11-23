@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
 import { fridgeCount } from '../engine/fridge.js';
-import { startNight } from '../engine/night.js';
+import { asleep, startNight } from '../engine/night.js';
 import { executer } from './commandes.js';
 import { memberName } from '../engine/family.js';
 import { newGameFrom } from '../engine/alerts.js';
@@ -66,7 +66,7 @@ export function wakeUp() {
     const noms = state.famille.membres.filter((m) => sans.includes(m.id)).map((m) => memberName(state, m.id));   // (son prénom, pas « Adulte 2 »)
     notify(`🛏 Sans paillasse dans une pièce close : ${noms.join(', ')} ${noms.length > 1 ? 'ont' : 'a'} mal dormi (${DATA.ATELIER.BONHEUR_SANS_COUCHAGE} 😊).`);
   }
-  setCoucher(false); // il se lève
+  if (!asleep(state)) setCoucher(false); // il se lève (encore couché : il dort jusqu'à HEURE_LEVER)
   syncJobs(); // les préparations terminées pendant la nuit ne sont pas annoncées par un toast
   persistState(); // sauvegarde après chaque nuit
   telDay(); // le suivi : un nouveau jour de jeu

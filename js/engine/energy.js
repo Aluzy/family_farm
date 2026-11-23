@@ -7,13 +7,13 @@ import { availableEnergy, runFridge } from './fridge.js';
 import { runCooking, runElectricStation } from './kitchen.js';
 import { refreshUnlocks, techFlag, techPct } from './techtree.js';
 import { bumpCounter, chapitresAuPas, noteEnergyRecord } from './campaign.js';
-import { nightActive } from './clock.js';
+import { awakeHours, nightActive } from './clock.js';
 import { growDue } from './crops.js';
 import { figerStation, irrigate, robotStep, runRobotCharge } from './automation.js';
 import { distribuerGrain } from './distributeur.js';
 import { pluieSurLaFerme } from './meteo.js';
 import { runChaines } from './chaines.js';
-import { advanceNight, nightSpeed } from './night.js';
+import { advanceNight, finDuSommeilJour, nightSpeed, recoverInSleep, vitesseSommeil } from './night.js';
 import { repasStep } from './repas.js';
 import { penalite } from './inventory.js';
 import { avancerTaches } from './taches.js';
@@ -150,7 +150,14 @@ function tickEnLot(state, dtMs, horlogeArretee) {
     if (!horlogeArretee) advanceNight(state, dtMs * nightSpeed(state)); // il dort : en accéléré
     return state;
   }
-  farmStep(state, dtMs, { horloge: !horlogeArretee });
+  // couché le soir ou le matin (night.js goToSleep) : le temps défile en accéléré jusqu'à la nuit ou au lever
+  const fin = finDuSommeilJour(state);
+  if (fin < Infinity && !horlogeArretee) {
+    const avant = state.awakeMs;
+    farmStep(state, dtMs * vitesseSommeil(), { horloge: true, eveilMax: Math.max(avant, fin) });
+    recoverInSleep(state, state.awakeMs - avant);
+    if (state.awakeMs >= fin && awakeHours(state) < DATA.TEMPS.HEURE_NUIT && awakeHours(state) < (DATA.TEMPS.HEURE_COUCHER ?? 24)) state.sommeilJour = false;
+  } else farmStep(state, dtMs, { horloge: !horlogeArretee });
   refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
   chapitresAuPas(state); // objectifs du chapitre (piste 5 : chaque seconde, et après un geste)
   return state;

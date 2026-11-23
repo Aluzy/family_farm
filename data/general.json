@@ -53,9 +53,12 @@
     "POUSSE_HEURES : une plante arrosée gagne son stade POUSSE_HEURES heures d'horloge",
     "après l'arrosage (le jour comme la nuit, voir growDue), puis se réarrose.",
     "ARROSAGE_HEURE : avec l'arrosage automatique, les asperseurs arrosent tous les jours à cette",
-    "heure les plantes qui ont soif (irrigate) ; sur la carte, ils tournent ARROSAGE_S secondes."
+    "heure les plantes qui ont soif (irrigate) ; sur la carte, ils tournent ARROSAGE_S secondes.",
+    "HEURE_COUCHER, HEURE_LEVER : on peut se coucher (un appui sur son lit) de HEURE_COUCHER h à HEURE_LEVER h.",
+    "Couché avant la nuit (HEURE_NUIT), le soir défile en accéléré jusqu'à elle ; encore couché au réveil",
+    "(HEURE_REVEIL), le matin aussi, jusqu'à HEURE_LEVER, où il se lève tout seul (night.js goToSleep, seLever)."
   ],
-  "TEMPS": { "HEURE_REVEIL": 6, "SECONDES_HEURE_MARCHE": 30, "SECONDES_PAR_HEURE": 30, "EVEIL_MIN_S": 30, "HEURE_NUIT": 22, "SECONDES_PAR_HEURE_SOMMEIL": 3, "POUSSE_HEURES": 24, "ARROSAGE_HEURE": 7, "ARROSAGE_S": 9 },
+  "TEMPS": { "HEURE_REVEIL": 6, "SECONDES_HEURE_MARCHE": 30, "SECONDES_PAR_HEURE": 30, "EVEIL_MIN_S": 30, "HEURE_NUIT": 22, "SECONDES_PAR_HEURE_SOMMEIL": 3, "POUSSE_HEURES": 24, "ARROSAGE_HEURE": 7, "ARROSAGE_S": 9, "HEURE_COUCHER": 20, "HEURE_LEVER": 7 },
   "//FAMILLE": "Famille (sections 1.1, 1.4, 6.9 et 8.8 ; version 1.8 : plus de santé).",
   "FAMILLE": {
     "//MEMBRES": [

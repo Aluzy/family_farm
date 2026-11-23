@@ -20,7 +20,7 @@ export function registerActions(handlers) {
 // dans l'une des deux listes.
 export const SOMMEIL_MESSAGE = '💤 Tu dors : attends le réveil.';
 export const SOMMEIL_PERMISES = new Set([
-  'sleep', 'monde-coucher', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
+  'sleep', 'lit-lever', 'lit-reveil', 'monde-coucher', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'meuble-annule', 'meuble-place',
   'carte-monde-but', 'carte-monde-ferme', 'port-boussole', // (fiche 8 : choisir le but de la boussole, rien ne bouge ; le port, I1b)
   'fiche-case', 'fiche-equiper', 'fiche-tente', // (fiche 11 : habiller la famille ; le récit, lot 8 : la tente)

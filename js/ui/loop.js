@@ -3,13 +3,14 @@ import { setupPending } from '../engine/depart.js';
 import { watchSetup } from './depart.js';
 import { bedtimeDue, nightActive } from '../engine/clock.js';
 import { tick } from '../engine/energy.js';
+import { asleep, heureDeDormir } from '../engine/night.js';
 import { memberName } from '../engine/family.js';
 import { ecouterJournal } from '../engine/journal.js';
 import { PRESSE_RENDU } from '../engine/state.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
 import { formatCoins, formatDay, formatNumber } from '../engine/format.js';
-import { enLigne, MAX_FRAME_MS, pasEnLigne, RENDER_THROTTLE_MS, state, tabAvailable, TICK_MS } from './store.js';
+import { coucher, enLigne, MAX_FRAME_MS, pasEnLigne, RENDER_THROTTLE_MS, setCoucher, state, tabAvailable, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
 import { consentBannerDue, consentBannerPending, consentBannerShown, modalRoot, storyOpen, uiCalm } from './calme.js';
@@ -162,6 +163,8 @@ function watchTechPoints() {
 // (le joueur lit), sauf celle qui explique la nuit.
 function watchDay() {
   if (enLigne) return;   // (E-5 : en ligne, la nuit est celle du monde : quand tous sont couchés)
+  // (couché le matin : à HEURE_LEVER, il se lève tout seul, night.js ; le coucher demandé ne vaut plus)
+  if (coucher && !asleep(state) && !heureDeDormir(state)) { setCoucher(false); scheduleRender(); }
   if (state.reveil && !modalRoot().childElementCount) wakeUp();
   if (nightActive(state)) {
     // minuit vient de passer : les préparations finies dans la nuit, sans toast

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Une capture de la scène d'une partie neuve sur l'île (docs/ile-300.md, étape 7b) : la page servie en local, dans
 // Chromium (Playwright), à l'écran d'un téléphone ; les erreurs de la page affichées.
-// Usage : node scripts/ile/capture.mjs [--graine 1] [--sortie apercus-ile/scene.png] [--attente 8000] [--ecran 412x860] [--clic <sélecteur>] [--touche m] [--foret] [--mesure 8] [--marche] [--processeur 4] [--profil]
+// Usage : node scripts/ile/capture.mjs [--graine 1] [--sortie apercus-ile/scene.png] [--attente 8000] [--ecran 412x860] [--clic <sélecteur>] [--touche m] [--foret] [--mesure 8] [--marche] [--processeur 4] [--profil] [--heure 20]
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -34,9 +34,9 @@ if (args.includes('--village')) {
   E.addItem(s, 'panneau_village', 1);
   console.log('place', JSON.stringify(E.poserBloc(s, 'panneau_village', s.monde.ici - 3)));
 }
-// (--projets : une pièce close au-dessus du point d'apparition, ses murs en pierre, une porte ; dedans, les meubles clés
+// (--projets, --lits : une pièce close au-dessus du point d'apparition, ses murs en pierre, une porte ; dedans, les meubles clés
 // des projets du village : le tableau en liège et le tableau noir accrochés au mur du haut, le piano droit ; docs/economie.md)
-if (args.includes('--projets')) {
+if (args.includes('--projets') || args.includes('--lits')) {
   const W = E.farmTerrain(s).LARGEUR,
     c0 = (s.monde.ici % W) - 4,
     r0 = Math.floor(s.monde.ici / W) - 7;
@@ -53,9 +53,16 @@ if (args.includes('--projets')) {
     poser('mur_pierre', y * W + c0);
     poser('mur_pierre', y * W + c0 + 8);
   }
-  poser('tableau_liege', r0 * W + c0 + 2, true);
-  poser('tableau_ardoise', r0 * W + c0 + 5, true);
-  poser('piano_droit', (r0 + 2) * W + c0 + 3);
+  if (args.includes('--lits')) {
+    // (--lits : la même pièce, deux paillasses dedans ; LITS : leurs cases, pour --action)
+    poser('paillasse', (r0 + 3) * W + c0 + 2);
+    poser('paillasse', (r0 + 3) * W + c0 + 6);
+    console.log('lits', (r0 + 3) * W + c0 + 2, (r0 + 3) * W + c0 + 6);
+  } else {
+    poser('tableau_liege', r0 * W + c0 + 2, true);
+    poser('tableau_ardoise', r0 * W + c0 + 5, true);
+    poser('piano_droit', (r0 + 2) * W + c0 + 3);
+  }
 }
 // (--labour : un carré de 3 × 3 cases labourées, deux cases au-dessus du point d'apparition)
 if (args.includes('--labour')) {
@@ -102,6 +109,8 @@ if (args.includes('--graines')) {
   J.garderIle(s);
 }
 s.awakeMs = 3 * 3600 * 1000 * (E.DATA.TEMPS.SECONDES_PAR_HEURE / 3600);
+// (--heure h : l'horloge à h heures, 20 pour essayer le lit le soir)
+if (opt('heure', null)) s.awakeMs = E.awakeMsAtHour(Number(opt('heure')));
 const SAUVEGARDE = JSON.stringify({ v: s.version, t: Date.now(), s });
 // (--foret : le personnage repart du cœur de la forêt la plus dense, le carré de 16 × 16 qui a le plus d'objets)
 let POSITION = null;

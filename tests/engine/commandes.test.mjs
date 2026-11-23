@@ -224,8 +224,9 @@ test('commandes : semer, arroser, récolter une parcelle, comme les fonctions du
   assertEqual(jouer(s, 'potager.recolter', {}).error, 'potager.recolter : il manque « parcelle ».');
 });
 
-test('commandes : dormir le jour est refusé, comme au bouton Dormir', () => {
+test('commandes : dormir le jour est refusé, comme au lit', () => {
   const s = garden();
+  s.awakeMs = 6 * 30 * 1000;   // (midi : de 7 h à 20 h, on ne dort pas)
   const { r } = commeLaFonction(s, 'nuit.dormir', {}, (b) => goToSleep(b), 'dormir le jour (refusé)');
   assertEqual(r.ok, false);
   assertEqual(jouer(s, 'nuit.dormir', { vite: true }).error, 'nuit.dormir : argument inconnu « vite ».');

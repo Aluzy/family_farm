@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { allDevices, fail, isBroken, needsService, newDayStats, storageCapacity, storedEnergy, tankCapacity } from './devices.js';
-import { awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } from './clock.js';
+import { awakeHours, awakeMsAtHour, awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } from './clock.js';
 import { expiringSoon, penalite, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
 import { feedFamily, newNightStats } from './family.js';
@@ -211,7 +211,9 @@ function nuitEntiere(state) {
 // nuit saute ce qui reste (skipNight). Pendant la nuit, rien d'autre n'avance (voir tick).
 export function startNight(state) {
   if (nightActive(state) || !bedtimeDue(state)) return false;
-  state.nuitEnCours = { ms: 0, minuit: false };
+  // (couché dès le soir, il dort toujours : la nuit défile en accéléré)
+  state.nuitEnCours = state.sommeilJour ? { ms: 0, minuit: false, dort: true } : { ms: 0, minuit: false };
+  state.sommeilJour = false;
   // (les enfants ont pris leur dernier repas à 20 h, avant leur lit : repas.js repasStep)
   return true;
 }
@@ -242,6 +244,8 @@ function avancerLaNuit(state, dtMs) {
   }
   if (n.ms >= nightLengthMs()) {
     state.nuitEnCours = null;
+    // (encore couché au réveil : il dort jusqu'à HEURE_LEVER, le matin en accéléré)
+    state.sommeilJour = !!n.dort && heureLever() > DATA.TEMPS.HEURE_REVEIL;
     state.reveil = true;
     state.bivouac = null; // (le récit, lot 8 : la tente se replie au réveil)
     // l'énergie et les plantes mûres au réveil, pas à minuit
@@ -274,16 +278,48 @@ export function recoverInSleep(state, ms) {
 }
 
 // « Dormir » : le personnage dort dans son lit, la nuit défile en accéléré (une heure toutes
-// les TIME.SECONDES_PAR_HEURE_SOMMEIL secondes au lieu de SECONDES_PAR_HEURE) jusqu'au réveil.
-// On ne dort que la nuit.
+// les TIME.SECONDES_PAR_HEURE_SOMMEIL secondes au lieu de SECONDES_PAR_HEURE). On se couche de HEURE_COUCHER
+// (20 h) à HEURE_LEVER (7 h) : couché le soir, avant la nuit (22 h), le soir défile en accéléré jusqu'à elle
+// (state.sommeilJour : tick) ; encore couché au réveil (6 h), le matin aussi, jusqu'à HEURE_LEVER où il se lève.
 // Sur la ferme générée, il faut une paillasse dans une pièce close (nuitCouchee) : sans elle, on
 // ne dort pas, la nuit passe à son rythme et ne rend pas d'énergie.
 export const SANS_COUCHAGE = 'Sans paillasse dans une pièce close (des murs tout autour et une porte), on ne peut pas dormir : la nuit passe sans rendre d\'énergie.';
+export const PAS_LE_JOUR = 'Tu ne peux pas dormir la journée.';
 export function goToSleep(state) {
-  if (!nightActive(state)) return fail(`On ne dort que la nuit, de ${DATA.TEMPS.HEURE_NUIT} h à ${DATA.TEMPS.HEURE_REVEIL} h.`);
+  if (!heureDeDormir(state)) return fail(PAS_LE_JOUR);
   if (!nuitCouchee(state)) return fail(SANS_COUCHAGE);
-  state.nuitEnCours.dort = true;
+  if (nightActive(state)) state.nuitEnCours.dort = true;
+  else state.sommeilJour = true;
   return { ok: true };
+}
+
+// Peut-on se coucher à cette heure ? La nuit, le soir dès HEURE_COUCHER, le matin avant HEURE_LEVER.
+export function heureDeDormir(state) {
+  if (nightActive(state)) return true;
+  return awakeHours(state) >= heureCoucher() || awakeHours(state) < heureLever();
+}
+const heureCoucher = () => (Number.isFinite(DATA.TEMPS.HEURE_COUCHER) ? DATA.TEMPS.HEURE_COUCHER : DATA.TEMPS.HEURE_NUIT);
+const heureLever = () => (Number.isFinite(DATA.TEMPS.HEURE_LEVER) ? DATA.TEMPS.HEURE_LEVER : DATA.TEMPS.HEURE_REVEIL);
+
+// Il se lève (« Tu veux te lever ? », ou HEURE_LEVER venue) : l'énergie déjà revenue reste ; le temps reprend son
+// rythme. Il peut se recoucher tant que c'est l'heure (goToSleep).
+export function seLever(state) {
+  if (!asleep(state)) return fail('Tu ne dors pas.');
+  if (nightActive(state)) state.nuitEnCours.dort = false;
+  state.sommeilJour = false;
+  return { ok: true };
+}
+
+// Le soir ou le matin, couché (state.sommeilJour) : le temps défile en accéléré, l'énergie remonte ; il s'arrête à
+// la nuit (22 h : startNight le reprend, il dort toujours) et à HEURE_LEVER (il se lève). Rend le temps d'éveil
+// (ms) jusqu'où ce pas peut aller (Infinity : il ne dort pas le jour).
+export function finDuSommeilJour(state) {
+  if (!state.sommeilJour || nightActive(state)) return Infinity;
+  const h = awakeHours(state);
+  return awakeMsAtHour(h < heureLever() ? heureLever() : DATA.TEMPS.HEURE_NUIT);
+}
+export function vitesseSommeil() {
+  return DATA.TEMPS.SECONDES_PAR_HEURE / DATA.TEMPS.SECONDES_PAR_HEURE_SOMMEIL;
 }
 
 // Le bivouac (le récit, lot 8) : loin de la ferme (enExpedition), la nuit, sa tente portée, le personnage
@@ -300,12 +336,13 @@ export function dormirSousTente(state) {
 
 // Le personnage dort-il dans son lit ?
 export function asleep(state) {
-  return nightActive(state) && !!state.nuitEnCours.dort;
+  if (!state) return false;
+  return nightActive(state) ? !!state.nuitEnCours.dort : !!state.sommeilJour;
 }
 
 // Vitesse de la nuit : 1 (elle défile à l'heure de l'horloge), plus quand il dort.
 export function nightSpeed(state) {
-  return asleep(state) ? DATA.TEMPS.SECONDES_PAR_HEURE / DATA.TEMPS.SECONDES_PAR_HEURE_SOMMEIL : 1;
+  return asleep(state) ? vitesseSommeil() : 1;
 }
 
 // Le bouton nuit : ce qui reste de la nuit passe d'un coup (minuit compris). Renvoie le

@@ -28,7 +28,7 @@ import { bacRecolter, bacTouche, massifCueillir, massifTouche } from './bacs.js'
 import { TIRED } from '../engine/stamina.js';
 import { executer } from './commandes.js';
 import { brokenRocks, gisementsFerme, cutBushes, cutGrass, fellenTrees, morceauxDe, poussesArbres, arbresPlantes } from '../engine/outils.js';
-import { asleep } from '../engine/night.js';
+import { asleep, heureDeDormir } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmTerrain, tileCount, voirRegion } from '../engine/terrain.js';
 import { MONDE } from '../engine/monde.js';
@@ -528,7 +528,7 @@ export function stageModel() {
     horaire: DATA.FAMILLE.HORAIRE,
     // le joueur a appuyé sur « Dormir » : le personnage va à son lit (js/fermier.js) ; il y
     // dort (la nuit défile en accéléré), même quand on regarde la carte de la ferme
-    coucher: (coucher || asleep(state)) && nightActive(state),
+    coucher: (coucher || asleep(state)) && heureDeDormir(state),
     // (D16 : la pierre de lune, la lueur de la ferme et de l'amas d'améthyste qui l'accompagnaient, et les toits
     // usés des hameaux sont retirés avec le récit à la bascule, I9h)
     toitsUses: {},
