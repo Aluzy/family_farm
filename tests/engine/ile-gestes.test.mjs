@@ -135,6 +135,30 @@ test('le roncier et le châtaignier cueillis restent en place ; leurs fruits rev
   assert.equal(etatObjetMonde(s, id), undefined);
 });
 
+test('les fleurs rouges et mauves donnent un hibiscus ; les herbes, de la fibre à la faux ; le rhododendron, du bois', () => {
+  const cas = {
+    fleur_rouge: 'hibiscus',
+    fleur_mauve: 'hibiscus',
+    fleurs: 'fibre',
+    touffe_pre: 'fibre',
+    touffe_foret: 'fibre',
+    herbe_seche: 'fibre',
+    chardon: 'fibre',
+    nenuphar: 'fibre',
+    rhododendron: 'bois',
+  };
+  for (const [nom, item] of Object.entries(cas)) {
+    const s = partie(),
+      ile = ileDeLaPartie(s);
+    const i = trouver(ile, (f) => f.id === nom);
+    assert.ok(i >= 0, nom);
+    const r = jusquauBout(s, idDe(ile, i, nom));
+    assert.ok(r.ok, `${nom} : ${r.error}`);
+    assert.equal(ile.objet[i], 0, `${nom} s'en va`);
+    assert.ok(r.items && r.items[item] >= 1, `${nom} donne ${item}`);
+  }
+});
+
 test('le tournesol du potager : à la main ses graines, à la faux sa fleur', () => {
   const s = partie();
   const p = { id: 'p1', culture: 'tournesol', stade: 0, lieu: 'potager', arrose: false };
