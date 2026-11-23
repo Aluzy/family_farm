@@ -130,9 +130,18 @@ let version = 0;     // chaque écriture dans state.monde.pris (les cases ouvert
 function ecrire(state, id, v) {
   const P = prisDe(state);
   // (l'île de 300 × 300 : une pièce prise ou cueillie l'est dans l'île même, qui la fait repousser ; rien n'en reste ici)
-  if (v && typeof v === 'object' && estPartieIle(state)) { recolterSurLIle(state, id, v); v = undefined; }
+  // Sauf une plante sauvage cueillie (le roncier, le châtaignier : RECOLTE.SORTES … « apres ») : elle reste sur l'île,
+  // sans ses fruits (son dessin « apres »), jusqu'à son retour ; son entrée reste ici (repousseMonde l'efface).
+  if (v && typeof v === 'object' && estPartieIle(state) && !(v.cueilli && !v.faux && resteCueillie(id))) { recolterSurLIle(state, id, v); v = undefined; }
   if (v === undefined) delete P[id]; else P[id] = v;
   version++;
+}
+
+// Une pièce cueillie reste-t-elle en place ? Les plantes sauvages du monde (pas les fruitiers ni les cultures de
+// l'île, dont l'île même tient le stade : reglesDeLIle).
+function resteCueillie(id) {
+  const o = lireIdMonde(id);
+  return !!o && !reglesDeLIle()[o.nom];
 }
 
 // La pièce `o` (lireIdMonde) est-elle sur l'île de la partie, sur sa case, prête au geste ?
