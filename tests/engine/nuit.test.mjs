@@ -8,7 +8,7 @@ import {
   asleep, awakeMsAtHour, bedtimeDue, boiteCounts, buyAnimals, buyItem, buyPrice, buyQuote,
   canSleep, castLine, chopTree, collectAt, countItem, createInitialState, DATA, dayOfMonth,
   deposit, energyMax, findPlot, fishLeft, formatDay, getNotifications,
-  goToSleep, grantTech, growAll, harvest, harvestYield, hitsNeeded, hourOfDay, isBuyable, maxStage,
+  goToSleep, seLever, grantTech, growAll, harvest, harvestYield, hitsNeeded, hourOfDay, isBuyable, maxStage,
   midnightMs, MIGRATIONS, mineRock, monthIndex, monthName, moonPhase, nightActive,
   nightLengthMs, nightSpeed, piles, plant, recipeTime, sellItem, sheepCount,
   simulateOffline, skipNight, sleep, sleepTarget, startNight, startRecipe, STATE_VERSION,
@@ -342,8 +342,35 @@ test('Dormir : on ne dort que la nuit ; couché, la nuit défile en accéléré 
   assertEqual([goToSleep(s).ok, asleep(s)], [true, true]);
   tick(s, 4);
   assertEqual(hourOfDay(s), 23, 'endormi : une heure toutes les 4 s');
-  for (let i = 0; i < 7 * 4 * 10; i++) tick(s, 0.1);
-  assertEqual([nightActive(s), asleep(s), s.reveil, s.day, hourOfDay(s)], [false, false, true, 2, 6], 'réveil à 6 h, le sommeil fini');
+  for (let i = 0; i < 7 * 4 * 10 && nightActive(s); i++) tick(s, 0.1);
+  assertEqual([nightActive(s), asleep(s), s.reveil, s.day, hourOfDay(s)], [false, true, true, 2, 6], 'réveil à 6 h : encore couché, il dort jusqu\'à 7 h');
+  for (let i = 0; i < 40; i++) tick(s, 0.1);
+  assertEqual([asleep(s), hourOfDay(s)], [false, 7], 'à 7 h, il se lève tout seul');
+});
+
+test('Le lit : on se couche de 20 h à 7 h ; le soir et le matin défilent en accéléré ; on se lève quand on veut', () => {
+  const s = partie();
+  s.awakeMs = awakeMsAtHour(19);
+  assertEqual(goToSleep(s).error, 'Tu ne peux pas dormir la journée.', 'à 19 h, pas encore');
+  s.awakeMs = awakeMsAtHour(20);
+  assertEqual([goToSleep(s).ok, asleep(s), nightActive(s)], [true, true, false], 'à 20 h, couché avant la nuit');
+  s.energie = 0;
+  tick(s, 3);
+  assertEqual(hourOfDay(s), 21, 'couché le soir : une heure toutes les 3 s');
+  assert(s.energie > 0, 'l\'énergie remonte déjà');
+  tick(s, 10);
+  assertEqual([hourOfDay(s), asleep(s)], [22, true], 'le soir s\'arrête à 22 h, il dort toujours');
+  assert(startNight(s));
+  assertEqual([nightActive(s), asleep(s), nightSpeed(s) > 1], [true, true, true], 'la nuit vient : il dort, en accéléré');
+  tick(s, 3);
+  assertEqual(seLever(s).ok, true);
+  assertEqual([asleep(s), nightSpeed(s), hourOfDay(s)], [false, 1, 23], 'levé à 23 h : la nuit reprend son rythme');
+  assertEqual(seLever(s).ok, false, 'déjà debout');
+  assertEqual(goToSleep(s).ok, true, 'il se recouche : c\'est encore la nuit');
+  s.awakeMs = awakeMsAtHour(15);
+  s.nuitEnCours = null;
+  s.sommeilJour = false;
+  assertEqual([goToSleep(s).ok, asleep(s)], [false, false], 'à 15 h, non');
 });
 
 test('Ramassage (version 1.19) : à l\'Étable, le personnage tond les moutons prêts puis prend lait et laine ; au Poulailler, les œufs', () => {

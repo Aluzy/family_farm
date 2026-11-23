@@ -997,7 +997,12 @@
         // le brouillard du grand monde (brouillard.js) : rien ne s'y touche (un appui y fait marcher)
         if (this.sousBrume && this.sousBrume(wx, wy)) return null;
         const hoeing = !!(this.ctx.lastModel && this.ctx.lastModel.houe);
-        let refus = null;                            // en mode houe : une tuile qui ne se laboure pas
+        let refus = null;
+        // le personnage endormi dans son lit : « Tu veux te lever ? » (js/ui/cruche.js « lit-reveil »)
+        if (this.ctx.lastModel && this.ctx.lastModel.dort && this.fermier && this.fermier.info) {
+          const f = this.fermier.info();
+          if (f.couche && Math.abs(wx - f.x) <= 12 && wy <= f.y + 6 && wy >= f.y - 30) return { dormeur: true };
+        }                            // en mode houe : une tuile qui ne se laboure pas
         // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
         // un hameau du grand monde (js/carte/ferme/hameaux.js) : son panneau ; un outil qui n'a rien
         // à y faire (il le dit)
@@ -1257,6 +1262,7 @@
         // assis (js/carte/ferme/sieges.js) : un appui ailleurs le relève (pas sur un siège, la table du repas,
         // un invité : il reste à table)
         if (this.fermier && this.fermier.assis && this.fermier.assis() && !(hit && (hit.siege || hit.tableRepas || hit.invite))) this.fermier.lever();
+        if (hit && hit.dormeur) { this.ctx.bridge.act('lit-reveil', {}); return; }
         if (hit && hit.siege) { this.asseoirSur(hit.siege); return; }
         if (hit && hit.tableRepas) {
           const G = this.invitesVus;

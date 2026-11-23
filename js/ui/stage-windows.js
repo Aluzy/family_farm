@@ -7,14 +7,14 @@ import { allDevices, isOwned, marcheFerme, starterOf } from '../engine/devices.j
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { familyNameHtml } from './depart.js';
 import { nightActive } from '../engine/clock.js';
-import { asleep, dormirSousTente, sleepTarget } from '../engine/night.js';
+import { asleep, dormirSousTente, heureDeDormir, PAS_LE_JOUR } from '../engine/night.js';
 import { enExpedition, tentePortee } from '../engine/equipement.js';
-import { affames, jaugeFamille } from '../engine/repas.js';
+
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { notificationCount } from '../engine/alerts.js';
-import { formatCoins, formatDay, formatNumber, formatPercent, weekdayShort } from '../engine/format.js';
+import { formatCoins, formatDay, formatNumber, weekdayShort } from '../engine/format.js';
 import { dayOfMonth, monthName, moonPhase } from '../engine/lune.js';
 import { renderCalendrier } from './calendrier.js';
 import {
@@ -23,7 +23,7 @@ import {
 import { telView } from './consent.js';
 import { notify } from './toasts.js';
 import { actionSleep } from './game-actions.js';
-import { artHtml, pxText } from './pixel-art.js';
+import { pxText } from './pixel-art.js';
 import { averageHappiness } from '../engine/bonheur.js';
 import { morph, morphSlots, refresh, setLastRenderAt } from './render.js';
 import { heureDuJour, setStagePan, STAGE_LIEUX, stageActive, stageUsable } from './stage.js';
@@ -61,7 +61,7 @@ import { renderComposts } from './compost.js';
 import { compostsPoses } from '../engine/compost.js';
 import { renderFrigoFenetre } from './frigo.js';
 import { boitePosee } from '../engine/repas.js';
-import { tutoTarget } from './aide.js';
+
 import { registerActions } from './actions.js';
 import { toolBarHtml, toolbarOpen } from './outils.js';
 import { rememberFocus } from './modal.js';
@@ -746,20 +746,9 @@ export function renderTabContent() {
   morphSlots(document.getElementById('tab-content'), (TAB_RENDERERS[activeTab] || TAB_RENDERERS.ferme)());
 }
 
-// Bouton « Dormir » (lune en pixel art), en bas à droite sur tous les onglets. La faim de la famille est
-// dans son libellé (title / aria-label). (Plus de pastille « 🍽️ % ⚠️ » à côté quand un membre a faim : elle
-// inquiétait le joueur sans cesse ; la faim se voit dans la Famille, la jauge et les portraits.)
+// La barre du bas. (Plus de bouton « Dormir » : on se couche d'un appui sur son lit, de 20 h à 7 h,
+// js/ui/cruche.js « lit-choisir ».)
 export function renderSleepBar() {
-  // Version 1.19 : le bouton « Zzz » n'est là que la nuit (de 22 h à 6 h), tant que le personnage ne
-  // dort pas ; il l'envoie dans son lit (actionGoToBed), puis la nuit défile en accéléré.
-  const nuit = nightActive(state) && !asleep(state); // il dort : plus rien à faire
-  // (la jauge de faim moyenne de la famille règle l'énergie du réveil : repas.js, night.js)
-  const faim = affames(state).length;
-  const jauge = jaugeFamille(state);
-  const meal = `Famille rassasiée à ${formatPercent(jauge)}${faim ? ` (${faim} ${faim > 1 ? 'ont' : 'a'} faim)` : ''} · réveil à ${formatNumber(energyLevel({ energie: sleepTarget(state) }))} d'énergie`;
-  const label = state.nuitEnCours && state.nuitEnCours.minuit
-    ? `Dormir : réveil à ${DATA.TEMPS.HEURE_REVEIL} h`
-    : `Dormir : réveil à ${DATA.TEMPS.HEURE_REVEIL} h. ${meal}`;
   // La barre d'outils (houe, pioche, hache, canne à pêche), en bas de la carte de la ferme,
   // sans fenêtre ouverte, dès qu'un outil est acheté (elle remplace le bouton rond de FLU-05).
   const outils = activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior ? toolBarHtml() : '';
@@ -768,10 +757,7 @@ export function renderSleepBar() {
   barre.hidden = !outils;
   barre.classList.toggle('open', toolbarOpen);
   document.body.classList.toggle('has-toolbar', !!outils);
-  morph(
-    document.getElementById('sleep-fab'),
-    nuit ? `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}">${artHtml('sleep-on', 'sleep-art')}</button>` : ''
-  );
+  morph(document.getElementById('sleep-fab'), '');
 }
 
 // La liste des appareils du mode test n'est reconstruite que si le parc change.
@@ -793,7 +779,7 @@ export function syncTestDeviceSelect() {
 // l'intérieur de la maison (encore en ruine) ou sans personnage, il s'endort tout de suite.
 // On ne dort que la nuit.
 export function actionGoToBed() {
-  if (!nightActive(state)) { actionSleep(); return; }   // hors de la nuit : « on ne dort que la nuit »
+  if (!heureDeDormir(state)) { notify(PAS_LE_JOUR); return; }   // « Tu ne peux pas dormir la journée. »
   if (asleep(state)) return;
   if (coucher) { actionSleep(); return; }
   const scene = window.FarmStage;
@@ -829,7 +815,7 @@ export function actionGoToBed() {
 // La carte : il est couché dans son lit, il s'endort ; la nuit défile en accéléré.
 export function asleepFromStage() {
   if (!coucher) return;
-  if (!nightActive(state)) { setCoucher(false); refresh(); return; }
+  if (!heureDeDormir(state)) { setCoucher(false); refresh(); return; }
   actionSleep();
 }
 

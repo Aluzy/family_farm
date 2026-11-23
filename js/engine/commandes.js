@@ -118,7 +118,8 @@
      distributeur.verser { case }               jeter son blé dans un distributeur de grain
      morceau.ramasser { n }                     prendre un morceau tombé au sol (bois, pierre, un produit)
      cueillette.ramasser { cueillette }         ramasser à la main (« sorte:case » : une branche, une baie…)
-     nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
+     nuit.dormir      { }                       se coucher, de 20 h à 7 h (le temps défile en accéléré)
+     nuit.lever       { }                       se lever (le temps reprend son rythme)
      nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
                                                 (le monde en ligne la joue, quand tous sont couchés)
      temps.sommeil    { oui }                   I9a2 : un monde de l'île, tous les joueurs connectés couchés (ou
@@ -217,7 +218,7 @@ import { harvestTree } from './orchard.js';
 import { recolterPieceMonde } from './monde-recolte.js';
 import { buyTech } from './techtree.js';
 import { planterIci } from './plantation.js';
-import { goToSleep, nuitPartagee } from './night.js';
+import { goToSleep, nuitPartagee, seLever } from './night.js';
 import { avecActeur, poserSommeil } from './temps-monde.js';
 import { acheterAuPort, dechargerAuPort, vendreAuPort } from './port.js';
 import { agrandirPort, apporterAuChantier, commanderImport, honorerCommande } from './bac.js';
@@ -670,6 +671,10 @@ export const COMMANDES = {
   'nuit.dormir': {
     args: {},
     executer: (state) => goToSleep(state),
+  },
+  'nuit.lever': {
+    args: {},
+    executer: (state) => seLever(state),
   },
   'nuit.partagee': {
     args: {},

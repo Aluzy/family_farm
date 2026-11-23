@@ -27,7 +27,9 @@ export const RAW_DATA = {
     "SECONDES_PAR_HEURE_SOMMEIL": 3,
     "POUSSE_HEURES": 24,
     "ARROSAGE_HEURE": 7,
-    "ARROSAGE_S": 9
+    "ARROSAGE_S": 9,
+    "HEURE_COUCHER": 20,
+    "HEURE_LEVER": 7
   },
   "FAMILLE": {
     "MEMBRES": [

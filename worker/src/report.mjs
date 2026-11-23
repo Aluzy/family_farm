@@ -217,6 +217,8 @@ export const GAME_ACTIONS = {
   // fiche 17 : la cruche remplie au puits, choisir son lit
   'cruche-remplir': 'Aller remplir la cruche au puits (barre d\'outils)',
   'lit-oui': 'Choisir son lit',
+  'lit-lever': 'Se lever',
+  'lit-reveil': 'Demander à se lever',
 };
 
 // Clics d'interface : navigation, fenêtres, réglages de quantité. Comptés à

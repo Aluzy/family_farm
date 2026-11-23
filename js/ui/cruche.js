@@ -9,7 +9,9 @@ import { accord, plural } from './common.js';
 import { memberName } from '../engine/family.js';
 import { asleep } from '../engine/night.js';
 import { mainCharacter } from '../engine/depart.js';
-import { enLigne, state } from './store.js';
+import { enLigne, setCoucher, state } from './store.js';
+import { actionGoToBed } from './stage-windows.js';
+import { villageoisDe } from '../engine/villageois.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -24,9 +26,11 @@ import { closeModal, openModal } from './modal.js';
    n'existe pas pour elle. Un appui sur cette case, ou sur le puits de la carte, envoie le
    personnage au puits (FarmStage.allerAuPuits, js/carte/ferme/puits.js) : il y marche, puise, et
    alors seulement la cruche se remplit (puiserFromStage, js/engine/cruche.js remplirCruche).
-   Le lit : un appui sur un lit (ou une paillasse) de la carte demande « Tu veux choisir ce lit ? » ;
-   Oui en fait le lit du personnage principal (js/engine/blocs.js choisirLit) : il y dort, et
-   le membre de la famille qui l'avait prend son ancien lit. */
+   Le lit : le premier appui sur un lit (ou une paillasse) de la carte en fait le lit du personnage principal
+   (js/engine/blocs.js choisirLit). Ensuite, un appui sur son lit l'y couche, de 20 h à 7 h (TEMPS.HEURE_COUCHER,
+   HEURE_LEVER ; le jour : « Tu ne peux pas dormir la journée. ») ; sur un autre, « Tu veux changer de lit ? » (le
+   membre de la famille qui l'avait prend son ancien lit ; celui d'un villageois ne se prend pas). Endormi, un appui
+   sur lui demande « Tu veux te lever ? ». */
 
 // La case de la cruche dans la barre d'outils, ou '' sans cruche : son icône, une jauge
 // verticale (l'eau, de bas en haut) et les litres qui restent.
@@ -108,6 +112,25 @@ export function puiserFromStage(casePuits) {
   return r;
 }
 
+// Ce lit devient celui du personnage principal (blocs.js choisirLit).
+function prendreLit(id) {
+  const r = choisirLit(state, id);
+  if (!r.ok) { notify(`🛏️ ${r.error}`); return; }
+  persistState();
+  notify(r.cede ? `🛏️ C'est ton lit. ${memberName(state, r.cede.id)} prend ton ancien lit.` : '🛏️ C\'est ton lit.');
+  refresh();
+}
+
+// « Tu veux te lever ? » (il dort : un appui sur lui, ou sur son lit).
+function demanderLever() {
+  openModal(`
+    <p class="lit-question" id="lit-question">Tu veux te lever ?</p>
+    <div class="row lit-choix">
+      <button type="button" class="btn primary" data-action="lit-lever">Oui</button>
+      <button type="button" class="btn" data-action="close-modal">Non</button>
+    </div>`, { labelledBy: 'lit-question', className: 'modal bois lit-modal', focus: '[data-action="lit-lever"]' });
+}
+
 registerActions({
   // Arroser en glissant (js/farm-stage.js) : `cases`, les cultures tracées, dans l'ordre.
   'water-many': (target) => {
@@ -118,31 +141,45 @@ registerActions({
   'cruche-remplir': () => {
     allerAuPuits();
   },
-  // La carte : un appui sur un lit (`lit` : son couchage, modèle.couchages).
+  // La carte : un appui sur un lit (`lit` : son couchage, modèle.couchages). Le premier choisit son lit ; sur son lit,
+  // de 20 h à 7 h, il va s'y coucher (le jour : « Tu ne peux pas dormir la journée. ») ; sur un autre lit, « Tu veux
+  // changer de lit ? » (pas celui d'un villageois ; celui d'un membre de la famille, oui). Endormi : se lever ?
   'lit-choisir': (target) => {
-    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    if (asleep(state)) { demanderLever(); return; }
     const lit = target.dataset.lit;
     const id = /^\d+$/.test(lit) ? Number(lit) : lit;
     if (!couchages(state).includes(id)) { notify('🛏️ On ne dort que dans une pièce close (des murs tout autour et une porte) : ce lit n\'en est pas une.'); return; }
-    if (litDuPrincipal(state) === id) { notify('🛏️ C\'est déjà ton lit : tu y dors la nuit.'); return; }
     const qui = dormeurDuLit(state, id);
-    const nom = qui && qui !== mainCharacter(state) ? escapeHtml(memberName(state, qui.id)) : '';
+    const famille = !!qui && qui !== mainCharacter(state);
+    if (!famille && villageoisDe(state).some((v) => v.lit === id)) { notify('🛏️ Tu ne peux pas choisir ce lit.'); return; }
+    // (le premier appui : ce lit devient le sien, sans question)
+    if (state.litPrincipal === null || state.litPrincipal === undefined || !couchages(state).includes(state.litPrincipal)) { prendreLit(id); return; }
+    if (litDuPrincipal(state) === id) { actionGoToBed(); return; }
+    const nom = famille ? escapeHtml(memberName(state, qui.id)) : '';
     const dit = nom ? `<p class="muted">C'est le lit de ${nom} : ${nom} prendra le tien.</p>` : '';
     openModal(`
-      <p class="lit-question" id="lit-question">Tu veux choisir ce lit ?</p>
+      <p class="lit-question" id="lit-question">Tu veux changer de lit ?</p>
       ${dit}
       <div class="row lit-choix">
         <button type="button" class="btn primary" data-action="lit-oui" data-lit="${escapeHtml(String(lit))}">Oui</button>
         <button type="button" class="btn" data-action="close-modal">Non</button>
       </div>`, { labelledBy: 'lit-question', className: 'modal bois lit-modal', focus: '[data-action="lit-oui"]' });
   },
+  // La carte : un appui sur le personnage endormi (ou sur son lit) : « Tu veux te lever ? »
+  'lit-reveil': () => {
+    if (asleep(state)) demanderLever();
+  },
+  'lit-lever': () => {
+    closeModal();
+    const r = executer('nuit.lever', {});
+    if (!r.ok) { notify(r.error); return; }
+    setCoucher(false);
+    persistState();
+    refresh();
+  },
   'lit-oui': (target) => {
     closeModal();
     const lit = target.dataset.lit;
-    const r = choisirLit(state, /^\d+$/.test(lit) ? Number(lit) : lit);
-    if (!r.ok) { notify(`🛏️ ${r.error}`); return; }
-    persistState();
-    notify(r.cede ? `🛏️ C'est ton lit : tu y dormiras. ${memberName(state, r.cede.id)} prend ton ancien lit.` : '🛏️ C\'est ton lit : tu y dormiras.');
-    refresh();
+    prendreLit(/^\d+$/.test(lit) ? Number(lit) : lit);
   },
 });
