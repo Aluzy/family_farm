@@ -183,3 +183,22 @@ test('les cultures sauvages : prises, elles quittent l’île ; la vigne revient
   assert.equal(R.vigne_sauvage.regle.reste, true);
   assert.ok(!R.carotte_sauvage.regle.reste && !R.patate_sauvage.regle.reste);
 });
+
+test('tous les buissons de l’île se coupent à la hache (le roncier aussi : 1 bois ; ses mûres se cueillent encore)', () => {
+  const buissons = catalogue()
+    .fiches.filter((f) => f.famille === 'buisson')
+    .map((f) => f.id);
+  assert.deepEqual(buissons.sort(), ['ajonc', 'buisson_pre', 'genet', 'rhododendron', 'ronces']);
+  for (const nom of buissons) {
+    const s = partie(),
+      ile = ileDeLaPartie(s);
+    const i = trouver(ile, (f) => f.id === nom);
+    assert.ok(i >= 0, `${nom} : sur l'île`);
+    s.stamina = 100;
+    const avant = inventoryCounts(s).bois || 0;
+    const r = jusquauBout(s, idDe(ile, i, nom), { geste: 'couper' });
+    assert.ok(r.ok, `${nom} : ${r.error}`);
+    assert.equal(ile.objet[i], 0, `${nom} coupé`);
+    assert.ok((inventoryCounts(s).bois || 0) > avant, `${nom} : du bois`);
+  }
+});

@@ -152,7 +152,7 @@ refuse('rochers : une falaise sans toutes ses colonnes', (d) => { d.ROCHES.SORTE
 refuse('monde : un coût de chemin sur un biome inconnu', (d) => { d.PLAN_MONDE.CHEMINS.COUTS.desert = 3; }, '« desert » n\'est pas un biome');
 refuse('monde : des hameaux en nombre impossible', (d) => { d.PLAN_MONDE.HAMEAUX.NOMBRE = [10, 6]; }, 'PLAN_MONDE.HAMEAUX.NOMBRE');
 refuse('récolte du monde : une sorte inconnue', (d) => { d.RECOLTE.SORTES.baobab = { geste: 'couper', coups: 3, fin: { bois: [1, 2] }, retour: [2, 3] }; }, '« baobab » n\'est pas une sorte du monde');
-refuse('récolte du monde : un butin qui n\'existe pas', (d) => { d.RECOLTE.SORTES.ronces.fin = { framboise: [1, 2] }; }, 'RECOLTE.SORTES.ronces.fin');
+refuse('récolte du monde : un butin qui n\'existe pas', (d) => { d.RECOLTE.SORTES.ronces.aussi.fin = { framboise: [1, 2] }; }, 'RECOLTE.SORTES.ronces.aussi.fin');
 refuse('récolte du monde : une falaise reste du décor', (d) => { d.RECOLTE.SORTES.paroi = { geste: 'ramasser', fin: { pierre: [1, 2] }, retour: [2, 3] }; }, 'une paroi reste du décor');
 
 /* ---------- arbre : clés d'effet ; objets qu'on peut obtenir ---------- */
