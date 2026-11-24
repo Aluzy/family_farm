@@ -25,7 +25,8 @@ import { formatCoins, formatDay, formatQty } from '../engine/format.js';
 import { solDuMonde } from './monde-sol.js';
 import { openStageWindow } from './stage-windows.js';
 import { persistState } from './storage.js';
-import { comptoirTab, enLigne, state } from './store.js';
+import { comptoirTab, enLigne, state, tabAvailable } from './store.js';
+import { refusPortIle } from '../engine/ile/village.js';
 import { executer } from './commandes.js';
 import { applyResult } from './game-actions.js';
 import { pxText } from './pixel-art.js';
@@ -492,6 +493,11 @@ export function charretteModele() {
 
 // Un appui sur le comptoir (le personnage y va) : la fenêtre du port.
 export function portComptoirDepuisCarte() {
+  // (pas encore ouvert : pourquoi, plutôt que rien ; l'île : le village pas encore fondé)
+  if (!tabAvailable('comptoir')) {
+    notify(`⚓ ${refusPortIle(state) || 'Le port n\'est pas encore ouvert.'}`, { kind: 'info' });
+    return;
+  }
   openStageWindow('comptoir');
 }
 

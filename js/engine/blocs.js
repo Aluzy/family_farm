@@ -29,6 +29,7 @@ import { closeFridge, openFridge } from './fridge.js';
 import { cheminDehorsSur, horsFerme, poseDehorsStatus, poserCheminDehors, poserRails, railsStatus, railsSur, retirerCheminDehors, retirerRails } from './dehors.js';
 import { degagerIle, estPartieIle, ileDeLaPartie } from './ile/jeu.js';
 import { refusPoseIle } from './ile/village.js';
+import { choisirPortIle, portIle } from './ile/port-ile.js';
 import { planterGraine as planterGraineIle, refusSemis } from './ile/vie.js';
 import { graineDeLIle, planteSemee } from './ile/graines.js';
 import { verifierProjet } from './ile/projets.js';
@@ -319,6 +320,9 @@ function calculerCouvertes(state) {
     if (!s || ((s.largeur || 1) === 1 && (s.hauteur || 1) === 1)) continue;
     for (const j of empriseMeuble(state, sorte, t, sensBloc(state, t)) || []) if (j !== t) out.set(j, t);
   }
+  // (l'île : le ponton et la halle du port, ses cases ; js/engine/ile/port-ile.js)
+  const port = portIle(state);
+  if (port) for (const j of port.cases) if (j !== port.racine) out.set(j, port.racine);
   return out;
 }
 
@@ -992,7 +996,7 @@ export function poseStatus(state, sorte, tile, sens = 0) {
     return r ? { ok: false, raison: `${s.nom} : ${r}.` } : { ok: true };
   }
   // (l'île : une seule place, un seul port, au bord de la mer : js/engine/ile/village.js)
-  const refusIle = refusPoseIle(state, sorte, empriseMeuble(state, sorte, tile, sens) || [tile]);
+  const refusIle = refusPoseIle(state, sorte, empriseMeuble(state, sorte, tile, sens) || [tile], libreIle(state));
   if (refusIle) return { ok: false, raison: refusIle };
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
@@ -1140,6 +1144,8 @@ function poserLeBloc(state, sorte, tile, sens = 0, variante = null) {
   // (l'île : une graine plantée, pas un bloc posé ; js/engine/ile/graines.js)
   if (graineIle(state, sorteDe(sorte))) return planterLaGraine(state, sorte, tile);
   const tourne = tourneBloc(sorte);
+  // (l'île : le port, son ponton et sa halle, à la place que choisit js/engine/ile/port-ile.js, vue avant la pose)
+  const port = estPartieIle(state) && sorte === DATA.ILE.VILLAGE.PORT ? choisirPortIle(ileDeLaPartie(state), tile, libreIleBloque(state)) : null;
   const r = poser(state, sorte, tile, tourne ? sens : 0);
   if (r.ok) {
     // (le sens d'un meuble qui tourne ; un autre bloc n'en a pas)
@@ -1149,9 +1155,23 @@ function poserLeBloc(state, sorte, tile, sens = 0, variante = null) {
     if (varianteBloc(state, tile)) r.variante = varianteBloc(state, tile);
     foulerAutour(state, tile);
     degagerIle(state, tile);   // (l'île : ce qui y poussait sans bloquer s'en va)
+    // (l'île : le port, son ponton et sa halle, à la place que choisit js/engine/ile/port-ile.js ; tout s'y dégage)
+    if (port && port.d) {
+      state.portIle = { case: tile, sens: port.sens, cote: port.cote };
+      for (const t of port.d.cases) degagerIle(state, t);
+      r.port = { sens: port.sens, cote: port.cote };
+    }
     noter('pose', { sorte });
   }
   return r;
+}
+
+// Une case de l'île où bâtir (sans bloc, sol, meuble qui la couvre, ni terre labourée) ; …Bloque : et sans ce qui
+// y pousse en bloquant (un arbre, un buisson, un rocher). Le port y cherche sa place (js/engine/ile/port-ile.js).
+const libreIle = (state) => (t) => !blocAt(state, t) && !solAt(state, t) && !casesCouvertes(state).has(t) && !allPlots(state).some((p) => p.case === t);
+function libreIleBloque(state) {
+  const ile = ileDeLaPartie(state), l = libreIle(state);
+  return (t) => !ile.bloque[t] && l(t);
 }
 
 // Une graine de l'île (son bloc) : une des siennes, ou le gland, la pomme de pin d'avant plantés sur l'île.

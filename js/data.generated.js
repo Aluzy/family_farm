@@ -2619,15 +2619,7 @@ export const RAW_DATA = {
         "comptoir": true,
         "village": true
       },
-      "comptoir_port": {
-        "nom": "Comptoir du port",
-        "objet": "comptoir_port",
-        "dehors": true,
-        "bloque": true,
-        "dessin": "comptoir",
-        "largeur": 2,
-        "port": true
-      },
+      "comptoir_port": { "nom": "Port (ponton et halle)", "objet": "comptoir_port", "dehors": true, "plat": true, "dessin": "comptoir", "port": true },
       "enseigne_forge": {
         "nom": "Enseigne du forgeron",
         "objet": "enseigne_forge",

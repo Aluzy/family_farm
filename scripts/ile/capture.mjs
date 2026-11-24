@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Une capture de la scène d'une partie neuve sur l'île (docs/ile-300.md, étape 7b) : la page servie en local, dans
 // Chromium (Playwright), à l'écran d'un téléphone ; les erreurs de la page affichées.
-// Usage : node scripts/ile/capture.mjs [--graine 1] [--sortie apercus-ile/scene.png] [--attente 8000] [--ecran 412x860] [--clic <sélecteur>] [--touche m] [--foret] [--mesure 8] [--marche] [--processeur 4] [--profil] [--heure 20] [--labour --mures]
+// Usage : node scripts/ile/capture.mjs [--graine 1] [--sortie apercus-ile/scene.png] [--attente 8000] [--ecran 412x860] [--clic <sélecteur>] [--touche m] [--foret] [--mesure 8] [--marche] [--processeur 4] [--profil] [--heure 20] [--labour --mures] [--port [--sens S]]
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -27,6 +27,39 @@ if (args.includes('--objectifs')) (await import('../../js/engine/objectifs.js'))
 if (args.includes('--outils')) {
   s.outils = { ...(s.outils || {}), hache: true, pioche: true, faux: true };
   s.stamina = 1000;
+}
+// (--port : le port posé sur la rive la plus proche (son ponton, sa halle : js/engine/ile/port-ile.js), le personnage
+// à côté de sa halle ; sa disposition dans le journal)
+if (args.includes('--port')) {
+  const { ileDeLaPartie } = await import('../../js/engine/ile/jeu.js');
+  const ile = ileDeLaPartie(s),
+    n = ile.n,
+    ici = s.monde.ici,
+    VI = E.DATA.ILE.VILLAGE;
+  const d = (i) => Math.abs((i % n) - (ici % n)) + Math.abs(Math.floor(i / n) - Math.floor(ici / n));
+  const { refusPoseIle } = await import('../../js/engine/ile/village.js');
+  const sens = opt('sens', null);
+  const rives = [];
+  for (let i = n; i < n * n - n; i++) if (d(i) < 120) rives.push(i);
+  rives.sort((a, b) => d(a) - d(b));
+  let posee = null;
+  for (const i of rives) {
+    if (refusPoseIle(s, VI.PORT, [i]) !== null) continue;
+    E.addItem(s, VI.PORT, 1);
+    const r = E.poserBloc(s, VI.PORT, i);
+    if (r.ok && (!sens || s.portIle.sens === sens)) {
+      posee = i;
+      break;
+    }
+    if (r.ok) {
+      E.reprendreBloc(s, i);
+    }
+  }
+  console.log('port', posee, JSON.stringify(s.portIle));
+  if (posee !== null) {
+    const { portIle } = await import('../../js/engine/ile/port-ile.js');
+    s.monde.ici = portIle(s).devant + Number(opt('decale', 2)) * n; // (sous le devant du comptoir : --decale cases)
+  }
 }
 // (--chemin : un chemin de 6 cases, trois au-dessus du personnage, ses cases dans le journal)
 if (args.includes('--chemin')) {

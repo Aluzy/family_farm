@@ -30,7 +30,7 @@ function auPort(seed = 'commerce') {
 
 test('le comptoir du port bâti (l\'île) : ses cases, la case devant à portée', () => {
   const { s, c, ou } = auPort();
-  assertEqual(c.cases.length, DATA.ATELIER.BLOCS[DATA.ILE.VILLAGE.PORT].largeur, 'ses cases');
+  assertEqual(c.cases.length, 3, 'ses cases : le comptoir de la halle');
   assert(distanceAuComptoir(s, ou) <= P.PORTEE, 'devant le comptoir : à portée');
   assertEqual(portOuvert(s, ou).ok, true, 'ouvert');
 });

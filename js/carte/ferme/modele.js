@@ -80,6 +80,7 @@
       else this.syncPerso(model.perso | 0, model.apparence || null, model.coiffe || null);
       this.syncFloors(model.sols);
       this.syncPaths(model.chemins);
+      if (this.syncPortIle) this.syncPortIle(model.portIle || null);   // (le port de l'île : port-ile.js)
       this.syncBeasts(model.enclos, model.heure);
       this.fireOn = !!model.fourAllume;
       this.cuisineOn = !!model.cuisineAllumee;

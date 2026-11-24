@@ -284,7 +284,7 @@
       "four_boulanger": { "nom": "Four à bois et étal à pains", "objet": "four_boulanger", "dedans": true, "bloque": true, "dessin": "four_boulanger", "ouvert": "four_boulanger_feu_0", "largeur": 2, "commerce": "boulangerie", "village": true },
       "cave_affinage": { "nom": "Cave d'affinage", "objet": "cave_affinage", "dedans": true, "bloque": true, "dessin": "cave_affinage", "largeur": 2, "commerce": "fromagerie", "village": true },
       "comptoir": { "nom": "Comptoir", "objet": "comptoir", "dedans": true, "bloque": true, "dessin": "comptoir", "largeur": 2, "comptoir": true, "village": true },
-      "comptoir_port": { "nom": "Comptoir du port", "objet": "comptoir_port", "dehors": true, "bloque": true, "dessin": "comptoir", "largeur": 2, "port": true },
+      "comptoir_port": { "nom": "Port (ponton et halle)", "objet": "comptoir_port", "dehors": true, "plat": true, "dessin": "comptoir", "port": true },
       "enseigne_forge": { "nom": "Enseigne du forgeron", "objet": "enseigne_forge", "dehors": true, "bloque": true, "dessin": "enseigne_forge", "largeur": 2, "enseigneCommerce": "forge", "texte": "#2b1a0e", "village": true },
       "enseigne_scierie": { "nom": "Enseigne du menuisier", "objet": "enseigne_scierie", "dehors": true, "bloque": true, "dessin": "enseigne_scierie", "largeur": 2, "enseigneCommerce": "scierie", "texte": "#2b1a0e", "village": true },
       "enseigne_boulangerie": { "nom": "Enseigne du boulanger", "objet": "enseigne_boulangerie", "dehors": true, "bloque": true, "dessin": "enseigne_boulangerie", "largeur": 2, "enseigneCommerce": "boulangerie", "texte": "#2b1a0e", "village": true },
