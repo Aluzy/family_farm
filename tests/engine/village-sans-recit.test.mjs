@@ -5,7 +5,7 @@
    - une partie neuve de l'île, 30 nuits du joueur automatique : sans erreur, rien du récit (ni fait, ni courrier),
      la pousse de toujours (plus de pierre de lune), l'amitié des seuls villageois, à son échelle.
    Ce qui reste du jeu d'avant pour les anciennes parties est dans js/engine/migration-avant.js et
-   js/engine/migration-ile.js (les tests : migrations, temoins, village-migration, village-bascule).
+   js/engine/migration-ile.js.
    Lancer seul : node tests/run-tests.mjs village-sans-recit
    ========================================================================== */
 
