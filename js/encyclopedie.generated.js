@@ -481,7 +481,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cruche",
      "terme": "Cruche à eau",
-     "description": "Avant la pompe et la citerne, on arrose avec elle. Elle se fabrique à l'Atelier (3 bois) ; elle se remplit au puits posé sur la ferme (10 litres) : un appui sur le puits, ou sur la cruche de la barre d'outils, et le personnage y marche, puise, et la cruche est pleine. Une plante qu'on touche pour l'arroser y puise son eau quand la citerne n'en a pas assez ; la jauge bleue de la cruche, dans la barre d'outils, dit ce qui reste. Pour arroser plusieurs cultures à la suite, sans outil en main, on glisse le doigt de l'une à l'autre : elles s'allument en bleu, puis le personnage les arrose dans l'ordre ; la cruche vide en chemin, il va la remplir au puits et reprend où il s'était arrêté.",
+     "description": "Avant la pompe et la citerne, on arrose avec elle. Elle se fabrique à l'Atelier (3 bois) ; elle se remplit au puits posé sur la ferme (10 litres) : un appui sur le puits, et le personnage y marche, puise, et la cruche est pleine. Une plante qu'on touche pour l'arroser y puise son eau quand la citerne n'en a pas assez ; la jauge bleue de la cruche, dans la roue des outils, dit ce qui reste. Pour arroser plusieurs cultures à la suite, sans outil en main, on glisse le doigt de l'une à l'autre : elles s'allument en bleu, puis le personnage les arrose dans l'ordre ; la cruche vide en chemin, il va la remplir au puits et reprend où il s'était arrêté.",
      "liens": [
       "puit",
       "reservoir"
@@ -847,7 +847,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cheval",
      "terme": "Cheval et Écurie",
-     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d'outils te met en selle : tu vas 1,4 fois plus vite, sur la ferme comme dans tout le grand monde. Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille s'il y en a. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
+     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la roue des outils te met en selle : tu vas 1,4 fois plus vite, sur la ferme comme dans tout le grand monde. Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille s'il y en a. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
      "liens": [
       "atelier",
       "murs",
@@ -905,7 +905,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "mode_construire",
      "terme": "Mode Construire",
-     "description": "La case 🔨 de la barre d'outils : un menu sur le côté propose les blocs qu'on a en main ; un appui sur une case de la carte pose le bloc choisi, un appui sur un bloc posé le reprend (il revient dans l'inventaire). Un glissement du doigt pose toute une rangée de murs, de barrières ou de sol ; l'outil pièce (le carré au bout de la barre, un mur en main) pose d'un glissement, d'un coin à l'autre, tous les murs d'une pièce. S'il en manque, une fenêtre propose de les fabriquer sur place, avec les matériaux de l'inventaire, et de les poser. Le bouton ↶ annule la dernière opération ; la gomme reprend d'un glissement les blocs d'une même sorte. Un appui maintenu sur un bloc posé le prend en main (la pipette). Un meuble ou un bloc seul (lanterne, four, ruche…) se déplace d'un glissement. En construisant, la carte montre le mur qui manque à une enceinte, une enceinte sans porte, et ce qu'est chaque pièce (maison, bâtiment, ou ce qui la ferait devenir quelque chose). On ne bâtit que sur l'herbe libre : l'herbe haute se fauche d'abord, un rocher ou un arbre se casse ou s'abat. Un niveau au-dessus du sol sert à rehausser les murs ou à bâtir à l'étage.",
+     "description": "La case 🔨 de la roue des outils : un menu sur le côté propose les blocs qu'on a en main ; un appui sur une case de la carte pose le bloc choisi, un appui sur un bloc posé le reprend (il revient dans l'inventaire). Un glissement du doigt pose toute une rangée de murs, de barrières ou de sol ; l'outil pièce (le carré au bout de la barre, un mur en main) pose d'un glissement, d'un coin à l'autre, tous les murs d'une pièce. S'il en manque, une fenêtre propose de les fabriquer sur place, avec les matériaux de l'inventaire, et de les poser. Le bouton ↶ annule la dernière opération ; la gomme reprend d'un glissement les blocs d'une même sorte. Un appui maintenu sur un bloc posé le prend en main (la pipette). Un meuble ou un bloc seul (lanterne, four, ruche…) se déplace d'un glissement. En construisant, la carte montre le mur qui manque à une enceinte, une enceinte sans porte, et ce qu'est chaque pièce (maison, bâtiment, ou ce qui la ferait devenir quelque chose). On ne bâtit que sur l'herbe libre : l'herbe haute se fauche d'abord, un rocher ou un arbre se casse ou s'abat. Un niveau au-dessus du sol sert à rehausser les murs ou à bâtir à l'étage.",
      "liens": [
       "atelier",
       "murs",
@@ -2217,7 +2217,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "outils",
      "terme": "Outils",
-     "description": "Les outils se fabriquent une fois chacun à l'Atelier (onglet Outils) : la houe, la hache, la pioche et la faux avec du bois, de la pierre et de la fibre, et la canne à pêche avec du bois, de la fibre et une pierre. On choisit celui qu'on tient dans la barre d'outils de la carte, puis on touche l'herbe, un arbre, un rocher, une touffe d'herbe haute, un minerai ou l'eau. Un appui maintenu sur le personnage qui tient un outil donne un coup fort : il tremble puis frappe quand on relâche ; la hache ou la pioche comptent 2 coups, la faux tournoie et fauche toute l'herbe haute autour de lui, la houe laboure les tuiles autour de lui. Chaque geste coûte de l'énergie et rapporte de l'XP. La branche Outils de l'Arbre des technologies les rend plus efficaces : moins de coups, plus de bois, de pierre, de minerai et de poisson, moins d'énergie.",
+     "description": "Les outils se fabriquent une fois chacun à l'Atelier (onglet Outils) : la houe, la hache, la pioche et la faux avec du bois, de la pierre et de la fibre, et la canne à pêche avec du bois, de la fibre et une pierre. On choisit celui qu'on tient dans la roue des outils de la carte, puis on touche l'herbe, un arbre, un rocher, une touffe d'herbe haute, un minerai ou l'eau. Un appui maintenu sur le personnage qui tient un outil donne un coup fort : il tremble puis frappe quand on relâche ; la hache ou la pioche comptent 2 coups, la faux tournoie et fauche toute l'herbe haute autour de lui, la houe laboure les tuiles autour de lui. Chaque geste coûte de l'énergie et rapporte de l'XP. La branche Outils de l'Arbre des technologies les rend plus efficaces : moins de coups, plus de bois, de pierre, de minerai et de poisson, moins d'énergie.",
      "liens": [
       "houe",
       "hache",
@@ -2238,7 +2238,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "houe",
      "terme": "Houe",
-     "description": "Outil fabriqué une seule fois à l'Atelier, avec du bois, une pierre et de la fibre. Houe en main (barre d'outils de la carte), un appui sur une tuile d'herbe de la carte la laboure (5 énergie, 10 XP) et un appui sur une terre vide la rebouche, gratuitement. La terre déborde en bordure mi-herbe mi-terre sur les 8 tuiles autour : si l'une d'elles ne peut pas la porter (chemin, eau, pierre, arbre, ou une seule tuile d'herbe prise entre deux terres), la houe refuse et dit pourquoi, comme sur un chemin ou aux abords d'un bâtiment.",
+     "description": "Outil fabriqué une seule fois à l'Atelier, avec du bois, une pierre et de la fibre. Houe en main (roue des outils de la carte), un appui sur une tuile d'herbe de la carte la laboure (5 énergie, 10 XP) et un appui sur une terre vide la rebouche, gratuitement. La terre déborde en bordure mi-herbe mi-terre sur les 8 tuiles autour : si l'une d'elles ne peut pas la porter (chemin, eau, pierre, arbre, ou une seule tuile d'herbe prise entre deux terres), la houe refuse et dit pourquoi, comme sur un chemin ou aux abords d'un bâtiment.",
      "liens": [
       "outils",
       "potager",

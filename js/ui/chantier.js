@@ -1,6 +1,6 @@
 // chantier.js — la ferme générée (docs/carte-generee.md, étape 4) : le mode « Construire ».
 //
-// Une case de la barre d'outils (🔨, dès que l'Atelier est construit) ouvre le mode : un menu
+// Une case de la roue des outils (🔨, dès que l'Atelier est construit) ouvre le mode : un menu
 // en haut de l'écran (le HUD du haut s'efface pendant ce temps : body.construction) montre les
 // blocs débloqués (js/engine/blocs.js, blocDebloque) et combien il en reste, rangés par
 // catégories (DATA.ATELIER.CATEGORIES) : des onglets intercalaires posés sur la barre, celui
@@ -182,7 +182,7 @@ const LIGNES = 3;
 // L'icône d'un bloc : js/ui/icone-bloc.js (la même dans l'Atelier).
 const icone = iconeBloc;
 
-// La case de la barre d'outils.
+// La case de la roue des outils.
 export function buildSlotHtml() {
   if (!chantierOuvert() || !atelierConstruit(state)) return '';
   const on = !!buildMode;
@@ -542,7 +542,7 @@ let modePiece = false;
 let modeGomme = false;
 // Tourner les meubles (js/engine/blocs.js, sensBloc) : `sensPose`, le sens du prochain meuble posé (0 de
 // face, 1 tourné vers la droite, 2 de dos, 3 vers la gauche ; le bouton ↻ de la pose d'un meuble, ou celui
-// de la barre d'outils, un meuble qui tourne en main) ; `modeTourner` (l'outil ↻ allumé) : un appui sur un
+// de la roue des outils, un meuble qui tourne en main) ; `modeTourner` (l'outil ↻ allumé) : un appui sur un
 // meuble posé le tourne d'un quart de tour.
 let sensPose = 0, modeTourner = false;
 // A-3 : la couleur du prochain meuble posé, par sorte (son id ; rien : celle du dessin), et l'outil 🎨 allumé

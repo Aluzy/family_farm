@@ -306,7 +306,7 @@
   "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
   "//OUTILS": [
     "La hache, la pioche, la faux et la canne à pêche se fabriquent une fois à l'Atelier, comme la houe.",
-    "Les outils achetés vont dans la barre d'outils, en bas de la carte : un appui sur un",
+    "Les outils achetés vont dans la roue des outils, en bas de la carte : un appui sur un",
     "outil le prend en main (un second appui le range). ⚒ est la pioche dans les textes",
     "(⛏ est la houe)."
   ],

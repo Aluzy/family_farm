@@ -14,25 +14,25 @@ import { ACTIONS, registerActions } from './actions.js';
 import { persistState } from './storage.js';
 import { closeStageWindow, stageInterior, stageWindow } from './stage-windows.js';
 import { buildSlotHtml } from './chantier.js';
-import { crucheSlotHtml } from './cruche.js';
-import { setBuildMode } from './store.js';
+import { crucheContenu } from './cruche.js';
+import { jaugeCruche } from '../engine/cruche.js';
+import { buildMode, crucheMode, setBuildMode, setCrucheMode } from './store.js';
 import { chevalMonte, chevalOu, chevalPossede, toggleCheval } from '../engine/cheval.js';
 import { ouvrirFicheCheval, rangeeGalopHtml } from './galop.js';
 
-/* ---------- la barre d'outils, en bas de la carte ---------- */
+/* ---------- la roue des outils, en bas à droite de la carte ---------- */
 
-// Une case par outil (OUTILS, dans l'ordre de la barre), qui montre l'outil une fois acheté.
-// Un appui prend l'outil en main ; un second appui sur l'outil en main le range. Le cheval
-// (js/engine/cheval.js), une fois acheté, a sa case au bout : un appui y fait monter le
-// personnage, un autre l'en fait descendre ; hors de la ferme, en descendre l'attache à un
-// poteau, là. La barre se
-// range comme le menu : sa languette, au-dessus d'elle, la fait glisser hors de l'écran.
-export let toolbarOpen = true;
-
-// Triangle de la languette (5 × 3 pixels), pointé vers le bas (barre ouverte : le sens où
-// elle se range) ; retourné quand la barre est rangée.
-const BARRE_FLECHE = '<svg class="tool-bar-arrow" viewBox="0 0 5 3" width="20" height="12" aria-hidden="true" shape-rendering="crispEdges">' +
-  '<rect x="0" y="0" width="5" height="1"/><rect x="1" y="1" width="3" height="1"/><rect x="2" y="2" width="1" height="1"/></svg>';
+// Un rond, dans le coin en bas à droite, montre ce qu'on a en main : l'outil, la cruche, ou la main
+// (rien). Deux appuis rapides sur lui l'ouvrent : il monte un peu en diagonale et devient une roue,
+// les choix posés en cercle autour de lui (la main, les outils fabriqués, la cruche, le cheval,
+// Construire : seulement ce qu'on a). Un appui sur un choix le prend et la roue se referme ; un appui
+// sur le rond, la roue ouverte, la referme sans rien changer. La cruche n'a pas besoin d'être prise
+// pour arroser : les gestes qui s'en servent (arroser en glissant, aller au puits) la mettent au
+// centre (js/ui/cruche.js). Le cheval : monter en selle ou en descendre, le centre ne change pas.
+export let roueOuverte = false;
+const ROUE_RAYON = 118;        // (px : la distance du centre de la roue au centre d'une case)
+const DOUBLE_APPUI_MS = 400;   // (deux appuis sur le rond, à moins de 400 ms l'un de l'autre : l'ouvrir)
+let dernierAppui = 0;
 
 // L'outil en main (la houe, la hache, la pioche, la faux ou la canne), ou null.
 function enMain() {
@@ -44,37 +44,61 @@ function enMain() {
   return null;
 }
 
-// La barre d'outils de la carte, ou '' : sur la carte de la ferme, sans fenêtre ouverte,
-// dès qu'un outil est acheté.
-export function toolBarHtml() {
-  const bati = buildSlotHtml();             // la ferme générée : le mode Construire (js/ui/chantier.js)
-  const cheval = chevalPossede(state);
-  const cruche = crucheSlotHtml();          // la cruche et sa jauge (fiche 17, js/ui/cruche.js)
-  if (!OUTILS.some((id) => hasTool(state, id)) && !cheval && !bati && !cruche) return '';
-  const main = enMain();
-  const cases = OUTILS.map((id) => {
-    const def = toolDef(id);
-    if (!hasTool(state, id)) {
-      return `<span class="tool-slot vide" title="${def.NOM} : à fabriquer à l'Atelier" aria-hidden="true"></span>`;
-    }
-    const tenu = id === main;
-    const label = tenu ? `${def.NOM} en main : la ranger` : `Prendre : ${def.NOM}`;
-    // (la pioche : l'icône de son métal, son nom, le lot 5 : DATA.PIOCHE.NIVEAUX)
-    const pd = id === 'pioche' ? piocheDef(state) : null;
-    const lab = pd ? label.replace(def.NOM, `${def.NOM} en ${pd.nom}`) : label;
-    return `<button type="button" class="tool-slot${tenu ? ' active' : ''}" data-action="tool-use" data-outil="${id}" aria-pressed="${tenu}" aria-label="${lab}" title="${lab}">${pd ? pd.icone : def.ICONE}</button>`;
-  }).join('') + cruche + (cheval ? chevalSlot() : '') + bati;
-  const tab = `<button type="button" class="tool-bar-tab" data-action="toolbar-toggle" aria-expanded="${toolbarOpen}" aria-label="${toolbarOpen ? 'Ranger la barre d\'outils' : 'Sortir la barre d\'outils'}" title="Outils">${BARRE_FLECHE}</button>`;
-  // (en selle, avec la sacoche : ses pommes, au-dessus de la languette ; js/ui/galop.js)
-  return rangeeGalopHtml() + tab + `<div class="tool-bar-body" role="toolbar" aria-label="Outils"${toolbarOpen ? '' : ' inert'}>${cases}</div>`;
+// Ce que montre le centre de la roue : un outil, 'bati' (Construire), 'cruche' ou 'main'.
+function auCentre() {
+  if (buildMode) return 'bati';
+  return enMain() || (crucheMode && jaugeCruche(state) ? 'cruche' : 'main');
 }
 
-// La case du cheval : allumée quand le personnage est en selle.
-function chevalSlot() {
-  const C = DATA.CHEVAL, monte = chevalMonte(state);
-  const label = monte ? `${C.NOM} : en descendre` : `${C.NOM} : monter en selle`;
-  return `<button type="button" class="tool-slot${monte ? ' active' : ''}" data-action="cheval-toggle" aria-pressed="${monte}" aria-label="${label}" title="${label}">${C.ICONE}</button>`;
+// Les choix de la roue, dans l'ordre (la main en haut, puis dans le sens des aiguilles d'une montre) :
+// { id, nom, html (l'icône), action (le data-action de sa case), attrs, on (allumé) }.
+function choixRoue() {
+  const centre = auCentre();
+  const l = [{ id: 'main', nom: 'Main', html: '✋', action: 'roue-main', on: centre === 'main' }];
+  for (const id of OUTILS) {
+    if (!hasTool(state, id)) continue;
+    const def = toolDef(id);
+    // (la pioche : l'icône de son métal, son nom, le lot 5 : DATA.PIOCHE.NIVEAUX)
+    const pd = id === 'pioche' ? piocheDef(state) : null;
+    const tenu = id === centre;
+    l.push({ id, nom: pd ? `${def.NOM} en ${pd.nom}` : def.NOM, html: pd ? pd.icone : def.ICONE, action: tenu ? 'roue-fermer' : 'tool-use', attrs: ` data-outil="${id}"`, on: tenu });
+  }
+  const cr = crucheContenu();
+  if (cr) l.push({ id: 'cruche', nom: cr.label, html: cr.html, action: 'roue-cruche', classe: ` cruche-slot${cr.vide ? ' vide-eau' : ''}`, on: centre === 'cruche' });
+  if (chevalPossede(state)) {
+    const C = DATA.CHEVAL, monte = chevalMonte(state);
+    l.push({ id: 'cheval', nom: monte ? `${C.NOM} : en descendre` : `${C.NOM} : monter en selle`, html: C.ICONE, action: 'cheval-toggle', on: monte });
+  }
+  if (buildSlotHtml()) l.push({ id: 'bati', nom: 'Construire', html: DATA.ATELIER.ICONE, action: 'build-toggle', on: centre === 'bati' });
+  return l;
 }
+
+// La roue des outils de la carte, ou '' : sur la carte de la ferme, sans fenêtre ouverte, dès qu'on a
+// autre chose que ses mains (un outil, la cruche, le cheval, Construire).
+export function toolBarHtml() {
+  const l = choixRoue();
+  if (l.length < 2) return '';
+  const centre = auCentre();
+  const c = l.find((x) => x.id === centre) || l[0];
+  const n = l.length;
+  const cases = l.map((x, i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const dx = Math.round(Math.cos(a) * ROUE_RAYON), dy = Math.round(Math.sin(a) * ROUE_RAYON);
+    return `<button type="button" class="tool-slot roue-case${x.classe || ''}${x.on ? ' active' : ''}" data-action="${x.action}" data-choix="${x.id}"${x.attrs || ''} style="--dx:${dx}px;--dy:${dy}px" aria-pressed="${x.on}" aria-label="${x.nom}" title="${x.nom}"${roueOuverte ? '' : ' tabindex="-1"'}>${x.html}<span class="roue-nom" aria-hidden="true">${x.nom.split(' : ')[0]}</span></button>`;
+  }).join('');
+  const label = `En main : ${c.nom.split(' : ')[0]}. ${roueOuverte ? 'Refermer la roue des outils' : 'Deux appuis pour changer d\'outil'}`;
+  const hub = `<button type="button" class="tool-slot roue-centre${c.classe || ''}" data-action="roue-centre" data-outil="${c.id}" aria-expanded="${roueOuverte}" aria-label="${label}" title="${label}">${c.html}</button>`;
+  // (en selle, avec la sacoche : ses pommes, au-dessus du rond ; js/ui/galop.js)
+  return rangeeGalopHtml() + `<div class="roue" role="group" aria-label="Roue des outils"><div class="roue-cases"${roueOuverte ? '' : ' inert'}>${cases}</div>${hub}</div>`;
+}
+
+// Une case de la roue touchée : la roue se referme (avant son action, qui redessine ; après elle
+// aussi, au cas où l'action ne redessine pas : un refus).
+document.addEventListener('click', (e) => {
+  if (!roueOuverte || !e.target.closest || !e.target.closest('.roue-case')) return;
+  roueOuverte = false;
+  setTimeout(refresh, 0);
+}, true);
 
 // Monter en selle ou descendre du cheval (un appui sur sa case). Sur la ferme seulement pour
 // l'instant : le poteau d'attache servira dans le grand monde (docs/grand-monde.md).
@@ -305,8 +329,29 @@ registerActions({
   'cheval-toggle': () => {
     useCheval();
   },
-  'toolbar-toggle': () => {
-    toolbarOpen = !toolbarOpen;
+  // Le rond de la roue des outils : deux appuis rapides l'ouvrent ; ouverte, un appui la referme.
+  'roue-centre': () => {
+    const t = Date.now();
+    if (roueOuverte) { roueOuverte = false; dernierAppui = 0; refresh(); return; }
+    if (t - dernierAppui > DOUBLE_APPUI_MS) { dernierAppui = t; return; }
+    dernierAppui = 0;
+    roueOuverte = true;
+    refresh();
+  },
+  // La case de ce qu'on a déjà en main : la roue se referme, rien ne change.
+  'roue-fermer': () => {
+    refresh();
+  },
+  // La main : ranger l'outil (et la cruche).
+  'roue-main': () => {
+    if (hoeMode) ACTIONS['hoe-toggle']();
+    setAxeMode(false); setPickMode(false); setRodMode(false); setScytheMode(false); setCrucheMode(false);
+    refresh();
+  },
+  // La cruche au centre (l'outil en main est rangé).
+  'roue-cruche': () => {
+    if (hoeMode) ACTIONS['hoe-toggle']();
+    setCrucheMode(true);
     refresh();
   },
   'axe-toggle': () => {

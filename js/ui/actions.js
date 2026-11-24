@@ -49,7 +49,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'hoe', 'hoe-toggle', 'hoe-take', 'upgrade-tank', 'robot-autonomie', 'upgrade-fridge', 'maintain', 'repair', 'eat', 'fridge-in',
   'fridge-in-all', 'fridge-in-urgent', 'frigo-ranger', 'fridge-out', 'toggle', 'semis-set', 'cow-herbs',
   'sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre', 'sac-manger', // (fiche 11 : le sac, comme la boîte et « Manger »)
-  'cruche-remplir', 'lit-oui', // (fiche 17 : aller au puits, choisir son lit)
+  'lit-oui', // (fiche 17 : aller au puits, choisir son lit)
   'demande-rendre', // (V-2 : rendre une demande d'un habitant)
   'bac-semer', // (les bacs à fleurs : semer une graine de fleur)
   'tonnelet-remplir', // (le tonnelet : y mettre une tomme d'alpage, un moût de houblon)

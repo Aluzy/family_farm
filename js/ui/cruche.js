@@ -8,7 +8,7 @@ import { TIRED } from '../engine/stamina.js';
 import { memberName } from '../engine/family.js';
 import { asleep } from '../engine/night.js';
 import { mainCharacter } from '../engine/depart.js';
-import { enLigne, setCoucher, state } from './store.js';
+import { enLigne, setCoucher, setCrucheMode, state } from './store.js';
 import { actionGoToBed } from './stage-windows.js';
 import { villageoisDe } from '../engine/villageois.js';
 import { persistState } from './storage.js';
@@ -18,7 +18,7 @@ import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 
 /* ---------- la cruche et le lit (fiche 17) ----------
-   La cruche : sa case dans la barre d'outils (js/ui/outils.js) montre l'eau qui reste, d'une
+   La cruche : sa case dans la roue des outils (js/ui/outils.js) montre l'eau qui reste, d'une
    jauge bleue qui baisse à chaque arrosage et remonte au puits. La cruche n'est pas un outil
    qu'on prend en main (elle sert d'elle-même dès qu'on arrose une plante sans citerne) : sa jauge
    reste donc toujours en vue, à côté des outils, plutôt que près d'un « outil en main » qui
@@ -31,19 +31,21 @@ import { closeModal, openModal } from './modal.js';
    membre de la famille qui l'avait prend son ancien lit ; celui d'un villageois ne se prend pas). Endormi, un appui
    sur lui demande « Tu veux te lever ? ». */
 
-// La case de la cruche dans la barre d'outils, ou '' sans cruche : son icône, une jauge
-// verticale (l'eau, de bas en haut) et les litres qui restent.
-export function crucheSlotHtml() {
+// La cruche dans la roue des outils (sa case, et le centre quand elle y est : js/ui/outils.js), ou null sans
+// cruche : son icône, une jauge verticale (l'eau, de bas en haut), les litres qui restent, et son nom.
+export function crucheContenu() {
   const j = jaugeCruche(state);
-  if (!j) return '';
+  if (!j) return null;
   const pct = Math.round(j.part * 100);
   const litres = formatNumber(j.litres);
   const etat = j.vide ? 'vide' : j.pleine ? 'pleine' : `${litres} L sur ${DATA.CRUCHE.LITRES}`;
-  const label = `Cruche ${etat}${j.pleine ? '' : ' : aller la remplir au puits'}`;
-  return `<button type="button" class="tool-slot cruche-slot${j.vide ? ' vide-eau' : ''}" data-action="cruche-remplir" aria-label="${label}" title="${label}">`
-    + `<span class="cruche-icone" aria-hidden="true">${DATA.OBJETS.cruche.icone}</span>`
-    + `<span class="cruche-jauge" role="meter" aria-label="Eau de la cruche" aria-valuemin="0" aria-valuemax="${DATA.CRUCHE.LITRES}" aria-valuenow="${j.litres}" aria-valuetext="${litres} L"><span style="height:${pct}%"></span></span>`
-    + `<span class="cruche-litres num" aria-hidden="true">${litres}</span></button>`;
+  return {
+    vide: j.vide,
+    label: `Cruche ${etat}`,
+    html: `<span class="cruche-icone" aria-hidden="true">${DATA.OBJETS.cruche.icone}</span>`
+      + `<span class="cruche-jauge" role="meter" aria-label="Eau de la cruche" aria-valuemin="0" aria-valuemax="${DATA.CRUCHE.LITRES}" aria-valuenow="${j.litres}" aria-valuetext="${litres} L"><span style="height:${pct}%"></span></span>`
+      + `<span class="cruche-litres num" aria-hidden="true">${litres}</span>`,
+  };
 }
 
 // Arroser en glissant (js/farm-stage.js arroseStart) : les cultures tracées, arrosées une à une
@@ -82,7 +84,7 @@ function arroserCases(cases) {
   if (vide) allerAuPuits(true);
 }
 
-// Envoie le personnage remplir la cruche au puits (un appui sur le puits ou sur la cruche ; `apres` :
+// Envoie le personnage remplir la cruche au puits (un appui sur le puits ; `apres` :
 // arroser en glissant, après les arrosages déjà faits).
 export function allerAuPuits(apres = false) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
@@ -90,7 +92,7 @@ export function allerAuPuits(apres = false) {
   if (!r.ok) { notify(`${DATA.OBJETS.cruche.icone} ${r.error}`); return; }
   const S = window.FarmStage;
   const go = S && S.allerAuPuits ? S.allerAuPuits(apres) : { ok: false, raison: 'sans' };
-  if (go.ok) return;
+  if (go.ok) { setCrucheMode(true); refresh(); return; }   // (la cruche au centre de la roue des outils)
   if (go.raison === 'loin') notify(`${DATA.OBJETS.cruche.icone} Le puits est trop loin d'ici : rapproche-toi de la ferme pour remplir la cruche.`);
   else if (go.raison === 'ferme') notify(`${DATA.OBJETS.cruche.icone} Impossible d'aller au puits : aucun chemin n'y mène (une porte manque, ou le puits est enfermé).`);
   else notify(`${DATA.OBJETS.cruche.icone} Pour remplir la cruche, va au puits de la ferme : touche-le.`);
@@ -133,11 +135,8 @@ registerActions({
   // Arroser en glissant (js/farm-stage.js) : `cases`, les cultures tracées, dans l'ordre.
   'water-many': (target) => {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    setCrucheMode(true);                      // (le geste met la cruche au centre de la roue des outils)
     arroserCases(String(target.dataset.cases || '').split(',').map(Number).filter((t) => Number.isInteger(t)));
-  },
-  // La case de la cruche, dans la barre d'outils : aller la remplir (pleine : elle le dit).
-  'cruche-remplir': () => {
-    allerAuPuits();
   },
   // La carte : un appui sur un lit (`lit` : son couchage, modèle.couchages). Le premier choisit son lit ; sur son lit,
   // de 20 h à 7 h, il va s'y coucher (le jour : « Tu ne peux pas dormir la journée. ») ; sur un autre lit, « Tu veux

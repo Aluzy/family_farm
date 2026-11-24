@@ -59,7 +59,7 @@
   --z-stage: 5;        /* #farm-stage, #map-stage : la carte en plein écran */
   --z-debug: 40;       /* #god-bar (Options, god mode) */
   --z-hud: 45;         /* .player-card (à gauche) et .hud (à droite) : jamais l'un sur l'autre */
-  --z-fab: 50;         /* .sleep-fab (à droite) et .tool-bar (au milieu) : côte à côte */
+  --z-fab: 50;         /* .tool-bar : la roue des outils, en bas à droite */
   --z-menu: 55;        /* .side-menu, au-dessus des boutons flottants */
   --z-banner: 60;      /* .consent-banner (en bas) et .tuto (la bulle, au-dessus du bandeau) */
   --z-window: 90;      /* .window-layer : fenêtres de la carte */
@@ -1468,8 +1468,8 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   font-size: 14px;
   line-height: 1.35;
 }
-/* la barre d'outils rangée : la bulle descend à sa place */
-body:has(#tool-bar:not(.open)) .didac-bulle:not(.haut):not(.reduite) { bottom: calc(76px + env(safe-area-inset-bottom)); }
+/* (plus de barre d'outils au milieu du bas : la bulle descend) */
+body .didac-bulle:not(.haut):not(.reduite) { bottom: calc(76px + env(safe-area-inset-bottom)); }
 /* sur le personnage (au bord de la carte : js/carte/ferme/camera.js stepBulleDidacticiel) : transparente,
    et les appuis passent au travers, sauf sur ses boutons */
 .didac-bulle { transition: bottom 0.2s ease-out, opacity 0.2s; }
@@ -3154,34 +3154,55 @@ span.encyclo-item.encyclo-inconnue { color: #866f94; }
 /* La barre d'outils (js/ui/outils.js) : en bas au milieu de la carte, dans le cadre bois des
    cartes flottantes (bordure de 3 px, fond crème, filet clair) ; une case par outil, l'outil
    dessiné à 32 px. Rangée, elle glisse sous le bord de l'écran et n'en dépasse que sa languette. */
+/* La roue des outils (js/ui/outils.js) : un rond dans le coin en bas à droite, bordé comme les autres ronds
+   de l'HUD, qui montre ce qu'on a en main. Ouverte, elle monte de 130 px en diagonale et ses cases se posent
+   en cercle autour du rond (--dx, --dy : la place de chacune, depuis le centre). */
 .tool-bar {
-  --u: 7.5px; /* la hauteur de la barre : 9 × --u */
+  --roue: 64px;
   position: fixed;
-  left: 50%;
-  bottom: calc(var(--dock) + 6px);
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--dock) + 12px);
   z-index: var(--z-fab);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: translate(-50%, calc(9 * var(--u) + 6px));
-  transition: transform 0.2s ease-out;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+  width: var(--roue);
+  height: var(--roue);
 }
-.tool-bar.open { transform: translate(-50%, 0); }
 .tool-bar[hidden] { display: none; }
-@media (prefers-reduced-motion: reduce) { .tool-bar { transition: none; } }
-.tool-bar-body {
-  box-sizing: border-box;
-  display: flex;
-  gap: 5px;
-  height: calc(9 * var(--u));
-  padding: 5px;
-  background: rgba(var(--wood-bg-rgb), 0.88);
-  border: 3px solid var(--color-earth);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 2px var(--wood-glow);
+.roue { position: absolute; inset: 0; transition: transform 0.24s ease-out; }
+.tool-bar.roue-ouverte .roue { transform: translate(-130px, -130px); }
+.tool-bar .tool-slot.roue-centre, .tool-bar .tool-slot.roue-case {
+  position: absolute;
+  height: auto;
+  border-radius: 50%;
+  background: var(--wood-cream);
+  border: 3px solid var(--prune);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 0 0 2px var(--wood-glow);
 }
-.tool-bar:not(.open) .tool-bar-body { visibility: hidden; transition: visibility 0s 0.2s; }
+.tool-bar .tool-slot.roue-centre { inset: 0; width: var(--roue); font-size: 1.6rem; z-index: 2; }
+.tool-bar .tool-slot.roue-case {
+  left: 50%; top: 50%;
+  width: 52px;
+  font-size: 1.3rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.3);
+  transition: transform 0.24s ease-out, opacity 0.2s;
+}
+.tool-bar.roue-ouverte .tool-slot.roue-case { opacity: 1; pointer-events: auto; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); }
+.tool-bar .tool-slot.roue-case.active { background: var(--rose-pale); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 0 0 2px var(--color-earth); }
+.tool-bar.roue-ouverte .tool-slot.roue-case:active { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 1px)); }
+.roue-nom {
+  position: absolute; top: calc(100% + 2px); left: 50%; transform: translateX(-50%);
+  font-size: 0.68rem; font-weight: 700; line-height: 1.2; white-space: nowrap; color: var(--color-ink);
+  background: rgba(var(--wood-bg-rgb), 0.92); border-radius: 8px; padding: 1px 6px;
+}
+/* la cruche : sa jauge et ses litres rentrent dans le rond */
+.tool-bar .cruche-jauge { right: 9px; top: 12px; bottom: 12px; }
+.tool-bar .cruche-litres { left: 9px; bottom: 7px; }
+.tool-bar .roue-centre .cruche-jauge { right: 12px; top: 15px; bottom: 15px; }
+.tool-bar .roue-centre .cruche-litres { left: 12px; bottom: 10px; }
+.tool-bar .galop-rangee { position: absolute; right: 0; bottom: calc(100% + 8px); --u: 7.5px; }
+.tool-bar.roue-ouverte .galop-rangee { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .roue, .tool-bar .tool-slot.roue-case { transition: none; } }
 .tool-slot {
   box-sizing: border-box;
   height: 100%;
@@ -3267,30 +3288,6 @@ span.encyclo-item.encyclo-inconnue { color: #866f94; }
   font-size: 0.62rem; font-weight: 800; line-height: 1; color: #231a28;
 }
 @media (prefers-reduced-motion: reduce) { .cruche-jauge > span { transition: none; } }
-/* La languette, au-dessus du milieu de la barre : le même bois, le même fond. */
-.tool-bar-tab {
-  position: relative;
-  width: 60px;
-  height: 24px;
-  margin-bottom: -3px; /* posée sur le bois de la barre : un seul cadre */
-  padding: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(var(--wood-bg-rgb), 0.88);
-  border: 3px solid var(--color-earth);
-  border-bottom: 0;
-  border-radius: 8px 8px 0 0;
-  box-shadow: inset 0 2px 0 var(--wood-glow);
-  cursor: pointer;
-}
-.tool-bar-tab::after { content: ""; position: absolute; inset: -12px 0 -6px; } /* zone d'appui de 44 px environ */
-.tool-bar-arrow { fill: #4a2c5b; transition: transform 0.2s; }
-.tool-bar:not(.open) .tool-bar-arrow { transform: scaleY(-1); } /* rangée : le triangle montre le sens où elle ressort */
-.tool-bar-tab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
-/* Avec la barre, le chevron « la carte continue vers le bas » passe au-dessus d'elle. */
-body.has-toolbar .stage-arrow.bas { bottom: calc(9 * 7.5px + 46px); }
-/* … et le bouton Dormir (la nuit) aussi, pour ne pas la couvrir sur un téléphone. */
-body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 /* La pose d'un meuble (js/ui/chantier.js) : en bas, au-dessus de la barre d'outils, une
    bande du même bois : ce qu'on fait, ✔️ (vert : le poser là où est son aperçu) et ❌ (sortir
    de ce mode). */
