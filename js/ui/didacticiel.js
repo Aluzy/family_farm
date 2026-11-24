@@ -3,7 +3,7 @@
 // Une bulle de texte, en bas de l'écran (en haut quand ce qu'elle montre est en bas), dit quoi
 // faire ; ce qu'il faut toucher brille d'une lueur blanche qui respire (.didac-ring) : une jauge, la flèche du
 // menu latéral, une entrée du menu, une case du menu Construire, une recette de l'Atelier, un outil
-// de la barre d'outils. Sur la carte, la scène fait briller les objets à toucher (modèle :
+// de la roue des outils. Sur la carte, la scène fait briller les objets à toucher (modèle :
 // surbrillance, js/carte/ferme/didacticiel.js) : les pierres, le bois, l'Atelier, le puits. En
 // haut à droite, sous le hublot, les compteurs (« 🪨 2 / 3 ») de ce qu'il reste à réunir. Les
 // étapes à lire ont un bouton « Suivant » ; les autres passent d'elles-mêmes quand leur objectif
@@ -11,7 +11,7 @@
 //
 // Fiche 9b : les étapes du grand monde (ETAPES_MONDE) : la carte du monde (l'entrée 🧭 du menu ; l'étape
 // passe quand elle s'ouvre), la sortie de la ferme (ses cases allumées sur la carte), une prise dans le
-// monde (la hache dans la barre d'outils), la calèche (un cercle autour d'elle, le bouton Héler, et la
+// monde (la hache dans la roue des outils), la calèche (un cercle autour d'elle, le bouton Héler, et la
 // case où elle se gare devant la ferme ; il est dit où elle est et l'heure), le hameau voisin (montré sur
 // la carte du monde en arrivant à l'étape : son repère, puis « Y mener la boussole »), puis la boussole
 // jusqu'à lui. Chacune a son bouton « Passer cette étape » : aucune ne bloque.
@@ -39,7 +39,7 @@ import { marcheOuvert } from '../engine/devices.js';
 import { montrerLieu } from '../engine/monde-vu.js';
 import { buildMode, hoeMode, scytheMode, state } from './store.js';
 import { menuOpen, stageWindow } from './stage-windows.js';
-import { toolbarOpen } from './outils.js';
+import { roueOuverte } from './outils.js';
 import { persistState } from './storage.js';
 import { morph, refresh } from './render.js';
 import { registerActions } from './actions.js';
@@ -51,7 +51,7 @@ import { son } from './son.js';
 const nomObjet = (o) => (DATA.OBJETS[o] ? DATA.OBJETS[o].nom.toLowerCase() : o);
 export const fabricable = (id) => craftStatus(state, id).ok;
 export const atelierOuvertFenetre = () => stageWindow === 'atelier';
-export const tenu = (outil) => !!document.querySelector(`.tool-slot.active[data-outil="${outil}"]`);
+export const tenu = (outil) => !!document.querySelector(`.roue-centre[data-outil="${outil}"]`);
 const ongletGraines = () => !!document.querySelector('.inv-tab.active[data-tab="graines"]');
 
 // La première recette de `ids` qu'on peut fabriquer maintenant, sinon la première de la liste.
@@ -69,16 +69,16 @@ export function construire(sorte) {
   return buildMode === sorte ? null : cibleBloc(sorte);
 }
 
-// Un outil de la barre d'outils : d'abord fermer la fenêtre ouverte (la barre ne se montre pas
-// sous une fenêtre), puis la languette si la barre est rangée, puis la case de l'outil.
-export const outil = (id) => (tenu(id) ? null : stageWindow ? '#stage-window-close' : toolbarOpen ? `.tool-slot[data-outil="${id}"]` : '.tool-bar-tab');
+// Un outil de la roue des outils : d'abord fermer la fenêtre ouverte (la roue ne se montre pas
+// sous une fenêtre), puis le rond si la roue est fermée, puis la case de l'outil.
+export const outil = (id) => (tenu(id) ? null : stageWindow ? '#stage-window-close' : roueOuverte ? `.roue-case[data-choix="${id}"]` : '.roue-centre');
 
-// Ce qu'il faut dire pour prendre un outil (`nom` : son nom, en HTML) dans la barre d'outils.
+// Ce qu'il faut dire pour prendre un outil (`nom` : son nom, en HTML) dans la roue des outils.
 export function prendreOutil(nom) {
-  if (stageWindow === 'atelier') return 'Ferme la fenêtre de l\'<b>Atelier</b> (✕) pour retrouver ta barre d\'outils.';
-  if (stageWindow) return 'Ferme cette fenêtre (✕) pour retrouver ta barre d\'outils.';
-  if (!toolbarOpen) return 'Appuie sur la <b>flèche</b> de la barre d\'outils, en bas de l\'écran, pour la faire sortir.';
-  return `Prends la ${nom} dans ta barre d'outils.`;
+  if (stageWindow === 'atelier') return 'Ferme la fenêtre de l\'<b>Atelier</b> (✕) pour retrouver tes outils.';
+  if (stageWindow) return 'Ferme cette fenêtre (✕) pour retrouver tes outils.';
+  if (!roueOuverte) return 'Touche <b>deux fois</b> le rond en bas à droite de l\'écran pour ouvrir la roue des outils.';
+  return `Prends la ${nom} dans la roue des outils.`;
 }
 
 // Une recette de l'Atelier : sa fenêtre ouverte, son onglet, sa case (ou celle de son groupe),

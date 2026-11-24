@@ -174,8 +174,8 @@ export const GAME_ACTIONS = {
   'bloc-deplacer': 'Construire : déplacer un meuble ou un bloc posé (glissement, ferme générée)',
   'build-level': 'Construire : choisir le niveau (ferme générée)',
   'etage-toggle': 'Monter ou descendre l\'escalier (ferme générée, essai)',
-  'tool-use': 'Prendre ou ranger un outil (barre d\'outils)',
-  'cheval-toggle': 'Monter à cheval ou en descendre (barre d\'outils)',
+  'tool-use': 'Prendre ou ranger un outil (roue des outils)',
+  'cheval-toggle': 'Monter à cheval ou en descendre (roue des outils)',
   'axe-toggle': 'Ranger la hache',
   'pick-toggle': 'Ranger la pioche',
   'rod-toggle': 'Ranger la canne à pêche',
@@ -215,7 +215,6 @@ export const GAME_ACTIONS = {
   'sac-reprendre': 'Remplir le sac à provisions',
   'sac-manger': 'Manger un en-cas',
   // fiche 17 : la cruche remplie au puits, choisir son lit
-  'cruche-remplir': 'Aller remplir la cruche au puits (barre d\'outils)',
   'lit-oui': 'Choisir son lit',
   'lit-lever': 'Se lever',
   'lit-reveil': 'Demander à se lever',
@@ -267,7 +266,7 @@ export const INTERFACE_ACTIONS = new Set([
   'inv-item', // Inventaire : fiche d'un objet
   'port-fiche', 'port-aide', // le port (fiche I1b) : fiche d'un article, aide de l'onglet
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
-  'toolbar-toggle', // la barre d'outils de la carte : la ranger, la sortir
+  'roue-centre', 'roue-fermer', 'roue-main', 'roue-cruche', // la roue des outils de la carte : l'ouvrir, la refermer, ranger l'outil, prendre la cruche
   'lit-choisir', // fiche 17 : un lit touché sur la carte, la question « Tu veux choisir ce lit ? »
 ]);
 

@@ -235,7 +235,7 @@ function caseRecette(id, choisie) {
 // le bouton Fabriquer (grisé, avec ce qui manque).
 function detailHtml(id) {
   const r = DATA.ATELIER.RECETTES[id], st = craftStatus(state, id), n = stock(id);
-  const garde = r.sacoche ? (n ? 'sur ton cheval' : '') : r.outil || r.cheval ? (n ? (r.cheval ? 'il est à l\'Écurie' : 'déjà dans ta barre d\'outils') : '') : r.animal ? `${n} à la ferme` : `${n} en stock`;
+  const garde = r.sacoche ? (n ? 'sur ton cheval' : '') : r.outil || r.cheval ? (n ? (r.cheval ? 'il est à l\'Écurie' : 'déjà dans ta roue des outils') : '') : r.animal ? `${n} à la ferme` : `${n} en stock`;
   // (un bloc : son icône du menu, en petit)
   const ico = (item) => (blocDe(id) && DATA.ATELIER.BLOCS[blocDe(id)].objet === item ? `<span class="atelier-mini">${icone(id)}</span>` : DATA.OBJETS[item].icone);
   const donne = r.sortie ? Object.entries(r.sortie).map(([item, q]) => `<span class="chip">${q} ${ico(item)}</span>`).join('') : `<span class="chip">${icone(id)}</span>`;
@@ -316,7 +316,7 @@ registerActions({
     const r = executer('atelier.fabriquer', { recette: String(target.dataset.recette || '') });
     if (!r.ok) { notify(r.error); return; }
     const R = DATA.ATELIER.RECETTES[target.dataset.recette];
-    if (r.animal === 'cheval') notify(`${DATA.CHEVAL.ICONE} Un cheval s'approche, attiré par les friandises : le voilà à l'Écurie. Monte en selle avec sa case de la barre d'outils.`);
+    if (r.animal === 'cheval') notify(`${DATA.CHEVAL.ICONE} Un cheval s'approche, attiré par les friandises : le voilà à l'Écurie. Monte en selle avec sa case de la roue des outils.`);
     else if (r.animal) notify(`${DATA.ANIMAUX[r.animal].icone} ${r.animal === 'poule' ? 'Une poule du pays vient s\'installer au Poulailler' : `${r.animal === 'mouton' ? 'Un mouton' : 'Une vache'} des prés voisins vient à l'Étable`}.`);
     else if (r.outil) notify(`${toolDef(r.outil).ICONE} ${nom(target.dataset.recette)} : ${toolDef(r.outil).ARTICLE === 'un' ? 'fabriqué' : 'fabriquée'}.`);
     else if (R.meuble) notify(`🏠 ${DATA.MEUBLES[R.meuble].nom} : dans l'inventaire, à poser dans la maison avec 🔨${DATA.MEUBLES[R.meuble].bonheur ? ` · 😊 +${DATA.MEUBLES[R.meuble].bonheur}` : ''}`);

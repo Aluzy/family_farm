@@ -19,7 +19,7 @@ import { marcheOuvert } from '../engine/devices.js';
 import { unlockLevel } from '../engine/levels.js';
 import { buildMode, comptoirTab, hoeMode, state } from './store.js';
 import { menuOpen, stageWindow } from './stage-windows.js';
-import { toolbarOpen } from './outils.js';
+import { roueOuverte } from './outils.js';
 import { persistState } from './storage.js';
 import { morph, refresh } from './render.js';
 import { registerActions } from './actions.js';
@@ -32,8 +32,8 @@ import {
 // Prendre l'outil `id` (son nom `nom`) : la ligne et la cible.
 function prendre(id, nom) {
   if (stageWindow) return { texte: 'Ferme la fenêtre (✕).', cible: '#stage-window-close' };
-  if (!toolbarOpen) return { texte: 'Sors la barre d\'outils, en bas.', cible: '.tool-bar-tab' };
-  return { texte: `Prends la ${nom}, en bas.`, cible: outil(id) };
+  if (!roueOuverte) return { texte: 'Touche deux fois le rond, en bas à droite.', cible: '.roue-centre' };
+  return { texte: `Prends la ${nom} dans la roue.`, cible: outil(id) };
 }
 // Fabriquer à l'Atelier les recettes `ids` (`nom` : ce que c'est).
 function aLAtelier(ids, nom) {

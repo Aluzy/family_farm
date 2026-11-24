@@ -63,7 +63,7 @@ import { renderFrigoFenetre } from './frigo.js';
 import { boitePosee } from '../engine/repas.js';
 
 import { registerActions } from './actions.js';
-import { toolBarHtml, toolbarOpen } from './outils.js';
+import { roueOuverte, toolBarHtml } from './outils.js';
 import { rememberFocus } from './modal.js';
 import { jaugeClasse, plural } from './common.js';
 import { son } from './son.js';
@@ -749,14 +749,13 @@ export function renderTabContent() {
 // La barre du bas. (Plus de bouton « Dormir » : on se couche d'un appui sur son lit, de 20 h à 7 h,
 // js/ui/cruche.js « lit-choisir ».)
 export function renderSleepBar() {
-  // La barre d'outils (houe, pioche, hache, canne à pêche), en bas de la carte de la ferme,
-  // sans fenêtre ouverte, dès qu'un outil est acheté (elle remplace le bouton rond de FLU-05).
+  // La roue des outils (js/ui/outils.js), en bas à droite de la carte de la ferme, sans fenêtre
+  // ouverte, dès qu'on a un outil, la cruche, le cheval ou Construire.
   const outils = activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior ? toolBarHtml() : '';
   const barre = document.getElementById('tool-bar');
   morph(barre, outils);
   barre.hidden = !outils;
-  barre.classList.toggle('open', toolbarOpen);
-  document.body.classList.toggle('has-toolbar', !!outils);
+  barre.classList.toggle('roue-ouverte', roueOuverte);
   morph(document.getElementById('sleep-fab'), '');
 }
 

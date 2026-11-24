@@ -1,5 +1,5 @@
 /* ---------- le galop : les pommes de la sacoche, en selle (js/engine/cheval.js) ----------
-   En selle, si le cheval a sa sacoche, une rangée de ses GALOP.PLACES places au-dessus de la barre d'outils
+   En selle, si le cheval a sa sacoche, une rangée de ses GALOP.PLACES places au-dessus de la roue des outils
    (js/ui/outils.js, toolBarHtml) : chaque pomme est une jauge. Quand le cheval la mange, sa chair blanchit de gauche à
    droite (assets/galop_pommes.png : la pomme, sa chair, la pomme dorée, sa chair ; scripts/galop/pommes.py). Un appui
    sur une pomme lance le galop (elle brille), un autre l'arrête.
@@ -90,7 +90,7 @@ function ficheHtml() {
          <button type="button" class="btn" data-action="cheval-reprendre"${S.some((p) => p && p.reste >= 1) ? '' : ' disabled'}>Reprendre</button>
        </div>`
     : `<ul class="item-lines"><li>👜 Pas encore de sacoche : elle se fabrique à l'Atelier (Élevage), avec ${Object.entries(DATA.ATELIER.RECETTES.sacoche_cheval.entrees).map(([o, n]) => `${n} ${DATA.OBJETS[o].icone}`).join(' et ')}.</li></ul>`;
-  const aide = `<p class="galop-aide" id="cheval-aide"${aideOuverte ? '' : ' hidden'}>En selle, touche une pomme de la sacoche (au-dessus de la barre d'outils) pour galoper ; retouche-la pour reprendre le pas. Elle ne se mange que quand il avance : une pomme dure ${F.pomme.secondes} s, une pomme dorée ${F.pomme_doree.secondes / 60} min. Finie, la suivante prend le relais. Dans la sacoche, les pommes ne se périment pas.</p>`;
+  const aide = `<p class="galop-aide" id="cheval-aide"${aideOuverte ? '' : ' hidden'}>En selle, touche une pomme de la sacoche (au-dessus de la roue des outils) pour galoper ; retouche-la pour reprendre le pas. Elle ne se mange que quand il avance : une pomme dure ${F.pomme.secondes} s, une pomme dorée ${F.pomme_doree.secondes / 60} min. Finie, la suivante prend le relais. Dans la sacoche, les pommes ne se périment pas.</p>`;
   return `
     <div class="item-head">
       <span class="item-icon" aria-hidden="true">${C.ICONE}</span>
