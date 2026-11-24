@@ -93,6 +93,7 @@ import { surbrillanceObjectifs } from './objectifs.js';
 import { surbrillanceIle } from './didacticiel-ile.js';
 import { solDeLIle } from './ile-sol.js';
 import { estPartieIle, ileDeLaPartie } from '../engine/ile/jeu.js';
+import { casesPortIle, portIle } from '../engine/ile/port-ile.js';
 import { abriDeLIle } from './abri-ile.js';
 import { marchable as marchableIle } from '../engine/ile/vie.js';
 
@@ -609,7 +610,9 @@ export function stageModel() {
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
     // (un mur rehaussé, version 1.25 : sa hauteur en blocs)
     // (une fenêtre percée dans un mur : la matière de ce mur)
-    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(sorte === 'compost' ? { niveau: etatCompost(state, Number(c)).niveau } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}), ...(hauteurs[c] > 1 && hautes.some((H) => H[c]) ? { fenetresHautes: hautes.map((H) => H[c] || null) } : {}) })),
+    // (le port de l'île : son ponton et sa halle, js/carte/ferme/port-ile.js ; son bloc n'a pas d'autre dessin)
+    portIle: portIleModele(),
+    blocs: Object.entries(blocsPoses(state)).filter(([c]) => !(state.portIle && Number(c) === state.portIle.case && portIle(state))).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(sorte === 'compost' ? { niveau: etatCompost(state, Number(c)).niveau } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}), ...(hauteurs[c] > 1 && hautes.some((H) => H[c]) ? { fenetresHautes: hautes.map((H) => H[c] || null) } : {}) })),
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)
@@ -885,6 +888,20 @@ function autoDone() {
   return out;
 }
 
+// Le port de l'île posé, pour la carte (js/carte/ferme/port-ile.js), ou null.
+function portIleModele() {
+  const d = portIle(state);
+  if (!d) return null;
+  return { racine: d.racine, sens: d.sens, cote: d.cote, halle: d.halle, poteaux: d.poteaux, comptoir: d.comptoir, bloquees: casesPortIle(state).bloquees };
+}
+// Les cases du ponton (sur l'eau), ouvertes à la marche : un Set refait quand le port change.
+let ouvertesPort = { cle: null, set: new Set() };
+function ouvertesPortIle() {
+  const p = state.portIle, cle = p ? `${p.case},${p.sens},${p.cote},${portIle(state) ? 1 : 0}` : '';
+  if (cle !== ouvertesPort.cle) ouvertesPort = { cle, set: new Set(casesPortIle(state).ouvertes) };
+  return ouvertesPort.set;
+}
+
 // Les gestes des villageois aux champs aujourd'hui (« recolter:<case> »…, taches.js) : ni le personnage ne les refait
 // (js/fermier.js diff), ni la case ne change avant le geste du villageois (villageois-travail.js).
 function parVillageois() {
@@ -1158,7 +1175,12 @@ function stageParcelle(id) {
 // à la marche (casesOuvertesMonde, d'après la partie en cours).
 function mondeDeLaCarte() {
   // (l'île de 300 × 300, docs/ile-300.md : son sol d'après l'île vivante de la partie)
-  if (estPartieIle(state)) return solDeLIle(ileDeLaPartie(state), state.carte.graine, MONDE.REGION);
+  if (estPartieIle(state)) {
+    const sol = solDeLIle(ileDeLaPartie(state), state.carte.graine, MONDE.REGION);
+    // (le ponton du port s'ouvre à la marche, sur la mer : js/engine/ile/port-ile.js)
+    if (sol) sol.ouvertes = ouvertesPortIle;
+    return sol;
+  }
   const sol = solDuMonde(farmTerrain(state));
   // (fiche I2 : les ponts de planches posés s'ouvrent aussi ; le moteur lit ce sol pour bâtir dehors, dehors.js)
   if (sol) sol.ouvertes = () => (ouvertesAvecPonts());

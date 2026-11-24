@@ -1199,6 +1199,7 @@
       // les arbres plantés dans le sol : leur tronc (ceux du Verger, ceux d'une graine : foret.js)
       for (const e of (this.trees || new Map()).values()) if (e.a && e.a.sol) out.push(e.a.case);
       out.push(...this.foretCells());
+      if (this.portIleCells) out.push(...this.portIleCells());   // (les poteaux et le comptoir du port de l'île)
       return out;
     },
 

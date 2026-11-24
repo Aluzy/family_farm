@@ -176,6 +176,9 @@
           // les hameaux bâtis (scripts/carte/hameaux.py, js/carte/ferme/hameaux.js)
           L.image('hameaux', v('hameaux.png'));
           L.json('hameaux_cases', v('hameaux.json'));
+          // le port de l'île : son ponton et sa halle (scripts/carte/port_ile.py, js/carte/ferme/port-ile.js)
+          L.image('port_ile', v('port_ile.png'));
+          L.json('port_ile_cases', v('port_ile.json'));
           L.json('faune_cases', v('faune.json'));
           // l'île de 300 × 300 : ses cultures sauvages et ses fruitiers (js/carte/ferme/vegetation.js)
           if (this.ctx.monde.ile300) { L.image('ile_cultures', v('crops.png')); L.image('ile_fruitiers', v('verger.png')); L.image('ile_semis', v('graines_ile.png')); const GI = global.CarteKit.GRAINES_ILE; A.feuille(this, GI.key, GI.file, GI.frame, v); }
@@ -676,6 +679,7 @@
           { nom: 'regionPerso', cadence: 10, actif: () => !!this.fermier && !fige(), pas: () => this.stepRegionPerso() },   // (la région où il entre devient vue : js/carte/ferme/sol.js)
           { nom: 'lieuxMonde', cadence: 10, pas: (I) => this.stepLieuxMonde(I.time) },       // (les coins de pêche, les secrets : lieux-monde.js)
           { nom: 'hameaux', cadence: img, actif: () => !fige(), pas: (I) => this.stepHameaux(I.s) },     // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
+          { nom: 'portIle', cadence: img, actif: () => !fige() && !!this.portIleVu, pas: () => this.stepPortIle() },   // (le toit de la halle du port de l'île : port-ile.js)
           { nom: 'bac', cadence: img, actif: () => !fige() && !!this.stepBac && !!(this.ctx.lastModel && this.ctx.lastModel.bac), pas: () => this.stepBac() },   // (le bac du port, fiche I1c : bac.js)
           { nom: 'charretteVillage', cadence: img, actif: () => !fige() && !!this.stepCharretteVillage && !!(this.ctx.lastModel && (this.ctx.lastModel.charretteVillage || this.cvEtat)), pas: () => this.stepCharretteVillage() },   // (la charrette du village, les rails : charrette-village.js, fiche I2b)
           { nom: 'villageois', cadence: img, actif: () => !fige() && !!this.stepVillageois && !!(this.ctx.lastModel && (this.ctx.lastModel.villageois || this.villageoisVus && this.villageoisVus.size)), pas: (I) => this.stepVillageois(I.s) },   // (l'île à bâtir, fiche I3a : villageois.js)
@@ -1025,6 +1029,9 @@
         }
         const ham = this.hameauOutil ? this.hameauOutil(wx, wy) : null;
         if (ham) return ham;
+        // (le comptoir du port de l'île : port-ile.js)
+        const pc = this.portIleComptoirAt ? this.portIleComptoirAt(this.tileAtPoint(wx, wy)) : null;
+        if (pc) return pc;
         // planter un arbre (js/carte/ferme/plantation.js) : la case touchée, rien d'autre
         if (this.plantation) { const c = this.tileAtPoint(wx, wy); return c >= 0 ? { plante: c } : null; }
         // la ferme générée, en mode Construire : la case touchée (poser, reprendre), rien d'autre

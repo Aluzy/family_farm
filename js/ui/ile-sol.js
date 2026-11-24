@@ -227,6 +227,8 @@ function client(ile, graine, taille) {
     carte: () => imageDeLIle(ile, ctx.fiches),
     marchable(t) {
       if (!(t >= 0 && t < N * N)) return false;
+      // (le ponton du port, posé sur la mer : js/ui/stage.js mondeDeLaCarte)
+      if (sol.ouvertes && sol.ouvertes().has(t)) return true;
       const reg = sol.region(Math.floor((t % N) / taille), Math.floor(t / N / taille));
       return !!reg && reg.marche[(Math.floor(t / N) - reg.cy0) * reg.cl + (t % N) - reg.cx0] === 1;
     },

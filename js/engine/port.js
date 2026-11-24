@@ -45,6 +45,7 @@ import { planDuMonde } from './monde.js';
 import { dispositionPort } from './monde-gen.js';
 import { chargeDe, materiauDuChantier, vendreCharge, vendreToutLaCharge } from './portage.js';
 import { objetImporte } from './bac.js';
+import { portIle } from './ile/port-ile.js';
 import { estPartieIle } from './ile/jeu.js';
 import { casePort, refusPortIle } from './ile/village.js';
 
@@ -118,6 +119,9 @@ export function comptoirDuPort(state) {
   if (estPartieIle(state)) {
     const c = casePort(state), W = farmTerrain(state).LARGEUR;
     if (c === null) return null;
+    // (le port posé avec son ponton et sa halle : le comptoir au milieu de la halle, js/engine/ile/port-ile.js)
+    const d = portIle(state);
+    if (d) return { cases: d.comptoir.slice(), devant: d.devant, W };
     const lg = (DATA.ATELIER.BLOCS[DATA.ILE.VILLAGE.PORT] || {}).largeur || 1, cases = [];
     for (let k = 0; k < lg; k++) cases.push(c + k);
     return { cases, devant: c + W, W };

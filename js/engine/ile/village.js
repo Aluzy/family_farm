@@ -14,8 +14,8 @@
 
 import { DATA } from '../catalog.js';
 import { ileDeLaPartie, estPartieIle } from './jeu.js';
-import { BIOMES, SOL_BIOME } from './reglages.js';
 import { bourseVillage, payerParLeVillage } from './economie.js';
+import { choisirPortIle } from './port-ile.js';
 
 const V = () => DATA.ILE.VILLAGE;
 
@@ -104,36 +104,23 @@ export function refusArriveeIle(state, jour, voirJour = true) {
 export const heuresArrivee = () => V().ARRIVEE.HEURES;
 
 /**
- * Le comptoir du port (le bloc PORT) se pose-t-il en `tile` ? null, ou la raison. Il touche la mer (une case d'eau
- * du large, à côté d'une de ses cases) ; un seul. La place : une seule.
+ * Le bloc PORT, la place se posent-ils en `cases` (leur emprise ; la première : leur case) ? null, ou la raison. Le
+ * port : sa case sur la rive, la culée d'un ponton qui part vers la mer, sa halle à côté sur la terre libre
+ * (js/engine/ile/port-ile.js choisirPortIle) ; un seul. La place : une seule.
  * @param {object} state
  * @param {string} sorte
  * @param {number[]} cases ses cases (son emprise)
+ * @param {(t: number) => boolean} [libre] une case de terre où bâtir (blocs.js)
  */
-export function refusPoseIle(state, sorte, cases) {
+export function refusPoseIle(state, sorte, cases, libre = () => true) {
   if (!estPartieIle(state)) return null;
   if (sorte === V().PLACE && casePlace(state) !== null)
     return "Le village n'a qu'une place : son panneau est déjà posé.";
   if (sorte !== V().PORT) return null;
   if (casePort(state) !== null) return "L'île n'a qu'un port : son comptoir est déjà posé.";
-  const ile = ileDeLaPartie(state),
-    n = ile.n;
-  const mer = (i) => BIOMES[SOL_BIOME[ile.sol[i]]] === 'mer';
-  for (const t of cases) {
-    const x = t % n,
-      y = Math.floor(t / n);
-    for (const [dx, dy] of [
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1],
-    ]) {
-      const X = x + dx,
-        Y = y + dy;
-      if (X >= 0 && Y >= 0 && X < n && Y < n && mer(Y * n + X)) return null;
-    }
-  }
-  return 'Le comptoir du port se pose au bord de la mer (une de ses cases touche la mer).';
+  const ile = ileDeLaPartie(state);
+  const r = choisirPortIle(ile, cases[0], (t) => !ile.bloque[t] && libre(t));
+  return r.raison || null;
 }
 
 /**

@@ -22,6 +22,7 @@ import { ETAPES } from '../../js/engine/didacticiel.js';
 import { ileDeLaPartie as ileDeLaPartieAide } from '../../js/engine/ile/jeu.js';
 import { estEau as estEauAide } from '../../js/engine/ile/vie.js';
 import { refusPoseIle as refusPoseIleAide } from '../../js/engine/ile/village.js';
+import { choisirPortIle as choisirPortIleAide } from '../../js/engine/ile/port-ile.js';
 
 // Le calendrier lunaire change la pousse, l'eau et les récoltes selon le jour. Les tests écrits
 // avant lui tournent lune neutre (un stade par nuit, rendements et eau de base) ; ceux de la
@@ -468,8 +469,16 @@ export function fonderVillage(s) {
   if (port === undefined) {
     const d = (i) => Math.abs((i % n) - (ici % n)) + Math.abs(Math.floor(i / n) - Math.floor(ici / n));
     let mieux = -1;
-    for (let i = n; i < n * n - n; i++) if (refusPoseIleAide(s, VI.PORT, [i, i + 1]) === null && s.blocs[i] === undefined && s.blocs[i + 1] === undefined && ile.objet[i] === 0 && ile.objet[i + 1] === 0 && !estEauAide(ile, i) && !estEauAide(ile, i + 1) && !estEauAide(ile, i + n) && (mieux < 0 || d(i) < d(mieux))) mieux = i;
+    // (le port : sa culée sur la rive, le ponton vers la mer, la halle à côté : js/engine/ile/port-ile.js ; les cases
+    // de rive d'abord, les plus proches)
+    const rive = (i) => !estEauAide(ile, i) && (estEauAide(ile, i + 1) || estEauAide(ile, i - 1) || estEauAide(ile, i + n) || estEauAide(ile, i - n));
+    const rives = [];
+    for (let i = n; i < n * n - n; i++) if (rive(i) && s.blocs[i] === undefined) rives.push(i);
+    rives.sort((a, b) => d(a) - d(b));
+    for (const i of rives) if (refusPoseIleAide(s, VI.PORT, [i]) === null) { mieux = i; break; }
     s.blocs[mieux] = VI.PORT;
+    const c = choisirPortIleAide(ile, mieux, (t) => !ile.bloque[t]);
+    s.portIle = { case: mieux, sens: c.sens, cote: c.cote };
     port = mieux;
   }
   if (!Array.isArray(s.villageois)) s.villageois = [];
