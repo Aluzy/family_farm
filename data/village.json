@@ -930,8 +930,7 @@
         { "id": "maison", "icone": "🏠", "ligne": "Bâtis une maison libre : un lit, une boîte aux lettres." },
         { "id": "villageois", "icone": "🧑‍🌾", "ligne": "Accueille le premier villageois, sur la place." },
         { "id": "tache", "icone": "📋", "ligne": "Donne-lui une tâche, sur sa fiche." },
-        { "id": "comptoir", "icone": "⚓", "ligne": "Construis le comptoir du port, au bord de la mer." },
-        { "id": "charger", "icone": "🧺", "ligne": "Charge ta récolte : la fenêtre du port, onglet Porter." },
+        { "id": "comptoir", "icone": "⚓", "ligne": "Construis le port, au bord de la mer : son ponton et sa halle." },
         { "id": "vendre", "icone": "💰", "ligne": "Vends au comptoir du port : le seul moyen de gagner de l'argent." }
       ]
     },

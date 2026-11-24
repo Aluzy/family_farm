@@ -15,7 +15,6 @@ import { countItem } from '../engine/inventory.js';
 import { aCruche, eauCruche } from '../engine/cruche.js';
 import { etapeIle, majDidacticielIle, passerDidacticielIle, passerEtapeIle } from '../engine/didacticiel-ile.js';
 import { distanceAuComptoir, PORT } from '../engine/port.js';
-import { chargeDe } from '../engine/portage.js';
 import { marcheOuvert } from '../engine/devices.js';
 import { unlockLevel } from '../engine/levels.js';
 import { buildMode, comptoirTab, hoeMode, state } from './store.js';
@@ -91,8 +90,8 @@ const UI = {
       : { texte: 'Suis le chemin jusqu\'au port.', cible: visibleSel('.boussole') }),
   vendre: () => {
     if (distanceAuComptoir(state, persoCase()) > PORT.PORTEE && stageWindow !== 'comptoir') return { texte: 'Touche le comptoir, sous la halle.' };
-    if (!Object.keys(chargeDe(state)).length) return { texte: 'Charge d\'abord une récolte.' };
-    return ouvrirPort('vendre', 'Touche 💰 Vendre.') || { texte: 'Touche « Tout décharger ».', cible: visibleSel('[data-action="port-decharger"]') };
+    // (l'île : le port achète directement ce qu'on a ; un appui sur un objet, puis combien)
+    return ouvrirPort('vendre', 'Touche 💰 Vendre.') || { texte: 'Touche ce que tu vends, puis combien.', cible: visibleSel('.port-modal [data-action="port-vendre"]') || visibleSel('[data-action="port-fiche"][data-mode="vendre"]') };
   },
   graines: () => ouvrirPort('acheter', 'Touche 🛒 Acheter.') || { texte: 'Achète des graines.', cible: visibleSel('.port-modal [data-action="port-acheter"]') || visibleSel('[data-action="port-fiche"][data-mode="acheter"]') },
   maison: () => ({

@@ -6,17 +6,12 @@
 import {
   acheterAuPort, awakeMsAtHour, buyItem, buyPrice, comptoirDuPort, commencerObjectifs, createNewGame, DATA,
   distanceAuComptoir, enVenteAuPort, etalPort, executerCommande, farmSeed, isBuyable, lieuPort, marcheFerme,
-  objectiveValue, portDuMonde, portOuvert, sellPrice, simulateGame, unlockLevel, vendreAuPort, chargerPortage,
+  objectiveValue, portDuMonde, portOuvert, sellPrice, simulateGame, unlockLevel, vendreAuPort,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, reach, setInv, test, fonderVillage } from './aide.mjs';
 
 const P = DATA.PORT;
 
-// (fiche I2, le portage : ce qu'on vend au port, on l'y porte. L'inventaire posé, tout est chargé, sur la ferme.)
-function setCharge(s, inv) {
-  setInv(s, inv);
-  for (const [k, n] of Object.entries(inv)) assert(chargerPortage(s, k, n, null, { sansPresence: true }).ok, `${k} chargé`);
-}
 
 // Une partie neuve avec son port (le lieu calculé d'après le plan : portDuMonde), au niveau du commerce (celui de
 // l'élément « marche »), à 9 h, et la case devant le comptoir.
@@ -28,6 +23,9 @@ function auPort(seed = 'commerce') {
   return { s, c, ou: c.devant };
 }
 
+// (l'île : le port achète directement ce qu'on a, l'inventaire : plus de chargement à porter)
+const garnir = (s, q) => setInv(s, q);
+
 test('le comptoir du port bâti (l\'île) : ses cases, la case devant à portée', () => {
   const { s, c, ou } = auPort();
   assertEqual(c.cases.length, 3, 'ses cases : le comptoir de la halle');
@@ -35,10 +33,10 @@ test('le comptoir du port bâti (l\'île) : ses cases, la case devant à portée
   assertEqual(portOuvert(s, ou).ok, true, 'ouvert');
 });
 
-test('vendre au port : le prix de vente de market.js, les Comptes disent « Port : … », les paliers comptent', () => {
+test('vendre au port (l’île : ce qu’on a, sans rien porter) : le prix de vente de market.js, les Comptes disent « Port : … », les paliers comptent', () => {
   const { s, ou } = auPort();
   commencerObjectifs(s);
-  setCharge(s, { carotte: 5, laine: 2 });
+  garnir(s, { carotte: 5, laine: 2 });
   const avant = s.pieces;
   const r = vendreAuPort(s, 'carotte', 3, ou);
   assert(r.ok, r.error);
@@ -65,7 +63,7 @@ test('acheter au port : rien sur l\'île (docs/economie.md E4)', () => {
 
 test('refus : loin du comptoir, hors des heures, avant le niveau du commerce', () => {
   const { s, c, ou } = auPort();
-  setCharge(s, { carotte: 5 });
+  garnir(s, { carotte: 5 });
   const loin = c.devant + 10;
   assert(distanceAuComptoir(s, loin) > P.PORTEE, 'à dix cases');
   const r = vendreAuPort(s, 'carotte', 1, loin);
@@ -81,7 +79,7 @@ test('refus : loin du comptoir, hors des heures, avant le niveau du commerce', (
   const n = createNewGame('commerce');
   fonderVillage(n);
   n.awakeMs = awakeMsAtHour(9);
-  setCharge(n, { carotte: 1 });
+  garnir(n, { carotte: 1 });
   const nv = vendreAuPort(n, 'carotte', 1, comptoirDuPort(n).devant);
   assertEqual(nv.ok, false, 'avant le niveau : refusé');
   assertEqual(nv.error, `Le port commerce avec toi à partir du niveau ${unlockLevel('marche')}.`);
@@ -90,7 +88,7 @@ test('refus : loin du comptoir, hors des heures, avant le niveau du commerce', (
 
 test('les commandes port.vendre et port.acheter', () => {
   const { s, ou } = auPort();
-  setCharge(s, { patate: 4 });
+  garnir(s, { patate: 4 });
   s.pieces = 200;
   const v = executerCommande(s, { id: 'v1', type: 'port.vendre', args: { objet: 'patate', quantite: 4, case: ou } });
   assert(v.ok, v.error);

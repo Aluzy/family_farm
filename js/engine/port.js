@@ -37,7 +37,9 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, marcheFerme, marcheOuvert } from './devices.js';
 import { clockHours } from './clock.js';
-import { buyItem, buyPrice, buyQuote, isBuyable, sellableCount } from './market.js';
+import { buyItem, buyPrice, buyQuote, encaisserVente, isBuyable, sellableCount, sellPrice } from './market.js';
+import { takeStock } from './fridge.js';
+import { chroniqueVente } from './chronique.js';
 import { bumpCounter, isUnlocked } from './campaign.js';
 import { seedItem } from './crops.js';
 import { farmSeed, farmTerrain } from './terrain.js';
@@ -164,7 +166,9 @@ export function portDansSesHeures(state, h = clockHours(state)) {
 
 // Où est le port, en mots (loin de lui) : « Le port est au bout du chemin qui sort de la ferme, sur la côte
 // (la boussole y mène). Le comptoir, sous la halle, est ouvert de 6 h à 21 h. »
-export function ouEstLePort() {
+export function ouEstLePort(state = null) {
+  // (l'île : le port est celui que le joueur a bâti au bord de la mer)
+  if (state && estPartieIle(state)) return `Le port est le ponton que tu as bâti au bord de la mer : son comptoir, sous la halle, est ouvert ${heuresPort()}.`;
   return `${PORT.NOM} est au bout du chemin qui sort de la ferme, sur la côte (la carte du monde le montre, la boussole y mène). Son comptoir, sous la halle, est ouvert ${heuresPort()}.`;
 }
 
@@ -175,7 +179,7 @@ export function portOuvert(state, ou = null, o = {}) {
   if (estPartieIle(state)) { const r = refusPortIle(state); if (r) return { ok: false, raison: r, dist: Infinity }; }
   if (!marcheOuvert(state)) return { ok: false, raison: marcheFerme(state), dist: Infinity };
   const dist = o.sansPresence ? 0 : distanceAuComptoir(state, ou);
-  if (dist > PORT.PORTEE + EPS) return { ok: false, raison: `Tu n'es pas au port. ${ouEstLePort()}`, dist };
+  if (dist > PORT.PORTEE + EPS) return { ok: false, raison: `Tu n'es pas au port. ${ouEstLePort(state)}`, dist };
   if (!portDansSesHeures(state, Number.isFinite(o.heure) ? o.heure : clockHours(state))) return { ok: false, raison: `Le comptoir est fermé : il ouvre ${heuresPort()}.`, dist };
   return { ok: true, raison: null, dist };
 }
@@ -196,8 +200,10 @@ export function etalPort(state) {
   return Object.keys(DATA.OBJETS).filter((item) => enVenteAuPort(state, item)).map((item) => ({ item, prix: buyPrice(state, item) }));
 }
 
-// Ce que le joueur peut y vendre : [item] (ce qu'il y a porté : son chargement, fiche I2, portage.js).
+// Ce que le joueur peut y vendre : [item] (ce qu'il y a porté : son chargement, fiche I2, portage.js ; l'île : ce
+// qu'il a, l'inventaire et le frigo, tout ce qui a un prix : vendreStockAuPort).
 export function vendablesPort(state) {
+  if (estPartieIle(state)) return Object.keys(DATA.OBJETS).filter((k) => vendableAuPortIle(state, k) && Math.floor(sellableCount(state, k) + EPS) >= 1);
   const c = chargeDe(state);
   return Object.keys(DATA.OBJETS).filter((k) => !DATA.OBJETS[k].invendable && (c[k] || 0) >= 1);
 }
@@ -219,7 +225,23 @@ export function devisPort(state, item, qty = 1) {
 export function vendreAuPort(state, item, qty, ou = null, o = {}) {
   const ici = portOuvert(state, ou, o);
   if (!ici.ok) return fail(ici.raison);
+  if (estPartieIle(state)) return vendreStockAuPort(state, item, qty);
   return vendreCharge(state, item, qty);   // (les paliers de l'île : ventesPort, compté par vendreCharge)
+}
+
+// L'île (24 novembre) : le port achète directement ce que le joueur a, l'inventaire puis le frigo (market.js
+// takeStock) ; plus de chargement à porter. Tout ce qui a un prix se vend. → { ok, sold, gain } ou le refus.
+const vendableAuPortIle = (state, item) => !!DATA.OBJETS[item] && !DATA.OBJETS[item].invendable && sellPrice(item, state) > 0;
+export function vendreStockAuPort(state, item, qty) {
+  const def = DATA.OBJETS[item];
+  if (!def) return fail('Objet inconnu.');
+  if (!vendableAuPortIle(state, item)) return fail(`${def.nom} ne se vend pas.`);
+  const n = takeStock(state, item, Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS)));
+  if (!(n > 0)) return fail(`${def.nom} : tu n'en as pas.`);
+  const gain = encaisserVente(state, item, n, 'Port');
+  bumpCounter(state, 'ventesPort', gain);   // (les paliers de l'île, paliers.js : ventesPort)
+  chroniqueVente(state, item);              // (la première vente au port, dans la chronique)
+  return { ok: true, sold: n, gain };
 }
 
 // Le joueur (sur la case `ou`) décharge sous la halle : tout ce qu'il a porté se vend d'un coup (fiche I2 ; fiche I1c :

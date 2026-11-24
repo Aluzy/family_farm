@@ -82,28 +82,17 @@ test('une partie neuve a son port au niveau de départ ; elle ne rattrape pas le
 
 /* ---------- la vente sans limite, les caisses ---------- */
 
-test('la vente reste libre : tout se vend sous la halle, sans quota ; les caisses attendent le bac et partent avec lui', () => {
+test('la vente reste libre : tout se vend au comptoir, sans quota (l’île : ce qu’on a, directement)', () => {
   const { s, ou } = auPort('vente', B.PERIODE + 1, 10);
-  avancerBac(s);
   let vendus = 0;
   for (let k = 0; k < 40; k++) {
-    charger(s, { carotte: 12 });
+    setInv(s, { carotte: 12 });
     const r = vendreAuPort(s, 'carotte', 12, ou);
     assert(r.ok, r.error);
     assertEqual(r.gain, 12 * sellPrice('carotte'), 'toujours le prix de vente');
     vendus += r.sold;
   }
   assertEqual(vendus, 480, 'pas de borne');
-  assertEqual(s.port.vendu.carotte, 480, 'ce qui attend le bac');
-  assertEqual(caissesAQuai(s), B.CAISSES_MAX, 'les caisses, CAISSES_MAX au plus');
-  // le bac suivant accoste : elles sont toujours là ; il repart : elles partent avec lui
-  aller(s, 2 * B.PERIODE, B.HEURES[0] + 1);
-  avancerBac(s);
-  assert(caissesAQuai(s) > 0, 'à quai : chargées');
-  aller(s, 2 * B.PERIODE, B.HEURES[1]);
-  assertEqual(avancerBac(s).depart, true, 'il repart');
-  assertEqual(caissesAQuai(s), 0, 'parties avec lui');
-  assertEqual(s.port.vendu, {});
 });
 
 /* ---------- les commandes ---------- */
