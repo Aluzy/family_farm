@@ -117,27 +117,23 @@ function useTool(id) {
   }
   if (id === 'hache') {
     setAxeMode(true);
-    notify(`${def.ICONE} Hache en main : touche un arbre ou un buisson de la carte pour le couper.`);
     if (stageWindow) closeStageWindow();
     else refresh();
     return;
   }
   if (id === 'pioche') {
     setPickMode(true);
-    notify(`${def.ICONE} Pioche en main : touche un rocher de la carte pour le casser.`);
     if (stageWindow) closeStageWindow();
     else refresh();
     return;
   }
   if (id === 'faux') {
     setScytheMode(true);
-    notify(`${def.ICONE} Faux en main : touche une touffe d'herbe haute de la carte pour la faucher.`);
     if (stageWindow) closeStageWindow();
     else refresh();
     return;
   }
   setRodMode(true);
-  notify(`${def.ICONE} Canne à pêche en main : touche l'eau de l'étang ou de la mare pour y pêcher.`);
   if (stageWindow) closeStageWindow();
   else refresh();
 }

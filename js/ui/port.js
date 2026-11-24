@@ -10,7 +10,7 @@ import {
 } from '../engine/port.js';
 import { capaciteDe, capacitePortage, chargeDe, vehiculePortage, vehiculesPortage, volumeCharge, volumeDe } from '../engine/portage.js';
 import {
-  articleDe, avancerBac, caissesAQuai, catalogueImport, commandesDuBac, etatBac, heuresBac, importsAttendus, nomArticle,
+  avancerBac, caissesAQuai, catalogueImport, commandesDuBac, etatBac, heuresBac, importsAttendus, nomArticle,
   prendreAvisBac, prochainNiveau,
 } from '../engine/bac.js';
 import { setupPending } from '../engine/depart.js';
@@ -438,7 +438,7 @@ function watchSauvages() {
 }
 
 // Le bac (fiche I1c) : ses passages (bac.js avancerBac : son arrivée, son départ), et ce qu'ils disent au joueur : la
-// cloche et un mot à son arrivée (ses commandes, les imports livrés).
+// cloche et le mot à son arrivée ne se disent plus (leurs avis sont vidés sans bruit).
 function watchBac() {
   if (!state || setupPending(state)) return;
   // (I9a2 : sur une île en ligne, le bac et les contrats avancent dans le pas du monde, chez chacun : la page n'en dit
@@ -448,32 +448,11 @@ function watchBac() {
   if (!r) return;
   // (fiche I8b : les contrats d'export suivent le bac ; un contrat honoré, manqué, de nouveaux proposés)
   if (!vivant) avancerContrats(state);
-  const avisC = prendreAvisContrats(state).filter((a) => !vivant || nouvelAvis(a));
-  for (const a of avisC) {
-    const it = a.objet && DATA.OBJETS[a.objet];
-    if (a.quoi === 'honore') notify(`📜 Contrat d'export honoré : ${it.icone} ${it.nom} × ${formatQty(a.quantite)} (+${formatCoins(a.prime)} 💰 de prime).`, { kind: 'info', cible: { fenetre: 'comptoir' } });
-    else if (a.quoi === 'manque') notify(`📜 Le contrat de ${it.nom.toLowerCase()} s'efface : ${formatQty(a.livre)} livrés sur ${formatQty(a.quantite)} (ce qui est livré est payé).`, { kind: 'info' });
-    else if (a.quoi === 'proposes' && a.n) notify(`📜 Le bac propose ${a.n} contrat${a.n > 1 ? 's' : ''} d'export au comptoir.`, { kind: 'info', cible: { fenetre: 'comptoir' } });
-  }
+  // (le bac et ses contrats ne se disent plus : ni notification ni cloche ; leurs avis sont vidés)
+  const avisC = prendreAvisContrats(state);
+  const avis = prendreAvisBac(state);
   if (avisC.length) { persistState(); refresh(); }
-  const avis = prendreAvisBac(state).filter((a) => !vivant || nouvelAvis(a));
-  for (const a of avis.slice(-1)) {
-    const livres = a.livres.map((x) => { const ar = articleDe(x.cle, state); const n = ar ? x.quantite * (ar.lot || 1) : 0; return ar ? `${nomArticle(ar)[1]} ${nomArticle(ar)[0]}${n > 1 ? ` × ${n}` : ''}` : ''; }).filter(Boolean);
-    const morceaux = [a.commandes ? `${a.commandes} commande${a.commandes > 1 ? 's' : ''} t'attend${a.commandes > 1 ? 'ent' : ''} au comptoir` : null, livres.length ? `livré à la ferme : ${livres.join(', ')}` : null].filter(Boolean);
-    const rendus = a.rendus.length ? ' (une bête sans place : son prix t\'est rendu)' : '';
-    notify(`⛴️ Le bac accoste au port${morceaux.length ? ` : ${morceaux.join(' ; ')}` : '.'}${rendus}`, { kind: 'info', cible: { fenetre: 'comptoir' } });
-    son('cloche');
-  }
   if (avis.length || r.depart || r.arrivees.length) { persistState(); refresh(); }
-}
-
-// (I9a2 : les avis déjà dits en ligne, par leur texte)
-const avisDits = new Set();
-function nouvelAvis(a) {
-  const k = JSON.stringify(a);
-  if (avisDits.has(k)) return false;
-  avisDits.add(k);
-  return true;
 }
 
 // Le bac pour la scène (js/carte/ferme/bac.js) : { aQuai, caisses, jour, heures }.
