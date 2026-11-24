@@ -677,8 +677,7 @@ registerActions({
     }
   },
   'water-all': (target) => {
-    const result = applyResult(executer('potager.toutArroser', { lieu: target.dataset.lieu }));
-    if (result.ok) notify(`💧 ${plural(result.arrosees, 'parcelle')} ${accord(result.arrosees, 'arrosée')}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
+    applyResult(executer('potager.toutArroser', { lieu: target.dataset.lieu }));
   },
   'harvest-all': (target) => {
     const result = applyResult(executer('potager.toutRecolter', { lieu: target.dataset.lieu, ...(enLigne ? { direct: true } : {}) }));

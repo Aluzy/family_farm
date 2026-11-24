@@ -5,7 +5,6 @@ import { aCruche, crucheARemplir, jaugeCruche, remplirCruche } from '../engine/c
 import { executer } from './commandes.js';
 import { GROUPE_MIN, groupDiscount } from '../engine/automation.js';
 import { TIRED } from '../engine/stamina.js';
-import { accord, plural } from './common.js';
 import { memberName } from '../engine/family.js';
 import { asleep } from '../engine/night.js';
 import { mainCharacter } from '../engine/depart.js';
@@ -77,8 +76,8 @@ function arroserCases(cases) {
   if (cases.length >= GROUPE_MIN && !enLigne) groupDiscount(state, avant);   // (en ligne, pas de remise)
   if (n) persistState();
   refresh();
-  if (n) notify(`💧 ${plural(n, 'culture')} ${accord(n, 'arrosée')}${vide ? ' · la cruche est vide : au puits !' : raison ? ` · ${raison}` : ''}`);
-  else if (vide) notify(`${DATA.OBJETS.cruche.icone} La cruche est vide : au puits d'abord, puis on arrose.`);
+  // (l'arrosage réussi ne se dit pas : seuls les refus s'affichent)
+  if (vide) notify(`${DATA.OBJETS.cruche.icone} La cruche est vide : au puits d'abord, puis on arrose.`);
   else if (raison) notify(raison, { son: 'erreur' });
   if (vide) allerAuPuits(true);
 }
@@ -104,7 +103,6 @@ export function puiserFromStage(casePuits) {
   const c = casePuits === null || casePuits === undefined ? null : Number(casePuits);
   const r = Number.isInteger(c) && c >= 0 ? executer('cruche.remplir', { case: c }) : remplirCruche(state, c);
   if (!r.ok) { arrosageReste = []; notify(`${DATA.OBJETS.cruche.icone} ${r.error}`); return r; }
-  notify(`${DATA.OBJETS.cruche.icone} Cruche remplie : ${r.litres} L pour arroser.`);
   persistState();
   refresh();
   // (un arrosage en glissant attendait la cruche pleine : il reprend où il s'était arrêté)

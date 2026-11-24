@@ -210,7 +210,7 @@ ecouterJournal((type, d) => {
 function direCompagnon(d) {
   const nom = memberName(state, d.id), cible = { fenetre: 'famille' };
   if (d.action === 'arroser') {
-    notify(null, { cumul: { cle: 'compagnon-arroser', quantites: { n: d.n || 1 }, texte: (t) => `💧 ${nom} a arrosé ${plural(t.n, 'légume')} qui avai${t.n > 1 ? 'en' : ''}t soif.` }, cible, son: false });
+    // (l'arrosage ne se dit pas)
   } else if (d.action === 'ramasser') {
     notify(null, { cumul: { cle: 'compagnon-ramasser', quantites: d.items, texte: (t) => `🧺 ${nom} a ramassé ${itemsText(t)} autour de la ferme.` }, cible, son: false });
   } else if (d.action === 'recolter' || d.action === 'cueillir') {
