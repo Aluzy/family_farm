@@ -6294,7 +6294,13 @@ export const RAW_DATA = {
       "genet": { "geste": "couper", "coups": 1, "fin": { "bois": [1, 1] }, "retour": [3, 5] },
       "souche": { "geste": "couper", "coups": 2, "coup": { "bois": 1 }, "fin": { "bois": [1, 2] }, "retour": [12, 20] },
       "tronc_couche": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 4] }, "retour": [12, 20] },
-      "ronces": { "geste": "cueillir", "variantes": [0, 1], "apres": 2, "fin": { "mures": [2, 4] }, "retour": [3, 5] },
+      "ronces": {
+        "geste": "couper",
+        "coups": 1,
+        "fin": { "bois": [1, 1] },
+        "retour": [3, 5],
+        "aussi": { "geste": "cueillir", "variantes": [0, 1], "apres": 2, "fin": { "mures": [2, 4] }, "retour": [3, 5] }
+      },
       "chataignier": {
         "geste": "couper",
         "coups": 3,

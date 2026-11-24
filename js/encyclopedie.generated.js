@@ -1205,7 +1205,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "mures",
      "terme": "Mûres",
-     "description": "Dans les forêts du grand monde, les ronciers qui portent des mûres (noires ou rouges ; un roncier en fleur n'en a pas encore) se cueillent à la main : 2 à 4 mûres, pour un peu d'énergie. Le roncier reste là, sans fruits, et en porte de nouveau 3 à 5 jours plus tard. Elles se mangent fraîches (elles se gardent peu) ou se vendent.",
+     "description": "Dans les forêts du grand monde, les ronciers qui portent des mûres (noires ou rouges ; un roncier en fleur n'en a pas encore) se cueillent à la main : 2 à 4 mûres, pour un peu d'énergie. Le roncier reste là, sans fruits, et en porte de nouveau 3 à 5 jours plus tard ; la hache en main, il se coupe pour 1 bois. Elles se mangent fraîches (elles se gardent peu) ou se vendent.",
      "liens": [
       "recolte_du_monde",
       "buissons"
