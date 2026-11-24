@@ -1,4 +1,5 @@
 import { DATA, prixIle } from '../engine/catalog.js';
+import { estPartieIle } from '../engine/ile/jeu.js';
 import { EPS } from '../engine/base.js';
 import { clockHours } from '../engine/clock.js';
 import { countItem } from '../engine/inventory.js';
@@ -73,8 +74,15 @@ export const PORT_TABS = [
   { id: 'charrette', label: 'La charrette du village', icon: '🛞' },
 ];
 
+// Les onglets du comptoir : sur l'île (24 novembre), Vendre seul (on y vend ce qu'on a ; ni achat, ni portage, ni
+// bac, ni contrats, ni niveau, ni charrette).
+const ILE_TABS = ['vendre'];
+function onglets() {
+  return estPartieIle(state) ? PORT_TABS.filter((t) => ILE_TABS.includes(t.id)) : PORT_TABS;
+}
 function currentTab() {
-  return PORT_TABS.find((t) => t.id === comptoirTab) || PORT_TABS[0];
+  const L = onglets();
+  return L.find((t) => t.id === comptoirTab) || L[0];
 }
 
 // La case du personnage sur la carte (-1 : pas de carte).
@@ -87,6 +95,8 @@ function ouPerso() {
 const vendable = (item) => Math.floor(sellableCount(state, item) + EPS);
 // (fiche I2 : ce qui est chargé, à vendre au port)
 const charge = (item) => chargeDe(state)[item] || 0;
+// (ce qui se vend au port : sur l'île, ce qu'on a, l'inventaire et le frigo ; avant, ce qu'on y a porté)
+const aVendre = (item) => (estPartieIle(state) ? vendable(item) : charge(item));
 // Le personnage est-il sur la ferme (on y charge) ?
 function surLaFerme() {
   const t = ouPerso();
@@ -98,7 +108,8 @@ function presence() {
   const r = portOuvert(state, ouPerso());
   // (I9c : en ligne, la caisse est commune : ce que chacun vend l'alimente, ce qu'il achète y puise)
   const caisse = enLigne ? ` La caisse est commune : ${formatCoins(state.pieces)} 💰.` : '';
-  if (r.ok) return { ici: true, texte: `Te voilà au comptoir du port, sous la halle : vends ce que tu as en trop, achète tes graines. Le bac emporte tout. Ouvert ${heuresPort()}.${caisse}` };
+  if (r.ok) return { ici: true, texte: estPartieIle(state) ? `Te voilà au comptoir du port, sous la halle : vends ce que tu as en trop. Ouvert ${heuresPort()}.` : `Te voilà au comptoir du port, sous la halle : vends ce que tu as en trop, achète tes graines. Le bac emporte tout. Ouvert ${heuresPort()}.${caisse}` };
+  if (estPartieIle(state)) return { ici: false, texte: r.raison };
   if (!lieuPort(state)) return { ici: false, texte: `${ouEstLePort()} (La carte du monde se prépare.)` };
   const b = state.monde && state.monde.but;
   return { ici: false, texte: r.raison, boussole: r.dist > PORT.PORTEE && !(b && b.sorte === 'port') };
@@ -107,7 +118,7 @@ function presence() {
 // En-tête : les onglets en icônes seules, et le « ? ».
 export function portTabsHtml() {
   const cur = currentTab().id;
-  return `<div class="inv-tabs" role="group" aria-label="${PORT.NOM}">${PORT_TABS
+  return `<div class="inv-tabs" role="group" aria-label="${PORT.NOM}">${onglets()
     .map((t) => `<button type="button" class="inv-tab${t.id === cur ? ' active' : ''}" data-action="comptoir-tab" data-tab="${t.id}" aria-pressed="${t.id === cur}" title="${t.label}" aria-label="${t.label}"><span aria-hidden="true">${t.icon}</span></button>`)
     .join('')}<button type="button" class="btn help-btn shop-help" data-action="port-aide" aria-label="Aide : ${currentTab().label}" title="Comment ça marche">?</button></div>`;
 }
@@ -118,9 +129,9 @@ function bandeauHtml(p) {
 }
 
 function venteSlot(item, ici) {
-  const it = DATA.OBJETS[item], n = charge(item), prix = prixIle(item);
+  const it = DATA.OBJETS[item], n = aVendre(item), prix = prixIle(item);
   return shopSlot(it.icone, it.nom, `data-item="${item}"`, prix, pxText(String(n), 'light'), n < 1 || !ici,
-    `${it.nom} : ${formatCoins(prix)} pièces l'unité, ${formatQty(n)} chargé${n > 1 ? 's' : ''}`).replace('data-action="port-fiche"', 'data-action="port-fiche" data-mode="vendre"');
+    `${it.nom} : ${formatCoins(prix)} pièces l'unité, ${formatQty(n)} ${estPartieIle(state) ? 'en stock' : `chargé${n > 1 ? 's' : ''}`}`).replace('data-action="port-fiche"', 'data-action="port-fiche" data-mode="vendre"');
 }
 
 // Une case à charger (l'onglet Porter) : son volume au lieu du prix.
@@ -149,6 +160,8 @@ function porterHtml() {
 
 // L'onglet Vendre : ce qui est chargé ; sous la halle, tout décharger.
 function vendreHtml(p) {
+  // (l'île : tout ce qu'on a et qui se vend, directement ; un appui ouvre sa fiche : ×1, ×5, tout)
+  if (estPartieIle(state)) return slotsHtml(vendablesPort(state).map((k) => venteSlot(k, p.ici)), 'Rien à vendre : récolte, cueille, fabrique, puis reviens.');
   const v = vendablesPort(state), gain = v.reduce((t, k) => t + charge(k) * prixIle(k), 0);
   const bouton = p.ici && v.length ? `<div class="row"><button type="button" class="btn primary" data-action="port-decharger">⬇️ Tout décharger sous la halle (+${formatCoins(gain)} 💰)</button></div>` : '';
   // (fiche I1c : des matériaux du chantier du port portés : les y apporter avant de tout vendre)
@@ -339,13 +352,13 @@ function ficheHtml(o) {
   const it = DATA.OBJETS[o.id], p = presence();
   const absent = p.ici ? '' : `<li>${p.texte}</li>`;
   if (o.mode === 'vendre') {
-    const n = charge(o.id), attrs = `data-action="port-vendre" data-item="${o.id}"`, prix = prixIle(o.id);
+    const n = aVendre(o.id), attrs = `data-action="port-vendre" data-item="${o.id}"`, prix = prixIle(o.id);
     const lots = [lotBtn(attrs, 1, '×1', `+${formatCoins(prix)} 💰`, n >= 1 && p.ici)];
     if (n >= 5) lots.push(lotBtn(attrs, 5, '×5', `+${formatCoins(5 * prix)} 💰`, p.ici));
     if (n > 1 && n !== 5) lots.push(lotBtn(attrs, n, `Tout (${n})`, `+${formatCoins(n * prix)} 💰`, p.ici));
     return `
       <div class="item-head"><span class="item-icon" aria-hidden="true">${it.icone}</span><span class="item-title"><strong id="item-title">${it.nom}</strong><span class="num">${formatCoins(prix)} 💰 l'unité</span></span></div>
-      <ul class="item-lines"><li>Chargé : ${formatQty(n)}</li>${absent}</ul>
+      <ul class="item-lines"><li>${estPartieIle(state) ? 'En stock' : 'Chargé'} : ${formatQty(n)}</li>${absent}</ul>
       <div class="row item-actions lot-btns">${lots.join('')}</div>`;
   }
   if (o.mode === 'charger') {
@@ -380,12 +393,13 @@ function ouvrirFiche(mode, id) {
 export function renderPortModal() {
   const body = document.querySelector('#modal-root .port-modal .item-body');
   if (!body || !fiche) return;
-  if ((fiche.mode === 'vendre' ? charge(fiche.id) : fiche.mode === 'charger' ? vendable(fiche.id) : 1) < 1) { fiche = null; closeModal(); return; }
+  if ((fiche.mode === 'vendre' ? aVendre(fiche.id) : fiche.mode === 'charger' ? vendable(fiche.id) : 1) < 1) { fiche = null; closeModal(); return; }
   morph(body, ficheHtml(fiche));
 }
 
 function aideTexte(tab) {
-  const base = `${ouEstLePort()} Approche-toi du comptoir, sous la halle (touche-le : ton personnage y va).`;
+  const base = `${ouEstLePort(state)} Approche-toi du comptoir, sous la halle (touche-le : ton personnage y va).`;
+  if (tab === 'vendre' && estPartieIle(state)) return `${base} Le port t'achète tout ce que tu as et qui se vend (l'inventaire et le frigo), à prix fixe : touche un objet, choisis combien. Chaque unité vendue baisse de ${DATA.MARCHE.PAS} points le cours d'achat de l'objet, sans passer sous son plancher.`;
   if (tab === 'vendre') return `${base} Le port t'achète tout ce que tu y portes (l'onglet Porter : charge-le sur la ferme), à prix fixe : le bac emporte tout, sans limite. Sous la halle, « Tout décharger » vend ton chargement d'un coup. Chaque unité vendue baisse de ${DATA.MARCHE.PAS} points le cours d'achat de l'objet, sans passer sous son plancher.`;
   if (tab === 'commandes') return `${base} À chaque passage (tous les ${DATA.PORT.BAC.PERIODE} jours, ${heuresBac()}), le bac apporte des commandes, tirées de ce que tu sais produire. Porte ce qu'elles demandent (l'onglet Porter, sur la ferme) et honore-les au comptoir : le prix de vente, plus la prime, plus de l'expérience. Elles valent jusqu'au passage suivant ; une commande manquée ne coûte rien. Le bac emporte aussi tout ce que tu vends : tes caisses attendent sur le quai et partent avec lui.`;
   if (tab === 'contrats') return `${base} À partir du port de niveau ${DATA.PRODUCTION.CONTRATS.NIVEAU}, le bac propose à chaque passage des contrats d'export : de grosses commandes (cent pains, trente fromages…) à livrer sur ${DATA.PRODUCTION.CONTRATS.PASSAGES} passages, avec une prime. Accepte-les au comptoir ; livre-les en autant de fois que tu veux, avec ce que tu as porté ou par la tournée du port d'un villageois (elle les livre d'abord). Chaque livraison est payée au prix de vente ; le contrat complet, sa prime. Manqué, il s'efface sans rien coûter. Plus le port est grand, plus les contrats sont gros. Le quai de chargement (l'Atelier) regroupe les envois de la tournée.`;
@@ -495,7 +509,7 @@ export function charretteModele() {
 export function portComptoirDepuisCarte() {
   // (pas encore ouvert : pourquoi, plutôt que rien ; l'île : le village pas encore fondé)
   if (!tabAvailable('comptoir')) {
-    notify(`⚓ ${refusPortIle(state) || 'Le port n\'est pas encore ouvert.'}`, { kind: 'info' });
+    notify(`⚓ ${refusPortIle(state) || portOuvert(state, ouPerso()).raison || 'Le port n\'est pas encore ouvert.'}`, { kind: 'info' });
     return;
   }
   openStageWindow('comptoir');

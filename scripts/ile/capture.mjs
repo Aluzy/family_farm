@@ -28,6 +28,17 @@ if (args.includes('--outils')) {
   s.outils = { ...(s.outils || {}), hache: true, pioche: true, faux: true };
   s.stamina = 1000;
 }
+// (--fonde : le village fondé (la place, le port, un villageois : tests/engine/aide.mjs fonderVillage), le personnage
+// devant le comptoir, à 10 h, de quoi vendre)
+if (args.includes('--fonde')) {
+  const { fonderVillage, reach } = await import('../../tests/engine/aide.mjs');
+  reach(s, 'marche');
+  fonderVillage(s);
+  const { portIle } = await import('../../js/engine/ile/port-ile.js');
+  s.monde.ici = portIle(s).devant;
+  s.awakeMs = E.awakeMsAtHour(10);
+  for (const [k, n] of Object.entries({ carotte: 12, aubergine: 5, oeuf: 6, bois: 20 })) E.addItem(s, k, n);
+}
 // (--port : le port posé sur la rive la plus proche (son ponton, sa halle : js/engine/ile/port-ile.js), le personnage
 // à côté de sa halle ; sa disposition dans le journal)
 if (args.includes('--port')) {
