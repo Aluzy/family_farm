@@ -3203,6 +3203,8 @@ span.encyclo-item.encyclo-inconnue { color: #866f94; }
 .tool-bar .galop-rangee { position: absolute; right: 0; bottom: calc(100% + 8px); --u: 7.5px; }
 .tool-bar.roue-ouverte .galop-rangee { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .roue, .tool-bar .tool-slot.roue-case { transition: none; } }
+/* la roue ouverte : les notifications sont suspendues (cachées), elles reviennent quand elle se referme */
+body:has(#tool-bar.roue-ouverte) #toast-root { visibility: hidden; }
 .tool-slot {
   box-sizing: border-box;
   height: 100%;
