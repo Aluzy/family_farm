@@ -93,7 +93,6 @@ function useCheval() {
 }
 
 function useTool(id) {
-  const def = toolDef(id);
   if (!hasTool(state, id)) return;
   if (enMain() === id) {                     // l'outil en main : le ranger
     if (id === 'houe') ACTIONS['hoe-toggle']();
