@@ -156,7 +156,7 @@
         L.image(MAP.tiles, v(MAP.image));
         A.feuille(this, 'verger', 'verger.png', TREE_FRAME, v);
         A.feuille(this, 'arbre_clair_sp', 'arbre_clair_sp.png', { frameWidth: 56, frameHeight: 64 }, v);
-        L.image(F.BUISSON_HD.cle, v(F.BUISSON_HD.fichier));   // (essai : le buisson des prés en définition double, vegetation.js)
+        for (const h of Object.values(F.PLANTES_HD)) L.image(h.cle, v(h.fichier));   // (essai : des plantes en définition double, vegetation.js)
         A.feuille(this, 'pin_clair_sp', 'pin_clair_sp.png', { frameWidth: 72, frameHeight: 64 }, v);
         L.image('terre_bords', v('terre_bords.png'));
         L.image('terre_serre', v('terre_serre.png'));   // les bacs de la Serre (scripts/carte/terre_serre.py)
