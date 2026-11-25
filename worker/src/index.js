@@ -126,6 +126,7 @@ async function loadAnnuaire(bucket) {
 function outilsAdmin(env) {
   return {
     page: async () => (await import('./admin.html')).default,
+    sprites: async () => (await import('./sprites.html')).default,
     rapport: async (fenetreMs) => {
       const now = new Date(), since = new Date(now.getTime() - fenetreMs);
       const { sessions, unreadable, truncated } = await loadFiles(env.SESSIONS, 'sessions/', since, MAX_READ);

@@ -16,6 +16,8 @@
 //   - En ligne : GET /admin/api/enligne : comptes, mondes, amis, joueurs en ligne (le Durable Object des comptes).
 //   - Ventes : GET /admin/api/ventes : les gemmes vendues (par mode : test ou réel), les packs, les articles
 //     achetés (boutique.mjs) ; jamais de compte.
+//   - Atelier des sprites : GET /admin/sprites : une page à part (sprites.html), l'outil qui tire d'une image un
+//     sprite vu de haut à 45° ; tout s'y calcule dans le navigateur, rien ne remonte au Worker.
 // Rien ici n'écrit : la console lit.
 
 const SID_RE = /^[A-Za-z0-9_-]{8,64}$/;
@@ -163,6 +165,13 @@ export async function routeAdmin(request, env, url, outils, o = {}) {
     return new Response(page, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer',
       // (la page ne charge qu'elle-même et ne parle qu'à ses /admin/api)
       'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" } });
+  }
+  if (p === '/admin/sprites') {
+    const page = outils.sprites ? await outils.sprites() : '';
+    if (!page) return json({ ok: false, erreur: 'not found' }, 404);
+    return new Response(page, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer',
+      // (l'atelier ne parle à personne : connect-src 'none' ; blob: pour lire l'image choisie sur l'appareil)
+      'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'self' data: blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" } });
   }
   if (p === '/admin/api/moi') return json({ ok: true, email: acces.email });
   if (p === '/admin/api/couts') { const r = await couts(env, o); return json(r, r.ok ? 200 : r.statut); }

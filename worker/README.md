@@ -350,6 +350,15 @@ toi seul. Cinq écrans :
 - **Sessions et retours** : les commentaires des joueurs, les erreurs techniques, les sessions (le contenu de chacune) ;
 - **En ligne** : comptes, mondes, amitiés, qui est en ligne (son prénom ; jamais d'adresse e-mail).
 
+Et un outil, à part : l'**Atelier des sprites** (`src/sprites.html`, adresse `/admin/sprites`, lien dans la barre
+de la console), derrière le même accès. Il tire d'une image (PNG transparent, dessin, photo) un sprite vu de haut à
+45° : détourage du fond en Oklab, échantillonnage qui garde les traits sombres, regroupement des couleurs et rampes
+Moon Bloom, soleil sur 24 h, contour d'un pixel, retouche au pixel ; il exporte le PNG, la normal map (`_n.png`),
+une planche extrudée et son atlas Phaser (`.json`, ancre au pied). Il propose aussi des modèles procéduraux (forge,
+puits, silo, mur raccordé, arbre, buffet) et un mode « 2 faces » (dessus + face avant). Tout se calcule dans le
+navigateur : la page ne parle à aucun serveur (`connect-src 'none'`). Un sprite qui en sort passe encore les règles
+de dessin de `CLAUDE.md` (projection, nuances, couleurs comptées, vérification en jeu) avant d'entrer dans le jeu.
+
 La console ne fait que lire. Elle est **fermée** tant que les réglages ci-dessous n'existent pas.
 
 ### Mise en route (une seule fois)
