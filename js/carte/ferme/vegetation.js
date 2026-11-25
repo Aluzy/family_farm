@@ -58,9 +58,12 @@
   // de jeu) ; son pied à `pied` de sa hauteur (comme cette variante). w : la largeur du dessin.
   //   buisson_pre : 64 × 35, à la largeur du buisson large (44 px ; pied 24 / 27)
   //   sapin : 64 × 94, à la largeur du plus grand sapin (42 px ; pied 67 / 70)
+  //   arbre_clair (le chêne clair, celui d'un gland planté) : 64 × 68, deux fois la largeur de l'ancien (96 px ;
+  //     pied 61 / 64)
   const PLANTES_HD = {
     buisson_pre: { cle: 'buisson_hd', fichier: 'buisson_hd.png', w: 64, largeur: 44, pied: 24 / 27 },
     sapin: { cle: 'sapin_hd', fichier: 'sapin_hd.png', w: 64, largeur: 42, pied: 67 / 70 },
+    arbre_clair: { cle: 'chene_hd', fichier: 'chene_hd.png', w: 64, largeur: 96, pied: 61 / 64 },
   };
   global.FermeCarte.PLANTES_HD = PLANTES_HD;
 
