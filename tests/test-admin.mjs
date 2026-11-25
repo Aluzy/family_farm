@@ -93,6 +93,7 @@ test('routes : lecture seule, page avec CSP, paramètres vérifiés, rapport sur
     lire: async (cle) => { lus.push(cle); return cle.includes('abcdefgh12') ? { sid: 'abcdefgh12' } : null; },
     enLigne: async () => ({ ok: true, comptes: 4 }),
     ventes: async () => ({ ok: true, mode: 'test', gemmesEnCirculation: 550 }),
+    sprites: async () => '<!doctype html><title>Atelier des sprites</title>',
   };
   const jwt = await jeton();
   const appel = async (chemin, init) => { const r = await routeAdmin(requete(chemin, jwt, init), ENV, new URL('https://x' + chemin), outils, o); return { statut: r.status, r, corps: r.headers.get('Content-Type').includes('json') ? await r.json() : await r.text() }; };
@@ -113,6 +114,10 @@ test('routes : lecture seule, page avec CSP, paramètres vérifiés, rapport sur
   eq(lus, ['sessions/abcdefgh12.json', 'players/inconnu123.json'], 'rien d\'autre n\'est lu');
   eq((await appel('/admin/api/enligne')).corps.comptes, 4);
   eq((await appel('/admin/api/ventes')).corps.gemmesEnCirculation, 550, 'les ventes de gemmes');
+  const atelier = await appel('/admin/sprites');
+  const csp = atelier.r.headers.get('Content-Security-Policy');
+  eq([atelier.statut, /Atelier des sprites/.test(atelier.corps), /connect-src 'none'/.test(csp), /img-src 'self' data: blob:/.test(csp), atelier.r.headers.get('X-Frame-Options')], [200, true, true, true, 'DENY'], 'l\'atelier des sprites : derrière Access, ne parle à personne');
+  eq((await routeAdmin(requete('/admin/sprites'), ENV, new URL('https://x/admin/sprites'), outils, o)).status, 403, 'l\'atelier sans Access : rien');
   eq((await appel('/admin/api/rien')).statut, 404);
 });
 

@@ -1,0 +1,2560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<!-- L'atelier des sprites de la console d'administration (worker/src/admin.mjs, route /admin/sprites) : il
+     transforme une image en sprite vu de haut à 45° (détourage Oklab, échantillonnage, rampes Moon Bloom,
+     soleil 24 h, contour 1 px) et exporte le PNG, la normal map et l'atelier Phaser. Tout se fait dans le
+     navigateur : la page ne charge rien d'autre qu'elle-même et n'envoie rien au serveur. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Atelier des sprites — Console Moon Bloom</title>
+<style>
+  :root {
+    --bg: #14121d;
+    --bg-deep: #0e0c15;
+    --panel: #1f1c2b;
+    --panel-2: #2a263b;
+    --border: #3d3756;
+    --accent: #f0b44c;
+    --green: #6ad08f;
+    --blue: #7ab8ff;
+    --text: #f4f0e8;
+    --muted: #a8a0be;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-size: 13px; overflow: hidden; user-select: none;
+  }
+
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+  canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: #413a5c; border-radius: 999px; }
+
+  .app { display: flex; flex-direction: column; width: 100vw; height: 100dvh; }
+
+  /* EN-TÊTE */
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    padding: 6px 10px; background: var(--panel); border-bottom: 1px solid var(--border);
+    flex-shrink: 0; flex-wrap: wrap; z-index: 20;
+  }
+  .retour { color: var(--muted); text-decoration: none; font-weight: 600; font-size: 11px; border: 1px solid var(--border); border-radius: 7px; padding: 3px 8px; }
+  .retour:hover { color: var(--text); border-color: #5b5280; }
+  .brand { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; flex-wrap: wrap; }
+  .badge {
+    background: rgba(106, 208, 143, 0.14); border: 1px solid rgba(106, 208, 143, 0.45);
+    color: var(--green); border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700;
+  }
+  .badge.fid {
+    background: rgba(122, 184, 255, 0.14); border-color: rgba(122, 184, 255, 0.45); color: var(--blue);
+  }
+
+  .seg {
+    display: inline-flex; background: var(--bg-deep); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; flex-wrap: wrap;
+  }
+  .seg button {
+    background: transparent; color: var(--muted); border: 0; padding: 5px 8px;
+    font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.12s, color 0.12s;
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button.active { background: var(--accent); color: #1b1408; font-weight: 700; }
+
+  /* WORKSPACE : MOBILE-FIRST PUIS 3 COLONNES DESKTOP */
+  .workspace { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+
+  .viewport-col {
+    position: relative; height: 45dvh; min-height: 245px; background: var(--bg-deep);
+    border-bottom: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  .vp-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 5px;
+    padding: 5px 8px; background: rgba(20, 18, 29, 0.95); border-bottom: 1px solid var(--border);
+    font-size: 11px; flex-wrap: wrap; z-index: 5;
+  }
+  .vp-tools {
+    display: flex; align-items: center; justify-content: space-between; gap: 5px;
+    padding: 4px 8px; background: rgba(26, 23, 38, 0.92); border-bottom: 1px solid var(--border);
+    font-size: 11px; flex-wrap: wrap; z-index: 5;
+  }
+  .canvas-wrap {
+    position: relative; flex: 1; min-height: 150px; display: flex; align-items: center; justify-content: center;
+    overflow: hidden; touch-action: none;
+  }
+  .vp-footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 4px 9px; background: rgba(20, 18, 29, 0.96); border-top: 1px solid var(--border);
+    font-size: 10.5px; color: var(--muted); flex-wrap: wrap;
+  }
+
+  .side-col {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 9px; padding-bottom: 64px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .right-col { display: contents; }
+
+  .tab-pane { display: none; flex-direction: column; gap: 9px; }
+  .tab-pane.active { display: flex; }
+
+  /* CARTES & FORMULAIRES */
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px; display: flex; flex-direction: column; gap: 7px;
+  }
+  .card h3 {
+    margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--accent); display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  }
+  .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .chk-lbl { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--text); font-size: 11px; }
+  .chk-lbl input { accent-color: var(--accent); margin: 0; cursor: pointer; }
+
+  .field { display: flex; flex-direction: column; gap: 2px; }
+  .field-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); }
+  .field-head b { color: var(--accent); font-family: ui-monospace, monospace; font-size: 11px; }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+    border-radius: 999px; background: var(--bg-deep); border: 1px solid var(--border); outline: none; margin: 2px 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%;
+    background: var(--accent); border: 2px solid #20170a; cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 15px; height: 15px; border-radius: 50%; background: var(--accent); border: 2px solid #20170a; cursor: pointer;
+  }
+
+  select, button.btn, label.btn {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 7px; padding: 5px 8px; font-size: 11px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px; outline: none;
+  }
+  button.btn:hover, label.btn:hover { border-color: #5b5280; }
+  button.btn.primary { background: linear-gradient(180deg, #f5c663, #d89628); color: #1e1508; border-color: #f8da8b; font-weight: 700; }
+  button.btn.green { background: rgba(106, 208, 143, 0.16); color: #aef4c6; border-color: rgba(106, 208, 143, 0.5); }
+  button.btn.active-tool { background: var(--accent); color: #1b1408; border-color: #fae094; font-weight: 700; }
+
+  .dropzone {
+    border: 1.5px dashed var(--border); border-radius: 9px; padding: 8px;
+    text-align: center; background: rgba(255, 255, 255, 0.02); cursor: pointer; font-size: 11px;
+  }
+  .dropzone.drag { border-color: var(--accent); background: rgba(240, 180, 76, 0.1); }
+
+  .src-box {
+    display: flex; gap: 9px; align-items: center; background: var(--bg-deep);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px;
+  }
+  .thumb {
+    width: 74px; height: 74px; border: 1px solid var(--border); border-radius: 6px;
+    background: repeating-conic-gradient(#252134 0% 25%, #1a1725 0% 50%) 50% / 12px 12px;
+    cursor: crosshair; flex-shrink: 0;
+  }
+  .swatch {
+    display: inline-block; width: 13px; height: 13px; border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.45); vertical-align: middle;
+  }
+  input[type="color"] {
+    width: 24px; height: 24px; padding: 0; border: 1px solid var(--border);
+    border-radius: 5px; background: none; cursor: pointer;
+  }
+
+  .neso-pad {
+    display: inline-grid; grid-template-columns: repeat(3, 26px); gap: 3px;
+    background: var(--bg-deep); padding: 4px; border-radius: 7px; border: 1px solid var(--border);
+  }
+  .neso-pad button {
+    padding: 4px 0; font-size: 10.5px; font-weight: 700; border-radius: 4px;
+    background: var(--panel-2); color: var(--muted); border: 1px solid var(--border); cursor: pointer;
+  }
+  .neso-pad button.on { background: var(--accent); color: #1b1408; border-color: #fae094; }
+
+  .cluster-list { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
+  .cluster-row {
+    display: flex; align-items: center; gap: 6px; background: var(--bg-deep);
+    border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; font-size: 10.5px;
+  }
+  .ramp-preview {
+    display: inline-flex; height: 12px; width: 48px; border-radius: 3px; overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.25); flex-shrink: 0;
+  }
+  .ramp-preview i { flex: 1; display: block; }
+
+  .sun-box {
+    display: flex; align-items: center; gap: 10px; background: var(--bg-deep);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px;
+  }
+  #sunPad { width: 76px; height: 76px; border-radius: 50%; border: 1px solid #534a73; cursor: grab; flex-shrink: 0; touch-action: none; }
+
+  nav.mobile-tabs {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 54px;
+    display: grid; grid-template-columns: repeat(5, 1fr); background: #1a1725;
+    border-top: 1px solid var(--border); z-index: 40;
+  }
+  nav.mobile-tabs button {
+    background: transparent; color: var(--muted); border: 0; border-top: 2px solid transparent;
+    padding: 5px 2px; font-size: 10px; font-weight: 600; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  }
+  nav.mobile-tabs button.active { color: var(--accent); border-top-color: var(--accent); background: rgba(240, 180, 76, 0.08); font-weight: 700; }
+
+  #toast {
+    position: fixed; bottom: 64px; right: 12px; background: #272238; border: 1px solid var(--accent);
+    color: var(--text); padding: 7px 12px; border-radius: 9px; font-size: 11.5px; font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.55); opacity: 0; pointer-events: none;
+    transform: translateY(6px); transition: opacity 0.18s, transform 0.18s; z-index: 60;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* DESKTOP 3 COLONNES >= 1120PX */
+  @media (min-width: 1120px) {
+    .workspace { flex-direction: row; }
+    .side-col.left-col { width: 390px; flex: none; order: 1; padding-bottom: 12px; border-right: 1px solid var(--border); }
+    .viewport-col { flex: 1; height: auto; order: 2; border-bottom: 0; }
+    .right-col {
+      display: flex; flex-direction: column; gap: 9px; width: 365px; flex: none; order: 3;
+      overflow-y: auto; padding: 9px; padding-bottom: 12px; border-left: 1px solid var(--border);
+    }
+    .tab-pane { display: flex !important; }
+    nav.mobile-tabs { display: none !important; }
+    #toast { bottom: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- EN-TÊTE SUPÉRIEUR -->
+  <header>
+    <div class="brand">
+      <a class="retour" href="/admin">← Console</a>
+      <span>🌾 Moon Bloom Sprite Studio v5</span>
+      <span class="badge fid mono" id="fidelityBadge" title="Fidélité perceptuelle Oklab entre l'image source détourée et le sprite généré">Fidélité ΔE : —%</span>
+      <span class="badge mono" id="colorBadge">0 nuances</span>
+    </div>
+    <div class="row">
+      <div class="seg" id="passSeg" title="Passes G-Buffer">
+        <button type="button" data-pass="final" class="active">Rendu</button>
+        <button type="button" data-pass="albedo">Albédo</button>
+        <button type="button" data-pass="normal">Normal</button>
+        <button type="button" data-pass="depth">Hauteur Z</button>
+        <button type="button" data-pass="ao">SSAO</button>
+        <button type="button" data-pass="clusters">Matières</button>
+      </div>
+      <div class="seg" id="resSeg" title="Définition par tuile">
+        <button type="button" data-res="16">16px</button>
+        <button type="button" data-res="32">32px</button>
+        <button type="button" data-res="64" class="active">64px</button>
+        <button type="button" data-res="128">128px</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- VIEWPORT CENTRAL AVEC COMPARATEUR ENTRÉE/SORTIE & RETOUCHE 1PX -->
+    <section class="viewport-col">
+      <div class="vp-bar">
+        <div class="row">
+          <div class="seg" id="cmpSeg" title="Mode de comparaison Entrée ↔ Sortie">
+            <button type="button" data-cmp="split" class="active">🔀 Rideau Avant/Après</button>
+            <button type="button" data-cmp="side">⚖️ Côte à côte</button>
+            <button type="button" data-cmp="out">🎯 Sortie seule</button>
+          </div>
+          <select id="bgMode" aria-label="Fond">
+            <option value="checker" selected>Damier alpha</option>
+            <option value="meadow">Herbe prairie</option>
+            <option value="night">Nuit village</option>
+          </select>
+          <label class="chk-lbl"><input type="checkbox" id="chkGrid"> Grille</label>
+          <label class="chk-lbl"><input type="checkbox" id="chkFoot" checked> Pied 45°</label>
+          <label class="chk-lbl"><input type="checkbox" id="chkSheet"> Planche</label>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="btnAnim">▶ Animer</button>
+          <button class="btn" type="button" id="btnZoomOut">−</button>
+          <span class="mono" id="zoomLbl" style="min-width:26px;text-align:center;color:var(--accent);font-weight:700">5×</span>
+          <button class="btn" type="button" id="btnZoomIn">+</button>
+          <button class="btn" type="button" id="btnCenter">Centrer</button>
+        </div>
+      </div>
+
+      <!-- BARRE D'ATELIER RETOUCHE PIXEL DIRECTE -->
+      <div class="vp-tools">
+        <div class="row">
+          <span style="color:var(--muted);font-weight:600">Outil :</span>
+          <button class="btn active-tool" type="button" data-tool="pan" title="Déplacer la vue ou glisser le rideau Avant/Après">✋ Vue / Rideau</button>
+          <button class="btn" type="button" data-tool="pencil" title="Peindre 1 pixel sur le sprite">✏️ Crayon 1px</button>
+          <button class="btn" type="button" data-tool="eraser" title="Gommer 1 pixel">🧽 Gomme 1px</button>
+          <button class="btn" type="button" data-tool="picker" title="Prélever une couleur du sprite">💧 Pipette</button>
+          <input type="color" id="brushColor" value="#f0b44c" title="Couleur du crayon 1px">
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="btnUndoEdit" title="Annuler le dernier coup de crayon">↩️ Annuler</button>
+          <button class="btn" type="button" id="btnClearEdits" title="Réinitialiser toutes les retouches manuelles">🗑️ RàZ retouches</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="viewCanvas" width="420" height="250" class="pixel"></canvas>
+      </div>
+
+      <div class="vp-footer mono">
+        <span id="spriteDims">Sprite : — × — px</span>
+        <span id="hoverInfo">Glissez la barre dorée centrale pour comparer Entrée (gauche) et Sprite (droite)</span>
+      </div>
+    </section>
+
+    <!-- COLONNE GAUCHE : SOURCE & HARMONISATION RAMPES -->
+    <aside class="side-col left-col">
+      <!-- ONGLET 1 : SOURCE -->
+      <div class="tab-pane active" data-pane="source">
+        <div class="card">
+          <h3>
+            <span>1. Pipeline d'Entrée</span>
+            <span class="mono" style="font-size:10px;color:var(--muted)" id="lodTag">64px</span>
+          </h3>
+
+          <div class="seg" id="pipeSeg" style="width:100%">
+            <button type="button" data-pipe="inflate" class="active" style="flex:1">📷 Image → Sprite</button>
+            <button type="button" data-pipe="proc3d" style="flex:1">🏛️ Procédural 3D</button>
+            <button type="button" data-pipe="box45" style="flex:1">📦 2-Faces 45°</button>
+          </div>
+
+          <!-- PIPELINE HAUTE FIDÉLITÉ IMAGE → SPRITE (ACTIF PAR DÉFAUT) -->
+          <div id="paneInflate" style="display:flex;flex-direction:column;gap:7px">
+            <label class="dropzone" id="dropzone">
+              <input type="file" id="fileInput" accept="image/*" hidden>
+              📷 <b>Importer une image / PNG transparent / Photo</b><br>
+              <span style="font-size:10px;color:var(--muted)">Glisser-déposer ou coller avec Ctrl+V</span>
+            </label>
+
+            <div class="row">
+              <button class="btn primary" type="button" data-sample="fox">🦊 Renard illustré</button>
+              <button class="btn" type="button" data-sample="cottage">🏠 Chaumière</button>
+              <button class="btn" type="button" data-sample="cauldron">🍲 Chaudron</button>
+              <button class="btn" type="button" data-sample="chest">🧰 Coffre</button>
+            </div>
+
+            <div class="row">
+              <span style="font-size:11px;color:var(--muted)">Emprise :</span>
+              <select id="selFootprint" style="flex:1">
+                <option value="auto" selected>Auto (respecte le ratio image)</option>
+                <option value="1x1">1 × 1 case</option>
+                <option value="2x1">2 × 1 cases (large)</option>
+                <option value="2x2">2 × 2 cases</option>
+                <option value="3x2">3 × 2 cases</option>
+                <option value="3x3">3 × 3 cases</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <span style="font-size:11px;color:var(--muted)">Échantillonnage :</span>
+              <select id="selSampler" style="flex:1">
+                <option value="medoid" selected>Saillance & Contours Nets (Oklab Medoid)</option>
+                <option value="median">Centroïde Médian Doux (Anti-bruit photo)</option>
+                <option value="nearest">Plus Proche Voisin Strict (Pixel-Art natif)</option>
+              </select>
+            </div>
+
+            <div class="field" style="background:rgba(240,180,76,0.08);padding:6px 8px;border-radius:7px;border:1px solid rgba(240,180,76,0.3)">
+              <div class="field-head">
+                <span style="color:var(--text);font-weight:700">Fidélité Source (0%) ↔ Re-éclairage 3D (100%)</span>
+                <b id="valRelight">20%</b>
+              </div>
+              <input type="range" id="rngRelight" min="0" max="100" step="5" value="20">
+              <div style="font-size:10px;color:var(--muted)">0% = couleurs/ombres 1:1 d'origine · 20% = relief subtil · 100% = PBR 24h</div>
+            </div>
+
+            <div class="field">
+              <div class="field-head"><span>Verrouillage des traits sombres (Lineart Lock)</span><b id="valLineLock">0.75</b></div>
+              <input type="range" id="rngLineLock" min="0" max="1" step="0.05" value="0.75">
+            </div>
+
+            <div class="src-box">
+              <canvas id="srcThumb" width="88" height="88" class="pixel thumb" title="Touchez l'image pour ajouter une couleur de fond à retirer"></canvas>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px;font-size:10.5px">
+                <div class="row" style="justify-content:space-between">
+                  <span>Fond (<span id="sampleCountLbl">1</span>) : <span id="keySwatches"></span></span>
+                  <button class="btn" type="button" id="btnResetKeys" style="padding:2px 6px;font-size:10px">Auto 4 coins</button>
+                </div>
+                <div class="field">
+                  <div class="field-head"><span>Tolérance détourage Oklab</span><b id="valTol">0.12</b></div>
+                  <input type="range" id="rngTol" min="0" max="0.45" step="0.01" value="0.12">
+                </div>
+                <div class="field">
+                  <div class="field-head"><span>Érosion de frange (Defringe halo)</span><b id="valDefringe">1 px</b></div>
+                  <input type="range" id="rngDefringe" min="0" max="2" step="1" value="1">
+                </div>
+                <div class="row">
+                  <label class="chk-lbl"><input type="checkbox" id="chkInvertMask"> Inverser masque</label>
+                  <label class="chk-lbl"><input type="checkbox" id="chkDespeckle"> Anti-poussière</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field" style="flex:1">
+                <div class="field-head"><span>Galbe 2.5D</span><b id="valPuff">0.45</b></div>
+                <input type="range" id="rngPuff" min="0" max="1.4" step="0.05" value="0.45">
+              </div>
+              <div class="field" style="flex:1">
+                <div class="field-head"><span>Relief Scharr</span><b id="valBump">0.60</b></div>
+                <input type="range" id="rngBump" min="0" max="1.4" step="0.05" value="0.60">
+              </div>
+            </div>
+          </div>
+
+          <!-- PIPELINE PROCÉDURAL 3D 45° -->
+          <div id="paneProc3d" style="display:none;flex-direction:column;gap:8px">
+            <div class="row">
+              <select id="selArchetype" style="flex:1">
+                <option value="forge" selected>🔥 Forge & Foyer ardent (2×1)</option>
+                <option value="well">🪣 Puits à toit conique (2×2)</option>
+                <option value="silo">🌾 Silo bois & dôme tuiles (2×2)</option>
+                <option value="wall">🧱 Mur raccordé NESO (16 masques)</option>
+                <option value="tree">🌳 Arbre feuillu animé (5 poses vent)</option>
+                <option value="cabinet">🚪 Buffet 45° orientable (4 sens)</option>
+              </select>
+              <button class="btn primary" type="button" id="btnSeed">🎲 Graine</button>
+            </div>
+            <div class="row" style="align-items:flex-start">
+              <div class="neso-pad" id="nesoPad" style="display:none">
+                <span></span><button type="button" data-bit="1">N</button><span></span>
+                <button type="button" data-bit="8" class="on">O</button><span style="text-align:center;line-height:22px">🧱</span><button type="button" data-bit="2" class="on">E</button>
+                <span></span><button type="button" data-bit="4">S</button><span></span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+                <div class="field">
+                  <div class="field-head"><span>Proportion</span><b id="valProcScale">1.00×</b></div>
+                  <input type="range" id="rngProcScale" min="0.70" max="1.45" step="0.05" value="1.00">
+                </div>
+                <div class="field">
+                  <div class="field-head"><span>Pose / Sens (0..4)</span><b id="valPose">0</b></div>
+                  <input type="range" id="rngPose" min="0" max="4" step="1" value="0">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PIPELINE 2-FACES 45° -->
+          <div id="paneBox45" style="display:none;flex-direction:column;gap:8px">
+            <div class="row">
+              <label class="btn" style="flex:1">⬆️ Dessus <input type="file" id="fileTop" accept="image/*" hidden></label>
+              <label class="btn" style="flex:1">⬇️ Face avant <input type="file" id="fileFront" accept="image/*" hidden></label>
+            </div>
+            <div class="row">
+              <button class="btn primary" type="button" data-boxpreset="wardrobe">🚪 Armoire</button>
+              <button class="btn" type="button" data-boxpreset="furnace">🔥 Four</button>
+              <button class="btn" type="button" data-boxpreset="crate">📦 Caisse</button>
+            </div>
+            <div class="src-box">
+              <canvas id="topThumb" width="64" height="64" class="pixel thumb"></canvas>
+              <canvas id="frontThumb" width="64" height="64" class="pixel thumb"></canvas>
+              <div style="flex:1">
+                <div class="field">
+                  <div class="field-head"><span>Hauteur 45°</span><b id="valBoxH">1.10×</b></div>
+                  <input type="range" id="rngBoxH" min="0.4" max="2.0" step="0.1" value="1.1">
+                </div>
+                <div class="field">
+                  <div class="field-head"><span>Profondeur 45°</span><b id="valBoxD">0.90×</b></div>
+                  <input type="range" id="rngBoxD" min="0.4" max="1.6" step="0.1" value="0.9">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ONGLET 2 : HARMONISATION RAMPES -->
+      <div class="tab-pane" data-pane="palette">
+        <div class="card">
+          <h3>2. K-Means++ Oklab & Rampes Moon Bloom</h3>
+          <div style="font-size:10.5px;color:var(--muted);line-height:1.35">
+            Par défaut sur <b>Teintes d'origine</b> pour respecter votre image à 100 %. Cliquez sur <b>Auto-harmoniser</b> pour projeter vers les rampes officielles du village.
+          </div>
+          <div class="field">
+            <div class="field-head"><span>Groupes de couleurs K-Means++ (2..16)</span><b id="valClusters">8</b></div>
+            <input type="range" id="rngClusters" min="2" max="16" step="1" value="8">
+          </div>
+          <div class="field">
+            <div class="field-head"><span>Dosage d'harmonisation</span><b id="valHarmMix">1.00</b></div>
+            <input type="range" id="rngHarmMix" min="0" max="1" step="0.05" value="1.00">
+          </div>
+          <div class="row">
+            <button class="btn green" type="button" id="btnAutoHarmonize">✨ Auto-harmoniser Moon Bloom</button>
+            <button class="btn" type="button" id="btnResetClusters">↺ Garder teintes d'origine</button>
+          </div>
+          <div class="cluster-list" id="clusterList"></div>
+        </div>
+      </div>
+
+      <!-- COLONNE DROITE SUR DESKTOP (FUSIONNÉE DANS LE FLUX D'ONGLETS SUR MOBILE) -->
+      <div class="right-col">
+        <!-- ONGLET 3 : SOLEIL 24H -->
+        <div class="tab-pane" data-pane="sun">
+          <div class="card">
+            <h3>3. Soleil 24h & Éclairage</h3>
+            <div class="sun-box">
+              <canvas id="sunPad" width="76" height="76"></canvas>
+              <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+                <div class="field">
+                  <div class="field-head"><span>Heure du village</span><b id="valHour">10:30</b></div>
+                  <input type="range" id="rngHour" min="0" max="24" step="0.25" value="10.5">
+                </div>
+                <div class="row">
+                  <button class="btn" type="button" id="btnAutoCycle">▶ Cycle 24h</button>
+                  <button class="btn" type="button" id="btnCanonSun">↖ Canon 45°</button>
+                </div>
+              </div>
+            </div>
+            <label class="chk-lbl"><input type="checkbox" id="chkEmissive" checked> 🔥 Lueur chaude ponctuelle / braises actives</label>
+          </div>
+        </div>
+
+        <!-- ONGLET 4 : PBR & CONTOUR 1PX -->
+        <div class="tab-pane" data-pane="pbr">
+          <div class="card">
+            <h3>4. Finition PBR, Patine & Contour 1 px</h3>
+            <div class="field">
+              <div class="field-head"><span>Reflets spéculaires Blinn-Phong</span><b id="valSpec">0.45</b></div>
+              <input type="range" id="rngSpec" min="0" max="1.4" step="0.05" value="0.45">
+            </div>
+            <div class="field">
+              <div class="field-head"><span>Ombres propres Voxel & SSAO</span><b id="valSSAO">0.55</b></div>
+              <input type="range" id="rngSSAO" min="0" max="1.2" step="0.05" value="0.55">
+            </div>
+            <div class="field">
+              <div class="field-head"><span>Translucidité SSS (feuillage/cristal)</span><b id="valSSS">0.45</b></div>
+              <input type="range" id="rngSSS" min="0" max="1.2" step="0.05" value="0.45">
+            </div>
+            <div class="field">
+              <div class="field-head"><span>Mousse orientée (surfaces hautes)</span><b id="valMoss">0.00</b></div>
+              <input type="range" id="rngMoss" min="0" max="1" step="0.05" value="0.00">
+            </div>
+            <div class="field">
+              <div class="field-head"><span>Tramage Pixel-Art Bayer 4×4</span><b id="valDither">0.00</b></div>
+              <input type="range" id="rngDither" min="0" max="1" step="0.05" value="0.00">
+            </div>
+            <div class="row">
+              <span style="font-size:11px;color:var(--muted);flex:1">Contour externe 1 px :</span>
+              <select id="selOutline">
+                <option value="selout" selected>Sel-Out adaptatif (teinté)</option>
+                <option value="canon">Brun sombre canon #241e14</option>
+                <option value="none">Sans contour ajouté (fidèle 1:1)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ONGLET 5 : EXPORTS PHASER 4 -->
+        <div class="tab-pane" data-pane="export">
+          <div class="card">
+            <h3>5. Exports Sprite, Normal Map & Atlas Phaser 4</h3>
+            <div style="font-size:10.5px;color:var(--muted);line-height:1.4">
+              Inclut vos retouches 1px au crayon, la bordure extrudée d'1 px et l'ancre de pied <code>{ x: 0.5, y: 1.0 }</code>.
+            </div>
+            <div class="row">
+              <button class="btn primary" type="button" id="btnExpSprite" style="flex:1">💾 PNG Sprite (1×)</button>
+              <button class="btn" type="button" id="btnExpNormal" style="flex:1">🧭 Normal Map (_n.png)</button>
+            </div>
+            <div class="row">
+              <button class="btn green" type="button" id="btnExpSheet" style="flex:1">🎞️ Planche Extrudée (.png)</button>
+              <button class="btn" type="button" id="btnExpJson" style="flex:1">📋 Atlas Phaser 4 (.json)</button>
+            </div>
+            <div id="statsBox" class="mono" style="font-size:10px;color:var(--muted);background:var(--bg-deep);padding:7px;border-radius:7px;border:1px solid var(--border);line-height:1.5"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- BARRE FIXE 5 ONGLETS MOBILE -->
+  <nav class="mobile-tabs" id="mobileTabs">
+    <button type="button" class="active" data-tab="source"><span>📷</span><span>Source</span></button>
+    <button type="button" data-tab="palette"><span>🎨</span><span>Rampes</span></button>
+    <button type="button" data-tab="sun"><span>☀️</span><span>24h</span></button>
+    <button type="button" data-tab="pbr"><span>✨</span><span>PBR</span></button>
+    <button type="button" data-tab="export"><span>💾</span><span>Export</span></button>
+  </nav>
+</div>
+
+<div id="toast">Prêt</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const HAUT = 14 / 16, FOND = 10 / 16;
+  const BAYER4 = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+
+  /* =========================================================================
+   * 1. RAMPES OFFICIELLES MOON BLOOM VILLAGE & ESPACE PERCEPTUEL OKLAB
+   * ========================================================================= */
+  const RAMPES_JEU = {
+    bois_serre:    { nom: 'Bois de serre',    rough: 0.60, sss: 0.00, ancres: [[56,47,29],[77,64,39],[112,96,65],[150,130,92],[188,163,122]] },
+    chene_chaud:   { nom: 'Chêne chaud',      rough: 0.50, sss: 0.00, ancres: [[60,30,22],[96,54,32],[134,82,46],[170,112,64],[208,156,98]] },
+    pierre_seche:  { nom: 'Pierre sèche',     rough: 0.84, sss: 0.00, ancres: [[34,32,44],[68,64,74],[108,102,102],[150,140,126],[196,186,166]] },
+    brique_cuite:  { nom: 'Brique cuite',     rough: 0.75, sss: 0.00, ancres: [[44,18,24],[88,34,36],[134,54,42],[178,84,56],[222,134,94]] },
+    tuile_rouge:   { nom: 'Tuile rouge',      rough: 0.46, sss: 0.00, ancres: [[82,28,20],[122,47,34],[155,63,44],[185,87,59],[216,128,88]] },
+    acier_fonte:   { nom: 'Acier & Fonte',    rough: 0.22, sss: 0.00, ancres: [[30,32,40],[56,60,72],[96,102,116],[148,156,170],[214,222,234]] },
+    laiton_poli:   { nom: 'Laiton poli',      rough: 0.16, sss: 0.00, ancres: [[102,72,24],[154,114,38],[204,162,62],[238,206,110],[254,240,180]] },
+    feuillage_pre: { nom: 'Feuillage prairie',rough: 0.64, sss: 0.88, ancres: [[14,43,12],[29,88,24],[48,122,40],[74,166,52],[130,208,92]] },
+    eau_cristal:   { nom: 'Eau & Cristal',    rough: 0.12, sss: 0.50, ancres: [[22,38,68],[42,78,124],[76,134,184],[130,190,228],[206,242,254]] },
+    amethyste:     { nom: 'Cristal améthyste',rough: 0.15, sss: 0.65, ancres: [[48,20,78],[88,38,136],[138,70,192],[192,126,236],[244,208,255]] }
+  };
+
+  const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+  const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => clamp(Math.round(x), 0, 255).toString(16).padStart(2, '0')).join('');
+  const hexToRgb = hex => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+
+  function srgbToLinear(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+  function linearToSrgb(c) {
+    c = clamp(c, 0, 1);
+    return Math.round(255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055));
+  }
+  function rgbToOklab(r, g, b) {
+    const lr = srgbToLinear(r), lg = srgbToLinear(g), lb = srgbToLinear(b);
+    const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+    const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+    const s = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+    return [
+      0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+      1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+      0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+    ];
+  }
+  function oklabToRgb(L, a, b) {
+    const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+    const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+    const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+    const l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_;
+    return [
+      linearToSrgb(+4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+      linearToSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+      linearToSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s)
+    ];
+  }
+  const distLab = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+  function hash2(x, y, s = 1) {
+    let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(s | 0, 1442695041)) >>> 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+
+  const RAMP_CACHE = {};
+  for (const [id, def] of Object.entries(RAMPES_JEU)) {
+    const labs = def.ancres.map(c => rgbToOklab(c[0], c[1], c[2]));
+    RAMP_CACHE[id] = { labs, mid: labs[2] };
+  }
+  function evalRampOklab(rampId, t) {
+    const labs = (RAMP_CACHE[rampId] || RAMP_CACHE.pierre_seche).labs;
+    const f = clamp(t, 0, 1) * (labs.length - 1);
+    const k = Math.min(labs.length - 2, Math.floor(f)), u = f - k;
+    return oklabToRgb(
+      labs[k][0] * (1 - u) + labs[k + 1][0] * u,
+      labs[k][1] * (1 - u) + labs[k + 1][1] * u,
+      labs[k][2] * (1 - u) + labs[k + 1][2] * u
+    );
+  }
+  function closestGameRamp(lab) {
+    let best = 'bois_serre', bd = 1e9;
+    for (const [id, info] of Object.entries(RAMP_CACHE)) {
+      const d = Math.hypot((lab[0] - info.mid[0]) * 0.65, (lab[1] - info.mid[1]) * 1.65, (lab[2] - info.mid[2]) * 1.65);
+      if (d < bd) { bd = d; best = id; }
+    }
+    return best;
+  }
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(el.__t); el.__t = setTimeout(() => el.classList.remove('show'), 1900);
+  }
+
+  /* =========================================================================
+   * 2. ÉTAT GLOBAL V5 (OUVERTURE SUR IMAGE → SPRITE + RIDEAU AVANT/APRÈS)
+   * ========================================================================= */
+  const state = {
+    pipeline: 'inflate',  // 'inflate' | 'proc3d' | 'box45'
+    cmpMode: 'split',     // 'split' | 'side' | 'out'
+    splitPos: 0.50,       // position 0..1 du rideau Avant/Après
+    tool: 'pan',          // 'pan' | 'pencil' | 'eraser' | 'picker'
+    brushHex: '#f0b44c',
+
+    tileSize: 64,         // 16 | 32 | 64 | 128
+    pass: 'final',
+
+    // Haute fidélité Image -> Sprite
+    footprintMode: 'auto',// 'auto' | '1x1' | '2x1' | '2x2' | '3x2' | '3x3'
+    sampler: 'medoid',    // 'medoid' | 'median' | 'nearest'
+    relightMix: 0.20,     // 0.0 = fidélité 1:1 absolue, 0.20 = relief subtil, 1.0 = PBR 24h complet
+    lineLock: 0.75,       // protection des lignes sombres internes
+    keyColors: [[244, 240, 232]],
+    hasNativeAlpha: false,
+    tol: 0.12,
+    defringe: 1,
+    invertMask: false,
+    despeckle: false,
+    puff: 0.45,
+    bump: 0.60,
+
+    // Procédural 3D & 2-Faces
+    archetype: 'forge',
+    seed: 2026,
+    procScale: 1.00,
+    pose: 0,
+    wallMask: 10,
+    boxH: 1.10,
+    boxD: 0.90,
+
+    // K-Means++ Oklab (jusqu'à 16 groupes, 'keep' par défaut)
+    kClusters: 8,
+    harmMix: 1.00,
+    clusters: [],
+
+    // Soleil 24h & PBR
+    hour: 10.5,
+    sunDir: [-0.55, -0.45, 0.70],
+    customSun: true,
+    emissiveOn: true,
+    specular: 0.45,
+    ssao: 0.55,
+    sss: 0.45,
+    moss: 0.00,
+    dither: 0.00,
+    outline: 'selout',
+
+    // Viewport & Calque de retouche manuelle 1px
+    bgMode: 'checker',
+    showGrid: false,
+    showFoot: true,
+    showSheet: false,
+    zoom: 5,
+    panX: 0, panY: 0,
+
+    editsW: 0, editsH: 0,
+    editsMap: new Map(),  // index -> [r,g,b,a] (a=0 pour gomme, a=255 pour crayon)
+    undoStack: [],
+
+    srcCanvas: document.createElement('canvas'),
+    alignedRefCanvas: document.createElement('canvas'), // Image source détourée calée exactement sur la grille de sortie !
+    topCanvas: document.createElement('canvas'),
+    frontCanvas: document.createElement('canvas'),
+    outCanvas: document.createElement('canvas'),
+    normalCanvas: document.createElement('canvas'),
+    sheetCanvas: document.createElement('canvas'),
+    lastAtlasMeta: null,
+    gb: null,
+    fidelityPct: null,
+    animTimer: null,
+    cycleTimer: null
+  };
+  {
+    const l = Math.hypot(...state.sunDir);
+    state.sunDir = state.sunDir.map(v => v / l);
+  }
+
+  function resetManualEdits(w, h) {
+    if (state.editsW !== w || state.editsH !== h) {
+      state.editsW = w; state.editsH = h;
+      state.editsMap.clear();
+      state.undoStack = [];
+    }
+  }
+
+  /* =========================================================================
+   * 3. DÉTECTION AUTO DU FOND (PNG TRANSPARENT VS FOND UNI) & SWATCHES
+   * ========================================================================= */
+  function detectBackgroundFromSource(cv) {
+    const w = cv.width, h = cv.height;
+    const d = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+    let transBorder = 0, borderTot = 0;
+    for (let x = 0; x < w; x++) {
+      borderTot += 2;
+      if (d[x * 4 + 3] < 220) transBorder++;
+      if (d[((h - 1) * w + x) * 4 + 3] < 220) transBorder++;
+    }
+    for (let y = 1; y < h - 1; y++) {
+      borderTot += 2;
+      if (d[(y * w) * 4 + 3] < 220) transBorder++;
+      if (d[(y * w + w - 1) * 4 + 3] < 220) transBorder++;
+    }
+    // Si l'image possède déjà un vrai fond transparent (> 8% du bord transparent), on ne supprime aucune couleur opaque !
+    if (transBorder > borderTot * 0.08) {
+      state.hasNativeAlpha = true;
+      state.keyColors = [];
+      updateKeySwatchesUI();
+      return;
+    }
+    state.hasNativeAlpha = false;
+    const corners = [[2, 2], [w - 3, 2], [2, h - 3], [w - 3, h - 3]];
+    const picked = [];
+    for (const [cx, cy] of corners) {
+      const p = (clamp(cy, 0, h - 1) * w + clamp(cx, 0, w - 1)) * 4;
+      if (d[p + 3] < 200) continue;
+      const col = [d[p], d[p + 1], d[p + 2]];
+      const lab = rgbToOklab(...col);
+      if (!picked.some(k => distLab(rgbToOklab(...k), lab) < 0.04)) picked.push(col);
+    }
+    state.keyColors = picked.length ? picked.slice(0, 3) : [[244, 240, 232]];
+    updateKeySwatchesUI();
+  }
+
+  function updateKeySwatchesUI() {
+    const host = document.getElementById('keySwatches');
+    const lbl = document.getElementById('sampleCountLbl');
+    if (state.hasNativeAlpha && state.keyColors.length === 0) {
+      lbl.textContent = 'Alpha PNG natif';
+      host.innerHTML = `<span style="color:var(--green);font-weight:700">✓ Transparent</span>`;
+      return;
+    }
+    lbl.textContent = String(state.keyColors.length);
+    host.innerHTML = state.keyColors.map(c => `<span class="swatch" style="background:${rgbToHex(...c)};margin-right:3px"></span>`).join('');
+  }
+
+  /* =========================================================================
+   * 4. PIPELINE HAUTE FIDÉLITÉ IMAGE → SPRITE (MEDOID OKLAB + LINEART LOCK + DEFRINGE)
+   * ========================================================================= */
+  function buildHighFidelityImageGBuffer() {
+    const sw = state.srcCanvas.width, sh = state.srcCanvas.height;
+    if (!sw || !sh) return null;
+    const sctx = state.srcCanvas.getContext('2d', { willReadFrequently: true });
+    const sd = sctx.getImageData(0, 0, sw, sh).data;
+    const nSrc = sw * sh;
+
+    // 1. Masque de détourage précis (respecte les PNG transparents + Flood-Fill multi-échantillons aux bords)
+    const opaque = new Uint8Array(nSrc);
+    for (let i = 0; i < nSrc; i++) opaque[i] = sd[i * 4 + 3] >= 128 ? 1 : 0;
+
+    const keyLabs = state.keyColors.map(c => rgbToOklab(c[0], c[1], c[2]));
+    if (keyLabs.length > 0 && state.tol > 0.001) {
+      const matchesKey = i => {
+        if (!opaque[i]) return true;
+        const p = i * 4;
+        const lab = rgbToOklab(sd[p], sd[p + 1], sd[p + 2]);
+        for (let k = 0; k < keyLabs.length; k++) {
+          if (distLab(lab, keyLabs[k]) <= state.tol) return true;
+        }
+        return false;
+      };
+      const vis = new Uint8Array(nSrc), q = new Int32Array(nSrc);
+      let h = 0, t = 0;
+      const push = (x, y) => {
+        const i = y * sw + x;
+        if (!vis[i] && matchesKey(i)) { vis[i] = 1; opaque[i] = 0; q[t++] = i; }
+      };
+      for (let x = 0; x < sw; x++) { push(x, 0); push(x, sh - 1); }
+      for (let y = 0; y < sh; y++) { push(0, y); push(sw - 1, y); }
+      while (h < t) {
+        const c = q[h++], cx = c % sw, cy = (c / sw) | 0;
+        if (cx > 0) push(cx - 1, cy);
+        if (cx + 1 < sw) push(cx + 1, cy);
+        if (cy > 0) push(cx, cy - 1);
+        if (cy + 1 < sh) push(cx, cy + 1);
+      }
+    }
+
+    if (state.invertMask) {
+      for (let i = 0; i < nSrc; i++) opaque[i] = opaque[i] ? 0 : 1;
+    }
+
+    // 2. Érosion de frange sur la source haute-résolution si grande image, plus passe sur le sprite
+    // Boîte englobante exacte de l'objet
+    let minX = sw, minY = sh, maxX = -1, maxY = -1;
+    for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) if (opaque[y * sw + x]) {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    if (maxX < minX) { minX = 0; minY = 0; maxX = sw - 1; maxY = sh - 1; for (let i = 0; i < nSrc; i++) opaque[i] = 1; }
+
+    const bw = maxX - minX + 1, bh = maxY - minY + 1;
+    const aspect = bw / Math.max(1, bh);
+
+    // 3. Calcul intelligent des dimensions de sortie (Auto ratio ou multi-cases !)
+    const T = state.tileSize;
+    const margin = state.outline !== 'none' ? 1 : 0;
+    let fw = 1, fd = 1, W = T, H = T;
+
+    if (state.footprintMode === 'auto') {
+      if (aspect >= 1.35) {
+        fw = aspect >= 2.1 ? 3 : 2;
+        fd = 1;
+        W = fw * T;
+        H = Math.max(Math.round(T * 0.75), Math.round((W - margin * 2) / aspect) + margin * 2);
+      } else if (aspect <= 0.72) {
+        fw = 1; fd = 1;
+        H = Math.min(3 * T, Math.max(T, Math.round((T - margin * 2) / aspect) + margin * 2));
+        W = T;
+      } else {
+        fw = 1; fd = 1;
+        W = T;
+        H = Math.max(Math.round(T * 0.8), Math.round((T - margin * 2) / aspect) + margin * 2);
+      }
+    } else {
+      [fw, fd] = state.footprintMode.split('x').map(Number);
+      W = fw * T;
+      const naturalH = Math.round((W - margin * 2) / aspect) + margin * 2;
+      H = clamp(naturalH, fd * T, Math.round(Math.max(fd, fw) * T * 1.65));
+    }
+
+    const sc = Math.min((W - margin * 2) / bw, (H - margin * 2) / bh);
+    const dw = Math.max(1, Math.round(bw * sc));
+    const dh = Math.max(1, Math.round(bh * sc));
+    const dx0 = (W - dw) >> 1;
+    const dy0 = H - margin - dh; // Pied posé pile au bas de la case !
+
+    // Génération de l'image de référence haute résolution alignée exactement sur le même cadre (pour Rideau Avant/Après & calcul ΔE)
+    const refScale = Math.max(1, Math.min(8, Math.ceil(256 / Math.max(W, H))));
+    state.alignedRefCanvas.width = W * refScale;
+    state.alignedRefCanvas.height = H * refScale;
+    const rctx = state.alignedRefCanvas.getContext('2d');
+    rctx.clearRect(0, 0, state.alignedRefCanvas.width, state.alignedRefCanvas.height);
+    // Copie uniquement les pixels détourés de la source
+    const maskedSrcCv = document.createElement('canvas');
+    maskedSrcCv.width = bw; maskedSrcCv.height = bh;
+    const mctx = maskedSrcCv.getContext('2d');
+    const mImg = mctx.createImageData(bw, bh);
+    for (let y = 0; y < bh; y++) {
+      for (let x = 0; x < bw; x++) {
+        const si = (minY + y) * sw + (minX + x);
+        if (!opaque[si]) continue;
+        const sp = si * 4, dp = (y * bw + x) * 4;
+        mImg.data[dp] = sd[sp]; mImg.data[dp + 1] = sd[sp + 1]; mImg.data[dp + 2] = sd[sp + 2]; mImg.data[dp + 3] = 255;
+      }
+    }
+    mctx.putImageData(mImg, 0, 0);
+    rctx.imageSmoothingEnabled = true;
+    rctx.imageSmoothingQuality = 'high';
+    rctx.drawImage(maskedSrcCv, dx0 * refScale, dy0 * refScale, dw * refScale, dh * refScale);
+
+    // 4. Échantillonnage Haute Fidélité (3 algorithmes + Lineart Lock !)
+    const N = W * H;
+    const mask = new Uint8Array(N);
+    const srcR = new Uint8Array(N), srcG = new Uint8Array(N), srcB = new Uint8Array(N);
+    const isLineart = new Uint8Array(N);
+
+    for (let dy = 0; dy < dh; dy++) {
+      const syFloat0 = minY + (dy / dh) * bh;
+      const syFloat1 = minY + ((dy + 1) / dh) * bh;
+      const iy0 = clamp(Math.floor(syFloat0), minY, maxY);
+      const iy1 = clamp(Math.max(iy0, Math.ceil(syFloat1) - 1), minY, maxY);
+      const syCenter = clamp(Math.floor((syFloat0 + syFloat1) * 0.5), minY, maxY);
+
+      for (let dx = 0; dx < dw; dx++) {
+        const sxFloat0 = minX + (dx / dw) * bw;
+        const sxFloat1 = minX + ((dx + 1) / dw) * bw;
+        const ix0 = clamp(Math.floor(sxFloat0), minX, maxX);
+        const ix1 = clamp(Math.max(ix0, Math.ceil(sxFloat1) - 1), minX, maxX);
+        const sxCenter = clamp(Math.floor((sxFloat0 + sxFloat1) * 0.5), minX, maxX);
+
+        const ti = (dy0 + dy) * W + (dx0 + dx);
+
+        if (state.sampler === 'nearest') {
+          const ci = syCenter * sw + sxCenter;
+          if (!opaque[ci]) continue;
+          const cp = ci * 4;
+          mask[ti] = 1;
+          srcR[ti] = sd[cp]; srcG[ti] = sd[cp + 1]; srcB[ti] = sd[cp + 2];
+          continue;
+        }
+
+        // Collecte des pixels opaques de la cellule
+        const cell = [];
+        let tot = 0, sumL = 0, sumA = 0, sumB = 0;
+        const strideY = Math.max(1, Math.floor((iy1 - iy0 + 1) / 5));
+        const strideX = Math.max(1, Math.floor((ix1 - ix0 + 1) / 5));
+
+        for (let sy = iy0; sy <= iy1; sy += strideY) {
+          for (let sx = ix0; sx <= ix1; sx += strideX) {
+            tot++;
+            const si = sy * sw + sx;
+            if (!opaque[si]) continue;
+            const p = si * 4;
+            const r = sd[p], g = sd[p + 1], b = sd[p + 2];
+            const lab = rgbToOklab(r, g, b);
+            sumL += lab[0]; sumA += lab[1]; sumB += lab[2];
+            cell.push({ r, g, b, lab });
+          }
+        }
+
+        if (!cell.length || cell.length < tot * 0.42) continue;
+        const cnt = cell.length;
+        const meanLab = [sumL / cnt, sumA / cnt, sumB / cnt];
+
+        // Contexte voisin élargi pour détecter un trait sombre interne (Lineart Lock)
+        let darkStroke = null;
+        if (state.lineLock > 0.05) {
+          let darkestL = 99, darkestPix = null;
+          for (const px of cell) {
+            if (px.lab[0] < darkestL) { darkestL = px.lab[0]; darkestPix = px; }
+          }
+          // Un trait de dessin est nettement plus sombre que la moyenne locale de la cellule ou très sombre (< 0.28)
+          const dropNeeded = 0.20 - state.lineLock * 0.12;
+          if (darkestPix && (meanLab[0] - darkestL > dropNeeded || (darkestL < 0.27 && meanLab[0] < 0.48))) {
+            darkStroke = darkestPix;
+          }
+        }
+
+        if (darkStroke) {
+          mask[ti] = 1;
+          srcR[ti] = darkStroke.r; srcG[ti] = darkStroke.g; srcB[ti] = darkStroke.b;
+          isLineart[ti] = 1;
+        } else if (state.sampler === 'medoid') {
+          // Oklab Medoid / Contrast-Peak : élit un VRAI pixel existant de la source (jamais de bouillie RGB !)
+          let bestPix = cell[0], bestScore = -1e9;
+          for (const px of cell) {
+            const dMean = distLab(px.lab, meanLab);
+            const chroma = Math.hypot(px.lab[1], px.lab[2]);
+            // Favorise le pixel représentatif tout en gardant la vivacité chromatique (yeux, gemmes, dorures)
+            const score = -dMean * 1.15 + chroma * 0.42;
+            if (score > bestScore) { bestScore = score; bestPix = px; }
+          }
+          mask[ti] = 1;
+          srcR[ti] = bestPix.r; srcG[ti] = bestPix.g; srcB[ti] = bestPix.b;
+        } else {
+          // Centroïde Médian Doux (moyenne tronquée des 60% pixels centraux en Oklab)
+          cell.sort((u, v) => distLab(u.lab, meanLab) - distLab(v.lab, meanLab));
+          const keep = Math.max(1, Math.ceil(cnt * 0.6));
+          let mL = 0, mA = 0, mB = 0;
+          for (let k = 0; k < keep; k++) { mL += cell[k].lab[0]; mA += cell[k].lab[1]; mB += cell[k].lab[2]; }
+          const [rr, rg, rb] = oklabToRgb(mL / keep, mA / keep, mB / keep);
+          mask[ti] = 1;
+          srcR[ti] = rr; srcG[ti] = rg; srcB[ti] = rb;
+        }
+      }
+    }
+
+    // 5. Érosion de frange colorée (Defringe 0..2 px) : remplace la couleur des bords contaminés par le fond !
+    if (state.defringe > 0 && keyLabs.length > 0) {
+      for (let pass = 0; pass < state.defringe; pass++) {
+        const nextR = new Uint8Array(srcR), nextG = new Uint8Array(srcG), nextB = new Uint8Array(srcB);
+        const dropMask = new Uint8Array(N);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const i = y * W + x;
+          if (!mask[i]) continue;
+          let touchesAir = false;
+          for (const [ox, oy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+            const nx = x + ox, ny = y + oy;
+            if (nx < 0 || nx >= W || ny < 0 || ny >= H || !mask[ny * W + nx]) { touchesAir = true; break; }
+          }
+          if (!touchesAir) continue;
+          const lab = rgbToOklab(srcR[i], srcG[i], srcB[i]);
+          const nearBg = keyLabs.some(kl => distLab(lab, kl) <= state.tol * 1.65 + 0.06);
+          if (nearBg) {
+            // Cherche un voisin intérieur propre pour tirer sa vraie couleur ou retire la frange
+            let ir = 0, ig = 0, ib = 0, ic = 0;
+            for (const [ox, oy] of [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]]) {
+              const sx = x + ox, sy = y + oy;
+              if (sx < 0 || sx >= W || sy < 0 || sy >= H) continue;
+              const j = sy * W + sx;
+              if (!mask[j]) continue;
+              const jLab = rgbToOklab(srcR[j], srcG[j], srcB[j]);
+              if (!keyLabs.some(kl => distLab(jLab, kl) <= state.tol * 1.5 + 0.05)) {
+                ir += srcR[j]; ig += srcG[j]; ib += srcB[j]; ic++;
+              }
+            }
+            if (ic >= 2) {
+              nextR[i] = Math.round(ir / ic); nextG[i] = Math.round(ig / ic); nextB[i] = Math.round(ib / ic);
+            } else {
+              dropMask[i] = 1;
+            }
+          }
+        }
+        for (let i = 0; i < N; i++) {
+          if (dropMask[i]) mask[i] = 0;
+          else { srcR[i] = nextR[i]; srcG[i] = nextG[i]; srcB[i] = nextB[i]; }
+        }
+      }
+    }
+
+    // 6. Anti-poussière optionnel (Despeckle)
+    if (state.despeckle) {
+      const copy = new Uint8Array(mask);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        let nb = 0;
+        for (const [ox, oy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+          const sx = x + ox, sy = y + oy;
+          if (sx >= 0 && sx < W && sy >= 0 && sy < H && copy[sy * W + sx]) nb++;
+        }
+        if (copy[i] && nb === 0) mask[i] = 0;
+      }
+    }
+
+    // 7. Carte de hauteur SDF + Scharr 3×3 (pour Normal Map & relief subtil ou complet)
+    const lum = new Float32Array(N);
+    for (let i = 0; i < N; i++) if (mask[i]) lum[i] = rgbToOklab(srcR[i], srcG[i], srcB[i])[0];
+
+    const dist = new Float32Array(N);
+    for (let i = 0; i < N; i++) dist[i] = mask[i] ? 1e4 : 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x; if (!mask[i]) continue;
+      let d = dist[i];
+      if (x > 0) d = Math.min(d, dist[i - 1] + 1);
+      if (y > 0) d = Math.min(d, dist[i - W] + 1);
+      if (x > 0 && y > 0) d = Math.min(d, dist[i - W - 1] + 1.414);
+      if (x + 1 < W && y > 0) d = Math.min(d, dist[i - W + 1] + 1.414);
+      dist[i] = d;
+    }
+    let maxD = 1;
+    for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
+      const i = y * W + x; if (!mask[i]) continue;
+      let d = dist[i];
+      if (x + 1 < W) d = Math.min(d, dist[i + 1] + 1);
+      if (y + 1 < H) d = Math.min(d, dist[i + W] + 1);
+      if (x + 1 < W && y + 1 < H) d = Math.min(d, dist[i + W + 1] + 1.414);
+      if (x > 0 && y + 1 < H) d = Math.min(d, dist[i + W - 1] + 1.414);
+      dist[i] = d;
+      if (d > maxD) maxD = d;
+    }
+
+    const height = new Float32Array(N);
+    const plateauD = Math.max(2, maxD * 0.45); // Plateau plat au centre (fini l'effet ballon gonflé !)
+    for (let i = 0; i < N; i++) if (mask[i]) {
+      const u = clamp(dist[i] / plateauD, 0, 1);
+      const bevel = Math.sqrt(Math.max(0, 1 - (1 - u) * (1 - u)));
+      height[i] = bevel * state.puff * 4.5 + lum[i] * state.bump * 2.4;
+    }
+
+    const nx = new Float32Array(N), nd = new Float32Array(N), nz = new Float32Array(N);
+    const hAt = (x, y, fb) => (x >= 0 && x < W && y >= 0 && y < H && mask[y * W + x]) ? height[y * W + x] : fb * 0.4;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x; if (!mask[i]) continue;
+      const hc = height[i];
+      const tl = hAt(x - 1, y - 1, hc), tc = hAt(x, y - 1, hc), tr = hAt(x + 1, y - 1, hc);
+      const ml = hAt(x - 1, y, hc),                             mr = hAt(x + 1, y, hc);
+      const bl = hAt(x - 1, y + 1, hc), bc = hAt(x, y + 1, hc), br = hAt(x + 1, y + 1, hc);
+      const gx = (3 * tr + 10 * mr + 3 * br - (3 * tl + 10 * ml + 3 * bl)) / 32;
+      const gy = (3 * bl + 10 * bc + 3 * br - (3 * tl + 10 * tc + 3 * tr)) / 32;
+      const vx = -gx * 1.25, vd = -0.72 + gy * 0.55, vz = 0.70 + gy * 0.75;
+      const l = Math.hypot(vx, vd, vz) || 1;
+      nx[i] = vx / l; nd[i] = vd / l; nz[i] = vz / l;
+    }
+
+    const ao = computeSSAO12(W, H, mask, height, nx, nd, nz);
+    const rough = new Float32Array(N).fill(0.48), sss = new Float32Array(N);
+    const emitR = new Float32Array(N), emitG = new Float32Array(N), emitB = new Float32Array(N);
+
+    resetManualEdits(W, H);
+    return {
+      W, H, fw, fd, isImageMode: true, isLineart,
+      mask, albR: srcR, albG: srcG, albB: srcB,
+      nx, nd, nz, height, ao, rough, sss, emitR, emitG, emitB, raster: null
+    };
+  }
+
+  /* =========================================================================
+   * 5. RASTÉRISEUR PROCÉDURAL 3D À 45° & MODE 2-FACES 45° (CONSERVÉS INTACTS)
+   * ========================================================================= */
+  class Raster45 {
+    constructor(fw, fd, heightCases, tileSize) {
+      this.T = tileSize; this.S = tileSize / 16;
+      this.fw = fw; this.fd = fd;
+      this.W = fw * tileSize; this.H = Math.round(heightCases * tileSize);
+      this.x0 = this.W * 0.5;
+      this.y0 = this.H - 2 - (fd * tileSize * FOND) * 0.42;
+      const N = this.W * this.H;
+      this.mask = new Uint8Array(N);
+      this.kBuf = new Float32Array(N).fill(-1e9);
+      this.albR = new Uint8Array(N); this.albG = new Uint8Array(N); this.albB = new Uint8Array(N);
+      this.nx = new Float32Array(N); this.nd = new Float32Array(N); this.nz = new Float32Array(N);
+      this.wx = new Float32Array(N); this.wd = new Float32Array(N); this.wz = new Float32Array(N);
+      this.rough = new Float32Array(N).fill(0.6); this.sss = new Float32Array(N);
+      this.emitR = new Float32Array(N); this.emitG = new Float32Array(N); this.emitB = new Float32Array(N);
+      this.lights = [];
+      this.VX = 48; this.VD = 48; this.VZ = 64;
+      this.vox = new Uint8Array(this.VX * this.VD * this.VZ);
+      this.step = Math.max(0.08, 0.26 / this.S);
+    }
+    setVoxel(x, d, z) {
+      const ix = Math.floor((x / (this.fw * 8.5) + 0.5) * this.VX);
+      const id = Math.floor((d / (this.fd * 8.5) + 0.5) * this.VD);
+      const iz = Math.floor((z / 38) * this.VZ);
+      if (ix >= 0 && ix < this.VX && id >= 0 && id < this.VD && iz >= 0 && iz < this.VZ) this.vox[(iz * this.VD + id) * this.VX + ix] = 1;
+    }
+    hasVoxel(x, d, z) {
+      const ix = Math.floor((x / (this.fw * 8.5) + 0.5) * this.VX);
+      const id = Math.floor((d / (this.fd * 8.5) + 0.5) * this.VD);
+      const iz = Math.floor((z / 38) * this.VZ);
+      if (ix < 0 || ix >= this.VX || id < 0 || id >= this.VD || iz < 0 || iz >= this.VZ) return false;
+      return this.vox[(iz * this.VD + id) * this.VX + ix] === 1;
+    }
+    plot(x, d, z, col, nrm, rampId, emit = null, cast = true) {
+      if (cast && !emit) this.setVoxel(x, d, z);
+      const sx = Math.floor(this.x0 + x * this.S);
+      const sy = Math.floor(this.y0 - (z * HAUT + d * FOND) * this.S);
+      if (sx < 1 || sx >= this.W - 1 || sy < 1 || sy >= this.H - 1) return;
+      const k = z * FOND - d * HAUT, i = sy * this.W + sx;
+      if (k < this.kBuf[i]) return;
+      this.kBuf[i] = k; this.mask[i] = 1;
+      this.albR[i] = col[0]; this.albG[i] = col[1]; this.albB[i] = col[2];
+      const nl = Math.hypot(nrm[0], nrm[1], nrm[2]) || 1;
+      this.nx[i] = nrm[0] / nl; this.nd[i] = nrm[1] / nl; this.nz[i] = nrm[2] / nl;
+      this.wx[i] = x; this.wd[i] = d; this.wz[i] = z;
+      const mat = RAMPES_JEU[rampId] || RAMPES_JEU.pierre_seche;
+      this.rough[i] = mat.rough; this.sss[i] = mat.sss;
+      if (emit) { this.emitR[i] = emit[0]; this.emitG[i] = emit[1]; this.emitB[i] = emit[2]; }
+      else { this.emitR[i] = 0; this.emitG[i] = 0; this.emitB[i] = 0; }
+    }
+    box(x0, x1, d0, d1, z0, z1, rampId, sh = null) {
+      const st = this.step;
+      for (let x = x0; x <= x1 + 1e-4; x += st) {
+        for (let d = d0; d <= d1 + 1e-4; d += st) {
+          const s = sh ? sh('top', x, d, z1) : { t: 0.62, dn: [0,0,0] };
+          if (s) this.plot(x, d, z1, evalRampOklab(rampId, s.t), [s.dn[0], s.dn[1], 1], rampId, s.emit);
+        }
+        for (let z = z0; z <= z1 + 1e-4; z += st) {
+          const s = sh ? sh('front', x, d0, z) : { t: 0.52, dn: [0,0,0] };
+          if (s) this.plot(x, d0, z, evalRampOklab(rampId, s.t), [s.dn[0], -1, s.dn[2]], rampId, s.emit);
+        }
+      }
+      for (let d = d0; d <= d1 + 1e-4; d += st) for (let z = z0; z <= z1 + 1e-4; z += st) {
+        const sL = sh ? sh('left', x0, d, z) : { t: 0.50, dn: [0,0,0] };
+        if (sL) this.plot(x0, d, z, evalRampOklab(rampId, sL.t), [-1, sL.dn[1], sL.dn[2]], rampId, sL.emit);
+        const sR = sh ? sh('right', x1, d, z) : { t: 0.46, dn: [0,0,0] };
+        if (sR) this.plot(x1, d, z, evalRampOklab(rampId, sR.t), [1, sR.dn[1], sR.dn[2]], rampId, sR.emit);
+      }
+    }
+    cylinder(cx, cd, r, z0, z1, rampId, sh = null, inside = false) {
+      const st = this.step, nPhi = Math.max(24, Math.ceil((2 * Math.PI * r) / st));
+      for (let z = z0; z <= z1 + 1e-4; z += st) for (let i = 0; i < nPhi; i++) {
+        const phi = (2 * Math.PI * i) / nPhi, c = Math.cos(phi), sn = Math.sin(phi);
+        const s = sh ? sh(phi, z) : { t: 0.56, dn: [0,0,0] };
+        const nrm = inside ? [-c + s.dn[0], -sn + s.dn[1], s.dn[2]] : [c + s.dn[0], sn + s.dn[1], s.dn[2]];
+        this.plot(cx + r * c, cd + r * sn, z, evalRampOklab(rampId, s.t), nrm, rampId, s.emit, !inside);
+      }
+    }
+    disc(cx, cd, r0, r1, zBase, rampId, sh = null, relFn = null) {
+      const st = this.step;
+      for (let rho = r0; rho <= r1 + 1e-4; rho += st) {
+        const nPhi = Math.max(16, Math.ceil((2 * Math.PI * Math.max(0.4, rho)) / st));
+        for (let i = 0; i < nPhi; i++) {
+          const phi = (2 * Math.PI * i) / nPhi;
+          const rel = relFn ? relFn(rho, phi) : { dz: 0, n: [0, 0, 1] };
+          const s = sh ? sh(rho, phi) : { t: 0.60, dn: [0,0,0] };
+          this.plot(cx + rho * Math.cos(phi), cd + rho * Math.sin(phi), zBase + rel.dz, evalRampOklab(rampId, s.t), [rel.n[0] + s.dn[0], rel.n[1] + s.dn[1], rel.n[2] + s.dn[2]], rampId, s.emit);
+        }
+      }
+    }
+  }
+
+  function stoneSh(seed, lod, brick = false) {
+    const rH = brick ? 2.4 : 3.1, cW = brick ? 4.3 : 5.1;
+    return (face, u, v, z) => {
+      const cu = face === 'top' ? u : (face === 'front' ? u : v), cv = face === 'top' ? v : z;
+      const row = Math.floor(cv / rH), col = Math.floor((cu + (row & 1 ? cW * 0.5 : 0)) / cW);
+      const fu = (((cu + (row & 1 ? cW * 0.5 : 0)) % cW) + cW) % cW / cW, fv = ((cv % rH) + rH) % rH / rH;
+      const h = hash2(col, row, seed);
+      if (fu < 0.11 || fv < 0.11) return { t: 0.24 + h * 0.08, dn: [0, 0, -0.32] };
+      const gr = lod >= 1 ? (hash2(Math.floor(cu * 4), Math.floor(cv * 4), seed + 7) - 0.5) * 0.12 : 0;
+      return { t: clamp(0.48 + (h - 0.5) * 0.24 + gr, 0.28, 0.85), dn: [fu < 0.22 ? -0.3 : fu > 0.8 ? 0.3 : 0, 0, fv < 0.22 ? -0.3 : fv > 0.8 ? 0.3 : 0] };
+    };
+  }
+
+  function buildProcedural3D(poseOverride = null) {
+    const T = Math.min(64, state.tileSize); // garde une vitesse temps-réel fluide en voxel 3D
+    const lod = T === 16 ? 0 : (T === 32 ? 1 : 2);
+    const sc = state.procScale, seed = state.seed, pose = poseOverride !== null ? poseOverride : state.pose;
+    let r;
+
+    if (state.archetype === 'forge') {
+      r = new Raster45(2, 1, 2.2, T);
+      const st = stoneSh(seed, lod, false), br = stoneSh(seed + 13, lod, true), H = 9.8 * sc;
+      r.box(-14.2, 1.6, -5.6, 5.6, 0, H, 'pierre_seche', (f, x, d, z) => (f === 'top' && x > -11.5 && x < -1.0 && d > -3 && d < 3) ? null : st(f, x, d, z));
+      r.box(-11.5, -1.0, -3.0, 3.0, H - 3.0, H - 2.2, 'brique_cuite', (f, x, d) => {
+        const hot = clamp(0.5 + Math.sin(x * 1.6 + d * 2 + pose * 1.7) * 0.35 + hash2(x | 0, d | 0, seed) * 0.2, 0, 1);
+        return { t: 0.38 + hot * 0.5, dn: [0,0,0.2], emit: state.emissiveOn ? [1.7 * hot, 0.7 * hot, 0.14 * hot] : null };
+      });
+      if (state.emissiveOn) r.lights.push({ x: -6.2, d: 0, z: H + 2.0, col: [2.1, 0.95, 0.28], rad: 18 });
+      r.box(-13.2, -6.4, 1.2, 5.8, H, H + 11.8 * sc, 'brique_cuite', br);
+      r.box(-13.8, -5.8, 0.6, 6.4, H + 11.8 * sc, H + 13.4 * sc, 'pierre_seche', st);
+      r.cylinder(8.4, 0, 4.3, 0, 7.0 * sc, 'chene_chaud');
+      r.disc(8.4, 0, 0, 4.3, 7.0 * sc, 'bois_serre', rho => ({ t: 0.68 + Math.sin(rho * 4.2) * 0.08, dn: [0,0,0] }));
+      r.box(5.8, 11.4, -2.0, 2.0, 7.0 * sc, 9.0 * sc, 'acier_fonte');
+      r.box(4.8, 12.6, -2.3, 2.3, 9.0 * sc, 11.2 * sc, 'acier_fonte', f => ({ t: f === 'top' ? 0.84 : 0.56, dn: [0,0,0] }));
+    } else if (state.archetype === 'well') {
+      r = new Raster45(2, 2, 2.5, T);
+      const st = stoneSh(seed, lod, false), RO = 10.6, RI = 8.0, HM = 8.2 * sc, ZT = 21.5 * sc;
+      r.cylinder(0, 0, RO, 0, HM, 'pierre_seche', (p, z) => st('front', p * RO, 0, z));
+      r.cylinder(0, 0, RI, 4.5, HM, 'pierre_seche', () => ({ t: 0.28, dn: [0,0,0] }), true);
+      r.disc(0, 0, RI, RO, HM, 'pierre_seche');
+      r.disc(0, 0, 0, RI, 5.2, 'eau_cristal', rho => ({ t: 0.5 + Math.sin(rho * 2.2 - pose) * 0.08, dn: [0,0,0] }));
+      for (const px of [-RO + 1.1, RO - 1.1]) r.cylinder(px, 0, 1.25, HM, ZT, 'bois_serre');
+      r.disc(0, 0, 0, 13.4, ZT, 'tuile_rouge', rho => ({ t: 0.56 + ((Math.floor(rho / 2) & 1) * 0.07), dn: [0,0,0] }), (rho, phi) => ({ dz: 8.6 * sc * (1 - rho / 13.4), n: [Math.cos(phi) * 0.65, Math.sin(phi) * 0.65, 1] }));
+    } else if (state.archetype === 'silo') {
+      r = new Raster45(2, 2, 2.7, T);
+      const R = 11.0, Z0 = 3.2, HZ = 20.5 * sc, HD = 8.4;
+      r.cylinder(0, 0, R + 0.7, 0, Z0, 'pierre_seche', (p, z) => stoneSh(seed, lod)('front', p * R, 0, z));
+      r.cylinder(0, 0, R, Z0, Z0 + HZ, 'chene_chaud');
+      for (const hz of [Z0 + 3.8, Z0 + HZ * 0.52, Z0 + HZ - 2.4]) r.cylinder(0, 0, R + 0.3, hz - 0.55, hz + 0.55, 'acier_fonte');
+      r.disc(0, 0, 0, R + 0.8, Z0 + HZ, 'tuile_rouge', null, (rho, phi) => {
+        const u = clamp(rho / (R + 0.8), 0, 1);
+        return { dz: Math.sqrt(Math.max(0, 1 - u * u)) * HD, n: [Math.cos(phi) * u, Math.sin(phi) * u, Math.sqrt(Math.max(0.08, 1 - u * u))] };
+      });
+    } else if (state.archetype === 'wall') {
+      r = new Raster45(1, 1, 1.75, T);
+      const m = state.wallMask, H = 14.2 * sc, st = stoneSh(seed, lod);
+      r.box(-4.2, 4.2, -4.2, 4.2, 0, H, 'pierre_seche', st);
+      if (m & 1) r.box(-3.8, 3.8, 3.8, 8.0, 0, H, 'pierre_seche', st);
+      if (m & 4) r.box(-3.8, 3.8, -8.0, -3.8, 0, H, 'pierre_seche', st);
+      if (m & 2) r.box(3.8, 8.0, -3.8, 3.8, 0, H, 'pierre_seche', st);
+      if (m & 8) r.box(-8.0, -3.8, -3.8, 3.8, 0, H, 'pierre_seche', st);
+      r.box(m & 8 ? -8 : -4.6, m & 2 ? 8 : 4.6, m & 4 ? -8 : -4.6, m & 1 ? 8 : 4.6, H, H + 1.6, 'bois_serre', st);
+    } else if (state.archetype === 'tree') {
+      r = new Raster45(2, 2, 2.6, T);
+      const sway = [0, 1.15, 2.15, -1.15, -2.15][pose % 5];
+      r.cylinder(sway * 0.2, 0, 2.2, 0, 13 * sc, 'chene_chaud');
+      const puffs = [[0,0,19,7.6],[-5.4,-1.8,15.4,5.8],[5.6,-1.5,15.7,5.6],[-4.2,3.8,16.5,5.6],[4.5,3.6,16.8,5.5],[0,-4.3,14.8,5.2]];
+      puffs.forEach(([bx, bd, bz, rad], idx) => {
+        const px = bx + sway * (0.55 + idx * 0.08), pz = bz * sc;
+        for (let th = 0; th <= Math.PI; th += 0.14) for (let ph = 0; ph < Math.PI * 2; ph += 0.14) {
+          const nx = Math.sin(th) * Math.cos(ph), nd = Math.sin(th) * Math.sin(ph), nz = Math.cos(th);
+          r.plot(px + rad * nx, bd + rad * nd, pz + rad * nz, evalRampOklab('feuillage_pre', 0.44 + nz * 0.28), [nx, nd, nz], 'feuillage_pre');
+        }
+      });
+    } else {
+      const orient = pose % 4, fw = orient % 2 === 0 ? 2 : 1, fd = orient % 2 === 0 ? 1 : 2;
+      r = new Raster45(fw, fd, 2.15, T);
+      const W2 = orient % 2 === 0 ? 13.4 : 5.8, D2 = orient % 2 === 0 ? 5.8 : 13.4;
+      r.box(-W2, W2, -D2, D2, 0, 9.4 * sc, 'chene_chaud');
+      r.box(-W2 - 0.6, W2 + 0.6, -D2 - 0.6, D2 + 0.6, 9.4 * sc, 10.7 * sc, 'bois_serre');
+      r.box(-W2 * 0.85, W2 * 0.85, -D2 * 0.7, D2 * 0.85, 10.7 * sc, 18.4 * sc, 'chene_chaud');
+    }
+
+    const { W, H, mask, albR, albG, albB, nx, nd, nz, wx, wd, wz, rough, sss, emitR, emitG, emitB } = r;
+    const height = new Float32Array(W * H);
+    for (let i = 0; i < W * H; i++) if (mask[i]) height[i] = wz[i] * r.S;
+    const ao = computeSSAO12(W, H, mask, height, nx, nd, nz);
+    resetManualEdits(W, H);
+    return { W, H, fw: r.fw, fd: r.fd, isImageMode: false, mask, albR, albG, albB, nx, nd, nz, height, ao, rough, sss, emitR, emitG, emitB, wx, wd, wz, raster: r };
+  }
+
+  function buildBox45GBuffer() {
+    const T = state.tileSize, margin = state.outline !== 'none' ? 1 : 0;
+    const wPx = Math.max(4, T - margin * 2);
+    const frontH = Math.max(2, Math.round(state.boxH * T * HAUT));
+    const topH = Math.max(2, Math.round(state.boxD * T * FOND));
+    const W = T, H = frontH + topH + margin * 2, N = W * H;
+    const mask = new Uint8Array(N), albR = new Uint8Array(N), albG = new Uint8Array(N), albB = new Uint8Array(N);
+    const nx = new Float32Array(N), nd = new Float32Array(N), nz = new Float32Array(N), height = new Float32Array(N);
+    const emitR = new Float32Array(N), emitG = new Float32Array(N), emitB = new Float32Array(N);
+
+    const td = state.topCanvas.width ? state.topCanvas.getContext('2d').getImageData(0, 0, state.topCanvas.width, state.topCanvas.height) : null;
+    const fd = state.frontCanvas.width ? state.frontCanvas.getContext('2d').getImageData(0, 0, state.frontCanvas.width, state.frontCanvas.height) : null;
+    const sample = (img, u, v) => {
+      if (!img) return [175, 130, 88];
+      const p = (clamp(Math.floor(v * img.height), 0, img.height - 1) * img.width + clamp(Math.floor(u * img.width), 0, img.width - 1)) * 4;
+      return [img.data[p], img.data[p + 1], img.data[p + 2]];
+    };
+    const x0 = (W - wPx) >> 1;
+    for (let y = 0; y < topH; y++) for (let x = 0; x < wPx; x++) {
+      const [r, g, b] = sample(td, x / wPx, y / topH);
+      const i = (margin + y) * W + x0 + x;
+      mask[i] = 1; albR[i] = r; albG[i] = g; albB[i] = b; nx[i] = 0; nd[i] = 0; nz[i] = 1; height[i] = state.boxH * T + (1 - y / topH) * 2.5;
+    }
+    for (let y = 0; y < frontH; y++) for (let x = 0; x < wPx; x++) {
+      const [r, g, b] = sample(fd, x / wPx, y / frontH);
+      const i = (margin + topH + y) * W + x0 + x;
+      mask[i] = 1; albR[i] = r; albG[i] = g; albB[i] = b; nx[i] = 0; nd[i] = -1; nz[i] = 0.08; height[i] = (1 - y / frontH) * state.boxH * T * 0.7;
+      if (state.emissiveOn && r > 210 && g > 110 && b < 95) { emitR[i] = 1.3; emitG[i] = 0.6; emitB[i] = 0.14; }
+    }
+    const ao = computeSSAO12(W, H, mask, height, nx, nd, nz);
+    resetManualEdits(W, H);
+    return { W, H, fw: 1, fd: 1, isImageMode: false, mask, albR, albG, albB, nx, nd, nz, height, ao, rough: new Float32Array(N).fill(0.55), sss: new Float32Array(N), emitR, emitG, emitB, raster: null };
+  }
+
+  function computeSSAO12(W, H, mask, height, nx, nd, nz) {
+    const N = W * H, ao = new Float32Array(N).fill(1);
+    const taps = [[-1,0],[1,0],[0,-1],[0,1],[-2,0],[2,0],[0,-2],[0,2],[-1,-1],[1,-1],[-1,1],[1,1]];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x; if (!mask[i]) continue;
+      let occ = 0;
+      for (const [ox, oy] of taps) {
+        const sx = x + ox, sy = y + oy;
+        if (sx < 0 || sx >= W || sy < 0 || sy >= H) continue;
+        const j = sy * W + sx; if (!mask[j]) continue;
+        const dh = height[j] - height[i];
+        if (dh > 0.25) occ += Math.min(1, dh / 3.4);
+        if (nx[i] * nx[j] + nd[i] * nd[j] + nz[i] * nz[j] < 0.55 && sy <= y) occ += 0.32;
+      }
+      ao[i] = clamp(1 - (occ / taps.length) * 1.3, 0.26, 1);
+    }
+    return ao;
+  }
+
+  /* =========================================================================
+   * 6. K-MEANS++ OKLAB (JUSQU'À 16 CLUSTERS)
+   * ========================================================================= */
+  function segmentClustersKMeans(gb, autoAssign = false, updateUI = true) {
+    const { W, H, mask, albR, albG, albB } = gb;
+    const N = W * H, pts = [];
+    for (let i = 0; i < N; i++) if (mask[i]) pts.push({ i, lab: rgbToOklab(albR[i], albG[i], albB[i]) });
+    const cid = new Uint8Array(N);
+    gb.clusterId = cid;
+    if (!pts.length) { if (updateUI) { state.clusters = []; renderClusterUI(); } return; }
+
+    const K = Math.min(state.kClusters, pts.length);
+    const centers = [pts[Math.floor(pts.length / 2)].lab.slice()];
+    const step = Math.max(1, Math.floor(pts.length / 280));
+    while (centers.length < K) {
+      let bestP = pts[0].lab, bestD = -1;
+      for (let p = 0; p < pts.length; p += step) {
+        let minD = 1e9;
+        for (const c of centers) { const d = distLab(pts[p].lab, c); if (d < minD) minD = d; }
+        if (minD > bestD) { bestD = minD; bestP = pts[p].lab; }
+      }
+      centers.push(bestP.slice());
+    }
+
+    for (let it = 0; it < 6; it++) {
+      const sums = Array.from({ length: K }, () => [0, 0, 0, 0]);
+      for (const p of pts) {
+        let bk = 0, bd = 1e9;
+        for (let k = 0; k < K; k++) { const d = distLab(p.lab, centers[k]); if (d < bd) { bd = d; bk = k; } }
+        cid[p.i] = bk;
+        sums[bk][0] += p.lab[0]; sums[bk][1] += p.lab[1]; sums[bk][2] += p.lab[2]; sums[bk][3]++;
+      }
+      for (let k = 0; k < K; k++) if (sums[k][3] > 0) {
+        centers[k][0] = sums[k][0] / sums[k][3];
+        centers[k][1] = sums[k][1] / sums[k][3];
+        centers[k][2] = sums[k][2] / sums[k][3];
+      }
+    }
+
+    const prev = state.clusters;
+    const stats = Array.from({ length: K }, (_, k) => ({
+      k, centerLab: centers[k], rgb: oklabToRgb(...centers[k]), count: 0, lMin: 1, lMax: 0,
+      ramp: autoAssign ? closestGameRamp(centers[k]) : ((prev[k] && prev[k].ramp) || 'keep')
+    }));
+    for (const p of pts) {
+      const st = stats[cid[p.i]]; st.count++;
+      if (p.lab[0] < st.lMin) st.lMin = p.lab[0];
+      if (p.lab[0] > st.lMax) st.lMax = p.lab[0];
+    }
+    gb.clusters = stats;
+    if (updateUI) { state.clusters = stats; renderClusterUI(); }
+  }
+
+  function renderClusterUI() {
+    const box = document.getElementById('clusterList');
+    box.innerHTML = '';
+    state.clusters.forEach((cl, idx) => {
+      if (!cl.count) return;
+      const row = document.createElement('div');
+      row.className = 'cluster-row';
+      const bands = cl.ramp === 'keep'
+        ? [0.25, 0.42, 0.58, 0.74, 0.90].map(f => rgbToHex(...oklabToRgb(clamp(cl.centerLab[0] * (0.55 + f * 0.7), 0.1, 0.95), cl.centerLab[1], cl.centerLab[2])))
+        : RAMPES_JEU[cl.ramp].ancres.map(a => rgbToHex(a[0], a[1], a[2]));
+      const opts = `<option value="keep"${cl.ramp === 'keep' ? ' selected' : ''}>Origine (${cl.count}px)</option>` +
+        Object.entries(RAMPES_JEU).map(([id, r]) => `<option value="${id}"${cl.ramp === id ? ' selected' : ''}>${r.nom}</option>`).join('');
+      row.innerHTML = `<span class="swatch" style="background:${rgbToHex(...cl.rgb)}"></span><span class="ramp-preview">${bands.map(c => `<i style="background:${c}"></i>`).join('')}</span><select style="flex:1;padding:2px 5px;font-size:10.5px">${opts}</select>`;
+      row.querySelector('select').addEventListener('change', e => {
+        state.clusters[idx].ramp = e.target.value;
+        if (state.gb) state.gb.clusters = state.clusters;
+        refreshShading();
+      });
+      box.appendChild(row);
+    });
+  }
+
+  /* =========================================================================
+   * 7. SHADER HAUTE FIDÉLITÉ (CURSEUR CONTINU 0% FIDÈLE 1:1 ↔ 100% PBR 24H)
+   * ========================================================================= */
+  function getSunParams(hour) {
+    const night = hour < 5.75 || hour > 20.25;
+    let lx, ld, lz, sunCol, ambCol;
+    if (!night) {
+      const t = (hour - 5.75) / (20.25 - 5.75), ang = (t - 0.5) * Math.PI * 0.88;
+      lx = Math.sin(ang); ld = -0.48; lz = Math.max(0.18, Math.cos(ang) * 0.88);
+      const warm = 1 - Math.sin(t * Math.PI);
+      sunCol = [1.05 + warm * 0.16, 0.98 - warm * 0.14, 0.91 - warm * 0.30];
+      ambCol = [0.34, 0.38, 0.48];
+    } else {
+      lx = -0.35; ld = -0.40; lz = 0.78;
+      sunCol = [0.36, 0.46, 0.74]; ambCol = [0.16, 0.20, 0.32];
+    }
+    if (state.customSun) [lx, ld, lz] = state.sunDir;
+    else { const l = Math.hypot(lx, ld, lz) || 1; lx /= l; ld /= l; lz /= l; state.sunDir = [lx, ld, lz]; }
+    return { lx, ld, lz, sunCol, ambCol };
+  }
+
+  function shadeGBuffer(gb, targetCv, normalCv = null, overrideHour = null, applyManualEdits = true) {
+    if (!gb) return { colors: 0, pixels: 0, fidelity: 100 };
+    const { W, H, mask, albR, albG, albB, nx, nd, nz, height, ao, rough, sss, emitR, emitG, emitB, raster, clusterId, isImageMode, isLineart } = gb;
+    const activeClusters = gb.clusters || state.clusters;
+    const N = W * H;
+
+    targetCv.width = W; targetCv.height = H;
+    if (normalCv) { normalCv.width = W; normalCv.height = H; }
+    const octx = targetCv.getContext('2d');
+    const outImg = octx.createImageData(W, H), od = outImg.data;
+    const nrmImg = normalCv ? normalCv.getContext('2d').createImageData(W, H) : null;
+
+    const savedCustom = state.customSun;
+    if (overrideHour !== null) state.customSun = false;
+    const { lx, ld, lz, sunCol, ambCol } = getSunParams(overrideHour !== null ? overrideHour : state.hour);
+    state.customSun = savedCustom;
+
+    const vLen = Math.hypot(HAUT, FOND);
+    const vx = 0, vd = -HAUT / vLen, vz = FOND / vLen;
+    const hxR = lx + vx, hdR = ld + vd, hzR = lz + vz, hL = Math.hypot(hxR, hdR, hzR) || 1;
+    const hx = hxR / hL, hd = hdR / hL, hz = hzR / hL;
+
+    let maxH = 1;
+    for (let i = 0; i < N; i++) if (mask[i] && height[i] > maxH) maxH = height[i];
+
+    // En mode Image, relightMix dose entre 0.0 (fidélité 1:1 absolue) et 1.0 (re-éclairage 3D complet)
+    const relight = isImageMode ? (overrideHour !== null ? Math.max(0.45, state.relightMix) : state.relightMix) : 1.0;
+
+    const clusterCols = [[240,180,76],[106,208,143],[122,184,255],[232,112,130],[198,138,248],[242,226,118],[108,224,224],[235,152,94]];
+    const gridR = new Uint8Array(N), gridG = new Uint8Array(N), gridB = new Uint8Array(N), gridA = new Uint8Array(N);
+
+    let sumDeltaE = 0, deltaCount = 0;
+
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (!mask[i]) continue;
+
+        const nsX = nx[i], nsY = clamp(nz[i] * 0.75 + nd[i] * 0.65, -1, 1), nsZ = clamp(-nd[i] * 0.65 + nz[i] * 0.75, 0, 1);
+        if (nrmImg) {
+          const p = i * 4;
+          nrmImg.data[p]     = Math.round((nsX * 0.5 + 0.5) * 255);
+          nrmImg.data[p + 1] = Math.round((nsY * 0.5 + 0.5) * 255);
+          nrmImg.data[p + 2] = Math.round((nsZ * 0.5 + 0.5) * 255);
+          nrmImg.data[p + 3] = 255;
+        }
+
+        let bR = albR[i], bG = albG[i], bB = albB[i];
+        let matRough = rough[i], matSSS = sss[i];
+        if (clusterId && activeClusters && activeClusters.length) {
+          const cl = activeClusters[clusterId[i]];
+          if (cl && cl.ramp && cl.ramp !== 'keep' && state.harmMix > 0.01) {
+            const pixLab = rgbToOklab(bR, bG, bB);
+            const span = Math.max(0.12, cl.lMax - cl.lMin);
+            const tRamp = clamp(((pixLab[0] - cl.lMin) / span) * 0.80 + 0.10, 0.03, 0.97);
+            const [rr, rg, rb] = evalRampOklab(cl.ramp, tRamp);
+            const m = state.harmMix;
+            bR = Math.round(bR * (1 - m) + rr * m);
+            bG = Math.round(bG * (1 - m) + rg * m);
+            bB = Math.round(bB * (1 - m) + rb * m);
+            matRough = RAMPES_JEU[cl.ramp].rough;
+            matSSS = RAMPES_JEU[cl.ramp].sss;
+          }
+        }
+
+        if (overrideHour === null) {
+          if (state.pass === 'albedo') { gridR[i] = bR; gridG[i] = bG; gridB[i] = bB; gridA[i] = 255; continue; }
+          if (state.pass === 'normal') {
+            gridR[i] = Math.round((nsX * 0.5 + 0.5) * 255);
+            gridG[i] = Math.round((nsY * 0.5 + 0.5) * 255);
+            gridB[i] = Math.round((nsZ * 0.5 + 0.5) * 255);
+            gridA[i] = 255; continue;
+          }
+          if (state.pass === 'depth') {
+            const v = Math.round(clamp(height[i] / maxH, 0, 1) * 235 + 20);
+            gridR[i] = v; gridG[i] = v; gridB[i] = Math.min(255, v + 12); gridA[i] = 255; continue;
+          }
+          if (state.pass === 'ao') {
+            const v = Math.round(ao[i] * 255);
+            gridR[i] = v; gridG[i] = v; gridB[i] = v; gridA[i] = 255; continue;
+          }
+          if (state.pass === 'clusters') {
+            const cc = clusterCols[(clusterId ? clusterId[i] : 0) % clusterCols.length];
+            gridR[i] = cc[0]; gridG[i] = cc[1]; gridB[i] = cc[2]; gridA[i] = 255; continue;
+          }
+        }
+
+        // Mousse orientée
+        if (state.moss > 0.01 && nz[i] > 0.50 && !(isLineart && isLineart[i])) {
+          const n = hash2(x, y, state.seed + 77);
+          const mm = clamp((nz[i] - 0.50) * 2.1 * state.moss + (n - 0.5) * 0.30, 0, 0.85);
+          if (mm > 0.14) {
+            const mc = evalRampOklab('feuillage_pre', 0.44 + n * 0.35);
+            bR = Math.round(bR * (1 - mm) + mc[0] * mm);
+            bG = Math.round(bG * (1 - mm) + mc[1] * mm);
+            bB = Math.round(bB * (1 - mm) + mc[2] * mm);
+          }
+        }
+
+        let r = bR, g = bG, b = bB;
+
+        if (relight > 0.005) {
+          // Protège les traits sombres internes (Lineart Lock) contre l'écrasement lumineux
+          const strokeProtect = (isLineart && isLineart[i]) ? (1 - state.lineLock * 0.85) : 1.0;
+          const effRelight = relight * strokeProtect;
+
+          let shadow = 1.0;
+          if (state.ssao > 0.05 && raster) {
+            const x0 = gb.wx[i], d0 = gb.wd[i], z0 = gb.wz[i];
+            for (let t = 1.4; t <= 16; t += 1.05) {
+              if (raster.hasVoxel(x0 + lx * t, d0 + ld * t, z0 + lz * t)) { shadow = 1 - 0.48 * clamp(state.ssao, 0, 1); break; }
+            }
+          }
+
+          const dotNL = nx[i] * lx + nd[i] * ld + nz[i] * lz;
+          const diff = Math.max(0, dotNL) * shadow;
+          const occ = 1 - (1 - ao[i]) * state.ssao;
+          const backSSS = Math.max(0, -dotNL * 0.6 + 0.35) * matSSS * state.sss * 0.45;
+
+          // En mode Image, normalisation neutre autour de 1.0 pour sculpter sans noircir les couleurs d'origine !
+          const normFactor = isImageMode ? 1.18 : 1.0;
+          let lr = (ambCol[0] * occ + sunCol[0] * (diff + backSSS)) * normFactor + (state.emissiveOn ? emitR[i] : 0);
+          let lg = (ambCol[1] * occ + sunCol[1] * (diff + backSSS * 1.2)) * normFactor + (state.emissiveOn ? emitG[i] : 0);
+          let lb = (ambCol[2] * occ + sunCol[2] * (diff + backSSS * 0.4)) * normFactor + (state.emissiveOn ? emitB[i] : 0);
+
+          if (state.emissiveOn && raster && raster.lights.length) {
+            for (const L of raster.lights) {
+              const dx = L.x - gb.wx[i], dd = L.d - gb.wd[i], dz = L.z - gb.wz[i];
+              const d2 = dx * dx + dd * dd + dz * dz;
+              if (d2 < L.rad * L.rad) {
+                const d = Math.sqrt(d2) || 1;
+                const att = Math.pow(1 - d / L.rad, 2) * Math.max(0.15, (nx[i] * dx + nd[i] * dd + nz[i] * dz) / d) * 0.9;
+                lr += L.col[0] * att; lg += L.col[1] * att; lb += L.col[2] * att;
+              }
+            }
+          }
+
+          const shininess = Math.round(4 + (1 - matRough) * (1 - matRough) * 60);
+          const spec = diff > 0 ? Math.pow(Math.max(0, nx[i] * hx + nd[i] * hd + nz[i] * hz), shininess) * state.specular * (1.1 - matRough * 0.75) * effRelight : 0;
+
+          const litR = bR * lr + 255 * spec * sunCol[0];
+          const litG = bG * lg + 245 * spec * sunCol[1];
+          const litB = bB * lb + 225 * spec * sunCol[2];
+
+          r = bR * (1 - effRelight) + litR * effRelight;
+          g = bG * (1 - effRelight) + litG * effRelight;
+          b = bB * (1 - effRelight) + litB * effRelight;
+        }
+
+        if (state.dither > 0.02) {
+          const by = (BAYER4[y & 3][x & 3] / 15 - 0.5) * state.dither * 16;
+          const q = 255 / Math.max(8, Math.round(40 - state.dither * 24));
+          r = Math.round((r + by) / q) * q;
+          g = Math.round((g + by) / q) * q;
+          b = Math.round((b + by) / q) * q;
+        }
+
+        gridR[i] = clamp(Math.round(r), 0, 255);
+        gridG[i] = clamp(Math.round(g), 0, 255);
+        gridB[i] = clamp(Math.round(b), 0, 255);
+        gridA[i] = 255;
+
+        // Mesure de fidélité perceptuelle Oklab par rapport à la couleur source échantillonnée
+        if (isImageMode) {
+          const labSrc = rgbToOklab(albR[i], albG[i], albB[i]);
+          const labOut = rgbToOklab(gridR[i], gridG[i], gridB[i]);
+          sumDeltaE += distLab(labSrc, labOut);
+          deltaCount++;
+        }
+      }
+    }
+
+    // Contour externe 1 px optionnel (Sel-Out ou Canon)
+    if (state.outline !== 'none' && (state.pass === 'final' || overrideHour !== null)) {
+      const baseA = new Uint8Array(gridA);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = y * W + x; if (baseA[i]) continue;
+        let nc = 0, sr = 0, sg = 0, sb = 0;
+        for (const [ox, oy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+          const sx = x + ox, sy = y + oy;
+          if (sx >= 0 && sx < W && sy >= 0 && sy < H && baseA[sy * W + sx]) {
+            const ni = sy * W + sx; sr += gridR[ni]; sg += gridG[ni]; sb += gridB[ni]; nc++;
+          }
+        }
+        if (!nc) continue;
+        gridA[i] = 255;
+        if (state.outline === 'canon') {
+          gridR[i] = 36; gridG[i] = 30; gridB[i] = 20;
+        } else {
+          const sunSide = clamp(((x / W - 0.5) * lx + (0.5 - y / H) * lz) + 0.5, 0, 1);
+          const f = 0.25 + 0.22 * sunSide;
+          gridR[i] = clamp(Math.round((sr / nc) * f), 12, 220);
+          gridG[i] = clamp(Math.round((sg / nc) * f * 0.96), 10, 220);
+          gridB[i] = clamp(Math.round((sb / nc) * f * 1.08 + 5), 16, 230);
+        }
+      }
+    }
+
+    // Application du calque de retouches manuelles 1px (Crayon / Gomme)
+    if (applyManualEdits && state.editsW === W && state.editsH === H && state.editsMap.size > 0) {
+      for (const [idx, rgba] of state.editsMap.entries()) {
+        if (idx < 0 || idx >= N) continue;
+        if (rgba[3] === 0) {
+          gridA[idx] = 0;
+        } else {
+          gridR[idx] = rgba[0]; gridG[idx] = rgba[1]; gridB[idx] = rgba[2]; gridA[idx] = 255;
+        }
+      }
+    }
+
+    const unique = new Set();
+    let opaqueCount = 0;
+    for (let i = 0; i < N; i++) {
+      if (!gridA[i]) continue;
+      const p = i * 4;
+      od[p] = gridR[i]; od[p + 1] = gridG[i]; od[p + 2] = gridB[i]; od[p + 3] = 255;
+      unique.add((gridR[i] << 16) | (gridG[i] << 8) | gridB[i]);
+      opaqueCount++;
+    }
+    octx.putImageData(outImg, 0, 0);
+    if (normalCv && nrmImg) normalCv.getContext('2d').putImageData(nrmImg, 0, 0);
+
+    const meanDE = deltaCount > 0 ? sumDeltaE / deltaCount : 0;
+    const fidelity = clamp(Math.round((1 - meanDE * 1.45) * 1000) / 10, 0, 100);
+    return { colors: unique.size, pixels: opaqueCount, fidelity: isImageMode ? fidelity : null };
+  }
+
+  /* =========================================================================
+   * 8. MODÈLES ILLUSTRÉS HAUTE DÉFINITION INTÉGRÉS (RENARD, CHAUMIÈRE, CHAUDRON, COFFRE)
+   * ========================================================================= */
+  function makeSampleImage(kind) {
+    const W = 280, H = 280, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#f4f0e8';
+    g.fillRect(0, 0, W, H);
+
+    if (kind === 'fox') {
+      // Renard villageois illustré avec traits sombres fins, écharpe verte, yeux brillants et queue touffue !
+      g.lineJoin = 'round'; g.lineCap = 'round';
+      // Queue touffue à droite avec bout crème
+      g.fillStyle = '#d96528'; g.strokeStyle = '#2a1812'; g.lineWidth = 5;
+      g.beginPath(); g.ellipse(196, 198, 52, 26, -0.35, 0, Math.PI * 2); g.fill(); g.stroke();
+      g.fillStyle = '#fff5e4';
+      g.beginPath(); g.ellipse(230, 184, 22, 16, -0.35, 0, Math.PI * 2); g.fill();
+
+      // Corps assis + plastron crème
+      const bodyG = g.createLinearGradient(90, 140, 175, 245);
+      bodyG.addColorStop(0, '#ee7b35'); bodyG.addColorStop(1, '#b84918');
+      g.fillStyle = bodyG;
+      g.beginPath(); g.ellipse(132, 196, 46, 52, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+      g.fillStyle = '#faeedc';
+      g.beginPath(); g.ellipse(132, 198, 26, 36, 0, 0, Math.PI * 2); g.fill();
+
+      // Pattes sombres avant
+      g.fillStyle = '#3b231c';
+      g.beginPath(); g.roundRect(102, 226, 20, 24, 9); g.fill(); g.stroke();
+      g.beginPath(); g.roundRect(142, 226, 20, 24, 9); g.fill(); g.stroke();
+
+      // Écharpe verte de jardinier Moon Bloom
+      g.fillStyle = '#4da858';
+      g.beginPath(); g.ellipse(132, 152, 42, 14, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+      g.fillStyle = '#68c972';
+      g.beginPath(); g.roundRect(142, 154, 18, 38, 6); g.fill(); g.stroke();
+
+      // Grandes oreilles pointues
+      for (const [ex, rot, ix] of [[92, -0.28, 95], [172, 0.28, 169]]) {
+        g.fillStyle = '#df6829';
+        g.beginPath(); g.moveTo(ex - 22, 92); g.lineTo(ex, 32); g.lineTo(ex + 24, 88); g.closePath(); g.fill(); g.stroke();
+        g.fillStyle = '#3a201a';
+        g.beginPath(); g.moveTo(ix - 11, 84); g.lineTo(ex, 44); g.lineTo(ix + 11, 82); g.closePath(); g.fill();
+      }
+
+      // Tête large + joues crème
+      const headG = g.createRadialGradient(125, 96, 12, 132, 108, 64);
+      headG.addColorStop(0, '#f78d44'); headG.addColorStop(1, '#cc5820');
+      g.fillStyle = headG;
+      g.beginPath(); g.ellipse(132, 108, 58, 46, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+
+      g.fillStyle = '#fff6e8';
+      g.beginPath(); g.ellipse(102, 124, 28, 20, 0.15, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(162, 124, 28, 20, -0.15, 0, Math.PI * 2); g.fill();
+
+      // Yeux expressifs avec reflet blanc net (test décisif anti-flou !)
+      for (const x of [108, 156]) {
+        g.fillStyle = '#1e161c';
+        g.beginPath(); g.arc(x, 106, 9, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#ffffff';
+        g.beginPath(); g.arc(x - 3, 103, 3.5, 0, Math.PI * 2); g.fill();
+      }
+      // Truffe noire brillante
+      g.fillStyle = '#1c1518';
+      g.beginPath(); g.ellipse(132, 124, 9, 6.5, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffffff';
+      g.beginPath(); g.arc(129, 122, 2.2, 0, Math.PI * 2); g.fill();
+    } else if (kind === 'cottage') {
+      // Chaumière du village à colombages, toit de tuiles, fenêtre éclairée et buisson fleuri
+      g.lineJoin = 'round'; g.strokeStyle = '#2b1d16'; g.lineWidth = 4;
+      // Murs crépis chauds
+      g.fillStyle = '#ebd9be';
+      g.fillRect(58, 128, 164, 108); g.strokeRect(58, 128, 164, 108);
+      // Soubassement pierre
+      g.fillStyle = '#8b8580';
+      g.fillRect(56, 212, 168, 26); g.strokeRect(56, 212, 168, 26);
+      // Colombages bois
+      g.fillStyle = '#6e4526';
+      g.fillRect(58, 128, 12, 86); g.fillRect(210, 128, 12, 86); g.fillRect(134, 128, 10, 86);
+      // Cheminée
+      g.fillStyle = '#a84a39';
+      g.fillRect(174, 42, 28, 58); g.strokeRect(174, 42, 28, 58);
+      // Grand toit pentu tuiles rouges
+      const roofG = g.createLinearGradient(140, 46, 140, 138);
+      roofG.addColorStop(0, '#d96548'); roofG.addColorStop(1, '#963422');
+      g.fillStyle = roofG;
+      g.beginPath(); g.moveTo(34, 136); g.lineTo(140, 48); g.lineTo(246, 136); g.closePath(); g.fill(); g.stroke();
+      // Porte cintrée chêne + poignée or
+      g.fillStyle = '#8c552c';
+      g.beginPath(); g.roundRect(82, 162, 38, 74, [18, 18, 0, 0]); g.fill(); g.stroke();
+      g.fillStyle = '#f5cb5c'; g.beginPath(); g.arc(111, 198, 4, 0, Math.PI * 2); g.fill();
+      // Fenêtre illuminée à croisillons
+      g.fillStyle = '#ffdf78';
+      g.fillRect(156, 156, 40, 38); g.strokeRect(156, 156, 40, 38);
+      g.beginPath(); g.moveTo(176, 156); g.lineTo(176, 194); g.moveTo(156, 175); g.lineTo(196, 175); g.stroke();
+      // Jardinière fleurie sous la fenêtre
+      g.fillStyle = '#499e45';
+      g.beginPath(); g.ellipse(176, 202, 26, 11, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+      for (const [fx, col] of [[160, '#ff6b8b'], [176, '#ffd24c'], [192, '#b980ff']]) {
+        g.fillStyle = col; g.beginPath(); g.arc(fx, 199, 5, 0, Math.PI * 2); g.fill();
+      }
+    } else if (kind === 'cauldron') {
+      g.fillStyle = '#242734';
+      for (const px of [84, 196]) { g.beginPath(); g.ellipse(px, 234, 18, 13, 0, 0, Math.PI * 2); g.fill(); }
+      const bodyG = g.createRadialGradient(104, 138, 20, 140, 160, 98);
+      bodyG.addColorStop(0, '#8591a8'); bodyG.addColorStop(0.5, '#42495c'); bodyG.addColorStop(1, '#1b1e29');
+      g.fillStyle = bodyG; g.strokeStyle = '#14161f'; g.lineWidth = 4;
+      g.beginPath(); g.ellipse(140, 160, 90, 78, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+      const rimG = g.createLinearGradient(52, 78, 228, 118);
+      rimG.addColorStop(0, '#aeb9cf'); rimG.addColorStop(1, '#2f3544');
+      g.fillStyle = rimG; g.beginPath(); g.ellipse(140, 94, 82, 32, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+      const soupG = g.createRadialGradient(128, 94, 8, 140, 96, 66);
+      soupG.addColorStop(0, '#c8ff8c'); soupG.addColorStop(0.65, '#52b84c'); soupG.addColorStop(1, '#215730');
+      g.fillStyle = soupG; g.beginPath(); g.ellipse(140, 96, 66, 22, 0, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#f0be59'; g.lineWidth = 8;
+      g.beginPath(); g.arc(56, 148, 14, 0.3, Math.PI * 1.7); g.stroke();
+      g.beginPath(); g.arc(224, 148, 14, -Math.PI * 0.7, Math.PI * 0.7); g.stroke();
+    } else {
+      g.strokeStyle = '#2c190e'; g.lineWidth = 4;
+      const fG = g.createLinearGradient(48, 128, 232, 234); fG.addColorStop(0, '#ba7c44'); fG.addColorStop(1, '#6e4222');
+      g.fillStyle = fG; g.fillRect(48, 128, 184, 104); g.strokeRect(48, 128, 184, 104);
+      g.fillStyle = '#4a2914'; g.fillRect(48, 162, 184, 4); g.fillRect(48, 196, 184, 4);
+      const tG = g.createLinearGradient(48, 64, 48, 130); tG.addColorStop(0, '#cc9156'); tG.addColorStop(0.55, '#e6b072'); tG.addColorStop(1, '#9d6434');
+      g.fillStyle = tG; g.beginPath(); g.moveTo(60, 68); g.lineTo(220, 68); g.lineTo(234, 128); g.lineTo(46, 128); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = '#4d5364'; for (const x of [72, 194]) { g.fillRect(x, 68, 15, 164); g.strokeRect(x, 68, 15, 164); }
+      g.fillStyle = '#f2c664'; g.fillRect(124, 116, 32, 38); g.strokeRect(124, 116, 32, 38);
+      g.fillStyle = '#221a16'; g.beginPath(); g.arc(140, 132, 5, 0, Math.PI * 2); g.fill();
+    }
+
+    copyThumb(cv, state.srcCanvas, 'srcThumb');
+    detectBackgroundFromSource(cv);
+    state.clusters = [];
+    rebuildAll(false);
+    autoFitZoom();
+  }
+
+  function makeBoxPreset(kind) {
+    const W = 128, top = document.createElement('canvas'), fr = document.createElement('canvas');
+    top.width = top.height = fr.width = fr.height = W;
+    const gt = top.getContext('2d'), gf = fr.getContext('2d');
+    if (kind === 'wardrobe') {
+      gt.fillStyle = '#b9824c'; gt.fillRect(0, 0, W, W);
+      gf.fillStyle = '#9e6939'; gf.fillRect(0, 0, W, W);
+      gf.strokeStyle = '#603a1b'; gf.lineWidth = 8; gf.strokeRect(4, 4, W - 8, W - 8);
+      gf.fillStyle = '#b47c48'; gf.fillRect(14, 16, 44, W - 32); gf.fillRect(70, 16, 44, W - 32);
+      gf.fillStyle = '#f0c665'; gf.fillRect(51, 60, 5, 12); gf.fillRect(72, 60, 5, 12);
+    } else if (kind === 'furnace') {
+      gt.fillStyle = '#9c5240'; gt.fillRect(0, 0, W, W);
+      gf.fillStyle = '#8e4535'; gf.fillRect(0, 0, W, W);
+      const fg = gf.createRadialGradient(64, 96, 6, 64, 96, 28);
+      fg.addColorStop(0, '#fff4b0'); fg.addColorStop(0.5, '#ff962e'); fg.addColorStop(1, '#982214');
+      gf.fillStyle = fg; gf.beginPath(); gf.arc(64, 94, 25, Math.PI, 0); gf.lineTo(89, 118); gf.lineTo(39, 118); gf.closePath(); gf.fill();
+    } else {
+      gt.fillStyle = '#cca068'; gt.fillRect(0, 0, W, W);
+      gf.fillStyle = '#ba8b54'; gf.fillRect(0, 0, W, W);
+      gf.strokeStyle = '#d4aa72'; gf.lineWidth = 14; gf.strokeRect(7, 7, W - 14, W - 14);
+    }
+    copyThumb(top, state.topCanvas, 'topThumb');
+    copyThumb(fr, state.frontCanvas, 'frontThumb');
+    state.clusters = [];
+    rebuildAll(false);
+    autoFitZoom();
+  }
+
+  function copyThumb(src, dst, id) {
+    dst.width = src.width; dst.height = src.height;
+    dst.getContext('2d').drawImage(src, 0, 0);
+    const th = document.getElementById(id);
+    if (!th) return;
+    const ctx = th.getContext('2d');
+    ctx.clearRect(0, 0, th.width, th.height);
+    const sc = Math.min(th.width / src.width, th.height / src.height);
+    const dw = Math.round(src.width * sc), dh = Math.round(src.height * sc);
+    ctx.drawImage(src, (th.width - dw) >> 1, (th.height - dh) >> 1, dw, dh);
+  }
+
+  /* =========================================================================
+   * 9. PLANCHE EXTRUDÉE 1PX & ATLAS PHASER 4
+   * ========================================================================= */
+  function buildExtrudedSheet() {
+    const frames = [];
+    const savedMask = state.wallMask, savedPose = state.pose;
+
+    if (state.pipeline === 'proc3d' && state.archetype === 'wall') {
+      for (let m = 0; m < 16; m++) {
+        state.wallMask = m;
+        const gb = buildProcedural3D();
+        segmentClustersKMeans(gb, false, false);
+        const cv = document.createElement('canvas');
+        shadeGBuffer(gb, cv, null, null, false);
+        frames.push({ name: `mur_${m}`, cv });
+      }
+    } else if (state.pipeline === 'proc3d') {
+      const cnt = state.archetype === 'tree' ? 5 : 4;
+      for (let p = 0; p < cnt; p++) {
+        const gb = buildProcedural3D(p);
+        segmentClustersKMeans(gb, false, false);
+        const cv = document.createElement('canvas');
+        shadeGBuffer(gb, cv, null, null, false);
+        frames.push({ name: `${state.archetype}_${p}`, cv });
+      }
+    } else {
+      for (const [nom, h] of [['fid_origine', null], ['matin', 8.0], ['midi', 12.5], ['nuit', 23.0]]) {
+        const cv = document.createElement('canvas');
+        shadeGBuffer(state.gb, cv, null, h, true);
+        frames.push({ name: `sprite_${nom}`, cv });
+      }
+    }
+    state.wallMask = savedMask; state.pose = savedPose;
+
+    const BORD = 1;
+    const cols = frames.length === 16 ? 4 : frames.length;
+    const rows = Math.ceil(frames.length / cols);
+    const cellW = Math.max(...frames.map(f => f.cv.width)) + BORD * 2;
+    const cellH = Math.max(...frames.map(f => f.cv.height)) + BORD * 2;
+    const sheet = state.sheetCanvas;
+    sheet.width = cols * cellW; sheet.height = rows * cellH;
+    const sctx = sheet.getContext('2d');
+    sctx.clearRect(0, 0, sheet.width, sheet.height);
+
+    const atlas = {
+      frames: {},
+      meta: { app: 'Moon Bloom Sprite Studio v5', version: '5.0', image: `atlas_${state.tileSize}px.png`, format: 'RGBA8888', size: { w: sheet.width, h: sheet.height }, scale: '1', tileSize: state.tileSize, extrudeBorder: BORD }
+    };
+
+    frames.forEach((f, idx) => {
+      const fw = f.cv.width, fh = f.cv.height;
+      const cx = (idx % cols) * cellW + BORD, cy = Math.floor(idx / cols) * cellH + BORD;
+      sctx.drawImage(f.cv, cx, cy);
+      sctx.drawImage(f.cv, 0, 0, fw, 1, cx, cy - 1, fw, 1);
+      sctx.drawImage(f.cv, 0, fh - 1, fw, 1, cx, cy + fh, fw, 1);
+      sctx.drawImage(f.cv, 0, 0, 1, fh, cx - 1, cy, 1, fh);
+      sctx.drawImage(f.cv, fw - 1, 0, 1, fh, cx + fw, cy, 1, fh);
+      atlas.frames[f.name] = { frame: { x: cx, y: cy, w: fw, h: fh }, rotated: false, trimmed: false, spriteSourceSize: { x: 0, y: 0, w: fw, h: fh }, sourceSize: { w: fw, h: fh }, anchor: { x: 0.5, y: 1.0 } };
+    });
+    state.lastAtlasMeta = atlas;
+    return sheet;
+  }
+
+  /* =========================================================================
+   * 10. VIEWPORT COMPARATEUR (RIDEAU AVANT/APRÈS, CÔTE À CÔTE, SORTIE SEULE)
+   * ========================================================================= */
+  function rebuildAll(autoHarmonize = false) {
+    document.getElementById('lodTag').textContent = `${state.tileSize}px`;
+    if (state.pipeline === 'inflate') state.gb = buildHighFidelityImageGBuffer();
+    else if (state.pipeline === 'proc3d') state.gb = buildProcedural3D();
+    else state.gb = buildBox45GBuffer();
+    if (!state.gb) return;
+    segmentClustersKMeans(state.gb, autoHarmonize, true);
+    refreshShading();
+  }
+
+  function refreshShading() {
+    if (!state.gb) return;
+    const info = shadeGBuffer(state.gb, state.outCanvas, state.normalCanvas, null, true);
+    if (state.showSheet) buildExtrudedSheet();
+
+    const W = state.outCanvas.width, H = state.outCanvas.height;
+    document.getElementById('colorBadge').textContent = `${info.colors} nuances`;
+    const fidEl = document.getElementById('fidelityBadge');
+    if (info.fidelity !== null) {
+      fidEl.textContent = `Fidélité ΔE : ${info.fidelity.toFixed(1)}%`;
+      fidEl.style.display = 'inline-block';
+    } else {
+      fidEl.style.display = 'none';
+    }
+
+    document.getElementById('spriteDims').textContent = state.showSheet
+      ? `Planche : ${state.sheetCanvas.width}×${state.sheetCanvas.height} px`
+      : `Sprite : ${W}×${H} px (Tuile ${state.tileSize}px · Retouches : ${state.editsMap.size} px)`;
+
+    document.getElementById('statsBox').innerHTML =
+      `Pipeline : ${state.pipeline === 'inflate' ? 'Image → Sprite Haute Fidélité (' + state.sampler + ')' : state.pipeline}<br>` +
+      `Dimensions : ${W}×${H} px · Pixels opaques : ${info.pixels} · Nuances : ${info.colors}<br>` +
+      (info.fidelity !== null ? `Fidélité perceptuelle Oklab : ${info.fidelity.toFixed(1)}% · ` : '') +
+      `Retouches manuelles : ${state.editsMap.size} px`;
+
+    drawSunPad();
+    renderViewport();
+  }
+
+  function getViewportSize() {
+    const r = document.getElementById('canvasWrap').getBoundingClientRect();
+    return [Math.max(280, Math.floor(r.width || window.innerWidth || 360)), Math.max(170, Math.floor(r.height || 220))];
+  }
+
+  // Retourne la boîte écran du sprite de sortie (pour le clic crayon 1px et le rideau)
+  function getSpritePlacement(vw, vh) {
+    const active = state.showSheet ? state.sheetCanvas : state.outCanvas;
+    const sw = active.width || 32, sh = active.height || 32, z = state.zoom;
+    const useSide = state.pipeline === 'inflate' && !state.showSheet && state.cmpMode === 'side';
+    if (useSide) {
+      const gap = Math.max(16, Math.round(z * 2));
+      const totalW = sw * z * 2 + gap;
+      const leftX = Math.floor((vw - totalW) / 2 + state.panX);
+      const oy = Math.floor((vh - sh * z) / 2 + state.panY);
+      return { useSide: true, inX: leftX, outX: leftX + sw * z + gap, oy, w: sw * z, h: sh * z, sw, sh, z };
+    }
+    const ox = Math.floor((vw - sw * z) / 2 + state.panX);
+    const oy = Math.floor((vh - sh * z) / 2 + state.panY);
+    return { useSide: false, inX: ox, outX: ox, oy, w: sw * z, h: sh * z, sw, sh, z };
+  }
+
+  function autoFitZoom() {
+    const [vw, vh] = getViewportSize();
+    const active = state.showSheet ? state.sheetCanvas : state.outCanvas;
+    const sw = active.width || 64, sh = active.height || 64;
+    const multX = (state.pipeline === 'inflate' && !state.showSheet && state.cmpMode === 'side') ? 2.15 : 1;
+    state.zoom = clamp(Math.floor(Math.min((vw - 32) / (sw * multX), (vh - 32) / sh)), 1, 18);
+    state.panX = 0; state.panY = 0;
+    document.getElementById('zoomLbl').textContent = `${state.zoom}×`;
+    renderViewport();
+  }
+
+  function renderViewport() {
+    const vc = document.getElementById('viewCanvas');
+    const [vw, vh] = getViewportSize();
+    if (vc.width !== vw || vc.height !== vh) { vc.width = vw; vc.height = vh; }
+    const ctx = vc.getContext('2d');
+
+    // 1. Fond
+    if (state.bgMode === 'meadow') {
+      const night = (state.hour < 5.75 || state.hour > 20.25) && !state.customSun;
+      ctx.fillStyle = night ? '#243c33' : '#558b46';
+      ctx.fillRect(0, 0, vw, vh);
+    } else if (state.bgMode === 'night') {
+      ctx.fillStyle = '#161c30'; ctx.fillRect(0, 0, vw, vh);
+    } else {
+      for (let y = 0; y < vh; y += 12) for (let x = 0; x < vw; x += 12) {
+        ctx.fillStyle = ((x / 12 + y / 12) & 1) ? '#232032' : '#191624';
+        ctx.fillRect(x, y, 12, 12);
+      }
+    }
+
+    const active = state.showSheet ? state.sheetCanvas : state.outCanvas;
+    if (!active.width || !active.height) return;
+    const p = getSpritePlacement(vw, vh);
+
+    // 2. Repère de ligne de pied 45°
+    if (!state.showSheet && state.showFoot) {
+      ctx.strokeStyle = 'rgba(240, 180, 76, 0.75)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p.inX - 8, p.oy + p.h);
+      ctx.lineTo(p.outX + p.w + 8, p.oy + p.h);
+      ctx.stroke();
+    }
+
+    const canCompare = state.pipeline === 'inflate' && !state.showSheet && state.alignedRefCanvas.width > 0;
+
+    if (canCompare && state.cmpMode === 'side') {
+      // Mode Côte à côte : Entrée haute définition à gauche | Sprite Pixel-Art à droite
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(state.alignedRefCanvas, p.inX, p.oy, p.w, p.h);
+      ctx.restore();
+
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(active, p.outX, p.oy, p.w, p.h);
+
+      // Étiquettes discrètes
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(14,12,21,0.78)';
+      ctx.fillRect(p.inX, Math.max(4, p.oy - 22), 92, 18);
+      ctx.fillRect(p.outX, Math.max(4, p.oy - 22), 104, 18);
+      ctx.fillStyle = '#a8a0be'; ctx.fillText('ENTRÉE SOURCE', p.inX + 6, Math.max(16, p.oy - 9));
+      ctx.fillStyle = '#f0b44c'; ctx.fillText('SORTIE SPRITE', p.outX + 6, Math.max(16, p.oy - 9));
+    } else if (canCompare && state.cmpMode === 'split') {
+      // Mode Rideau Avant / Après interactif !
+      const splitX = Math.round(p.outX + p.w * state.splitPos);
+
+      // Partie Gauche : Image source originale détourée
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, 0, splitX, vh); ctx.clip();
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(state.alignedRefCanvas, p.outX, p.oy, p.w, p.h);
+      ctx.restore();
+
+      // Partie Droite : Sprite Pixel-Art généré
+      ctx.save();
+      ctx.beginPath(); ctx.rect(splitX, 0, vw - splitX, vh); ctx.clip();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(active, p.outX, p.oy, p.w, p.h);
+      ctx.restore();
+
+      // Barre verticale dorée + poignée centrale du rideau
+      ctx.strokeStyle = '#f0b44c';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(splitX + 0.5, Math.max(0, p.oy - 12)); ctx.lineTo(splitX + 0.5, Math.min(vh, p.oy + p.h + 12)); ctx.stroke();
+
+      const cy = clamp(p.oy + p.h * 0.5, 24, vh - 24);
+      ctx.fillStyle = '#f0b44c';
+      ctx.beginPath(); ctx.arc(splitX, cy, 12, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1b1408';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('↔', splitX, cy + 4);
+      ctx.textAlign = 'start';
+
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(14,12,21,0.78)';
+      ctx.fillRect(8, 8, 58, 18); ctx.fillRect(vw - 66, 8, 58, 18);
+      ctx.fillStyle = '#d8d2e8'; ctx.fillText('ENTRÉE', 14, 20);
+      ctx.fillStyle = '#f0b44c'; ctx.fillText('SPRITE', vw - 58, 20);
+    } else {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(active, p.outX, p.oy, p.w, p.h);
+    }
+
+    // 3. Grille pixel/tuile sur le sprite de sortie
+    if (state.showGrid && !state.showSheet) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.lineWidth = 1;
+      const T = state.tileSize;
+      for (let x = 0; x <= p.sw; x += T) {
+        ctx.beginPath(); ctx.moveTo(p.outX + x * p.z + 0.5, p.oy); ctx.lineTo(p.outX + x * p.z + 0.5, p.oy + p.h); ctx.stroke();
+      }
+      for (let y = p.sh; y >= 0; y -= T) {
+        ctx.beginPath(); ctx.moveTo(p.outX, p.oy + y * p.z + 0.5); ctx.lineTo(p.outX + p.w, p.oy + y * p.z + 0.5); ctx.stroke();
+      }
+      if (p.z >= 5) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        for (let x = 0; x <= p.sw; x++) { ctx.beginPath(); ctx.moveTo(p.outX + x * p.z + 0.5, p.oy); ctx.lineTo(p.outX + x * p.z + 0.5, p.oy + p.h); ctx.stroke(); }
+        for (let y = 0; y <= p.sh; y++) { ctx.beginPath(); ctx.moveTo(p.outX, p.oy + y * p.z + 0.5); ctx.lineTo(p.outX + p.w, p.oy + y * p.z + 0.5); ctx.stroke(); }
+      }
+    }
+  }
+
+  function drawSunPad() {
+    const pad = document.getElementById('sunPad'), ctx = pad.getContext('2d'), R = pad.width / 2;
+    ctx.clearRect(0, 0, pad.width, pad.height);
+    const g = ctx.createRadialGradient(R - 9, R - 9, 4, R, R, R - 2);
+    g.addColorStop(0, '#3c3656'); g.addColorStop(1, '#161322');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(R, R, R - 2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#564d78'; ctx.stroke();
+    const [lx, ld] = state.sunDir;
+    ctx.fillStyle = '#f0b44c'; ctx.beginPath(); ctx.arc(R + lx * (R - 9), R + ld * (R - 9), 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  const fmtHour = h => `${String(Math.floor(h) % 24).padStart(2, '0')}:${String(Math.round((h % 1) * 60) % 60).padStart(2, '0')}`;
+
+  /* =========================================================================
+   * 11. ÉVÉNEMENTS UI, RIDEAU INTERACTIF & RETOUCHE PIXEL 1PX
+   * ========================================================================= */
+  document.querySelectorAll('#cmpSeg button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#cmpSeg button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.cmpMode = b.dataset.cmp;
+    autoFitZoom();
+  }));
+
+  document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-tool]').forEach(x => x.classList.remove('active-tool'));
+    b.classList.add('active-tool');
+    state.tool = b.dataset.tool;
+    if (state.tool === 'pencil' || state.tool === 'eraser') {
+      state.showGrid = true;
+      document.getElementById('chkGrid').checked = true;
+      renderViewport();
+    }
+  }));
+
+  document.getElementById('brushColor').addEventListener('input', e => { state.brushHex = e.target.value; });
+
+  document.getElementById('btnUndoEdit').addEventListener('click', () => {
+    const last = state.undoStack.pop();
+    if (!last) return;
+    for (const [idx, prevVal] of last) {
+      if (prevVal === undefined) state.editsMap.delete(idx);
+      else state.editsMap.set(idx, prevVal);
+    }
+    refreshShading();
+    toast('Coup annulé');
+  });
+
+  document.getElementById('btnClearEdits').addEventListener('click', () => {
+    state.editsMap.clear();
+    state.undoStack = [];
+    refreshShading();
+    toast('Retouches effacées');
+  });
+
+  // Interaction sur le canevas principal : Rideau Avant/Après, Panoramique ou Crayon/Gomme/Pipette 1px
+  const vc = document.getElementById('viewCanvas');
+  let dragMode = null; // 'split' | 'pan' | 'paint'
+  let panOrigin = null;
+  let currentStroke = null;
+
+  function applyPaintAt(clientX, clientY) {
+    if (state.showSheet || !state.outCanvas.width) return;
+    const r = vc.getBoundingClientRect();
+    const p = getSpritePlacement(vc.width, vc.height);
+    const px = Math.floor((clientX - r.left - p.outX) / p.z);
+    const py = Math.floor((clientY - r.top - p.oy) / p.z);
+    if (px < 0 || px >= p.sw || py < 0 || py >= p.sh) return;
+    const idx = py * p.sw + px;
+
+    if (state.tool === 'picker') {
+      const d = state.outCanvas.getContext('2d').getImageData(px, py, 1, 1).data;
+      if (d[3] > 0) {
+        state.brushHex = rgbToHex(d[0], d[1], d[2]);
+        document.getElementById('brushColor').value = state.brushHex;
+        document.querySelector('[data-tool="pencil"]').click();
+        toast(`Couleur prélevée : ${state.brushHex}`);
+      }
+      return;
+    }
+
+    if (!currentStroke.has(idx)) {
+      currentStroke.set(idx, state.editsMap.get(idx));
+    }
+    if (state.tool === 'eraser') {
+      state.editsMap.set(idx, [0, 0, 0, 0]);
+    } else if (state.tool === 'pencil') {
+      const [cr, cg, cb] = hexToRgb(state.brushHex);
+      state.editsMap.set(idx, [cr, cg, cb, 255]);
+    }
+    // Si on peint côté gauche du rideau, pousse légèrement le rideau pour révéler le coup de crayon
+    if (state.cmpMode === 'split' && px / p.sw < state.splitPos) {
+      state.splitPos = clamp(px / p.sw - 0.05, 0, 1);
+    }
+    refreshShading();
+  }
+
+  vc.addEventListener('pointerdown', e => {
+    vc.setPointerCapture(e.pointerId);
+    const r = vc.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const p = getSpritePlacement(vc.width, vc.height);
+
+    if (state.tool !== 'pan' && !state.showSheet) {
+      dragMode = 'paint';
+      currentStroke = new Map();
+      applyPaintAt(e.clientX, e.clientY);
+      return;
+    }
+
+    // Détecte si l'utilisateur saisit la barre du rideau Avant/Après
+    if (state.pipeline === 'inflate' && !state.showSheet && state.cmpMode === 'split') {
+      const splitX = p.outX + p.w * state.splitPos;
+      if (Math.abs(x - splitX) <= 22) {
+        dragMode = 'split';
+        return;
+      }
+    }
+    dragMode = 'pan';
+    panOrigin = { x: e.clientX - state.panX, y: e.clientY - state.panY };
+  });
+
+  vc.addEventListener('pointermove', e => {
+    const r = vc.getBoundingClientRect();
+    const p = getSpritePlacement(vc.width, vc.height);
+
+    if (dragMode === 'split') {
+      state.splitPos = clamp((e.clientX - r.left - p.outX) / Math.max(1, p.w), 0, 1);
+      renderViewport();
+      return;
+    }
+    if (dragMode === 'pan' && panOrigin) {
+      state.panX = e.clientX - panOrigin.x;
+      state.panY = e.clientY - panOrigin.y;
+      renderViewport();
+      return;
+    }
+    if (dragMode === 'paint') {
+      if (state.tool === 'pencil' || state.tool === 'eraser') applyPaintAt(e.clientX, e.clientY);
+      return;
+    }
+
+    const px = Math.floor((e.clientX - r.left - p.outX) / p.z);
+    const py = Math.floor((e.clientY - r.top - p.oy) / p.z);
+    if (px >= 0 && px < p.sw && py >= 0 && py < p.sh && state.gb && !state.showSheet) {
+      const d = state.outCanvas.getContext('2d').getImageData(px, py, 1, 1).data;
+      document.getElementById('hoverInfo').textContent = d[3]
+        ? `X:${px} Y:${py} · ${rgbToHex(d[0], d[1], d[2])} · Z:${state.gb.height[py * p.sw + px].toFixed(1)}`
+        : `X:${px} Y:${py} · Transparent (Alpha 0)`;
+    }
+  });
+
+  vc.addEventListener('pointerup', () => {
+    if (dragMode === 'paint' && currentStroke && currentStroke.size > 0) {
+      state.undoStack.push([...currentStroke.entries()]);
+      if (state.undoStack.length > 30) state.undoStack.shift();
+    }
+    dragMode = null; currentStroke = null;
+  });
+
+  vc.addEventListener('wheel', e => {
+    e.preventDefault();
+    state.zoom = clamp(state.zoom + (e.deltaY < 0 ? 1 : -1), 1, 24);
+    document.getElementById('zoomLbl').textContent = `${state.zoom}×`;
+    renderViewport();
+  }, { passive: false });
+
+  // Pipelines & Résolutions
+  document.querySelectorAll('#pipeSeg button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#pipeSeg button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.pipeline = b.dataset.pipe;
+    document.getElementById('paneInflate').style.display = state.pipeline === 'inflate' ? 'flex' : 'none';
+    document.getElementById('paneProc3d').style.display = state.pipeline === 'proc3d' ? 'flex' : 'none';
+    document.getElementById('paneBox45').style.display = state.pipeline === 'box45' ? 'flex' : 'none';
+    state.clusters = [];
+    if (state.pipeline === 'box45' && !state.topCanvas.width) makeBoxPreset('wardrobe');
+    else { rebuildAll(false); autoFitZoom(); }
+  }));
+
+  document.querySelectorAll('#passSeg button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#passSeg button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); state.pass = b.dataset.pass; refreshShading();
+  }));
+
+  document.querySelectorAll('#resSeg button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#resSeg button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); state.tileSize = Number(b.dataset.res);
+    rebuildAll(false); autoFitZoom();
+    toast(`Grille ${state.tileSize} px activée`);
+  }));
+
+  document.querySelectorAll('[data-sample]').forEach(b => b.addEventListener('click', () => makeSampleImage(b.dataset.sample)));
+  document.querySelectorAll('[data-boxpreset]').forEach(b => b.addEventListener('click', () => makeBoxPreset(b.dataset.boxpreset)));
+
+  function readImgFile(file, cb) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const u = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const sc = Math.min(1, 768 / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(img.width * sc));
+      cv.height = Math.max(1, Math.round(img.height * sc));
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(u); cb(cv);
+    };
+    img.src = u;
+  }
+
+  const loadUserImage = cv => {
+    copyThumb(cv, state.srcCanvas, 'srcThumb');
+    detectBackgroundFromSource(cv);
+    state.clusters = [];
+    state.splitPos = 0.50;
+    rebuildAll(false);
+    autoFitZoom();
+    toast(state.hasNativeAlpha ? 'PNG transparent détecté et converti sans perte' : 'Image importée — comparez avec le rideau !');
+  };
+
+  document.getElementById('fileInput').addEventListener('change', e => readImgFile(e.target.files[0], loadUserImage));
+  const dz = document.getElementById('dropzone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); readImgFile(e.dataTransfer.files[0], loadUserImage); });
+
+  document.getElementById('fileTop').addEventListener('change', e => readImgFile(e.target.files[0], cv => { copyThumb(cv, state.topCanvas, 'topThumb'); rebuildAll(false); }));
+  document.getElementById('fileFront').addEventListener('change', e => readImgFile(e.target.files[0], cv => { copyThumb(cv, state.frontCanvas, 'frontThumb'); rebuildAll(false); }));
+
+  window.addEventListener('paste', e => {
+    const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+    if (it) readImgFile(it.getAsFile(), cv => {
+      document.querySelector('[data-pipe="inflate"]').click();
+      loadUserImage(cv);
+    });
+  });
+
+  // Pipette multi-échantillons sur la miniature d'entrée
+  document.getElementById('srcThumb').addEventListener('pointerdown', e => {
+    const th = e.currentTarget, r = th.getBoundingClientRect();
+    const x = Math.floor(((e.clientX - r.left) / r.width) * th.width);
+    const y = Math.floor(((e.clientY - r.top) / r.height) * th.height);
+    const d = th.getContext('2d').getImageData(x, y, 1, 1).data;
+    if (d[3] > 10) {
+      state.hasNativeAlpha = false;
+      state.keyColors.push([d[0], d[1], d[2]]);
+      if (state.keyColors.length > 4) state.keyColors.shift();
+      updateKeySwatchesUI();
+      rebuildAll(false);
+      toast('Échantillon de fond ajouté');
+    }
+  });
+
+  document.getElementById('btnResetKeys').addEventListener('click', () => {
+    if (state.srcCanvas.width) { detectBackgroundFromSource(state.srcCanvas); rebuildAll(false); }
+  });
+
+  // Sliders & Sélecteurs
+  document.getElementById('selFootprint').addEventListener('change', e => { state.footprintMode = e.target.value; rebuildAll(false); autoFitZoom(); });
+  document.getElementById('selSampler').addEventListener('change', e => { state.sampler = e.target.value; rebuildAll(false); });
+  document.getElementById('chkInvertMask').addEventListener('change', e => { state.invertMask = e.target.checked; rebuildAll(false); });
+  document.getElementById('chkDespeckle').addEventListener('change', e => { state.despeckle = e.target.checked; rebuildAll(false); });
+
+  const bindRange = (id, lbl, key, full, fmt = v => v.toFixed(2)) => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      state[key] = Number(el.value);
+      document.getElementById(lbl).textContent = fmt(state[key]);
+      full ? rebuildAll(false) : refreshShading();
+    });
+  };
+  document.getElementById('rngRelight').addEventListener('input', e => {
+    const pct = Number(e.target.value);
+    state.relightMix = pct / 100;
+    document.getElementById('valRelight').textContent = `${pct}%`;
+    refreshShading();
+  });
+  bindRange('rngLineLock', 'valLineLock', 'lineLock', true);
+  bindRange('rngTol', 'valTol', 'tol', true);
+  bindRange('rngDefringe', 'valDefringe', 'defringe', true, v => `${v} px`);
+  bindRange('rngPuff', 'valPuff', 'puff', true);
+  bindRange('rngBump', 'valBump', 'bump', true);
+  bindRange('rngProcScale', 'valProcScale', 'procScale', true, v => `${v.toFixed(2)}×`);
+  bindRange('rngPose', 'valPose', 'pose', true, v => String(v));
+  bindRange('rngBoxH', 'valBoxH', 'boxH', true, v => `${v.toFixed(2)}×`);
+  bindRange('rngBoxD', 'valBoxD', 'boxD', true, v => `${v.toFixed(2)}×`);
+  bindRange('rngClusters', 'valClusters', 'kClusters', true, v => String(v));
+  bindRange('rngHarmMix', 'valHarmMix', 'harmMix', false);
+  bindRange('rngSpec', 'valSpec', 'specular', false);
+  bindRange('rngSSAO', 'valSSAO', 'ssao', false);
+  bindRange('rngSSS', 'valSSS', 'sss', false);
+  bindRange('rngMoss', 'valMoss', 'moss', false);
+  bindRange('rngDither', 'valDither', 'dither', false);
+
+  document.getElementById('selArchetype').addEventListener('change', e => {
+    state.archetype = e.target.value;
+    document.getElementById('nesoPad').style.display = state.archetype === 'wall' ? 'inline-grid' : 'none';
+    state.clusters = []; rebuildAll(false); autoFitZoom();
+  });
+  document.getElementById('btnSeed').addEventListener('click', () => { state.seed = (state.seed * 1664525 + 1013904223) & 0xffff; rebuildAll(false); });
+  document.querySelectorAll('#nesoPad button').forEach(b => b.addEventListener('click', () => {
+    const bit = Number(b.dataset.bit); state.wallMask ^= bit; b.classList.toggle('on', !!(state.wallMask & bit)); rebuildAll(false);
+  }));
+
+  document.getElementById('btnAutoHarmonize').addEventListener('click', () => {
+    if (state.gb) { segmentClustersKMeans(state.gb, true, true); refreshShading(); toast('✨ Rampes Moon Bloom appliquées'); }
+  });
+  document.getElementById('btnResetClusters').addEventListener('click', () => {
+    state.clusters.forEach(c => { c.ramp = 'keep'; });
+    if (state.gb) state.gb.clusters = state.clusters;
+    renderClusterUI(); refreshShading();
+    toast('Teintes d’origine restaurées');
+  });
+
+  // Soleil 24h
+  document.getElementById('rngHour').addEventListener('input', e => {
+    state.hour = Number(e.target.value); state.customSun = false;
+    document.getElementById('valHour').textContent = fmtHour(state.hour);
+    refreshShading();
+  });
+  const sunPad = document.getElementById('sunPad');
+  let sunDrag = false;
+  const moveSun = e => {
+    const r = sunPad.getBoundingClientRect(), R = r.width / 2 - 8;
+    let dx = (e.clientX - r.left - r.width / 2) / R, dy = (e.clientY - r.top - r.height / 2) / R;
+    const l2 = dx * dx + dy * dy;
+    if (l2 > 1) { const s = Math.sqrt(l2); dx /= s; dy /= s; }
+    state.sunDir = [dx, dy, Math.sqrt(Math.max(0.08, 1 - dx * dx - dy * dy))];
+    state.customSun = true; refreshShading();
+  };
+  sunPad.addEventListener('pointerdown', e => { sunDrag = true; sunPad.setPointerCapture(e.pointerId); moveSun(e); });
+  sunPad.addEventListener('pointermove', e => { if (sunDrag) moveSun(e); });
+  sunPad.addEventListener('pointerup', () => { sunDrag = false; });
+
+  document.getElementById('btnCanonSun').addEventListener('click', () => {
+    const l = Math.hypot(-0.55, -0.45, 0.70);
+    state.sunDir = [-0.55 / l, -0.45 / l, 0.70 / l]; state.customSun = true; refreshShading();
+  });
+  document.getElementById('btnAutoCycle').addEventListener('click', e => {
+    if (state.cycleTimer) { clearInterval(state.cycleTimer); state.cycleTimer = null; e.currentTarget.textContent = '▶ Cycle 24h'; }
+    else {
+      state.customSun = false;
+      if (state.pipeline === 'inflate' && state.relightMix < 0.35) {
+        state.relightMix = 0.55; document.getElementById('rngRelight').value = '55'; document.getElementById('valRelight').textContent = '55%';
+      }
+      e.currentTarget.textContent = '⏸ Pause 24h';
+      state.cycleTimer = setInterval(() => {
+        state.hour = (state.hour + 0.2) % 24;
+        document.getElementById('rngHour').value = String(state.hour);
+        document.getElementById('valHour').textContent = fmtHour(state.hour);
+        refreshShading();
+      }, 65);
+    }
+  });
+
+  document.getElementById('btnAnim').addEventListener('click', e => {
+    if (state.animTimer) { clearInterval(state.animTimer); state.animTimer = null; e.currentTarget.textContent = '▶ Animer'; }
+    else {
+      e.currentTarget.textContent = '⏸ Stop';
+      state.animTimer = setInterval(() => {
+        if (state.pipeline === 'proc3d') {
+          state.pose = (state.pose + 1) % 5;
+          document.getElementById('rngPose').value = String(state.pose);
+          document.getElementById('valPose').textContent = String(state.pose);
+          rebuildAll(false);
+        } else {
+          state.splitPos = 0.5 + 0.45 * Math.sin(performance.now() * 0.003);
+          renderViewport();
+        }
+      }, 45);
+    }
+  });
+
+  document.getElementById('chkEmissive').addEventListener('change', e => { state.emissiveOn = e.target.checked; rebuildAll(false); });
+  document.getElementById('selOutline').addEventListener('change', e => { state.outline = e.target.value; rebuildAll(false); });
+  document.getElementById('bgMode').addEventListener('change', e => { state.bgMode = e.target.value; renderViewport(); });
+  document.getElementById('chkGrid').addEventListener('change', e => { state.showGrid = e.target.checked; renderViewport(); });
+  document.getElementById('chkFoot').addEventListener('change', e => { state.showFoot = e.target.checked; renderViewport(); });
+  document.getElementById('chkSheet').addEventListener('change', e => { state.showSheet = e.target.checked; refreshShading(); autoFitZoom(); });
+
+  document.getElementById('btnZoomIn').addEventListener('click', () => { state.zoom = Math.min(24, state.zoom + 1); document.getElementById('zoomLbl').textContent = `${state.zoom}×`; renderViewport(); });
+  document.getElementById('btnZoomOut').addEventListener('click', () => { state.zoom = Math.max(1, state.zoom - 1); document.getElementById('zoomLbl').textContent = `${state.zoom}×`; renderViewport(); });
+  document.getElementById('btnCenter').addEventListener('click', autoFitZoom);
+
+  document.querySelectorAll('#mobileTabs button').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#mobileTabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelector(`.tab-pane[data-pane="${btn.dataset.tab}"]`).classList.add('active');
+  }));
+
+  // Exports
+  const dlCanvas = (cv, filename) => {
+    const a = document.createElement('a'); a.download = filename; a.href = cv.toDataURL('image/png'); a.click();
+    toast(`Téléchargé : ${filename}`);
+  };
+  document.getElementById('btnExpSprite').addEventListener('click', () => dlCanvas(state.outCanvas, `sprite_${state.tileSize}px.png`));
+  document.getElementById('btnExpNormal').addEventListener('click', () => dlCanvas(state.normalCanvas, `sprite_${state.tileSize}px_n.png`));
+  document.getElementById('btnExpSheet').addEventListener('click', () => dlCanvas(buildExtrudedSheet(), `atlas_${state.tileSize}px.png`));
+  document.getElementById('btnExpJson').addEventListener('click', () => {
+    if (!state.lastAtlasMeta) buildExtrudedSheet();
+    const blob = new Blob([JSON.stringify(state.lastAtlasMeta, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.download = `atlas_${state.tileSize}px.json`; a.href = url; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    toast(`Téléchargé : atlas_${state.tileSize}px.json`);
+  });
+
+  window.addEventListener('resize', renderViewport);
+
+  // Ouverture directe sur Image → Sprite avec le Renard illustré et le Rideau Avant/Après actif !
+  makeSampleImage('fox');
+  requestAnimationFrame(() => autoFitZoom());
+})();
+</script>
+</body>
+</html>
