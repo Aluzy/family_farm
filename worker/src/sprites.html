@@ -189,6 +189,31 @@
   }
   .ramp-preview i { flex: 1; display: block; }
 
+  .assets-grille {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 5px;
+    max-height: 300px; overflow-y: auto; padding: 2px;
+  }
+  .asset-case {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px;
+    background: var(--bg-deep); border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+    color: var(--muted); font-size: 9px; line-height: 1.15; text-align: center; overflow: hidden;
+  }
+  .asset-case:hover { border-color: #5b5280; color: var(--text); }
+  .asset-case.choisi { border-color: var(--accent); color: var(--text); background: rgba(240, 180, 76, 0.1); }
+  .asset-case .vignette {
+    width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;
+    background: repeating-conic-gradient(#252134 0% 25%, #1a1725 0% 50%) 50% / 8px 8px; border-radius: 4px;
+  }
+  .asset-case img { max-width: 52px; max-height: 52px; image-rendering: pixelated; }
+  .asset-case span { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  input[type="search"] {
+    background: var(--bg-deep); color: var(--text); border: 1px solid var(--border); border-radius: 7px;
+    padding: 5px 8px; font-size: 11px; outline: none; min-width: 0;
+  }
+  .etat-donnees { font-size: 10.5px; color: var(--muted); line-height: 1.35; }
+  .etat-donnees b { color: var(--green); }
+  .etat-donnees.secours b { color: var(--accent); }
+
   .sun-box {
     display: flex; align-items: center; gap: 10px; background: var(--bg-deep);
     border: 1px solid var(--border); border-radius: 8px; padding: 7px;
@@ -316,6 +341,22 @@
     <aside class="side-col left-col">
       <!-- ONGLET 1 : SOURCE -->
       <div class="tab-pane active" data-pane="source">
+        <div class="card" id="carteAssets">
+          <h3>
+            <span>📚 Assets du jeu</span>
+            <span class="mono" style="font-size:10px;color:var(--muted)" id="assetsCompte">—</span>
+          </h3>
+          <div class="etat-donnees" id="assetsEtat">Lecture de la liste des images du jeu…</div>
+          <div class="row">
+            <select id="assetsDossier" aria-label="Dossier" style="flex:1"><option value="">Tous les dossiers</option></select>
+            <input type="search" id="assetsRecherche" placeholder="Chercher (vache, chene…)" style="flex:2" aria-label="Chercher un asset">
+          </div>
+          <div class="assets-grille" id="assetsGrille"></div>
+          <div class="row" style="justify-content:space-between">
+            <span class="mono" style="font-size:10px;color:var(--muted)" id="assetCourantLbl">Aucun asset chargé</span>
+            <button class="btn" type="button" id="assetsPlus" style="display:none">Afficher plus</button>
+          </div>
+        </div>
         <div class="card">
           <h3>
             <span>1. Pipeline d'Entrée</span>
@@ -347,6 +388,7 @@
               <span style="font-size:11px;color:var(--muted)">Emprise :</span>
               <select id="selFootprint" style="flex:1">
                 <option value="auto" selected>Auto (respecte le ratio image)</option>
+                <option value="source">Taille d'origine (1 pixel = 1 pixel)</option>
                 <option value="1x1">1 × 1 case</option>
                 <option value="2x1">2 × 1 cases (large)</option>
                 <option value="2x2">2 × 2 cases</option>
@@ -476,10 +518,11 @@
       <!-- ONGLET 2 : HARMONISATION RAMPES -->
       <div class="tab-pane" data-pane="palette">
         <div class="card">
-          <h3>2. K-Means++ Oklab & Rampes Moon Bloom</h3>
+          <h3>2. K-Means++ Oklab & Rampes du jeu</h3>
           <div style="font-size:10.5px;color:var(--muted);line-height:1.35">
-            Par défaut sur <b>Teintes d'origine</b> pour respecter votre image à 100 %. Cliquez sur <b>Auto-harmoniser</b> pour projeter vers les rampes officielles du village.
+            Par défaut sur <b>Teintes d'origine</b> pour respecter votre image à 100 %. Cliquez sur <b>Auto-harmoniser</b> pour projeter chaque groupe vers la rampe du jeu la plus proche (celles de <code>scripts/carte/*.py</code> et les palettes de <code>data/meubles.json</code>, mêmes tons au pixel près).
           </div>
+          <div class="etat-donnees secours" id="rampesEtat">Rampes : <b>palette de secours</b> (en attente des rampes du jeu)</div>
           <div class="field">
             <div class="field-head"><span>Groupes de couleurs K-Means++ (2..16)</span><b id="valClusters">8</b></div>
             <input type="range" id="rngClusters" min="2" max="16" step="1" value="8">
@@ -489,7 +532,7 @@
             <input type="range" id="rngHarmMix" min="0" max="1" step="0.05" value="1.00">
           </div>
           <div class="row">
-            <button class="btn green" type="button" id="btnAutoHarmonize">✨ Auto-harmoniser Moon Bloom</button>
+            <button class="btn green" type="button" id="btnAutoHarmonize">✨ Auto-harmoniser (rampes du jeu)</button>
             <button class="btn" type="button" id="btnResetClusters">↺ Garder teintes d'origine</button>
           </div>
           <div class="cluster-list" id="clusterList"></div>
@@ -596,20 +639,95 @@
   const BAYER4 = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
 
   /* =========================================================================
-   * 1. RAMPES OFFICIELLES MOON BLOOM VILLAGE & ESPACE PERCEPTUEL OKLAB
+   * 1. LES RAMPES DU JEU (scripts/carte/*.py, data/meubles.json PALETTES) & ESPACE OKLAB
+   * Les rampes sont celles des scripts de dessin, telles qu'écrites : les mêmes clés, le même nombre de
+   * tons, la même interpolation que rampe() et ton() de scripts/carte/nuances.py (au pixel près). La console
+   * les lit par GET /admin/api/atelier (scripts/atelier-donnees.mjs). En attendant, ou hors de la console,
+   * une palette de secours (marquée comme telle).
    * ========================================================================= */
-  const RAMPES_JEU = {
-    bois_serre:    { nom: 'Bois de serre',    rough: 0.60, sss: 0.00, ancres: [[56,47,29],[77,64,39],[112,96,65],[150,130,92],[188,163,122]] },
-    chene_chaud:   { nom: 'Chêne chaud',      rough: 0.50, sss: 0.00, ancres: [[60,30,22],[96,54,32],[134,82,46],[170,112,64],[208,156,98]] },
-    pierre_seche:  { nom: 'Pierre sèche',     rough: 0.84, sss: 0.00, ancres: [[34,32,44],[68,64,74],[108,102,102],[150,140,126],[196,186,166]] },
-    brique_cuite:  { nom: 'Brique cuite',     rough: 0.75, sss: 0.00, ancres: [[44,18,24],[88,34,36],[134,54,42],[178,84,56],[222,134,94]] },
-    tuile_rouge:   { nom: 'Tuile rouge',      rough: 0.46, sss: 0.00, ancres: [[82,28,20],[122,47,34],[155,63,44],[185,87,59],[216,128,88]] },
-    acier_fonte:   { nom: 'Acier & Fonte',    rough: 0.22, sss: 0.00, ancres: [[30,32,40],[56,60,72],[96,102,116],[148,156,170],[214,222,234]] },
-    laiton_poli:   { nom: 'Laiton poli',      rough: 0.16, sss: 0.00, ancres: [[102,72,24],[154,114,38],[204,162,62],[238,206,110],[254,240,180]] },
-    feuillage_pre: { nom: 'Feuillage prairie',rough: 0.64, sss: 0.88, ancres: [[14,43,12],[29,88,24],[48,122,40],[74,166,52],[130,208,92]] },
-    eau_cristal:   { nom: 'Eau & Cristal',    rough: 0.12, sss: 0.50, ancres: [[22,38,68],[42,78,124],[76,134,184],[130,190,228],[206,242,254]] },
-    amethyste:     { nom: 'Cristal améthyste',rough: 0.15, sss: 0.65, ancres: [[48,20,78],[88,38,136],[138,70,192],[192,126,236],[244,208,255]] }
+  const RAMPES_SECOURS = [
+    { id: 'secours.bois', nom: 'Bois (secours)', cles: [[56,47,29],[77,64,39],[112,96,65],[150,130,92],[188,163,122]] },
+    { id: 'secours.chene', nom: 'Chêne (secours)', cles: [[60,30,22],[96,54,32],[134,82,46],[170,112,64],[208,156,98]] },
+    { id: 'secours.pierre', nom: 'Pierre (secours)', cles: [[34,32,44],[68,64,74],[108,102,102],[150,140,126],[196,186,166]] },
+    { id: 'secours.brique', nom: 'Brique (secours)', cles: [[44,18,24],[88,34,36],[134,54,42],[178,84,56],[222,134,94]] },
+    { id: 'secours.tuile', nom: 'Tuile (secours)', cles: [[82,28,20],[122,47,34],[155,63,44],[185,87,59],[216,128,88]] },
+    { id: 'secours.fer', nom: 'Fer (secours)', cles: [[30,32,40],[56,60,72],[96,102,116],[148,156,170],[214,222,234]] },
+    { id: 'secours.laiton', nom: 'Laiton (secours)', cles: [[102,72,24],[154,114,38],[204,162,62],[238,206,110],[254,240,180]] },
+    { id: 'secours.feuillage', nom: 'Feuillage (secours)', cles: [[14,43,12],[29,88,24],[48,122,40],[74,166,52],[130,208,92]] },
+    { id: 'secours.eau', nom: 'Eau (secours)', cles: [[22,38,68],[42,78,124],[76,134,184],[130,190,228],[206,242,254]] }
+  ].map(r => ({ ...r, groupe: 'secours', n: 40 }));
+
+  // Les rôles des modèles procéduraux : la rampe du jeu qui joue chacun (la première trouvée), sinon le secours.
+  const ROLES = {
+    pierre:    ['hameaux.ROCHE', 'secours.pierre'],
+    brique:    ['hameaux.FERRUGINEUX', 'secours.brique'],
+    tuile:     ['hameaux.LIEGE', 'secours.tuile'],
+    chene:     ['blocs.R_CHENE', 'secours.chene'],
+    bois:      ['hameaux.FRENE', 'secours.bois'],
+    fer:       ['blocs.R_FER', 'secours.fer'],
+    eau:       ['hameaux.EAU_R', 'secours.eau'],
+    feuillage: ['hameaux.HERBE_R', 'secours.feuillage'],
+    laiton:    ['port.LAITON', 'secours.laiton']
   };
+  const R = {};             // rôle -> id de rampe
+  let RAMPES = {};          // id -> { id, nom, groupe, cles, n, tons, rough, sss, mid (Oklab), exacte }
+  let rampesDuJeu = false;  // false tant que seules les rampes de secours sont là
+
+  // round() de Python 3 (les demis vers le pair), comme scripts/carte/nuances.py
+  function arrondiPair(x) {
+    const f = Math.floor(x), d = x - f;
+    if (d > 0.5) return f + 1;
+    if (d < 0.5) return f;
+    return f % 2 === 0 ? f : f + 1;
+  }
+  // rampe(cles, n) de scripts/carte/nuances.py : n tons interpolés entre les clés, du sombre au clair
+  function rampePy(cles, n) {
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const f = (i / (n - 1)) * (cles.length - 1);
+      const k = Math.min(Math.floor(f), cles.length - 2), r = f - k;
+      out.push([0, 1, 2].map(j => arrondiPair(cles[k][j] * (1 - r) + cles[k + 1][j] * r)));
+    }
+    return out;
+  }
+  // La matière d'une rampe, d'après son nom : la rugosité (reflets) et la translucidité (feuillage, eau)
+  function proprietesMatiere(id) {
+    const n = id.toUpperCase();
+    if (/LAITON|CUIVRE/.test(n)) return { rough: 0.16, sss: 0 };
+    if (/GOMME/.test(n)) return { rough: 0.80, sss: 0 };
+    if (/FER|ACIER|FONTE|TOLE|CLOU|ROUILLE/.test(n)) return { rough: 0.24, sss: 0 };
+    if (/VERRE|VITRE|EAU|MOUILLE/.test(n)) return { rough: 0.12, sss: 0.5 };
+    if (/HERBE|FEUIL|SAUGE|ALGUE|CHOU|TIGE|LAVANDE|AIL|VERT/.test(n)) return { rough: 0.64, sss: 0.85 };
+    if (/LIEGE|TUILE/.test(n)) return { rough: 0.46, sss: 0 };
+    if (/ROCHE|PIERRE|BRIQUE|FERRUGINEUX/.test(n)) return { rough: 0.84, sss: 0 };
+    if (/FEU|VOYANT|JUS/.test(n)) return { rough: 0.40, sss: 0.3 };
+    return { rough: 0.60, sss: 0 };
+  }
+  function installerRampes(liste, duJeu) {
+    RAMPES = {};
+    for (const r of [...liste, ...RAMPES_SECOURS]) {
+      if (RAMPES[r.id]) continue;
+      const tons = rampePy(r.cles, Math.max(2, r.n));
+      const mid = tons[Math.round((tons.length - 1) * 0.5)];
+      RAMPES[r.id] = { ...r, tons, ...proprietesMatiere(r.id), mid: rgbToOklab(mid[0], mid[1], mid[2]) };
+    }
+    for (const [role, prefs] of Object.entries(ROLES)) R[role] = prefs.find(id => RAMPES[id]) || Object.keys(RAMPES)[0];
+    rampesDuJeu = duJeu;
+  }
+  // ton(r, t) de scripts/carte/nuances.py : le ton t (0 sombre … 1 clair) de la rampe
+  function evalRamp(rampId, t) {
+    const r = RAMPES[rampId] || RAMPES[R.pierre];
+    return r.tons[Math.round(clamp(t, 0, 1) * (r.tons.length - 1))].slice();
+  }
+  function closestGameRamp(lab) {
+    let best = R.bois, bd = 1e9;
+    for (const [id, info] of Object.entries(RAMPES)) {
+      if (rampesDuJeu && info.groupe === 'secours') continue;
+      const d = Math.hypot((lab[0] - info.mid[0]) * 0.65, (lab[1] - info.mid[1]) * 1.65, (lab[2] - info.mid[2]) * 1.65);
+      if (d < bd) { bd = d; best = id; }
+    }
+    return best;
+  }
 
   const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
   const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => clamp(Math.round(x), 0, 255).toString(16).padStart(2, '0')).join('');
@@ -650,29 +768,7 @@
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
 
-  const RAMP_CACHE = {};
-  for (const [id, def] of Object.entries(RAMPES_JEU)) {
-    const labs = def.ancres.map(c => rgbToOklab(c[0], c[1], c[2]));
-    RAMP_CACHE[id] = { labs, mid: labs[2] };
-  }
-  function evalRampOklab(rampId, t) {
-    const labs = (RAMP_CACHE[rampId] || RAMP_CACHE.pierre_seche).labs;
-    const f = clamp(t, 0, 1) * (labs.length - 1);
-    const k = Math.min(labs.length - 2, Math.floor(f)), u = f - k;
-    return oklabToRgb(
-      labs[k][0] * (1 - u) + labs[k + 1][0] * u,
-      labs[k][1] * (1 - u) + labs[k + 1][1] * u,
-      labs[k][2] * (1 - u) + labs[k + 1][2] * u
-    );
-  }
-  function closestGameRamp(lab) {
-    let best = 'bois_serre', bd = 1e9;
-    for (const [id, info] of Object.entries(RAMP_CACHE)) {
-      const d = Math.hypot((lab[0] - info.mid[0]) * 0.65, (lab[1] - info.mid[1]) * 1.65, (lab[2] - info.mid[2]) * 1.65);
-      if (d < bd) { bd = d; best = id; }
-    }
-    return best;
-  }
+  installerRampes([], false);
   function toast(msg) {
     const el = document.getElementById('toast');
     el.textContent = msg; el.classList.add('show');
@@ -693,7 +789,10 @@
     pass: 'final',
 
     // Haute fidélité Image -> Sprite
-    footprintMode: 'auto',// 'auto' | '1x1' | '2x1' | '2x2' | '3x2' | '3x3'
+    footprintMode: 'auto',// 'auto' | 'source' | '1x1' | '2x1' | '2x2' | '3x2' | '3x3'
+    assetCourant: null,   // le chemin dans assets/ de l'image chargée depuis la bibliothèque (ou null)
+    assets: [],           // la liste des images du jeu ({ chemin, l, h }), lue par GET /admin/api/atelier
+    assetsMax: 60,        // combien de vignettes montrer
     sampler: 'medoid',    // 'medoid' | 'median' | 'nearest'
     relightMix: 0.20,     // 0.0 = fidélité 1:1 absolue, 0.20 = relief subtil, 1.0 = PBR 24h complet
     lineLock: 0.75,       // protection des lignes sombres internes
@@ -883,7 +982,12 @@
     const margin = state.outline !== 'none' ? 1 : 0;
     let fw = 1, fd = 1, W = T, H = T;
 
-    if (state.footprintMode === 'auto') {
+    let sourceExacte = false;
+    if (state.footprintMode === 'source') {
+      // 1 pixel de l'image = 1 pixel du sprite, à sa place : on retravaille l'asset tel qu'il est (le pied reste
+      // le bas de l'image, rien ne bouge) ; le contour éventuel se pose dans les pixels transparents autour
+      W = sw; H = sh; sourceExacte = true;
+    } else if (state.footprintMode === 'auto') {
       if (aspect >= 1.35) {
         fw = aspect >= 2.1 ? 3 : 2;
         fd = 1;
@@ -905,14 +1009,15 @@
       H = clamp(naturalH, fd * T, Math.round(Math.max(fd, fw) * T * 1.65));
     }
 
-    const sc = Math.min((W - margin * 2) / bw, (H - margin * 2) / bh);
-    const dw = Math.max(1, Math.round(bw * sc));
-    const dh = Math.max(1, Math.round(bh * sc));
-    const dx0 = (W - dw) >> 1;
-    const dy0 = H - margin - dh; // Pied posé pile au bas de la case !
+    const sc = sourceExacte ? 1 : Math.min((W - margin * 2) / bw, (H - margin * 2) / bh);
+    const dw = sourceExacte ? bw : Math.max(1, Math.round(bw * sc));
+    const dh = sourceExacte ? bh : Math.max(1, Math.round(bh * sc));
+    const dx0 = sourceExacte ? minX : (W - dw) >> 1;
+    const dy0 = sourceExacte ? minY : H - margin - dh; // Pied posé pile au bas de la case !
 
     // Génération de l'image de référence haute résolution alignée exactement sur le même cadre (pour Rideau Avant/Après & calcul ΔE)
     const refScale = Math.max(1, Math.min(8, Math.ceil(256 / Math.max(W, H))));
+    if (sourceExacte) fw = Math.max(1, Math.round(W / T)), fd = 1;
     state.alignedRefCanvas.width = W * refScale;
     state.alignedRefCanvas.height = H * refScale;
     const rctx = state.alignedRefCanvas.getContext('2d');
@@ -931,7 +1036,9 @@
       }
     }
     mctx.putImageData(mImg, 0, 0);
-    rctx.imageSmoothingEnabled = true;
+    // un asset en taille d'origine est du pixel art : sa référence s'agrandit sans lissage, comme le sprite
+    state.refPixel = sourceExacte;
+    rctx.imageSmoothingEnabled = !sourceExacte;
     rctx.imageSmoothingQuality = 'high';
     rctx.drawImage(maskedSrcCv, dx0 * refScale, dy0 * refScale, dw * refScale, dh * refScale);
 
@@ -1199,7 +1306,7 @@
       const nl = Math.hypot(nrm[0], nrm[1], nrm[2]) || 1;
       this.nx[i] = nrm[0] / nl; this.nd[i] = nrm[1] / nl; this.nz[i] = nrm[2] / nl;
       this.wx[i] = x; this.wd[i] = d; this.wz[i] = z;
-      const mat = RAMPES_JEU[rampId] || RAMPES_JEU.pierre_seche;
+      const mat = RAMPES[rampId] || RAMPES[R.pierre];
       this.rough[i] = mat.rough; this.sss[i] = mat.sss;
       if (emit) { this.emitR[i] = emit[0]; this.emitG[i] = emit[1]; this.emitB[i] = emit[2]; }
       else { this.emitR[i] = 0; this.emitG[i] = 0; this.emitB[i] = 0; }
@@ -1209,18 +1316,18 @@
       for (let x = x0; x <= x1 + 1e-4; x += st) {
         for (let d = d0; d <= d1 + 1e-4; d += st) {
           const s = sh ? sh('top', x, d, z1) : { t: 0.62, dn: [0,0,0] };
-          if (s) this.plot(x, d, z1, evalRampOklab(rampId, s.t), [s.dn[0], s.dn[1], 1], rampId, s.emit);
+          if (s) this.plot(x, d, z1, evalRamp(rampId, s.t), [s.dn[0], s.dn[1], 1], rampId, s.emit);
         }
         for (let z = z0; z <= z1 + 1e-4; z += st) {
           const s = sh ? sh('front', x, d0, z) : { t: 0.52, dn: [0,0,0] };
-          if (s) this.plot(x, d0, z, evalRampOklab(rampId, s.t), [s.dn[0], -1, s.dn[2]], rampId, s.emit);
+          if (s) this.plot(x, d0, z, evalRamp(rampId, s.t), [s.dn[0], -1, s.dn[2]], rampId, s.emit);
         }
       }
       for (let d = d0; d <= d1 + 1e-4; d += st) for (let z = z0; z <= z1 + 1e-4; z += st) {
         const sL = sh ? sh('left', x0, d, z) : { t: 0.50, dn: [0,0,0] };
-        if (sL) this.plot(x0, d, z, evalRampOklab(rampId, sL.t), [-1, sL.dn[1], sL.dn[2]], rampId, sL.emit);
+        if (sL) this.plot(x0, d, z, evalRamp(rampId, sL.t), [-1, sL.dn[1], sL.dn[2]], rampId, sL.emit);
         const sR = sh ? sh('right', x1, d, z) : { t: 0.46, dn: [0,0,0] };
-        if (sR) this.plot(x1, d, z, evalRampOklab(rampId, sR.t), [1, sR.dn[1], sR.dn[2]], rampId, sR.emit);
+        if (sR) this.plot(x1, d, z, evalRamp(rampId, sR.t), [1, sR.dn[1], sR.dn[2]], rampId, sR.emit);
       }
     }
     cylinder(cx, cd, r, z0, z1, rampId, sh = null, inside = false) {
@@ -1229,7 +1336,7 @@
         const phi = (2 * Math.PI * i) / nPhi, c = Math.cos(phi), sn = Math.sin(phi);
         const s = sh ? sh(phi, z) : { t: 0.56, dn: [0,0,0] };
         const nrm = inside ? [-c + s.dn[0], -sn + s.dn[1], s.dn[2]] : [c + s.dn[0], sn + s.dn[1], s.dn[2]];
-        this.plot(cx + r * c, cd + r * sn, z, evalRampOklab(rampId, s.t), nrm, rampId, s.emit, !inside);
+        this.plot(cx + r * c, cd + r * sn, z, evalRamp(rampId, s.t), nrm, rampId, s.emit, !inside);
       }
     }
     disc(cx, cd, r0, r1, zBase, rampId, sh = null, relFn = null) {
@@ -1240,7 +1347,7 @@
           const phi = (2 * Math.PI * i) / nPhi;
           const rel = relFn ? relFn(rho, phi) : { dz: 0, n: [0, 0, 1] };
           const s = sh ? sh(rho, phi) : { t: 0.60, dn: [0,0,0] };
-          this.plot(cx + rho * Math.cos(phi), cd + rho * Math.sin(phi), zBase + rel.dz, evalRampOklab(rampId, s.t), [rel.n[0] + s.dn[0], rel.n[1] + s.dn[1], rel.n[2] + s.dn[2]], rampId, s.emit);
+          this.plot(cx + rho * Math.cos(phi), cd + rho * Math.sin(phi), zBase + rel.dz, evalRamp(rampId, s.t), [rel.n[0] + s.dn[0], rel.n[1] + s.dn[1], rel.n[2] + s.dn[2]], rampId, s.emit);
         }
       }
     }
@@ -1268,65 +1375,65 @@
     if (state.archetype === 'forge') {
       r = new Raster45(2, 1, 2.2, T);
       const st = stoneSh(seed, lod, false), br = stoneSh(seed + 13, lod, true), H = 9.8 * sc;
-      r.box(-14.2, 1.6, -5.6, 5.6, 0, H, 'pierre_seche', (f, x, d, z) => (f === 'top' && x > -11.5 && x < -1.0 && d > -3 && d < 3) ? null : st(f, x, d, z));
-      r.box(-11.5, -1.0, -3.0, 3.0, H - 3.0, H - 2.2, 'brique_cuite', (f, x, d) => {
+      r.box(-14.2, 1.6, -5.6, 5.6, 0, H, R.pierre, (f, x, d, z) => (f === 'top' && x > -11.5 && x < -1.0 && d > -3 && d < 3) ? null : st(f, x, d, z));
+      r.box(-11.5, -1.0, -3.0, 3.0, H - 3.0, H - 2.2, R.brique, (f, x, d) => {
         const hot = clamp(0.5 + Math.sin(x * 1.6 + d * 2 + pose * 1.7) * 0.35 + hash2(x | 0, d | 0, seed) * 0.2, 0, 1);
         return { t: 0.38 + hot * 0.5, dn: [0,0,0.2], emit: state.emissiveOn ? [1.7 * hot, 0.7 * hot, 0.14 * hot] : null };
       });
       if (state.emissiveOn) r.lights.push({ x: -6.2, d: 0, z: H + 2.0, col: [2.1, 0.95, 0.28], rad: 18 });
-      r.box(-13.2, -6.4, 1.2, 5.8, H, H + 11.8 * sc, 'brique_cuite', br);
-      r.box(-13.8, -5.8, 0.6, 6.4, H + 11.8 * sc, H + 13.4 * sc, 'pierre_seche', st);
-      r.cylinder(8.4, 0, 4.3, 0, 7.0 * sc, 'chene_chaud');
-      r.disc(8.4, 0, 0, 4.3, 7.0 * sc, 'bois_serre', rho => ({ t: 0.68 + Math.sin(rho * 4.2) * 0.08, dn: [0,0,0] }));
-      r.box(5.8, 11.4, -2.0, 2.0, 7.0 * sc, 9.0 * sc, 'acier_fonte');
-      r.box(4.8, 12.6, -2.3, 2.3, 9.0 * sc, 11.2 * sc, 'acier_fonte', f => ({ t: f === 'top' ? 0.84 : 0.56, dn: [0,0,0] }));
+      r.box(-13.2, -6.4, 1.2, 5.8, H, H + 11.8 * sc, R.brique, br);
+      r.box(-13.8, -5.8, 0.6, 6.4, H + 11.8 * sc, H + 13.4 * sc, R.pierre, st);
+      r.cylinder(8.4, 0, 4.3, 0, 7.0 * sc, R.chene);
+      r.disc(8.4, 0, 0, 4.3, 7.0 * sc, R.bois, rho => ({ t: 0.68 + Math.sin(rho * 4.2) * 0.08, dn: [0,0,0] }));
+      r.box(5.8, 11.4, -2.0, 2.0, 7.0 * sc, 9.0 * sc, R.fer);
+      r.box(4.8, 12.6, -2.3, 2.3, 9.0 * sc, 11.2 * sc, R.fer, f => ({ t: f === 'top' ? 0.84 : 0.56, dn: [0,0,0] }));
     } else if (state.archetype === 'well') {
       r = new Raster45(2, 2, 2.5, T);
       const st = stoneSh(seed, lod, false), RO = 10.6, RI = 8.0, HM = 8.2 * sc, ZT = 21.5 * sc;
-      r.cylinder(0, 0, RO, 0, HM, 'pierre_seche', (p, z) => st('front', p * RO, 0, z));
-      r.cylinder(0, 0, RI, 4.5, HM, 'pierre_seche', () => ({ t: 0.28, dn: [0,0,0] }), true);
-      r.disc(0, 0, RI, RO, HM, 'pierre_seche');
-      r.disc(0, 0, 0, RI, 5.2, 'eau_cristal', rho => ({ t: 0.5 + Math.sin(rho * 2.2 - pose) * 0.08, dn: [0,0,0] }));
-      for (const px of [-RO + 1.1, RO - 1.1]) r.cylinder(px, 0, 1.25, HM, ZT, 'bois_serre');
-      r.disc(0, 0, 0, 13.4, ZT, 'tuile_rouge', rho => ({ t: 0.56 + ((Math.floor(rho / 2) & 1) * 0.07), dn: [0,0,0] }), (rho, phi) => ({ dz: 8.6 * sc * (1 - rho / 13.4), n: [Math.cos(phi) * 0.65, Math.sin(phi) * 0.65, 1] }));
+      r.cylinder(0, 0, RO, 0, HM, R.pierre, (p, z) => st('front', p * RO, 0, z));
+      r.cylinder(0, 0, RI, 4.5, HM, R.pierre, () => ({ t: 0.28, dn: [0,0,0] }), true);
+      r.disc(0, 0, RI, RO, HM, R.pierre);
+      r.disc(0, 0, 0, RI, 5.2, R.eau, rho => ({ t: 0.5 + Math.sin(rho * 2.2 - pose) * 0.08, dn: [0,0,0] }));
+      for (const px of [-RO + 1.1, RO - 1.1]) r.cylinder(px, 0, 1.25, HM, ZT, R.bois);
+      r.disc(0, 0, 0, 13.4, ZT, R.tuile, rho => ({ t: 0.56 + ((Math.floor(rho / 2) & 1) * 0.07), dn: [0,0,0] }), (rho, phi) => ({ dz: 8.6 * sc * (1 - rho / 13.4), n: [Math.cos(phi) * 0.65, Math.sin(phi) * 0.65, 1] }));
     } else if (state.archetype === 'silo') {
       r = new Raster45(2, 2, 2.7, T);
       const R = 11.0, Z0 = 3.2, HZ = 20.5 * sc, HD = 8.4;
-      r.cylinder(0, 0, R + 0.7, 0, Z0, 'pierre_seche', (p, z) => stoneSh(seed, lod)('front', p * R, 0, z));
-      r.cylinder(0, 0, R, Z0, Z0 + HZ, 'chene_chaud');
-      for (const hz of [Z0 + 3.8, Z0 + HZ * 0.52, Z0 + HZ - 2.4]) r.cylinder(0, 0, R + 0.3, hz - 0.55, hz + 0.55, 'acier_fonte');
-      r.disc(0, 0, 0, R + 0.8, Z0 + HZ, 'tuile_rouge', null, (rho, phi) => {
+      r.cylinder(0, 0, R + 0.7, 0, Z0, R.pierre, (p, z) => stoneSh(seed, lod)('front', p * R, 0, z));
+      r.cylinder(0, 0, R, Z0, Z0 + HZ, R.chene);
+      for (const hz of [Z0 + 3.8, Z0 + HZ * 0.52, Z0 + HZ - 2.4]) r.cylinder(0, 0, R + 0.3, hz - 0.55, hz + 0.55, R.fer);
+      r.disc(0, 0, 0, R + 0.8, Z0 + HZ, R.tuile, null, (rho, phi) => {
         const u = clamp(rho / (R + 0.8), 0, 1);
         return { dz: Math.sqrt(Math.max(0, 1 - u * u)) * HD, n: [Math.cos(phi) * u, Math.sin(phi) * u, Math.sqrt(Math.max(0.08, 1 - u * u))] };
       });
     } else if (state.archetype === 'wall') {
       r = new Raster45(1, 1, 1.75, T);
       const m = state.wallMask, H = 14.2 * sc, st = stoneSh(seed, lod);
-      r.box(-4.2, 4.2, -4.2, 4.2, 0, H, 'pierre_seche', st);
-      if (m & 1) r.box(-3.8, 3.8, 3.8, 8.0, 0, H, 'pierre_seche', st);
-      if (m & 4) r.box(-3.8, 3.8, -8.0, -3.8, 0, H, 'pierre_seche', st);
-      if (m & 2) r.box(3.8, 8.0, -3.8, 3.8, 0, H, 'pierre_seche', st);
-      if (m & 8) r.box(-8.0, -3.8, -3.8, 3.8, 0, H, 'pierre_seche', st);
-      r.box(m & 8 ? -8 : -4.6, m & 2 ? 8 : 4.6, m & 4 ? -8 : -4.6, m & 1 ? 8 : 4.6, H, H + 1.6, 'bois_serre', st);
+      r.box(-4.2, 4.2, -4.2, 4.2, 0, H, R.pierre, st);
+      if (m & 1) r.box(-3.8, 3.8, 3.8, 8.0, 0, H, R.pierre, st);
+      if (m & 4) r.box(-3.8, 3.8, -8.0, -3.8, 0, H, R.pierre, st);
+      if (m & 2) r.box(3.8, 8.0, -3.8, 3.8, 0, H, R.pierre, st);
+      if (m & 8) r.box(-8.0, -3.8, -3.8, 3.8, 0, H, R.pierre, st);
+      r.box(m & 8 ? -8 : -4.6, m & 2 ? 8 : 4.6, m & 4 ? -8 : -4.6, m & 1 ? 8 : 4.6, H, H + 1.6, R.bois, st);
     } else if (state.archetype === 'tree') {
       r = new Raster45(2, 2, 2.6, T);
       const sway = [0, 1.15, 2.15, -1.15, -2.15][pose % 5];
-      r.cylinder(sway * 0.2, 0, 2.2, 0, 13 * sc, 'chene_chaud');
+      r.cylinder(sway * 0.2, 0, 2.2, 0, 13 * sc, R.chene);
       const puffs = [[0,0,19,7.6],[-5.4,-1.8,15.4,5.8],[5.6,-1.5,15.7,5.6],[-4.2,3.8,16.5,5.6],[4.5,3.6,16.8,5.5],[0,-4.3,14.8,5.2]];
       puffs.forEach(([bx, bd, bz, rad], idx) => {
         const px = bx + sway * (0.55 + idx * 0.08), pz = bz * sc;
         for (let th = 0; th <= Math.PI; th += 0.14) for (let ph = 0; ph < Math.PI * 2; ph += 0.14) {
           const nx = Math.sin(th) * Math.cos(ph), nd = Math.sin(th) * Math.sin(ph), nz = Math.cos(th);
-          r.plot(px + rad * nx, bd + rad * nd, pz + rad * nz, evalRampOklab('feuillage_pre', 0.44 + nz * 0.28), [nx, nd, nz], 'feuillage_pre');
+          r.plot(px + rad * nx, bd + rad * nd, pz + rad * nz, evalRamp(R.feuillage, 0.44 + nz * 0.28), [nx, nd, nz], R.feuillage);
         }
       });
     } else {
       const orient = pose % 4, fw = orient % 2 === 0 ? 2 : 1, fd = orient % 2 === 0 ? 1 : 2;
       r = new Raster45(fw, fd, 2.15, T);
       const W2 = orient % 2 === 0 ? 13.4 : 5.8, D2 = orient % 2 === 0 ? 5.8 : 13.4;
-      r.box(-W2, W2, -D2, D2, 0, 9.4 * sc, 'chene_chaud');
-      r.box(-W2 - 0.6, W2 + 0.6, -D2 - 0.6, D2 + 0.6, 9.4 * sc, 10.7 * sc, 'bois_serre');
-      r.box(-W2 * 0.85, W2 * 0.85, -D2 * 0.7, D2 * 0.85, 10.7 * sc, 18.4 * sc, 'chene_chaud');
+      r.box(-W2, W2, -D2, D2, 0, 9.4 * sc, R.chene);
+      r.box(-W2 - 0.6, W2 + 0.6, -D2 - 0.6, D2 + 0.6, 9.4 * sc, 10.7 * sc, R.bois);
+      r.box(-W2 * 0.85, W2 * 0.85, -D2 * 0.7, D2 * 0.85, 10.7 * sc, 18.4 * sc, R.chene);
     }
 
     const { W, H, mask, albR, albG, albB, nx, nd, nz, wx, wd, wz, rough, sss, emitR, emitG, emitB } = r;
@@ -1443,6 +1550,18 @@
     if (updateUI) { state.clusters = stats; renderClusterUI(); }
   }
 
+  // Les rampes dans une liste déroulante, rangées par script de dessin (le secours seulement s'il n'y a rien d'autre)
+  function optionsRampes(choisie) {
+    const groupes = {};
+    for (const r of Object.values(RAMPES)) {
+      if (rampesDuJeu && r.groupe === 'secours') continue;
+      (groupes[r.groupe] = groupes[r.groupe] || []).push(r);
+    }
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    return Object.entries(groupes).map(([g, rs]) => `<optgroup label="${esc(g)}">` +
+      rs.map(r => `<option value="${esc(r.id)}"${choisie === r.id ? ' selected' : ''}>${esc(r.nom)}${r.exacte ? ' (tons exacts)' : ''} · ${r.n} tons</option>`).join('') + '</optgroup>').join('');
+  }
+
   function renderClusterUI() {
     const box = document.getElementById('clusterList');
     box.innerHTML = '';
@@ -1452,9 +1571,8 @@
       row.className = 'cluster-row';
       const bands = cl.ramp === 'keep'
         ? [0.25, 0.42, 0.58, 0.74, 0.90].map(f => rgbToHex(...oklabToRgb(clamp(cl.centerLab[0] * (0.55 + f * 0.7), 0.1, 0.95), cl.centerLab[1], cl.centerLab[2])))
-        : RAMPES_JEU[cl.ramp].ancres.map(a => rgbToHex(a[0], a[1], a[2]));
-      const opts = `<option value="keep"${cl.ramp === 'keep' ? ' selected' : ''}>Origine (${cl.count}px)</option>` +
-        Object.entries(RAMPES_JEU).map(([id, r]) => `<option value="${id}"${cl.ramp === id ? ' selected' : ''}>${r.nom}</option>`).join('');
+        : [0.1, 0.3, 0.5, 0.7, 0.9].map(t => rgbToHex(...evalRamp(cl.ramp, t)));
+      const opts = `<option value="keep"${cl.ramp === 'keep' ? ' selected' : ''}>Origine (${cl.count}px)</option>` + optionsRampes(cl.ramp);
       row.innerHTML = `<span class="swatch" style="background:${rgbToHex(...cl.rgb)}"></span><span class="ramp-preview">${bands.map(c => `<i style="background:${c}"></i>`).join('')}</span><select style="flex:1;padding:2px 5px;font-size:10.5px">${opts}</select>`;
       row.querySelector('select').addEventListener('change', e => {
         state.clusters[idx].ramp = e.target.value;
@@ -1537,17 +1655,17 @@
         let matRough = rough[i], matSSS = sss[i];
         if (clusterId && activeClusters && activeClusters.length) {
           const cl = activeClusters[clusterId[i]];
-          if (cl && cl.ramp && cl.ramp !== 'keep' && state.harmMix > 0.01) {
+          if (cl && cl.ramp && cl.ramp !== 'keep' && RAMPES[cl.ramp] && state.harmMix > 0.01) {
             const pixLab = rgbToOklab(bR, bG, bB);
             const span = Math.max(0.12, cl.lMax - cl.lMin);
             const tRamp = clamp(((pixLab[0] - cl.lMin) / span) * 0.80 + 0.10, 0.03, 0.97);
-            const [rr, rg, rb] = evalRampOklab(cl.ramp, tRamp);
+            const [rr, rg, rb] = evalRamp(cl.ramp, tRamp);
             const m = state.harmMix;
             bR = Math.round(bR * (1 - m) + rr * m);
             bG = Math.round(bG * (1 - m) + rg * m);
             bB = Math.round(bB * (1 - m) + rb * m);
-            matRough = RAMPES_JEU[cl.ramp].rough;
-            matSSS = RAMPES_JEU[cl.ramp].sss;
+            matRough = RAMPES[cl.ramp] ? RAMPES[cl.ramp].rough : matRough;
+            matSSS = RAMPES[cl.ramp] ? RAMPES[cl.ramp].sss : matSSS;
           }
         }
 
@@ -1578,7 +1696,7 @@
           const n = hash2(x, y, state.seed + 77);
           const mm = clamp((nz[i] - 0.50) * 2.1 * state.moss + (n - 0.5) * 0.30, 0, 0.85);
           if (mm > 0.14) {
-            const mc = evalRampOklab('feuillage_pre', 0.44 + n * 0.35);
+            const mc = evalRamp(R.feuillage, 0.44 + n * 0.35);
             bR = Math.round(bR * (1 - mm) + mc[0] * mm);
             bG = Math.round(bG * (1 - mm) + mc[1] * mm);
             bB = Math.round(bB * (1 - mm) + mc[2] * mm);
@@ -1717,6 +1835,9 @@
    * 8. MODÈLES ILLUSTRÉS HAUTE DÉFINITION INTÉGRÉS (RENARD, CHAUMIÈRE, CHAUDRON, COFFRE)
    * ========================================================================= */
   function makeSampleImage(kind) {
+    state.assetCourant = null;
+    const lbl = document.getElementById('assetCourantLbl');
+    if (lbl) lbl.textContent = 'Aucun asset chargé';
     const W = 280, H = 280, cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
     const g = cv.getContext('2d');
@@ -1989,7 +2110,8 @@
       `Pipeline : ${state.pipeline === 'inflate' ? 'Image → Sprite Haute Fidélité (' + state.sampler + ')' : state.pipeline}<br>` +
       `Dimensions : ${W}×${H} px · Pixels opaques : ${info.pixels} · Nuances : ${info.colors}<br>` +
       (info.fidelity !== null ? `Fidélité perceptuelle Oklab : ${info.fidelity.toFixed(1)}% · ` : '') +
-      `Retouches manuelles : ${state.editsMap.size} px`;
+      `Retouches manuelles : ${state.editsMap.size} px` +
+      (state.assetCourant ? `<br>Asset : assets/${state.assetCourant} (à remplacer par l'export « ${nomExport()}.png »)` : '');
 
     drawSunPad();
     renderViewport();
@@ -2067,7 +2189,7 @@
     if (canCompare && state.cmpMode === 'side') {
       // Mode Côte à côte : Entrée haute définition à gauche | Sprite Pixel-Art à droite
       ctx.save();
-      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingEnabled = !state.refPixel;
       ctx.drawImage(state.alignedRefCanvas, p.inX, p.oy, p.w, p.h);
       ctx.restore();
 
@@ -2088,7 +2210,7 @@
       // Partie Gauche : Image source originale détourée
       ctx.save();
       ctx.beginPath(); ctx.rect(0, 0, splitX, vh); ctx.clip();
-      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingEnabled = !state.refPixel;
       ctx.drawImage(state.alignedRefCanvas, p.outX, p.oy, p.w, p.h);
       ctx.restore();
 
@@ -2152,6 +2274,12 @@
     const [lx, ld] = state.sunDir;
     ctx.fillStyle = '#f0b44c'; ctx.beginPath(); ctx.arc(R + lx * (R - 9), R + ld * (R - 9), 5.5, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  // Le nom d'un export : celui de l'asset retravaillé (sans dossier ni .png), sinon sprite_<taille>px
+  function nomExport() {
+    if (state.assetCourant && state.pipeline === 'inflate') return state.assetCourant.split('/').pop().replace(/\.png$/, '');
+    return `sprite_${state.tileSize}px`;
   }
 
   const fmtHour = h => `${String(Math.floor(h) % 24).padStart(2, '0')}:${String(Math.round((h % 1) * 60) % 60).padStart(2, '0')}`;
@@ -2351,14 +2479,17 @@
     img.src = u;
   }
 
-  const loadUserImage = cv => {
+  const loadUserImage = (cv, chemin = null) => {
+    state.assetCourant = chemin;
+    document.getElementById('assetCourantLbl').textContent = chemin ? `assets/${chemin} · ${cv.width}×${cv.height}` : 'Aucun asset chargé';
+    document.querySelectorAll('.asset-case').forEach(c => c.classList.toggle('choisi', c.dataset.chemin === chemin));
     copyThumb(cv, state.srcCanvas, 'srcThumb');
     detectBackgroundFromSource(cv);
     state.clusters = [];
     state.splitPos = 0.50;
     rebuildAll(false);
     autoFitZoom();
-    toast(state.hasNativeAlpha ? 'PNG transparent détecté et converti sans perte' : 'Image importée — comparez avec le rideau !');
+    if (!chemin) toast(state.hasNativeAlpha ? 'PNG transparent détecté et converti sans perte' : 'Image importée — comparez avec le rideau !');
   };
 
   document.getElementById('fileInput').addEventListener('change', e => readImgFile(e.target.files[0], loadUserImage));
@@ -2446,7 +2577,7 @@
   }));
 
   document.getElementById('btnAutoHarmonize').addEventListener('click', () => {
-    if (state.gb) { segmentClustersKMeans(state.gb, true, true); refreshShading(); toast('✨ Rampes Moon Bloom appliquées'); }
+    if (state.gb) { segmentClustersKMeans(state.gb, true, true); refreshShading(); toast(rampesDuJeu ? '✨ Rampes du jeu appliquées' : '✨ Palette de secours appliquée (rampes du jeu indisponibles)'); }
   });
   document.getElementById('btnResetClusters').addEventListener('click', () => {
     state.clusters.forEach(c => { c.ramp = 'keep'; });
@@ -2537,8 +2668,8 @@
     const a = document.createElement('a'); a.download = filename; a.href = cv.toDataURL('image/png'); a.click();
     toast(`Téléchargé : ${filename}`);
   };
-  document.getElementById('btnExpSprite').addEventListener('click', () => dlCanvas(state.outCanvas, `sprite_${state.tileSize}px.png`));
-  document.getElementById('btnExpNormal').addEventListener('click', () => dlCanvas(state.normalCanvas, `sprite_${state.tileSize}px_n.png`));
+  document.getElementById('btnExpSprite').addEventListener('click', () => dlCanvas(state.outCanvas, `${nomExport()}.png`));
+  document.getElementById('btnExpNormal').addEventListener('click', () => dlCanvas(state.normalCanvas, `${nomExport()}_n.png`));
   document.getElementById('btnExpSheet').addEventListener('click', () => dlCanvas(buildExtrudedSheet(), `atlas_${state.tileSize}px.png`));
   document.getElementById('btnExpJson').addEventListener('click', () => {
     if (!state.lastAtlasMeta) buildExtrudedSheet();
@@ -2551,9 +2682,103 @@
 
   window.addEventListener('resize', renderViewport);
 
+  /* =========================================================================
+   * 12. LES DONNÉES DU JEU : RAMPES ET BIBLIOTHÈQUE DES ASSETS (GET /admin/api/atelier)
+   * ========================================================================= */
+  const API_ATELIER = '/admin/api/atelier';
+  const urlAsset = chemin => `${API_ATELIER}/image?chemin=${encodeURIComponent(chemin)}`;
+  const dossierDe = chemin => (chemin.includes('/') ? chemin.split('/')[0] : '(racine)');
+  const sansAccent = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  function assetsFiltres() {
+    const dossier = document.getElementById('assetsDossier').value;
+    const mots = sansAccent(document.getElementById('assetsRecherche').value.trim()).split(/[\s_/-]+/).filter(Boolean);
+    return state.assets.filter(a => (!dossier || dossierDe(a.chemin) === dossier) && mots.every(m => sansAccent(a.chemin).includes(m)));
+  }
+
+  function afficherAssets() {
+    const grille = document.getElementById('assetsGrille');
+    const liste = assetsFiltres();
+    grille.innerHTML = '';
+    for (const a of liste.slice(0, state.assetsMax)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'asset-case' + (a.chemin === state.assetCourant ? ' choisi' : '');
+      b.dataset.chemin = a.chemin;
+      b.title = `assets/${a.chemin} · ${a.l}×${a.h}`;
+      const v = document.createElement('div'); v.className = 'vignette';
+      const img = document.createElement('img'); img.loading = 'lazy'; img.alt = ''; img.src = urlAsset(a.chemin);
+      v.appendChild(img);
+      const nom = document.createElement('span'); nom.textContent = a.chemin.split('/').pop().replace(/\.png$/, '');
+      const dim = document.createElement('span'); dim.className = 'mono'; dim.textContent = `${a.l}×${a.h}`;
+      b.append(v, nom, dim);
+      b.addEventListener('click', () => chargerAsset(a));
+      grille.appendChild(b);
+    }
+    document.getElementById('assetsCompte').textContent = `${liste.length} / ${state.assets.length}`;
+    const plus = document.getElementById('assetsPlus');
+    plus.style.display = liste.length > state.assetsMax ? 'inline-flex' : 'none';
+  }
+
+  async function chargerAsset(a) {
+    if (a.l * a.h > 1600000) { toast(`${a.chemin} : ${a.l}×${a.h}, trop grand pour l'atelier`); return; }
+    toast(`Chargement de ${a.chemin}…`);
+    try {
+      const r = await fetch(urlAsset(a.chemin), { credentials: 'same-origin' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const bmp = await createImageBitmap(await r.blob());
+      const cv = document.createElement('canvas');
+      cv.width = bmp.width; cv.height = bmp.height;
+      cv.getContext('2d').drawImage(bmp, 0, 0);
+      // retravailler un asset : on part de lui tel quel (taille d'origine, pixel le plus proche, sans re-éclairage
+      // ni contour ajouté : il a déjà le sien) ; chaque réglage reste ensuite libre
+      if (state.pipeline !== 'inflate') document.querySelector('[data-pipe="inflate"]').click();
+      state.footprintMode = 'source'; document.getElementById('selFootprint').value = 'source';
+      state.sampler = 'nearest'; document.getElementById('selSampler').value = 'nearest';
+      state.outline = 'none'; document.getElementById('selOutline').value = 'none';
+      state.relightMix = 0; document.getElementById('rngRelight').value = '0'; document.getElementById('valRelight').textContent = '0%';
+      state.splitPos = 0.5;
+      loadUserImage(cv, a.chemin);
+      toast(`${a.chemin} chargé tel quel (1:1) — à retravailler`);
+    } catch (e) {
+      toast(`Impossible de lire ${a.chemin} (${e.message})`);
+    }
+  }
+
+  async function chargerDonneesJeu() {
+    const etatA = document.getElementById('assetsEtat'), etatR = document.getElementById('rampesEtat');
+    try {
+      const r = await fetch(API_ATELIER, { credentials: 'same-origin' });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erreur || `HTTP ${r.status}`);
+      installerRampes(d.rampes || [], true);
+      const groupes = new Set((d.rampes || []).map(x => x.groupe));
+      etatR.className = 'etat-donnees';
+      etatR.innerHTML = `Rampes : <b>${(d.rampes || []).length} rampes du jeu</b> (${[...groupes].join(', ')})`;
+      state.assets = d.assets || [];
+      const dossiers = [...new Set(state.assets.map(a => dossierDe(a.chemin)))].sort();
+      document.getElementById('assetsDossier').innerHTML = '<option value="">Tous les dossiers</option>' +
+        dossiers.map(x => `<option value="${x}">${x} (${state.assets.filter(a => dossierDe(a.chemin) === x).length})</option>`).join('');
+      etatA.innerHTML = `<b>${state.assets.length} images</b> de <code>assets/</code> (telles que sur main). Touchez-en une pour la retravailler.`;
+      afficherAssets();
+      // les rampes ont changé : les modèles et les groupes de couleurs repartent dessus
+      state.clusters = [];
+      rebuildAll(false);
+    } catch (e) {
+      etatA.className = 'etat-donnees secours';
+      etatA.innerHTML = `<b>Liste indisponible</b> (${e.message}). Elle est servie par la console : ouvrez l'atelier depuis /admin/sprites.`;
+      etatR.innerHTML = 'Rampes : <b>palette de secours</b> (rampes du jeu indisponibles)';
+    }
+  }
+
+  document.getElementById('assetsDossier').addEventListener('change', () => { state.assetsMax = 60; afficherAssets(); });
+  document.getElementById('assetsRecherche').addEventListener('input', () => { state.assetsMax = 60; afficherAssets(); });
+  document.getElementById('assetsPlus').addEventListener('click', () => { state.assetsMax += 60; afficherAssets(); });
+
   // Ouverture directe sur Image → Sprite avec le Renard illustré et le Rideau Avant/Après actif !
   makeSampleImage('fox');
   requestAnimationFrame(() => autoFitZoom());
+  chargerDonneesJeu();
 })();
 </script>
 </body>

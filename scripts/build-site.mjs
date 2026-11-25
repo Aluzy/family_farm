@@ -25,6 +25,9 @@
 // seuls les générateurs Python lisent. Une carte publiée qui demanderait l'une de ces
 // images arrête la construction.
 //
+// _site/atelier/donnees.json : les rampes des scripts de dessin et la liste des images de assets/, pour
+// l'atelier des sprites de la console (scripts/atelier-donnees.mjs).
+//
 // La carte des sources de jeu.bundle.js (.map) n'est pas publiée ; pour l'avoir en
 // local : node scripts/build-site.mjs --sourcemap
 //
@@ -37,6 +40,7 @@ import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { ROOT } from './lib/engine-source.mjs';
+import { donneesAtelier } from './atelier-donnees.mjs';
 
 let esbuild;
 try {
@@ -212,6 +216,12 @@ if (errors.length) {
   process.exit(1);
 }
 writeFileSync(join(OUT, 'jeu.html'), html);
+
+/* l'atelier des sprites de la console (worker/src/sprites.html) : les rampes des scripts de dessin et la
+   liste des images de assets/ (scripts/atelier-donnees.mjs), relues par le Worker (GET /admin/api/atelier) */
+const atelier = donneesAtelier(ROOT);
+mkdirSync(join(OUT, 'atelier'), { recursive: true });
+writeFileSync(join(OUT, 'atelier', 'donnees.json'), JSON.stringify(atelier));
 
 const ko = (f) => Math.round(statSync(join(OUT, f)).size / 1024);
 let total = 0;

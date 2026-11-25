@@ -85,7 +85,7 @@ test('coûts : une requête par mesure depuis le 1er du mois ; R2 par classe ; u
 
 test('routes : lecture seule, page avec CSP, paramètres vérifiés, rapport sur la période demandée', async () => {
   oublierClesAccess();
-  const fenetres = [], lus = [];
+  const fenetres = [], lus = [], imagesLues = [];
   const outils = {
     page: async () => '<!doctype html><title>Console Moon Bloom</title>',
     rapport: async (ms) => { fenetres.push(ms); return { sessions: 3, comments: [{ at: T0, text: 'Super jeu' }], erreurs: { total: 0, top: [] }, truncated: 0, unreadable: 0, joueurs: { actifs: 2 } }; },
@@ -94,6 +94,8 @@ test('routes : lecture seule, page avec CSP, paramètres vérifiés, rapport sur
     enLigne: async () => ({ ok: true, comptes: 4 }),
     ventes: async () => ({ ok: true, mode: 'test', gemmesEnCirculation: 550 }),
     sprites: async () => '<!doctype html><title>Atelier des sprites</title>',
+    atelier: async () => ({ ok: true, version: 1, rampes: [{ id: 'blocs.R_CHENE', cles: [[46, 30, 18], [232, 204, 150]], n: 40 }], assets: [{ chemin: 'dessins/cow.png', l: 32, h: 32 }] }),
+    imageAtelier: async (chemin) => { imagesLues.push(chemin); return chemin === 'dessins/cow.png' ? { corps: new Uint8Array([0x89, 0x50, 0x4e, 0x47]) } : null; },
   };
   const jwt = await jeton();
   const appel = async (chemin, init) => { const r = await routeAdmin(requete(chemin, jwt, init), ENV, new URL('https://x' + chemin), outils, o); return { statut: r.status, r, corps: r.headers.get('Content-Type').includes('json') ? await r.json() : await r.text() }; };
@@ -116,7 +118,16 @@ test('routes : lecture seule, page avec CSP, paramètres vérifiés, rapport sur
   eq((await appel('/admin/api/ventes')).corps.gemmesEnCirculation, 550, 'les ventes de gemmes');
   const atelier = await appel('/admin/sprites');
   const csp = atelier.r.headers.get('Content-Security-Policy');
-  eq([atelier.statut, /Atelier des sprites/.test(atelier.corps), /connect-src 'none'/.test(csp), /img-src 'self' data: blob:/.test(csp), atelier.r.headers.get('X-Frame-Options')], [200, true, true, true, 'DENY'], 'l\'atelier des sprites : derrière Access, ne parle à personne');
+  eq([atelier.statut, /Atelier des sprites/.test(atelier.corps), /connect-src 'self'/.test(csp), /img-src 'self' data: blob:/.test(csp), atelier.r.headers.get('X-Frame-Options')], [200, true, true, true, 'DENY'], 'l\'atelier des sprites : derrière Access, ne parle qu\'à la console');
+  const donnees = await appel('/admin/api/atelier');
+  eq([donnees.statut, donnees.corps.ok, donnees.corps.rampes[0].id, donnees.corps.assets[0].chemin], [200, true, 'blocs.R_CHENE', 'dessins/cow.png'], 'l\'atelier : ses rampes et ses images');
+  const image = await routeAdmin(requete('/admin/api/atelier/image?chemin=dessins/cow.png', jwt), ENV, new URL('https://x/admin/api/atelier/image?chemin=dessins/cow.png'), outils, o);
+  eq([image.status, image.headers.get('Content-Type'), image.headers.get('X-Content-Type-Options'), [...new Uint8Array(await image.arrayBuffer())]], [200, 'image/png', 'nosniff', [0x89, 0x50, 0x4e, 0x47]], 'une image de assets/');
+  eq((await appel('/admin/api/atelier/image?chemin=dessins/absente.png')).statut, 404, 'une image absente');
+  for (const forge of ['../wrangler.toml', 'dessins/../../x.png', '/etc/passwd', 'dessins/cow.js', '', 'icones/a b.png', 'dessins/.png', 'https://autre.site/x.png'])
+    eq((await appel('/admin/api/atelier/image?chemin=' + encodeURIComponent(forge))).statut, 400, `un chemin forgé refusé : ${forge}`);
+  eq(imagesLues, ['dessins/cow.png', 'dessins/absente.png'], 'aucun chemin forgé n\'est demandé au dépôt');
+  eq((await routeAdmin(requete('/admin/api/atelier'), ENV, new URL('https://x/admin/api/atelier'), outils, o)).status, 403, 'les données de l\'atelier sans Access : rien');
   eq((await routeAdmin(requete('/admin/sprites'), ENV, new URL('https://x/admin/sprites'), outils, o)).status, 403, 'l\'atelier sans Access : rien');
   eq((await appel('/admin/api/rien')).statut, 404);
 });

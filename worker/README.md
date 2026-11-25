@@ -356,8 +356,25 @@ de la console), derrière le même accès. Il tire d'une image (PNG transparent,
 Moon Bloom, soleil sur 24 h, contour d'un pixel, retouche au pixel ; il exporte le PNG, la normal map (`_n.png`),
 une planche extrudée et son atlas Phaser (`.json`, ancre au pied). Il propose aussi des modèles procéduraux (forge,
 puits, silo, mur raccordé, arbre, buffet) et un mode « 2 faces » (dessus + face avant). Tout se calcule dans le
-navigateur : la page ne parle à aucun serveur (`connect-src 'none'`). Un sprite qui en sort passe encore les règles
-de dessin de `CLAUDE.md` (projection, nuances, couleurs comptées, vérification en jeu) avant d'entrer dans le jeu.
+navigateur : la page ne parle qu'à la console (`connect-src 'self'`), pour deux lectures :
+
+- `GET /admin/api/atelier` : **les rampes du jeu** (chaque `NOM = rampe([…], n)` des scripts de dessin
+  `scripts/carte/*.py`, et les palettes `PALETTES` de `data/meubles.json`, tons exacts) et **la liste des images de
+  `assets/`** (avec leur taille ; sans les galeries `apercu/`). C'est `scripts/atelier-donnees.mjs` qui les tire du
+  dépôt ; `scripts/build-site.mjs` les publie à chaque mise en ligne (`_site/atelier/donnees.json`) et le Worker les
+  relit là (`https://moonbloom-village.com/atelier/donnees.json`). Rien n'est recopié à la main : une rampe changée
+  dans un script l'est dans l'atelier après la mise en ligne suivante. L'atelier évalue les rampes comme `rampe()` et
+  `ton()` de `scripts/carte/nuances.py`, au pixel près (tests/test-atelier.mjs le vérifie, contre Python s'il est là).
+- `GET /admin/api/atelier/image?chemin=…` : une image de `assets/`, telle qu'elle est sur `main` (lue sur
+  raw.githubusercontent.com : les icônes et dessins une par une ne sont pas mis en ligne, le jeu lit les planches).
+  Le chemin est vérifié (des noms simples, `.png`, jamais `..`).
+
+Dans l'onglet Source, la carte **Assets du jeu** liste ces images (par dossier, avec une recherche) : en toucher une
+la charge **telle quelle**, en taille d'origine (1 pixel = 1 pixel, le pied en place), sans re-éclairage ni contour
+ajouté ; le sprite rendu est alors identique à l'asset, et chaque réglage (re-éclairage, rampes, mousse, retouche au
+pixel) part de là. L'export porte le nom de l'asset (`cow.png`, `cow_n.png`), prêt à remplacer le fichier de
+`assets/` (puis `python3 scripts/carte/atlas.py` si c'est une image de meuble). Un sprite qui en sort passe encore les
+règles de dessin de `CLAUDE.md` (projection, nuances, couleurs comptées, vérification en jeu) avant d'entrer dans le jeu.
 
 La console ne fait que lire. Elle est **fermée** tant que les réglages ci-dessous n'existent pas.
 
