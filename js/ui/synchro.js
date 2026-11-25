@@ -27,7 +27,14 @@
 import { amitieDuJoueur, avancerJusqua, chargeDuCompte, dureeDuPas, energieDe, horlogeVivante, pasDe, sacDe, sacsDe } from '../engine/temps-monde.js';
 import { chargesDe } from '../engine/portage.js';
 
-const cloner = (v) => JSON.parse(JSON.stringify(v));
+// La copie d'une partie (JSON). Le mode test (📏 Mesures : js/ui/mesures.js) compte les copies et leur temps.
+export const CLONES = { n: 0, ms: 0 };
+const cloner = (v) => {
+  const t = performance.now();
+  const c = JSON.parse(JSON.stringify(v));
+  CLONES.n++; CLONES.ms += performance.now() - t;
+  return c;
+};
 export const MARGE = 2;   // pas : la confirmée suit la locale d'aussi loin
 
 export class Synchro {

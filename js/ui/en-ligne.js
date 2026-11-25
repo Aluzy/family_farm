@@ -133,8 +133,19 @@ export function mondeActuel() {
   return lien && lien.etat !== 'refuse' ? { monde: lien.monde, role: lien.role || null, titre: lien.titre || '' } : null;
 }
 
+// Ce qui passe sur la WebSocket depuis l'ouverture (le mode test, 📏 Mesures : js/ui/mesures.js) : messages
+// et octets envoyés et reçus, et la part des positions (« pos »).
+export const RESEAU = { envoyes: 0, octetsEnvoyes: 0, posEnvoyes: 0, octetsPosEnvoyes: 0, recus: 0, octetsRecus: 0, posRecus: 0, octetsPosRecus: 0 };
+const octets = (t) => (typeof TextEncoder !== 'undefined' ? new TextEncoder().encode(t).length : t.length);
+
 function envoyer(m) {
-  if (lien && lien.ws && lien.ws.readyState === 1) { lien.ws.send(JSON.stringify(m)); return true; }
+  if (lien && lien.ws && lien.ws.readyState === 1) {
+    const t = JSON.stringify(m), o = octets(t);
+    lien.ws.send(t);
+    RESEAU.envoyes++; RESEAU.octetsEnvoyes += o;
+    if (m.t === 'pos') { RESEAU.posEnvoyes++; RESEAU.octetsPosEnvoyes += o; }
+    return true;
+  }
   return false;
 }
 
@@ -148,6 +159,9 @@ function recevoir(ws, data) {
   if (!lien || lien.ws !== ws) return;
   let m;
   try { m = JSON.parse(data); } catch (e) { return; }
+  const o = typeof data === 'string' ? octets(data) : (data.byteLength || 0);
+  RESEAU.recus++; RESEAU.octetsRecus += o;
+  if (m.t === 'pos') { RESEAU.posRecus++; RESEAU.octetsPosRecus += o; }
   if (m.t === 'refus') {
     lien.refuse = true;
     notify(`🌐 ${m.erreur || 'Entrée refusée.'}`);

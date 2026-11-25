@@ -32,6 +32,9 @@ import { registerActions } from './actions.js';
 import { runAction } from './events.js';
 import { chrono, demarrer, noter, postes } from './chrono.js';
 import { lieuDuPerso } from './stage.js';
+import { CLES } from '../engine/cles.js';
+import { RESEAU, mondeActuel } from './en-ligne.js';
+import { CLONES } from './synchro.js';
 
 // Les budgets (docs/perf.md, « cosy standard ») sur le téléphone de référence (Redmi Note 13).
 export const BUDGETS = {
@@ -116,6 +119,8 @@ function faireRapport(m) {
     '',
     ...ouTempsPasse(m, durees),
     '',
+    ...pistes(m, total),
+    '',
     '— Appareil —',
     ...appareil(),
     '',
@@ -139,6 +144,68 @@ function ouTempsPasse(m, durees) {
     L.push('Les plus longues images (ce qui y a pris le plus de temps) :');
     for (const q of m.pires) L.push(`  ${Math.round(q.ms)} ms à ${q.t.toFixed(1)} s (${q.lieu}) : ${q.postes.map((p) => `${p.nom} ${Math.round(p.ms)}`).join(', ') || '—'}`);
   }
+  return L;
+}
+
+/* ---------- les pistes du dossier « chantiers » (refactorisation proposée) : ce qu'elles visent, mesuré ---------- */
+
+// Les compteurs au début de la mesure (repris à la fin : la différence).
+function releve() {
+  return { cles: { ...CLES }, reseau: { ...RESEAU }, clones: { ...CLONES } };
+}
+
+// Le tri des images de la carte par profondeur (Phaser : DisplayList.depthSort, à chaque image où une
+// profondeur a changé) : compté et chronométré pendant la mesure. Rend de quoi l'arrêter.
+function suivreTri(sc, M) {
+  const L = sc && sc.sys && sc.sys.displayList;
+  M.tri = { ok: !!(L && L.depthSort), n: 0, ms: 0, max: 0, taille: 0, tailles: 0 };
+  if (!M.tri.ok) return () => {};
+  const T = M.tri, propre = Object.prototype.hasOwnProperty.call(L, 'depthSort'), avant = L.depthSort;
+  L.depthSort = function (...a) {
+    T.tailles++; T.taille += this.list.length;
+    if (!this.sortChildrenFlag) return avant.apply(this, a);
+    const t = performance.now();
+    const r = avant.apply(this, a);
+    const d = performance.now() - t;
+    T.n++; T.ms += d; T.max = Math.max(T.max, d);
+    return r;
+  };
+  return () => { if (propre) L.depthSort = avant; else delete L.depthSort; };
+}
+
+const ko = (o) => (o / 1024).toFixed(1);
+const mo = (o) => (o / 1048576).toFixed(1);
+
+function pistes(m, total) {
+  const s = Math.max(0.001, total), a = m.debut, L = ['— Pistes du dossier « chantiers » —'];
+  // 01 : les clés JSON des caches du bâti
+  const n = CLES.n - a.cles.n, ms = CLES.ms - a.cles.ms, car = CLES.caracteres - a.cles.caracteres;
+  L.push(`01 Clés JSON du bâti : ${n} clés (${(n / s).toFixed(1)}/s), ${(ms / s).toFixed(2)} ms/s, ${n ? (ms / n * 1000).toFixed(0) : 0} µs et ${n ? Math.round(car / n) : 0} caractères par clé en moyenne`);
+  // 02 : la mémoire du son décodé
+  const S = window.FermeSon && FermeSon.memoire ? FermeSon.memoire() : null;
+  L.push(S ? `02 Son décodé en mémoire : ${mo(S.octets)} Mo pour ${S.n} sons, dont ${mo(S.longs)} Mo pour ${S.nLongs} pistes longues (plus de 20 s)` : '02 Son décodé : pas de son (pas encore de geste, ou son coupé)');
+  // 03 : le tri par profondeur des images de la carte
+  const T = m.tri;
+  L.push(T && T.ok ? `03 Tri des images de la carte : ${T.tailles ? Math.round(T.taille / T.tailles) : 0} images dans la liste en moyenne, triée ${T.n} fois (${(T.n / s).toFixed(1)}/s), ${(T.ms / s).toFixed(2)} ms/s, ${T.max.toFixed(1)} ms au plus` : '03 Tri des images : pas de carte pendant la mesure');
+  // 04 et 05 : le chargement (scripts, et ce qui vient du cache du navigateur)
+  const R = performance.getEntriesByType ? performance.getEntriesByType('resource') : [];
+  const js = R.filter((e) => /\.js(\?|$)/.test(e.name));
+  if (js.length) {
+    const deb = Math.min(...js.map((e) => e.startTime)), fin = Math.max(...js.map((e) => e.responseEnd));
+    L.push(`04 Scripts : ${js.length} fichiers, ${ko(js.reduce((x, e) => x + (e.encodedBodySize || 0), 0))} Ko compressés, demandés de ${Math.round(deb)} à ${Math.round(fin)} ms après l'ouverture (reçus en ${Math.round(fin - deb)} ms)`);
+  }
+  const caches = R.filter((e) => e.transferSize === 0 && e.decodedBodySize > 0).length;
+  const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+  L.push(`05 Fichiers de la page : ${R.length}, dont ${caches} lus dans le cache du navigateur, ${ko(R.reduce((x, e) => x + (e.transferSize || 0), 0))} Ko téléchargés · ouverture : ${nav ? nav.type : '?'} (recharger la page pour la seconde ouverture)`);
+  // 06 : le réseau (en ligne) et les copies de la partie
+  const r = RESEAU, b = a.reseau, min = s / 60;
+  if (mondeActuel()) {
+    const env = r.octetsEnvoyes - b.octetsEnvoyes, rec = r.octetsRecus - b.octetsRecus;
+    const posE = r.octetsPosEnvoyes - b.octetsPosEnvoyes, posR = r.octetsPosRecus - b.octetsPosRecus;
+    L.push(`06 Réseau : ${ko(env / min)} Ko/min envoyés (${r.envoyes - b.envoyes} messages, positions ${env ? Math.round((100 * posE) / env) : 0} %), ${ko(rec / min)} Ko/min reçus (${r.recus - b.recus} messages, positions ${rec ? Math.round((100 * posR) / rec) : 0} %)`);
+  } else L.push('06 Réseau : en solo (rien à mesurer ; jouer dans un monde en ligne)');
+  const cn = CLONES.n - a.clones.n, cms = CLONES.ms - a.clones.ms;
+  L.push(`06 Copies de la partie (synchro en ligne) : ${cn}, ${cms.toFixed(1)} ms en tout, ${cn ? (cms / cn).toFixed(1) : 0} ms chacune`);
   return L;
 }
 
@@ -168,6 +235,9 @@ function mesurer() {
     lieux: {}, longues: [], longuesOk: false, postes: [], pires: [],
   };
   const M = mesure;
+  M.debut = releve();
+  CLES.actif = true;
+  const finTri = suivreTri(sc, M);
   notify(`📏 Mesure de ${DUREE_S} s : joue normalement (marche, construis, tourne la vue).`, { duree: 4000 });
   const bouton = document.querySelector('[data-action="test-perf-mesurer"]');
   // le chronomètre (les postes), et ce qu'il a noté à chaque image : le total d'avant, pour la différence
@@ -188,6 +258,8 @@ function mesurer() {
     if (ev) { ev.off('prerender', avantDessin); ev.off('postrender', image); }
     M.postes = postes();
     demarrer(false);
+    CLES.actif = false;
+    finTri();
     rapport = faireRapport(M);
     mesure = null;
     if (bouton) bouton.textContent = `Mesurer ${DUREE_S} s`;

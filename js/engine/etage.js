@@ -28,6 +28,7 @@ import { farmTerrain } from './terrain.js';
 import { openStation } from './kitchen.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
+import { cleJson } from './cles.js';
 
 // Les blocs qui se posent à l'étage : un escalier (vers le niveau 2), des murs, des portes, une paillasse, une lanterne, un
 // réverbère, une barrière, les meubles qui se posent au sol, les tableaux (sur un mur de l'étage :
@@ -181,7 +182,7 @@ export function escaliersEtage(state) {
 let e2Pieces = null, e2Cle = null, e2Set = null;
 export function etage2Emprise(state) {
   // (gardée tant que les pièces closes, les blocs de l'étage et les hauteurs des murs n'ont pas changé)
-  const pieces = piecesCloses(state), cle = JSON.stringify(etageBlocs(state)) + JSON.stringify(state.hauteurs || null);
+  const pieces = piecesCloses(state), cle = cleJson(etageBlocs(state)) + cleJson(state.hauteurs || null);
   if (pieces === e2Pieces && cle === e2Cle) return e2Set;
   const out = new Set(), E = etageBlocs(state), un = etageEmprise(state);
   e2Pieces = pieces; e2Cle = cle; e2Set = out;
@@ -219,7 +220,7 @@ function avecMurs(state, cases) {
 // lit pour chaque case affichée. Les appelants ne font que la lire.)
 let empPieces = null, empCle = null, empSet = null;
 export function etageEmprise(state) {
-  const pieces = piecesCloses(state), cle = JSON.stringify(state.hauteurs || null);
+  const pieces = piecesCloses(state), cle = cleJson(state.hauteurs || null);
   if (pieces === empPieces && cle === empCle) return empSet;
   const out = new Set();
   const B = blocsPoses(state);
@@ -263,7 +264,7 @@ export function empriseNiveau(state, n = 1) {
 let toitsCle = null, toitsListe = [];
 export function toits(state) {
   const B = blocsPoses(state), E = etageBlocs(state), W = farmTerrain(state).LARGEUR;
-  const cle = W + ':' + JSON.stringify(B) + JSON.stringify(E) + JSON.stringify(solsPoses(state)) + JSON.stringify(state.hauteurs || null) + JSON.stringify(state.rehausses || null);
+  const cle = W + ':' + cleJson(B) + cleJson(E) + cleJson(solsPoses(state)) + cleJson(state.hauteurs || null) + cleJson(state.rehausses || null);
   if (cle === toitsCle) return toitsListe;
   toitsListe = calculerToits(state, B, E, W);
   toitsCle = cle;
@@ -641,7 +642,7 @@ export const niveauxSols = () => Array.from({ length: Math.max(0, DATA.ATELIER.H
 // (gardées tant que les pièces closes et les hauteurs des murs n'ont pas changé ; par niveau)
 let nivPieces = null, nivCle = null, nivListes = new Map();
 export function piecesNiveau(state, n = 1) {
-  const pieces = piecesCloses(state), cle = JSON.stringify(state.hauteurs || null);
+  const pieces = piecesCloses(state), cle = cleJson(state.hauteurs || null);
   if (pieces !== nivPieces || cle !== nivCle) { nivPieces = pieces; nivCle = cle; nivListes = new Map(); }
   if (nivListes.has(n)) return nivListes.get(n);
   const out = [];

@@ -55,6 +55,18 @@ Le rapport donne aussi la médiane et les 95 / 99 % des durées d'image, la plus
 (Chrome seulement), le temps de chargement de la page, l'appareil et la taille de la partie. Rien ne part
 de l'appareil.
 
+Le bloc « Pistes du dossier « chantiers » » du rapport mesure ce que visait la refactorisation proposée
+en novembre 2026 (six chantiers), pour décider sur des chiffres :
+- **01** les clés JSON des caches du bâti (`js/engine/cles.js`) : combien par seconde, leur temps, leur taille ;
+- **02** la mémoire du son décodé (`FermeSon.memoire()`), dont les pistes longues (musiques, ambiances) :
+  à relever après une longue session, quand beaucoup de musiques et d'ambiances ont joué ;
+- **03** le tri des images de la carte par profondeur (Phaser) : la taille de la liste, combien de tris, leur temps ;
+- **04** les scripts : combien, leur poids, le temps de leur réception ;
+- **05** les fichiers lus dans le cache du navigateur et les octets téléchargés : refaire la mesure après
+  avoir rechargé la page pour la seconde ouverture ;
+- **06** en ligne : les octets par minute envoyés et reçus (et la part des positions), et les copies de la
+  partie par la synchro (`js/ui/synchro.js`).
+
 ## Résultats
 
 | Date | Appareil (version, mémoire) | Version du jeu | Scénario | Images/s · lentes | Carte prête, puis jeu affiché | Sauvegarde max | Mémoire |
