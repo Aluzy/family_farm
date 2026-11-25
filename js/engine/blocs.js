@@ -33,6 +33,7 @@ import { choisirPortIle, portIle } from './ile/port-ile.js';
 import { planterGraine as planterGraineIle, refusSemis } from './ile/vie.js';
 import { graineDeLIle, planteSemee } from './ile/graines.js';
 import { verifierProjet } from './ile/projets.js';
+import { cleJson } from './cles.js';
 
 
 
@@ -512,7 +513,7 @@ function calculerPieces(state) {
   // (I9g : les mêmes blocs que la dernière fois, relus case par case sans refaire le texte de tous les blocs, qui coûtait
   // le quart d'une nuit du village ; le texte, comme avant, seulement quand ils semblent avoir changé)
   if (memesBlocs(W, B)) return piecesListe;
-  const cle = W + ':' + JSON.stringify(B);
+  const cle = W + ':' + cleJson(B);
   if (cle === piecesCle) { noterBlocs(W, B); return piecesListe; }
   const F = casesQuiFerment(B), ferme = (t) => F.has(t);
   const faites = new Set(), out = [], max = DATA.ATELIER.PIECE_MAX;
@@ -650,7 +651,7 @@ export function pieceDe(state, tile) {
 let conseilsCle = null, conseilsListe = null;
 export function conseilsPieces(state) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR, max = DATA.ATELIER.PIECE_MAX;
-  const cle = W + ':' + JSON.stringify(B);
+  const cle = W + ':' + cleJson(B);
   if (cle === conseilsCle) return conseilsListe;
   const F = casesQuiFerment(B), ferme = (t, plus) => t === plus || F.has(t);
   const voisins = (i) => { const c = i % W, r = Math.floor(i / W); return [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, r > 0 ? i - W : -1, r < H - 1 ? i + W : -1]; };
@@ -1488,7 +1489,7 @@ function etendue(state, depart) {
 
 export function etatEnclos(state, sorteCle) {
   const B = blocsPoses(state);
-  const cle = farmSeed(state) + ':' + JSON.stringify(B) + ':' + (state.verger ? state.verger.arbres.map((a) => a.case).join(',') : '');
+  const cle = farmSeed(state) + ':' + cleJson(B) + ':' + (state.verger ? state.verger.arbres.map((a) => a.case).join(',') : '');
   const vu = enclosCache.get(sorteCle);
   if (vu && vu.cle === cle) return vu.etat;
   const T = farmTerrain(state), W = T.LARGEUR;

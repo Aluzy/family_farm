@@ -158,6 +158,9 @@
 
   let ctx = null, maitre = null, bus = null, duck = null, ext = 'ogg';
   const tampons = new Map();        // fichier → Promise<AudioBuffer>
+  // les sons décodés gardés en mémoire (fichier → { octets : PCM en Float32, s : durée }), pour les mesures
+  // du mode test (js/ui/mesures.js : la mémoire du son)
+  const decodes = new Map();
   const derniere = {};              // clé → dernière variante (jamais deux fois la même de suite)
   const dernierJeu = {};            // clé → instant du dernier départ (anti-rafale)
   let voix = [];
@@ -175,7 +178,8 @@
   function tampon(f) {
     if (!tampons.has(f)) {
       const p = fetch(url(f)).then((r) => { if (!r.ok) throw new Error(f); return r.arrayBuffer(); })
-        .then((ab) => new Promise((ok, ko) => ctx.decodeAudioData(ab, ok, ko)));
+        .then((ab) => new Promise((ok, ko) => ctx.decodeAudioData(ab, ok, ko)))
+        .then((buf) => { decodes.set(f, { octets: buf.length * buf.numberOfChannels * 4, s: buf.duration }); return buf; });
       p.catch(() => tampons.delete(f));   // un échec (réseau) : on réessaiera
       tampons.set(f, p);
     }
@@ -738,6 +742,16 @@
   }
 
   global.FermeSon = {
+    // La mémoire des sons décodés (mode test, 📏 Mesures) : en tout, et celle des pistes longues (plus de 20 s :
+    // musiques et ambiances en boucle), en octets.
+    memoire() {
+      let n = 0, octets = 0, nLongs = 0, longs = 0;
+      for (const d of decodes.values()) {
+        n++; octets += d.octets;
+        if (d.s > 20) { nLongs++; longs += d.octets; }
+      }
+      return { n, octets, nLongs, longs };
+    },
     joue, pas, prise, cri, matin, boucle, debloque, babil, voixDe,
     reglages: () => Object.assign({}, R), regle,
     pret: () => !!(ctx && ctx.state === 'running'),
