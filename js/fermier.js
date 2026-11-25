@@ -233,6 +233,7 @@
     /* ---------- l'image ---------- */
 
     const s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1).setVisible(false);
+    if (s.frame && s.frame.width) s.setScale(16 / s.frame.width);   // PROTOTYPE HD : une planche de 32 de large s'affiche à moitié
     s.personnage = true;   // (caché en mode Construire : farm-stage.js figer)
     s.moi = true;          // (l'herbe qu'il traverse : ses pieds, pos ; carte/ferme/marcheurs.js)
     let x = 0, y = 0, face = 'bas', flip = false, shown = false, alpha = 0, fade = 0;
@@ -1344,6 +1345,7 @@
       setSheet(key) {
         o.sheet = key;
         s.setTexture(key, s.frame ? s.frame.name : 0);
+        if (s.frame && s.frame.width) s.setScale(16 / s.frame.width);
       },
     };
   }

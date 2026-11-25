@@ -198,7 +198,7 @@
       if (!this.fermier || !key || key === this.persoCle) return;
       this.persoCle = key;
       this.persoN = n;
-      const apply = () => { if (this.persoCle === key && this.has(key)) this.fermier.setSheet(key); };
+      const apply = () => { if (!global.FERMIER_HD && this.persoCle === key && this.has(key)) this.fermier.setSheet(key); };
       if (this.textures.exists(key)) { apply(); return; }
       if (propre) {
         const faire = () => { P.texturesMembre(this, { perso: n, enfant: false, apparence, coiffe }); apply(); };
