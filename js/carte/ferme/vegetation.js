@@ -53,6 +53,12 @@
 (function (global) {
   'use strict';
 
+  // Essai (novembre 2026) : le buisson des prés (buisson_pre, ses deux variantes) dessiné en définition
+  // double (64 × 35, assets/buisson_hd.png), affiché à la largeur du buisson large (44 px de jeu) ;
+  // son pied, à `pied` de sa hauteur (comme le buisson large : 24 / 27).
+  const BUISSON_HD = { cle: 'buisson_hd', fichier: 'buisson_hd.png', sorte: 'buisson_pre', w: 64, largeur: 44, pied: 24 / 27 };
+  global.FermeCarte.BUISSON_HD = BUISSON_HD;
+
   const K = global.CarteKit;
   const F = global.FermeCarte;
   const { T, OCCLUDER_ALPHA, SOLEIL } = F.C;
@@ -287,11 +293,16 @@
         if (n == null || !c) continue;
         // (un ponton : sur l'eau, sous tout ce qui marche dessus ; il ne cache rien)
         const ponton = s.genre === 'ponton';
-        const img = this.add.image(x, y, pl.cle, n).setOrigin(c.px / c.w, c.py / c.h).setDepth(ponton ? 0.3 : y);
+        // (essai : le buisson des prés dessiné en définition double, assets/buisson_hd.png, à la largeur
+        // du buisson large ; BUISSON_HD)
+        const hd = s.nom === BUISSON_HD.sorte && this.textures.exists(BUISSON_HD.cle);
+        const img = hd
+          ? this.add.image(x, y, BUISSON_HD.cle).setOrigin(0.5, BUISSON_HD.pied).setScale(BUISSON_HD.largeur / BUISSON_HD.w).setDepth(y)
+          : this.add.image(x, y, pl.cle, n).setOrigin(c.px / c.w, c.py / c.h).setDepth(ponton ? 0.3 : y);
         // (pas d'ombre : les plantes hautes ; les falaises, dont la face regarde le soleil ; le ponton ; les murs,
         // fenêtres et portes des maisons des hameaux, dont l'ombre est un volume de leur case : hameaux.js hameauxMurs)
         const murHameau = pl.cle === 'hameaux' && SOLEIL.mursHameaux.test(s.nom);
-        const o = { img, x: x - c.px, y: y - c.py, w: c.w, h: c.h, foot: ponton ? -Infinity : y, mask: c.mask, alpha: 1, ombre: s.genre !== 'haute' && s.genre !== 'basse' && s.genre !== 'paroi' && !ponton && !murHameau };
+        const o = { img, x: hd ? x - img.displayWidth / 2 : x - c.px, y: hd ? y - img.displayHeight * BUISSON_HD.pied : y - c.py, w: hd ? img.displayWidth : c.w, h: hd ? img.displayHeight : c.h, foot: ponton ? -Infinity : y, mask: c.mask, alpha: 1, ombre: s.genre !== 'haute' && s.genre !== 'basse' && s.genre !== 'paroi' && !ponton && !murHameau };
         if (penche) o.herbe = { img, fleurs: null, x, y, base: n, t: -1, dir: 1, inside: false };
         // (un arbre d'un jardin de hameau : la hache le dit, hameaux.js)
         if (pl.cle === 'hameaux' && s.genre === 'arbre') o.nomHameau = s.nom;
