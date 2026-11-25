@@ -136,7 +136,10 @@
         if (K.chargePortage) K.chargePortage(this, v);
         // la charrette du village et les rails (l'île à bâtir, fiche I2b : js/carte/ferme/charrette-village.js)
         if (K.chargeCharretteVillage && this.ctx.monde && this.ctx.monde.ile) K.chargeCharretteVillage(this, v);
-        L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
+        // PROTOTYPE HD (?hd=1) : la fermière en cases de 32×64, affichée à moitié
+        const HD = /[?&]hd=1/.test(global.location ? global.location.search : '');
+        global.FERMIER_HD = HD;
+        L.spritesheet('fermier', v(PERSONNAGE + (HD ? '_hd' : '') + '.png'), HD ? { frameWidth: 32, frameHeight: 64 } : FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
         L.json('perso_cases', v('personnages/cases.json'));
         L.json('perso_peau', v('personnages/peau.json'));   // (les teintes de peau : les émotions, amis.js)
