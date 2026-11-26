@@ -1340,10 +1340,12 @@
       // de son image (sans le cheval), son sens ; null s'il n'est pas sur la carte.
       vu: () => (!shown || home ? null : { x, y, h: lift(), img: drawn, flip }),
       destroy() { s.destroy(); for (const k in selles) if (selles[k]) selles[k].destroy(); if (drapDehors) drapDehors.destroy(); zs.forEach((z) => z.destroy()); holds.clear(); },
-      // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre.
-      setSheet(key) {
+      // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre. echelle : sa
+      // taille d'affichage (1 ; une planche plus fine, le personnage en essai du mode test, plus petite).
+      setSheet(key, echelle = 1) {
         o.sheet = key;
         s.setTexture(key, s.frame ? s.frame.name : 0);
+        s.setScale(echelle);
       },
     };
   }

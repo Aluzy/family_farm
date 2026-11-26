@@ -138,6 +138,16 @@ registerActions({
     applyResult(testAddBlocs(state));
     notify('+5 de chaque bloc');
   },
+  // Le personnage du joueur remplacé par le personnage en essai (une planche dessinée plus fine :
+  // scripts/personnage/essai_hd.py ; js/carte/ferme/modele.js syncPerso), ou rendu ; le temps de la page.
+  'test-perso-essai': () => {
+    const E = window.FermeCarte && window.FermeCarte.ESSAI_PERSO;
+    const sc = window.FarmStage && FarmStage.scene && FarmStage.scene();
+    if (!E || !sc || !sc.syncPerso) { notify('La carte n\'est pas prête'); return; }
+    E.actif = !E.actif;
+    sc.syncPerso(...(sc.persoArgs || []));
+    notify(E.actif ? 'Personnage en essai' : 'Personnage d\'origine');
+  },
   'test-outils': () => {
     applyResult(testAllTools(state));
     notify('Houe, pioche, hache, faux et canne en main');
