@@ -39,6 +39,9 @@ export { Monde } from './monde.mjs';
 // adresse GitHub Pages (qui renvoie vers le domaine, gardée le temps que tout le monde suive).
 const ORIGINES = new Set(['https://moonbloom-village.com', 'https://www.moonbloom-village.com', 'https://aluzy.github.io']);
 const JEU_URL = 'https://moonbloom-village.com/jeu.html';
+// l'atelier des sprites de la console : ses données (publiées par le site) et les images de assets/ sur main
+const ATELIER_DONNEES = 'https://moonbloom-village.com/atelier/donnees.json';
+const ASSETS_DEPOT = 'https://raw.githubusercontent.com/Aluzy/family_farm/main/assets/';
 const MAX_BYTES = 64 * 1024;
 const SID_RE = /^[A-Za-z0-9-]{8,64}$/;
 const PID_RE = SID_RE;
@@ -127,6 +130,17 @@ function outilsAdmin(env) {
   return {
     page: async () => (await import('./admin.html')).default,
     sprites: async () => (await import('./sprites.html')).default,
+    // l'atelier des sprites : ses données, publiées par le site (scripts/atelier-donnees.mjs), et les images de
+    // assets/ lues sur main (les icônes et dessins une par une ne sont pas mis en ligne : le jeu lit les planches)
+    atelier: async () => {
+      const r = await fetch(ATELIER_DONNEES, { cf: { cacheTtl: 300, cacheEverything: true } });
+      if (!r.ok) return { ok: false, erreur: `Les données de l'atelier ne sont pas lisibles (${r.status}) : le site est-il à jour ?` };
+      return { ok: true, ...(await r.json()) };
+    },
+    imageAtelier: async (chemin) => {
+      const r = await fetch(`${ASSETS_DEPOT}${chemin}`, { cf: { cacheTtl: 300, cacheEverything: true } });
+      return r.ok ? { corps: await r.arrayBuffer() } : null;
+    },
     rapport: async (fenetreMs) => {
       const now = new Date(), since = new Date(now.getTime() - fenetreMs);
       const { sessions, unreadable, truncated } = await loadFiles(env.SESSIONS, 'sessions/', since, MAX_READ);
