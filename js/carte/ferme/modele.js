@@ -13,6 +13,9 @@
   const F = global.FermeCarte;
   const { T, SFX, TREE_OBJECT, ORCHARD_ADULT, TREE_BODY, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, FERMIER_FRAME, ZONE_LABEL_UP, BLOCS_CARTE, SOLEIL } = F.C;
   const { clamp, reducedMotion, v } = F;
+  // Le personnage en essai du mode test (syncPerso ; la planche : scripts/personnage/essai_hd.py, qui écrit aussi
+  // sa taille de case et son échelle dans assets/personnages/essai_hd.json).
+  F.ESSAI_PERSO = { actif: false, cle: 'perso_essai_hd', fichier: 'personnages/essai_hd.png', frameWidth: 48, frameHeight: 42, echelle: 0.625 };
 
   F.partie({
 
@@ -191,7 +194,22 @@
     // planche est chargée la première fois qu'il est choisi ; d'ici là, la fermière.
     // Étape E6 : son apparence à lui (apparence) remplace son personnage du catalogue (js/carte/planches.js).
     // Étape E7 : coiffe, la pièce d'équipement qu'il porte sur la tête (son casque, son chapeau de paille).
+    // Le mode test, « Personnage en essai » (js/ui/testmode.js) : FermeCarte.ESSAI_PERSO.actif, sa planche
+    // (scripts/personnage/essai_hd.py : des cases de 48 × 42, dessinées plus fin) remplace celle du joueur, à
+    // son échelle (la taille des autres personnages).
     syncPerso(n, apparence, coiffe) {
+      this.persoArgs = [n, apparence, coiffe];
+      const E = global.FermeCarte.ESSAI_PERSO;
+      if (E.actif && this.fermier) {
+        if (this.persoCle === E.cle) return;
+        this.persoCle = E.cle;
+        const poser = () => { if (this.persoCle === E.cle) this.fermier.setSheet(E.cle, E.echelle); };
+        if (this.textures.exists(E.cle)) { poser(); return; }
+        this.load.spritesheet(E.cle, v(E.fichier), { frameWidth: E.frameWidth, frameHeight: E.frameHeight });
+        this.load.once('complete', poser);
+        this.load.start();
+        return;
+      }
       const P = global.CartePlanches;
       const propre = !!(P && (apparence || coiffe));
       const key = propre ? P.cleMembre({ perso: n, enfant: false, apparence, coiffe }) : n ? 'perso_' + n : null;
