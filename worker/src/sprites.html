@@ -253,6 +253,80 @@
     nav.mobile-tabs { display: none !important; }
     #toast { bottom: 16px; }
   }
+
+  /* MODULE STUDIO PERSONNAGES (docs/studio-personnages.md ; lots 1 à 3 : gabarits Piskel, import & vérificateur, assemblage) */
+  .app[data-atelier="perso"] > .workspace,
+  .app[data-atelier="perso"] > #mobileTabs,
+  .app[data-atelier="perso"] #passSeg,
+  .app[data-atelier="perso"] #resSeg,
+  .app[data-atelier="perso"] #fidelityBadge,
+  .app[data-atelier="perso"] #colorBadge { display: none !important; }
+  #persoWorkspace { display: none; flex: 1; min-height: 0; overflow: hidden; flex-direction: column; }
+  .app[data-atelier="perso"] #persoWorkspace { display: flex; }
+  .perso-vp {
+    height: 44dvh; min-height: 235px; background: var(--bg-deep); border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  .perso-side {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .perso-subpane { display: none; flex-direction: column; gap: 10px; }
+  .perso-subpane.active { display: flex; }
+  .perso-grid-pieces {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 6px;
+    max-height: 250px; overflow-y: auto; padding: 2px;
+  }
+  .piece-item {
+    background: var(--bg-deep); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px;
+    display: flex; flex-direction: column; gap: 3px; cursor: pointer; text-align: left; color: var(--text);
+  }
+  .piece-item:hover { border-color: #5b5280; }
+  .piece-item.active { border-color: var(--accent); background: rgba(240, 180, 76, 0.10); }
+  .piece-item b { font-size: 11px; color: var(--text); }
+  .piece-item small { font-size: 9.5px; color: var(--muted); font-family: ui-monospace, monospace; word-break: break-all; }
+  .att-legend { display: flex; flex-wrap: wrap; gap: 5px; }
+  .att-chip {
+    display: inline-flex; align-items: center; gap: 4px; background: var(--bg-deep);
+    border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px; font-size: 10px;
+  }
+  /* Lot 2 : Journal du vérificateur & Bibliothèque des pièces validées */
+  .verif-log {
+    display: flex; flex-direction: column; gap: 6px; max-height: 210px; overflow-y: auto;
+  }
+  .verif-item {
+    background: var(--bg-deep); border: 1px solid var(--border); border-left: 3px solid var(--green);
+    border-radius: 6px; padding: 6px 8px; font-size: 10.5px; line-height: 1.4;
+  }
+  .verif-item.ko { border-left-color: #e26d6d; background: rgba(226, 109, 109, 0.07); }
+  .verif-item .v-head { display: flex; justify-content: space-between; gap: 6px; font-weight: 700; margin-bottom: 2px; }
+  .verif-item.ko .v-head span:last-child { color: #ff9494; }
+  .verif-item.ok .v-head span:last-child { color: var(--green); }
+  .verif-item ul { margin: 3px 0 0 16px; padding: 0; color: #e8c5c5; }
+  .biblio-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(126px, 1fr)); gap: 6px;
+    max-height: 240px; overflow-y: auto; padding: 2px;
+  }
+  .biblio-card {
+    background: var(--bg-deep); border: 1px solid var(--border); border-radius: 7px; padding: 5px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; position: relative;
+    text-align: center; color: var(--text); font-size: 9.5px;
+  }
+  .biblio-card:hover { border-color: #5b5280; }
+  .biblio-card.active { border-color: var(--green); background: rgba(106, 208, 143, 0.10); }
+  .biblio-card canvas {
+    width: 48px; height: 48px; image-rendering: pixelated;
+    background: repeating-conic-gradient(#252134 0% 25%, #1a1725 0% 50%) 50% / 8px 8px; border-radius: 4px;
+  }
+  .biblio-del {
+    position: absolute; top: 3px; right: 3px; border: 0; background: rgba(226,109,109,0.2);
+    color: #ff9b9b; border-radius: 4px; font-size: 9px; padding: 1px 4px; cursor: pointer;
+  }
+  @media (min-width: 1020px) {
+    #persoWorkspace { flex-direction: row; }
+    .perso-vp { flex: 1; height: auto; border-bottom: 0; border-left: 1px solid var(--border); order: 2; }
+    .perso-side { width: 485px; flex: none; order: 1; }
+  }
+
 </style>
 </head>
 <body>
@@ -262,6 +336,12 @@
     <div class="brand">
       <a class="retour" href="/admin">← Console</a>
       <span>🌾 Moon Bloom Sprite Studio v5</span>
+
+      <div class="seg" id="atelierSwitch" title="Choisir le module de l'atelier">
+        <button type="button" data-atelier-btn="sprites" class="active">🧱 Sprites 45°</button>
+        <button type="button" data-atelier-btn="perso">🧑 Personnages</button>
+      </div>
+
       <span class="badge fid mono" id="fidelityBadge" title="Fidélité perceptuelle Oklab entre l'image source détourée et le sprite généré">Fidélité ΔE : —%</span>
       <span class="badge mono" id="colorBadge">0 nuances</span>
     </div>
@@ -627,6 +707,246 @@
     <button type="button" data-tab="pbr"><span>✨</span><span>PBR</span></button>
     <button type="button" data-tab="export"><span>💾</span><span>Export</span></button>
   </nav>
+
+  <!-- MODULE PERSONNAGES (docs/studio-personnages.md) — ÉTAPE 2 : GABARITS · ÉTAPE 3 : IMPORT & VÉRIFICATEUR · ÉTAPE 4 : ASSEMBLAGE & 111 CASES -->
+  <div id="persoWorkspace">
+    <section class="perso-vp">
+      <div class="vp-bar">
+        <div class="row">
+          <div class="seg" id="pVueSeg">
+            <button type="button" data-pvue="face" class="active">Face (bas)</button>
+            <button type="button" data-pvue="dos">Dos (haut)</button>
+            <button type="button" data-pvue="profil">Profil → droite</button>
+            <button type="button" data-pvue="toutes">3 Vues côte à côte</button>
+          </div>
+          <label class="chk-lbl"><input type="checkbox" id="pChkGhost" checked> Silhouette essai_hd</label>
+          <label class="chk-lbl"><input type="checkbox" id="pChkBox" checked> Zone & Ancres</label>
+          <label class="chk-lbl"><input type="checkbox" id="pChkGrid" checked> Grille</label>
+        </div>
+        <div class="row">
+          <button class="btn" type="button" id="pZoomOut">−</button>
+          <span class="mono" id="pZoomLbl" style="min-width:28px;text-align:center;color:var(--accent);font-weight:700">8×</span>
+          <button class="btn" type="button" id="pZoomIn">+</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrap" id="pCanvasWrap">
+        <canvas id="pViewCanvas" width="420" height="260" class="pixel"></canvas>
+      </div>
+
+      <div class="vp-footer mono">
+        <span id="pFileName">femme_face_buste_base.png (48 × 48 px)</span>
+        <span id="pHoverCoord">Case 48×48 · Pied y=47 · Axe x=24</span>
+      </div>
+    </section>
+
+    <aside class="perso-side">
+      <!-- Navigation interne du Studio Personnages -->
+      <div class="seg" id="pSubTabSeg" style="width:100%">
+        <button type="button" data-psub="gabarits" class="active" style="flex:1">📐 1. Gabarits Piskel</button>
+        <button type="button" data-psub="import" style="flex:1">📥 2. Import & Vérif. <span id="pBibCountPill" class="mono">(0)</span></button>
+        <button type="button" data-psub="assemblage" style="flex:1">🎬 3. Assembler & 111 Cases</button>
+      </div>
+
+      <!-- SOUS-ONGLET 1 : GABARITS PISKEL (ÉTAPE 2) -->
+      <div class="perso-subpane active" data-psubpane="gabarits">
+        <div class="card">
+          <h3>
+            <span>1. Corps & Catalogue des Gabarits (48 × 48 px)</span>
+            <span class="badge mono" id="pCountBadge">0 pièces</span>
+          </h3>
+          <div class="row">
+            <span style="font-size:11px;color:var(--muted)">Profil :</span>
+            <div class="seg" id="pCorpsSeg">
+              <button type="button" data-pcorps="femme" class="active">👩 Femme (Priorité)</button>
+              <button type="button" data-pcorps="homme">👨 Homme (commun)</button>
+              <button type="button" data-pcorps="enfant">🧒 Enfant (18×30)</button>
+            </div>
+          </div>
+          <div class="row">
+            <span style="font-size:11px;color:var(--muted)">Filtrer :</span>
+            <select id="pFilterCat" style="flex:1">
+              <option value="minimal" selected>⭐ Jeu minimal Femme (Étape 4 — 24 pièces × vues)</option>
+              <option value="corps">Anatomie nue (tête, buste, 5 bras, 6 jambes)</option>
+              <option value="visage">Visage & Coiffures (yeux, nez, bouches, cheveux)</option>
+              <option value="vetements">Vêtements & Accessoires (haut, manches, bas, chapeau)</option>
+              <option value="outils">Outils avec point de prise (#FF8000)</option>
+              <option value="tous">Toutes les pièces</option>
+            </select>
+          </div>
+          <div class="perso-grid-pieces" id="pPiecesGrid"></div>
+        </div>
+
+        <div class="card">
+          <h3>2. Téléchargement Piskel (.piskel à 3 calques) & PNG</h3>
+          <div style="font-size:11px;color:var(--muted);line-height:1.42">
+            • <b>Projet <code>.piskel</code></b> : 3 calques séparés (<i>1. Silhouette fantôme à masquer avant export</i>, <i>2. Points d'attache</i>, <i>3. Dessin vierge</i>).<br>
+            • <b>PNG Attaches seules</b> : fond transparent 48×48 avec uniquement les pixels d'attache.
+          </div>
+          <div class="row">
+            <button class="btn primary" type="button" id="btnDlPiskel" style="flex:1">🎨 Projet .piskel (3 calques)</button>
+            <button class="btn green" type="button" id="btnDlPngClean" style="flex:1">🖼️ PNG Attaches seules</button>
+          </div>
+          <div class="row">
+            <button class="btn" type="button" id="btnDlPngGuide" style="flex:1">👁️ PNG avec Guide</button>
+            <button class="btn" type="button" id="btnDlPaletteGpl" style="flex:1">🎨 Palette Piskel (.gpl)</button>
+          </div>
+          <div class="row">
+            <button class="btn" type="button" id="btnDlMinimalPack" style="width:100%">📦 Télécharger la planche + manifeste des gabarits du filtre</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>3. Points d'attache requis sur la pièce sélectionnée</h3>
+          <div id="pPieceRule" style="font-size:11px;color:var(--text);line-height:1.4"></div>
+          <div class="att-legend" id="pAttLegend"></div>
+        </div>
+      </div>
+
+      <!-- SOUS-ONGLET 2 : IMPORT + VÉRIFICATEUR STRICT + BIBLIOTHÈQUE (ÉTAPE 3) -->
+      <div class="perso-subpane" data-psubpane="import">
+        <div class="card">
+          <h3>
+            <span>1. Importer & Vérifier des pièces PNG</span>
+            <span class="mono" style="font-size:10px;color:var(--muted)">1 px = 1 px</span>
+          </h3>
+          <label class="dropzone" id="pImportDrop">
+            <input type="file" id="pImportInput" accept="image/png" multiple hidden>
+            📥 <b>Glisser-déposer vos PNG exportés de Piskel</b> (un ou plusieurs)<br>
+            <span style="font-size:10px;color:var(--muted)">Nom attendu : <code>&lt;corps&gt;_&lt;vue&gt;_&lt;piece&gt;_&lt;variante&gt;[_&lt;position&gt;].png</code></span>
+          </label>
+          <div style="font-size:10.5px;color:var(--muted)">
+            Banc d'essai intégré du vérificateur (génère et soumet de vrais PNG 48×48 en mémoire) :
+          </div>
+          <div class="row">
+            <button class="btn green" type="button" id="btnSimValid" style="flex:1">🧪 Tester 3 pièces conformes</button>
+            <button class="btn" type="button" id="btnSimErrors" style="flex:1">⚠️ Tester les 4 cas de refus</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>
+            <span>2. Rapport du Vérificateur</span>
+            <button class="btn" type="button" id="btnClearLog" style="padding:2px 6px;font-size:10px">Effacer journal</button>
+          </h3>
+          <div class="verif-log" id="pVerifLog">
+            <div style="font-size:10.5px;color:var(--muted)">Aucun fichier vérifié pour l'instant. Déposez vos PNG ou lancez un test ci-dessus.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>
+            <span>3. Bibliothèque des Pièces Validées</span>
+            <span class="badge mono" id="pBibBadge">0 validée</span>
+          </h3>
+          <div style="font-size:10.5px;color:var(--muted);line-height:1.35">
+            Chaque pièce acceptée a eu ses pixels d'attache relevés puis effacés automatiquement du dessin. Touchez une vignette pour l'inspecter avec ses ancres dans l'aperçu.
+          </div>
+          <div class="biblio-grid" id="pBibGrid"></div>
+          <div class="row">
+            <button class="btn primary" type="button" id="btnExpBiblio" style="flex:1">💾 Exporter bibliothèque (.json)</button>
+            <label class="btn" style="flex:1">📂 Charger bibliothèque (.json)<input type="file" id="inpImpBiblio" accept="application/json,.json" hidden></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SOUS-ONGLET 3 : ASSEMBLAGE PAR ANCRES, TIRAGE À GRAINE & EXPORT 111 CASES (ÉTAPE 4) -->
+      <div class="perso-subpane" data-psubpane="assemblage">
+        <div class="card">
+          <h3>
+            <span>1. Jeu minimal & Tirage déterministe (Graine)</span>
+            <span class="badge mono" id="pAsmColorsBadge">0 couleur</span>
+          </h3>
+          <div style="font-size:10.5px;color:var(--muted);line-height:1.38">
+            Assemble votre personnage uniquement par <b>décalages entiers</b> sur les points d'attache (sans jamais tourner ni redimensionner un pixel). Chargez le <b>Jeu minimal démo HD (22×39)</b> en un clic pour essayer tout de suite l'animation et l'export des 111 cases avant même d'avoir fini tous vos dessins Piskel : vos propres PNG importés prennent automatiquement le dessus pièce par pièce !
+          </div>
+          <div class="row">
+            <button class="btn green" type="button" id="btnLoadDemoKit" style="flex:1">✨ Charger le jeu minimal Femme (Démo HD)</button>
+          </div>
+          <div class="row">
+            <span style="font-size:11px;color:var(--muted)">Graine :</span>
+            <input type="text" id="pSeedInput" value="fermiere-1" class="mono" style="flex:1;background:var(--bg-deep);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 7px;font-size:11px">
+            <button class="btn primary" type="button" id="btnDrawSeed">🎲 Tirer graine</button>
+            <button class="btn" type="button" id="btnNextUnique" title="Tire la graine suivante en garantissant jamais deux villageois identiques">➕ Villageois unique</button>
+          </div>
+          <div id="pDiversityInfo" class="mono" style="font-size:10px;color:var(--muted)">Clé d'unicité : —</div>
+        </div>
+
+        <div class="card">
+          <h3>2. Choix des Pièces & Couleurs (Rampes du jeu)</h3>
+          <div class="row">
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Morphologie<br><select id="selAsmGenre" style="width:100%;margin-top:2px"><option value="femme" selected>Femme (22×39)</option><option value="homme">Homme (22×39)</option><option value="enfant">Enfant (18×30)</option></select></label>
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Yeux<br><select id="selAsmYeuxForme" style="width:100%;margin-top:2px"><option value="amande">Amande</option><option value="ronds">Ronds</option></select></label>
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Bouche<br><select id="selAsmBouche" style="width:100%;margin-top:2px"><option value="sourire">Sourire</option><option value="neutre">Neutre</option></select></label>
+          </div>
+          <div class="row">
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Coiffure<br><select id="selAsmCoiffure" style="width:100%;margin-top:2px"><option value="longue">Longue (2 couches)</option><option value="courte">Courte</option></select></label>
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Couvre-chef (#00FF00)<br><select id="selAsmChapeau" style="width:100%;margin-top:2px"><option value="aucun">Aucun</option><option value="paille" selected>Chapeau de paille</option></select></label>
+          </div>
+          <div class="row">
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Peau<br><select id="selPalPeau" style="width:100%;margin-top:2px"></select></label>
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Cheveux<br><select id="selPalCheveux" style="width:100%;margin-top:2px"></select></label>
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Iris<br><select id="selPalYeux" style="width:100%;margin-top:2px"></select></label>
+          </div>
+          <div class="row">
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Haut (vet_1)<br><select id="selPalVet1" style="width:100%;margin-top:2px"></select></label>
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Bas / Salopette (vet_2)<br><select id="selPalVet2" style="width:100%;margin-top:2px"></select></label>
+          </div>
+          <div class="row">
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Chaussures<br><select id="selPalChaussures" style="width:100%;margin-top:2px"></select></label>
+            <label style="flex:1;font-size:10.5px;color:var(--muted)">Ruban / Accessoire<br><select id="selPalAcc" style="width:100%;margin-top:2px"></select></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>
+            <span>3. Animation des 111 Cases (assets/fermier.json)</span>
+            <span class="mono" id="pFrameIdxLbl" style="font-size:10.5px;color:var(--accent)">#0 idle_bas_0</span>
+          </h3>
+          <div class="row">
+            <select id="selAsmGeste" style="flex:1">
+              <option value="idle">Respiration (idle)</option>
+              <option value="marche" selected>Marche 4 temps (marche)</option>
+              <option value="houe">Labourer à la houe (houe)</option>
+              <option value="plante">Planter / Semer (plante)</option>
+              <option value="arrose">Arroser (arrose)</option>
+              <option value="panier">Porter le panier (panier)</option>
+              <option value="hache">Couper à la hache (hache)</option>
+              <option value="pioche">Piocher un rocher (pioche)</option>
+              <option value="peche">Pêcher à la ligne (peche)</option>
+              <option value="faux">Faucher l'herbe (faux)</option>
+              <option value="cuisine">Cuisiner de dos (cuisine)</option>
+              <option value="ramasse">Ramasser un œuf (ramasse)</option>
+              <option value="assis">Assis à table (assis)</option>
+              <option value="dort">Dormir yeux fermés (dort)</option>
+              <option value="jette">Jeter à la botteleuse (jette)</option>
+              <option value="toutes111">Défiler les 111 cases</option>
+            </select>
+            <button class="btn primary" type="button" id="btnAsmPlay">⏸ Pause</button>
+          </div>
+          <div class="field">
+            <div class="field-head"><span>Case directe (0..110)</span><b id="valAsmFrame">0</b></div>
+            <input type="range" id="rngAsmFrame" min="0" max="110" step="1" value="0">
+          </div>
+          <div class="row">
+            <label class="chk-lbl"><input type="checkbox" id="chkAsmSheetView"> Voir la planche complète (384 × 672 px · 111 cases)</label>
+            <label class="chk-lbl"><input type="checkbox" id="chkAsmGameScale"> Aperçu taille jeu (×0.641 = 25px)</label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>4. Export Planche 111 Cases + JSON (Mode Test)</h3>
+          <div style="font-size:10.5px;color:var(--muted);line-height:1.4">
+            Exporte <code>essai_hd.png</code> (8 col × 14 rangées de 48×48, profils retournés vers la gauche comme dans le jeu) et <code>essai_hd.json</code> (<code>frameWidth: 48, frameHeight: 48, echelle: 0.641</code> + les 111 noms de <code>assets/fermier.json</code>).
+          </div>
+          <div class="row">
+            <button class="btn primary" type="button" id="btnExpPersoPng" style="flex:1">💾 Exporter essai_hd.png</button>
+            <button class="btn green" type="button" id="btnExpPersoJson" style="flex:1">📋 Exporter essai_hd.json</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
 </div>
 
 <div id="toast">Prêt</div>
@@ -2780,6 +3100,1947 @@
   requestAnimationFrame(() => autoFitZoom());
   chargerDonneesJeu();
 })();
+</script>
+<script>
+
+/* =========================================================================
+ * MODULE STUDIO PERSONNAGES — LOTS 1 & 2 (GABARITS PISKEL + IMPORT & VÉRIFICATEUR)
+ * 100 % local dans le navigateur : zéro appel réseau externe.
+ * ========================================================================= */
+(() => {
+  'use strict';
+
+  const CFG = {"PLANCHE": {"LARGEUR_CASE": 48, "HAUTEUR_CASE": 48, "COLONNES": 8, "NOMBRE_CASES": 111, "HAUTEUR_JEU_PX": 25, "ECHELLE_JEU": 0.641, "PIED_Y": 47, "AXE_X": 24}, "CORPS": {"//architecture": "Tronc commun adulte (homme et femme partagent les membres, chaussures, accessoires et outils ; le buste et les hauts portent les variantes morphologiques), plus le gabarit enfant.", "adulte": {"largeur_ref": 22, "hauteur_ref": 39, "genres": ["femme", "homme"], "partage_membres": true, "variantes_buste": {"femme": {"largeur_epaules": 14, "largeur_taille": 11, "largeur_hanches": 13}, "homme": {"largeur_epaules": 16, "largeur_taille": 13, "largeur_hanches": 13}}, "repere_48x48": {"face": {"cou": [24, 28], "epaule_lointaine": [18, 30], "epaule_proche": [30, 30], "hanche_lointaine": [20, 38], "hanche_proche": [28, 38], "yeux": [24, 22], "nez": [24, 24], "bouche": [24, 26]}, "dos": {"cou": [24, 28], "epaule_lointaine": [18, 30], "epaule_proche": [30, 30], "hanche_lointaine": [20, 38], "hanche_proche": [28, 38]}, "profil": {"cou": [23, 28], "epaule_lointaine": [25, 30], "epaule_proche": [21, 30], "hanche_lointaine": [24, 38], "hanche_proche": [22, 38], "yeux": [27, 22], "nez": [29, 24], "bouche": [28, 26]}}}, "enfant": {"largeur_ref": 18, "hauteur_ref": 30, "genres": ["enfant"], "partage_membres": true, "variantes_buste": {"enfant": {"largeur_epaules": 11, "largeur_taille": 10, "largeur_hanches": 10}}, "repere_48x48": {"face": {"cou": [24, 34], "epaule_lointaine": [19, 35], "epaule_proche": [29, 35], "hanche_lointaine": [21, 41], "hanche_proche": [27, 41], "yeux": [24, 28], "nez": [24, 30], "bouche": [24, 31]}, "dos": {"cou": [24, 34], "epaule_lointaine": [19, 35], "epaule_proche": [29, 35], "hanche_lointaine": [21, 41], "hanche_proche": [27, 41]}, "profil": {"cou": [23, 34], "epaule_lointaine": [25, 35], "epaule_proche": [21, 35], "hanche_lointaine": [24, 41], "hanche_proche": [22, 41], "yeux": [27, 28], "nez": [28, 30], "bouche": [27, 31]}}}}, "VUES": {"face": {"code_jeu": "bas", "miroir_export": false, "visage": true}, "dos": {"code_jeu": "haut", "miroir_export": false, "visage": false}, "profil": {"code_jeu": "cote", "miroir_export": true, "visage": true, "//note": "Dessiné tourné vers la droite dans Piskel, retourné vers la gauche à l'export pour Phaser."}}, "POINTS_ATTACHE": {"cou": {"hex": "#FF00FF", "rgb": [255, 0, 255], "role": "Relie la tête (et couvre-chef/cheveux) au buste"}, "epaule_l": {"hex": "#00B4FF", "rgb": [0, 180, 255], "role": "Épaule du bras lointain sur le buste"}, "epaule_p": {"hex": "#00FFFF", "rgb": [0, 255, 255], "role": "Épaule du bras proche sur le buste (et pivot sur le gabarit de bras)"}, "hanche_l": {"hex": "#CCA800", "rgb": [204, 168, 0], "role": "Hanche de la jambe lointaine sur le buste"}, "hanche_p": {"hex": "#FFFF00", "rgb": [255, 255, 0], "role": "Hanche de la jambe proche sur le buste (et pivot sur le gabarit de jambe)"}, "prise": {"hex": "#FF8000", "rgb": [255, 128, 0], "role": "Paume/prise de la main sur un bras ET point tenu sur le manche d'un outil"}, "yeux": {"hex": "#00FF66", "rgb": [0, 255, 102], "role": "Centre de la ligne des yeux sur la tête nue (face et profil)"}, "nez": {"hex": "#A066FF", "rgb": [160, 102, 255], "role": "Point d'ancrage du nez sur la tête nue (face et profil)"}, "bouche": {"hex": "#FF3366", "rgb": [255, 51, 102], "role": "Centre de la bouche sur la tête nue (face et profil)"}}, "POSITIONS": {"bras": ["repos", "tendu", "leve", "tient", "elan"], "jambes": ["debout", "marche_1", "marche_2", "marche_3", "marche_4", "assis"], "yeux": ["ouverts", "fermes"], "bouches": ["neutre", "sourire", "triste", "surprise"]}, "TONS_RESERVES": {"peau": ["#FCE0C8", "#F0BE98", "#CA906A", "#966042"], "cheveux": ["#F2CA78", "#C89246", "#8E5A28", "#543216"], "yeux": ["#74B4FF", "#3A78D8", "#1E4692", "#102452"], "vetement_1": ["#FF867C", "#D84A42", "#9C2824", "#5E1416"], "vetement_2": ["#7CC8FF", "#4288D4", "#265496", "#162E58"], "chaussures": ["#D2A478", "#9E6E46", "#6C462A", "#3E2616"], "accessoire": ["#98E690", "#58B456", "#327C36", "#1C4A22"], "masque_coupe": "#00FF00"}};
+  const ESSAI_B64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAAAwCAYAAAD+WvNWAAAPOklEQVR42u2ce5ST5Z3HP5kkJJMryVyYzAyQkZnFoahIxVLPco7ClnrhgDf2WHa3uygusuKl1stq17qr9tCtyro9VVZdqtVWPa1aL6O2rFK3UKWoQwVkwBlImMlMwiQk5J6QN7z7xzvvM8kAijNhkp6d7zk5532fNy/8nuf5/u7PBCYwgQlMYAITmMAEJjCBCUxgAhOYwAQm8P8BmoklGMYP77xB3vTcy+iyKRLoip4ZDZPY7A9W/Hp91WqSDXr9CZ9lczk+jqdKOgfd6ZhAjV6RUTKYlP8kmwIggY73w9GK24QLnHYZINDxGjcvmirGe3oT1DuUzcjE4+iyZrlS56Gu++LZTbROsxQ96+lN4AvFcVZrqPFo5FLKrynlJliQWDy7iXqHHpvVQE9vglQygbvZIe63eQ8TS2TYFE5qKmXhF0y1M7fNibvZQDgKgwMhAGKSEZsuA0B9Y60yFs/y+o4A4VxVxVikC5x2+fwGExfOdQFgkBMA9Pkz4juF8g9GcrzVHSmJ/JpSTeCGBc3YrIYTCq9OwGlXrrfvSpRsAqUg0C0LW6iz5E75nU/7YNPu/opQAlUBrrzIhd1hJRqJkzySOOn3zZMV6+T1ZfmvLb4xW6KqsU5gnnuafOXsKdisBlrc1iLCTHUZxbWq1ckjCVqnWbi0zcFip+ISyoWFrjr5W+c2U2fJ0djiOqV3GltcnH+WhcWzm8ouP0CNXiPIM+Dxs7crRGOL67j5mCdbaGxxsbdL2Ydzzqrl4hYzX7WaxjQH3Vgtz/mmHOefVSsmYJ5swe5QiDTgSWC0WnHaocXdIp43OpSxeocbtnjlcmmyLpuiddpUGt2K7I0tLgY8/pMSByAaiWN3WKl3ZMvuuha66uTFbQ6x9gBnttcOrb2/SO4Bj1/sy96uEGe2w9ntDWz1RCmbBbIg0Vxrxe6w8smuEMGEXphRdUO8vogwqYUaUAlxw+LZTcLljiRK4XUhedS51FlyLJ7dJALw8ilAccCskqTPnykij6ocMckoPEEpMCYC2SzGoizlnLNqhRkt1II+f4YBj1/cF2qDzWIsy+JbkMR1oVyFmls4XrjohVbKaJhUdmUolFlV3kBUEtd9/gweb5zf7ohz2cpriElG+vwZYvFs+Qi00FUnz3fXYLMahMAeb5w+f4Y9gRzmyRY+3Jtg+dpVBKISWY2FrMZCICoJQgHMd9ew0FUnU2EY6cpO5NpsuowoUVSKzMkjCfr8GRrsOvZ2KV5hTyDHz39/kNV3XA/AZSuvIRCVsFkN5bVAalqoZlw7uwIEohJz25y8ty3A8rWrAFi+dhU7uwLs7AqI99R36h16nPpjE1XMUaKnN0FWYyla10BUIiYZiUlGOrvDrL7jesK5Km757iPie1s9UR5/a9+YM8lREyiTPUq9Q08mHufM9loa7DqWXdLGVk+Un2/xsnztKhpb3TS2uoXAWz1RLpzfgNFq5WsXtJCJxxmM5IglMhNMGAMK47hAVOKWRx8UsdHqO67n3vseY7M/qJk5f47YE8lgKkkZYuwWSDJSd94S6htreeDZ3WwKJ4WgIhhtdTNz/hw2hZOaH79xEAD3N/+eQFQSMVS5UKi9f67Iaiz0+TNFc2lxW0klEzS2utn4i4cA8B86XGQAyh5Ej8TGXzxEr2f7SeOZXs92+ab/Xl8S31sKtE6ziPrUl0WfPyOqu5WG/7z1XwBosA9XaaJbfipvfPROcf/2a//BmfW1ckUQaN+7HcNppG83D959nRLU9XjF+IN3X4fdt5s51XkMcoLfPfGTsi/0ibKQkRX0z8NoyVdqDA6EMFqVrNZkthBOy3i8cTFWFGgP7ckly77D3sFQ+V2YTZfhvU4/BjlRRBjVdY2E97c/EwG3yVwe9+E2G+XFs5vIxOOjtiLqe+WsBSXQiVjH3WwoIvR7nX4GI7kT7snCS9eWrJk66kq00TAJm9VAJh4HIJjQs/G+x3jg324UxOno7AFgydxWQZ4Hnt3N0nMbCKdlTObyaGyjwYAvFGdWg77I8qitl89zW1NdxiH3ZREKVFhTGi+oDdRCBKIS4bSyH821VlqnWXjz6RcBeKs7ImKfUh7pqBqt8Je2OTDICQJRZfE6u8M0WyZx732PCdYvmdsqyNPR2cMDz+6m2TKJzu4wAL6QMtm/bLGPqxarFXTV/I8MpE/FjZXbfVlQyiXC4mxTSiS+ajt/SOl5O3SM5LyLuWzlNbiuuppM9iib/UFNqY+hVI1W+JEldBXhXBU33rOBjs4eBnq8DPR46ejsYeMPnyJiceCrth/3ztntDeOqxQl0+EJxQf6R7YyTkclotRJM6MU1wJ5A7rjDZ+MFm9Ug4rhwWiacVnTw5d+9RMOc83j41X0MNs1gwdLLWbrqW7jNxpIracmysIYly/iDbQbx6TO57p+vF/5WdWeL/+4qPNpmDDPnkHefcdI6xnjg/XBUszMisTOYJSYZ+XBvgphkFJVylTgqebIapaquuuyYZMTrixCTjGzpi4774TK1j+e0Ky0kVeadEYkrvn0lAOt+cBtao4V///GvAFix5lpuuPEfSpJ5lYRAsXiWrEaJ+OetXsmKNdciO2ZwRLLT3D6TBUsvp6Ozh47OHhYsvZypTU6kbIp1P7iNq2/9R2GJvL5IWWoxm/1BjSeS5oUdPtGR7ulNCOtitFrZE8hhtFoZHAgRTsv09CpE27S7n62eKC/s8JX8iOiXSV4KG6LOag2uixaxYOnlYuyR7ywE4Iab7gfg63/1dawmU0nlGJXtTaBjMJJjMJKjYckyFiy9HE93F/XawxQeDiicTF9/eLjI1dbOeYsuJNDxmsgYyuEGJk9t5Ok3n8fT3cVtV63BbjHj1B9jZzDAfHeNiO0UVxXDlzhKLJHhey8+TktbO7dd/W0+/nhveUoQQxYThtpI2Ljia8OW3dPdpSQ3oSM8fP/13HDT/fiTBnrC6fIT6P1wVGPsniQ79cdY/7NrAfjgnQ+46+bl3P79p1h1zy/JZ5PHvffcT27k+Q0/ZcWaa1mx5loe2r2Lrdv+xOGcPO6aPM89TX76zefF/fqXN3DNynU0N9ZCoJfwUNYCEDdUw1+cy66+EC++eHfZ6z4D2eL6VTgtE0GiuX2mGPvgnQ+Y2uTkiGTn1nWvozXWoDUOlzG8yUx50/jN/qBm0axW4U8ff7WT3+/xkbO1QDiMzTV8OF2TSxENHebWda9zuL+PFWsU0u2vcpTlWOg89zT54ScfKBrzde0D4HBSB9YzOFI7osYgAYSKNHz9S89y8KKr5Q+9veM6B28yo3lhh09elpyMu9mBMxqB9PAcAHb5jvDk23txNk9Hyh8j7DuI1qDMyWi2QDJDWQm0aFar0OAtr79KLhlj4KiiAWanE522CimvdNllvQlns4V8JiEWv6WtnbtuXk72wF753T0947oBNtOkIjN/+/ef4lD4KHqzrYj4RQulrSIbC3LNynU8fOeVwj2r/9Z44+N4SsNnyMuG7h2JyFDJJM+f0lo+O+BDa7AL2bUGM/a6WhL+GsiVrgQxpixsy+uvik1QkQyHSYbDRIMhca3ea40WIgFP0fcd1eMf+ziqdcypzgPw5DNv0/nHD5RA1D3zpO9I+WPUz2in2tlAX38YT3cXyfc6yurKPo6nNK99doTglJai8fr+/RDoxV5XK5QYIBoMkYgfxinlKoNAS+a2Ut+/n+/ds55qZ4MYt9fVHvcRm9fQwpKrbyf5XofYxPF2X2pTsb5/P6/98len/K66GQ+uf4o51XkaW9288sQ9Yz6YPlYSvb9lB+Hc8Fbue7cDfSwqLL6UP1a0DxsfuaVkhdtREWjRrFb5lSfuUbKUmEQomxP+1ex0EvYdJBoMFX3MTidS/hg6g4lkajgT2PjoneNahdbHhvPEzphEreHUj5PotMpypagWbZpKwMgE5KLVa8nZ7MeRXyUUlO4o7qgIJEeGN2GuTXFBFutwH8nmmorZ6Sz6qNAazGjy6aJGaznOFQ/0eIXssrYag63u1OIn11Q0+TS/fvYV0bI52Z8SjydGnu9557l/Jf3p/6LJDR+5jYaU80CDTTPQOOzld2EDPd4Tdtw/D4VEUzcgbqguy6Lfe99jRXIVLvbnuTBZWyxvNperCEtU2Hnf8MZ2UTSM+fsIe5UMLZlKs/pvv0upEpdREaiQvVf89V2k80qmJYpc/r7jPsJ66U3I2mqu+5s7vjT5SoUNb2xXsrBIWklpgUQ8I0oOyXAYTS4lCFVILNWNfbTXyyVrf8Q5F/9T2arRI2tzl6z9kSDRM8+8RN3ss9EaLQQPfopu6HcKNPl0Sc4BCS6MJRg9djjEvnSWdB7O+saKIgJ5uz5Ck09T39jGlK/MK3p35+ZfYyLN2TbLafnFiC9CYVPRm8xoqnQW+ZwF3xRESvj3c+iQT8hf7WwQ6b1OW0Xn/7zMMSlRcT8SodVo5bnTmwCom302g/kawr6DBA9+St30ryjz7fqopLKPOocuLJ5V6SxyzN9XVENpPmMWvgN7irKzQiSkvOb9cLQsC32iKqxqgQAsrhnozTYhv1qMK3RjlYpDkxqoaZrKwFETOi1I2ZQgz+lAybrxUjYlaj4AuWQMTf74vssXxRnlgCafJvDZ9i+MfQAOffphRRNIuKpcisH9XUV1t1Jbn5IR6JiU0PgO7CEbC5KNBZFG/LGdSiqdtkpkApWEvJzXpOJhsrEgk3VRJutObBlj/j4OHfJVpPs6LlMeikkLSyanhbCl1GLTkQNFY4NDaXshiU6HFpRkwbXVTHFOYrpa5j+aoj+fFsqgtgMqFVU6i9x0xqwisquhhJRN4Tuw57Sse0n7CFaTSfSGYqmjQISEfz8W1wwl3Y0FT+jWKgEm0thiAQ6mjirFxoJCnLoZWoMZs6maeCxRkXPIJWMYbHXCyueSsSIFr2gLVK2F6TUmImkJR7WO/tARAGbZJfp7/zi0SZWNWOoo8VQKdHpIKZanTReG/NBZphQEKlR2E2ma9SkI7RJj8VxK1IIGh7K0vJyvzN9ITEh5zW8+6ZYL77UarQzQVDu5yCpVItJ5FPIMoTt4YjnlVLhi5QdFiVXsTqWIp1J847yZTK8x8ZtPuklIFWqBVNKc7Nks9xQAOg/2V+QG5OW8pjsYkau1w/eqAvw5QfUArik1uKbU8PSmbTy9advpy2DHo7ilbsoXkawSocqvanipXUCpZR0ZVqTzp1fm/wOziGpBuiEkuAAAAABJRU5ErkJggg==";
+  const PALETTE_GPL = "GIMP Palette\nName: Moon Bloom Personnages (Tons Reserves + Attaches)\nColumns: 4\n# Palette officielle pour Piskel — Studio Personnages Moon Bloom Village\n 43  29  20\tContour Fixe (#2B1D14)\n250 246 240\tBlanc Oeil Fixe (#FAF6F0)\n  0 255   0\tMasque Coiffure (#00FF00)\n  0   0   0\tSeparateur\n252 224 200\tpeau_1 (#FCE0C8)\n240 190 152\tpeau_2 (#F0BE98)\n202 144 106\tpeau_3 (#CA906A)\n150  96  66\tpeau_4 (#966042)\n242 202 120\tcheveux_1 (#F2CA78)\n200 146  70\tcheveux_2 (#C89246)\n142  90  40\tcheveux_3 (#8E5A28)\n 84  50  22\tcheveux_4 (#543216)\n116 180 255\tyeux_1 (#74B4FF)\n 58 120 216\tyeux_2 (#3A78D8)\n 30  70 146\tyeux_3 (#1E4692)\n 16  36  82\tyeux_4 (#102452)\n255 134 124\tvetement_1_1 (#FF867C)\n216  74  66\tvetement_1_2 (#D84A42)\n156  40  36\tvetement_1_3 (#9C2824)\n 94  20  22\tvetement_1_4 (#5E1416)\n124 200 255\tvetement_2_1 (#7CC8FF)\n 66 136 212\tvetement_2_2 (#4288D4)\n 38  84 150\tvetement_2_3 (#265496)\n 22  46  88\tvetement_2_4 (#162E58)\n210 164 120\tchaussures_1 (#D2A478)\n158 110  70\tchaussures_2 (#9E6E46)\n108  70  42\tchaussures_3 (#6C462A)\n 62  38  22\tchaussures_4 (#3E2616)\n152 230 144\taccessoire_1 (#98E690)\n 88 180  86\taccessoire_2 (#58B456)\n 50 124  54\taccessoire_3 (#327C36)\n 28  74  34\taccessoire_4 (#1C4A22)\n255   0 255\tattache_cou (#FF00FF)\n  0 180 255\tattache_epaule_l (#00B4FF)\n  0 255 255\tattache_epaule_p (#00FFFF)\n204 168   0\tattache_hanche_l (#CCA800)\n255 255   0\tattache_hanche_p (#FFFF00)\n255 128   0\tattache_prise (#FF8000)\n  0 255 102\tattache_yeux (#00FF66)\n160 102 255\tattache_nez (#A066FF)\n255  51 102\tattache_bouche (#FF3366)\n";
+
+  // Table des pièces connues et de leurs points d'attache obligatoires par vue
+  const REGLES_PIECES = {
+    'tete':            { attaches: v => v === 'dos' ? ['cou'] : ['cou', 'yeux', 'nez', 'bouche'], posPermises: null, zoneDefaut: 'peau' },
+    'buste':           { attaches: () => ['cou', 'epaule_l', 'epaule_p', 'hanche_l', 'hanche_p'], posPermises: null, zoneDefaut: 'peau' },
+    'bras-lointain':   { attaches: () => ['epaule_l', 'prise'], posPermises: ['repos', 'tendu', 'leve', 'tient', 'elan'], zoneDefaut: 'peau' },
+    'bras-proche':     { attaches: () => ['epaule_p', 'prise'], posPermises: ['repos', 'tendu', 'leve', 'tient', 'elan'], zoneDefaut: 'peau' },
+    'jambes':          { attaches: () => ['hanche_l', 'hanche_p'], posPermises: ['debout', 'marche-1', 'marche-2', 'marche-3', 'marche-4', 'assis'], zoneDefaut: 'peau' },
+    'jambe-lointaine': { attaches: () => ['hanche_l'], posPermises: ['debout', 'marche-1', 'marche-2', 'marche-3', 'marche-4', 'assis'], zoneDefaut: 'peau' },
+    'jambe-proche':    { attaches: () => ['hanche_p'], posPermises: ['debout', 'marche-1', 'marche-2', 'marche-3', 'marche-4', 'assis'], zoneDefaut: 'peau' },
+    'yeux':            { attaches: v => v === 'dos' ? [] : ['yeux'], posPermises: ['ouverts', 'fermes'], interditDos: true, zoneDefaut: 'yeux' },
+    'nez':             { attaches: v => v === 'dos' ? [] : ['nez'], posPermises: null, interditDos: true, zoneDefaut: 'peau' },
+    'bouche':          { attaches: v => v === 'dos' ? [] : ['bouche'], posPermises: null, interditDos: true, zoneDefaut: 'peau' },
+    'sourcils':        { attaches: v => v === 'dos' ? [] : ['yeux'], posPermises: null, interditDos: true, zoneDefaut: 'cheveux' },
+    'pilosite':        { attaches: v => v === 'dos' ? [] : ['bouche'], posPermises: null, interditDos: true, zoneDefaut: 'cheveux' },
+    'coiffure':        { attaches: () => ['cou'], posPermises: ['avant', 'arriere', 'entiere'], zoneDefaut: 'cheveux' },
+    'coiffure-longue': { attaches: () => ['cou'], posPermises: null, zoneDefaut: 'cheveux' },
+    'coiffure-courte': { attaches: () => ['cou'], posPermises: null, zoneDefaut: 'cheveux' },
+    'haut':            { attaches: () => ['cou'], posPermises: null, zoneDefaut: 'vetement_1' },
+    'manche-lointaine':{ attaches: () => ['epaule_l'], posPermises: ['repos', 'tendu', 'leve', 'tient', 'elan'], zoneDefaut: 'vetement_1' },
+    'manche-proche':   { attaches: () => ['epaule_p'], posPermises: ['repos', 'tendu', 'leve', 'tient', 'elan'], zoneDefaut: 'vetement_1' },
+    'bas':             { attaches: () => ['hanche_p'], posPermises: ['debout', 'marche-1', 'marche-2', 'marche-3', 'marche-4', 'assis'], zoneDefaut: 'vetement_2' },
+    'chaussures':      { attaches: () => ['hanche_p'], posPermises: ['debout', 'marche-1', 'marche-2', 'marche-3', 'marche-4', 'assis'], zoneDefaut: 'chaussures' },
+    'couvre-chef':     { attaches: () => ['cou'], posPermises: null, masqueVertPermis: true, zoneDefaut: 'accessoire' },
+    'lunettes':        { attaches: v => v === 'dos' ? [] : ['yeux'], posPermises: null, interditDos: true, zoneDefaut: 'accessoire' },
+    'accessoire':      { attaches: () => ['cou'], posPermises: null, zoneDefaut: 'accessoire' },
+    'outil':           { attaches: () => ['prise'], posPermises: null, zoneDefaut: null }
+  };
+
+  // Pré-calcul des tables de couleurs exactes (attaches, tons réservés, masque #00FF00)
+  const hex2rgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const rgb2hex = (r, g, b) => '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0').toUpperCase()).join('');
+  const cleRgb = (r, g, b) => (r << 16) | (g << 8) | b;
+
+  const ATTACHES_PAR_COULEUR = new Map();
+  for (const [nom, info] of Object.entries(CFG.POINTS_ATTACHE)) {
+    ATTACHES_PAR_COULEUR.set(cleRgb(info.rgb[0], info.rgb[1], info.rgb[2]), { nom, hex: info.hex.toUpperCase(), rgb: info.rgb });
+  }
+
+  const TONS_RESERVES_LISTE = []; // [{ zone, rang, hex, rgb, cle }]
+  const TONS_RESERVES_SET = new Set();
+  for (const [zone, hexes] of Object.entries(CFG.TONS_RESERVES)) {
+    if (!Array.isArray(hexes)) continue;
+    hexes.forEach((hx, idx) => {
+      const rgb = hex2rgb(hx);
+      const cle = cleRgb(rgb[0], rgb[1], rgb[2]);
+      TONS_RESERVES_LISTE.push({ zone, rang: idx + 1, hex: hx.toUpperCase(), rgb, cle });
+      TONS_RESERVES_SET.add(cle);
+    });
+  }
+  const CLE_MASQUE_COUPE = cleRgb(0, 255, 0);
+
+  // Analyse d'un nom de fichier selon <corps>_<vue>_<piece>_<variante>[_<position>].png
+  const REGEX_NOM = /^(adulte|femme|homme|enfant)_(face|dos|profil)_([a-z0-9-]+)_([a-z0-9-]+?)(?:_([a-z0-9-]+))?\.png$/i;
+
+  function analyserNomFichier(nomBrut) {
+    const base = String(nomBrut || '').trim().split(/[\\/]/).pop();
+    const m = base.match(REGEX_NOM);
+    if (!m) {
+      return {
+        ok: false,
+        erreur: `Nom « ${base} » invalide. Format attendu : <corps>_<vue>_<piece>_<variante>[_<position>].png (ex: femme_face_buste_base.png ou adulte_profil_bras-proche_nu_tient.png).`
+      };
+    }
+    const [, corps, vue, piece, variante, position = null] = m.map(x => x ? x.toLowerCase() : null);
+    const regle = REGLES_PIECES[piece];
+    if (!regle) {
+      return {
+        ok: false,
+        erreur: `Pièce « ${piece} » inconnue dans « ${base} ». Pièces reconnues : ${Object.keys(REGLES_PIECES).join(', ')}.`
+      };
+    }
+    if (regle.interditDos && vue === 'dos') {
+      return { ok: false, erreur: `La pièce « ${piece} » n'existe qu'en vue face et profil (pas de vue « dos »).` };
+    }
+    if (regle.posPermises && (!position || !regle.posPermises.includes(position))) {
+      return {
+        ok: false,
+        erreur: `Position « ${position || 'absente'} » invalide pour « ${piece} ». Positions attendues : ${regle.posPermises.join(', ')}.`
+      };
+    }
+    return { ok: true, fichier: base, corps, vue, piece, variante, position, regle };
+  }
+
+  // Vérificateur strict d'un ImageData 48×48 :
+  // 1. Taille exacte 48×48
+  // 2. Zéro pixel semi-transparent (alpha strictement 0 ou 255)
+  // 3. Extraction des pixels d'attache (exactement 1 px par point requis, aucun point doublé)
+  // 4. Détection des couleurs "presque égales" (écart Manhattan 1..18) aux tons réservés ou aux points d'attache (erreur typique d'export/IA/gamma)
+  // 5. Effacement propre des pixels d'attache et séparation éventuelle du masque #00FF00 sur couvre-chef
+  function verifierEtExtrairePiece(nomFichier, largeur, hauteur, rgbaData) {
+    const erreurs = [];
+    const avertissements = [];
+    const meta = analyserNomFichier(nomFichier);
+    if (!meta.ok) return { ok: false, fichier: nomFichier, erreurs: [meta.erreur] };
+
+    const W = CFG.PLANCHE.LARGEUR_CASE, H = CFG.PLANCHE.HAUTEUR_CASE;
+    if (largeur !== W || hauteur !== H) {
+      erreurs.push(`Dimensions ${largeur} × ${hauteur} px refusées : chaque gabarit doit mesurer exactement ${W} × ${H} px.`);
+      return { ok: false, fichier: meta.fichier, erreurs };
+    }
+
+    const propres = new Uint8ClampedArray(rgbaData);
+    const masqueCoupe = []; // indices [x, y] peints en #00FF00 sur un couvre-chef
+    const attachesTrouvees = {}; // nom -> [[x, y], ...]
+    const semiTransparents = [];
+    const presqueTons = new Map(); // hexFautif -> message
+    let pixelsDessin = 0;
+    const zonesUtilisees = new Set();
+
+    // Seuil de proximité suspecte (distance euclidienne RGB <= 14 mais != 0)
+    const SEUIL_DERIVE = 14;
+    // Couleurs fixes connues légitimes qui ne doivent pas déclencher de faux positif
+    const FIXES_CONNUES = new Set([cleRgb(43, 29, 20), cleRgb(36, 30, 20), cleRgb(250, 246, 240), cleRgb(255, 255, 255)]);
+
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 4;
+        const r = rgbaData[i], g = rgbaData[i + 1], b = rgbaData[i + 2], a = rgbaData[i + 3];
+        if (a === 0) continue;
+        if (a !== 255) {
+          if (semiTransparents.length < 5) semiTransparents.push(`(${x},${y} α=${a})`);
+          else if (semiTransparents.length === 5) semiTransparents.push('…');
+          continue;
+        }
+
+        const cle = cleRgb(r, g, b);
+
+        // 1. Est-ce un pixel de point d'attache exact ?
+        if (ATTACHES_PAR_COULEUR.has(cle)) {
+          const att = ATTACHES_PAR_COULEUR.get(cle);
+          (attachesTrouvees[att.nom] = attachesTrouvees[att.nom] || []).push([x, y]);
+          // Effacé du dessin final ! (S'il touche des pixels réservés autour sur la même pièce, ex. cou sur buste,
+          // on bouche le trou par le voisin majoritaire non-attache dans une 2e passe si entouré, sinon transparent)
+          propres[i + 3] = 0;
+          continue;
+        }
+
+        // 2. Est-ce le masque de coiffure #00FF00 ?
+        if (cle === CLE_MASQUE_COUPE) {
+          if (!meta.regle.masqueVertPermis) {
+            erreurs.push(`Couleur masque #00FF00 trouvée en (${x},${y}) alors que « ${meta.piece} » n'est pas un couvre-chef.`);
+          } else {
+            masqueCoupe.push([x, y]);
+            propres[i + 3] = 0;
+          }
+          continue;
+        }
+
+        pixelsDessin++;
+
+        // 3. Est-ce un ton réservé officiel ?
+        if (TONS_RESERVES_SET.has(cle)) {
+          const t = TONS_RESERVES_LISTE.find(z => z.cle === cle);
+          if (t) zonesUtilisees.add(t.zone);
+          continue;
+        }
+        if (FIXES_CONNUES.has(cle)) continue;
+
+        // 4. Vérifie si la couleur est dangereusement proche d'un ton réservé ou d'une couleur d'attache !
+        for (const t of TONS_RESERVES_LISTE) {
+          const d = Math.hypot(r - t.rgb[0], g - t.rgb[1], b - t.rgb[2]);
+          if (d > 0 && d <= SEUIL_DERIVE) {
+            const hx = rgb2hex(r, g, b);
+            if (!presqueTons.has(hx)) {
+              presqueTons.set(hx, `Couleur ${hx} en (${x},${y}) trop proche du ton réservé ${t.zone}_${t.rang} (${t.hex}, écart ΔRGB=${d.toFixed(1)}) : vérifiez le profil colorimétrique ou utilisez la palette .gpl exacte.`);
+            }
+          }
+        }
+        for (const att of ATTACHES_PAR_COULEUR.values()) {
+          const d = Math.hypot(r - att.rgb[0], g - att.rgb[1], b - att.rgb[2]);
+          if (d > 0 && d <= 18) {
+            const hx = rgb2hex(r, g, b);
+            if (!presqueTons.has(hx)) {
+              presqueTons.set(hx, `Couleur ${hx} en (${x},${y}) ressemble à l'attache « ${att.nom} » (${att.hex}) sans être exacte.`);
+            }
+          }
+        }
+      }
+    }
+
+    if (semiTransparents.length) {
+      erreurs.push(`Pixels semi-transparents interdits (anticrénelage détecté) : ${semiTransparents.join(', ')}. Seuls α=0 et α=255 sont permis.`);
+    }
+    for (const msg of presqueTons.values()) erreurs.push(msg);
+    if (pixelsDessin === 0) {
+      erreurs.push('Le dessin ne contient aucun pixel visible hors points d\'attache : avez-vous oublié de peindre le calque 3 ?');
+    }
+
+    // 5. Contrôle des points d'attache obligatoires pour cette pièce et cette vue
+    const attendues = meta.regle.attaches(meta.vue);
+    const ancresFinales = {};
+    for (const nomAtt of attendues) {
+      const pts = attachesTrouvees[nomAtt] || [];
+      const hexAttendu = CFG.POINTS_ATTACHE[nomAtt].hex;
+      if (pts.length === 0) {
+        erreurs.push(`Point d'attache obligatoire « ${nomAtt} » (${hexAttendu}) manquant pour « ${meta.piece} » en vue « ${meta.vue} ».`);
+      } else if (pts.length > 1) {
+        erreurs.push(`Point d'attache « ${nomAtt} » (${hexAttendu}) présent ${pts.length} fois (${pts.map(p => `(${p[0]},${p[1]})`).join(', ')}) : il ne doit occuper qu'un seul pixel.`);
+      } else {
+        ancresFinales[nomAtt] = pts[0];
+      }
+    }
+
+    // Bouche proprement un pixel d'attache posé en plein milieu d'une zone de matière (si >= 3 voisins directs opaques de la pièce)
+    if (!erreurs.length) {
+      const snap = new Uint8ClampedArray(propres);
+      for (const pts of Object.values(attachesTrouvees)) {
+        for (const [ax, ay] of pts) {
+          const voisins = [];
+          for (const [ox, oy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+            const nx = ax + ox, ny = ay + oy;
+            if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+            const k = (ny * W + nx) * 4;
+            if (snap[k + 3] === 255) voisins.push([snap[k], snap[k + 1], snap[k + 2]]);
+          }
+          if (voisins.length >= 3) {
+            const dst = (ay * W + ax) * 4;
+            propres[dst] = voisins[0][0];
+            propres[dst + 1] = voisins[0][1];
+            propres[dst + 2] = voisins[0][2];
+            propres[dst + 3] = 255;
+          }
+        }
+      }
+    }
+
+    if (erreurs.length) {
+      return { ok: false, fichier: meta.fichier, erreurs };
+    }
+
+    // Clé unique dans la bibliothèque
+    const clePiece = `${meta.corps}_${meta.vue}_${meta.piece}_${meta.variante}${meta.position ? '_' + meta.position : ''}`;
+    const cvPropre = document.createElement('canvas');
+    cvPropre.width = W; cvPropre.height = H;
+    cvPropre.getContext('2d').putImageData(new ImageData(propres, W, H), 0, 0);
+
+    return {
+      ok: true,
+      cle: clePiece,
+      fichier: meta.fichier,
+      corps: meta.corps,
+      vue: meta.vue,
+      piece: meta.piece,
+      variante: meta.variante,
+      position: meta.position,
+      ancres: ancresFinales,
+      masqueCoupe,
+      pixels: pixelsDessin,
+      zones: [...zonesUtilisees],
+      avertissements,
+      canvas: cvPropre,
+      dataUrl: cvPropre.toDataURL('image/png')
+    };
+  }
+
+  // Catalogue des gabarits (Lot 1 conservé intact)
+  function cataloguePieces(profil) {
+    const estEnfant = profil === 'enfant';
+    const pComm = estEnfant ? 'enfant' : 'adulte';
+    const pGenre = estEnfant ? 'enfant' : profil;
+
+    const pieces = [
+      { id: 'tete_base', cat: 'corps', min: true, prefix: pComm, piece: 'tete', variante: 'base', pos: null, titre: 'Tête nue (sans cheveux)', attaches: ['cou', 'yeux', 'nez', 'bouche'], vues: ['face', 'dos', 'profil'], zone: [14, 9, 20, 20], note: 'Dessiner le crâne et le menton avec les 4 tons réservés peau. En vue dos, seul le point cou (#FF00FF) est posé.' },
+      { id: 'buste_base', cat: 'corps', min: true, prefix: pGenre, piece: 'buste', variante: 'base', pos: null, titre: `Buste nu (${pGenre})`, attaches: ['cou', 'epaule_l', 'epaule_p', 'hanche_l', 'hanche_p'], vues: ['face', 'dos', 'profil'], zone: [15, 27, 18, 13], note: 'Repère maître du corps : porte les 5 points d\'attache (cou, 2 épaules, 2 hanches).' },
+    ];
+
+    for (const pos of ['repos', 'tient', 'elan', 'tendu', 'leve']) {
+      const isMin = ['repos', 'tient', 'elan'].includes(pos);
+      const posFile = pos.replace('_', '-');
+      pieces.push({
+        id: `bras_l_${pos}`, cat: 'corps', min: isMin, prefix: pComm, piece: 'bras-lointain', variante: 'nu', pos: posFile,
+        titre: `Bras lointain · ${pos}`, attaches: ['epaule_l', 'prise'], vues: ['face', 'dos', 'profil'],
+        zone: [10, 18, 22, 20], note: 'S\'accroche à epaule_l (#00B4FF) et porte prise (#FF8000) sur la main.'
+      });
+      pieces.push({
+        id: `bras_p_${pos}`, cat: 'corps', min: isMin, prefix: pComm, piece: 'bras-proche', variante: 'nu', pos: posFile,
+        titre: `Bras proche · ${pos}`, attaches: ['epaule_p', 'prise'], vues: ['face', 'dos', 'profil'],
+        zone: [16, 18, 22, 20], note: 'S\'accroche à epaule_p (#00FFFF) et porte prise (#FF8000) sur la paume.'
+      });
+    }
+
+    for (const pos of ['debout', 'marche_1', 'marche_2', 'marche_3', 'marche_4', 'assis']) {
+      const isMin = pos !== 'assis';
+      const posFile = pos.replace('_', '-');
+      pieces.push({
+        id: `jambes_${pos}`, cat: 'corps', min: isMin, prefix: pComm, piece: 'jambes', variante: 'nues', pos: posFile,
+        titre: `Jambes · ${pos}`, attaches: ['hanche_l', 'hanche_p'], vues: ['face', 'dos', 'profil'],
+        zone: [15, 36, 18, 12], note: 'Pieds posés sur la dernière rangée y=47 (sauf jambe levée en marche).'
+      });
+    }
+
+    for (const v of ['amande', 'ronds']) {
+      for (const etat of ['ouverts', 'fermes']) {
+        pieces.push({
+          id: `yeux_${v}_${etat}`, cat: 'visage', min: true, prefix: pComm, piece: 'yeux', variante: v, pos: etat,
+          titre: `Yeux ${v} · ${etat}`, attaches: ['yeux'], vues: ['face', 'profil'],
+          zone: [17, 19, 14, 7], note: 'Utiliser les 4 tons réservés yeux (+ #FAF6F0 pour l\'éclat).'
+        });
+      }
+    }
+    pieces.push({
+      id: 'nez_petit', cat: 'visage', min: true, prefix: pComm, piece: 'nez', variante: 'petit', pos: null,
+      titre: 'Nez · petit', attaches: ['nez'], vues: ['face', 'profil'],
+      zone: [20, 22, 8, 5], note: 'Ombré avec les tons réservés peau (ton 3 ou 4).'
+    });
+    for (const expr of ['neutre', 'sourire', 'triste', 'surprise']) {
+      pieces.push({
+        id: `bouche_${expr}`, cat: 'visage', min: ['neutre', 'sourire'].includes(expr), prefix: pComm, piece: 'bouche', variante: expr, pos: null,
+        titre: `Bouche · ${expr}`, attaches: ['bouche'], vues: ['face', 'profil'],
+        zone: [20, 24, 8, 5], note: 'S\'aligne sur le point bouche (#FF3366).'
+      });
+    }
+
+    pieces.push({
+      id: 'coiffure_fermiere_av', cat: 'visage', min: true, prefix: pComm, piece: 'coiffure-longue', variante: 'avant', pos: null,
+      titre: 'Coiffure longue · avant', attaches: ['cou'], vues: ['face', 'profil'],
+      zone: [12, 7, 24, 22], note: 'Frange et mèches passant devant les épaules (4 tons réservés cheveux).'
+    });
+    pieces.push({
+      id: 'coiffure_fermiere_ar', cat: 'visage', min: true, prefix: pComm, piece: 'coiffure-longue', variante: 'arriere', pos: null,
+      titre: 'Coiffure longue · arrière/dos', attaches: ['cou'], vues: ['face', 'dos', 'profil'],
+      zone: [11, 7, 26, 26], note: 'Cheveux tombant dans le dos (sous le buste en face/profil, par-dessus en dos).'
+    });
+
+    pieces.push({
+      id: 'haut_chemisier', cat: 'vetements', min: true, prefix: pGenre, piece: 'haut', variante: 'chemisier', pos: 'buste',
+      titre: `Haut chemisier · buste (${pGenre})`, attaches: ['cou'], vues: ['face', 'dos', 'profil'],
+      zone: [14, 27, 20, 13], note: '4 tons réservés vetement_1.'
+    });
+    for (const pos of ['repos', 'tient', 'elan']) {
+      pieces.push({
+        id: `manche_p_${pos}`, cat: 'vetements', min: true, prefix: pComm, piece: 'manche-proche', variante: 'chemisier', pos,
+        titre: `Manche proche · ${pos}`, attaches: ['epaule_p'], vues: ['face', 'dos', 'profil'],
+        zone: [16, 27, 20, 14], note: 'Suit exactement le bras proche de même position (tons vetement_1).'
+      });
+    }
+    for (const pos of ['debout', 'marche_1', 'marche_2', 'marche_3', 'marche_4']) {
+      const posFile = pos.replace('_', '-');
+      pieces.push({
+        id: `bas_salopette_${pos}`, cat: 'vetements', min: true, prefix: pGenre, piece: 'bas', variante: 'salopette', pos: posFile,
+        titre: `Bas salopette · ${pos}`, attaches: ['hanche_p'], vues: ['face', 'dos', 'profil'],
+        zone: [14, 28, 20, 18], note: '4 tons réservés vetement_2.'
+      });
+    }
+    pieces.push({
+      id: 'chapeau_paille', cat: 'vetements', min: false, prefix: pComm, piece: 'couvre-chef', variante: 'paille', pos: null,
+      titre: 'Chapeau de paille (+ masque #00FF00)', attaches: ['cou'], vues: ['face', 'dos', 'profil'],
+      zone: [10, 4, 28, 16], note: 'Peindre en #00FF00 la calotte cachée des cheveux au-dessus du chapeau.'
+    });
+
+    for (const [oid, lbl] of [['houe', 'Houe · prêt'], ['arrosoir', 'Arrosoir · droit'], ['hache', 'Hache · prêt'], ['panier', 'Panier · porté']]) {
+      pieces.push({
+        id: `outil_${oid}`, cat: 'outils', min: false, prefix: pComm, piece: 'outil', variante: oid, pos: 'pret',
+        titre: `Outil · ${lbl}`, attaches: ['prise'], vues: ['face', 'dos', 'profil'],
+        zone: [2, 8, 44, 36], note: 'Placer 1 pixel #FF8000 (prise) à l\'endroit tenu par la main.'
+      });
+    }
+    return pieces;
+  }
+
+  const pState = {
+    subTab: 'gabarits',  // 'gabarits' | 'import' | 'assemblage'
+    corps: 'femme',
+    vue: 'face',
+    filtre: 'minimal',
+    pieceId: 'buste_base',
+    showGhost: true,
+    showBox: true,
+    showGrid: true,
+    zoom: 8,
+    essaiImg: null,
+    biblio: new Map(),   // cle -> entrée validée { cle, fichier, corps, vue, piece, variante, position, ancres, masqueCoupe, pixels, zones, canvas, dataUrl }
+    selectedBibKey: null,
+    journal: []          // [{ ok, fichier, message, erreurs }]
+  };
+
+  // Exposé proprement pour le Lot 3 (Assembleur & Export 111 cases)
+  window.StudioPersonnages = { CFG, pState, verifierEtExtrairePiece, analyserNomFichier, rafraichirImportUI: () => rafraichirImportUI() };
+
+  function nomFichierGabarit(p, vue) {
+    const v = vue === 'toutes' ? 'face' : vue;
+    return `${p.prefix}_${v}_${p.piece}_${p.variante}${p.pos ? '_' + p.pos : ''}.png`;
+  }
+
+  function attachesPourVue(p, vue) {
+    const rep = CFG.CORPS[pState.corps === 'enfant' ? 'enfant' : 'adulte'].repere_48x48[vue];
+    const mapKey = {
+      cou: 'cou', epaule_l: 'epaule_lointaine', epaule_p: 'epaule_proche',
+      hanche_l: 'hanche_lointaine', hanche_p: 'hanche_proche',
+      yeux: 'yeux', nez: 'nez', bouche: 'bouche'
+    };
+    const out = [];
+    for (const a of p.attaches) {
+      if (vue === 'dos' && ['yeux', 'nez', 'bouche'].includes(a)) continue;
+      if (a === 'prise') {
+        const pr = vue === 'profil' ? [31, 35] : [32, 36];
+        out.push({ nom: 'prise', xy: pr, info: CFG.POINTS_ATTACHE.prise });
+        continue;
+      }
+      const xy = rep[mapKey[a]];
+      if (xy) out.push({ nom: a, xy, info: CFG.POINTS_ATTACHE[a] });
+    }
+    return out;
+  }
+
+  function construireCalques48(p, vue) {
+    const W = 48, H = 48;
+    const ghostCv = document.createElement('canvas'); ghostCv.width = W; ghostCv.height = H;
+    const attachCv = document.createElement('canvas'); attachCv.width = W; attachCv.height = H;
+    const guideCv = document.createElement('canvas'); guideCv.width = W; guideCv.height = H;
+
+    const gctx = ghostCv.getContext('2d');
+    if (pState.essaiImg) {
+      const idx = vue === 'face' ? 0 : (vue === 'dos' ? 1 : 2);
+      gctx.save();
+      gctx.globalAlpha = 0.28;
+      if (pState.corps === 'enfant') {
+        gctx.imageSmoothingEnabled = false;
+        gctx.drawImage(pState.essaiImg, idx * 48, 0, 48, 48, 5, 10, 38, 38);
+      } else {
+        gctx.drawImage(pState.essaiImg, idx * 48, 0, 48, 48, 0, 0, 48, 48);
+      }
+      gctx.restore();
+    }
+    gctx.fillStyle = 'rgba(240, 180, 76, 0.22)';
+    gctx.fillRect(24, 2, 1, 46);
+    gctx.fillRect(8, 47, 32, 1);
+    if (p.zone) {
+      const [zx, zy, zw, zh] = p.zone;
+      gctx.strokeStyle = 'rgba(122, 184, 255, 0.45)';
+      gctx.lineWidth = 1;
+      gctx.strokeRect(zx + 0.5, zy + 0.5, zw - 1, zh - 1);
+    }
+
+    const actx = attachCv.getContext('2d');
+    const idata = actx.createImageData(W, H);
+    for (const att of attachesPourVue(p, vue)) {
+      const [ax, ay] = att.xy;
+      if (ax >= 0 && ax < W && ay >= 0 && ay < H) {
+        const k = (ay * W + ax) * 4;
+        idata.data[k] = att.info.rgb[0];
+        idata.data[k + 1] = att.info.rgb[1];
+        idata.data[k + 2] = att.info.rgb[2];
+        idata.data[k + 3] = 255;
+      }
+    }
+    actx.putImageData(idata, 0, 0);
+
+    const cctx = guideCv.getContext('2d');
+    cctx.drawImage(ghostCv, 0, 0);
+    cctx.drawImage(attachCv, 0, 0);
+
+    return { ghostCv, attachCv, guideCv };
+  }
+
+  function genererFichierPiskel(p, vue) {
+    const { ghostCv, attachCv } = construireCalques48(p, vue);
+    const emptyCv = document.createElement('canvas'); emptyCv.width = 48; emptyCv.height = 48;
+    const mkLayer = (name, opacity, cv) => JSON.stringify({
+      name, opacity, frameCount: 1,
+      chunks: [{ layout: [[0]], base64PNG: cv.toDataURL('image/png') }]
+    });
+    const nom = nomFichierGabarit(p, vue).replace(/\.png$/, '');
+    return {
+      filename: `${nom}.piskel`,
+      json: JSON.stringify({
+        modelVersion: 2,
+        piskel: {
+          name: nom,
+          description: `Gabarit Moon Bloom Village — ${p.titre} (${vue})`,
+          fps: 6, height: 48, width: 48,
+          layers: [
+            mkLayer('1_guide_essai_hd (masquer avant export)', 1, ghostCv),
+            mkLayer('2_points_attache (garder)', 1, attachCv),
+            mkLayer('3_dessin_piece', 1, emptyCv)
+          ],
+          hiddenFrames: []
+        }
+      })
+    };
+  }
+
+  function pieceCourante() {
+    const list = cataloguePieces(pState.corps);
+    return list.find(x => x.id === pState.pieceId) || list[0];
+  }
+
+  function afficherListePieces() {
+    const toutes = cataloguePieces(pState.corps);
+    const filtrees = toutes.filter(p => pState.filtre === 'minimal' ? p.min : pState.filtre === 'tous' ? true : p.cat === pState.filtre);
+    if (!filtrees.some(p => p.id === pState.pieceId) && filtrees.length) pState.pieceId = filtrees[0].id;
+    document.getElementById('pCountBadge').textContent = `${filtrees.length} pièces`;
+
+    const grid = document.getElementById('pPiecesGrid');
+    grid.innerHTML = '';
+    for (const p of filtrees) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'piece-item' + (p.id === pState.pieceId ? ' active' : '');
+      const v = pState.vue === 'toutes' ? p.vues[0] : (p.vues.includes(pState.vue) ? pState.vue : p.vues[0]);
+      btn.innerHTML = `<b>${p.titre}</b><small>${nomFichierGabarit(p, v)}</small>`;
+      btn.addEventListener('click', () => {
+        pState.pieceId = p.id;
+        afficherListePieces();
+        rendreApercuPerso();
+      });
+      grid.appendChild(btn);
+    }
+    majInfosPiece();
+  }
+
+  function majInfosPiece() {
+    if (pState.subTab === 'import' && pState.selectedBibKey && pState.biblio.has(pState.selectedBibKey)) {
+      const e = pState.biblio.get(pState.selectedBibKey);
+      const ancTxt = Object.entries(e.ancres).map(([k, xy]) => `${k}(${xy[0]},${xy[1]})`).join(', ');
+      document.getElementById('pFileName').textContent = `✓ ${e.fichier} · ${e.pixels} px · ancres : ${ancTxt}`;
+      return;
+    }
+    const p = pieceCourante();
+    if (!p) return;
+    const v = pState.vue === 'toutes' ? p.vues[0] : (p.vues.includes(pState.vue) ? pState.vue : p.vues[0]);
+    document.getElementById('pFileName').textContent = `${nomFichierGabarit(p, v)} (48 × 48 px · vues : ${p.vues.join(', ')})`;
+    document.getElementById('pPieceRule').textContent = p.note;
+
+    const leg = document.getElementById('pAttLegend');
+    const atts = attachesPourVue(p, v);
+    leg.innerHTML = atts.map(a =>
+      `<span class="att-chip"><span class="swatch" style="background:${a.info.hex}"></span><b>${a.nom}</b> <code>${a.info.hex}</code> (${a.xy[0]},${a.xy[1]})</span>`
+    ).join('') || '<span style="font-size:10.5px;color:var(--muted)">Aucun point en vue de dos pour le visage.</span>';
+  }
+
+  function rendreApercuPerso() {
+    const wrap = document.getElementById('pCanvasWrap');
+    const vc = document.getElementById('pViewCanvas');
+    const r = wrap.getBoundingClientRect();
+    const vw = Math.max(280, Math.floor(r.width)), vh = Math.max(190, Math.floor(r.height));
+    if (vc.width !== vw || vc.height !== vh) { vc.width = vw; vc.height = vh; }
+    const ctx = vc.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    for (let y = 0; y < vh; y += 12) {
+      for (let x = 0; x < vw; x += 12) {
+        ctx.fillStyle = ((x / 12 + y / 12) & 1) ? '#231f31' : '#181523';
+        ctx.fillRect(x, y, 12, 12);
+      }
+    }
+
+    const z = pState.zoom;
+
+    // Mode Inspection d'une pièce importée et validée dans l'onglet Import
+    if (pState.subTab === 'import' && pState.selectedBibKey && pState.biblio.has(pState.selectedBibKey)) {
+      const e = pState.biblio.get(pState.selectedBibKey);
+      const ox = Math.floor((vw - 48 * z) / 2);
+      const oy = Math.floor((vh - 48 * z) / 2);
+      ctx.fillStyle = 'rgba(14, 12, 21, 0.72)';
+      ctx.fillRect(ox, oy, 48 * z, 48 * z);
+      ctx.strokeStyle = '#6ad08f';
+      ctx.strokeRect(ox - 0.5, oy - 0.5, 48 * z + 1, 48 * z + 1);
+
+      if (pState.showGhost && pState.essaiImg) {
+        const idx = e.vue === 'face' ? 0 : (e.vue === 'dos' ? 1 : 2);
+        ctx.save(); ctx.globalAlpha = 0.22;
+        ctx.drawImage(pState.essaiImg, idx * 48, 0, 48, 48, ox, oy, 48 * z, 48 * z);
+        ctx.restore();
+      }
+      // Dessin nettoyé (attaches déjà effacées !)
+      ctx.drawImage(e.canvas, ox, oy, 48 * z, 48 * z);
+
+      // Réticules non-destructifs sur les points d'attache relevés et le masque #00FF00 éventuel
+      if (pState.showBox) {
+        for (const [mx, my] of e.masqueCoupe || []) {
+          ctx.fillStyle = 'rgba(0, 255, 0, 0.28)';
+          ctx.fillRect(ox + mx * z, oy + my * z, z, z);
+        }
+        for (const [nom, [ax, ay]] of Object.entries(e.ancres)) {
+          const hex = CFG.POINTS_ATTACHE[nom] ? CFG.POINTS_ATTACHE[nom].hex : '#ffffff';
+          ctx.strokeStyle = hex;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(ox + ax * z - 1, oy + ay * z - 1, z + 2, z + 2);
+        }
+      }
+      if (pState.showGrid && z >= 5) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        for (let i = 1; i < 48; i++) {
+          ctx.beginPath(); ctx.moveTo(ox + i * z + 0.5, oy); ctx.lineTo(ox + i * z + 0.5, oy + 48 * z); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(ox, oy + i * z + 0.5); ctx.lineTo(ox + 48 * z, oy + i * z + 0.5); ctx.stroke();
+        }
+      }
+      ctx.fillStyle = '#6ad08f';
+      ctx.font = 'bold 11px ui-monospace, monospace';
+      ctx.fillText(`PIÈCE VALIDÉE · ${e.vue.toUpperCase()}`, ox + 2, oy - 6);
+      majInfosPiece();
+      return;
+    }
+
+    // Mode Gabarit Piskel (Lot 1)
+    const p = pieceCourante();
+    if (!p) return;
+    const vues = pState.vue === 'toutes' ? ['face', 'dos', 'profil'] : [pState.vue];
+    const gap = 14;
+    const totalW = vues.length * 48 * z + (vues.length - 1) * gap;
+    const startX = Math.floor((vw - totalW) / 2);
+    const startY = Math.floor((vh - 48 * z) / 2);
+
+    vues.forEach((v, idx) => {
+      const ox = startX + idx * (48 * z + gap);
+      const oy = startY;
+      ctx.fillStyle = 'rgba(14, 12, 21, 0.65)';
+      ctx.fillRect(ox, oy, 48 * z, 48 * z);
+      ctx.strokeStyle = '#4c446b';
+      ctx.strokeRect(ox - 0.5, oy - 0.5, 48 * z + 1, 48 * z + 1);
+
+      if (!p.vues.includes(v)) {
+        ctx.fillStyle = '#a8a0be';
+        ctx.font = '11px system-ui';
+        ctx.fillText(`Pas de ${p.piece} en ${v}`, ox + 8, oy + 24 * z);
+        return;
+      }
+
+      const { ghostCv, attachCv } = construireCalques48(p, v);
+      if (pState.showGhost) ctx.drawImage(ghostCv, ox, oy, 48 * z, 48 * z);
+      if (pState.showBox && p.zone) {
+        const [zx, zy, zw, zh] = p.zone;
+        ctx.strokeStyle = 'rgba(122, 184, 255, 0.75)';
+        ctx.setLineDash([4, 3]);
+        ctx.strokeRect(ox + zx * z + 0.5, oy + zy * z + 0.5, zw * z - 1, zh * z - 1);
+        ctx.setLineDash([]);
+      }
+      ctx.drawImage(attachCv, ox, oy, 48 * z, 48 * z);
+
+      if (pState.showGrid && z >= 5) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        for (let i = 1; i < 48; i++) {
+          ctx.beginPath(); ctx.moveTo(ox + i * z + 0.5, oy); ctx.lineTo(ox + i * z + 0.5, oy + 48 * z); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(ox, oy + i * z + 0.5); ctx.lineTo(ox + 48 * z, oy + i * z + 0.5); ctx.stroke();
+        }
+      }
+      ctx.fillStyle = '#f0b44c';
+      ctx.font = 'bold 11px ui-monospace, monospace';
+      ctx.fillText(v.toUpperCase(), ox + 4, oy - 5);
+    });
+  }
+
+  // Affichage du journal du vérificateur et de la grille de bibliothèque
+  const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  function rafraichirImportUI() {
+    const n = pState.biblio.size;
+    document.getElementById('pBibCountPill').textContent = `(${n})`;
+    document.getElementById('pBibBadge').textContent = `${n} validée${n > 1 ? 's' : ''}`;
+
+    const logEl = document.getElementById('pVerifLog');
+    if (!pState.journal.length) {
+      logEl.innerHTML = '<div style="font-size:10.5px;color:var(--muted)">Aucun fichier vérifié pour l\'instant.</div>';
+    } else {
+      logEl.innerHTML = pState.journal.slice().reverse().map(j => {
+        if (j.ok) {
+          return `<div class="verif-item ok"><div class="v-head"><span>${escHtml(j.fichier)}</span><span>✓ Accepté</span></div><div style="color:var(--muted)">${escHtml(j.resume)}</div></div>`;
+        }
+        return `<div class="verif-item ko"><div class="v-head"><span>${escHtml(j.fichier)}</span><span>✗ Refusé (${j.erreurs.length})</span></div><ul>${j.erreurs.map(e => `<li>${escHtml(e)}</li>`).join('')}</ul></div>`;
+      }).join('');
+    }
+
+    const grid = document.getElementById('pBibGrid');
+    grid.innerHTML = '';
+    for (const [cle, e] of pState.biblio.entries()) {
+      const card = document.createElement('div');
+      card.className = 'biblio-card' + (cle === pState.selectedBibKey ? ' active' : '');
+      const thumb = document.createElement('canvas');
+      thumb.width = 48; thumb.height = 48;
+      thumb.getContext('2d').drawImage(e.canvas, 0, 0);
+      const lbl = document.createElement('div');
+      lbl.className = 'mono';
+      lbl.innerHTML = `<b style="color:var(--text)">${escHtml(e.piece)}</b><br>${escHtml(e.corps)} · ${escHtml(e.vue)}${e.position ? ' · ' + escHtml(e.position) : ''}`;
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'biblio-del'; del.textContent = '✕'; del.title = 'Retirer de la bibliothèque';
+      del.addEventListener('click', ev => {
+        ev.stopPropagation();
+        pState.biblio.delete(cle);
+        if (pState.selectedBibKey === cle) pState.selectedBibKey = pState.biblio.keys().next().value || null;
+        rafraichirImportUI();
+        rendreApercuPerso();
+      });
+      card.append(del, thumb, lbl);
+      card.addEventListener('click', () => {
+        pState.selectedBibKey = cle;
+        rafraichirImportUI();
+        rendreApercuPerso();
+      });
+      grid.appendChild(card);
+    }
+  }
+
+  function enregistrerResultatVerif(res) {
+    if (res.ok) {
+      pState.biblio.set(res.cle, res);
+      pState.selectedBibKey = res.cle;
+      const anc = Object.entries(res.ancres).map(([k, [x, y]]) => `${k}(${x},${y})`).join(', ');
+      const zones = res.zones.length ? `zones: ${res.zones.join(', ')}` : 'couleurs fixes';
+      pState.journal.push({
+        ok: true,
+        fichier: res.fichier,
+        resume: `${res.pixels} px nettoyés · ${zones} · ancres effacées : ${anc || 'aucune'}${res.masqueCoupe.length ? ` · masque coiffure : ${res.masqueCoupe.length} px` : ''}`
+      });
+    } else {
+      pState.journal.push({ ok: false, fichier: res.fichier, erreurs: res.erreurs });
+    }
+    if (pState.journal.length > 40) pState.journal.shift();
+  }
+
+  async function importerFichiersPng(fileList) {
+    const files = [...(fileList || [])];
+    if (!files.length) return;
+    for (const f of files) {
+      try {
+        const bmp = await createImageBitmap(f);
+        const cv = document.createElement('canvas');
+        cv.width = bmp.width; cv.height = bmp.height;
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(bmp, 0, 0);
+        const idata = ctx.getImageData(0, 0, cv.width, cv.height).data;
+        const res = verifierEtExtrairePiece(f.name, cv.width, cv.height, idata);
+        enregistrerResultatVerif(res);
+      } catch (err) {
+        pState.journal.push({ ok: false, fichier: f.name, erreurs: [`Lecture PNG impossible : ${err.message}`] });
+      }
+    }
+    rafraichirImportUI();
+    rendreApercuPerso();
+  }
+
+  // Banc d'essai intégré (sans fichier externe : teste les cas nominaux et les 4 erreurs classiques)
+  function peindreRect(d, x0, y0, w, h, rgb, a = 255) {
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) {
+      if (x < 0 || x >= 48 || y < 0 || y >= 48) continue;
+      const k = (y * 48 + x) * 4;
+      d[k] = rgb[0]; d[k + 1] = rgb[1]; d[k + 2] = rgb[2]; d[k + 3] = a;
+    }
+  }
+  function poserPx(d, x, y, rgb, a = 255) { peindreRect(d, x, y, 1, 1, rgb, a); }
+
+  function simulerTroisPiecesValides() {
+    const P = CFG.TONS_RESERVES.peau.map(hex2rgb);
+    const V1 = CFG.TONS_RESERVES.vetement_1.map(hex2rgb);
+    const K = [43, 29, 20];
+    const rep = CFG.CORPS.adulte.repere_48x48.face;
+
+    // 1. Buste femme conforme
+    const d1 = new Uint8ClampedArray(48 * 48 * 4);
+    peindreRect(d1, 18, 28, 12, 11, K);
+    peindreRect(d1, 19, 29, 5, 9, V1[1]);
+    peindreRect(d1, 24, 29, 5, 9, V1[2]);
+    poserPx(d1, rep.cou[0], rep.cou[1], CFG.POINTS_ATTACHE.cou.rgb);
+    poserPx(d1, rep.epaule_lointaine[0], rep.epaule_lointaine[1], CFG.POINTS_ATTACHE.epaule_l.rgb);
+    poserPx(d1, rep.epaule_proche[0], rep.epaule_proche[1], CFG.POINTS_ATTACHE.epaule_p.rgb);
+    poserPx(d1, rep.hanche_lointaine[0], rep.hanche_lointaine[1], CFG.POINTS_ATTACHE.hanche_l.rgb);
+    poserPx(d1, rep.hanche_proche[0], rep.hanche_proche[1], CFG.POINTS_ATTACHE.hanche_p.rgb);
+    enregistrerResultatVerif(verifierEtExtrairePiece('femme_face_buste_base.png', 48, 48, d1));
+
+    // 2. Tête nue adulte conforme
+    const d2 = new Uint8ClampedArray(48 * 48 * 4);
+    peindreRect(d2, 18, 14, 12, 14, K);
+    peindreRect(d2, 19, 15, 6, 12, P[1]);
+    peindreRect(d2, 25, 15, 4, 12, P[2]);
+    poserPx(d2, rep.cou[0], rep.cou[1], CFG.POINTS_ATTACHE.cou.rgb);
+    poserPx(d2, rep.yeux[0], rep.yeux[1], CFG.POINTS_ATTACHE.yeux.rgb);
+    poserPx(d2, rep.nez[0], rep.nez[1], CFG.POINTS_ATTACHE.nez.rgb);
+    poserPx(d2, rep.bouche[0], rep.bouche[1], CFG.POINTS_ATTACHE.bouche.rgb);
+    enregistrerResultatVerif(verifierEtExtrairePiece('adulte_face_tete_base.png', 48, 48, d2));
+
+    // 3. Chapeau de paille avec masque coiffure #00FF00
+    const ACC = CFG.TONS_RESERVES.accessoire.map(hex2rgb);
+    const d3 = new Uint8ClampedArray(48 * 48 * 4);
+    peindreRect(d3, 17, 8, 14, 5, [0, 255, 0]); // masque vert qui effacera le haut des cheveux !
+    peindreRect(d3, 14, 12, 20, 4, K);
+    peindreRect(d3, 15, 13, 18, 2, ACC[1]);
+    poserPx(d3, rep.cou[0], rep.cou[1], CFG.POINTS_ATTACHE.cou.rgb);
+    enregistrerResultatVerif(verifierEtExtrairePiece('adulte_face_couvre-chef_paille.png', 48, 48, d3));
+
+    rafraichirImportUI();
+    rendreApercuPerso();
+  }
+
+  function simulerQuatreErreurs() {
+    // Cas 1 : Mauvaise taille 32×32
+    enregistrerResultatVerif(verifierEtExtrairePiece('femme_face_buste_trop-petit.png', 32, 32, new Uint8ClampedArray(32 * 32 * 4)));
+
+    // Cas 2 : Pixel semi-transparent (anticrénelage α=180)
+    const dAlpha = new Uint8ClampedArray(48 * 48 * 4);
+    peindreRect(dAlpha, 20, 20, 6, 6, hex2rgb(CFG.TONS_RESERVES.peau[1]), 255);
+    poserPx(dAlpha, 19, 20, hex2rgb(CFG.TONS_RESERVES.peau[1]), 180);
+    poserPx(dAlpha, 24, 24, CFG.POINTS_ATTACHE.nez.rgb, 255);
+    enregistrerResultatVerif(verifierEtExtrairePiece('adulte_face_nez_flou.png', 48, 48, dAlpha));
+
+    // Cas 3 : Couleur dérivée #F1BF99 à 2 unités de #F0BE98 (peau_2)
+    const dDerive = new Uint8ClampedArray(48 * 48 * 4);
+    peindreRect(dDerive, 21, 23, 4, 3, [241, 191, 153], 255);
+    poserPx(dDerive, 24, 24, CFG.POINTS_ATTACHE.nez.rgb, 255);
+    enregistrerResultatVerif(verifierEtExtrairePiece('adulte_face_nez_mauvais-ton.png', 48, 48, dDerive));
+
+    // Cas 4 : Point d'attache prise (#FF8000) oublié sur un bras
+    const dSansAtt = new Uint8ClampedArray(48 * 48 * 4);
+    peindreRect(dSansAtt, 28, 30, 4, 8, hex2rgb(CFG.TONS_RESERVES.peau[1]), 255);
+    poserPx(dSansAtt, 30, 30, CFG.POINTS_ATTACHE.epaule_p.rgb, 255);
+    enregistrerResultatVerif(verifierEtExtrairePiece('adulte_face_bras-proche_nu_tient.png', 48, 48, dSansAtt));
+
+    rafraichirImportUI();
+  }
+
+  function telechargerBlob(blob, nom) {
+    const u = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.download = nom; a.href = u; a.click();
+    setTimeout(() => URL.revokeObjectURL(u), 1500);
+  }
+
+  // Export / Import JSON complet de la bibliothèque des pièces validées
+  function exporterBibliothequeJson() {
+    const pieces = {};
+    for (const [cle, e] of pState.biblio.entries()) {
+      pieces[cle] = {
+        fichier: e.fichier, corps: e.corps, vue: e.vue, piece: e.piece,
+        variante: e.variante, position: e.position,
+        ancres: e.ancres, masqueCoupe: e.masqueCoupe,
+        pixels: e.pixels, zones: e.zones, dataUrl: e.dataUrl
+      };
+    }
+    const doc = { format: 'moon-bloom-biblio-personnages', version: 1, count: pState.biblio.size, pieces };
+    telechargerBlob(new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' }), 'bibliotheque_personnages.json');
+  }
+
+  async function chargerBibliothequeJson(file) {
+    if (!file) return;
+    try {
+      const txt = await file.text();
+      const doc = JSON.parse(txt);
+      if (!doc || doc.format !== 'moon-bloom-biblio-personnages' || typeof doc.pieces !== 'object') {
+        throw new Error('Ce fichier JSON n\'est pas une bibliothèque Moon Bloom Personnages.');
+      }
+      for (const [cle, p] of Object.entries(doc.pieces)) {
+        const img = new Image();
+        await new Promise((ok, ko) => { img.onload = ok; img.onerror = ko; img.src = p.dataUrl; });
+        const cv = document.createElement('canvas'); cv.width = 48; cv.height = 48;
+        cv.getContext('2d').drawImage(img, 0, 0);
+        pState.biblio.set(cle, { ...p, cle, canvas: cv });
+        pState.selectedBibKey = cle;
+      }
+      pState.journal.push({ ok: true, fichier: file.name, resume: `Bibliothèque rechargée (${Object.keys(doc.pieces).length} pièce(s)).` });
+      rafraichirImportUI();
+      rendreApercuPerso();
+    } catch (err) {
+      pState.journal.push({ ok: false, fichier: file.name, erreurs: [err.message] });
+      rafraichirImportUI();
+    }
+  }
+
+  // Événements UI
+  document.querySelectorAll('#atelierSwitch button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#atelierSwitch button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelector('.app').setAttribute('data-atelier', btn.dataset.atelierBtn);
+      if (btn.dataset.atelierBtn === 'perso') {
+        afficherListePieces();
+        rafraichirImportUI();
+        requestAnimationFrame(rendreApercuPerso);
+      }
+    });
+  });
+
+  document.querySelectorAll('#pSubTabSeg button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#pSubTabSeg button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.perso-subpane').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      pState.subTab = btn.dataset.psub;
+      document.querySelector(`.perso-subpane[data-psubpane="${pState.subTab}"]`).classList.add('active');
+      majInfosPiece();
+      rendreApercuPerso();
+    });
+  });
+
+  document.querySelectorAll('#pVueSeg button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#pVueSeg button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    pState.vue = b.dataset.pvue;
+    if (pState.vue === 'toutes' && pState.zoom > 5) { pState.zoom = 5; document.getElementById('pZoomLbl').textContent = '5×'; }
+    majInfosPiece(); rendreApercuPerso();
+  }));
+
+  document.querySelectorAll('#pCorpsSeg button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#pCorpsSeg button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    pState.corps = b.dataset.pcorps;
+    afficherListePieces(); rendreApercuPerso();
+  }));
+
+  document.getElementById('pFilterCat').addEventListener('change', e => {
+    pState.filtre = e.target.value;
+    afficherListePieces(); rendreApercuPerso();
+  });
+
+  document.getElementById('pChkGhost').addEventListener('change', e => { pState.showGhost = e.target.checked; rendreApercuPerso(); });
+  document.getElementById('pChkBox').addEventListener('change', e => { pState.showBox = e.target.checked; rendreApercuPerso(); });
+  document.getElementById('pChkGrid').addEventListener('change', e => { pState.showGrid = e.target.checked; rendreApercuPerso(); });
+  document.getElementById('pZoomIn').addEventListener('click', () => { pState.zoom = Math.min(16, pState.zoom + 1); document.getElementById('pZoomLbl').textContent = `${pState.zoom}×`; rendreApercuPerso(); });
+  document.getElementById('pZoomOut').addEventListener('click', () => { pState.zoom = Math.max(2, pState.zoom - 1); document.getElementById('pZoomLbl').textContent = `${pState.zoom}×`; rendreApercuPerso(); });
+
+  document.getElementById('btnDlPiskel').addEventListener('click', () => {
+    const p = pieceCourante();
+    const v = pState.vue === 'toutes' ? p.vues[0] : (p.vues.includes(pState.vue) ? pState.vue : p.vues[0]);
+    const res = genererFichierPiskel(p, v);
+    telechargerBlob(new Blob([res.json], { type: 'application/json' }), res.filename);
+  });
+
+  document.getElementById('btnDlPngClean').addEventListener('click', () => {
+    const p = pieceCourante();
+    const v = pState.vue === 'toutes' ? p.vues[0] : (p.vues.includes(pState.vue) ? pState.vue : p.vues[0]);
+    const { attachCv } = construireCalques48(p, v);
+    attachCv.toBlob(b => telechargerBlob(b, nomFichierGabarit(p, v)));
+  });
+
+  document.getElementById('btnDlPngGuide').addEventListener('click', () => {
+    const p = pieceCourante();
+    const v = pState.vue === 'toutes' ? p.vues[0] : (p.vues.includes(pState.vue) ? pState.vue : p.vues[0]);
+    const { guideCv } = construireCalques48(p, v);
+    guideCv.toBlob(b => telechargerBlob(b, 'GUIDE_' + nomFichierGabarit(p, v)));
+  });
+
+  document.getElementById('btnDlPaletteGpl').addEventListener('click', () => {
+    telechargerBlob(new Blob([PALETTE_GPL], { type: 'text/plain;charset=utf-8' }), 'moon-bloom-personnages.gpl');
+  });
+
+  document.getElementById('btnDlMinimalPack').addEventListener('click', () => {
+    const toutes = cataloguePieces(pState.corps).filter(p => pState.filtre === 'minimal' ? p.min : pState.filtre === 'tous' ? true : p.cat === pState.filtre);
+    const items = [];
+    for (const p of toutes) for (const v of p.vues) items.push({ p, v, nom: nomFichierGabarit(p, v) });
+    const cols = 6, rows = Math.ceil(items.length / cols);
+    const sheet = document.createElement('canvas'); sheet.width = cols * 48; sheet.height = rows * 48;
+    const sctx = sheet.getContext('2d');
+    const manifest = [];
+    items.forEach((it, idx) => {
+      const cx = (idx % cols) * 48, cy = Math.floor(idx / cols) * 48;
+      const { guideCv } = construireCalques48(it.p, it.v);
+      sctx.drawImage(guideCv, cx, cy);
+      manifest.push({ index: idx, x: cx, y: cy, w: 48, h: 48, fichier: it.nom, attaches: attachesPourVue(it.p, it.v).map(a => ({ point: a.nom, hex: a.info.hex, xy: a.xy })) });
+    });
+    sheet.toBlob(b => telechargerBlob(b, `planche_gabarits_${pState.corps}_${pState.filtre}.png`));
+    telechargerBlob(new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' }), `gabarits_${pState.corps}_${pState.filtre}.json`);
+  });
+
+  // Événements Lot 2 : Import, Glisser-déposer, Simulations & Bibliothèque
+  const pImpInput = document.getElementById('pImportInput');
+  const pDrop = document.getElementById('pImportDrop');
+  pImpInput.addEventListener('change', e => { importerFichiersPng(e.target.files); e.target.value = ''; });
+  pDrop.addEventListener('dragover', e => { e.preventDefault(); pDrop.classList.add('drag'); });
+  pDrop.addEventListener('dragleave', () => pDrop.classList.remove('drag'));
+  pDrop.addEventListener('drop', e => { e.preventDefault(); pDrop.classList.remove('drag'); importerFichiersPng(e.dataTransfer.files); });
+
+  document.getElementById('btnSimValid').addEventListener('click', simulerTroisPiecesValides);
+  document.getElementById('btnSimErrors').addEventListener('click', simulerQuatreErreurs);
+  document.getElementById('btnClearLog').addEventListener('click', () => { pState.journal = []; rafraichirImportUI(); });
+  document.getElementById('btnExpBiblio').addEventListener('click', exporterBibliothequeJson);
+  document.getElementById('inpImpBiblio').addEventListener('change', e => { chargerBibliothequeJson(e.target.files[0]); e.target.value = ''; });
+
+  const img = new Image();
+  img.onload = () => {
+    pState.essaiImg = img;
+    if (document.querySelector('.app').getAttribute('data-atelier') === 'perso') rendreApercuPerso();
+  };
+  img.src = ESSAI_B64;
+  window.addEventListener('resize', () => {
+    if (document.querySelector('.app').getAttribute('data-atelier') === 'perso') rendreApercuPerso();
+  });
+})();
+
+</script>
+<script>
+
+/* =========================================================================
+ * MODULE STUDIO PERSONNAGES — LOT 3 (ÉTAPE 4 : ASSEMBLEUR PAR ANCRES,
+ * JEU MINIMAL DÉMO HD, RECOLORATION, GRAINE DÉTERMINISTE & EXPORT 111 CASES)
+ * ========================================================================= */
+(() => {
+  'use strict';
+
+  const SP = window.StudioPersonnages;
+  if (!SP) return;
+  const { CFG, pState, verifierEtExtrairePiece } = SP;
+
+  const CASES_111 = ["idle_bas_0", "idle_bas_1", "marche_bas_0", "marche_bas_1", "marche_bas_2", "marche_bas_3", "idle_haut_0", "idle_haut_1", "marche_haut_0", "marche_haut_1", "marche_haut_2", "marche_haut_3", "idle_cote_0", "idle_cote_1", "marche_cote_0", "marche_cote_1", "marche_cote_2", "marche_cote_3", "houe_cote_0", "houe_cote_1", "houe_cote_2", "houe_cote_3", "houe_bas_0", "houe_bas_1", "houe_bas_2", "houe_bas_3", "houe_haut_0", "houe_haut_1", "houe_haut_2", "houe_haut_3", "plante_cote_0", "plante_cote_1", "plante_cote_2", "plante_bas_0", "plante_bas_1", "plante_bas_2", "plante_haut_0", "plante_haut_1", "plante_haut_2", "arrose_cote_0", "arrose_bas_0", "arrose_haut_0", "arrose_cote_1", "arrose_bas_1", "arrose_haut_1", "arrose_cote_2", "arrose_bas_2", "arrose_haut_2", "panier_bas_0", "panier_bas_1", "panier_bas_2", "panier_bas_3", "panier_haut_0", "panier_haut_1", "panier_haut_2", "panier_haut_3", "panier_cote_0", "panier_cote_1", "panier_cote_2", "panier_cote_3", "cuisine_0", "cuisine_1", "cuisine_2", "cuisine_3", "frigo_0", "frigo_1", "frigo_2", "ramasse_0", "ramasse_1", "ramasse_2", "hache_cote_0", "hache_cote_1", "hache_cote_2", "hache_cote_3", "pioche_cote_0", "pioche_cote_1", "pioche_cote_2", "pioche_cote_3", "peche_cote_0", "peche_cote_1", "peche_cote_2", "peche_cote_3", "peche_bas_0", "peche_bas_1", "peche_bas_2", "peche_bas_3", "peche_haut_0", "peche_haut_1", "peche_haut_2", "peche_haut_3", "assis_bas_0", "assis_bas_1", "assis_haut_0", "assis_haut_1", "assis_cote_0", "assis_cote_1", "faux_cote_0", "faux_cote_1", "faux_cote_2", "faux_cote_3", "dort_bas_0", "dort_bas_1", "jette_cote_0", "jette_cote_1", "jette_cote_2", "jette_bas_0", "jette_bas_1", "jette_bas_2", "jette_haut_0", "jette_haut_1", "jette_haut_2"];
+  const POSES_111 = {"idle_bas_0": {"vue": "face", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "idle_bas_1": {"vue": "face", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "debout", "dy_buste": 1, "dy_tete": 1, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_bas_0": {"vue": "face", "bras_lointain": "elan", "bras_proche": "tendu", "jambes": "marche_1", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_bas_1": {"vue": "face", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "marche_2", "dy_buste": -1, "dy_tete": -1, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_bas_2": {"vue": "face", "bras_lointain": "tendu", "bras_proche": "elan", "jambes": "marche_3", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_bas_3": {"vue": "face", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "marche_4", "dy_buste": -1, "dy_tete": -1, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "idle_haut_0": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "idle_haut_1": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "debout", "dy_buste": 1, "dy_tete": 1, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_haut_0": {"vue": "dos", "bras_lointain": "tendu", "bras_proche": "elan", "jambes": "marche_1", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_haut_1": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "marche_2", "dy_buste": -1, "dy_tete": -1, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_haut_2": {"vue": "dos", "bras_lointain": "elan", "bras_proche": "tendu", "jambes": "marche_3", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_haut_3": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "marche_4", "dy_buste": -1, "dy_tete": -1, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "idle_cote_0": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "idle_cote_1": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "debout", "dy_buste": 1, "dy_tete": 1, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_cote_0": {"vue": "profil", "bras_lointain": "tendu", "bras_proche": "elan", "jambes": "marche_1", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_cote_1": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "marche_2", "dy_buste": -1, "dy_tete": -1, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_cote_2": {"vue": "profil", "bras_lointain": "elan", "bras_proche": "tient", "jambes": "marche_3", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "marche_cote_3": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "marche_4", "dy_buste": -1, "dy_tete": -1, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "houe_cote_0": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "houe:pret", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "houe_cote_1": {"vue": "profil", "bras_lointain": "leve", "bras_proche": "leve", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "houe:leve", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "houe_cote_2": {"vue": "profil", "bras_lointain": "elan", "bras_proche": "elan", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "houe:elan", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "houe_cote_3": {"vue": "profil", "bras_lointain": "tendu", "bras_proche": "tendu", "jambes": "marche_1", "dy_buste": 1, "dy_tete": 1, "outil": "houe:coup", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "houe_bas_0": {"vue": "face", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "houe:pret", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "houe_bas_1": {"vue": "face", "bras_lointain": "leve", "bras_proche": "leve", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "houe:leve", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "houe_bas_2": {"vue": "face", "bras_lointain": "elan", "bras_proche": "elan", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "houe:elan", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "houe_bas_3": {"vue": "face", "bras_lointain": "tendu", "bras_proche": "tendu", "jambes": "marche_1", "dy_buste": 1, "dy_tete": 1, "outil": "houe:coup", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "houe_haut_0": {"vue": "dos", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "houe:pret", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "houe_haut_1": {"vue": "dos", "bras_lointain": "leve", "bras_proche": "leve", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "houe:leve", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "houe_haut_2": {"vue": "dos", "bras_lointain": "elan", "bras_proche": "elan", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "houe:elan", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "houe_haut_3": {"vue": "dos", "bras_lointain": "tendu", "bras_proche": "tendu", "jambes": "marche_1", "dy_buste": 1, "dy_tete": 1, "outil": "houe:coup", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "plante_cote_0": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "plante_cote_1": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "marche_2", "dy_buste": 2, "dy_tete": 2, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "plante_cote_2": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "marche_2", "dy_buste": 2, "dy_tete": 3, "outil": "graine:semis", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "plante_bas_0": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "plante_bas_1": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "marche_2", "dy_buste": 2, "dy_tete": 2, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "plante_bas_2": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "marche_2", "dy_buste": 2, "dy_tete": 3, "outil": "graine:semis", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "plante_haut_0": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "plante_haut_1": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "marche_2", "dy_buste": 2, "dy_tete": 2, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "plante_haut_2": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "marche_2", "dy_buste": 2, "dy_tete": 3, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "arrose_cote_0": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "arrosoir:droit", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "arrose_bas_0": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "arrosoir:droit", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "arrose_haut_0": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "arrosoir:droit", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "arrose_cote_1": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 1, "outil": "arrosoir:penche", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "arrose_bas_1": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 1, "outil": "arrosoir:penche", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "arrose_haut_1": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "arrosoir:penche", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "arrose_cote_2": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 1, "outil": "arrosoir:gouttes", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "arrose_bas_2": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 1, "outil": "arrosoir:gouttes", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "arrose_haut_2": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "arrosoir:gouttes", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "panier_bas_0": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_1", "dy_buste": 0, "dy_tete": 0, "outil": "panier:porte", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "panier_bas_1": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_2", "dy_buste": -1, "dy_tete": -1, "outil": "panier:porte", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "panier_bas_2": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_3", "dy_buste": 0, "dy_tete": 0, "outil": "panier:porte", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "panier_bas_3": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_4", "dy_buste": -1, "dy_tete": -1, "outil": "panier:porte", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "panier_haut_0": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_1", "dy_buste": 0, "dy_tete": 0, "outil": "panier:porte", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "panier_haut_1": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_2", "dy_buste": -1, "dy_tete": -1, "outil": "panier:porte", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "panier_haut_2": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_3", "dy_buste": 0, "dy_tete": 0, "outil": "panier:porte", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "panier_haut_3": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_4", "dy_buste": -1, "dy_tete": -1, "outil": "panier:porte", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "panier_cote_0": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_1", "dy_buste": 0, "dy_tete": 0, "outil": "panier:porte", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "panier_cote_1": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_2", "dy_buste": -1, "dy_tete": -1, "outil": "panier:porte", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "panier_cote_2": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_3", "dy_buste": 0, "dy_tete": 0, "outil": "panier:porte", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "panier_cote_3": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_4", "dy_buste": -1, "dy_tete": -1, "outil": "panier:porte", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "cuisine_0": {"vue": "dos", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "cuillere:0", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "cuisine_1": {"vue": "dos", "bras_lointain": "tient", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "cuillere:1", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "cuisine_2": {"vue": "dos", "bras_lointain": "tient", "bras_proche": "leve", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "cuillere:2", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "cuisine_3": {"vue": "dos", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "cuillere:3", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "frigo_0": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "frigo_1": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "frigo_2": {"vue": "dos", "bras_lointain": "tient", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 1, "dy_tete": 1, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "ramasse_0": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "panier:sol", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "ramasse_1": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "marche_2", "dy_buste": 2, "dy_tete": 3, "outil": "panier:sol", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "ramasse_2": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "marche_2", "dy_buste": 2, "dy_tete": 2, "outil": "oeuf:main", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "hache_cote_0": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "hache:pret", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "hache_cote_1": {"vue": "profil", "bras_lointain": "elan", "bras_proche": "elan", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "hache:leve", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "hache_cote_2": {"vue": "profil", "bras_lointain": "leve", "bras_proche": "leve", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "hache:elan", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "hache_cote_3": {"vue": "profil", "bras_lointain": "tendu", "bras_proche": "tendu", "jambes": "marche_1", "dy_buste": 0, "dy_tete": 1, "outil": "hache:coup", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "pioche_cote_0": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "pioche:pret", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "pioche_cote_1": {"vue": "profil", "bras_lointain": "elan", "bras_proche": "elan", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "pioche:leve", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "pioche_cote_2": {"vue": "profil", "bras_lointain": "leve", "bras_proche": "leve", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "pioche:elan", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "pioche_cote_3": {"vue": "profil", "bras_lointain": "tendu", "bras_proche": "tendu", "jambes": "marche_1", "dy_buste": 1, "dy_tete": 1, "outil": "pioche:coup", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "peche_cote_0": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "canne:tenue", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "peche_cote_1": {"vue": "profil", "bras_lointain": "elan", "bras_proche": "elan", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "canne:armee", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "peche_cote_2": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "canne:lancee", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "peche_cote_3": {"vue": "profil", "bras_lointain": "leve", "bras_proche": "leve", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "canne:ferree", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "peche_bas_0": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "canne:tenue", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "peche_bas_1": {"vue": "face", "bras_lointain": "repos", "bras_proche": "elan", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "canne:armee", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "peche_bas_2": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "canne:lancee", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "peche_bas_3": {"vue": "face", "bras_lointain": "repos", "bras_proche": "leve", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "canne:ferree", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "peche_haut_0": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "canne:tenue", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "peche_haut_1": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "elan", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "canne:armee", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "peche_haut_2": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "canne:lancee", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "peche_haut_3": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "leve", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "canne:ferree", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "assis_bas_0": {"vue": "face", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "assis", "dy_buste": 4, "dy_tete": 4, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "sourire"}, "assis_bas_1": {"vue": "face", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "assis", "dy_buste": 4, "dy_tete": 4, "outil": "fourchette:bouche", "outil_derriere": false, "yeux": "ouverts", "expression": "sourire"}, "assis_haut_0": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "assis", "dy_buste": 4, "dy_tete": 4, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "sourire"}, "assis_haut_1": {"vue": "dos", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "assis", "dy_buste": 4, "dy_tete": 4, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "sourire"}, "assis_cote_0": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "assis", "dy_buste": 4, "dy_tete": 4, "outil": null, "outil_derriere": false, "yeux": "ouverts", "expression": "sourire"}, "assis_cote_1": {"vue": "profil", "bras_lointain": "repos", "bras_proche": "tient", "jambes": "assis", "dy_buste": 4, "dy_tete": 4, "outil": "fourchette:bouche", "outil_derriere": false, "yeux": "ouverts", "expression": "sourire"}, "faux_cote_0": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "faux:pret", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "faux_cote_1": {"vue": "profil", "bras_lointain": "elan", "bras_proche": "elan", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "faux:armee", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "faux_cote_2": {"vue": "profil", "bras_lointain": "tendu", "bras_proche": "tendu", "jambes": "marche_1", "dy_buste": 1, "dy_tete": 1, "outil": "faux:coup", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "faux_cote_3": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "faux:fin", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "dort_bas_0": {"vue": "face", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": null, "outil_derriere": false, "yeux": "fermes", "expression": "neutre"}, "dort_bas_1": {"vue": "face", "bras_lointain": "repos", "bras_proche": "repos", "jambes": "debout", "dy_buste": 1, "dy_tete": 1, "outil": null, "outil_derriere": false, "yeux": "fermes", "expression": "neutre"}, "jette_cote_0": {"vue": "profil", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "fibres:brassee", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "jette_cote_1": {"vue": "profil", "bras_lointain": "leve", "bras_proche": "leve", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "fibres:haut", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "jette_cote_2": {"vue": "profil", "bras_lointain": "tendu", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "fibres:envol", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "jette_bas_0": {"vue": "face", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "fibres:brassee", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "jette_bas_1": {"vue": "face", "bras_lointain": "leve", "bras_proche": "leve", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "fibres:haut", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "jette_bas_2": {"vue": "face", "bras_lointain": "tendu", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "fibres:envol", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "jette_haut_0": {"vue": "dos", "bras_lointain": "tient", "bras_proche": "tient", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "fibres:brassee", "outil_derriere": true, "yeux": "ouverts", "expression": "neutre"}, "jette_haut_1": {"vue": "dos", "bras_lointain": "leve", "bras_proche": "leve", "jambes": "debout", "dy_buste": -1, "dy_tete": -1, "outil": "fibres:haut", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}, "jette_haut_2": {"vue": "dos", "bras_lointain": "tendu", "bras_proche": "tendu", "jambes": "debout", "dy_buste": 0, "dy_tete": 0, "outil": "fibres:envol", "outil_derriere": false, "yeux": "ouverts", "expression": "neutre"}};
+  const ORDRE_COUCHES = {"face": ["outil_derriere", "coiffure_arriere", "bras_lointain", "manche_lointaine", "jambes", "chaussures", "bas", "buste", "haut", "tete", "visage_yeux", "visage_nez", "visage_bouche", "pilosite", "sourcils", "coiffure_avant", "couvre_chef", "lunettes", "accessoire", "bras_proche", "manche_proche", "outil_devant"], "dos": ["outil_derriere", "bras_lointain", "manche_lointaine", "jambes", "chaussures", "bas", "buste", "haut", "tete", "coiffure_entiere", "couvre_chef", "bras_proche", "manche_proche", "outil_devant"], "profil": ["outil_derriere", "bras_lointain", "manche_lointaine", "jambe_lointaine", "chaussure_lointaine", "bas_lointain", "coiffure_arriere", "jambe_proche", "chaussure_proche", "bas_proche", "buste", "haut", "tete", "visage_yeux", "visage_nez", "visage_bouche", "pilosite", "sourcils", "coiffure_avant", "couvre_chef", "lunettes", "accessoire", "bras_proche", "manche_proche", "outil_devant"]};
+  const RAMPES_PERSO = {"peau": {"tres_claire": ["#FCE2D0", "#F6D0B6", "#CEA286", "#987B73"], "claire": ["#F6D6BE", "#F0C4A0", "#C49676", "#917266"], "rosee": ["#FAD2C4", "#ECB4A0", "#C48474", "#916564"], "mate": ["#DAA678", "#C68E60", "#966440", "#6F4C39"], "olive": ["#D6B282", "#BE9868", "#8C6C46", "#68523E"], "foncee": ["#966442", "#7C5032", "#583620", "#41291F"], "tres_foncee": ["#6E4832", "#583826", "#3C2418", "#2C1B18"]}, "cheveux": {"gris": ["#D7D5CA", "#C8C8C2", "#969692", "#70706C"], "noirs": ["#736A61", "#3C3430", "#241E1C", "#181412"], "roux": ["#DC905E", "#CE682C", "#A0461C", "#783214"], "blonds": ["#F1D58A", "#ECC868", "#C49A40", "#967028"], "bruns": ["#977759", "#6E4624", "#4A2E16", "#362210"], "chatains": ["#A98A5E", "#87602C", "#4F3A1E", "#433015"], "platine": ["#F9EFCF", "#F6ECC8", "#D2C496", "#AA9A6E"], "blancs": ["#F4F2E9", "#F0F0EC", "#C8C8C4", "#A0A09C"], "auburn": ["#B3735C", "#964028", "#6E281A", "#501C12"], "roses": ["#F1AABD", "#EC8CB0", "#C46088", "#964064"], "bleus": ["#8DAADD", "#608CDC", "#3C60B0", "#284082"], "verts": ["#97C48E", "#6EB06E", "#46824C", "#2E6034"], "chocolat": ["#886D59", "#5A3824", "#3E2618", "#2C1A10"], "violets": ["#8272B0", "#513F9D", "#2A1F58", "#120D25"]}, "yeux": {"brun": ["#8D817A", "#543A28", "#362418", "#251916"], "noisette": ["#A9947C", "#80582C", "#603E1C", "#412B19"], "vert": ["#69AC6D", "#1A8014", "#146610", "#0E4710"], "bleu": ["#7699D7", "#2E60BE", "#1E4296", "#142E76"], "violet": ["#9782C4", "#643CA0", "#462478", "#30195F"], "turquoise": ["#66BAC8", "#1496A6", "#0A6E7C", "#074D62"]}, "vetement_1": {"rouge": ["#CE4A3A", "#962A22", "#6C1E18", "#46120E"], "jean": ["#6286BE", "#3A588C", "#253A60", "#121E38"], "jaune": ["#F6D660", "#CEA028", "#8C6C18", "#503C0A"], "lilas": ["#CCAEE0", "#966EAC", "#654475", "#381E42"], "orange": ["#EE944A", "#C46628", "#8A4418", "#54240A"], "vert": ["#B9E792", "#88A96C", "#546C3F", "#243416"], "marine": ["#405696", "#243468", "#192349", "#0E142C"], "rose": ["#F0A0BE", "#C8648C", "#8A3C5D", "#501832"], "blanc": ["#F4F4EE", "#C8C8C4", "#848482", "#464646"], "noir": ["#464650", "#28282E", "#18181C", "#0A0A0C"], "turquoise": ["#64D2C8", "#289696", "#1A6767", "#0E3C3C"], "marron": ["#A6764A", "#785030", "#54361F", "#321E10"], "kaki": ["#9CA060", "#6E743C", "#4C5027", "#2C2E14"], "bordeaux": ["#AA384C", "#781E32", "#541422", "#320A14"], "ciel": ["#AAD2F0", "#6EA0D2", "#446C94", "#1E3C5A"], "beige": ["#B29E88", "#968067", "#796753", "#5E5041"]}, "vetement_2": {"rouge": ["#CE4A3A", "#962A22", "#6C1E18", "#46120E"], "jean": ["#6286BE", "#3A588C", "#253A60", "#121E38"], "jaune": ["#F6D660", "#CEA028", "#8C6C18", "#503C0A"], "lilas": ["#CCAEE0", "#966EAC", "#654475", "#381E42"], "orange": ["#EE944A", "#C46628", "#8A4418", "#54240A"], "vert": ["#B9E792", "#88A96C", "#546C3F", "#243416"], "marine": ["#405696", "#243468", "#192349", "#0E142C"], "rose": ["#F0A0BE", "#C8648C", "#8A3C5D", "#501832"], "blanc": ["#F4F4EE", "#C8C8C4", "#848482", "#464646"], "noir": ["#464650", "#28282E", "#18181C", "#0A0A0C"], "turquoise": ["#64D2C8", "#289696", "#1A6767", "#0E3C3C"], "marron": ["#A6764A", "#785030", "#54361F", "#321E10"], "kaki": ["#9CA060", "#6E743C", "#4C5027", "#2C2E14"], "bordeaux": ["#AA384C", "#781E32", "#541422", "#320A14"], "ciel": ["#AAD2F0", "#6EA0D2", "#446C94", "#1E3C5A"], "beige": ["#B29E88", "#968067", "#796753", "#5E5041"], "pantalon_bleu": ["#688EBC", "#3F6FA8", "#2C4F7C", "#1E3762"], "pantalon_brun": ["#947964", "#785434", "#583C24", "#3C2A1F"], "pantalon_gris": ["#7D7E8B", "#5A5A68", "#40404C", "#2C2D3E"], "pantalon_sombre": ["#606471", "#343846", "#242632", "#181B2A"], "pantalon_vert": ["#78956A", "#54783C", "#3C5A2A", "#293F24"]}, "chaussures": {"cuir_brun": ["#D2A478", "#9E6E46", "#6C462A", "#3E2616"], "cuir_fauve": ["#E4B678", "#B88244", "#825426", "#4E3016"], "bottes_noires": ["#747682", "#484A54", "#2C2E38", "#181920"], "bottes_vertes": ["#8AB87E", "#588650", "#385A34", "#203620"], "sabots_bois": ["#E8C896", "#BE9660", "#8A663C", "#543C22"]}, "accessoire": {"rouge": ["#D77368", "#C4342C", "#8D2624", "#5A191B"], "bleu": ["#7691C4", "#3660B4", "#27468D", "#192D61"], "vert": ["#7AA879", "#3C8246", "#2B5F38", "#1C3E28"], "jaune": ["#F2D572", "#ECC43C", "#AA9031", "#6D5D23"], "rose": ["#EFA1BD", "#E878AA", "#A75886", "#6B395C"], "noir": ["#6D6B69", "#28282E", "#1D1D26", "#12131C"], "gris": ["#AAA8A7", "#82828A", "#5E5F6D", "#3C3E4B"], "blanc": ["#F5F3E7", "#F0F0E8", "#ADB0B5", "#6E727C"], "orange": ["#EFA66C", "#E88032", "#A75E29", "#6B3D1E"], "violet": ["#AA86BD", "#8250AA", "#5E3B86", "#3C265C"], "brun": ["#9C8065", "#6E4828", "#4F3521", "#332219"], "marine": ["#6A719D", "#24327A", "#1A2561", "#111843"]}};
+
+  // TIRAGE.probabilites.couvre_chef de data/studio-personnages.json
+  const PROBA_CHAPEAU = 0.35;
+
+  const hex2rgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const cleRgb = (r, g, b) => (r << 16) | (g << 8) | b;
+
+  // Hachage FNV-1a 32 bits + Mulberry32 déterministe (identique à js/carte/comportement.js : zéro Math.random)
+  function fnv1a(str) {
+    let h = 2166136261;
+    const s = String(str);
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  function mulberry32(seed) {
+    let s = (seed >>> 0) || 1;
+    return () => {
+      s = (s + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // État d'assemblage et d'animation
+  const asm = {
+    genre: 'femme',
+    yeuxForme: 'amande',
+    bouche: 'sourire',
+    coiffure: 'longue',
+    chapeau: 'paille',
+    couleurs: {
+      peau: 'claire',
+      cheveux: 'auburn',
+      yeux: 'vert',
+      vetement_1: 'vert',
+      vetement_2: 'jean',
+      chaussures: 'cuir_brun',
+      accessoire: 'rose'
+    },
+    geste: 'marche',
+    frameIdx: 0,
+    playing: true,
+    timer: null,
+    showSheet: false,
+    showGameScale: false,
+    villageoisTires: new Set(),
+    compteurUnique: 1,
+    sheetCv: document.createElement('canvas')
+  };
+
+  // Peuplement des listes déroulantes de palettes depuis catalogue.json
+  const MAP_SELECT_PAL = [
+    ['selPalPeau', 'peau'], ['selPalCheveux', 'cheveux'], ['selPalYeux', 'yeux'],
+    ['selPalVet1', 'vetement_1'], ['selPalVet2', 'vetement_2'],
+    ['selPalChaussures', 'chaussures'], ['selPalAcc', 'accessoire']
+  ];
+  for (const [selId, zone] of MAP_SELECT_PAL) {
+    const el = document.getElementById(selId);
+    const keys = Object.keys(RAMPES_PERSO[zone] || {});
+    el.innerHTML = keys.map(k => `<option value="${k}"${asm.couleurs[zone] === k ? ' selected' : ''}>${k.replace(/_/g, ' ')}</option>`).join('');
+    el.addEventListener('change', () => {
+      asm.couleurs[zone] = el.value;
+      majCleDiversite();
+      rafraichirAssemblage();
+    });
+  }
+
+  // Table de remplacement instantané : clé RGB ton réservé -> [r, g, b] cible
+  function construireTableRecoloration() {
+    const map = new Map();
+    for (const [zone, resHexes] of Object.entries(CFG.TONS_RESERVES)) {
+      if (!Array.isArray(resHexes)) continue;
+      const choix = asm.couleurs[zone];
+      const cibleHexes = (RAMPES_PERSO[zone] && RAMPES_PERSO[zone][choix]) || resHexes;
+      resHexes.forEach((rh, idx) => {
+        const sr = hex2rgb(rh);
+        const tr = hex2rgb(cibleHexes[Math.min(idx, cibleHexes.length - 1)]);
+        map.set(cleRgb(sr[0], sr[1], sr[2]), tr);
+      });
+    }
+    return map;
+  }
+
+  // =========================================================================
+  // GÉNÉRATEUR DU JEU MINIMAL DÉMO HD (22×39 px adulte / 18×30 enfant, 4 tons + contour #2B1D14)
+  // Passe chaque pièce générée à travers verifierEtExtrairePiece() exactement comme un PNG de Piskel !
+  // Ne remplace JAMAIS une pièce portant la même clé déjà importée par le propriétaire.
+  // =========================================================================
+  function creerTampon48() {
+    const buf = new Uint8ClampedArray(48 * 48 * 4);
+    const put = (x, y, rgb, a = 255) => {
+      x = Math.round(x); y = Math.round(y);
+      if (x < 0 || x >= 48 || y < 0 || y >= 48) return;
+      const i = (y * 48 + x) * 4;
+      buf[i] = rgb[0]; buf[i + 1] = rgb[1]; buf[i + 2] = rgb[2]; buf[i + 3] = a;
+    };
+    const disc = (cx, cy, rx, ry, tons) => {
+      for (let y = Math.floor(cy - ry - 1); y <= Math.ceil(cy + ry + 1); y++) {
+        for (let x = Math.floor(cx - rx - 1); x <= Math.ceil(cx + rx + 1); x++) {
+          const nx = (x - cx) / rx, ny = (y - cy) / ry;
+          if (nx * nx + ny * ny <= 1.0) {
+            // Lumière en haut à gauche (règle CLAUDE.md)
+            const s = (-nx * 0.55 - ny * 0.65 + 0.5);
+            const idx = s > 0.78 ? 0 : s > 0.42 ? 1 : s > 0.08 ? 2 : 3;
+            put(x, y, tons[idx]);
+          }
+        }
+      }
+    };
+    const capsule = (x0, y0, x1, y1, r, tons) => {
+      const steps = Math.max(2, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2));
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        disc(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r, r, tons);
+      }
+    };
+    const contour1px = (rgbOut = [43, 29, 20]) => {
+      const snap = new Uint8ClampedArray(buf);
+      for (let y = 1; y < 47; y++) {
+        for (let x = 1; x < 47; x++) {
+          const i = (y * 48 + x) * 4;
+          if (snap[i + 3] > 0) continue;
+          if (snap[i - 4 + 3] || snap[i + 4 + 3] || snap[i - 192 + 3] || snap[i + 192 + 3]) {
+            buf[i] = rgbOut[0]; buf[i + 1] = rgbOut[1]; buf[i + 2] = rgbOut[2]; buf[i + 3] = 255;
+          }
+        }
+      }
+    };
+    return { buf, put, disc, capsule, contour1px };
+  }
+
+  function chargerJeuMinimalDemo() {
+    const PEAU = CFG.TONS_RESERVES.peau.map(hex2rgb);
+    const CHEV = CFG.TONS_RESERVES.cheveux.map(hex2rgb);
+    const YEUX = CFG.TONS_RESERVES.yeux.map(hex2rgb);
+    const VET1 = CFG.TONS_RESERVES.vetement_1.map(hex2rgb);
+    const VET2 = CFG.TONS_RESERVES.vetement_2.map(hex2rgb);
+    const CHAU = CFG.TONS_RESERVES.chaussures.map(hex2rgb);
+    const ACC  = CFG.TONS_RESERVES.accessoire.map(hex2rgb);
+    const K = [43, 29, 20], BLANC = [250, 246, 240];
+    const ATT = CFG.POINTS_ATTACHE;
+
+    const enregistrerDemo = (nomFichier, buildFn) => {
+      const cleTest = nomFichier.replace(/\.png$/i, '').toLowerCase();
+      if (pState.biblio.has(cleTest) && !pState.biblio.get(cleTest).estDemo) return; // garde les vrais dessins du propriétaire !
+      const t = creerTampon48();
+      buildFn(t);
+      const res = verifierEtExtrairePiece(nomFichier, 48, 48, t.buf);
+      if (res.ok) {
+        res.estDemo = true;
+        pState.biblio.set(res.cle, res);
+      } else {
+        console.warn(`Jeu démo : ${nomFichier} refusé par le vérificateur`, res.erreurs);
+      }
+    };
+
+    for (const corpsType of ['adulte', 'enfant']) {
+      const isEnf = corpsType === 'enfant';
+      const sc = isEnf ? 0.76 : 1.0;
+      const repMap = CFG.CORPS[corpsType].repere_48x48;
+
+      for (const v of ['face', 'dos', 'profil']) {
+        const rep = repMap[v];
+        const [cx, cyCou] = rep.cou;
+
+        // 1. Tête nue
+        enregistrerDemo(`${corpsType}_${v}_tete_base.png`, t => {
+          const rx = (v === 'profil' ? 6.0 : 6.8) * sc, ry = 6.8 * sc;
+          t.disc(cx, cyCou - ry + 1, rx, ry, PEAU);
+          // Cou
+          t.capsule(cx, cyCou - 2, cx, cyCou, 2.2 * sc, PEAU);
+          if (v === 'face') { t.disc(cx - rx, cyCou - ry + 2, 1.3, 1.8, PEAU); t.disc(cx + rx, cyCou - ry + 2, 1.3, 1.8, PEAU); }
+          t.contour1px(K);
+          t.put(cx, cyCou, ATT.cou.rgb);
+          if (v !== 'dos') {
+            t.put(rep.yeux[0], rep.yeux[1], ATT.yeux.rgb);
+            t.put(rep.nez[0], rep.nez[1], ATT.nez.rgb);
+            t.put(rep.bouche[0], rep.bouche[1], ATT.bouche.rgb);
+          }
+        });
+
+        // 2. Bustes (femme, homme, enfant) + Hauts chemisier + Salopette
+        const genres = isEnf ? ['enfant'] : ['femme', 'homme'];
+        for (const g of genres) {
+          const wEp = g === 'homme' ? 6.2 : (g === 'femme' ? 5.2 : 4.2);
+          const wTa = g === 'homme' ? 5.2 : (g === 'femme' ? 4.3 : 3.8);
+          enregistrerDemo(`${g}_${v}_buste_base.png`, t => {
+            const yH = rep.hanche_proche[1];
+            for (let y = cyCou; y <= yH; y++) {
+              const u = (y - cyCou) / Math.max(1, yH - cyCou);
+              const hw = v === 'profil' ? (wTa * 0.85) : (wEp * (1 - u) + wTa * u);
+              t.disc((rep.epaule_lointaine[0] + rep.epaule_proche[0]) * 0.5, y, hw, 1.2, PEAU);
+            }
+            t.contour1px(K);
+            t.put(rep.cou[0], rep.cou[1], ATT.cou.rgb);
+            t.put(rep.epaule_lointaine[0], rep.epaule_lointaine[1], ATT.epaule_l.rgb);
+            t.put(rep.epaule_proche[0], rep.epaule_proche[1], ATT.epaule_p.rgb);
+            t.put(rep.hanche_lointaine[0], rep.hanche_lointaine[1], ATT.hanche_l.rgb);
+            t.put(rep.hanche_proche[0], rep.hanche_proche[1], ATT.hanche_p.rgb);
+          });
+
+          enregistrerDemo(`${g}_${v}_haut_chemisier_buste.png`, t => {
+            const yH = rep.hanche_proche[1];
+            const midX = (rep.epaule_lointaine[0] + rep.epaule_proche[0]) * 0.5;
+            for (let y = cyCou + 1; y <= yH; y++) {
+              const u = (y - cyCou) / Math.max(1, yH - cyCou);
+              const hw = (v === 'profil' ? wTa * 0.92 : (wEp * (1 - u) + wTa * u)) + 0.4;
+              t.disc(midX, y, hw, 1.2, VET1);
+            }
+            // Col clair
+            t.put(cx - 1, cyCou + 1, VET1[0]); t.put(cx + 1, cyCou + 1, VET1[0]);
+            t.contour1px(K);
+            t.put(rep.cou[0], rep.cou[1], ATT.cou.rgb);
+          });
+        }
+
+        // 3. Les 5 positions de bras (repos, tient, elan, tendu, leve) + manches
+        const brasVecteurs = {
+          repos: { face: [0, 8],  dos: [0, 8],  profil: [0, 8] },
+          tient: { face: [2, 5],  dos: [2, 5],  profil: [6, 3] },
+          tendu: { face: [1, 7],  dos: [1, 6],  profil: [8, 1] },
+          elan:  { face: [-2, -4],dos: [-2, -4],profil: [-5, -5] },
+          leve:  { face: [-1, -8],dos: [-1, -8],profil: [3, -8] }
+        };
+        for (const [pos, dirs] of Object.entries(brasVecteurs)) {
+          const [dx, dy] = dirs[v].map(val => Math.round(val * sc));
+          // Bras lointain
+          enregistrerDemo(`${corpsType}_${v}_bras-lointain_nu_${pos}.png`, t => {
+            const [ex, ey] = rep.epaule_lointaine;
+            const mx = ex + (v === 'face' || v === 'dos' ? -dx : dx), my = ey + dy;
+            t.capsule(ex, ey, mx, my, 1.45 * sc, PEAU);
+            t.contour1px(K);
+            t.put(ex, ey, ATT.epaule_l.rgb);
+            t.put(mx, my + (my === ey ? 1 : 0), ATT.prise.rgb);
+          });
+          // Bras proche + Manche proche
+          enregistrerDemo(`${corpsType}_${v}_bras-proche_nu_${pos}.png`, t => {
+            const [ex, ey] = rep.epaule_proche;
+            const mx = ex + dx, my = ey + dy;
+            t.capsule(ex, ey, mx, my, 1.55 * sc, PEAU);
+            t.contour1px(K);
+            t.put(ex, ey, ATT.epaule_p.rgb);
+            t.put(mx, my + (my === ey ? 1 : 0), ATT.prise.rgb);
+          });
+          enregistrerDemo(`${corpsType}_${v}_manche-proche_chemisier_${pos}.png`, t => {
+            const [ex, ey] = rep.epaule_proche;
+            const mx = ex + Math.round(dx * 0.52), my = ey + Math.round(dy * 0.52);
+            t.capsule(ex, ey, mx, my, 1.85 * sc, VET1);
+            t.contour1px(K);
+            t.put(ex, ey, ATT.epaule_p.rgb);
+          });
+          enregistrerDemo(`${corpsType}_${v}_manche-lointaine_chemisier_${pos}.png`, t => {
+            const [ex, ey] = rep.epaule_lointaine;
+            const mx = ex + Math.round((v === 'profil' ? dx : -dx) * 0.52), my = ey + Math.round(dy * 0.52);
+            t.capsule(ex, ey, mx, my, 1.75 * sc, VET1);
+            t.contour1px(K);
+            t.put(ex, ey, ATT.epaule_l.rgb);
+          });
+        }
+
+        // 4. Les 6 positions de jambes + Bas salopette + Chaussures (pieds posés sur y=46/47 avec contour)
+        const pasCfg = {
+          'debout':   { l: [0, 0],  p: [0, 0] },
+          'marche-1': { l: [-3, -1],p: [3, 0] },
+          'marche-2': { l: [0, -2], p: [0, 0] },
+          'marche-3': { l: [3, 0],  p: [-3, -1] },
+          'marche-4': { l: [0, 0],  p: [0, -2] },
+          'assis':    { l: [3, -3], p: [4, -3] }
+        };
+        for (const [pos, dec] of Object.entries(pasCfg)) {
+          const [hlx, hly] = rep.hanche_lointaine, [hpx, hpy] = rep.hanche_proche;
+          const ySol = 45;
+          const lx1 = hlx + (v === 'profil' ? dec.l[0] : 0), ly1 = ySol + dec.l[1];
+          const px1 = hpx + (v === 'profil' ? dec.p[0] : 0), py1 = ySol + dec.p[1];
+
+          enregistrerDemo(`${corpsType}_${v}_jambes_nues_${pos}.png`, t => {
+            t.capsule(hlx, hly, lx1, ly1, 1.6 * sc, PEAU);
+            t.capsule(hpx, hpy, px1, py1, 1.6 * sc, PEAU);
+            t.contour1px(K);
+            t.put(hlx, hly, ATT.hanche_l.rgb);
+            t.put(hpx, hpy, ATT.hanche_p.rgb);
+          });
+
+          for (const g of genres) {
+            enregistrerDemo(`${g}_${v}_bas_salopette_${pos}.png`, t => {
+              const midX = (hlx + hpx) * 0.5;
+              // Bavette de salopette qui remonte sur le buste + bretelles !
+              t.disc(midX, hpy - 3 * sc, (v === 'profil' ? 3.8 : 4.8) * sc, 3.2 * sc, VET2);
+              t.capsule(midX - 2, hpy - 4 * sc, midX - 2, cyCou + 2, 0.9, VET2);
+              if (v !== 'profil') t.capsule(midX + 2, hpy - 4 * sc, midX + 2, cyCou + 2, 0.9, VET2);
+              // Jambes du pantalon
+              t.capsule(hlx, hly, lx1, ly1 - 2, 1.85 * sc, VET2);
+              t.capsule(hpx, hpy, px1, py1 - 2, 1.85 * sc, VET2);
+              t.contour1px(K);
+              t.put(hpx, hpy, ATT.hanche_p.rgb);
+            });
+          }
+
+          enregistrerDemo(`${corpsType}_${v}_chaussures_bottines_${pos}.png`, t => {
+            const dirPied = v === 'profil' ? 1.5 : 0;
+            t.disc(lx1 + dirPied * 0.5, ly1, 2.1 * sc, 1.3, CHAU);
+            t.disc(px1 + dirPied * 0.5, py1, 2.2 * sc, 1.3, CHAU);
+            t.contour1px(K);
+            t.put(hpx, hpy, ATT.hanche_p.rgb);
+          });
+        }
+
+        // 5. Coiffures (longue avant/arrière + courte) & Chapeau de paille avec masque #00FF00
+        if (v !== 'dos') {
+          enregistrerDemo(`${corpsType}_${v}_coiffure-longue_avant.png`, t => {
+            const ry = 6.8 * sc;
+            // Frange souple sur le front + mèches d'épaules
+            t.disc(cx, cyCou - ry * 1.65, (v === 'profil' ? 6.2 : 7.4) * sc, 3.2 * sc, CHEV);
+            if (v === 'face') {
+              t.capsule(cx - 6.2 * sc, cyCou - ry, cx - 6.0 * sc, cyCou + 2, 1.7 * sc, CHEV);
+              t.capsule(cx + 6.2 * sc, cyCou - ry, cx + 6.0 * sc, cyCou + 2, 1.7 * sc, CHEV);
+            } else {
+              t.capsule(cx - 4.2 * sc, cyCou - ry, cx - 4.8 * sc, cyCou + 3, 2.2 * sc, CHEV);
+            }
+            t.contour1px(K);
+            t.put(cx, cyCou, ATT.cou.rgb);
+          });
+          enregistrerDemo(`${corpsType}_${v}_coiffure-courte_avant.png`, t => {
+            const ry = 6.8 * sc;
+            t.disc(cx, cyCou - ry * 1.68, (v === 'profil' ? 6.2 : 7.2) * sc, 3.0 * sc, CHEV);
+            if (v === 'profil') t.capsule(cx - 4.5 * sc, cyCou - ry * 1.3, cx - 4.2 * sc, cyCou - 2, 1.8 * sc, CHEV);
+            t.contour1px(K);
+            t.put(cx, cyCou, ATT.cou.rgb);
+          });
+        }
+
+        enregistrerDemo(`${corpsType}_${v}_coiffure-longue_arriere.png`, t => {
+          const ry = 6.8 * sc;
+          t.disc(cx - (v === 'profil' ? 2 : 0), cyCou - ry + 2, (v === 'profil' ? 6.5 : 7.8) * sc, 7.8 * sc, CHEV);
+          t.capsule(cx - (v === 'profil' ? 4 : 3) * sc, cyCou - 3, cx - (v === 'profil' ? 5 : 3.5) * sc, cyCou + 6 * sc, 3.2 * sc, CHEV);
+          if (v !== 'profil') t.capsule(cx + 3 * sc, cyCou - 3, cx + 3.5 * sc, cyCou + 6 * sc, 3.2 * sc, CHEV);
+          t.contour1px(K);
+          t.put(cx, cyCou, ATT.cou.rgb);
+        });
+        enregistrerDemo(`${corpsType}_${v}_coiffure-courte_arriere.png`, t => {
+          const ry = 6.8 * sc;
+          t.disc(cx - (v === 'profil' ? 1.5 : 0), cyCou - ry + 1, (v === 'profil' ? 6.4 : 7.2) * sc, 6.8 * sc, CHEV);
+          t.contour1px(K);
+          t.put(cx, cyCou, ATT.cou.rgb);
+        });
+
+        // Chapeau de paille + ruban accessoire + masque #00FF00 au-dessus de la calotte !
+        enregistrerDemo(`${corpsType}_${v}_couvre-chef_paille.png`, t => {
+          const yHat = Math.round(cyCou - 11.5 * sc);
+          // Calotte + large bord + ruban coloré
+          t.disc(cx, yHat - 2, 6.2 * sc, 3.2 * sc, CHAU);
+          t.disc(cx, yHat + 0.8, 10.2 * sc, 2.1 * sc, CHAU);
+          for (let x = Math.round(cx - 5.5 * sc); x <= Math.round(cx + 5.5 * sc); x++) {
+            t.put(x, yHat, ACC[1]);
+          }
+          t.contour1px(K);
+          // Masque #00FF00 au-dessus du chapeau pour effacer toute mèche haute qui dépasserait !
+          for (let y = Math.max(1, yHat - 9); y < yHat - 4; y++) {
+            for (let x = cx - 9; x <= cx + 9; x++) {
+              if (t.buf[(y * 48 + x) * 4 + 3] === 0) t.put(x, y, [0, 255, 0]);
+            }
+          }
+          t.put(cx, cyCou, ATT.cou.rgb);
+        });
+
+        // 6. Visage (yeux amande/ronds × ouverts/fermés, nez, bouches) en face et profil
+        if (v !== 'dos') {
+          const [yx, yy] = rep.yeux, [nx, ny] = rep.nez, [bx, by] = rep.bouche;
+          for (const forme of ['amande', 'ronds']) {
+            enregistrerDemo(`${corpsType}_${v}_yeux_${forme}_ouverts.png`, t => {
+              const offsets = v === 'face' ? [-3, 3] : [0];
+              for (const ox of offsets) {
+                t.put(yx + ox - 1, yy, BLANC);
+                t.put(yx + ox, yy, YEUX[1]);
+                t.put(yx + ox, yy + 1, YEUX[2]);
+                if (forme === 'ronds') t.put(yx + ox - 1, yy + 1, YEUX[1]);
+                t.put(yx + ox, yy - 1, K); // cil supérieur net
+              }
+              t.put(yx, yy, ATT.yeux.rgb);
+            });
+            enregistrerDemo(`${corpsType}_${v}_yeux_${forme}_fermes.png`, t => {
+              const offsets = v === 'face' ? [-3, 3] : [0];
+              for (const ox of offsets) {
+                t.put(yx + ox - 1, yy + 1, K);
+                t.put(yx + ox, yy + 1, K);
+              }
+              t.put(yx, yy, ATT.yeux.rgb);
+            });
+          }
+          enregistrerDemo(`${corpsType}_${v}_nez_petit.png`, t => {
+            t.put(nx + (v === 'profil' ? 1 : 0), ny, PEAU[2]);
+            t.put(nx, ny, ATT.nez.rgb);
+          });
+          enregistrerDemo(`${corpsType}_${v}_bouche_sourire.png`, t => {
+            t.put(bx - 1, by, PEAU[3]); t.put(bx + 1, by, PEAU[3]); t.put(bx, by + 1, PEAU[3]);
+            t.put(bx, by, ATT.bouche.rgb);
+          });
+          enregistrerDemo(`${corpsType}_${v}_bouche_neutre.png`, t => {
+            t.put(bx - 1, by, PEAU[3]); t.put(bx + 1, by, PEAU[3]);
+            t.put(bx, by, ATT.bouche.rgb);
+          });
+        }
+      }
+    }
+
+    // 7. Outils de travail avec pixel de prise (#FF8000) pour que tous les gestes à plusieurs temps bougent !
+    // (4 tons, du clair au sombre, comme ceux que disc() attend ; loin des tons réservés, sinon le vérificateur refuse l'outil)
+    const BOIS_O = [[226,184,124],[176,128,74],[124,84,46],[70,48,36]], FER_O = [[218,226,236],[154,164,178],[92,100,114],[56,62,74]];
+    const defOutils = [
+      ['houe-pret',   [[0,0],[3,-4],[6,-8]], [[7,-9],[8,-8],[6,-7]], FER_O],
+      ['houe-leve',   [[0,0],[-3,-6],[-6,-11]], [[-7,-12],[-8,-11],[-6,-10]], FER_O],
+      ['houe-elan',   [[0,0],[4,-5],[8,-9]], [[9,-10],[10,-9],[9,-8]], FER_O],
+      ['houe-coup',   [[0,0],[4,4],[7,8]], [[7,9],[8,10],[6,10]], FER_O],
+      ['hache-pret',  [[0,0],[3,-4],[6,-7]], [[6,-9],[7,-9],[6,-8],[7,-8]], FER_O],
+      ['hache-leve',  [[0,0],[-3,-5],[-6,-9]], [[-7,-10],[-8,-10],[-7,-9]], FER_O],
+      ['hache-elan',  [[0,0],[3,-6],[6,-10]], [[6,-12],[7,-12],[7,-11]], FER_O],
+      ['hache-coup',  [[0,0],[5,0],[9,0]], [[9,-2],[10,-2],[9,-1],[10,-1]], FER_O],
+      ['pioche-pret', [[0,0],[3,-4],[6,-7]], [[4,-7],[6,-8],[8,-7]], FER_O],
+      ['pioche-leve', [[0,0],[-3,-5],[-6,-9]], [[-8,-8],[-6,-10],[-4,-9]], FER_O],
+      ['pioche-elan', [[0,0],[2,-6],[5,-10]], [[3,-11],[5,-10],[7,-9]], FER_O],
+      ['pioche-coup', [[0,0],[4,3],[7,6]], [[6,8],[7,7],[8,5]], FER_O],
+      ['faux-pret',   [[0,0],[-2,-4],[4,7]], [[4,8],[3,9],[1,9],[-1,9]], FER_O],
+      ['faux-armee',  [[0,0],[2,-4],[-5,7]], [[-5,8],[-4,9],[-2,9]], FER_O],
+      ['faux-coup',   [[0,0],[-2,-3],[4,8]], [[5,8],[7,8],[8,7]], FER_O],
+      ['faux-fin',    [[0,0],[-1,-4],[5,5]], [[6,5],[7,4],[7,2]], FER_O],
+      ['canne-tenue', [[0,0],[4,-5],[9,-11]], [[10,-12]], BOIS_O],
+      ['canne-armee', [[0,0],[-4,-5],[-8,-10]], [[-9,-11]], BOIS_O],
+      ['canne-lancee',[[0,0],[5,-2],[11,-5]], [[12,-5]], BOIS_O],
+      ['canne-ferree',[[0,0],[3,-7],[7,-14]], [[8,-15]], BOIS_O]
+    ];
+    for (const v of ['face', 'dos', 'profil']) {
+      for (const [varianteOutil, manchePts, ferPts, ferPal] of defOutils) {
+        enregistrerDemo(`adulte_${v}_outil_${varianteOutil}.png`, t => {
+          const px = 24, py = 26;
+          for (let i = 0; i < manchePts.length - 1; i++) {
+            t.capsule(px + manchePts[i][0], py + manchePts[i][1], px + manchePts[i + 1][0], py + manchePts[i + 1][1], 0.9, BOIS_O);
+          }
+          for (const [fx, fy] of ferPts) t.disc(px + fx, py + fy, 1.3, 1.3, ferPal);
+          t.contour1px(K);
+          t.put(px, py, ATT.prise.rgb);
+        });
+      }
+      // Arrosoir (droit, penché, gouttes) et Panier
+      for (const etat of ['droit', 'penche', 'gouttes']) {
+        enregistrerDemo(`adulte_${v}_outil_arrosoir-${etat}.png`, t => {
+          const px = 24, py = 26, dy = etat === 'droit' ? 0 : 2;
+          t.disc(px + 3, py + 2 + dy, 3.2, 2.8, FER_O);
+          t.capsule(px + 5, py + 1 + dy, px + 9, py - 1 + dy * 1.5, 0.9, FER_O);
+          t.contour1px(K);
+          if (etat === 'gouttes') {
+            t.put(px + 11, py + 4, [110, 190, 245]);
+            t.put(px + 12, py + 7, [110, 190, 245]);
+            t.put(px + 10, py + 8, [110, 190, 245]);
+          }
+          t.put(px, py, ATT.prise.rgb);
+        });
+      }
+      enregistrerDemo(`adulte_${v}_outil_panier-porte.png`, t => {
+        const px = 24, py = 26;
+        t.disc(px, py + 4, 3.8, 2.8, BOIS_O);
+        t.put(px - 1, py + 2, [250, 244, 226]); t.put(px + 1, py + 2, [250, 244, 226]);
+        t.contour1px(K);
+        t.put(px, py, ATT.prise.rgb);
+      });
+    }
+  }
+
+  // =========================================================================
+  // ASSEMBLEUR PAR POINTS D'ATTACHE ENTIERS (ZÉRO ROTATION / ZÉRO MISE À L'ÉCHELLE)
+  // =========================================================================
+  function chercherPiece(voulusCorps, vue, piece, variante, position = null) {
+    const posDash = position ? position.replace(/_/g, '-') : null;
+    for (const c of voulusCorps) {
+      const cle1 = `${c}_${vue}_${piece}_${variante}${posDash ? '_' + posDash : ''}`;
+      if (pState.biblio.has(cle1)) return pState.biblio.get(cle1);
+      if (posDash) {
+        // Repli gracieux vers la position de base si une position secondaire n'est pas encore dessinée
+        for (const repli of ['repos', 'debout', 'tient']) {
+          const cleR = `${c}_${vue}_${piece}_${variante}_${repli}`;
+          if (pState.biblio.has(cleR)) return pState.biblio.get(cleR);
+        }
+      }
+    }
+    return null;
+  }
+
+  function copierPieceDecalee(dstData, pieceObj, dx, dy, tableCouleurs, masqueSet = null, filtrerMasque = false) {
+    if (!pieceObj) return;
+    dx = Math.round(dx); dy = Math.round(dy);
+    const sctx = pieceObj.canvas.getContext('2d');
+    const sd = sctx.getImageData(0, 0, 48, 48).data;
+
+    // Enregistre les pixels masqués si c'est un couvre-chef portant #00FF00
+    if (masqueSet && pieceObj.masqueCoupe && pieceObj.masqueCoupe.length) {
+      for (const [mx, my] of pieceObj.masqueCoupe) {
+        const tx = mx + dx, ty = my + dy;
+        if (tx >= 0 && tx < 48 && ty >= 0 && ty < 48) masqueSet.add(ty * 48 + tx);
+      }
+    }
+
+    for (let y = 0; y < 48; y++) {
+      const ty = y + dy;
+      if (ty < 0 || ty >= 48) continue;
+      for (let x = 0; x < 48; x++) {
+        const tx = x + dx;
+        if (tx < 0 || tx >= 48) continue;
+        const si = (y * 48 + x) * 4;
+        if (sd[si + 3] === 0) continue;
+        if (filtrerMasque && masqueSet && masqueSet.has(ty * 48 + tx)) continue;
+
+        let r = sd[si], g = sd[si + 1], b = sd[si + 2];
+        const remp = tableCouleurs.get(cleRgb(r, g, b));
+        if (remp) { r = remp[0]; g = remp[1]; b = remp[2]; }
+
+        const di = (ty * 48 + tx) * 4;
+        dstData[di] = r; dstData[di + 1] = g; dstData[di + 2] = b; dstData[di + 3] = 255;
+      }
+    }
+  }
+
+  // Assemble une case 48×48 complète pour le nom de case `nomCase` (ex. 'houe_cote_2')
+  function assemblerCase(nomCase, tableCouleurs, pourExportJeu = false) {
+    const pose = POSES_111[nomCase] || POSES_111.idle_bas_0;
+    const vue = pose.vue; // 'face' | 'dos' | 'profil'
+    const estEnf = asm.genre === 'enfant';
+    const corpsOrdre = estEnf ? ['enfant', 'adulte'] : [asm.genre, 'adulte'];
+    const corpsComm  = estEnf ? ['enfant', 'adulte'] : ['adulte', asm.genre];
+
+    const buste = chercherPiece(corpsOrdre, vue, 'buste', 'base');
+    const tete  = chercherPiece(corpsComm, vue, 'tete', 'base');
+    const cv = document.createElement('canvas'); cv.width = 48; cv.height = 48;
+    if (!buste || !tete) return cv;
+
+    const repDef = CFG.CORPS[estEnf ? 'enfant' : 'adulte'].repere_48x48[vue];
+    const dyB = pose.dy_buste || 0;
+    const dyT = pose.dy_tete || 0;
+
+    // Coordonnées maîtresses du buste dans la case (décalage entier dyB)
+    const ancreBuste = (nom, defaut) => {
+      const p = (buste.ancres && buste.ancres[nom]) || defaut;
+      return [p[0], p[1] + dyB];
+    };
+    const couMonde = [((buste.ancres && buste.ancres.cou) || repDef.cou)[0], ((buste.ancres && buste.ancres.cou) || repDef.cou)[1] + dyT];
+    const epLMonde = ancreBuste('epaule_l', repDef.epaule_lointaine);
+    const epPMonde = ancreBuste('epaule_p', repDef.epaule_proche);
+    const haPMonde = ancreBuste('hanche_p', repDef.hanche_proche);
+
+    // Décalage entier de la tête calée sur couMonde
+    const couTete = (tete.ancres && tete.ancres.cou) || repDef.cou;
+    const dxTete = couMonde[0] - couTete[0], dyTete = couMonde[1] - couTete[1];
+
+    // Pré-calcul du masque #00FF00 du couvre-chef s'il y en a un !
+    const chapeauPiece = asm.chapeau !== 'aucun' ? chercherPiece(corpsComm, vue, 'couvre-chef', asm.chapeau) : null;
+    const masqueCoiffure = new Set();
+    if (chapeauPiece && chapeauPiece.masqueCoupe) {
+      const cChap = (chapeauPiece.ancres && chapeauPiece.ancres.cou) || couTete;
+      const dxC = couMonde[0] - cChap[0], dyC = couMonde[1] - cChap[1];
+      for (const [mx, my] of chapeauPiece.masqueCoupe) {
+        const tx = mx + dxC, ty = my + dyC;
+        if (tx >= 0 && tx < 48 && ty >= 0 && ty < 48) masqueCoiffure.add(ty * 48 + tx);
+      }
+    }
+
+    // Bras proche et lointain pour localiser la prise de l'outil
+    const brasL = chercherPiece(corpsComm, vue, 'bras-lointain', 'nu', pose.bras_lointain);
+    const brasP = chercherPiece(corpsComm, vue, 'bras-proche', 'nu', pose.bras_proche);
+    const epBrasP = (brasP && brasP.ancres && brasP.ancres.epaule_p) || epPMonde;
+    const dxBP = epPMonde[0] - epBrasP[0], dyBP = epPMonde[1] - epBrasP[1];
+    const priseMonde = (brasP && brasP.ancres && brasP.ancres.prise)
+      ? [brasP.ancres.prise[0] + dxBP, brasP.ancres.prise[1] + dyBP]
+      : [epPMonde[0] + 4, epPMonde[1] + 4];
+
+    // Résolution éventuelle de l'outil de la pose
+    let outilPiece = null, dxOut = 0, dyOut = 0;
+    if (pose.outil) {
+      const varOut = pose.outil.replace(':', '-');
+      outilPiece = chercherPiece(['adulte'], vue, 'outil', varOut);
+      if (outilPiece) {
+        const prO = (outilPiece.ancres && outilPiece.ancres.prise) || [24, 26];
+        dxOut = priseMonde[0] - prO[0];
+        dyOut = priseMonde[1] - prO[1];
+      }
+    }
+
+    const dst = new Uint8ClampedArray(48 * 48 * 4);
+    const prefCoiff = `coiffure-${asm.coiffure}`;
+    const couchesVue = ORDRE_COUCHES[vue] || ORDRE_COUCHES.face;
+
+    for (const couche of couchesVue) {
+      if (couche === 'outil_derriere' && pose.outil_derriere && outilPiece) {
+        copierPieceDecalee(dst, outilPiece, dxOut, dyOut, tableCouleurs);
+      } else if (couche === 'outil_devant' && !pose.outil_derriere && outilPiece) {
+        copierPieceDecalee(dst, outilPiece, dxOut, dyOut, tableCouleurs);
+      } else if (couche === 'coiffure_arriere' || couche === 'coiffure_entiere') {
+        const p = chercherPiece(corpsComm, vue, prefCoiff, 'arriere');
+        if (p) {
+          const ac = (p.ancres && p.ancres.cou) || couTete;
+          copierPieceDecalee(dst, p, couMonde[0] - ac[0], couMonde[1] - ac[1], tableCouleurs, masqueCoiffure, true);
+        }
+      } else if (couche === 'coiffure_avant') {
+        const p = chercherPiece(corpsComm, vue, prefCoiff, 'avant');
+        if (p) {
+          const ac = (p.ancres && p.ancres.cou) || couTete;
+          copierPieceDecalee(dst, p, couMonde[0] - ac[0], couMonde[1] - ac[1], tableCouleurs, masqueCoiffure, true);
+        }
+      } else if (couche === 'bras_lointain' && brasL) {
+        const a = (brasL.ancres && brasL.ancres.epaule_l) || epLMonde;
+        copierPieceDecalee(dst, brasL, epLMonde[0] - a[0], epLMonde[1] - a[1], tableCouleurs);
+      } else if (couche === 'manche_lointaine') {
+        const ml = chercherPiece(corpsComm, vue, 'manche-lointaine', 'chemisier', pose.bras_lointain);
+        if (ml) {
+          const a = (ml.ancres && ml.ancres.epaule_l) || epLMonde;
+          copierPieceDecalee(dst, ml, epLMonde[0] - a[0], epLMonde[1] - a[1], tableCouleurs);
+        }
+      } else if (couche === 'jambes' || couche === 'jambe_proche') {
+        const j = chercherPiece(corpsComm, vue, 'jambes', 'nues', pose.jambes);
+        if (j) {
+          const a = (j.ancres && j.ancres.hanche_p) || haPMonde;
+          copierPieceDecalee(dst, j, haPMonde[0] - a[0], haPMonde[1] - a[1] - dyB, tableCouleurs);
+        }
+      } else if (couche === 'chaussures' || couche === 'chaussure_proche') {
+        const ch = chercherPiece(corpsComm, vue, 'chaussures', 'bottines', pose.jambes);
+        if (ch) {
+          const a = (ch.ancres && ch.ancres.hanche_p) || haPMonde;
+          copierPieceDecalee(dst, ch, haPMonde[0] - a[0], haPMonde[1] - a[1] - dyB, tableCouleurs);
+        }
+      } else if (couche === 'bas' || couche === 'bas_proche') {
+        const bs = chercherPiece(corpsOrdre, vue, 'bas', 'salopette', pose.jambes);
+        if (bs) {
+          const a = (bs.ancres && bs.ancres.hanche_p) || haPMonde;
+          copierPieceDecalee(dst, bs, haPMonde[0] - a[0], haPMonde[1] - a[1], tableCouleurs);
+        }
+      } else if (couche === 'buste') {
+        copierPieceDecalee(dst, buste, 0, dyB, tableCouleurs);
+      } else if (couche === 'haut') {
+        const ht = chercherPiece(corpsOrdre, vue, 'haut', 'chemisier', 'buste');
+        if (ht) {
+          const a = (ht.ancres && ht.ancres.cou) || repDef.cou;
+          copierPieceDecalee(dst, ht, ((buste.ancres && buste.ancres.cou) || repDef.cou)[0] - a[0], (((buste.ancres && buste.ancres.cou) || repDef.cou)[1] + dyB) - a[1], tableCouleurs);
+        }
+      } else if (couche === 'tete') {
+        copierPieceDecalee(dst, tete, dxTete, dyTete, tableCouleurs);
+      } else if (couche === 'visage_yeux' && vue !== 'dos') {
+        const yPiece = chercherPiece(corpsComm, vue, 'yeux', asm.yeuxForme, pose.yeux || 'ouverts');
+        if (yPiece) {
+          const cible = [((tete.ancres && tete.ancres.yeux) || repDef.yeux)[0] + dxTete, ((tete.ancres && tete.ancres.yeux) || repDef.yeux)[1] + dyTete];
+          const src = (yPiece.ancres && yPiece.ancres.yeux) || repDef.yeux;
+          copierPieceDecalee(dst, yPiece, cible[0] - src[0], cible[1] - src[1], tableCouleurs);
+        }
+      } else if (couche === 'visage_nez' && vue !== 'dos') {
+        const nPiece = chercherPiece(corpsComm, vue, 'nez', 'petit');
+        if (nPiece) {
+          const cible = [((tete.ancres && tete.ancres.nez) || repDef.nez)[0] + dxTete, ((tete.ancres && tete.ancres.nez) || repDef.nez)[1] + dyTete];
+          const src = (nPiece.ancres && nPiece.ancres.nez) || repDef.nez;
+          copierPieceDecalee(dst, nPiece, cible[0] - src[0], cible[1] - src[1], tableCouleurs);
+        }
+      } else if (couche === 'visage_bouche' && vue !== 'dos') {
+        const bPiece = chercherPiece(corpsComm, vue, 'bouche', asm.bouche);
+        if (bPiece) {
+          const cible = [((tete.ancres && tete.ancres.bouche) || repDef.bouche)[0] + dxTete, ((tete.ancres && tete.ancres.bouche) || repDef.bouche)[1] + dyTete];
+          const src = (bPiece.ancres && bPiece.ancres.bouche) || repDef.bouche;
+          copierPieceDecalee(dst, bPiece, cible[0] - src[0], cible[1] - src[1], tableCouleurs);
+        }
+      } else if (couche === 'couvre_chef' && chapeauPiece) {
+        const ac = (chapeauPiece.ancres && chapeauPiece.ancres.cou) || couTete;
+        copierPieceDecalee(dst, chapeauPiece, couMonde[0] - ac[0], couMonde[1] - ac[1], tableCouleurs);
+      } else if (couche === 'bras_proche' && brasP) {
+        copierPieceDecalee(dst, brasP, dxBP, dyBP, tableCouleurs);
+      } else if (couche === 'manche_proche') {
+        const mp = chercherPiece(corpsComm, vue, 'manche-proche', 'chemisier', pose.bras_proche);
+        if (mp) {
+          const a = (mp.ancres && mp.ancres.epaule_p) || epPMonde;
+          copierPieceDecalee(dst, mp, epPMonde[0] - a[0], epPMonde[1] - a[1], tableCouleurs);
+        }
+      }
+    }
+
+    // Règle § 4.2 : dans le jeu, les cases *_cote_* regardent à gauche -> retournement horizontal strict à l'export !
+    if (pourExportJeu && vue === 'profil') {
+      const flip = new Uint8ClampedArray(48 * 48 * 4);
+      for (let y = 0; y < 48; y++) {
+        for (let x = 0; x < 48; x++) {
+          const s = (y * 48 + x) * 4, d = (y * 48 + (47 - x)) * 4;
+          flip[d] = dst[s]; flip[d + 1] = dst[s + 1]; flip[d + 2] = dst[s + 2]; flip[d + 3] = dst[s + 3];
+        }
+      }
+      cv.getContext('2d').putImageData(new ImageData(flip, 48, 48), 0, 0);
+    } else {
+      cv.getContext('2d').putImageData(new ImageData(dst, 48, 48), 0, 0);
+    }
+    return cv;
+  }
+
+  function genererPlancheComplete111() {
+    const W = 48, H = 48, COLS = 8, ROWS = Math.ceil(CASES_111.length / COLS);
+    asm.sheetCv.width = COLS * W;
+    asm.sheetCv.height = ROWS * H;
+    const sctx = asm.sheetCv.getContext('2d');
+    sctx.clearRect(0, 0, asm.sheetCv.width, asm.sheetCv.height);
+    const table = construireTableRecoloration();
+    CASES_111.forEach((nom, k) => {
+      const fCv = assemblerCase(nom, table, true);
+      sctx.drawImage(fCv, (k % COLS) * W, Math.floor(k / COLS) * H);
+    });
+    return asm.sheetCv;
+  }
+
+  // Tirage déterministe à graine + garantie "jamais deux villageois identiques"
+  function cleDiversite() {
+    const c = asm.couleurs;
+    return [asm.genre, asm.coiffure, asm.chapeau, asm.yeuxForme, asm.bouche, c.peau, c.cheveux, c.yeux, c.vetement_1, c.vetement_2].join('|');
+  }
+  function majCleDiversite() {
+    document.getElementById('pDiversityInfo').textContent = `Clé : ${cleDiversite()}`;
+  }
+
+  function tirerDepuisGraine(graineTexte) {
+    const rand = mulberry32(fnv1a(graineTexte));
+    const pick = arr => arr[Math.floor(rand() * arr.length)];
+    asm.genre = pick(['femme', 'homme', 'femme', 'enfant']);
+    asm.yeuxForme = pick(['amande', 'ronds']);
+    asm.bouche = pick(['sourire', 'neutre']);
+    asm.coiffure = pick(['longue', 'courte']);
+    asm.chapeau = rand() < PROBA_CHAPEAU ? 'paille' : 'aucun';
+    for (const [, zone] of MAP_SELECT_PAL) {
+      asm.couleurs[zone] = pick(Object.keys(RAMPES_PERSO[zone]));
+    }
+    // Synchronise les contrôles UI
+    document.getElementById('selAsmGenre').value = asm.genre;
+    document.getElementById('selAsmYeuxForme').value = asm.yeuxForme;
+    document.getElementById('selAsmBouche').value = asm.bouche;
+    document.getElementById('selAsmCoiffure').value = asm.coiffure;
+    document.getElementById('selAsmChapeau').value = asm.chapeau;
+    for (const [selId, zone] of MAP_SELECT_PAL) document.getElementById(selId).value = asm.couleurs[zone];
+    majCleDiversite();
+  }
+
+  // Rendu dans le viewport principal quand le sous-onglet 3 (Assemblage) est actif
+  function rendreViewportAssemblage() {
+    if (pState.subTab !== 'assemblage') return;
+    if (pState.biblio.size < 10) { chargerJeuMinimalDemo(); if (SP.rafraichirImportUI) SP.rafraichirImportUI(); }
+
+    const wrap = document.getElementById('pCanvasWrap');
+    const vc = document.getElementById('pViewCanvas');
+    const r = wrap.getBoundingClientRect();
+    const vw = Math.max(280, Math.floor(r.width)), vh = Math.max(190, Math.floor(r.height));
+    if (vc.width !== vw || vc.height !== vh) { vc.width = vw; vc.height = vh; }
+    const ctx = vc.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    // Fond prairie verte douce Moon Bloom pour juger la lisibilité en jeu !
+    ctx.fillStyle = '#5a8f49';
+    ctx.fillRect(0, 0, vw, vh);
+    ctx.fillStyle = '#528342';
+    for (let y = 0; y < vh; y += 24) for (let x = ((y / 24) & 1) * 24; x < vw; x += 48) ctx.fillRect(x, y, 24, 24);
+
+    if (asm.showSheet) {
+      genererPlancheComplete111();
+      const sc = Math.max(1, Math.min(3, Math.floor(Math.min((vw - 16) / asm.sheetCv.width, (vh - 16) / asm.sheetCv.height)) || 1));
+      const dw = asm.sheetCv.width * sc, dh = asm.sheetCv.height * sc;
+      const ox = Math.floor((vw - dw) / 2), oy = Math.floor((vh - dh) / 2);
+      ctx.fillStyle = 'rgba(18, 16, 26, 0.82)';
+      ctx.fillRect(ox - 4, oy - 4, dw + 8, dh + 8);
+      ctx.drawImage(asm.sheetCv, ox, oy, dw, dh);
+      document.getElementById('pFileName').textContent = `Planche complète : 384 × 672 px · 111 cases de 48×48 (échelle jeu ${CFG.PLANCHE.ECHELLE_JEU})`;
+      return;
+    }
+
+    const table = construireTableRecoloration();
+    const nomCase = CASES_111[asm.frameIdx] || 'idle_bas_0';
+    document.getElementById('pFrameIdxLbl').textContent = `#${asm.frameIdx} ${nomCase}`;
+    document.getElementById('valAsmFrame').textContent = String(asm.frameIdx);
+    document.getElementById('rngAsmFrame').value = String(asm.frameIdx);
+
+    // Si pState.vue === 'toutes', on anime simultanément Face, Dos et Profil côte à côte !
+    const casesAffichees = pState.vue === 'toutes'
+      ? [
+          nomCase.replace(/_(bas|haut|cote)_/, '_bas_'),
+          nomCase.replace(/_(bas|haut|cote)_/, '_haut_'),
+          nomCase.replace(/_(bas|haut|cote)_/, '_cote_')
+        ].map(c => POSES_111[c] ? c : nomCase)
+      : [nomCase];
+
+    const z = asm.showGameScale ? Math.max(2, Math.round(pState.zoom * CFG.PLANCHE.ECHELLE_JEU)) : pState.zoom;
+    const gap = 16;
+    const totW = casesAffichees.length * 48 * z + (casesAffichees.length - 1) * gap;
+    const startX = Math.floor((vw - totW) / 2), startY = Math.floor((vh - 48 * z) / 2);
+
+    const uniqueCols = new Set();
+    casesAffichees.forEach((cNom, idx) => {
+      const fCv = assemblerCase(cNom, table, true);
+      const d = fCv.getContext('2d').getImageData(0, 0, 48, 48).data;
+      for (let i = 0; i < d.length; i += 4) if (d[i + 3]) uniqueCols.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
+
+      const ox = startX + idx * (48 * z + gap), oy = startY;
+      // Ombre elliptique douce au sol comme dans la scène Phaser
+      ctx.fillStyle = 'rgba(18, 28, 16, 0.34)';
+      ctx.beginPath();
+      ctx.ellipse(ox + 24 * z, oy + 46.5 * z, 9 * z, 3 * z, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (pState.showBox) {
+        ctx.strokeStyle = 'rgba(240, 180, 76, 0.5)';
+        ctx.strokeRect(ox - 0.5, oy - 0.5, 48 * z + 1, 48 * z + 1);
+      }
+      ctx.drawImage(fCv, ox, oy, 48 * z, 48 * z);
+
+      ctx.fillStyle = '#f4f0e8';
+      ctx.font = 'bold 10.5px ui-monospace, monospace';
+      ctx.fillText(cNom, ox + 2, oy - 5);
+    });
+
+    document.getElementById('pAsmColorsBadge').textContent = `${uniqueCols.size} couleurs`;
+    document.getElementById('pFileName').textContent = `Assemblage : ${nomCase} · ${asm.genre} · échelle jeu ${CFG.PLANCHE.ECHELLE_JEU}`;
+  }
+
+  function framesDuGeste(geste) {
+    if (geste === 'toutes111') return CASES_111.map((_, i) => i);
+    const vCode = pState.vue === 'dos' ? 'haut' : (pState.vue === 'profil' ? 'cote' : 'bas');
+    let idxs = CASES_111.map((n, i) => [n, i]).filter(([n]) => n.startsWith(geste + '_' + vCode + '_')).map(([, i]) => i);
+    if (!idxs.length) idxs = CASES_111.map((n, i) => [n, i]).filter(([n]) => n.startsWith(geste + '_')).map(([, i]) => i);
+    return idxs.length ? idxs : [0];
+  }
+
+  let stepTick = 0;
+  function demarrerBoucleAnim() {
+    clearInterval(asm.timer);
+    if (!asm.playing) return;
+    asm.timer = setInterval(() => {
+      if (document.querySelector('.app').getAttribute('data-atelier') !== 'perso' || pState.subTab !== 'assemblage' || asm.showSheet) return;
+      const seq = framesDuGeste(asm.geste);
+      stepTick = (stepTick + 1) % seq.length;
+      asm.frameIdx = seq[stepTick];
+      rendreViewportAssemblage();
+    }, 175);
+  }
+
+  function rafraichirAssemblage() {
+    if (pState.subTab === 'assemblage') rendreViewportAssemblage();
+  }
+
+  // Liaisons UI du sous-onglet 3
+  document.getElementById('btnLoadDemoKit').addEventListener('click', () => {
+    chargerJeuMinimalDemo();
+    if (SP.rafraichirImportUI) SP.rafraichirImportUI();
+    rendreViewportAssemblage();
+  });
+
+  document.getElementById('btnDrawSeed').addEventListener('click', () => {
+    tirerDepuisGraine(document.getElementById('pSeedInput').value || '1');
+    rafraichirAssemblage();
+  });
+
+  document.getElementById('btnNextUnique').addEventListener('click', () => {
+    let essais = 0, graine = '';
+    do {
+      graine = `villageois-${asm.compteurUnique++}`;
+      tirerDepuisGraine(graine);
+      essais++;
+    } while (asm.villageoisTires.has(cleDiversite()) && essais < 200);
+    asm.villageoisTires.add(cleDiversite());
+    document.getElementById('pSeedInput').value = graine;
+    document.getElementById('pDiversityInfo').textContent = `Unique #${asm.villageoisTires.size} · ${cleDiversite()}`;
+    rafraichirAssemblage();
+  });
+
+  document.getElementById('selAsmGenre').addEventListener('change', e => { asm.genre = e.target.value; majCleDiversite(); rafraichirAssemblage(); });
+  document.getElementById('selAsmYeuxForme').addEventListener('change', e => { asm.yeuxForme = e.target.value; majCleDiversite(); rafraichirAssemblage(); });
+  document.getElementById('selAsmBouche').addEventListener('change', e => { asm.bouche = e.target.value; majCleDiversite(); rafraichirAssemblage(); });
+  document.getElementById('selAsmCoiffure').addEventListener('change', e => { asm.coiffure = e.target.value; majCleDiversite(); rafraichirAssemblage(); });
+  document.getElementById('selAsmChapeau').addEventListener('change', e => { asm.chapeau = e.target.value; majCleDiversite(); rafraichirAssemblage(); });
+
+  document.getElementById('selAsmGeste').addEventListener('change', e => {
+    asm.geste = e.target.value;
+    stepTick = 0;
+    asm.frameIdx = framesDuGeste(asm.geste)[0];
+    rafraichirAssemblage();
+  });
+
+  document.getElementById('btnAsmPlay').addEventListener('click', e => {
+    asm.playing = !asm.playing;
+    e.currentTarget.textContent = asm.playing ? '⏸ Pause' : '▶ Jouer';
+    demarrerBoucleAnim();
+  });
+
+  document.getElementById('rngAsmFrame').addEventListener('input', e => {
+    asm.playing = false;
+    document.getElementById('btnAsmPlay').textContent = '▶ Jouer';
+    clearInterval(asm.timer);
+    asm.frameIdx = Number(e.target.value);
+    rafraichirAssemblage();
+  });
+
+  document.getElementById('chkAsmSheetView').addEventListener('change', e => { asm.showSheet = e.target.checked; rafraichirAssemblage(); });
+  document.getElementById('chkAsmGameScale').addEventListener('change', e => { asm.showGameScale = e.target.checked; rafraichirAssemblage(); });
+
+  // Réagit aussi aux boutons supérieurs de vue / zoom quand on est dans Assemblage
+  for (const sel of ['#pSubTabSeg button', '#pVueSeg button', '#pZoomIn', '#pZoomOut', '#pChkBox', '#pChkGhost', '#pChkGrid']) {
+    document.querySelectorAll(sel).forEach(el => el.addEventListener('click', () => requestAnimationFrame(rafraichirAssemblage)));
+  }
+
+  function dlBlob(blob, nom) {
+    const u = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.download = nom; a.href = u; a.click();
+    setTimeout(() => URL.revokeObjectURL(u), 1500);
+  }
+
+  document.getElementById('btnExpPersoPng').addEventListener('click', () => {
+    if (pState.biblio.size < 10) chargerJeuMinimalDemo();
+    const sh = genererPlancheComplete111();
+    sh.toBlob(b => dlBlob(b, 'essai_hd.png'));
+  });
+
+  document.getElementById('btnExpPersoJson').addEventListener('click', () => {
+    const meta = {
+      frameWidth: CFG.PLANCHE.LARGEUR_CASE,
+      frameHeight: CFG.PLANCHE.HAUTEUR_CASE,
+      echelle: CFG.PLANCHE.ECHELLE_JEU,
+      frames: CASES_111
+    };
+    dlBlob(new Blob([JSON.stringify(meta, null, 2) + '\n'], { type: 'application/json' }), 'essai_hd.json');
+  });
+
+  majCleDiversite();
+  demarrerBoucleAnim();
+  window.addEventListener('resize', rafraichirAssemblage);
+})();
+
 </script>
 </body>
 </html>

@@ -13,9 +13,10 @@
   const F = global.FermeCarte;
   const { T, SFX, TREE_OBJECT, ORCHARD_ADULT, TREE_BODY, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, FERMIER_FRAME, ZONE_LABEL_UP, BLOCS_CARTE, SOLEIL } = F.C;
   const { clamp, reducedMotion, v } = F;
-  // Le personnage en essai du mode test (syncPerso ; la planche : scripts/personnage/essai_hd.py, qui écrit aussi
-  // sa taille de case et son échelle dans assets/personnages/essai_hd.json).
-  F.ESSAI_PERSO = { actif: false, cle: 'perso_essai_hd', fichier: 'personnages/essai_hd.png', frameWidth: 48, frameHeight: 42, echelle: 0.625 };
+  // Le personnage en essai du mode test (syncPerso ; la planche : scripts/personnage/essai_hd.py ou le Studio de
+  // personnages de worker/src/sprites.html, qui écrivent sa taille de case et son échelle dans assets/personnages/essai_hd.json).
+  // Les constantes frameWidth / frameHeight / echelle restent des valeurs de repli si le JSON n'a pas pu être lu.
+  F.ESSAI_PERSO = { actif: false, cle: 'perso_essai_hd', fichier: 'personnages/essai_hd.png', json: 'personnages/essai_hd.json', frameWidth: 48, frameHeight: 42, echelle: 0.625 };
 
   F.partie({
 
@@ -195,18 +196,33 @@
     // Étape E6 : son apparence à lui (apparence) remplace son personnage du catalogue (js/carte/planches.js).
     // Étape E7 : coiffe, la pièce d'équipement qu'il porte sur la tête (son casque, son chapeau de paille).
     // Le mode test, « Personnage en essai » (js/ui/testmode.js) : FermeCarte.ESSAI_PERSO.actif, sa planche
-    // (scripts/personnage/essai_hd.py : des cases de 48 × 42, dessinées plus fin) remplace celle du joueur, à
-    // son échelle (la taille des autres personnages).
+    // (scripts/personnage/essai_hd.py, des cases de 48 × 42, ou le Studio de personnages, des cases de 48 × 48 :
+    // docs/studio-personnages.md) remplace celle du joueur, à son échelle (la taille des autres personnages).
+    // La taille des cases et l'échelle sont lues dans essai_hd.json avant la planche.
     syncPerso(n, apparence, coiffe) {
       this.persoArgs = [n, apparence, coiffe];
       const E = global.FermeCarte.ESSAI_PERSO;
       if (E.actif && this.fermier) {
         if (this.persoCle === E.cle) return;
         this.persoCle = E.cle;
-        const poser = () => { if (this.persoCle === E.cle) this.fermier.setSheet(E.cle, E.echelle); };
+        const poser = () => { if (this.persoCle === E.cle && this.textures.exists(E.cle)) this.fermier.setSheet(E.cle, E.echelle); };
         if (this.textures.exists(E.cle)) { poser(); return; }
-        this.load.spritesheet(E.cle, v(E.fichier), { frameWidth: E.frameWidth, frameHeight: E.frameHeight });
-        this.load.once('complete', poser);
+        const chargerPlanche = () => {
+          const meta = this.cache && this.cache.json && this.cache.json.get(E.cle + '_meta');
+          if (meta && typeof meta === 'object') {
+            if (Number.isInteger(meta.frameWidth) && meta.frameWidth > 0) E.frameWidth = meta.frameWidth;
+            if (Number.isInteger(meta.frameHeight) && meta.frameHeight > 0) E.frameHeight = meta.frameHeight;
+            if (typeof meta.echelle === 'number' && Number.isFinite(meta.echelle) && meta.echelle > 0) E.echelle = meta.echelle;
+          }
+          if (this.textures.exists(E.cle)) { poser(); return; }
+          this.load.spritesheet(E.cle, v(E.fichier), { frameWidth: E.frameWidth, frameHeight: E.frameHeight });
+          this.load.once('complete', poser);
+          this.load.start();
+        };
+        const cleMeta = E.cle + '_meta';
+        if (!E.json || (this.cache && this.cache.json && this.cache.json.exists(cleMeta))) { chargerPlanche(); return; }
+        this.load.json(cleMeta, v(E.json));
+        this.load.once('complete', chargerPlanche);
         this.load.start();
         return;
       }
