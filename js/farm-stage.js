@@ -147,6 +147,8 @@
         A.feuille(this, TALL_GRASS.key, TALL_GRASS.file, TALL_GRASS.frame, v);
         A.feuille(this, TALL_GRASS.fleurs.key, TALL_GRASS.fleurs.file, TALL_GRASS.frame, v);
         A.feuille(this, WELL.key, WELL.file, WELL.frame, v);
+        L.image(WELL.hd.key, v(WELL.hd.file));   // (essai : le puits en définition double, modele.js syncWell)
+        L.image('silo_hd', v('silo_hd.png'));     // (essai : le silo formé en définition double, silo.js)
         A.feuille(this, TANK.key, TANK.file, TANK.frame, v);
         L.tilemapTiledJSON(MAP.key, v(MAP.json));
         A.feuille(this, SPRINKLER.key, SPRINKLER.file, SPRINKLER.frame, v);
@@ -1153,7 +1155,7 @@
           if (!best || depth > best.depth) best = { depth, window: win };
         };
         // La pompe du puits et la citerne : la fenêtre Eau.
-        if (this.pump && this.well) test(this.well.x, this.well.y, this.well.width, this.well.height, this.well.depth + 1, 'eau');
+        if (this.pump && this.well) test(this.well.x, this.well.y, this.well.displayWidth, this.well.displayHeight, this.well.depth + 1, 'eau');
         // le robot et sa station de charge : sa fenêtre (batterie, autonomie)
         if (this.bot) {
           const b = this.bot.img;

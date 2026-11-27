@@ -545,7 +545,11 @@ const CULTURE_MONTE = 0;
   // fois achetée.
   // modèle.pompe = la pompe est achetée ; modèle.pompeEnMarche = elle tourne (elle vibre alors
   // d'un pixel vers la droite, toutes les PUMP_SHAKE_MS).
-  const WELL = { key: 'puits', file: 'puits.png', frame: { frameWidth: 50, frameHeight: 50 }, object: 'puits', frames: { puits: 0, tuyau: 1, pompe: 2 } };
+  // (essai : le puits dessiné en définition double, 32 px par case, affiché à l'échelle `echelle` (1,3 fois plus petit
+  // que la définition double : 49 × 53 px de jeu) ; la pompe, une
+  // fois achetée, reste celle de puits.png, posée à `pompeX` px de jeu du bord gauche du puits)
+  const WELL = { key: 'puits', file: 'puits.png', frame: { frameWidth: 50, frameHeight: 50 }, object: 'puits', frames: { puits: 0, tuyau: 1, pompe: 2 },
+    hd: { key: 'puits_hd', file: 'puits_hd.png', object: 'puits', echelle: 0.5 / 1.3, pompeX: 1 } };
   const PUMP_SHAKE_MS = 70;
   // citerne.png (scripts/batiments/citerne.py) : des images de 28×58 vues de haut à 45°, 5 à
   // la suite par niveau du réservoir (la cuve plus haute à chaque niveau), le tube de niveau

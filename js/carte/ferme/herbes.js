@@ -115,6 +115,8 @@
       if (this.well && this.well.active) pieds.push(['puits', this.well]);
       if (this.silo && this.silo.img && this.silo.img.active) pieds.push(['silo', this.silo.img]);
       for (const [nom, im] of pieds) {
+        // (le puits et le silo dessinés à part, dessinFin : leur dessin a déjà ses herbes au pied)
+        if (im.dessinFin) continue;
         const f = im.frame, x0 = Math.round(im.x - im.originX * f.cutWidth), y0 = Math.round(im.y - im.originY * f.cutHeight);
         source(`p${nom}/${im.texture.key}/${f.name}/${x0},${y0}`, () => this.piedHerbe(im.texture.key, f.name, x0, y0, im.depth, nom));
       }

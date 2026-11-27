@@ -302,9 +302,11 @@
     // Le puits est toujours là ; la pompe s'y ajoute une fois achetée. Comme un bâtiment :
     // bas-centre de l'image sur le bas-centre du rectangle, profondeur = y du pied.
     // En marche, la pompe vibre : un pixel à droite, puis à sa place, et ainsi de suite.
+    // Essai : le puits dessiné en définition double (WELL.hd, s'il est chargé) ; la pompe reste celle de puits.png,
+    // posée contre lui (sans le tuyau de l'ancien dessin).
     syncWell(pompe, enMarche) {
       if (!this.has(WELL.key)) return;
-      const F = WELL.frames;
+      const F = WELL.frames, HD = this.has(WELL.hd.key) ? WELL.hd : null;
       // la ferme générée : le puits est un bloc posé (étape 5b-2), sinon il n'y en a pas
       const rect = this.ctx.carte ? this.blockRect('puits') : null;
       const at = rect ? rect.x + ',' + rect.y : '';
@@ -317,11 +319,13 @@
       if (this.ctx.carte && !rect) return;
       // (sa profondeur : 3 px au-dessus de son pied ; qui puise à côté de lui, les pieds 2 px
       // au-dessus du bas de sa case, passe devant son toit, pas derrière : placesPuits, puits.js)
-      if (!this.well) { this.well = this.placeProp(WELL, rect); this.well.setDepth(this.well.y - 3); this.wellAt = at; this.sunDirty = true; }
+      if (!this.well) { this.well = HD ? this.placeProp(HD, rect) : this.placeProp(WELL, rect); this.well.setDepth(this.well.y - 3); this.well.dessinFin = !!HD; this.wellAt = at; this.sunDirty = true; }
       const image = pompe ? F.tuyau : F.puits;
-      if (this.well.frame.name !== image) { this.well.setFrame(image); this.sunDirty = true; }
+      if (!HD && this.well.frame.name !== image) { this.well.setFrame(image); this.sunDirty = true; }
+      // (la place de la pompe : sur le bas de l'ancien dessin ; contre le puits en définition double)
+      const pompeX = this.well.x + (HD ? HD.pompeX : 0);
       if (pompe && !this.pump) {
-        this.pump = this.add.image(this.well.x, this.well.y, WELL.key, F.pompe).setOrigin(0, 1).setDepth(this.well.depth + 0.1);
+        this.pump = this.add.image(pompeX, this.well.y, WELL.key, F.pompe).setOrigin(0, 1).setDepth(this.well.depth + 0.1);
       } else if (!pompe && this.pump) {
         this.pump.destroy();
         this.pump = null;
@@ -330,12 +334,12 @@
       if (shake && !this.pumpShake) {
         this.pumpShake = this.time.addEvent({
           delay: PUMP_SHAKE_MS, loop: true,
-          callback: () => { if (this.pump) this.pump.x = this.pump.x === this.well.x ? this.well.x + 1 : this.well.x; },
+          callback: () => { if (this.pump) this.pump.x = this.pump.x === pompeX ? pompeX + 1 : pompeX; },
         });
       } else if (!shake && this.pumpShake) {
         this.pumpShake.remove();
         this.pumpShake = null;
-        if (this.pump) this.pump.x = this.well.x;
+        if (this.pump) this.pump.x = pompeX;
       }
     },
 
@@ -355,14 +359,16 @@
       this.tank.setFrame(f);
     },
 
-    // Image d'une planche posée comme un bâtiment sur le rectangle `def.object` (ou `rect`).
+    // Image d'une planche posée comme un bâtiment sur le rectangle `def.object` (ou `rect`). Une image seule
+    // dessinée plus fin (def.echelle, sans def.frame : le puits en définition double) : à sa taille affichée.
     placeProp(def, rect) {
       const o = rect || this.objects[def.object] || DEFAULT_OBJECTS[def.object];
-      const w = def.frame.frameWidth;
-      const h = def.frame.frameHeight;
+      const k = def.echelle || 1, src = def.frame ? null : this.textures.get(def.key).getSourceImage();
+      const w = src ? Math.round(src.width * k) : def.frame.frameWidth;
+      const h = src ? Math.round(src.height * k) : def.frame.frameHeight;
       const x = clamp(Math.round(o.x + o.width / 2 - w / 2), 0, this.world.w - w);
       const y = clamp(Math.round(o.y + o.height), h, this.world.h);
-      return this.add.image(x, y, def.key, 0).setOrigin(0, 1).setDepth(y);
+      return (src ? this.add.image(x, y, def.key) : this.add.image(x, y, def.key, 0)).setOrigin(0, 1).setScale(k).setDepth(y);
     },
 
     // De combien de px la plante est remontée au-dessus du bas de sa case (config.js CULTURE_MONTE) : la même pour
