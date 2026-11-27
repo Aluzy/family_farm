@@ -60,10 +60,13 @@
   //   sapin : 64 × 94, à la largeur du plus grand sapin (42 px ; pied 67 / 70)
   //   arbre_clair (le chêne clair, celui d'un gland planté) : 64 × 68, deux fois la largeur de l'ancien (96 px ;
   //     pied 61 / 64)
+  //   pin_clair (le pin, celui d'une pomme de pin plantée) : 64 × 102, à la largeur de l'ancien (48 px ; le pied
+  //     au bas du tronc, 100 / 102)
   const PLANTES_HD = {
     buisson_pre: { cle: 'buisson_hd', fichier: 'buisson_hd.png', w: 64, largeur: 44, pied: 24 / 27 },
     sapin: { cle: 'sapin_hd', fichier: 'sapin_hd.png', w: 64, largeur: 42, pied: 67 / 70 },
     arbre_clair: { cle: 'chene_hd', fichier: 'chene_hd.png', w: 64, largeur: 96, pied: 61 / 64 },
+    pin_clair: { cle: 'pin_hd', fichier: 'pin_hd.png', w: 64, largeur: 48, pied: 100 / 102 },
   };
   global.FermeCarte.PLANTES_HD = PLANTES_HD;
 

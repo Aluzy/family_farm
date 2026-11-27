@@ -27,6 +27,10 @@
   // Ce qu'il faut pour un silo (DATA.ATELIER.SILO) : `largeur` colonnes hautes de `hauteur` blocs.
   // Le personnage derrière : l'image à `alpha`.
   const S = { sorte: 'bloc_silo', bloc: 16, dessus: 5, largeur: 2, hauteur: 3, alpha: 0.45 };
+  // Essai : le silo formé dessiné en définition double (assets/silo_hd.png, 32 px par case : 64 px pour ses deux
+  // colonnes), s'il est chargé (js/farm-stage.js). Toute l'image du silo est alors faite `k` fois plus fine, puis
+  // affichée à 1 / k. `sol` : le sol sous le milieu du fût, en px de jeu au-dessus du bas de l'image (son ombre).
+  const HD = { cle: 'silo_hd', k: 2, sol: 10 };
   const C = { trait: '#3b2416', fer: '#4a4e57', caisse: ['#b98450', '#9a6a3c', '#d4a46c'] };
 
   // Les colonnes du silo : [{ case, h, pleine }], de gauche à droite (une même rangée).
@@ -184,10 +188,25 @@
     return cv;
   }
 
+  // Le silo formé en définition double : l'image `src` mise à la largeur de `n` colonnes (k px par px de jeu), sur
+  // un canvas ; à deux colonnes (le silo de base), elle garde sa taille. `sol` : en px de jeu.
+  function corpsHD(src, n) {
+    const w = n * T * HD.k, h = Math.round((src.height * w) / src.width);
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.drawImage(src, 0, 0, w, h);
+    cv.sol = Math.round((HD.sol * w) / (S.largeur * T * HD.k));
+    return cv;
+  }
+
   // L'image des colonnes `cols` : un canvas (largeur : les colonnes ; hauteur : la plus haute,
   // son couvercle ou son dôme) ; `sol` : la hauteur du sol au-dessus de son bas (le pied du fût,
-  // pour son ombre ; 0 pour des caisses).
-  function dessin(cols) {
+  // pour son ombre ; 0 pour des caisses). Avec `hd` (l'image du silo en définition double), le
+  // canvas est HD.k fois plus fin (cv.k) ; `sol` reste en px de jeu.
+  function dessin(cols, hd) {
+    const k = hd ? HD.k : 1;
     const n = cols.length, maxH = Math.max(...cols.map((c) => c.h));
     // les colonnes pleines côte à côte, de même hauteur : un corps pour elles
     const parts = [];
@@ -195,20 +214,27 @@
     while (i < n) {
       const c = cols[i];
       if (!c.pleine) { parts.push({ i, caisses: c.h }); i += 1; continue; }
-      let k = i;
-      while (k + 1 < n && cols[k + 1].pleine && cols[k + 1].h === c.h) k += 1;
-      parts.push({ i, cv: corps((k - i + 1) * T, c.h) });
-      i = k + 1;
+      let j = i;
+      while (j + 1 < n && cols[j + 1].pleine && cols[j + 1].h === c.h) j += 1;
+      parts.push({ i, cv: hd ? corpsHD(hd, j - i + 1) : corps((j - i + 1) * T, c.h) });
+      i = j + 1;
     }
-    const W = n * T, H = Math.max(maxH * S.bloc + S.dessus + 2, ...parts.filter((p) => p.cv).map((p) => p.cv.height));
+    const W = n * T * k, H = Math.max((maxH * S.bloc + S.dessus + 2) * k, ...parts.filter((p) => p.cv).map((p) => p.cv.height));
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
     const g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false;
     for (const p of parts) {
-      if (p.cv) g.drawImage(p.cv, p.i * T, H - p.cv.height);
-      else for (let j = 0; j < p.caisses; j++) caisse(g, p.i * T, H - j * S.bloc, j === p.caisses - 1);
+      if (p.cv) g.drawImage(p.cv, p.i * T * k, H - p.cv.height);
+      else {
+        // (les caisses : dessinées en px de jeu, agrandies k fois)
+        g.save(); g.scale(k, k);
+        for (let j = 0; j < p.caisses; j++) caisse(g, p.i * T, H / k - j * S.bloc, j === p.caisses - 1);
+        g.restore();
+      }
     }
     cv.sol = Math.max(0, ...parts.map((p) => (p.cv ? p.cv.sol : 0)));
+    cv.k = k;
     return cv;
   }
 
@@ -222,13 +248,14 @@
       if (this.silo && this.silo.cle === cle) return;
       if (this.silo) { this.silo.img.destroy(); if (this.textures.exists(this.silo.tex)) this.textures.remove(this.silo.tex); this.silo = null; }
       if (!cols.length) return;
-      const cv = dessin(cols), W = this.grid.cols;
+      const hd = this.textures.exists(HD.cle) ? this.textures.get(HD.cle).getSourceImage() : null;
+      const cv = dessin(cols, hd), W = this.grid.cols;
       const tex = 'silo_blocs_' + (this.siloN = (this.siloN || 0) + 1);
       this.textures.addCanvas(tex, cv);
       const c0 = cols[0].case % W, r = Math.floor(cols[0].case / W);
       const x = c0 * T, y = (r + 1) * T;
-      const img = this.add.image(x, y, tex).setOrigin(0, 1).setDepth(y);
-      this.silo = { cle, tex, img, cols, x, y, w: cv.width, h: cv.height, forme: cols.some((c) => c.pleine), pied: y - Math.max(SOLEIL.base, cv.sol) };
+      const img = this.add.image(x, y, tex).setOrigin(0, 1).setScale(1 / cv.k).setDepth(y);
+      this.silo = { cle, tex, img, cols, x, y, w: cv.width / cv.k, h: cv.height / cv.k, forme: cols.some((c) => c.pleine), pied: y - Math.max(SOLEIL.base, cv.sol) };
       this.sunDirty = true;
     },
 
