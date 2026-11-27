@@ -1,0 +1,1973 @@
+{
+  "//objet": [
+    "Règles déclaratives du module « Personnages » de l'Atelier des sprites (worker/src/sprites.html).",
+    "Voir docs/studio-personnages.md pour le détail des ancres, des tons réservés et du tableau des 111 poses.",
+    "Clé racine unique STUDIO_PERSONNAGES compatible avec scripts/build-data.mjs si ajoutée à data/index.json."
+  ],
+  "STUDIO_PERSONNAGES": {
+    "VERSION": 1,
+    "OUTIL_DESSIN": "piskel",
+    "PLANCHE": {
+      "LARGEUR_CASE": 48,
+      "HAUTEUR_CASE": 48,
+      "COLONNES": 8,
+      "NOMBRE_CASES": 111,
+      "HAUTEUR_JEU_PX": 25,
+      "ECHELLE_JEU": 0.641,
+      "PIED_Y": 47,
+      "AXE_X": 24
+    },
+    "CORPS": {
+      "//architecture": "Tronc commun adulte (homme et femme partagent les membres, chaussures, accessoires et outils ; le buste et les hauts portent les variantes morphologiques), plus le gabarit enfant.",
+      "adulte": {
+        "largeur_ref": 22,
+        "hauteur_ref": 39,
+        "genres": [
+          "femme",
+          "homme"
+        ],
+        "partage_membres": true,
+        "variantes_buste": {
+          "femme": {
+            "largeur_epaules": 14,
+            "largeur_taille": 11,
+            "largeur_hanches": 13
+          },
+          "homme": {
+            "largeur_epaules": 16,
+            "largeur_taille": 13,
+            "largeur_hanches": 13
+          }
+        },
+        "repere_48x48": {
+          "face": {
+            "cou": [
+              24,
+              28
+            ],
+            "epaule_lointaine": [
+              18,
+              30
+            ],
+            "epaule_proche": [
+              30,
+              30
+            ],
+            "hanche_lointaine": [
+              20,
+              38
+            ],
+            "hanche_proche": [
+              28,
+              38
+            ],
+            "yeux": [
+              24,
+              22
+            ],
+            "nez": [
+              24,
+              24
+            ],
+            "bouche": [
+              24,
+              26
+            ]
+          },
+          "dos": {
+            "cou": [
+              24,
+              28
+            ],
+            "epaule_lointaine": [
+              18,
+              30
+            ],
+            "epaule_proche": [
+              30,
+              30
+            ],
+            "hanche_lointaine": [
+              20,
+              38
+            ],
+            "hanche_proche": [
+              28,
+              38
+            ]
+          },
+          "profil": {
+            "cou": [
+              23,
+              28
+            ],
+            "epaule_lointaine": [
+              25,
+              30
+            ],
+            "epaule_proche": [
+              21,
+              30
+            ],
+            "hanche_lointaine": [
+              24,
+              38
+            ],
+            "hanche_proche": [
+              22,
+              38
+            ],
+            "yeux": [
+              27,
+              22
+            ],
+            "nez": [
+              29,
+              24
+            ],
+            "bouche": [
+              28,
+              26
+            ]
+          }
+        }
+      },
+      "enfant": {
+        "largeur_ref": 18,
+        "hauteur_ref": 30,
+        "genres": [
+          "enfant"
+        ],
+        "partage_membres": true,
+        "variantes_buste": {
+          "enfant": {
+            "largeur_epaules": 11,
+            "largeur_taille": 10,
+            "largeur_hanches": 10
+          }
+        },
+        "repere_48x48": {
+          "face": {
+            "cou": [
+              24,
+              34
+            ],
+            "epaule_lointaine": [
+              19,
+              35
+            ],
+            "epaule_proche": [
+              29,
+              35
+            ],
+            "hanche_lointaine": [
+              21,
+              41
+            ],
+            "hanche_proche": [
+              27,
+              41
+            ],
+            "yeux": [
+              24,
+              28
+            ],
+            "nez": [
+              24,
+              30
+            ],
+            "bouche": [
+              24,
+              31
+            ]
+          },
+          "dos": {
+            "cou": [
+              24,
+              34
+            ],
+            "epaule_lointaine": [
+              19,
+              35
+            ],
+            "epaule_proche": [
+              29,
+              35
+            ],
+            "hanche_lointaine": [
+              21,
+              41
+            ],
+            "hanche_proche": [
+              27,
+              41
+            ]
+          },
+          "profil": {
+            "cou": [
+              23,
+              34
+            ],
+            "epaule_lointaine": [
+              25,
+              35
+            ],
+            "epaule_proche": [
+              21,
+              35
+            ],
+            "hanche_lointaine": [
+              24,
+              41
+            ],
+            "hanche_proche": [
+              22,
+              41
+            ],
+            "yeux": [
+              27,
+              28
+            ],
+            "nez": [
+              28,
+              30
+            ],
+            "bouche": [
+              27,
+              31
+            ]
+          }
+        }
+      }
+    },
+    "VUES": {
+      "face": {
+        "code_jeu": "bas",
+        "miroir_export": false,
+        "visage": true
+      },
+      "dos": {
+        "code_jeu": "haut",
+        "miroir_export": false,
+        "visage": false
+      },
+      "profil": {
+        "code_jeu": "cote",
+        "miroir_export": true,
+        "visage": true,
+        "//note": "Dessiné tourné vers la droite dans Piskel, retourné vers la gauche à l'export pour Phaser."
+      }
+    },
+    "NOMMAGE": {
+      "motif": "<corps>_<vue>_<piece>_<variante>[_<position>].png",
+      "regex": "^(adulte|femme|homme|enfant)_(face|dos|profil)_([a-z0-9-]+)_([a-z0-9-]+)(?:_([a-z0-9-]+))?\\.png$",
+      "note_tronc_commun": "Les pièces communes aux adultes (tête, membres, chaussures, outils, coiffures…) utilisent le préfixe « adulte_ » (ou « femme_ » / « homme_ » acceptés en alias pour les bustes et vêtements genrés)."
+    },
+    "POINTS_ATTACHE": {
+      "//principe": "Un seul pixel opaque par point d'attache dans le PNG importé, effacé après lecture par l'atelier.",
+      "cou": {
+        "hex": "#FF00FF",
+        "rgb": [
+          255,
+          0,
+          255
+        ],
+        "role": "Relie la tête (et couvre-chef/cheveux) au buste"
+      },
+      "epaule_l": {
+        "hex": "#00B4FF",
+        "rgb": [
+          0,
+          180,
+          255
+        ],
+        "role": "Épaule du bras lointain sur le buste"
+      },
+      "epaule_p": {
+        "hex": "#00FFFF",
+        "rgb": [
+          0,
+          255,
+          255
+        ],
+        "role": "Épaule du bras proche sur le buste (et pivot sur le gabarit de bras)"
+      },
+      "hanche_l": {
+        "hex": "#CCA800",
+        "rgb": [
+          204,
+          168,
+          0
+        ],
+        "role": "Hanche de la jambe lointaine sur le buste"
+      },
+      "hanche_p": {
+        "hex": "#FFFF00",
+        "rgb": [
+          255,
+          255,
+          0
+        ],
+        "role": "Hanche de la jambe proche sur le buste (et pivot sur le gabarit de jambe)"
+      },
+      "prise": {
+        "hex": "#FF8000",
+        "rgb": [
+          255,
+          128,
+          0
+        ],
+        "role": "Paume/prise de la main sur un bras ET point tenu sur le manche d'un outil"
+      },
+      "yeux": {
+        "hex": "#00FF66",
+        "rgb": [
+          0,
+          255,
+          102
+        ],
+        "role": "Centre de la ligne des yeux sur la tête nue (face et profil)"
+      },
+      "nez": {
+        "hex": "#A066FF",
+        "rgb": [
+          160,
+          102,
+          255
+        ],
+        "role": "Point d'ancrage du nez sur la tête nue (face et profil)"
+      },
+      "bouche": {
+        "hex": "#FF3366",
+        "rgb": [
+          255,
+          51,
+          102
+        ],
+        "role": "Centre de la bouche sur la tête nue (face et profil)"
+      }
+    },
+    "POSITIONS": {
+      "bras": [
+        "repos",
+        "tendu",
+        "leve",
+        "tient",
+        "elan"
+      ],
+      "jambes": [
+        "debout",
+        "marche_1",
+        "marche_2",
+        "marche_3",
+        "marche_4",
+        "assis"
+      ],
+      "yeux": [
+        "ouverts",
+        "fermes"
+      ],
+      "bouches": [
+        "neutre",
+        "sourire",
+        "triste",
+        "surprise"
+      ]
+    },
+    "ORDRE_COUCHES": {
+      "face": [
+        "outil_derriere",
+        "coiffure_arriere",
+        "bras_lointain",
+        "manche_lointaine",
+        "jambes",
+        "chaussures",
+        "bas",
+        "buste",
+        "haut",
+        "tete",
+        "visage_yeux",
+        "visage_nez",
+        "visage_bouche",
+        "pilosite",
+        "sourcils",
+        "coiffure_avant",
+        "couvre_chef",
+        "lunettes",
+        "accessoire",
+        "bras_proche",
+        "manche_proche",
+        "outil_devant"
+      ],
+      "dos": [
+        "outil_derriere",
+        "bras_lointain",
+        "manche_lointaine",
+        "jambes",
+        "chaussures",
+        "bas",
+        "buste",
+        "haut",
+        "tete",
+        "coiffure_entiere",
+        "couvre_chef",
+        "bras_proche",
+        "manche_proche",
+        "outil_devant"
+      ],
+      "profil": [
+        "outil_derriere",
+        "bras_lointain",
+        "manche_lointaine",
+        "jambe_lointaine",
+        "chaussure_lointaine",
+        "bas_lointain",
+        "coiffure_arriere",
+        "jambe_proche",
+        "chaussure_proche",
+        "bas_proche",
+        "buste",
+        "haut",
+        "tete",
+        "visage_yeux",
+        "visage_nez",
+        "visage_bouche",
+        "pilosite",
+        "sourcils",
+        "coiffure_avant",
+        "couvre_chef",
+        "lunettes",
+        "accessoire",
+        "bras_proche",
+        "manche_proche",
+        "outil_devant"
+      ]
+    },
+    "TONS_RESERVES": {
+      "//usage": "Palette Piskel de 28 couleurs clés réservées (4 tons du clair au sombre par zone recolorable). Toute autre couleur (contour #2B1D14, blanc de l'œil, acier/bois des outils) reste intacte.",
+      "peau": [
+        "#FCE0C8",
+        "#F0BE98",
+        "#CA906A",
+        "#966042"
+      ],
+      "cheveux": [
+        "#F2CA78",
+        "#C89246",
+        "#8E5A28",
+        "#543216"
+      ],
+      "yeux": [
+        "#74B4FF",
+        "#3A78D8",
+        "#1E4692",
+        "#102452"
+      ],
+      "vetement_1": [
+        "#FF867C",
+        "#D84A42",
+        "#9C2824",
+        "#5E1416"
+      ],
+      "vetement_2": [
+        "#7CC8FF",
+        "#4288D4",
+        "#265496",
+        "#162E58"
+      ],
+      "chaussures": [
+        "#D2A478",
+        "#9E6E46",
+        "#6C462A",
+        "#3E2616"
+      ],
+      "accessoire": [
+        "#98E690",
+        "#58B456",
+        "#327C36",
+        "#1C4A22"
+      ],
+      "masque_coupe": "#00FF00"
+    },
+    "COMPATIBILITES": {
+      "couvre_chef": {
+        "masque_couleur": "#00FF00",
+        "regle": "Dans un gabarit de couvre-chef, les pixels peints en #00FF00 effacent les pixels de coiffure_avant / coiffure_arriere situés aux mêmes coordonnées avant de poser le chapeau."
+      },
+      "vetements_longs": {
+        "tags_cache_cuisses": [
+          "robe",
+          "manteau_long",
+          "tablier_long"
+        ],
+        "regle": "Masque les 4 rangées supérieures du segment bas/jambes sous l'ourlet."
+      },
+      "pilosite": {
+        "corps_permis": [
+          "adulte"
+        ],
+        "genres_par_defaut": [
+          "homme"
+        ],
+        "fais_partie_identite": true
+      }
+    },
+    "TIRAGE": {
+      "prng": "fnv1a_32 + mulberry32 (identique à js/carte/comportement.js, zéro Math.random)",
+      "probabilites": {
+        "couvre_chef": 0.35,
+        "lunettes": 0.18,
+        "pilosite_homme": 0.3,
+        "accessoire": 0.25
+      },
+      "unicite": "Clé canonique corps|genre|peau|cheveux|coiffure|yeux|haut|vet1|bas|vet2|couvre_chef|pilosite vérifiée contre l'ensemble des villageois déjà tirés."
+    },
+    "CASES": [
+      "idle_bas_0",
+      "idle_bas_1",
+      "marche_bas_0",
+      "marche_bas_1",
+      "marche_bas_2",
+      "marche_bas_3",
+      "idle_haut_0",
+      "idle_haut_1",
+      "marche_haut_0",
+      "marche_haut_1",
+      "marche_haut_2",
+      "marche_haut_3",
+      "idle_cote_0",
+      "idle_cote_1",
+      "marche_cote_0",
+      "marche_cote_1",
+      "marche_cote_2",
+      "marche_cote_3",
+      "houe_cote_0",
+      "houe_cote_1",
+      "houe_cote_2",
+      "houe_cote_3",
+      "houe_bas_0",
+      "houe_bas_1",
+      "houe_bas_2",
+      "houe_bas_3",
+      "houe_haut_0",
+      "houe_haut_1",
+      "houe_haut_2",
+      "houe_haut_3",
+      "plante_cote_0",
+      "plante_cote_1",
+      "plante_cote_2",
+      "plante_bas_0",
+      "plante_bas_1",
+      "plante_bas_2",
+      "plante_haut_0",
+      "plante_haut_1",
+      "plante_haut_2",
+      "arrose_cote_0",
+      "arrose_bas_0",
+      "arrose_haut_0",
+      "arrose_cote_1",
+      "arrose_bas_1",
+      "arrose_haut_1",
+      "arrose_cote_2",
+      "arrose_bas_2",
+      "arrose_haut_2",
+      "panier_bas_0",
+      "panier_bas_1",
+      "panier_bas_2",
+      "panier_bas_3",
+      "panier_haut_0",
+      "panier_haut_1",
+      "panier_haut_2",
+      "panier_haut_3",
+      "panier_cote_0",
+      "panier_cote_1",
+      "panier_cote_2",
+      "panier_cote_3",
+      "cuisine_0",
+      "cuisine_1",
+      "cuisine_2",
+      "cuisine_3",
+      "frigo_0",
+      "frigo_1",
+      "frigo_2",
+      "ramasse_0",
+      "ramasse_1",
+      "ramasse_2",
+      "hache_cote_0",
+      "hache_cote_1",
+      "hache_cote_2",
+      "hache_cote_3",
+      "pioche_cote_0",
+      "pioche_cote_1",
+      "pioche_cote_2",
+      "pioche_cote_3",
+      "peche_cote_0",
+      "peche_cote_1",
+      "peche_cote_2",
+      "peche_cote_3",
+      "peche_bas_0",
+      "peche_bas_1",
+      "peche_bas_2",
+      "peche_bas_3",
+      "peche_haut_0",
+      "peche_haut_1",
+      "peche_haut_2",
+      "peche_haut_3",
+      "assis_bas_0",
+      "assis_bas_1",
+      "assis_haut_0",
+      "assis_haut_1",
+      "assis_cote_0",
+      "assis_cote_1",
+      "faux_cote_0",
+      "faux_cote_1",
+      "faux_cote_2",
+      "faux_cote_3",
+      "dort_bas_0",
+      "dort_bas_1",
+      "jette_cote_0",
+      "jette_cote_1",
+      "jette_cote_2",
+      "jette_bas_0",
+      "jette_bas_1",
+      "jette_bas_2",
+      "jette_haut_0",
+      "jette_haut_1",
+      "jette_haut_2"
+    ],
+    "POSES": {
+      "idle_bas_0": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "idle_bas_1": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "debout",
+        "dy_buste": 1,
+        "dy_tete": 1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_bas_0": {
+        "vue": "face",
+        "bras_lointain": "elan",
+        "bras_proche": "tendu",
+        "jambes": "marche_1",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_bas_1": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "marche_2",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_bas_2": {
+        "vue": "face",
+        "bras_lointain": "tendu",
+        "bras_proche": "elan",
+        "jambes": "marche_3",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_bas_3": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "marche_4",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "idle_haut_0": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "idle_haut_1": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "debout",
+        "dy_buste": 1,
+        "dy_tete": 1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_haut_0": {
+        "vue": "dos",
+        "bras_lointain": "tendu",
+        "bras_proche": "elan",
+        "jambes": "marche_1",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_haut_1": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "marche_2",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_haut_2": {
+        "vue": "dos",
+        "bras_lointain": "elan",
+        "bras_proche": "tendu",
+        "jambes": "marche_3",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_haut_3": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "marche_4",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "idle_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "idle_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "debout",
+        "dy_buste": 1,
+        "dy_tete": 1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "tendu",
+        "bras_proche": "elan",
+        "jambes": "marche_1",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "marche_2",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_cote_2": {
+        "vue": "profil",
+        "bras_lointain": "elan",
+        "bras_proche": "tient",
+        "jambes": "marche_3",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "marche_cote_3": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "marche_4",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "houe:pret",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "leve",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "houe:leve",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_cote_2": {
+        "vue": "profil",
+        "bras_lointain": "elan",
+        "bras_proche": "elan",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "houe:elan",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_cote_3": {
+        "vue": "profil",
+        "bras_lointain": "tendu",
+        "bras_proche": "tendu",
+        "jambes": "marche_1",
+        "dy_buste": 1,
+        "dy_tete": 1,
+        "outil": "houe:coup",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_bas_0": {
+        "vue": "face",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "houe:pret",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_bas_1": {
+        "vue": "face",
+        "bras_lointain": "leve",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "houe:leve",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_bas_2": {
+        "vue": "face",
+        "bras_lointain": "elan",
+        "bras_proche": "elan",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "houe:elan",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_bas_3": {
+        "vue": "face",
+        "bras_lointain": "tendu",
+        "bras_proche": "tendu",
+        "jambes": "marche_1",
+        "dy_buste": 1,
+        "dy_tete": 1,
+        "outil": "houe:coup",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_haut_0": {
+        "vue": "dos",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "houe:pret",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_haut_1": {
+        "vue": "dos",
+        "bras_lointain": "leve",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "houe:leve",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_haut_2": {
+        "vue": "dos",
+        "bras_lointain": "elan",
+        "bras_proche": "elan",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "houe:elan",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "houe_haut_3": {
+        "vue": "dos",
+        "bras_lointain": "tendu",
+        "bras_proche": "tendu",
+        "jambes": "marche_1",
+        "dy_buste": 1,
+        "dy_tete": 1,
+        "outil": "houe:coup",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "plante_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "plante_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "marche_2",
+        "dy_buste": 2,
+        "dy_tete": 2,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "plante_cote_2": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "marche_2",
+        "dy_buste": 2,
+        "dy_tete": 3,
+        "outil": "graine:semis",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "plante_bas_0": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "plante_bas_1": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "marche_2",
+        "dy_buste": 2,
+        "dy_tete": 2,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "plante_bas_2": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "marche_2",
+        "dy_buste": 2,
+        "dy_tete": 3,
+        "outil": "graine:semis",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "plante_haut_0": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "plante_haut_1": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "marche_2",
+        "dy_buste": 2,
+        "dy_tete": 2,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "plante_haut_2": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "marche_2",
+        "dy_buste": 2,
+        "dy_tete": 3,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "arrose_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "arrosoir:droit",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "arrose_bas_0": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "arrosoir:droit",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "arrose_haut_0": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "arrosoir:droit",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "arrose_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 1,
+        "outil": "arrosoir:penche",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "arrose_bas_1": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 1,
+        "outil": "arrosoir:penche",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "arrose_haut_1": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "arrosoir:penche",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "arrose_cote_2": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 1,
+        "outil": "arrosoir:gouttes",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "arrose_bas_2": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 1,
+        "outil": "arrosoir:gouttes",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "arrose_haut_2": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "arrosoir:gouttes",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_bas_0": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_1",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "panier:porte",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_bas_1": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_2",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "panier:porte",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_bas_2": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_3",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "panier:porte",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_bas_3": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_4",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "panier:porte",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_haut_0": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_1",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "panier:porte",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_haut_1": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_2",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "panier:porte",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_haut_2": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_3",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "panier:porte",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_haut_3": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_4",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "panier:porte",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_1",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "panier:porte",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_2",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "panier:porte",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_cote_2": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_3",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "panier:porte",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "panier_cote_3": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_4",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "panier:porte",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "cuisine_0": {
+        "vue": "dos",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "cuillere:0",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "cuisine_1": {
+        "vue": "dos",
+        "bras_lointain": "tient",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "cuillere:1",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "cuisine_2": {
+        "vue": "dos",
+        "bras_lointain": "tient",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "cuillere:2",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "cuisine_3": {
+        "vue": "dos",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "cuillere:3",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "frigo_0": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "frigo_1": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "frigo_2": {
+        "vue": "dos",
+        "bras_lointain": "tient",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 1,
+        "dy_tete": 1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "ramasse_0": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "panier:sol",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "ramasse_1": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "marche_2",
+        "dy_buste": 2,
+        "dy_tete": 3,
+        "outil": "panier:sol",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "ramasse_2": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "marche_2",
+        "dy_buste": 2,
+        "dy_tete": 2,
+        "outil": "oeuf:main",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "hache_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "hache:pret",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "hache_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "elan",
+        "bras_proche": "elan",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "hache:leve",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "hache_cote_2": {
+        "vue": "profil",
+        "bras_lointain": "leve",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "hache:elan",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "hache_cote_3": {
+        "vue": "profil",
+        "bras_lointain": "tendu",
+        "bras_proche": "tendu",
+        "jambes": "marche_1",
+        "dy_buste": 0,
+        "dy_tete": 1,
+        "outil": "hache:coup",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "pioche_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "pioche:pret",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "pioche_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "elan",
+        "bras_proche": "elan",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "pioche:leve",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "pioche_cote_2": {
+        "vue": "profil",
+        "bras_lointain": "leve",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "pioche:elan",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "pioche_cote_3": {
+        "vue": "profil",
+        "bras_lointain": "tendu",
+        "bras_proche": "tendu",
+        "jambes": "marche_1",
+        "dy_buste": 1,
+        "dy_tete": 1,
+        "outil": "pioche:coup",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "canne:tenue",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "elan",
+        "bras_proche": "elan",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "canne:armee",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_cote_2": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "canne:lancee",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_cote_3": {
+        "vue": "profil",
+        "bras_lointain": "leve",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "canne:ferree",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_bas_0": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "canne:tenue",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_bas_1": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "elan",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "canne:armee",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_bas_2": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "canne:lancee",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_bas_3": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "canne:ferree",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_haut_0": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "canne:tenue",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_haut_1": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "elan",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "canne:armee",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_haut_2": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "canne:lancee",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "peche_haut_3": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "canne:ferree",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "assis_bas_0": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "assis",
+        "dy_buste": 4,
+        "dy_tete": 4,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "sourire"
+      },
+      "assis_bas_1": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "assis",
+        "dy_buste": 4,
+        "dy_tete": 4,
+        "outil": "fourchette:bouche",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "sourire"
+      },
+      "assis_haut_0": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "assis",
+        "dy_buste": 4,
+        "dy_tete": 4,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "sourire"
+      },
+      "assis_haut_1": {
+        "vue": "dos",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "assis",
+        "dy_buste": 4,
+        "dy_tete": 4,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "sourire"
+      },
+      "assis_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "assis",
+        "dy_buste": 4,
+        "dy_tete": 4,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "sourire"
+      },
+      "assis_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "repos",
+        "bras_proche": "tient",
+        "jambes": "assis",
+        "dy_buste": 4,
+        "dy_tete": 4,
+        "outil": "fourchette:bouche",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "sourire"
+      },
+      "faux_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "faux:pret",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "faux_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "elan",
+        "bras_proche": "elan",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "faux:armee",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "faux_cote_2": {
+        "vue": "profil",
+        "bras_lointain": "tendu",
+        "bras_proche": "tendu",
+        "jambes": "marche_1",
+        "dy_buste": 1,
+        "dy_tete": 1,
+        "outil": "faux:coup",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "faux_cote_3": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "faux:fin",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "dort_bas_0": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "fermes",
+        "expression": "neutre"
+      },
+      "dort_bas_1": {
+        "vue": "face",
+        "bras_lointain": "repos",
+        "bras_proche": "repos",
+        "jambes": "debout",
+        "dy_buste": 1,
+        "dy_tete": 1,
+        "outil": null,
+        "outil_derriere": false,
+        "yeux": "fermes",
+        "expression": "neutre"
+      },
+      "jette_cote_0": {
+        "vue": "profil",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "fibres:brassee",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "jette_cote_1": {
+        "vue": "profil",
+        "bras_lointain": "leve",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "fibres:haut",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "jette_cote_2": {
+        "vue": "profil",
+        "bras_lointain": "tendu",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "fibres:envol",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "jette_bas_0": {
+        "vue": "face",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "fibres:brassee",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "jette_bas_1": {
+        "vue": "face",
+        "bras_lointain": "leve",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "fibres:haut",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "jette_bas_2": {
+        "vue": "face",
+        "bras_lointain": "tendu",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "fibres:envol",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "jette_haut_0": {
+        "vue": "dos",
+        "bras_lointain": "tient",
+        "bras_proche": "tient",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "fibres:brassee",
+        "outil_derriere": true,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "jette_haut_1": {
+        "vue": "dos",
+        "bras_lointain": "leve",
+        "bras_proche": "leve",
+        "jambes": "debout",
+        "dy_buste": -1,
+        "dy_tete": -1,
+        "outil": "fibres:haut",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      },
+      "jette_haut_2": {
+        "vue": "dos",
+        "bras_lointain": "tendu",
+        "bras_proche": "tendu",
+        "jambes": "debout",
+        "dy_buste": 0,
+        "dy_tete": 0,
+        "outil": "fibres:envol",
+        "outil_derriere": false,
+        "yeux": "ouverts",
+        "expression": "neutre"
+      }
+    }
+  }
+}

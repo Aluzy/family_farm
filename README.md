@@ -552,6 +552,7 @@ copier le rapport ; le téléphone de référence, les budgets et la marche à s
 | [`docs/perf.md`](docs/perf.md) | performances : téléphone de référence, budgets, mesures et résultats |
 | [`docs/chantier-allegement.md`](docs/chantier-allegement.md) | chantier à venir : six pistes mesurées pour alléger le jeu (processeur, mémoire, chargement) sans rien changer pour le joueur |
 | [`docs/personnage.md`](docs/personnage.md) | le personnage et ses gestes sur la carte |
+| [`docs/studio-personnages.md`](docs/studio-personnages.md) | le Studio de personnages de l'atelier des sprites (/admin/sprites) : gabarits Piskel, vérificateur des PNG, assemblage par points d'attache et planche des 111 cases |
 | [`docs/ile.md`](docs/ile.md) | l'île à bâtir : le document de l'île, la conception de référence depuis la bascule (le port, le bac, les villageois, le village, les paliers, les vocations) |
 | [`docs/grand-monde.md`](docs/grand-monde.md) | le grand monde : une seule carte de biomes, ses neuf étapes (terminées) et ce qui a suivi |
 | [`docs/fiches/`](docs/fiches/README.md) | les fiches de tâches du grand monde et d'après (une fiche, une PR) |
